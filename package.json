@@ -11,7 +11,7 @@
     "lint-staged": "^15.2.2"
   },
   "lint-staged": {
-    "backend/**/*.js": [
+    "apps/backend/**/*.js": [
       "node scripts/check-arabic-strings.js --staged",
       "node --check"
     ]

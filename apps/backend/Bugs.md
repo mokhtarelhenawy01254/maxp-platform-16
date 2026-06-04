@@ -1,3 +1,11 @@
+## [2026-06-04] Outdated Duplicate Root-level Codebases Deploy Conflict
+- **Bug/Issue**: The repository had duplicate, stale root-level `backend/` and `frontend/` directories from a previous structure, but the deploy pipeline was building and packaging from them instead of the active `apps/backend/` and `apps/frontend/` monorepo folders, causing new AI features and UI pages to never be deployed.
+- **Cause**: Incomplete deletion of old repository folders during monorepo consolidation, combined with the deployment workflow referencing root directories.
+- **Fix**: Removed root-level `backend/` and `frontend/` folders from Git tracking, and reconfigured `.github/workflows/deploy.yml` and root `package.json` to target `./apps/backend` and `./apps/frontend` respectively.
+- **Affected Files**:
+  - `package.json`
+  - `.github/workflows/deploy.yml`
+
 ## [2026-06-04] Embeddings Generation and Vector Search Test Client Auth Failure
 - **Bug/Issue**: Executing pytest tests in `tests/api/test_embeddings.py` returned `401 Unauthorized` responses.
 - **Cause**: FastAPI admin endpoints are protected by the `ServiceAuthMiddleware` which expects an `Authorization: Bearer test-service-token` header. The embedding test client requests did not provide this header.

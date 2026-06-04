@@ -1,3 +1,15 @@
+## [2026-06-04] Realign Monorepo Deployment & Clean Stale Directories [READY]
+- **Objective**: Clean up duplicate root-level folders and re-target the deployment pipeline to correct monorepo paths (`apps/backend` and `apps/frontend`) to allow deploying the new AI service features.
+- **Accomplishments**:
+  - **Folder Clean-up**: Deleted duplicate root `backend/` and `frontend/` folders to establish a single source of truth under `apps/`.
+  - **Deploy Paths Realignment**: Updated GHA `deploy.yml` and root `package.json` to install dependencies, run tests, build, and package from the nested `apps/backend` and `apps/frontend` folders.
+  - **AI Nginx Deployment**: Integrated `maxp-ai.pro.conf` deployment, backup, enabling, and domain conflict checking on VPS Nginx.
+  - **AI Service Smoke Verification**: Added `maxp-ai.pro` local-resolve API health checking post-deployment.
+- **Affected Files**:
+  - `.github/workflows/deploy.yml`
+  - `package.json`
+  - `scripts/verify-docs.js`
+
 ## [2026-03-09] Embeddings Generation and Vector Search Python Migration [READY]
 - **Objective**: Migrate embedding generation and corrective RAG vector search from the Node.js backend to the Python AI service.
 - **Accomplishments**:

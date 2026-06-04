@@ -52,11 +52,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: |
-            frontend/package-lock.json
-            backend/package-lock.json
+            apps/frontend/package-lock.json
+            apps/backend/package-lock.json
 
       - name: Install Backend Test Dependencies
-        working-directory: ./backend
+        working-directory: ./apps/backend
         run: |
           npm ci || npm install
         env:
@@ -65,26 +65,26 @@ jobs:
         continue-on-error: false
 
       - name: Run Facebook Ads Regression Tests
-        working-directory: ./backend
+        working-directory: ./apps/backend
         run: |
           npx jest tests/controller/facebookAdsController.fullAd.test.js --runInBand --testTimeout=30000 --forceExit
         continue-on-error: false
 
       - name: Run AI Agent Test Suite
-        working-directory: ./backend
+        working-directory: ./apps/backend
         run: |
           npx jest --testPathPattern="tests/services/agent|tests/services/aiChat" --runInBand --testTimeout=30000 --forceExit
         continue-on-error: true
 
       # Build Frontend
       - name: Install Frontend Dependencies
-        working-directory: ./frontend
+        working-directory: ./apps/frontend
         run: |
           npm ci || npm install
         continue-on-error: false
 
       - name: Build Frontend
-        working-directory: ./frontend
+        working-directory: ./apps/frontend
         run: |
           npm run build
           test -f dist/placeholders/luxury-shoes/hero.png
@@ -98,7 +98,7 @@ jobs:
 
       # Build Backend (if needed)
       - name: Install Backend Dependencies
-        working-directory: ./backend
+        working-directory: ./apps/backend
         run: |
           npm ci --only=production || npm install --only=production
         continue-on-error: false
@@ -107,15 +107,15 @@ jobs:
       - name: Package Assets
         run: |
           echo "📦 Packaging Frontend..."
-          tar -czf frontend.tar.gz -C frontend/dist .
+          tar -czf frontend.tar.gz -C apps/frontend/dist .
 
           echo "📦 Packaging Storefront Theme Presets..."
-          tar -czf theme-presets.tar.gz -C frontend/src/storefront/themes .
+          tar -czf theme-presets.tar.gz -C apps/frontend/src/storefront/themes .
           
           echo "📦 Packaging Backend (Optimized)..."
           # We exclude node_modules to avoid the 2.3GB upload time. 
           # We will install them on the server or use existing ones.
-          tar -czf backend.tar.gz --exclude="backend/node_modules" --exclude="backend/prisma/generated" --exclude="backend/legacy_mysql" --exclude="backend/uploads" --exclude="backend/*.tar.gz" backend
+          tar -czf backend.tar.gz --exclude="backend/node_modules" --exclude="backend/prisma/generated" --exclude="backend/legacy_mysql" --exclude="backend/uploads" --exclude="backend/*.tar.gz" -C apps backend
           
           echo "📦 Packaging Shared..."
           tar -czf shared.tar.gz -C shared .
@@ -125,6 +125,7 @@ jobs:
           mkdir -p deploy_nginx
           cp nginx_configs/maxp.online.conf deploy_nginx/maxp.online.conf
           cp nginx_configs/mokhtarelhenawy.online.conf deploy_nginx/mokhtarelhenawy.online.conf
+          cp nginx_configs/maxp-ai.pro.conf deploy_nginx/maxp-ai.pro.conf
           tar -czf nginx-configs.tar.gz -C deploy_nginx .
           rm -rf deploy_nginx
 
@@ -682,10 +683,14 @@ jobs:
 
               MAXP_NGINX_TARGET="/etc/nginx/sites-available/maxp.online.conf"
               MOKHTAR_NGINX_TARGET="/etc/nginx/sites-available/mokhtarelhenawy.online.conf"
+              MAXP_AI_NGINX_TARGET="/etc/nginx/sites-available/maxp-ai.pro.conf"
               MAXP_NGINX_ENABLED="/etc/nginx/sites-enabled/maxp.online.conf"
               MOKHTAR_NGINX_ENABLED="/etc/nginx/sites-enabled/mokhtarelhenawy.online.conf"
+              MAXP_AI_NGINX_ENABLED="/etc/nginx/sites-enabled/maxp-ai.pro.conf"
               MAXP_NGINX_BACKUP="/tmp/maxp.online.conf.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}.bak"
               MOKHTAR_NGINX_BACKUP="/tmp/mokhtarelhenawy.online.conf.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}.bak"
+              MAXP_AI_NGINX_BACKUP="/tmp/maxp-ai.pro.conf.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}.bak"
+              MAXP_AI_NGINX_ENABLED_BACKUP="/tmp/maxp-ai.pro.enabled.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}.bak"
               CONFLICT_BACKUP_DIR="$DEPLOY_STAGING/nginx_conflict_backup"
               CONFLICT_MANIFEST="$CONFLICT_BACKUP_DIR/manifest.txt"
 
@@ -695,11 +700,19 @@ jobs:
               if [ -f "$MOKHTAR_NGINX_TARGET" ]; then
                 sudo cp "$MOKHTAR_NGINX_TARGET" "$MOKHTAR_NGINX_BACKUP"
               fi
+              if [ -f "$MAXP_AI_NGINX_TARGET" ]; then
+                sudo cp -L "$MAXP_AI_NGINX_TARGET" "$MAXP_AI_NGINX_BACKUP"
+              fi
+              if [ -e "$MAXP_AI_NGINX_ENABLED" ]; then
+                sudo cp -L "$MAXP_AI_NGINX_ENABLED" "$MAXP_AI_NGINX_ENABLED_BACKUP"
+              fi
 
               sudo cp "$DEPLOY_STAGING/nginx_extract/maxp.online.conf" "$MAXP_NGINX_TARGET"
               sudo cp "$DEPLOY_STAGING/nginx_extract/mokhtarelhenawy.online.conf" "$MOKHTAR_NGINX_TARGET"
+              sudo cp "$DEPLOY_STAGING/nginx_extract/maxp-ai.pro.conf" "$MAXP_AI_NGINX_TARGET"
               sudo ln -sfn "$MAXP_NGINX_TARGET" "$MAXP_NGINX_ENABLED"
               sudo ln -sfn "$MOKHTAR_NGINX_TARGET" "$MOKHTAR_NGINX_ENABLED"
+              sudo ln -sfn "$MAXP_AI_NGINX_TARGET" "$MAXP_AI_NGINX_ENABLED"
 
               rm -rf "$CONFLICT_BACKUP_DIR"
               mkdir -p "$CONFLICT_BACKUP_DIR"
@@ -708,12 +721,16 @@ jobs:
               mapfile -t CONFLICTING_NGINX_FILES < <(
                 for candidate in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*.conf; do
                   [ -e "$candidate" ] || continue
-                  if [ "$candidate" = "$MAXP_NGINX_ENABLED" ] || [ "$candidate" = "$MOKHTAR_NGINX_ENABLED" ]; then
+                  if [ "$candidate" = "$MAXP_NGINX_ENABLED" ] || \
+                     [ "$candidate" = "$MOKHTAR_NGINX_ENABLED" ] || \
+                     [ "$candidate" = "$MAXP_AI_NGINX_ENABLED" ]; then
                     continue
                   fi
 
                   if sudo grep -qF 'server_name maxp.online www.maxp.online *.maxp.online;' "$candidate" || \
-                     sudo grep -qF 'server_name mokhtarelhenawy.online www.mokhtarelhenawy.online *.mokhtarelhenawy.online;' "$candidate"; then
+                     sudo grep -qF 'server_name mokhtarelhenawy.online www.mokhtarelhenawy.online *.mokhtarelhenawy.online;' "$candidate" || \
+                     sudo grep -qF 'server_name maxp-ai.pro www.maxp-ai.pro *.maxp-ai.pro;' "$candidate" || \
+                     sudo grep -qF 'server_name ai.maxp-ai.pro;' "$candidate"; then
                     printf '%s\n' "$candidate"
                   fi
                 done
@@ -737,6 +754,13 @@ jobs:
                 fi
                 if [ -f "$MOKHTAR_NGINX_BACKUP" ]; then
                   sudo cp "$MOKHTAR_NGINX_BACKUP" "$MOKHTAR_NGINX_TARGET"
+                fi
+                if [ -f "$MAXP_AI_NGINX_BACKUP" ]; then
+                  sudo cp "$MAXP_AI_NGINX_BACKUP" "$MAXP_AI_NGINX_TARGET"
+                fi
+                if [ -f "$MAXP_AI_NGINX_ENABLED_BACKUP" ]; then
+                  sudo rm -f "$MAXP_AI_NGINX_ENABLED"
+                  sudo cp "$MAXP_AI_NGINX_ENABLED_BACKUP" "$MAXP_AI_NGINX_ENABLED"
                 fi
                 if [ -f "$CONFLICT_MANIFEST" ]; then
                   while IFS='|' read -r original_path backup_path; do
@@ -802,6 +826,18 @@ jobs:
 
               if ! printf '%s' "$NGINX_HTML" | grep -q '<link rel="canonical"'; then
                 echo "❌ Nginx storefront HTML is missing the canonical link tag"
+                exit 1
+              fi
+
+              echo "🧪 Running maxp-ai.pro API smoke test..."
+              MAXP_AI_HEALTH_FILE="$(mktemp)"
+              MAXP_AI_HEALTH_STATUS="$(curl -ksS --max-time 20 --resolve "maxp-ai.pro:443:127.0.0.1" -o "$MAXP_AI_HEALTH_FILE" -w '%{http_code}' -H "Accept: application/json" "https://maxp-ai.pro/api/v1/health")"
+              echo "ℹ️ maxp-ai.pro API status: ${MAXP_AI_HEALTH_STATUS}"
+              if [ "$MAXP_AI_HEALTH_STATUS" != "200" ]; then
+                echo "❌ maxp-ai.pro API health returned HTTP ${MAXP_AI_HEALTH_STATUS}"
+                head -c 240 "$MAXP_AI_HEALTH_FILE" || true
+                echo
+                sudo nginx -T 2>/dev/null | grep -nE 'server_name .*maxp-ai\.pro|proxy_pass http://127\.0\.0\.1:(3007|8000)' || true
                 exit 1
               fi
             else

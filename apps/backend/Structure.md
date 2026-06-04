@@ -1,3 +1,13 @@
+## [2026-06-04] Monorepo Path Realignment & AI Service Deploy Integration
+- **Details**: Realigned the GitHub Actions deploy pipeline to build and package exclusively from `apps/backend/` and `apps/frontend/`, and added `maxp-ai.pro` Nginx configuration deployment with backend health check.
+- **Architecture**:
+  - **CI Workspace Paths**: setup-node cache-dependency-path, working directories, and packaging commands target `apps/backend` and `apps/frontend`.
+  - **AI Nginx Integration**: Packages and deploys `maxp-ai.pro.conf` Nginx config to sites-available/sites-enabled on the VPS, handling server-name conflicts.
+  - **AI Service API Smoke Test**: Runs a post-reload curl request to `https://maxp-ai.pro/api/v1/health` with local resolve mapping to verify the Python AI service is responsive.
+- **Files**:
+  - `.github/workflows/deploy.yml`
+  - `package.json`
+
 ## [2026-06-04] Embeddings Generation and Vector Search Architecture Migration
 - **Details**: Migrated embedding generation and corrective RAG vector search from the Node.js backend to the Python AI service. The Node.js backend delegates to Python when running in `primary` service mode, and the corrective RAG engine utilizes semantic similarity search using pgvector cosine distance.
 - **Architecture**:

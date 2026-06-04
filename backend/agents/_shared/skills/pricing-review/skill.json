@@ -1,9 +1,0 @@
-{
-  "id": "pricing-review",
-  "displayName": "Pricing Review",
-  "version": "1.0.0",
-  "description": "Review pricing and prepare price-change proposals.",
-  "allowedTools": ["product.search", "product.updatePrice", "audit.read"],
-  "requiresHumanApproval": true,
-  "maxToolCount": 3
-}

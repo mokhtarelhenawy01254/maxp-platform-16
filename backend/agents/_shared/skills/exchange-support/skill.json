@@ -1,9 +1,0 @@
-{
-  "id": "exchange-support",
-  "displayName": "سياسة دعم الاستبدال",
-  "version": "1.0.0",
-  "description": "التحقق من قواعد وشروط الاستبدال للطلبات المستلمة خلال 14 يوماً مع توضيح العميل للمشكلة.",
-  "allowedTools": ["order.lookup", "customer.info", "agent.handoff"],
-  "requiresHumanApproval": false,
-  "maxToolCount": 3
-}
