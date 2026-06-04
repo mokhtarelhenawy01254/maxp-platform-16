@@ -1,6 +1,4 @@
 name: Deploy to Server
-# Trigger: 2026-02-17 11:40 (Fix: Audit Logs data type casting String to Enum)
-# Update: 2026-02-17 11:40 (Fix: Added fix-audit-logs.sh to deploy script)
 
 on:
   push:
@@ -107,9 +105,9 @@ jobs:
       - name: Package Assets
         run: |
           echo "📦 Packaging Frontend..."
-tar -czf frontend.tar.gz -C apps/frontend/dist .
-        tar -czf theme-presets.tar.gz -C apps/frontend/src/storefront/themes .
-        tar -czf backend.tar.gz --exclude="apps/backend/node_modules" --exclude="apps/backend/prisma/generated" --exclude="apps/backend/legacy_mysql" --exclude="apps/backend/uploads" --exclude="apps/backend/*.tar.gz" apps/backend
+          tar -czf frontend.tar.gz -C apps/frontend/dist .
+          tar -czf theme-presets.tar.gz -C apps/frontend/src/storefront/themes .
+          tar -czf backend.tar.gz --exclude="apps/backend/node_modules" --exclude="apps/backend/prisma/generated" --exclude="apps/backend/legacy_mysql" --exclude="apps/backend/uploads" --exclude="apps/backend/*.tar.gz" apps/backend
           
           echo "📦 Packaging Shared..."
           tar -czf shared.tar.gz -C shared .
@@ -124,7 +122,6 @@ tar -czf frontend.tar.gz -C apps/frontend/dist .
 
           ls -lh *.tar.gz
 
-      # Verify secrets exist
       - name: Verify Secrets
         run: |
           if [ -z "${{ secrets.SERVER_HOST }}" ]; then
