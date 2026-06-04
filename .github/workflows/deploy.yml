@@ -52,11 +52,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: |
-            frontend/package-lock.json
-            backend/package-lock.json
+            apps/frontend/package-lock.json
+            apps/backend/package-lock.json
 
       - name: Install Backend Test Dependencies
-        working-directory: ./backend
+        working-directory: ./apps/backend
         run: |
           npm ci || npm install
         env:
@@ -65,26 +65,26 @@ jobs:
         continue-on-error: false
 
       - name: Run Facebook Ads Regression Tests
-        working-directory: ./backend
+        working-directory: ./apps/backend
         run: |
           npx jest tests/controller/facebookAdsController.fullAd.test.js --runInBand --testTimeout=30000 --forceExit
         continue-on-error: false
 
       - name: Run AI Agent Test Suite
-        working-directory: ./backend
+        working-directory: ./apps/backend
         run: |
           npx jest --testPathPattern="tests/services/agent|tests/services/aiChat" --runInBand --testTimeout=30000 --forceExit
         continue-on-error: true
 
       # Build Frontend
       - name: Install Frontend Dependencies
-        working-directory: ./frontend
+        working-directory: ./apps/frontend
         run: |
           npm ci || npm install
         continue-on-error: false
 
       - name: Build Frontend
-        working-directory: ./frontend
+        working-directory: ./apps/frontend
         run: |
           npm run build
           test -f dist/placeholders/luxury-shoes/hero.png
@@ -98,7 +98,7 @@ jobs:
 
       # Build Backend (if needed)
       - name: Install Backend Dependencies
-        working-directory: ./backend
+        working-directory: ./apps/backend
         run: |
           npm ci --only=production || npm install --only=production
         continue-on-error: false
@@ -107,15 +107,9 @@ jobs:
       - name: Package Assets
         run: |
           echo "📦 Packaging Frontend..."
-          tar -czf frontend.tar.gz -C frontend/dist .
-
-          echo "📦 Packaging Storefront Theme Presets..."
-          tar -czf theme-presets.tar.gz -C frontend/src/storefront/themes .
-          
-          echo "📦 Packaging Backend (Optimized)..."
-          # We exclude node_modules to avoid the 2.3GB upload time. 
-          # We will install them on the server or use existing ones.
-          tar -czf backend.tar.gz --exclude="backend/node_modules" --exclude="backend/prisma/generated" --exclude="backend/legacy_mysql" --exclude="backend/uploads" --exclude="backend/*.tar.gz" backend
+tar -czf frontend.tar.gz -C apps/frontend/dist .
+        tar -czf theme-presets.tar.gz -C apps/frontend/src/storefront/themes .
+        tar -czf backend.tar.gz --exclude="apps/backend/node_modules" --exclude="apps/backend/prisma/generated" --exclude="apps/backend/legacy_mysql" --exclude="apps/backend/uploads" --exclude="apps/backend/*.tar.gz" apps/backend
           
           echo "📦 Packaging Shared..."
           tar -czf shared.tar.gz -C shared .
