@@ -259,7 +259,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 </AccordionDetails>
               </Accordion>
             ))}
-</Box>
+          </Box>
         )}
       </Box>
     </Box>

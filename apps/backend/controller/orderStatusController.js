@@ -67,13 +67,16 @@ const WOOCOMMERCE_STATUSES = {
 // 📋 Get All Status Configurations
 // ═══════════════════════════════════════════════════════════════
 
+const getRequestCompanyId = (req) =>
+  req.user?.effectiveCompanyId || req.user?.companyId;
+
 /**
  * GET /api/v1/order-status
  * جلب جميع حالات الطلبات للشركة
  */
 const getAllStatuses = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = getRequestCompanyId(req);
     console.log('🏷️ [ORDER-STATUS] Getting statuses for company:', companyId);
 
     if (!companyId) {

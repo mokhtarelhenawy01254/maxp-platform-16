@@ -93,20 +93,13 @@ const createFrontendStaticFallback = () => {
 // GLOBAL CRASH HANDLERS - LOAD EARLY!
 // ---------------------------------------------------------
 const telegramAlertService = require("./services/telegramAlertService");
+const {
+  getReasonMessage,
+  isWhatsAppBaileysConnectionClosed,
+} = require("./utils/recoverableUnhandledRejection");
 
-function isTransientBaileysConnectionClosed(reason) {
-  if (!reason || reason.message !== "Connection Closed") {
-    return false;
-  }
 
-  const statusCode = reason.output?.statusCode || reason.statusCode;
-  const stack = reason.stack || "";
 
-  return (
-    statusCode === 428 &&
-    (reason.isBoom === true || stack.includes("@whiskeysockets/baileys"))
-  );
-}
 
 process.on("uncaughtException", async (error) => {
   console.error("🔥 FATAL UNCAUGHT EXCEPTION:", error);
@@ -122,17 +115,14 @@ process.on("uncaughtException", async (error) => {
 });
 
 process.on("unhandledRejection", async (reason, promise) => {
-  if (isTransientBaileysConnectionClosed(reason)) {
-    console.warn(
-      "[WA] Ignoring transient Baileys connection-closed rejection",
-      reason.message,
-    );
+  const msg = getReasonMessage(reason);
+  if (isWhatsAppBaileysConnectionClosed(reason)) {
+    console.warn("⚠️ [SERVER] Recoverable WhatsApp socket rejection ignored:", msg);
     return;
   }
 
   console.error("🔥 FATAL UNHANDLED REJECTION:", reason);
   try {
-    const msg = reason && reason.message ? reason.message : String(reason);
     const stack = reason && reason.stack ? reason.stack : "";
     await telegramAlertService.sendFatalError("unhandledRejection", msg, stack);
   } catch (e) {}
@@ -1069,11 +1059,11 @@ async function startServer() {
 }
 
 process.on("unhandledRejection", (reason, promise) => {
-  if (isTransientBaileysConnectionClosed(reason)) {
+  if (isWhatsAppBaileysConnectionClosed(reason)) {
     return;
   }
 
-  const reasonStr = reason instanceof Error ? reason.message : String(reason);
+  const reasonStr = getReasonMessage(reason);
   const mem = process.memoryUsage();
   console.error(
     "🔥 [FATAL] Unhandled Rejection at:",

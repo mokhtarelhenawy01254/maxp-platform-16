@@ -1,0 +1,40 @@
+{
+  "slug": "order-agent",
+  "name": "Order Agent",
+  "role": "ORDER",
+  "version": "1.0.0",
+  "modelPolicy": {
+    "default": "gemini-2.5-flash",
+    "fallback": "gemini-2.5-pro"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "standard",
+    "tone": "professional",
+    "formality": "formal"
+  },
+  "guardrails": {
+    "requireDraftOrders": true,
+    "confirmBeforePrice": false,
+    "singleQuestionPerTurn": false
+  },
+  "allowedTools": [
+    "order.lookup",
+    "order.create_draft",
+    "order.confirm",
+    "order.cancel",
+    "order.refund"
+  ],
+  "allowedSkills": [],
+  "channels": ["chat", "whatsapp", "messenger"],
+  "budget": {
+    "dailyUsd": 2,
+    "maxToolCallsPerRun": 5
+  }
+}
