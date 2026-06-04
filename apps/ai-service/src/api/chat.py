@@ -60,20 +60,39 @@ async def chat(
     session: AsyncSession = Depends(get_session),  # noqa: B008
 ) -> ChatResponse:
     """Handle a customer chat message."""
+    import uuid
+
     company_id = get_company_id(request)
     customer_id = get_customer_id(request)
 
-    thread_id = body.thread_id or f"{company_id}:{customer_id}:chat"
-    stmt = select(Thread).where(
-        Thread.company_id == company_id,
-        Thread.customer_id == customer_id,
-        Thread.channel == "chat",
-    )
-    result = await session.execute(stmt)
-    thread = result.scalar_one_or_none()
+    thread = None
+    if body.thread_id:
+        try:
+            thread_uuid = uuid.UUID(body.thread_id)
+            stmt = select(Thread).where(Thread.id == thread_uuid)
+            result = await session.execute(stmt)
+            thread = result.scalar_one_or_none()
+        except ValueError:
+            pass
 
     if not thread:
+        stmt = select(Thread).where(
+            Thread.company_id == company_id,
+            Thread.customer_id == customer_id,
+            Thread.channel == "chat",
+        )
+        result = await session.execute(stmt)
+        thread = result.scalar_one_or_none()
+
+    if not thread:
+        new_id = uuid.uuid4()
+        if body.thread_id:
+            try:
+                new_id = uuid.UUID(body.thread_id)
+            except ValueError:
+                pass
         thread = Thread(
+            id=new_id,
             company_id=company_id,
             customer_id=customer_id,
             channel="chat",
@@ -82,6 +101,8 @@ async def chat(
         session.add(thread)
         await session.commit()
         await session.refresh(thread)
+
+    thread_id = str(thread.id)
 
     try:
         outcome = await run_orchestration(

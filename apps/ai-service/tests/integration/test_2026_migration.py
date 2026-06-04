@@ -47,9 +47,9 @@ async def test_episodic_memory_pgvector_search_uses_cosine_sql():
 
     mock_session = AsyncMock()
     mock_result = MagicMock()
-    # match the schema: (id, content, similarity, metadata)
+    # match the schema: (id, content, metadata_json, embedding_provider, similarity)
     mock_result.fetchall.return_value = [
-        (uuid.uuid4(), "customer prefers XL", 0.92, {}),
+        (uuid.uuid4(), "customer prefers XL", {}, "gemini", 0.92),
     ]
     mock_session.execute.return_value = mock_result
 

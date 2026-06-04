@@ -36,8 +36,7 @@ async def resolve_intent(ctx: PipelineContext) -> PipelineContext:
     contract = build_intent_contract(plan, [], {"companyId": ctx.company_id})
     ctx.relevance_plan = to_tool_plan(contract, [])
 
-    # 4. Load system prompt from agent (if agent is provided)
     if ctx.agent:
-        ctx.system_prompt = ctx.agent.instructions
+        ctx.system_prompt = ctx.agent.default_options.get("instructions")
 
     return ctx
