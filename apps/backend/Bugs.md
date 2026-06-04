@@ -1,3 +1,18 @@
+## [2026-06-05] Order Status Hydration, Payment Status Badging, and WhatsApp Health Tests
+- **Bug/Issue**: 
+  1. The order status controller relied on `req.user?.companyId` in several routes (e.g. `getStatusById`, `createStatus`, etc.) instead of the `getRequestCompanyId(req)` helper, causing requests in contexts with `effectiveCompanyId` to fail to access the correct company settings.
+  2. The orders list page in the frontend (`Orders.tsx`) hardcoded filter options and status codes, and only hydrated order statuses but not payment statuses from the backend `/order-status` API. Also, payment status badges lacked dynamic company color configurations.
+  3. The `WhatsAppManager` health-checking functions (`classifySessionSocketHealth` and `getSocketReadyState`) lacked unit test coverage.
+- **Fix**:
+  1. Updated all handler functions in `orderStatusController.js` to extract the company ID using the `getRequestCompanyId(req)` helper.
+  2. Refactored `Orders.tsx` to fetch both order and payment status definitions from the `/order-status` API. Configured `filterableOrderStatuses`, `filterablePaymentStatuses`, and `bulkUpdatableStatuses` dynamically, preserving default fallback options and appending the selected status if missing. Used `getPaymentStatusBadgeStyle` to dynamically style payment status badges in both mobile and desktop views.
+  3. Added comprehensive unit tests for `getSocketReadyState` and `classifySessionSocketHealth` in `WhatsAppManager.messageCapture.test.js`.
+- **Affected Files**:
+  - `apps/backend/controller/orderStatusController.js`
+  - `apps/backend/tests/services/WhatsAppManager.messageCapture.test.js`
+  - `apps/frontend/src/pages/orders/Orders.tsx`
+- **Verification**: Executed backend unit tests successfully. Verified that both test suites compile and pass.
+
 ## [2026-06-04] Outdated Duplicate Root-level Codebases Deploy Conflict
 - **Bug/Issue**: The repository had duplicate, stale root-level `backend/` and `frontend/` directories from a previous structure, but the deploy pipeline was building and packaging from them instead of the active `apps/backend/` and `apps/frontend/` monorepo folders, causing new AI features and UI pages to never be deployed.
 - **Cause**: Incomplete deletion of old repository folders during monorepo consolidation, combined with the deployment workflow referencing root directories.

@@ -1,3 +1,13 @@
+## [2026-06-05] Order Status Hydration and Payment Status Badge Styling
+- **Details**: Refactored the orders list workspace in the frontend to dynamically fetch and map both order and payment status configurations from the backend. hardcoded lists and colors were replaced with dynamic, styled badges. The backend order status controller was updated to retrieve company-scoped configurations using the company-switchable helper.
+- **Architecture**:
+  - **Dynamic Hydration** (`apps/frontend/src/pages/orders/Orders.tsx`): Hydrates `orderStatuses` and `paymentStatuses` from the `/order-status` API. Created memoized `filterableOrderStatuses`, `filterablePaymentStatuses`, and `bulkUpdatableStatuses` arrays to dynamically construct filters and bulk operations, appending missing active filters.
+  - **Dynamic Badge Badging**: Integrated inline CSS styling for payment status badges (`getPaymentStatusBadgeStyle` and `getPaymentStatusText` maps), using the custom colors returned from the database configurations.
+  - **Backend Controller Scoping** (`apps/backend/controller/orderStatusController.js`): Replaced direct `req.user?.companyId` references with the `getRequestCompanyId(req)` helper to ensure correct tenancy resolution under proxy and admin sessions (`effectiveCompanyId`).
+- **Files**:
+  - `apps/backend/controller/orderStatusController.js`
+  - `apps/frontend/src/pages/orders/Orders.tsx`
+
 ## [2026-06-04] Monorepo Path Realignment & AI Service Deploy Integration
 - **Details**: Realigned the GitHub Actions deploy pipeline to build and package exclusively from `apps/backend/` and `apps/frontend/`, and added `maxp-ai.pro` Nginx configuration deployment with backend health check.
 - **Architecture**:

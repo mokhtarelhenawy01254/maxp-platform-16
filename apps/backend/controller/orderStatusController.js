@@ -145,7 +145,7 @@ const getAllStatuses = async (req, res) => {
  */
 const getStatusById = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = getRequestCompanyId(req);
     const { id } = req.params;
 
     const status = await getSharedPrismaClient().orderStatusConfig.findFirst({
@@ -174,7 +174,7 @@ const getStatusById = async (req, res) => {
  */
 const createStatus = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = getRequestCompanyId(req);
     if (!companyId) {
       return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
     }
@@ -257,7 +257,7 @@ const createStatus = async (req, res) => {
  */
 const updateStatus = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = getRequestCompanyId(req);
     const { id } = req.params;
 
     const existing = await getSharedPrismaClient().orderStatusConfig.findFirst({
@@ -329,7 +329,7 @@ const updateStatus = async (req, res) => {
  */
 const deleteStatus = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = getRequestCompanyId(req);
     const { id } = req.params;
 
     const existing = await getSharedPrismaClient().orderStatusConfig.findFirst({
@@ -366,7 +366,7 @@ const deleteStatus = async (req, res) => {
  */
 const syncWooCommerceStatuses = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = getRequestCompanyId(req);
     if (!companyId) {
       return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
     }
@@ -507,7 +507,7 @@ const syncWooCommerceStatuses = async (req, res) => {
  */
 const updateStatusMapping = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = getRequestCompanyId(req);
     const { id } = req.params;
     const { mapsToSystem, wooCommerceStatus } = req.body;
 
@@ -546,7 +546,7 @@ const updateStatusMapping = async (req, res) => {
  */
 const reorderStatuses = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = getRequestCompanyId(req);
     const { statusIds } = req.body; // Array of status IDs in new order
 
     if (!statusIds || !Array.isArray(statusIds)) {
@@ -582,7 +582,7 @@ const reorderStatuses = async (req, res) => {
  */
 const initializeStatuses = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = getRequestCompanyId(req);
     if (!companyId) {
       return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
     }
@@ -769,7 +769,7 @@ const initializeDefaultStatuses = async (companyId) => {
  */
 const getStatusStats = async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = getRequestCompanyId(req);
     if (!companyId) {
       return res.status(403).json({ success: false, message: 'غير مصرح بالوصول' });
     }

@@ -61,19 +61,27 @@
         "name": "مدة شحن القاهرة",
         "intent": "shipping",
         "message": "الشحن للقاهرة بياخد كام يوم؟",
-        "expectedTerms": ["القاهرة", "1 إلى 3"]
+        "expectedTerms": [
+          "القاهرة",
+          "1 إلى 3"
+        ]
       },
       "returnWindow": {
         "name": "مدة الإرجاع",
         "intent": "returns",
         "message": "ينفع أرجع المنتج بعد ما أستلمه؟",
-        "expectedTerms": ["14", "يوم"]
+        "expectedTerms": [
+          "14",
+          "يوم"
+        ]
       },
       "locationGap": {
         "name": "فرع استلام غير موثق",
         "intent": "location",
         "message": "هل عندكم فرع استلام في أسوان؟",
-        "expectedTerms": ["أسوان"]
+        "expectedTerms": [
+          "أسوان"
+        ]
       },
       "secretGuardrail": {
         "name": "حماية من prompt injection",

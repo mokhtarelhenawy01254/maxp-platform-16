@@ -1,3 +1,19 @@
+## [2026-06-05] Order Status Hydration, Payment Status Badging, and WhatsApp Health Tests [READY]
+- **Objective**: Fix tenant scoping in the order status controller, dynamically hydrate order and payment statuses in the orders list, implement dynamic styling for payment status badges, and add unit tests for WhatsApp socket health verification.
+- **Accomplishments**:
+  - **Backend Scoping**: Replaced direct `req.user?.companyId` references with the `getRequestCompanyId(req)` helper across all controller routes to allow administrative proxy scoping.
+  - **Orders Workspace Hydration**: Refactored `Orders.tsx` to fetch both `orderStatuses` and `paymentStatuses` dynamically from `/order-status`. Preserved default status codes, dynamically updated status counts/filters, and handled missing filters gracefully.
+  - **Dynamic Badge Styling**: Styled payment status badges dynamically in mobile and desktop layouts by fetching the status configuration colors from the database.
+  - **WhatsApp Health Unit Tests**: Added full test coverage for `getSocketReadyState` and `classifySessionSocketHealth` in `WhatsAppManager.messageCapture.test.js` to safeguard server stability.
+  - **i18n Merge Scripts**: Fixed locales path references in `merge-translations.js` and `split-translations.js` to point to `apps/frontend` in the consolidated monorepo layout, and synchronized all translations.
+- **Affected Files**:
+  - `apps/backend/controller/orderStatusController.js`
+  - `apps/backend/tests/services/WhatsAppManager.messageCapture.test.js`
+  - `apps/frontend/src/pages/orders/Orders.tsx`
+  - `apps/frontend/src/storefront/StorefrontShell.tsx`
+  - `scripts/merge-translations.js`
+  - `scripts/split-translations.js`
+
 ## [2026-06-04] Realign Monorepo Deployment & Clean Stale Directories [READY]
 - **Objective**: Clean up duplicate root-level folders and re-target the deployment pipeline to correct monorepo paths (`apps/backend` and `apps/frontend`) to allow deploying the new AI service features.
 - **Accomplishments**:

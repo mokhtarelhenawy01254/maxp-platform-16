@@ -4026,21 +4026,21 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
     const rows: Array<{ label: string; value: string; href?: string }> = [];
     if (footerSettings?.phone && footerSettings.showPhone) {
       rows.push({
-        label: i18n.t('phone'),
+        label: i18n.t('common.phone'),
         value: footerSettings.phone,
         href: `tel:${footerSettings.phone}`,
       });
     }
     if (footerSettings?.email && footerSettings.showEmail) {
       rows.push({
-        label: i18n.t('email'),
+        label: i18n.t('common.email'),
         value: footerSettings.email,
         href: `mailto:${footerSettings.email}`,
       });
     }
     if (footerSettings?.address && footerSettings.showAddress) {
       rows.push({
-        label: i18n.t('address'),
+        label: i18n.t('common.address'),
         value: footerSettings.address,
       });
     }
