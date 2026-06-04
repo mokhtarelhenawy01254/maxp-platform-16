@@ -434,13 +434,13 @@ const DEFAULT_ORDER_STATUSES: OrderStatusDefinition[] = [
 ];
 
 const DEFAULT_PAYMENT_STATUSES: OrderStatusDefinition[] = [
-  { code: "PENDING", name: "في انتظار الدفع", color: "#F59E0B" },
-  { code: "COMPLETED", name: "مدفوع", color: "#10B981" },
-  { code: "PARTIALLY_PAID", name: "مدفوع جزئياً", color: "#3B82F6" },
-  { code: "FAILED", name: "فشل الدفع", color: "#EF4444" },
-  { code: "ON_HOLD", name: "معلق", color: "#F97316" },
-  { code: "REFUNDED", name: "مسترد", color: "#6B7280" },
-  { code: "PARTIALLY_REFUNDED", name: "مسترد جزئياً", color: "#9CA3AF" },
+  { code: "PENDING", name: i18n.t('orderStatus.paymentPending'), color: "#F59E0B" },
+  { code: "COMPLETED", name: i18n.t('orderStatus.paymentCompleted'), color: "#10B981" },
+  { code: "PARTIALLY_PAID", name: i18n.t('orderStatus.paymentPartiallyPaid'), color: "#3B82F6" },
+  { code: "FAILED", name: i18n.t('orderStatus.paymentFailed'), color: "#EF4444" },
+  { code: "ON_HOLD", name: i18n.t('orderStatus.paymentOnHold'), color: "#F97316" },
+  { code: "REFUNDED", name: i18n.t('orderStatus.paymentRefunded'), color: "#6B7280" },
+  { code: "PARTIALLY_REFUNDED", name: i18n.t('orderStatus.paymentPartiallyRefunded'), color: "#9CA3AF" },
 ];
 
 const FILTERABLE_STATUS_CODES = [
