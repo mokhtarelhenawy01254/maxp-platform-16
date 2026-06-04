@@ -54,7 +54,7 @@ class RunStateManager:
         
         stmt = select(Checkpoint).where(
             Checkpoint.thread_id == t_id
-        ).order_by(desc(Checkpoint.created_at))
+        ).order_by(desc(Checkpoint.created_at)).limit(1)
         
         result = await self.session.execute(stmt)
         checkpoint = result.scalar_one_or_none()
