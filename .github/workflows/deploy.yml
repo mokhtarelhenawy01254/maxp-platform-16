@@ -155,26 +155,6 @@ jobs:
           echo "🎯 Target SSH Port: ${{ env.SERVER_SSH_PORT }}"
           echo "💡 Use this IP to whitelist port ${{ env.SERVER_SSH_PORT }} in your server/hosting firewall if connection fails."
 
-      - name: Debug DNS and SSH Port
-        run: |
-          echo "🔎 Checking SSH target reachability..."
-          echo "Host: ${{ secrets.SERVER_HOST }}"
-          echo "Port: ${{ env.SERVER_SSH_PORT }}"
-          nslookup "${{ secrets.SERVER_HOST }}" || echo "⚠️ DNS lookup failed for host"
-          for attempt in 1 2 3 4 5; do
-            echo "Attempt $attempt/5: checking SSH reachability..."
-            if nc -zv -w 15 "${{ secrets.SERVER_HOST }}" "${{ env.SERVER_SSH_PORT }}"; then
-              echo "✅ SSH port is reachable from this runner"
-              exit 0
-            fi
-            if [ "$attempt" -lt 5 ]; then
-              echo "⏳ SSH port is not reachable yet; waiting before retry..."
-              sleep 10
-            fi
-          done
-          echo "❌ SSH port ${{ env.SERVER_SSH_PORT }} is NOT reachable from this runner after retries"
-          exit 1
-
       - name: Prepare SSH Key
         shell: bash
         env:
