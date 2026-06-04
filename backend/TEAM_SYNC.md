@@ -1,3 +1,11 @@
+﻿## [2026-06-04] Deploy Pipeline Resilience and SSH Verification [READY]
+- **Objective**: Fix deployment failures where the pipeline fails to connect to the production server via SSH.
+- **Accomplishments**:
+  - **SSH Secrets Rectified**: Reset SERVER_PORT GitHub repository secret to the correct open SSH port (22) instead of a non-standard closed port.
+  - **Host Key Alignment**: Cleaned up the stale remote host identification for 153.92.223.119 in known_hosts to restore direct passwordless connection.
+  - **Workflow Reachability Check**: Re-introduced Verify SSH Port Reachability step with custom retries inside .github/workflows/deploy.yml to prevent failures due to temporary port unavailability or slow startup.
+- **Affected Files**:
+  - .github/workflows/deploy.yml
 ## [2026-06-04] Payroll Lateness Deduction Sync and Approval Workflow [READY]
 - **Objective**: Fix incorrect salary calculations caused by duplicate lateness penalties, missing grace period enforcement, and PENDING deductions being applied before manager approval.
 - **Accomplishments**:
@@ -12807,3 +12815,4 @@ ishlist and debounced search engine wiring)
     - `apps/ai-service/src/memory/episodic_memory.py`
     - `apps/ai-service/src/memory/working_memory.py`
     - `backend/services/aiAgent/embeddingCacheService.js`
+

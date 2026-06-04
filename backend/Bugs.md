@@ -1,10 +1,19 @@
+ï»¿## [2026-06-04] Deployment Failures due to Stale host keys and SERVER_PORT Secret Drift
+- **Bug/Issue**: GitHub Actions deployment fails with Connection refused (exit code 255) during the Test SSH Connection stage.
+- **Cause**: The GitHub repository secret SERVER_PORT was configured to a non-listening port, and the target server's host key had changed, causing key verification warnings.
+- **Fix**:
+  1. Updated SERVER_PORT GitHub secret to 22 (the standard SSH port open on the server).
+  2. Cleared the stale host key for 153.92.223.119 from the local known_hosts to restore clean local SSH command execution.
+  3. Added back the Verify SSH Port Reachability step with 5 retries and 10s intervals in .github/workflows/deploy.yml to make the deployment pipeline resilient to slow SSH port startup and network blips.
+- **Affected Files**:
+  - .github/workflows/deploy.yml
 ## [2026-06-04] Payroll Salary Miscalculation and Duplicate Lateness Deductions
 - **Bug/Issue**: Payroll net salary was incorrect because (1) PENDING deductions were subtracted from net salary before manager approval, (2) lateness penalties ignored the 60-minute monthly grace period, (3) editing attendance (fingerprint) did not recalculate auto-deductions, and (4) the `latenessCalculationService` had a variable scope bug preventing correct deduction amounts.
 - **Cause**: `payrollService.calculatePayrollData` summed all deductions regardless of approval status and had its own duplicate lateness penalty logic bypassing the grace period. `latenessCalculationService` declared `remainingGrace` inside an `if` block making it inaccessible. `attendanceService.updateAttendance` only queried `APPROVED` auto-deductions, missing `PENDING` ones.
 - **Fix**:
   1. Fixed `remainingGrace` scope in `latenessCalculationService.js`.
   2. Integrated `syncLatenessAndDeductionsForMonth` into `payrollService.calculatePayrollData` to enforce correct grace period.
-  3. Separated APPROVED vs PENDING deductions in payroll calculation — only APPROVED reduce net salary.
+  3. Separated APPROVED vs PENDING deductions in payroll calculation ï¿½ only APPROVED reduce net salary.
   4. Updated `attendanceService.updateAttendance` to query both PENDING and APPROVED auto-deductions.
   5. Added `totalPendingDeductions` aggregation to `getPayrollSummary`.
   6. Enhanced `Payroll.tsx` with employee search, pending deductions badge on summary card, and tabbed details dialog with daily calculation log.
@@ -3068,3 +3077,4 @@
   - `apps/ai-service/src/memory/episodic_memory.py`
   - `apps/ai-service/src/memory/working_memory.py`
   - `backend/services/aiAgent/embeddingCacheService.js`
+

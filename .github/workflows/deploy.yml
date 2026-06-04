@@ -155,6 +155,23 @@ jobs:
           echo "🎯 Target SSH Port: ${{ env.SERVER_SSH_PORT }}"
           echo "💡 Use this IP to whitelist port ${{ env.SERVER_SSH_PORT }} in your server/hosting firewall if connection fails."
 
+      - name: Verify SSH Port Reachability
+        run: |
+          echo "🔎 Checking SSH target reachability..."
+          for attempt in 1 2 3 4 5; do
+            echo "Attempt $attempt/5: checking SSH port..."
+            if nc -zv -w 15 "${{ secrets.SERVER_HOST }}" "${{ env.SERVER_SSH_PORT }}" 2>&1; then
+              echo "✅ SSH port is reachable from this runner"
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              echo "⏳ SSH port not reachable yet; waiting 10s..."
+              sleep 10
+            fi
+          done
+          echo "❌ SSH port ${{ env.SERVER_SSH_PORT }} NOT reachable after 5 attempts"
+          exit 1
+
       - name: Prepare SSH Key
         shell: bash
         env:

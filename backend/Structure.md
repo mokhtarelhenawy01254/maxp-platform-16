@@ -1,3 +1,10 @@
+﻿## [2026-06-04] Resilient Deployment Pipeline
+- **Details**: Restored SSH reachability check to deployment workflow to prevent deployment failures during server reboots / network instability.
+- **Architecture**:
+  - **SSH Target Reachability Guard** (.github/workflows/deploy.yml): Verify SSH Port Reachability step checks the open status of target SSH port using 
+c with a retry loop (5 attempts, 10s wait).
+- **Files**:
+  - .github/workflows/deploy.yml
 ## [2026-06-04] Payroll Lateness Sync and Deduction Approval Architecture
 - **Details**: Rebuilt the payroll deduction pipeline to ensure correct salary calculations with grace period enforcement, deduction approval workflow, and real-time attendance sync.
 - **Architecture**:
@@ -2308,3 +2315,4 @@ To support long-term context retention and high performance, the conversational 
 - **Backend Cache Coordinator (`backend/services/aiAgent/embeddingCacheService.js`)**: Interfaces with the AI service embedding cache and enforces timeout safety.
 - **Merchant Chat Routing (`apps/ai-service/src/api/chat.py`)**: Standardizes the chat gateway to support UUID thread lookups and creation, avoiding hardcoded string keys.
 - **SQL State Retrieval (`apps/ai-service/src/services/run_state_manager.py`)**: Restricts checkpointer lookups to `.limit(1)` to fetch only the active run state, eliminating DB overhead.
+
