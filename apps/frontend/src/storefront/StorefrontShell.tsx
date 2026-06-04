@@ -4059,12 +4059,13 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
     } => Boolean(row?.value),
   );
   const footerCopyrightText =
+    getRuntimeFooterValue('copyrightText', 'footerCopyright') ||
     replaceThemeBrandText(theme.footer?.copyrightText) ||
     (theme.direction === 'rtl'
       ? `© 2026 ${displayStoreName}. جميع الحقوق محفوظة.`
       : `© 2026 ${displayStoreName}. All rights reserved.`);
   const footerDescriptionText =
-    getRuntimeFooterValue('description', 'footerDescription', 'storeDescription') ||
+    getRuntimeFooterValue('description', 'footerDescription', 'storeDescription', 'aboutStore') ||
     replaceThemeBrandText(theme.footer?.description) ||
     (theme.direction === "rtl"
       ? "مجموعات مختارة مصممة للحياة العصرية. الجودة تلتقي بالجمال البسيط."
