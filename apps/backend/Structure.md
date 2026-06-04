@@ -2406,3 +2406,13 @@ Added a new marketplace-ready fashion storefront preset focused on mobile app-st
 - Updated documentation to reflect backtick handling fix in the i18n replacement script.
 - Ensured architectural documentation includes this script improvement.
 
+
+## AI Service Memory and Caching Architecture (2026-06-04 Updates)
+To support long-term context retention and high performance, the conversational AI pipeline has been integrated with localized memory modules and unified caching.
+
+- **Episodic Memory (`apps/ai-service/src/memory/episodic_memory.py`)**: Manages the persistence of historical dialogue turns. It uses vector embeddings to perform semantic search across previous chat episodes and falls back automatically to a local PL/pgSQL dot-product query when `pgvector` is unavailable.
+- **Working Memory (`apps/ai-service/src/memory/working_memory.py`)**: Stores volatile session states, active goals, and reasoning variables.
+- **Embedding Cache (`apps/ai-service/src/memory/embedding_cache.py`)**: Caches calculated vector embeddings to reduce model latency and minimize external LLM token consumption.
+- **Backend Cache Coordinator (`backend/services/aiAgent/embeddingCacheService.js`)**: Interfaces with the AI service embedding cache and enforces timeout safety.
+- **Merchant Chat Routing (`apps/ai-service/src/api/chat.py`)**: Standardizes the chat gateway to support UUID thread lookups and creation, avoiding hardcoded string keys.
+- **SQL State Retrieval (`apps/ai-service/src/services/run_state_manager.py`)**: Restricts checkpointer lookups to `.limit(1)` to fetch only the active run state, eliminating DB overhead.

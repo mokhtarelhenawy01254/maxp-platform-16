@@ -12788,3 +12788,22 @@ ishlist and debounced search engine wiring)
 - **Verification**:
     - `node scripts/check-arabic-strings.js --staged frontend/src/storefront/preview/marketplacePreviewCart.ts frontend/src/storefront/preview/marketplaceSampleData.ts frontend/src/storefront/sections/CheckoutForm.tsx frontend/src/storefront/sections/OrderSummary.tsx frontend/src/storefront/sections/manifest.ts frontend/src/storefront/themes/catalog.ts frontend/src/storefront/themes/index.ts frontend/src/storefront/variants/registry.ts` passed.
 
+
+## 2026-06-04 - AI Service Memory, Caching, and Merchant Thread UUID Fixes [READY]
+
+- **Objective**: Implement episodic memory, unified embedding cache, and resolve thread UUID and state retrieval issues.
+- **Accomplishments**:
+    - **Memory Modules**: Implemented `episodic_memory`, `working_memory`, and `embedding_cache` services.
+    - **Migrations**: Added migrations `0007_embedding_provider` and `0008_intent_definition` for the AI database schema.
+    - **Backend Cache**: Built `embeddingCacheService` with timeout management.
+    - **Merchant Chat UUID**: Fixed thread lookup in `chat_merchant` to parse `body.thread_id` as UUID and fallback to default channel.
+    - **SQL Checkpoint Optimization**: Added `limit(1)` in `run_state_manager.py` checkpoint retrieval.
+- **Verification**:
+    - Ran the AI Agent test suite and Facebook Ads controller tests locally (all passed).
+- **Affected Files**:
+    - `apps/ai-service/src/api/chat.py`
+    - `apps/ai-service/src/services/run_state_manager.py`
+    - `apps/ai-service/src/memory/embedding_cache.py`
+    - `apps/ai-service/src/memory/episodic_memory.py`
+    - `apps/ai-service/src/memory/working_memory.py`
+    - `backend/services/aiAgent/embeddingCacheService.js`

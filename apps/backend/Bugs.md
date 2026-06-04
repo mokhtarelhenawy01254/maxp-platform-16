@@ -3150,3 +3150,28 @@
   - `node scripts/check-arabic-strings.js --staged frontend/src/storefront/preview/marketplacePreviewCart.ts frontend/src/storefront/preview/marketplaceSampleData.ts frontend/src/storefront/sections/CheckoutForm.tsx frontend/src/storefront/sections/OrderSummary.tsx frontend/src/storefront/sections/manifest.ts frontend/src/storefront/themes/catalog.ts frontend/src/storefront/themes/index.ts frontend/src/storefront/variants/registry.ts` passed.
 - **Affected Files**: `scripts/check-arabic-strings.js`.
 
+
+## [2026-06-04] AI Service Memory Modules, Cache, and Merchant Thread UUID Fixes
+- **Problem**:
+  - The AI service was missing episodic memory, working memory, and embedding caches.
+  - Merchant chat thread handling was hardcoded to `f"{company_id}:merchant:chat"`, which is not a valid UUID, causing lookup and creation failures in the PostgreSQL database.
+  - The state manager checkpoint query was loading all checkpoints instead of only the latest, which caused slow response times.
+- **Cause**:
+  - The memory features and unified embedding caches were not yet implemented in the new monorepo architecture.
+  - `chat_merchant` did not validate or parse `thread_id` as a UUID before querying.
+  - Missing limit constraint on checkpoint query.
+- **Fix**:
+  - Added database migrations `0007_embedding_provider.py` and `0008_intent_definition.py`.
+  - Implemented `episodic_memory.py`, `working_memory.py`, and `embedding_cache.py` services in `ai-service`.
+  - Implemented `embeddingCacheService.js` in the backend to bridge caching with timeout controls.
+  - Updated `chat_merchant` in `apps/ai-service/src/api/chat.py` to parse `body.thread_id` as UUID and query or create the thread appropriately.
+  - Optimized checkpoint retrieval in `apps/ai-service/src/services/run_state_manager.py` using `.limit(1)`.
+- **Verification**:
+  - All AI service integration tests and agent test suites (`npm test`) passed.
+- **Affected Files**:
+  - `apps/ai-service/src/api/chat.py`
+  - `apps/ai-service/src/services/run_state_manager.py`
+  - `apps/ai-service/src/memory/embedding_cache.py`
+  - `apps/ai-service/src/memory/episodic_memory.py`
+  - `apps/ai-service/src/memory/working_memory.py`
+  - `backend/services/aiAgent/embeddingCacheService.js`
