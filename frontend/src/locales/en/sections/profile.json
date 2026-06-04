@@ -1,0 +1,10 @@
+{
+  "title": "Profile",
+  "editProfile": "Edit Profile",
+  "changePassword": "Change Password",
+  "personalInfo": "Personal Information",
+  "accountSettings": "Account Settings",
+  "currentPassword": "Current Password",
+  "newPassword": "New Password",
+  "confirmNewPassword": "Confirm New Password"
+}

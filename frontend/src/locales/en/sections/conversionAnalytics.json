@@ -1,0 +1,16 @@
+{
+  "title": "Conversion Rate Analytics",
+  "subtitle": "Optimize conversion at every stage",
+  "fetchError": "Error fetching data",
+  "retry": "Retry",
+  "last7Days": "Last 7 Days",
+  "last30Days": "Last 30 Days",
+  "last90Days": "Last 90 Days",
+  "lastYear": "Last Year",
+  "overallRate": "Overall Conversion Rate",
+  "visitorToCart": "Visitor → Cart",
+  "cartToCheckout": "Cart → Checkout",
+  "checkoutToOrder": "Checkout → Order",
+  "trend": "Conversion Rate Over Time",
+  "rate": "Conversion Rate"
+}

@@ -1,0 +1,617 @@
+{
+  "id": "zen-organic",
+  "name": "Zen Organic",
+  "tokens": {
+    "colors": {
+      "primary": "143 25% 27%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "34 32% 58%",
+      "secondaryForeground": "0 0% 100%",
+      "accent": "86 18% 46%",
+      "accentForeground": "0 0% 100%",
+      "background": "42 33% 97%",
+      "foreground": "143 16% 16%",
+      "muted": "45 27% 93%",
+      "mutedForeground": "143 8% 38%",
+      "border": "96 12% 80%",
+      "card": "0 0% 100%",
+      "cardForeground": "143 16% 16%",
+      "ring": "143 25% 27%"
+    },
+    "typography": {
+      "headingFont": "Noto Serif, serif",
+      "bodyFont": "Tajawal, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.5rem",
+      "buttonRadius": "999px"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Zen Organic",
+    "description": "متجر نباتي عربي يجمع النباتات المنزلية والأواني والبذور بواجهة هادئة وتجربة شراء أوضح."
+  },
+  "header": {
+    "brandName": "Zen Organic",
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      { "label": "الرئيسية", "to": "/" },
+      { "label": "المتجر", "to": "/shop" },
+      { "label": "النباتات", "to": "/shop?category=plants" },
+      { "label": "الأواني", "to": "/shop?category=pots" },
+      { "label": "البذور", "to": "/shop?category=seeds" },
+      { "label": "من نحن", "to": "/about" }
+    ],
+    "actions": [
+      { "label": "روتين العناية", "to": "/faq", "style": "link" },
+      { "label": "ابدأ التسوق", "to": "/shop", "style": "primary" }
+    ]
+  },
+  "footer": {
+    "description": "Zen Organic يقدّم نباتات منزلية، أواني، وبذور بعرض هادئ يوازن بين الجمال وسهولة الشراء من أول زيارة حتى تأكيد الطلب.",
+    "copyrightText": "© 2026 Zen Organic. جميع الحقوق محفوظة.",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
+    "navigation": [
+      {
+        "title": "التسوق",
+        "links": [
+          { "label": "كل المنتجات", "to": "/shop" },
+          { "label": "النباتات", "to": "/shop?category=plants" },
+          { "label": "الأواني", "to": "/shop?category=pots" },
+          { "label": "العروض", "to": "/sale" }
+        ]
+      },
+      {
+        "title": "الدعم",
+        "links": [
+          { "label": "من نحن", "to": "/about" },
+          { "label": "الأسئلة الشائعة", "to": "/faq" },
+          { "label": "الشحن والتوصيل", "to": "/shipping" },
+          { "label": "دليل المقاسات والأحجام", "to": "/size-guide" }
+        ]
+      }
+    ],
+    "legalLinks": [
+      { "label": "الشروط والأحكام", "to": "/terms" },
+      { "label": "سياسة الخصوصية", "to": "/privacy" }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "هدوء أكثر",
+            "message": "واجهة نباتية أوضح: أقسام مرتبة، بطاقات أجمل، وصفحات دعم حقيقية، وسلة وشراء جاهزان للاستخدام.",
+            "saleLabel": "وصل جديد",
+            "shippingLabel": "شحن حسب المحافظة",
+            "returnLabel": "دعم قبل وبعد الطلب",
+            "ctaText": "تصفّح المتجر",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "split-panel",
+          "settings": {
+            "eyebrow": "لمسة نباتية",
+            "title": "نباتات، أوانٍ، ولمسات طبيعية ترتب البيت بهدوء",
+            "subtitle": "متجر نباتي عربي مصمم ليبيع بثقة: مجموعات واضحة، صور أهدأ، وتجربة شراء نظيفة من أول تصفح حتى تأكيد الطلب.",
+            "ctaText": "ابدأ من النباتات",
+            "ctaLink": "/shop?category=plants",
+            "secondaryCtaText": "شاهد الأواني",
+            "secondaryCtaLink": "/shop?category=pots",
+            "backgroundImage": "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&q=80&w=1400",
+            "panelEyebrow": "الركنة الهادية",
+            "panelTitle": "اختيار طبيعي يهدّئ المساحة ويكملها",
+            "panelSubtitle": "نباتات منزلية، أوانٍ متناسقة، وبذور تبدأ منها زاوية خضراء سهلة ومرتبة.",
+            "panelMetricLabel": "مختارات الأسبوع",
+            "panelMetricValue": "12+",
+            "panelNote": "كل قسم مبني ليقرّب العميل من القرار بدل تركه يدور داخل واجهة عامة.",
+            "panelImage": "https://images.unsplash.com/photo-1512428813834-c702c7702b78?auto=format&fit=crop&q=80&w=1200"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "settings": {
+            "title": "ابدأ من الزاوية المناسبة",
+            "subtitle": "تقسيمات أوضح تجعل الوصول أسرع: نباتات، أوانٍ، بذور، وهدايا طبيعية للمساحات الصغيرة والبيوت الهادئة.",
+            "limit": 4,
+            "ctaText": "كل الأقسام",
+            "ctaLink": "/collections",
+            "collections": "نباتات داخلية|اختيارات يومية للمكاتب والبيوت تحتاج جمالًا هادئًا وعناية بسيطة.|https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&q=80&w=900|/shop?category=plants\nأوانٍ وستاندات|قطع تكمل المشهد وتساعد على تنسيق المساحة بدون ازدحام بصري.|https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&q=80&w=900|/shop?category=pots\nبذور وبدايات|للعملاء الذين يفضلون البداية من الزراعة والتجربة المنزلية الهادئة.|https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&q=80&w=900|/shop?category=seeds\nهدايا طبيعية|اقتراحات مناسبة للهدايا الخفيفة والديكور الأخضر اليومي.|https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&q=80&w=900|/sale"
+          }
+        },
+        {
+          "type": "features-bar",
+          "settings": {
+            "title": "ما يجعل التجربة أهدأ",
+            "image": "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&q=80&w=900",
+            "items": [
+              {
+                "icon": "leaf",
+                "title": "اختيارات منسقة",
+                "description": "المنتجات مرتبة لتظهر كنمط حياة نباتي واضح بدل شبكة عامة بلا اتجاه."
+              },
+              {
+                "icon": "search",
+                "title": "وصف أوضح",
+                "description": "صفحات المنتج صارت تركز على ما يهم فعلًا: الوصف، العناية، والشحن."
+              },
+              {
+                "icon": "target",
+                "title": "شراء أبسط",
+                "description": "السلة والدفع محافظين على نفس روح البراند بدل شكل عام منفصل."
+              },
+              {
+                "icon": "clipboard",
+                "title": "ثقة أعلى",
+                "description": "من نحن، الشحن، الخصوصية، والأسئلة الشائعة أصبحت صفحات حقيقية داخل الثيم."
+              }
+            ]
+          }
+        },
+        {
+          "type": "story-parallax",
+          "settings": {
+            "text": "اختيار نبات مناسب لا يجمّل المكان فقط، بل يخلق إيقاعًا أهدأ في البيت ويجعل كل زاوية تبدو مرتبة ومقصودة.",
+            "image": "https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&q=80&w=1200"
+          }
+        },
+        {
+          "type": "featured-products",
+          "settings": {
+            "title": "مختارات Zen لهذا الأسبوع",
+            "limit": 8
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "split-panel",
+          "settings": {
+            "title": "وصلك الجديد قبل الجميع",
+            "subtitle": "تنبيهات بالنباتات الجديدة، المقاسات المطلوبة، والعروض الهادئة التي تناسب البراند.",
+            "buttonText": "اشترك الآن",
+            "placeholder": "اكتب بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "split-panel",
+          "settings": {
+            "eyebrow": "تسوّق الركنة الخضرا",
+            "title": "كل ما تحتاجه لركن أخضر مرتب",
+            "subtitle": "ابحث، صفّ، واختر ما يناسب مساحتك: نباتات داخلية، أوانٍ، بذور، ولمسات طبيعية بسيطة.",
+            "ctaText": "العروض الحالية",
+            "ctaLink": "/sale",
+            "secondaryCtaText": "كل الأقسام",
+            "secondaryCtaLink": "/collections",
+            "backgroundImage": "https://images.unsplash.com/photo-1512428813834-c702c7702b78?auto=format&fit=crop&q=80&w=1400",
+            "panelEyebrow": "شراء هادي",
+            "panelTitle": "منتجات منظّمة، قرار أسرع، وتجربة أجمل",
+            "panelSubtitle": "المتجر الآن يبرز الفئة والسعر والوصف المختصر بشكل يساعد العميل على الحسم بثقة.",
+            "panelMetricLabel": "فئات واضحة",
+            "panelMetricValue": "4",
+            "panelNote": "التصفح صار أقرب إلى تجربة براند كاملة وليس قائمة منتجات فقط.",
+            "panelImage": "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&q=80&w=1200"
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "settings": {
+            "title": "ابحث واختر بهدوء",
+            "subtitle": "أدوات أوضح للوصول للنبات أو المقاس أو الفئة المناسبة بدون دوران طويل.",
+            "searchPlaceholder": "ابحث عن نبات أو أصيص أو بذور",
+            "resultsLabel": "منتج متاح",
+            "clearButtonText": "إعادة الضبط",
+            "stickyLabel": "أدوات التصفية",
+            "chipLimit": 6
+          }
+        },
+        "filters-sidebar",
+        {
+          "type": "product-grid",
+          "variant": "editorial-card",
+          "settings": {
+            "title": "كل المنتجات",
+            "limit": 12,
+            "emptyStateTitle": "لا توجد نتائج مطابقة الآن",
+            "emptyStateDescription": "جرّب إزالة بعض الفلاتر أو العودة إلى كل المنتجات لبدء تصفح أوسع.",
+            "clearButtonText": "عرض كل المنتجات"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "تنبيهات بالوصل الجديد",
+            "subtitle": "اشترك ليصلك ما يناسب المساحات الصغيرة والاختيارات النباتية الجديدة أولًا.",
+            "buttonText": "اشترك",
+            "placeholder": "بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "standard"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion",
+          "settings": {
+            "addToCartText": "أضف إلى السلة",
+            "descriptionTitle": "وصف المنتج",
+            "shippingTitle": "الشحن والعناية",
+            "shippingText": "يتم احتساب الشحن حسب المحافظة داخل صفحة الدفع. راجع وصف المنتج والعناية المقترحة قبل إتمام الطلب لتجربة أفضل بعد الاستلام.",
+            "guaranteesTitle": "لماذا Zen Organic؟",
+            "guaranteesSubtitle": "رسائل الثقة الأساسية أصبحت مرئية داخل صفحة المنتج نفسها بدل بيانات عامة أو غير دقيقة.",
+            "guaranteeItems": "شحن حسب المحافظة, دفع عند الاستلام, وصف أوضح للمنتج, دعم بعد الطلب",
+            "guaranteeStyle": "grid",
+            "sizeGuideText": "دليل المقاسات والأحجام",
+            "sizeGuideLink": "/size-guide",
+            "fitNote": "إذا كان المنتج يعتمد على قطر الأصيص أو ارتفاع النبات أو حجم العبوة، راجع دليل الأحجام قبل الإضافة للسلة."
+          }
+        },
+        {
+          "type": "conversion-stack",
+          "variant": "balanced"
+        },
+        {
+          "type": "bought-together",
+          "settings": {
+            "title": "يكمل المشهد الطبيعي",
+            "subtitle": "منتجات غالبًا ما تُختار معًا لتجهيز زاوية نباتية متناسقة.",
+            "limit": 3
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "compact",
+          "settings": {
+            "title": "مختارات مشابهة",
+            "subtitle": "اقتراحات قريبة من نفس المزاج النباتي لتسهيل اختيارك التالي.",
+            "limit": 4
+          }
+        },
+        "reviews"
+      ]
+    },
+    "cart": {
+      "sections": [
+        {
+          "type": "cart-items",
+          "settings": {
+            "title": "مراجعة اختيارك الطبيعي",
+            "subtitle": "خطوة هادئة قبل الدفع لمراجعة النباتات أو الأواني أو البذور وتعديل الكميات عند الحاجة."
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted",
+          "settings": {
+            "title": "ملخص السلة",
+            "subtitle": "ملخص واضح يحافظ على هدوء التجربة ويعرض الكوبون والشحن المتوقع بدون تشتيت.",
+            "shippingHelpText": "سيظهر الشحن بعد اختيار المحافظة داخل صفحة الدفع.",
+            "couponPlaceholder": "كود الخصم",
+            "couponButtonText": "تطبيق",
+            "checkoutButtonText": "إتمام الطلب",
+            "subtotalLabel": "المجموع الفرعي",
+            "shippingLabel": "الشحن",
+            "shippingValueText": "يحسب عند الدفع",
+            "totalLabel": "الإجمالي المتوقع",
+            "secureCheckoutText": "بياناتك محمية",
+            "returnsText": "دعم سريع بعد الطلب",
+            "freeShippingTitle": "أضف {{remaining}} للوصول إلى شحن أفضل",
+            "freeShippingReachedText": "رائع، وصلت إلى حد الشحن الأفضل"
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "دفع هادي",
+            "message": "الخطوة الأخيرة تحمل نفس هدوء البراند: بيانات أوضح، شحن محسوب حسب المحافظة، ودفع متاح فعليًا داخل المتجر.",
+            "saleLabel": "دفع عند الاستلام",
+            "shippingLabel": "شحن حسب المحافظة",
+            "returnLabel": "دعم بعد الطلب"
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "split",
+          "settings": {
+            "contactTitle": "بيانات التواصل",
+            "contactDescription": "أدخل البيانات الأساسية التي تسمح لنا بتأكيد الطلب ومتابعة التوصيل بسهولة.",
+            "shippingTitle": "عنوان التوصيل",
+            "shippingDescription": "العنوان والمدينة والمحافظة تساعدنا على حساب الشحن وتجهيز الطلب بشكل أدق.",
+            "notesTitle": "ملاحظات إضافية",
+            "notesDescription": "أضف أي توضيحات تخص التوصيل أو توقيت مناسب للاستلام أو وصف المكان.",
+            "notesOptionalLabel": "(اختياري)",
+            "fullNameLabel": "الاسم الكامل",
+            "fullNamePlaceholder": "مثال: مريم علي",
+            "emailLabel": "البريد الإلكتروني",
+            "emailPlaceholder": "name@example.com",
+            "phoneLabel": "رقم الهاتف",
+            "phonePlaceholder": "01xxxxxxxxx",
+            "addressLabel": "العنوان بالتفصيل",
+            "addressPlaceholder": "الشارع، المنطقة، رقم العقار",
+            "cityLabel": "المدينة",
+            "cityPlaceholder": "مثال: الشيخ زايد",
+            "governorateLabel": "المحافظة",
+            "governoratePlaceholder": "اختر المحافظة",
+            "notesPlaceholder": "ملاحظات عن الاستلام أو المكان أو تفاصيل الطلب",
+            "autoDetectHint": "سنقترح المحافظة تلقائيًا من المدينة أو العنوان إذا أمكن.",
+            "autoDetectSuccessText": "تم اقتراح المحافظة ويمكنك تعديلها قبل تأكيد الطلب."
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "cards",
+          "settings": {
+            "title": "طريقة الدفع",
+            "subtitle": "اختر الطريقة المتاحة فعليًا وأكمل الطلب بخطوات واضحة وبدون مفاجآت.",
+            "summaryTitle": "ملخص الطلب",
+            "summaryDescription": "يعرض السعر، الشحن، وأي خصم مطبق قبل تأكيد الطلب النهائي.",
+            "confirmOrderText": "تأكيد الطلب",
+            "payButtonPrefix": "ادفع",
+            "processingText": "جارٍ إرسال الطلب...",
+            "shippingPromptText": "اختر المحافظة أولًا لحساب تكلفة الشحن.",
+            "enterGovernorateText": "اختر المحافظة",
+            "subtotalLabel": "المجموع الفرعي",
+            "shippingLabel": "الشحن",
+            "totalLabel": "الإجمالي",
+            "calculatingText": "جارٍ الحساب...",
+            "shippingCalculatedText": "تم حساب الشحن إلى {{governorate}} بنجاح.",
+            "noShippingChargeText": "لا توجد تكلفة شحن مضافة لهذه المحافظة حاليًا.",
+            "shippingErrorText": "تعذر حساب الشحن الآن وسيتم تأكيده مع الطلب.",
+            "governorateRequiredText": "اختيار المحافظة مطلوب قبل تأكيد الطلب.",
+            "invalidEmailText": "صيغة البريد الإلكتروني غير صحيحة.",
+            "invalidPhoneText": "رقم الهاتف يجب أن يكون رقم موبايل مصري صحيحًا من 11 رقمًا.",
+            "securityText": "Checkout آمن ومشفّر",
+            "enabledMethods": ["cod"],
+            "codLabel": "الدفع عند الاستلام",
+            "codDesc": "ادفع عند وصول الطلب بعد مراجعة بيانات التوصيل"
+          }
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "settings": {
+            "title": "تم استلام طلبك",
+            "description": "شكرًا لاختيارك Zen Organic. سيبدأ تجهيز طلبك، وسيتواصل الفريق معك إذا احتجنا أي تأكيد إضافي قبل الشحن.",
+            "continueShoppingText": "العودة للمتجر",
+            "orderNumberPrefix": "رقم الطلب:",
+            "supportText": "إذا احتجت أي مساعدة بخصوص الطلب يمكنك التواصل معنا عبر"
+          }
+        }
+      ]
+    },
+    "about": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "من نحن",
+            "title": "Zen Organic براند نباتي بهدوء مقصود",
+            "subtitle": "نقدّم منتجات نباتية ومنزلية مختارة لتجميل المساحات الصغيرة والبيوت التي تبحث عن ترتيب بصري أهدأ.",
+            "body": "فكرة Zen Organic ليست بيع نباتات فقط، بل تقديم تجربة كاملة تشعر بالهدوء والوضوح من أول تصفح إلى ما بعد استلام الطلب.\n\nنختار ما يناسب الحياة اليومية: نباتات يمكن التعايش معها بسهولة، أوانٍ تكمل المشهد دون ضجيج، وبدايات زراعة بسيطة لمن يفضلون التجربة خطوة بخطوة.\n\nلهذا تم بناء الثيم بشكل احترافي: صفحات ثقة حقيقية، هيدر أوضح، وصفحات منتج أنظف، وتجربة checkout تحمل نفس روح البراند.",
+            "detailsTitle": "قيم البراند",
+            "details": "اختيار منسق|منتجات أقرب لنمط حياة هادئ ومنزلي\nوضوح قبل الشراء|معلومات أكثر دقة وصفحات دعم فعلية\nتجربة مكتملة|من الهوم إلى الدفع بنفس الهوية الهادئة",
+            "ctaText": "تصفّح المتجر",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "collections": {
+      "sections": [
+        {
+          "type": "featured-collections",
+          "settings": {
+            "title": "كل المجموعات في مكان واحد",
+            "subtitle": "صفحة تجمع المسارات الأساسية داخل Zen Organic وتفتح التصفح من أقرب نقطة قرار.",
+            "limit": 6,
+            "ctaText": "كل المنتجات",
+            "ctaLink": "/shop",
+            "collections": "نباتات داخلية|اختيارات للبيت والمكتب تجمع بين السهولة والشكل الهادئ.|https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&q=80&w=900|/shop?category=plants\nأوانٍ وستاندات|أوانٍ وأكسسوارات تنسيق تساعد على إخراج المشهد بشكل أنظف.|https://images.unsplash.com/photo-1512428813834-c702c7702b78?auto=format&fit=crop&q=80&w=900|/shop?category=pots\nبذور|لمن يفضل البدء من الزراعة خطوة بخطوة داخل البيت.|https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&q=80&w=900|/shop?category=seeds\nوصل جديد|منتجات دخلت المتجر مؤخرًا وتستحق الوصول السريع.|https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&q=80&w=900|/shop?sort=newest"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "standard",
+          "settings": {
+            "title": "اختيارات مناسبة لتبدأ منها",
+            "limit": 12
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "خلك قريبًا من الجديد",
+            "subtitle": "اشترك لتصلك المجموعات الجديدة والتنبيهات المهمة أولًا.",
+            "buttonText": "اشترك",
+            "placeholder": "بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "sale": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "عروض هادئة",
+            "message": "مساحة واضحة للعروض الحالية حتى تبقى الخصومات مرئية وسهلة الوصول داخل البراند.",
+            "saleLabel": "أسعار أقل",
+            "shippingLabel": "شحن حسب المحافظة",
+            "returnLabel": "دعم بعد الطلب",
+            "ctaText": "ابدأ التسوق",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "split-panel",
+          "settings": {
+            "eyebrow": "العروض",
+            "title": "اختيارات طبيعية بأسعار ألطف",
+            "subtitle": "صفحة خصومات حقيقية داخل Zen Organic بدل رابط عام أو قسم يصعب الوصول إليه من الواجهة.",
+            "ctaText": "شاهد المنتجات",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "كل الأقسام",
+            "secondaryCtaLink": "/collections",
+            "backgroundImage": "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&q=80&w=1400",
+            "panelEyebrow": "اختيارات الموسم",
+            "panelTitle": "فرص أجمل للزوايا الخضراء اليومية",
+            "panelSubtitle": "العروض الآن تملك مسارًا مرئيًا واضحًا يساعد العميل على اكتشاف القيمة بسرعة.",
+            "panelMetricLabel": "خصومات مرئية",
+            "panelMetricValue": "10+",
+            "panelNote": "فصل العروض عن بقية التصفح يرفع الوضوح ويقلل التشتيت.",
+            "panelImage": "https://images.unsplash.com/photo-1512428813834-c702c7702b78?auto=format&fit=crop&q=80&w=1200"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "minimal-card",
+          "settings": {
+            "title": "منتجات مخفضة",
+            "limit": 12,
+            "saleOnly": true,
+            "emptyStateTitle": "لا توجد عروض متاحة الآن",
+            "emptyStateDescription": "ارجع لاحقًا أو تصفح بقية المنتجات الحالية داخل المتجر.",
+            "clearButtonText": "كل المنتجات"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "اعرف العروض أولًا",
+            "subtitle": "تنبيهات بالعروض المحدودة والمنتجات الموسمية الجديدة.",
+            "buttonText": "اشترك",
+            "placeholder": "بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "size-guide": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الأحجام والمقاسات",
+            "title": "دليل الأحجام قبل الطلب",
+            "subtitle": "مرجع سريع لاختيار الوعاء أو النبات أو العبوة المناسبة لمساحتك.",
+            "body": "إذا كان المنتج يعتمد على قطر الأصيص أو ارتفاع النبات أو حجم العبوة، راجع هذه الصفحة قبل الإضافة للسلة حتى يصبح القرار أوضح وتقل الحاجة للاستبدال.\n\nقارن دائمًا القياس بمكان الاستخدام الفعلي: رف، مكتب، شرفة، أو زاوية معيشة. هذا مهم خصوصًا في المنتجات النباتية التي يتغيّر إحساسها البصري كثيرًا بحسب المساحة.\n\nعند الحاجة إلى توضيح إضافي، تواصل مع الدعم مع اسم المنتج وسنساعدك في اختيار المقاس أو الحجم الأنسب.",
+            "detailsTitle": "نقاط سريعة",
+            "details": "قطر الأصيص|راجع القياس بالنسبة لعرض السطح أو الرف\nارتفاع النبات|مهم للمداخل والزوايا الصغيرة\nالعبوات والبذور|راجع الحجم أو عدد الوحدات قبل الطلب",
+            "ctaText": "العودة للمتجر",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "faq": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "أسئلة سريعة",
+            "title": "الأسئلة الشائعة",
+            "subtitle": "إجابات سريعة على ما يحتاجه العميل قبل اتخاذ قرار الشراء داخل Zen Organic.",
+            "body": "وجود هذه الصفحة داخل الثيم يجعل تجربة الشراء أكثر احترافية، لأن العميل يجد الأسئلة الأساسية في مكان واضح بدل الخروج من المسار أو الوصول إلى صفحة غير موجودة.\n\nيمكنك لاحقًا تخصيص الأسئلة بحسب نشاطك الفعلي، لكن النسخة الحالية تغطي الأساسيات: الشحن، الدفع، متابعة الطلب، وكيفية التواصل عند الحاجة.\n\nهذا النوع من الصفحات مهم لبناء الثقة بقدر أهمية شكل الهوم أو صور المنتجات.",
+            "detailsTitle": "أسئلة متكررة",
+            "details": "طريقة الدفع|الدفع عند الاستلام متاح داخل الرحلة الحالية\nالشحن|يتم حسابه بعد اختيار المحافظة\nدعم ما بعد الطلب|يمكن الرجوع إلى فريق المتجر مع رقم الطلب\nمعلومات البراند|ستجدها أيضًا داخل صفحة من نحن",
+            "ctaText": "تصفّح المتجر",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشحن والتوصيل",
+            "title": "معلومات الشحن وما بعد الطلب",
+            "subtitle": "صفحة واضحة تشرح ما يحدث بعد تأكيد الطلب وتغلق واحدة من أهم فجوات الثقة في أي متجر.",
+            "body": "تتم مراجعة بيانات الطلب أولًا ثم احتساب الشحن حسب المحافظة داخل صفحة الدفع أو أثناء تأكيد الطلب النهائي.\n\nكتابة العنوان والمدينة ورقم الهاتف بدقة تساعد على تقليل التأخير وتجنب إعادة التواصل أكثر من مرة.\n\nإذا احتجت تعديلًا بعد إرسال الطلب أو أردت الاستفسار عن الشحنة، احتفظ برقم الطلب وتواصل مع فريق الدعم عبر القنوات الرسمية للمتجر.",
+            "detailsTitle": "مختصر مفيد",
+            "details": "حساب الشحن|يعتمد على المحافظة المختارة\nدقة البيانات|العنوان والهاتف الصحيحان يقللان التأخير\nمتابعة الطلب|تتم بسهولة أكبر عند توفر رقم الطلب",
+            "ctaText": "إكمال التسوق",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشروط والأحكام",
+            "title": "الشروط والأحكام",
+            "subtitle": "صفحة قانونية أساسية تعطي المتجر صورة أكثر اكتمالًا واحترافية.",
+            "body": "استخدام هذا المتجر يعني الموافقة على سياسات الشراء والشحن والاستبدال المعمول بها داخل النشاط.\n\nتأكيد الطلب يرتبط بتوفر المنتج وصحة البيانات وإمكانية تنفيذ الشحن ضمن النطاق والخدمة المتاحة.\n\nقد يتم تحديث بعض التفاصيل التشغيلية مع الوقت بما يتوافق مع تطوير المتجر وخدمة العملاء، لذلك يفضّل مراجعة هذه الصفحة عند الحاجة.",
+            "detailsTitle": "بنود مختصرة",
+            "details": "تأكيد الطلب|مرتبط بتوفر المنتج وصحة البيانات\nالدفع|بحسب الوسيلة المتاحة داخل صفحة الدفع\nالتحديثات|قد تتطور السياسات التشغيلية بمرور الوقت",
+            "ctaText": "العودة للرئيسية",
+            "ctaLink": "/"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الخصوصية",
+            "title": "سياسة الخصوصية",
+            "subtitle": "صفحة خصوصية فعلية تعزّز الثقة وتوضح استخدام بيانات العميل داخل المتجر.",
+            "body": "تُستخدم بيانات التواصل والعنوان لمعالجة الطلب، تنفيذ الشحن، والتواصل عند الحاجة بخصوص الخدمة أو تأكيد الطلب.\n\nلا تُستخدم هذه البيانات خارج أغراض تشغيل المتجر المعلنة إلا في الحدود التي تسمح بها السياسات والقوانين ذات الصلة.\n\nإذا رغبت في الاستفسار عن بياناتك أو كيفية استخدامها، يمكنك التواصل مع الدعم عبر القنوات الرسمية للمتجر.",
+            "detailsTitle": "كيف نستخدم البيانات",
+            "details": "بيانات التواصل|لتأكيد الطلب والمتابعة بعد الشراء\nالعنوان والمحافظة|لتنفيذ الشحن وحساب التكلفة\nسجل الطلب|لتحسين المتابعة وخدمة ما بعد البيع",
+            "ctaText": "تصفّح المتجر",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        {
+          "type": "member-registration",
+          "settings": {
+            "title": "انضم إلى مجتمع Zen Organic",
+            "subtitle": "سجّل بياناتك ليصلك الجديد والعروض الموسمية ونصائح الاختيار أولًا."
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,49 @@
+model WhatsAppFollowUpFlow {
+  id          String                 @id @default(cuid())
+  companyId   String
+  name        String
+  isEnabled   Boolean                @default(true)
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  company     Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  steps       WhatsAppFollowUpStep[]
+  journeys    CustomerJourney[]
+
+  @@map("whatsapp_follow_up_flows")
+}
+
+model WhatsAppFollowUpStep {
+  id          String               @id @default(cuid())
+  flowId      String
+  delayDays   Int                  @default(1)
+  content     String               @db.Text
+  mediaUrl    String?
+  stepOrder   Int                  @default(1)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  flow        WhatsAppFollowUpFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
+
+  @@map("whatsapp_follow_up_steps")
+}
+
+model CustomerJourney {
+  id          String               @id @default(cuid())
+  companyId   String
+  customerId  String
+  orderId     String?
+  flowId      String
+  currentStep Int                  @default(0) // 0 means not started, 1 means step 1 sent, etc.
+  status      String               @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
+  nextSendAt  DateTime
+  lastSentAt  DateTime?
+  logs        String?              @db.Text
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  company     Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer    Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  order       Order?               @relation(fields: [orderId], references: [id])
+  flow        WhatsAppFollowUpFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, status, nextSendAt])
+  @@map("customer_journeys")
+}

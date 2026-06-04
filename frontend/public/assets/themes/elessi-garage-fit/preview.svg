@@ -1,0 +1,17 @@
+<svg width="1440" height="960" viewBox="0 0 1440 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="960" rx="48" fill="#F4EEE7"/>
+  <rect x="64" y="64" width="1312" height="832" rx="36" fill="url(#bg)"/>
+  <rect x="108" y="136" width="540" height="584" rx="32" fill="#FBF5EF"/>
+  <rect x="692" y="136" width="604" height="194" rx="32" fill="#FFF9F3"/>
+  <rect x="692" y="364" width="292" height="356" rx="32" fill="#E5D5CB"/>
+  <rect x="1004" y="364" width="292" height="356" rx="32" fill="#F0C8B0"/>
+  <text x="132" y="212" fill="#3B2B2A" font-size="28" font-family="Arial, sans-serif">Elessi Pack</text>
+  <text x="132" y="292" fill="#3B2B2A" font-size="72" font-family="Arial, sans-serif" font-weight="700">Garage Fit</text>
+  <text x="132" y="360" fill="#725B58" font-size="28" font-family="Arial, sans-serif">Auto parts, specs, and dense utility routing.</text>
+  <defs>
+    <linearGradient id="bg" x1="64" y1="64" x2="1376" y2="896" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FCF7F1"/>
+      <stop offset="1" stop-color="#E8DED5"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitHub Deploy Verify"
+  short_description: "Push code, watch Actions, SSH-check deploys"
+  default_prompt: "Use $gh-deploy-ssh-verify to push this repo, watch GitHub Actions, verify the server over SSH, and add missing tests if needed."

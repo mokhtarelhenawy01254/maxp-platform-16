@@ -1,0 +1,211 @@
+const { getSharedPrismaClient } = require('../sharedDatabase');
+const WhatsAppNotificationService = require('./WhatsAppNotificationService');
+
+/**
+ * 🚀 WhatsApp Journey Service
+ * نظام جدولة رسائل المتابعة بالتسلسل بعد تسليم الطلب
+ */
+class WhatsAppJourneyService {
+    get prisma() {
+        return getSharedPrismaClient();
+    }
+
+    /**
+     * تسجيل العميل في رحلة متابعة
+     * يتم استدعاؤها عند تغيير حالة الطلب إلى "تم التسليم"
+     */
+    async enrollCustomer(companyId, customerId, orderId) {
+        try {
+            console.log(`[JOURNEY] Attempting to enroll customer ${customerId} for company ${companyId}`);
+
+            // 1. جلب الرحلة المفعلة لهذه الشركة
+            const flow = await this.prisma.whatsAppFollowUpFlow.findFirst({
+                where: { companyId, isEnabled: true },
+                include: {
+                    steps: {
+                        orderBy: { stepOrder: 'asc' }
+                    }
+                }
+            });
+
+            if (!flow || flow.steps.length === 0) {
+                console.log(`[JOURNEY] No active flow found for company ${companyId}`);
+                return;
+            }
+
+            // 2. التأكد من عدم وجود رحلة نشطة لنفس الطلب (تجنب التكرار)
+            const existing = await this.prisma.customerJourney.findFirst({
+                where: {
+                    companyId,
+                    orderId,
+                    flowId: flow.id,
+                    status: 'ACTIVE'
+                }
+            });
+
+            if (existing) {
+                console.log(`[JOURNEY] Customer already enrolled for order ${orderId}`);
+                return;
+            }
+
+            // 3. تحديد موعد أول خطوة
+            const firstStep = flow.steps[0];
+            const nextSendAt = new Date();
+            nextSendAt.setDate(nextSendAt.getDate() + firstStep.delayDays);
+
+            // 4. إنشاء السجل
+            await this.prisma.customerJourney.create({
+                data: {
+                    companyId,
+                    customerId,
+                    orderId,
+                    flowId: flow.id,
+                    currentStep: 0,
+                    status: 'ACTIVE',
+                    nextSendAt,
+                    logs: `Started journey: ${flow.name} at ${new Date().toISOString()}`
+                }
+            });
+
+            console.log(`✅ [JOURNEY] Enrolled customer successfully in flow: ${flow.name}`);
+        } catch (error) {
+            console.error('❌ [JOURNEY-ERROR] Enrollment failed:', error);
+        }
+    }
+
+    /**
+     * معالجة جميع الرحلات التي حان موعد رسالتها
+     * يتم استدعاؤها عبر Cron Job
+     */
+    async processPendingJourneys() {
+        try {
+            const now = new Date();
+            const journeys = await this.prisma.customerJourney.findMany({
+                where: {
+                    status: 'ACTIVE',
+                    nextSendAt: { lte: now }
+                },
+                include: {
+                    customer: true,
+                    order: true,
+                    flow: {
+                        include: { steps: { orderBy: { stepOrder: 'asc' } } }
+                    }
+                }
+            });
+
+            if (journeys.length === 0) return;
+
+            console.log(`[JOURNEY] Processing ${journeys.length} pending journeys...`);
+
+            for (const journey of journeys) {
+                await this.sendNextStep(journey);
+            }
+        } catch (error) {
+            console.error('❌ [JOURNEY-ERROR] Processing journeys failed:', error);
+        }
+    }
+
+    /**
+     * إرسال الخطوة التالية في الرحلة
+     */
+    async sendNextStep(journey) {
+        const stepIndex = journey.currentStep;
+        const step = journey.flow.steps[stepIndex];
+
+        if (!step) {
+            await this.prisma.customerJourney.update({
+                where: { id: journey.id },
+                data: { status: 'COMPLETED' }
+            });
+            return;
+        }
+
+        try {
+            // إرسال الرسالة باستخدام contentOverride
+            const result = await WhatsAppNotificationService.sendNotification({
+                companyId: journey.companyId,
+                recipientPhone: journey.customer.phone,
+                recipientName: `${journey.customer.firstName || ''} ${journey.customer.lastName || ''}`.trim(),
+                recipientType: 'CUSTOMER',
+                category: 'MARKETING',
+                eventType: 'POST_DELIVERY_FOLLOWUP',
+                contentOverride: step.content,
+                variables: {
+                    firstName: journey.customer.firstName || '',
+                    lastName: journey.customer.lastName || '',
+                    customerName: journey.customer.firstName,
+                    orderNumber: journey.order?.orderNumber || '',
+                    totalPrice: journey.order?.total?.toString() || '0'
+                },
+                orderId: journey.orderId,
+                customerId: journey.customerId
+            });
+
+            if (result.success) {
+                const nextStepIndex = stepIndex + 1;
+                const nextStep = journey.flow.steps[nextStepIndex];
+
+                const updateData = {
+                    currentStep: nextStepIndex,
+                    lastSentAt: new Date(),
+                    logs: (journey.logs || '') + `\nSent step ${stepIndex + 1} at ${new Date().toISOString()}`
+                };
+
+                if (!nextStep) {
+                    updateData.status = 'COMPLETED';
+                } else {
+                    const nextSendAt = new Date();
+                    nextSendAt.setDate(nextSendAt.getDate() + nextStep.delayDays);
+                    updateData.nextSendAt = nextSendAt;
+                }
+
+                await this.prisma.customerJourney.update({
+                    where: { id: journey.id },
+                    data: updateData
+                });
+
+                console.log(`✅ [JOURNEY] Step ${stepIndex + 1} sent to ${journey.customer.phone}`);
+            } else {
+                console.error(`⚠️ [JOURNEY] Failed to send step ${stepIndex + 1}:`, result.reason);
+                // محاولة أخرى لاحقاً (بإضافة ساعة مثلاً)
+                const retryAt = new Date();
+                retryAt.setHours(retryAt.getHours() + 1);
+                await this.prisma.customerJourney.update({
+                    where: { id: journey.id },
+                    data: { nextSendAt: retryAt }
+                });
+
+                // 🔔 Notify Company Admins about the failure
+                try {
+                    const admins = await this.prisma.userCompany.findMany({
+                        where: {
+                            companyId: journey.companyId,
+                            role: { in: ['OWNER', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'MANAGER'] },
+                            isActive: true
+                        },
+                        select: { userId: true }
+                    });
+
+                    if (admins.length > 0) {
+                        const notificationsData = admins.map(admin => ({
+                            companyId: journey.companyId,
+                            userId: admin.userId,
+                            title: 'فشل إرسال رسالة رحلة متابعة',
+                            message: `فشل أو تأخر إرسال الخطوة رقم ${stepIndex + 1} للعميل ${journey.customer.firstName || ''} - طلب ${journey.order?.orderNumber || 'مجهول'}. سيتم المحاولة مرة أخرى.`,
+                            type: 'SYSTEM',
+                            data: { journeyId: journey.id, reason: result.reason }
+                        }));
+                        await this.prisma.notification.createMany({ data: notificationsData });
+                    }
+                } catch(notifyErr) {
+                    console.error('❌ [JOURNEY] Failed to notify admins about step failure:', notifyErr.message);
+                }
+            }
+        } catch (error) {
+            console.error('❌ [JOURNEY-ERROR] Failed to send step:', error);
+        }
+    }
+}
+
+module.exports = new WhatsAppJourneyService();

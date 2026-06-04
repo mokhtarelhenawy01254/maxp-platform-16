@@ -1,0 +1,2408 @@
+## [2026-06-04] Embeddings Generation and Vector Search Architecture Migration
+- **Details**: Migrated embedding generation and corrective RAG vector search from the Node.js backend to the Python AI service. The Node.js backend delegates to Python when running in `primary` service mode, and the corrective RAG engine utilizes semantic similarity search using pgvector cosine distance.
+- **Architecture**:
+  - **FastAPI Endpoint** (`apps/ai-service/src/api/admin/embeddings.py`):
+    - `POST /admin/embeddings/generate`: Accepts text and dimensions, generating vector embeddings using the `episodic_memory_service`.
+  - **Corrective RAG Similarity Search** (`apps/ai-service/src/rag/corrective_rag.py`):
+    - Replaced basic SQL query and word-overlap scoring for `VECTOR_STORE` with `episodic_memory_service.search_similar()`, executing true semantic cosine similarity on pgvector.
+  - **Node.js Client Delegation** (`apps/backend/services/aiAgent/`):
+    - `agentAiServiceClient.js`: Added `generateEmbedding()` client implementation targeting the Python admin API.
+    - `episodicMemoryService.js`: Routes embedding generation dynamically to the Python service when `AI_SERVICE_MODE=primary`, falling back to Google Embedding API or pseudo-embeddings on failure.
+- **Files**:
+  - `apps/ai-service/src/api/admin/embeddings.py`
+  - `apps/ai-service/src/api/admin/__init__.py`
+  - `apps/ai-service/src/rag/corrective_rag.py`
+  - `apps/backend/services/aiAgent/agentAiServiceClient.js`
+  - `apps/backend/services/aiAgent/episodicMemoryService.js`
+
+## [2026-06-03] AI Service Pipeline, RAG, Guardrails & Agent Provisioning Architecture
+- **Details**: Full execution pipeline with 6 stages, corrective RAG, input/output guardrails, intent classification, agent provisioning, admin API, memory model, and tool gateway.
+- **Architecture**:
+  - **Pipeline** (`apps/ai-service/src/pipeline/`):
+    - `runner.py`: Orchestrates stage execution in sequence.
+    - `context.py`: Carries shared state across stages.
+    - `stages/`: `resolve_intent` → `route_to_tools` → `execute_tools` → `retrieve_knowledge` → `validate_reply` → `handle_fallback`.
+  - **RAG** (`apps/ai-service/src/rag/`):
+    - `corrective_rag.py`: Evidence-scored retrieval with correction loop.
+    - `knowledge_evidence.py`: Knowledge base evidence extraction.
+  - **Guardrails** (`apps/ai-service/src/guardrails/`):
+    - `base.py`, `input.py`, `output.py`: Input validation and output safety checks.
+  - **Agent Provisioning** (`apps/ai-service/src/services/agent_provisioning.py`): Dynamic agent creation from templates.
+  - **Agent Loader** (`apps/ai-service/src/agents/loader.py`): Runtime agent class resolution.
+  - **Admin API** (`apps/ai-service/src/api/admin/agents.py`): CRUD endpoints for agent management.
+  - **Memory** (`apps/ai-service/src/db/models/memory.py`): Conversation memory persistence model.
+  - **Tool Gateway** (`apps/ai-service/src/tools/gateway.py`): Unified tool execution routing.
+
+## [2026-06-03] AI Service Agent Client Integration
+- **Details**: Restored and integrated `agentAiServiceClient.js` to manage remote agent lifecycle requests (spawn, list, update, reconcile, archive) against the Python `maxp-ai-service` in primary mode.
+- **Files**:
+  - `apps/backend/services/aiAgent/agentAiServiceClient.js`
+
+## [2026-06-03] Intent Classification, Planning, and Agent Templates Architecture
+- **Details**: Added structured intent classification and LLM-driven planning services in the AI service, along with database-backed agent templates and migrations.
+- **Architecture**:
+  - **Intent Classification Module** (`apps/ai-service/src/intent/`):
+    - `classifier.py`: Runs semantic intent classification on incoming messages, maps them to allowed intent enums, and parses/normalizes slots/missingSlots from LLM structured JSON response.
+    - `planner.py`: Standardizes task planning steps for routing customer requests.
+    - `schema.py`: Defines type schemas and slot constraints for all intent configurations.
+  - **Agent Templates & Models** (`apps/ai-service/src/db/models/agent.py`):
+    - Defines agent template schemas mapping roles to default models, templates, tools, and souls.
+    - Added database migration `0005_agent_templates.py` to persist system-defined agent templates.
+  - **CEO Agent Merchant Adaptation** (`apps/ai-service/src/agents/ceo.py`):
+    - Added `is_merchant` flag and instructions to adapt CEO orchestration flow for store owners vs general store customers.
+- **Files**:
+  - `apps/ai-service/migrations/versions/0005_agent_templates.py`
+  - `apps/ai-service/src/db/models/agent.py`
+  - `apps/ai-service/src/intent/classifier.py`
+  - `apps/ai-service/src/intent/planner.py`
+  - `apps/ai-service/src/intent/schema.py`
+  - `apps/ai-service/src/agents/ceo.py`
+
+## [2026-06-03] Agent Execution State Checkpointing Architecture
+- **Details**: Integrated SQLAlchemy-based checkpointing/state manager into the AI service agent orchestration flow to persist and load agent state checkpoints between execution turns.
+- **Architecture**:
+  - **Run State Manager** (`apps/ai-service/src/services/run_state_manager.py`): Created `RunStateManager` service wrapping SQLAlchemy async operations (`merge`, `select`, `get_latest_state`) on the `Checkpoint` database model. Uses defensive UUID normalization to ensure robust lookup query execution.
+  - **Orchestration Lifecycle Integration** (`apps/ai-service/src/workflows/orchestration_flow.py`): Integrates `RunStateManager` inside the core `run_orchestration` workflow. Proactively loads the most recent checkpoint state before executing the agent loop, and saves the final status/response checkpoint at the end of the turn.
+- **Files**:
+  - `apps/ai-service/src/services/run_state_manager.py`
+  - `apps/ai-service/src/workflows/orchestration_flow.py`
+
+## [2026-06-03] Monorepo Consolidation Architecture
+- **Details**: Established the unified project structure, bringing `apps/backend`, `apps/frontend` (React), and `apps/ai-service` (Python) together under one monorepo.
+- **Architecture**:
+  - **Monorepo Workspaces**: Configured root-level `package.json` to manage JavaScript/Node workspaces for frontend and backend while coordinating the python service using custom scripts (`uv run`).
+  - **Dynamic Dependency Resolution**: Configured the frontend bundler (`vite.config.ts`) to dynamically check and resolve `node_modules` between the local directory and the root workspace folder, preventing package collision.
+  - **Shared Service Gateways**: Configured inter-service communication over port 8000 via a secure SDK client on Node.js backend.
+- **Files**:
+  - `package.json`
+  - `apps/frontend/vite.config.ts`
+  - `apps/frontend/package.json`
+  - `apps/backend/services/aiSdkClient.js`
+
+## [2026-03-09] Specialist Agent Model Injection in Scheduled Routine Execution
+- **Details**: Updated `routineExecutorService.js` to dynamically inject the standard system `ModelManager` instance into active or newly spawned specialist agents prior to scheduled task processing.
+- **Architecture**:
+  - **Runtime Injection**: Integrates `aiRuntimeService` inside `executeRoutine()` to lazily retrieve and assign the global `ModelManager` context to dynamic specialist instances via `agent.setModelManager(...)`. This closes the execution gap where modular specialists lacked model resolution bindings during scheduled tasks.
+- **Files**:
+  - `backend/services/aiAgent/routineExecutorService.js`
+
+## [2026-03-09] Modularized Prompt Generation Pipeline Integration
+- **Details**: Resolved path referencing errors within the modularized stages of the AI message processing pipeline.
+- **Architecture**:
+  - **Shared Prompts Utility Integration**: Updated the `routeToTools` stage prompt builder (`buildSystemPromptForTurn`) to draw the `_formatRelevancePrompt` function from the centralized `utils/agentPromptUtils.js` helper instead of relying on legacy circular paths.
+- **Files**:
+  - `backend/services/aiAgent/pipeline/stages/routeToTools.js`
+
+## [2026-03-09] Agent Manager Runtime Mock Repository Extension
+- **Details**: Upgraded the mock database client infrastructure in `agentManagerRuntimeService.test.js` to match the latest modular Prisma Client API.
+- **Architecture**:
+  - **Advanced Mocks**: Added support for mock `company` queries, multi-field upserts, non-blocking default department bulk inserts via `createMany`, and array-based `orderBy` sort mapping to verify that active database queries perform accurately without native database adapters.
+- **Files**:
+  - `backend/tests/services/agentManagerRuntimeService.test.js`
+
+## [2026-03-09] Lazy AI Agent Model Manager Wrapper
+- **Details**: Deployed `aiRuntimeService.js` under the AI Agent service module to provide a lazy-loaded runtime facade for `ModelManager`.
+- **Architecture**:
+  - **Lazy Loader**: Wraps `ModelManager` instantiation to decouple it from circular-dependency startups.
+  - **Graceful Degradation**: Instantiates `ModelManager` with a `null` stub if the full `aiAgentService` has not booted yet, ensuring the orchestration API routes remain active without module-loading crashes.
+- **Files**:
+  - `backend/services/aiAgent/aiRuntimeService.js`
+
+## [2026-03-09] Simplified AI Product Catalog Page (AI Catalog)
+- **Details**: Built a dedicated, simplified product catalog page (`/admin/ai-catalog`) under the AI Operator section for merchants who don't use full e-commerce but need to easily add products for bot training and RAG search.
+- **Architecture**:
+  - **Lazy Routing** (`frontend/src/App.tsx`): Registered `/admin/ai-catalog` mapping to `AgentCatalogPage.tsx` using React lazy imports for optimized load performance.
+  - **Sidebar Ingestion** (`frontend/src/config/sidebar.ts`): Integrated the page link into the sidebar config under the `ai-operator` namespace.
+  - **Catalog Page Component** (`frontend/src/pages/admin/AgentCatalogPage.tsx`): Built a clean, modern dashboard with search, debounced paging, product summary stats, a multi-stage edit/add Drawer form, main image upload, and modular color variants with custom images.
+  - **i18n Translation Bundles**: Added full translation support inside Arabic and English `translation.json` files for standard elements, alerts, error strings, and form controls under the `aiCatalog` key.
+  - **Database Integration**: Reuses existing product API endpoints (`/products` CRUD and `/products/:id/variants`) to maintain database integrity and eliminate duplicate database structures.
+- **Files**:
+  - `frontend/src/App.tsx`
+  - `frontend/src/config/sidebar.ts`
+  - `frontend/src/pages/admin/AgentCatalogPage.tsx`
+  - `frontend/src/locales/en/translation.json`
+  - `frontend/src/locales/ar/translation.json`
+
+## [2026-06-01] Legacy WhatsApp Chat Task Button
+- **Details**: Added a Task button to the legacy WhatsApp chat (`/whatsapp`) action toolbar, right after the existing ShoppingCart order button. Opens `TasksModal` with `<Tasks embeddedInModal />`.
+- **Architecture**:
+  - **ChatWindow** (`frontend/src/pages/whatsapp/components/ChatWindow.tsx`): Added optional `onOpenTasks` prop and conditional Task button (`ClipboardList` icon) with same `variant="ghost" size="icon-sm" rounded-full` pattern as the order button.
+  - **WhatsAppChat** (`frontend/src/pages/whatsapp/WhatsAppChat.tsx`): Added `showTasksModal` state, `TasksModal` import, and rendering after `QuickOrderModal`.
+  - **Reuse**: Uses existing `TasksModal` → `<Tasks embeddedInModal />` — no new logic or components.
+  - **i18n**: Added `whatsapp.tooltips.task` key in both EN (`"Tasks"`) and AR (`"المهام"`).
+- **Files**:
+  - `frontend/src/pages/whatsapp/WhatsAppChat.tsx`
+  - `frontend/src/pages/whatsapp/components/ChatWindow.tsx`
+  - `frontend/src/locales/en/sections/whatsapp.json`
+  - `frontend/src/locales/ar/sections/whatsapp.json`
+
+## [2026-06-01] Prisma ProductVariant Select Query Alignment
+- **Details**: Resolved a critical API 500 error when fetching simple order details under `/api/v1/orders-new/simple/:orderNumber` on the backend.
+- **Architecture**:
+  - **Prisma Select Statement** (`backend/routes/orders.js`): Updated the `productVariant.findMany` query to remove the non-existent `color` and `size` database columns.
+  - **Attribute Resolution Fallback**: Relies on the robust fallback parsing logic directly below the query to resolve color and size from the `metadata` JSON object or the variant's `name` string.
+- **Files**:
+  - `backend/routes/orders.js`
+
+## [2026-06-01] Order Details / List Null Safety Architecture
+- **Details**: Resolved a critical API 500 runtime error when rendering or listing orders with unspecified sources (having null or undefined status/paymentStatus/paymentMethod values).
+- **Architecture**:
+  - **Orders Route Safety Mappings** (`backend/routes/orders.js`): Added fallback handlers within `/simple` and `/simple/:orderNumber` response mapping stages, mapping missing database values to safe defaults (e.g. `'PENDING'` for status, `'CASH'` for paymentMethod).
+  - **Controller/Service Refactoring**: Applied the same mapping boundaries inside `orderController.js`, `customerController.js`, and `preparationQueueService.js` to ensure uniform serialization across all endpoints.
+- **Files**:
+  - `backend/routes/orders.js`
+  - `backend/controller/orderController.js`
+  - `backend/controller/customerController.js`
+  - `backend/services/preparationQueueService.js`
+
+## [2026-06-01] Task WhatsApp Notification and Interactive Execution Follow-up System
+- **Details**: Verified and audited the full task WhatsApp notification and execution tracking flow to ensure robust operations and i18n translation compliance.
+- **Architecture**:
+  - **Orchestration Gateway** (`backend/services/taskNotificationService.js`): Coordinates event scoping (assignee, creator, observers/watchers), formats template variables, and handles interactive button responses.
+  - **Modular Templates & Translation** (`backend/services/whatsapp/WhatsAppNotificationService.js` & `backend/services/aiAgent/i18n.js`): Holds templates (`TASK_CREATED`, `TASK_UPDATED`, `TASK_STATUS_CHANGED`, `TASK_DEADLINE_REMINDER`, `TASK_OVERDUE`, `TASK_EXECUTION_CHECK`, `TASK_EXECUTION_RESPONSE`, `TASK_WATCHER_ADDED`, `TASK_DELETED`). All statuses, priorities, and responses are localized via `i18n.t()`.
+  - **Interactive Button Gateway** (`backend/services/whatsapp/WhatsAppInteractionService.js`): Intercepts button clicks (`task_done_`, `task_not_done_`, `task_blocked_`) via webhook, updates DB state safely (e.g. `COMPLETED`, 100% progress), logs task activities, and alerts stakeholders.
+  - **Automated Verification** (`scratch/test_task_whatsapp.js`): Simulates events and verifies compilation variables and database state changes.
+- **Files**:
+  - `backend/services/taskNotificationService.js`
+  - `backend/services/whatsapp/WhatsAppNotificationService.js`
+  - `backend/services/whatsapp/WhatsAppInteractionService.js`
+  - `backend/controller/taskController.js`
+  - `backend/controller/taskExternalController.js`
+  - `backend/cron/taskDeadlineCron.js`
+
+## [2026-06-01] Instagram Inbox Frontend Architecture Overhaul & Crash Fixes
+- **Details**: Fixed critical frontend crashes in the Instagram Inbox by restoring the required tab counts calculation, proper search and filters callback state, and correcting execution orders to prevent Temporal Dead Zone ReferenceErrors.
+- **Architecture**:
+  - **Memoized Tab Counts** (`frontend/src/pages/instagram-inbox/InstagramInbox.tsx`): Integrated `tabCounts` state via `useMemo` that filters and structures counts (e.g. `all`, `unreplied`, `done`, `main`, `general`, `requests`, `spam`) dynamically from `conversations` and `apiCounts`, aligning with the strict type definition of `InboxTabsProps`.
+  - **Callback Reordering**: Moved the `loadConversationsIG` callback definition above the `handleTagsChange` callback where it is declared as an arrow function, avoiding ReferenceError in its React dependency array.
+  - **Tabs Alignment**: Properly wired search (`onSearch={setSearchQuery}`), filters toggling (`onToggleFilters`), and counts (`counts={tabCounts}`) props on `<InboxTabs>` to resolve the missing parameter TypeError.
+- **Files**:
+  - `frontend/src/pages/instagram-inbox/InstagramInbox.tsx`
+
+## [2026-06-01] WhatsApp Session Connection Overhaul — Multi-Layer Health, Platform Browser, Exponential Backoff, Auth State Debounce
+- **Details**: Overhauled WhatsApp session connection lifecycle to fix auth race conditions, stale connections, platform-specific browser IDs, QR lifecycle, and auto-reconnect reliability.
+- **Architecture**:
+  - **Platform-Aware Browser ID** (`backend/services/whatsapp/WhatsAppManager.js`): `getSocketBrowser()` now detects `process.platform` — `Browsers.windows('Chrome')` on win32, `Browsers.linux('Chrome')` on linux, macOS for darwin, with Chrome 125 user agent. Eliminates WhatsApp suspicious-login flags from mismatched browser identity.
+  - **Multi-Layer Health Check** (`verifySessionHealth`): Checks WebSocket `readyState === 1` AND `lastReceivedMessageTimestamp` freshness. Connections with no messages for 120s are marked `stale`, forcing socket termination and reconnect.
+  - **Exponential Backoff Reconnect** (`scheduleReconnectSession`): Base delay multiplied by `1.5^attempt`, jitter capped at 30% of base, max 60s. Up to 5 automatic retry attempts on failure.
+  - **AUTHENTICATING State Machine**: New transient status between `qr_pending` and `connected`. When Baileys emits `connection` update with no QR after user scans, status transitions through `authenticating` (DB: `CONNECTING`).
+  - **Auth State Save Debounce** (`backend/services/whatsapp/DatabaseAuthState.js`): Dual debounce — 50ms for immediate saves, 1000ms for regular saves. Deep-clones creds and keys before serialization to prevent race-condition corruption.
+  - **QR Lifecycle Scoping**: QR codes emitted only to `company_{companyId}` Socket.IO room. Tracks `lastQRTimestamp` per session. Detects refreshes (different QR) vs initial generation.
+  - **Extended Link Wait**: `waitForSessionLinkState` increased to 240 attempts × 500ms = 120s, with background polling (120 × 1s) and Socket.IO re-emission when link data arrives post-timeout.
+- **Files**:
+  - `backend/controller/whatsappController.js`: Socket.IO integration, background QR polling, extended wait.
+  - `backend/services/whatsapp/DatabaseAuthState.js`: Dual debounce, deep-clone snapshot, direct cache.
+  - `backend/services/whatsapp/WhatsAppManager.js`: Platform browser, health check, backoff, AUTHENTICATING, QR lifecycle.
+  - `frontend/src/services/socketService.ts`: Socket.IO integration.
+  - `frontend/src/pages/whatsapp/WhatsAppSettings.tsx`: UI alignment with new states.
+
+## [2026-06-01] Hydrated/Recovered Company Agents Architecture Fix
+- **Details**: Refactored the background startup agent recovery system (`_initRecovery` in `agentProvisioningService.js`) to use `_restoreAgent` for loading db-backed agents instead of direct instantiation.
+- **Architecture**:
+  - Previously, `_initRecovery` manually called `new BaseAgent` but passed the parsed `row.skills` string to `allowedTools` and set `allowedSkills` to `[]`.
+  - Now, `_initRecovery` correctly passes `row.skills` as `allowedSkills` to the `_restoreAgent` helper.
+  - The `_restoreAgent` helper delegates to `agentProfileLoaderService.buildRuntimeConfig`, which correctly matches template-defined tools to the agent's runtime structure.
+  - Prevents the frontend from displaying `0/0` tools and skills for recovered/hydrated database agents.
+
+## [2026-06-01] Global Template Agent Auto-Provisioning & SAS Excel Agent Mappings
+- **Details**: Added auto-provisioning of global template agents for every company. When a company's agent team is accessed for the first time (via `getManagerContext()`), the system automatically creates company-scoped `CompanyAgent` records for all disk-based templates (Sales, Support, Inventory/Pricing, Marketing, Facebook Messenger, and Google Sheets Excel agent).
+- **Architecture**:
+  - Constant `GLOBAL_TEMPLATE_AGENTS` in `agentManagerService.js` updated to include both `"facebook-sales-support-agent"` and `"sas-sales-agent"`.
+  - Renamed `sas-sales-agent` to `"وكيل فيسبوك وجدول جوجل (إكسل)"` (Facebook & Google Sheets Agent) for clear user presentation.
+  - Role-to-template map (`ROLE_TEMPLATE_MAP` inside `agentProfileLoaderService.js`) updated to include the `SAS_SALES` role mapping to `sas-sales-agent`.
+  - Role-to-tool map (`ROLE_TOOL_MAP` inside `agentProvisioningService.js`) updated to define fallback tools for `SAS_SALES` (`googlesheets.searchProducts`, `googlesheets.submitOrder`, `googlesheets.readProducts`, `facebook.reply`, `agent.handoff`).
+  - Added `facebook.reply` and `agent.handoff` tools and `handoff-to-human` skill to `sas-sales-agent/agent.json` to allow Facebook messenger messaging support and agent delegation.
+  - Frontend `isFacebookResponderAgent` helper inside `CompanyAIAgents.tsx` updated to correctly identify `SAS_SALES` / `sas-sales-agent` as social channel responders.
+- **Changes**:
+  - **`backend/services/aiAgent/agentManagerService.js`**: Updated `GLOBAL_TEMPLATE_AGENTS` config and name.
+  - **`backend/services/aiAgent/agentProfileLoaderService.js`**: Added `SAS_SALES` to `ROLE_TEMPLATE_MAP`.
+  - **`backend/services/aiAgent/agentProvisioningService.js`**: Added `SAS_SALES` to `ROLE_TOOL_MAP`.
+  - **`backend/agents/sas-sales-agent/agent.json`**: Updated template name, allowedTools, and allowedSkills.
+  - **`frontend/src/pages/admin/CompanyAIAgents.tsx`**: Updated `isFacebookResponderAgent`.
+  - **`backend/tests/services/agentManagerRuntimeService.test.js`**: Updated test suites.
+
+
+## [2026-06-01] AI Sandbox Route Registration
+- **Details**: Mounted the `aiSandboxRoutes` router on the Express application.
+- **Paths**:
+  - Registered `/api/v1/ai-sandbox` to map to `backend/routes/aiSandboxRoutes.js`.
+
+## [2026-06-01] CompanyAgent & Company Prisma Schema Updates
+- **Details**: Modified modular schema files to solve Prisma validation / client generation conflicts and enable querying nullable database values for `managerType`.
+- **Changes**:
+  - **`backend/prisma/schema/ai_analytics.prisma`**: Changed the `managerType` field on `CompanyAgent` from required `String` to optional `String?` (`managerType String? @default("AGENT")`).
+  - **`backend/prisma/schema/core.prisma`**:
+    - Removed a duplicate definition of `aiSandboxSessions` from the `Company` model.
+    - Added the opposite relation field `socialProfiles CompanySocialProfile[]` to the `Company` model to map the relationship defined on `CompanySocialProfile` in `company_social.prisma`.
+
+## 2026-06-01 Native Tool Schema required parameter alignments
+- **Details**: Synchronized `order.create_draft` and `order.create_confirmed` parameter definitions and `inputSchema` schemas in `backend/services/aiAgent/tools/orderTools.js` to officially mark required fields.
+- **Required parameters**: `'productName', 'productPrice', 'customerName', 'customerPhone'` and, for confirmed orders, `'city', 'confirmedByCustomer'`.
+
+
+## [2026-05-31] Instagram DM Integration & Alignment
+To expand the communication capabilities of the platform, we integrated full Instagram DM messaging support spanning database schemas, API routing adapter mappings, localized sidebar, and custom frontend pages.
+
+### 1. Multi-Tenant Database Schemas (`backend/prisma/schema/`)
+- **`enums.prisma`**: Added `INSTAGRAM` to `CommunicationChannel` enums.
+- **`marketing.prisma`**: Appended `instagramAccountId` (unique) and `instagramAccountName` fields to `FacebookPage` model to store linked Instagram credentials.
+- **`products.prisma`**: Appended `instagramId` (unique per company) to the `Customer` model to map Instagram chat contacts.
+- **`core.prisma`**: Integrated sandbox sessions relation mapping.
+
+### 2. Connected Page Adapter & Webhook Receivers
+- **`facebookIntegration.js`**: Enhanced the page serialization model inside `getConnectedFacebookPages` to map and output `instagramAccountId` and `instagramAccountName` dynamic fields.
+- **`webhookController.js` & `allFunctions.js`**: Wired checking for `body.object === 'instagram'` messages and comments webhooks. The handlers automatically create and update database conversations using `channel: 'INSTAGRAM'` and broadcast real-time events over socket namespaces with `'instagram'` platform metadata.
+
+### 3. Integrated Navigation & Pages
+- **`sidebar.ts`**: Registered a premium localized Instagram navigation group containing Inbox and Settings subnodes.
+- **`marketplaceFeatureMap.ts` & `projectMapData.tsx`**: Synchronized feature mapping and super-admin project layout definitions to register the `/instagram-inbox` and `/settings/instagram` routes.
+- **`InstagramInbox.tsx` & `InstagramSettings.tsx`**: Implemented frontend views querying unified and connected routes.
+
+## [2026-05-31] WhatsApp History Loss on Session Reconnect
+- **Bug/Issue**:
+  When a WhatsApp session was removed and re-added (with the same phone number), all previous chat history (messages, contacts, event logs) was lost from the UI because the newly created session had a different sessionId.
+- **Cause**:
+  The system strictly bound WhatsAppMessage and WhatsAppContact models to the sessionId. When a new session was created for the same phone number, the previous history remained tied to the old, disconnected/logged-out session IDs, making it inaccessible to the user.
+- **Fix**:
+  1. Implemented migrateOldSessionHistory function inside WhatsAppManager.js.
+  2. The function automatically runs whenever a WhatsApp connection hits the open state.
+  3. It queries the database for any older disconnected/logged-out sessions associated with the same companyId and phoneNumber.
+  4. It migrates all related WhatsAppMessage, WhatsAppContact, WhatsAppStatus, and WhatsAppEventLog records to the new sessionId using robust conflict handling (merging duplicate contacts by taking maximum stats).
+  5. It gracefully deletes the old session records after a successful merge.
+- **Affected Files**:
+  - backend/services/whatsapp/WhatsAppManager.js
+
+﻿## 2026-05-31 Order Edit Permissions & Ownership Logic
+
+To enforce accountability, we instituted ownership restrictions ensuring moderators and employees can only manipulate orders they exclusively created.
+
+### 1. Unified Route Ownership Guard (\ackend/routes/orders.js\)
+- **\checkOrderEditPermission\ Helper**: Scans incoming status update and detail patch operations to evaluate user ownership. Dynamically maps the \eq.user.companyId\ and validates \order.createdBy\ vs \eq.user.id\. Rejects mismatched credentials with a \403 Forbidden\.
+- **Targeted Endpoints**: Bound this validation routine directly onto \PATCH /:orderNumber/status\, \POST /:orderNumber/confirm\, \POST /:orderNumber/cancel\, and \PUT /simple/:orderNumber\.
+
+### 2. Main Order Controller Security Validation (\ackend/controller/orderController.js\)
+- **Controller-Level Validation**: Replicated identical ownership screening on the primary \updateOrder\ handler to block unapproved structural state mutations across all ingestion vectors.
+
+# System Structure
+
+## 2026-05-31 Product Variant (Color & Size) Order Submission Routing
+
+To support precise physical order fulfillment, we integrated dynamic product variants mapping into the tool-routing data flow.
+
+### 1. Dynamic Variant Slots Extraction (`backend/services/aiAgent/executors/intentExecutionRouter.js`)
+- **Router Mapping**: Upgraded `_getModelClassifiedWriteToolParams` for `googlesheets.submitOrder` to dynamically inspect model classification payloads.
+- **Variant Identification**: Maps `productColor` (or fallback `color`) and `productSize` (or fallback `size`) slots identified by the LLM and appends them to the outgoing tool request arguments.
+
+### 2. Multi-Variant Payload Integration (`backend/services/aiAgent/tools/googleSheetsTools.js`)
+- **Schema Expansion**: Registered new optional parameter keys `color` and `size` in both `googlesheets.submitOrder` and `googlesheets.createOrder` tool manifests.
+- **Fulfillment Payload**: Added variant properties to the `orderData` post body payload transmitted to external Google Apps Script endpoints and embedded them into appended raw CSV rows locally.
+
+## 2026-05-31 Google Sheets & Gemini Resiliency Serialization Safeguard
+
+To ensure structural robustness and interoperability across multiple model providers, we enhanced the dynamic tool schema translation layer for Google Gemini API integration.
+
+### 1. Robust Type Array Normalization (`backend/services/aiAgent/providers/GoogleProvider.js`)
+- **`resolveArrayType`**: Intercepts parameter properties in tool specifications and sanitizes array-based types (e.g. `type: ['number', 'null']` or `type: ['string', 'null']`).
+- **`nullable: true` Conversion**: Extracts the primary data type, maps it into normalized UPPERCASE values (e.g., `NUMBER`, `STRING`), and sets `nullable: true` dynamically.
+- **Provider Integrity Safeguard**: Acts as a runtime firewall, ensuring any developer-defined JSON-schema that conforms to OpenAI drafts automatically converts into Gemini-compatible Protocol Buffer formats. This eliminates API-breaking 400 Bad Request payload validation rejections.
+
+### 2. Standardized Tool Param Schemas (`backend/services/aiAgent/tools/googleSheetsTools.js`)
+- Corrected raw schemas of `googlesheets.submitOrder` and `googlesheets.createOrder` tools to adopt the uniform single-string `type: 'number'` with explicit `nullable: true` parameters.
+
+## 2026-03-09 Google Sheets Integration Tools Hardening
+
+To support resilient, performant, and secure e-commerce integrations using Google Sheets as a database backend, we hardened the extraction, search, caching, and order submission pipelines.
+
+### 1. In-Memory TTL Cache (`backend/services/aiAgent/tools/googleSheetsTools.js`)
+- **`sheetCache`**: Added a process-local caching layer mapping sheet URLs to cached parsing results.
+- **60-Second TTL**: Restricts redundant network requests to Google Servers within a 60-second window, significantly reducing chat latency and protecting merchants against HTTP 429 rate limits.
+
+### 2. Reliable 2D Array Sheet Parsing (`backend/services/aiAgent/tools/googleSheetsTools.js`)
+- **JSON Object Shift Immunity**: Replaced `xlsx.utils.sheet_to_json(sheet, { defval: '' })` (which drops empty columns and shifts cell value indices dynamically) with raw 2D array parsing `{ header: 1, defval: '' }`.
+- **Coordinate-based Lookups**: Column fields are now extracted by scanning the header row (index `0`) to resolve static indices (`nameCol`, `skuCol`, `priceCol`, etc.), ensuring zero cell-shift data corruption.
+- **First Product Retention**: Removed `rows.slice(1)` double-slicing that was causing the first database product to be skipped during execution.
+
+### 3. Search and Arabic Normalization
+- **Arabic Text Normalization (`normalizeArabicTextForSearch`)**: Normalizes all Alif forms (`Ø£/Ø¥/Ø¢` â†’ `Ø§`), Teh Marbuta (`Ø©` â†’ `Ù‡`), and final Yeh (`Ù‰` â†’ `ÙŠ`) to enable matching regardless of dialect or input typos.
+- **Multi-Column Search**: Upgraded `googlesheets.searchProducts` to match query patterns across name, SKU, description, and category.
+
+### 4. Apps Script Redirect and Submission Resiliency
+- **Content-Type Verification**: Verifies response content-types before calling `.json()`.
+- **HTML Redirect Handling**: Gracefully intercepts Google Apps Script HTML redirect pages (302) and returns a structured merchant setup warning (`GOOGLE_SHEETS_APPS_SCRIPT_REDIRECT_DETECTED`) instead of crashing the process.
+
+### 5. Data Privacy Protection
+- **Internal Column Scrubbing**: Refactored `googlesheets.readProducts` to route through the filtered `parseProductsFromSheet` parser, ensuring that cost prices and profit margins are never leaked to the customer-facing LLM context.
+
+## 2026-03-09 Arabic Size Synonym Mapping & Definite Article Stripping
+
+To achieve native-level Arabic query understanding without relying on rigid hardcoded string keywords, we've modularized size synonyms and implemented linguistic article normalization.
+
+### 1. Bilingual Size Synonym Dictionary (`backend/services/aiAgent/utils/arabicSynonymDictionary.js`)
+- **`SIZE_SYNONYMS` Map**: Houses standard clothing size translations, linking common Arabic transliterated and colloquial variations (e.g. `Ù„Ø§Ø±Ø¬`, `Ø³Ù…ÙˆÙ„`, `Ù…ÙŠØ¯ÙŠÙˆÙ…`, `Ø§ÙƒØ³ Ù„Ø§Ø±Ø¬`) to canonical English database size keys (`S`, `M`, `L`, `XL`, `XXL`, `XXXL`).
+- **Definite Article Normalizer (`_stripAl`)**: Intercepts lookup tokens and strips the Arabic definite article `Ø§Ù„Ù€` prefix (e.g. `Ø§Ù„Ø§Ø³ÙˆØ¯` becomes `Ø§Ø³ÙˆØ¯`, `Ø§Ù„Ù„Ø§Ø±Ø¬` becomes `Ù„Ø§Ø±Ø¬`) before searching synonyms. This enables robust lookup matching for both raw and definite Arabic nouns.
+- **Bilingual API resolution**: Added and exported `resolveSize` alongside `resolveCategory`, `resolveColor`, and `resolveGender`, ensuring cohesive attribute mappings.
+
+### 2. Multi-Word Phrase Size Parser (`backend/services/aiAgent/utils/queryUnderstandingParser.js`)
+- **Phrase-based Extraction**: Upgraded the rule-based query parser to execute a phrase-based check against `SIZE_SYNONYMS` before running legacy regex matching.
+- **Substring Collision Prevention**: Iterates over all known size synonyms, prioritizing longest phrases first. This ensures compound phrases (such as `Ø§ÙƒØ³ Ù„Ø§Ø±Ø¬`) are correctly resolved instead of being greedily stripped into smaller single-word matches (like `Ù„Ø§Ø±Ø¬` leaving a dangling `Ø§ÙƒØ³`).
+- **Token Resolution Fallback**: If a size is not found in phrases, individual tokens are resolved against `resolveSize` during the token lookup loop.
+
+## 2026-05-30 AI Sandbox Detailed Error Response Propagation
+
+To improve runtime visibility and debugging for AI Agent Sandbox users, the sandbox API has been enhanced to return detailed root-cause messages when execution errors (such as `AI_AGENT_EMPTY_REPLY` or `AI_AGENT_UNGROUNDED_REPLY`) occur.
+
+### API Changes
+- **`sendCodeError` Helper**: Accepts an optional fourth `message` parameter. If provided, the response `error` string is formatted as `${code}: ${message}` (e.g. `AI_AGENT_EMPTY_REPLY: The selected model returned no assistant text`).
+- **`sendChatMessage` & `streamChatMessage` Catch Blocks**: Now catch errors, log them, and extract `error.reason` or `error.message` to pass to `sendCodeError`, propagating precise failure details to the client instead of generic error codes.
+
+## 2026-05-30 AI Agent Exchange Support Policy Skill & Order Delivery Integration
+
+To enable robust, automated product exchange validation without keyword routing, we implemented structured procedural skill rules and integrated delivery date tracking.
+
+### 1. Exchange Support Skill (`backend/agents/_shared/skills/exchange-support/`)
+- **`skill.json`**: Defined the skill manifest restricting the allowed tools to read-only order/customer checks (`order.lookup`, `customer.info`) and human escalation (`agent.handoff`).
+- **`SKILL.md`**: Formalized the product exchange business rules and operational flows. Instructs the agent to explicitly verify:
+  1. Customer has a previous order.
+  2. Order status is explicitly "delivered" (ØªÙ… Ø§Ù„ØªØ³Ù„ÙŠÙ…).
+  3. Delivery date was within the past 14 days.
+  4. The customer has stated the exact problem/reason.
+- Registered the skill under `allowedSkills` in the manifests of `facebook-sales-support-agent` and `support-agent`.
+
+### 2. Order Lookup Delivery Tracking (`backend/services/aiAgent/tools/orderTools.js`)
+- Refactored the `order.lookup` tool handler to fetch the latest `DELIVERED` entry from the order's status history (`OrderStatusHistory`).
+- Extracted and returned the `deliveredAt` timestamp alongside `confirmedAt` and `updatedAt` in the returned JSON tool response, enabling programmatic validation of the 14-day exchange window.
+
+## 2026-05-30 AI Sandbox Activity Log Persistence & Arabic Intent Classification Diagnostic Trace
+
+To improve the debugging experience in the AI agent sandbox and resolve Arabic intent classification mismatches, we implemented persistent pipeline logs and enhanced the LLM structured intent classifier.
+
+### 1. Database-Backed Message Metadata (`backend/prisma/schema/ai_sandbox.prisma` & `backend/services/aiSandboxService.js`)
+- Added a `metadata` JSON field to the `AiSandboxMessage` database model to store structured diagnostic traces.
+- Executed database migrations to apply the schema modification.
+- Updated `aiSandboxService.js` to persist and retrieve the `metadata` JSON object on message insertion.
+
+### 2. Backend Pipeline Trace Extraction (`backend/controller/aiSandboxController.js` & `backend/services/aiAgent/CEOAgent.js`)
+- Refactored `CEOAgent.js`'s `processTask` execution pipeline to return the resolved `relevancePlan` on both successful runs and early failures (e.g. system failures).
+- Updated `aiSandboxController.js` to extract a detailed `pipelineTrace` object from the task execution result, containing:
+  - `intentClassification`: The raw LLM intent, confidence, slots, and missing slots.
+  - `toolPlan`: Resolved tool plan, allowed tools, primary tool, and decision reasons.
+  - `toolExecutions`: Executed tools list with parameters, results, and latencies.
+  - `modelSelection`: The actual model, provider, and API key details selected during runtime.
+- Saved the trace under the message's `metadata` column, and returned it in the HTTP response of both standard and streaming sandbox chat endpoints (`sendChatMessage` and `streamChatMessage`).
+
+### 3. Frontend Activity Log Persistence (`frontend/src/pages/admin/ai-agent-sandbox/`)
+- Updated type definitions in `sandbox.types.ts` and `sandboxApi.ts` to include `PipelineTrace` and message `metadata`.
+- Refactored `useAgentSandbox.ts` to log detailed intent classification, tool execution, tool plan, and model selection entries from the returned `pipelineTrace` dynamically.
+- Implemented `reconstructActivityLogFromMessages` to reconstruct the entire activity log history from a session's message `metadata` when loading session details or switching sessions, ensuring log entries persist across browser refreshes and session context changes.
+- Added a "Pipeline" filter tab in `InspectorPanel.tsx` to filter intent classification and tool routing steps, and rendered metadata payloads inside syntax-highlighted code blocks.
+
+### 4. Intent Classifier Arabic Disambiguation (`backend/services/aiAgent/agentIntentClassifierService.js`)
+- Enhanced the LLM intent classifier's system prompt instructions with explicit Arabic disambiguation rules:
+  - Standalone nouns referring to clothing suits ("Ø§Ù„Ø¨Ø¯ÙŠÙ„Ù‡", "Ø§Ù„Ø¨Ø¯Ù„Ø©", "Ø§Ù„Ø¨Ø¯Ù„Ù‡", "Ø¨Ø¯Ù„Ø©") must be classified as product catalog search (`products` or `inventory`) rather than exchange requests (`support.exchange`).
+  - Active exchange verbs ("Ø¨Ø¯Ù„", "Ø§Ø³ØªØ¨Ø¯Ø§Ù„", "Ø§Ø¨Ø¯Ø§Ù„") referring to an order should map to `support.exchange`.
+- Added few-shot examples for suit-related catalog queries versus return/exchange request queries.
+
+## 2026-05-30 Vite Development Dependency Optimization
+
+To fix development connection limits and client bootstrap failures under Windows environments (avoiding `net::ERR_INSUFFICIENT_RESOURCES` errors on Chrome), we explicitly configured dependency pre-bundling.
+
+### 1. Pre-Bundling Core & Icon Assets (`frontend/vite.config.ts`)
+- Explicitly registered core libraries (`lucide-react`, `sonner`, `framer-motion`, `@heroicons/react/24/outline`, `@heroicons/react/24/solid`, `@mui/material`, `@mui/icons-material`, `react-hot-toast`, `lodash`, `recharts`, `react-hook-form`, `zustand`, `clsx`, `tailwind-merge`, `notistack`, `react-select`, `react-datepicker`) inside `optimizeDeps.include`.
+- Forces Vite to pre-bundle these heavy assets during dev initialization, preventing the browser from making hundreds of raw concurrent requests while keeping the conservative Windows dependency scanning entry list active to avoid esbuild OOM crashes.
+
+## 2026-05-29 E-Commerce Product Search Hardening
+
+To fix critical search mismatch issues, handle conversational pronoun context, and prevent cross-turn filter bleeding, we hardened the unified catalog search pre-filtering and orchestration logic.
+
+### 1. POSIX Regex Color Synonyms Matching (`backend/services/aiAgent/utils/DbVectorAdaptor.js`)
+- Upgraded the case-insensitive color variant pre-filtering from `ILIKE` exact key matching to case-insensitive POSIX regex matching (`~*`).
+- Generates a regex pattern containing all synonyms of the resolved English canonical color (e.g. `black|Ø§Ø³ÙˆØ¯|Ø£Ø³ÙˆØ¯|Ø£Ø³Ù…Ø±|Ø¨Ù„Ø§Ùƒ|noir`) dynamically to ensure Arabic queries successfully match variants in the database.
+
+### 2. Multi-turn Pronoun Reference Resolution (`backend/services/aiAgent/utils/UnifiedProductSearchOrchestrator.js` & `DbVectorAdaptor.js`)
+- Added pronoun follow-up query detection. If a query contains pronoun keywords (e.g., `Ù…Ù†Ù‡`, `Ù…Ø¹Ø§Ù‡`, `Ø¯Ù‡`, `Ø§Ù„Ù…Ù†ØªØ¬`) or is a short follow-up text turn with no new product name, the system marks it as `isPronounQuery`.
+- Injects a `productIds` restriction into database filters to constrain search queries to `lastShownProductIds` retrieved from the working memory context.
+- Implemented `ANY($param::text[])` SQL-level array pre-filtering inside `DbVectorAdaptor.js` to bound the search.
+
+### 3. Category-Shift Filter Bleeding Prevention (`backend/services/aiAgent/utils/UnifiedProductSearchOrchestrator.js`)
+- Implemented category comparison checks between active session search filters and newly parsed queries.
+- Discards previous turns' filters if a category shift is detected (e.g. switching from shoes to shirt), preventing incompatible parameters (like shoe sizes) from bleeding into the new search.
+
+## 2026-05-29 Unified E-Commerce Variant Pre-filtering and Query Parameterization
+
+To secure the catalog database against SQL injection vulnerabilities and optimize search retrieval efficiency, we implemented database-level pre-filtering for product variants and parameterized all query filters in the database adaptor layer.
+
+### 1. SQL-Level Variant Pre-filtering (`backend/services/aiAgent/utils/DbVectorAdaptor.js`)
+- Refactored `hybridSearch` to accept `color` and `size` search constraints.
+- Integrated an SQL `EXISTS` subquery targeting the `product_variants` table, asserting that the product has at least one active variant matching the requested color or size pattern that is in-stock or has inventory tracking disabled.
+- Only products with matching variants are returned from the database, eliminating the risk of zero-result recall during post-processing.
+
+### 2. Parameterized SQL Compilation
+- Replaced direct string interpolation of dynamic filter values (`categoryId`, `minPrice`, `maxPrice`, `color`, `size`) with secure dynamic parameters (`$6`, `$7`, etc.).
+- Bound all dynamic inputs to positional arguments passed safely to `prisma.$queryRawUnsafe`, guaranteeing full protection against SQL injection vulnerabilities.
+
+### 3. Orchestration Mapping (`backend/services/aiAgent/utils/UnifiedProductSearchOrchestrator.js`)
+- Synchronized the main 11-stage search execution pipeline to pass parsed color and size filters directly to the database filters within the execution context of the hybrid search engine.
+
+## 2026-05-29 Unified Product Search & Real-Time Inventory Validation Orchestration
+
+To address catalog search gaps, slang mismatches, and multi-turn session filters, we consolidated all catalog search and inventory lookup pathways under a **Unified Product Search Orchestration** architecture.
+
+```mermaid
+graph TD
+    A[Customer Message / Image] --> B[Unified Search Orchestrator]
+    C[Conversation Session Memory] --> B
+    B --> D[Slang Synonyms & Regex Parser]
+    B --> E[Gemini Image Intent Classifier]
+    D & E --> F[Dynamic Hybrid Weight Calculator]
+    F --> G[DbVectorAdaptor - Vector + Trigram Matcher]
+    G --> H[Business Ranker - Margin, stock, popularity]
+    H --> I{Results > 0?}
+    I -- No --> J[Recovery Loop - Relaxation & Did-You-Mean]
+    I -- Yes --> K[Async Observability Analytics Logger]
+    K & J --> L[Ranked Catalog Results / Adaptive Reply]
+```
+
+### 1. Unified Search Orchestrator (`backend/services/aiAgent/utils/UnifiedProductSearchOrchestrator.js`)
+Consolidates search processing into a single, cohesive 11-stage pipeline:
+- **Conversation State Resolution**: Restores size, color, gender, and category filters from working memory (`activeSearchFilters`) and resolves pronoun references (e.g. "Ù…Ù†Ù‡" - "of it") utilizing the last shown product IDs.
+- **Slang Synonyms & Regex Pre-processing**: Expands Arabic/English terms (e.g. `ÙƒÙˆØªØ´ÙŠ` -> `sneakers`) and parses price range ("ØªØ­Øª 500 Ø¬Ù†ÙŠÙ‡") and sizes via `queryUnderstandingParser.js`.
+- **Gemini Image Intent Classifier**: Intercepts image uploads and categorizes them into `PRODUCT_MATCH`, `COLOR_REFERENCE`, `PAYMENT_RECEIPT`, or `DAMAGE_REPORT` using `imageIntentClassifier.js` with Gemini 1.5 Flash. Only matchable intents continue to search; payment receipts and damage reports bypass indexing.
+- **Dynamic Weight Calculation**: Computes query signatures to distribute vector, trigram, and exact weights dynamically.
+- **DB Adaptor Execution**: Queries PostgreSQL via `DbVectorAdaptor.js` with auto-detected PL/pgSQL fallbacks.
+- **Business Re-ranking & Boosting**: Re-orders matches by multiplying search scores with stock status (0.4 penalty if out of stock) and featured popularity multipliers.
+- **Result Recovery**: Relaxes filter constraints or queries `pg_trgm` for closest string suggestions (did-you-mean).
+- **Async Observability Logger**: Saves detailed search metrics, extracted filters, latency, and conversions to `product_search_logs` asynchronously.
+
+### 2. Multi-File Prisma Schema Synchronization
+- **`product_search_logs`**: Backed by the formal `ProductSearchLog` Prisma model inside `prisma/schema/product_search_log.prisma` to guarantee client-side types and safe db migrations.
+- **`embedding_array`**: Defined inside `products.prisma`'s `Product` model to support standard `double precision[]` vectors natively without dropping array values during push routines.
+
+## 2026-05-29 Agentic Hybrid RAG Product Search Architecture
+
+To support scalable and robust product searches across multi-tenant SaaS catalogs, we transitioned the product and inventory retrieval logic from simple lexical matching to a high-fidelity **Agentic Hybrid RAG Product Search**.
+
+### 1. Database Schema and Sync Trigger
+- **`embedding_array` & `embedding_image_array`**: Added standard PostgreSQL double precision arrays (`double precision[]`) to the `products` table to house text and multimodal embeddings natively without depending on separate compiled pgvector binary extensions (ensuring compatibility across Windows local developer setups, tests, and CI/CD runners).
+- **PL/pgSQL `dot_product` Function**: Built a native `dot_product(a double precision[], b double precision[])` mathematical function in PostgreSQL to calculate cosine similarity (as Gemini embeddings are normalized, dot product directly yields cosine similarity).
+- **`sync_product_arrays_trigger`**: Implemented a database trigger that fires `BEFORE INSERT OR UPDATE` on `products`. It automatically parses JSON string representations of float arrays from the Prisma-native `embedding` and `embeddingImage` `TEXT` fields and copies them into the native `double precision[]` array columns.
+
+### 2. Product Semantic Search Service (`backend/services/aiAgent/utils/productSemanticSearchService.js`)
+Created a dedicated hybrid search utility that:
+- Generates query embeddings using `episodicMemoryService` (utilizing `generateMultimodalEmbeddingAsync` if an image attachment is provided, and falling back to `generateEmbeddingAsync` for text queries).
+- Performs a hybrid query on PostgreSQL combining:
+  1. **Vector Score** (weight 0.6): `dot_product(embedding_array, queryEmbedding)`
+  2. **Text Similarity** (weight 0.3): Trigram similarity of name, tags, and description via `pg_trgm` (`similarity` function).
+  3. **Exact Match** (weight 0.1): Substring matches for SKU, tags, or name.
+- Falls back to standard Prisma lexical querying in unit tests or environments where PostgreSQL raw queries are mocked.
+
+### 3. Agent Tool & RAG Integration
+- **`productTools.js` & `inventoryTools.js`**: Refactored the search handlers to use `searchProducts` from `productSemanticSearchService` as the primary path, retrieving target product IDs via hybrid similarity and mapping them to full product models to maintain relational completeness (variants, categories) in tool outputs.
+- **`CorrectiveRAGEngine.js`**: Upgraded the `PRODUCT_DB` retrieval source. It now leverages the new semantic search service to fetch the top 10 most relevant products sorted by hybrid similarity, converting them to RAG context documents, while maintaining a robust listing fallback.
+- **Episodic Memory Mock Stabilization**: Upgraded the developer fallback `generateEmbedding` function inside `episodicMemoryService.js` to compute tokenized, position-independent bag-of-words hashes. This eliminates test flakiness caused by position-based multipliers when running integration tests without active Gemini API keys.
+
+## 2026-05-29 Product Search Plural/Singular Mismatch & Image Support in AI Sandbox
+
+- **Generalized Morphological Search**: Replaced static keyword aliases in `productSearchQueryService.js` with language-agnostic morphological stemmers `getArabicVariations` and `getEnglishVariations`. These stemmers automatically generate singular stems for dual/plural words (e.g. Arabic words ending in `Ø§Øª`, `ÙŠÙ†`, `ÙˆÙ†`, `Ø§Ù†` and English words ending in `s`, `es`), ensuring that searches like "Ø³Ø§Ø¹Ø§Øª" or "watches" match "Ø³Ø§Ø¹Ø©" or "watch" database products in a scalable multi-tenant SaaS environment.
+- **AI Sandbox Attachment Parameter**: Upgraded the sandbox endpoints `/api/v1/ai-sandbox/chat` and `/api/v1/ai-sandbox/chat/stream` to accept an optional `attachments` array parameter (`Array<{ type: string, url: string }>`).
+- **Sandbox Attachment Lifecycle**: Inside `aiSandboxController.js`, `attachments` are validated and formatted into an attachment summary string passed into the agent's task processor (mirroring production Messenger channel webhook inputs), while the user message is saved to the database with the attachments encoded in Markdown image syntax (`![image](url)`).
+- **Interactive Sandbox UI**: Upgraded `sandboxApi.ts`, `useAgentSandbox.ts`, and `ChatArea.tsx` with image upload/URL attachment toggles, quick-select preset scenario presets (Classic Watch, Platform Sneakers, Linen Shirt), and card-based markdown image rendering in chat bubble feeds.
+
+## 2026-05-29 Sandbox Chat Hydration Lifecycle
+
+To prevent `AGENT_NOT_FOUND` routing exceptions during cold-starts or direct API integrations with the Sandbox Chat system:
+- **Automatic Fallback Registry Hydration**: Inside `aiSandboxController.js`, the `createSandboxRuntimeAgent` method checks `agentProvisioningService.getAgent()`. If the agent is missing from memory due to a fresh server boot, it proactively triggers `getManagerAgent()` and `ensureFacebookMessengerAgent()` using `agentManagerService` to restore persisted company agents dynamically.
+- **Resilient Turn Planning**: Sandbox chat requests are shielded from database/memory mismatch issues, guaranteeing consistent endpoint responses regardless of initial frontend navigation paths.
+
+## 2026-05-28 Product Search Retrieval and Embedding Deprecation
+
+The active RAG search retrieval pipeline (`CorrectiveRAGEngine.js`) for catalog products uses a resilient lexical overlap n-gram scoring mechanism (`_scoreDocuments()`) rather than vector similarity embeddings. To reflect this architecture:
+- Database-connected product embedding generation helpers (`postgresVectorService.js` and `embeddingHelper.js`) were previously deprecated and deleted.
+- Orphaned execution scripts (`generateProductEmbeddings.js` and `generate_missing_embeddings.js`) have been removed from the codebase.
+- The `refreshProductRetrievalArtifacts` function in `productController.js` has been simplified to hydrate the product structure from the database without invoking embedding generation.
+
+## 2026-05-28 CEOAgent Decoupling & 100% LLM Intent Classification Architecture
+
+The CEOAgent monolith has been decomposed into focused executor engines, and the intent routing pipeline has been fully migrated from keyword-based to LLM-classifier-based routing.
+
+### 1. CEOAgent Executor Architecture (`backend/services/aiAgent/executors/`)
+
+`CEOAgent.js` is now a thin facade that delegates to four specialized executor engines:
+
+- **`toolExecutionEngine.js`**: Manages the multi-round tool execution loop. Parses text-based and native tool calls, executes them through the tool gateway, feeds results back to the LLM, and tracks DSML tool-call leak detection across all rounds (sticky `hasToolCallLeak` flag).
+- **`customerReplyEngine.js`**: Handles customer-facing reply formatting, compact reply message construction, grounding validation, repair passes, and response diversity enforcement.
+- **`intentExecutionRouter.js`**: Routes resolved intent contracts to the appropriate execution path â€” deterministic goal execution, read-only tool execution, customer handoff, or LLM-driven generation. Contains the structural routing helpers previously embedded in CEOAgent.
+- **`orderDraftEngine.js`**: Manages the multi-step order draft creation flow â€” slot extraction, price confirmation, customer data validation, and draft submission through the tool gateway.
+
+This separation reduces `CEOAgent.js` from a ~2400-line monolith to a ~800-line orchestration facade, improving testability and reducing merge conflicts.
+
+### 2. 100% LLM Intent Classification (`agentIntentRelevanceService.js`)
+
+All keyword constant arrays have been removed:
+- `AGENT_HINTS`, `PRODUCT_CREATION_HINTS`, `HR_ATTENDANCE_HINTS`, `ORDER_CREATE_HINTS`, `INVENTORY_HINTS`, `SALES_HINTS`, `CUSTOMER_HINTS`, `COMPANY_HINTS`, `SKILL_HINTS`, `AGENT_ACTION_HINTS`, `CONFIRMATION_HINTS`, `AGENT_PROPOSAL_HINTS`, `AGENT_FOLLOWUP_HINTS`, `PENDING_RESULT_HINTS`, `LIVE_DATA_HINTS`, `DEVELOPER_UPLOAD_HINTS`, `IMPLEMENTATION_HINTS`
+
+Intent flow for non-goal turns:
+1. `CEOAgent.processTask` â†’ `intentExecutionRouter.resolveExecution`
+2. If durable goal â†’ deterministic `resolveToolPlan` (structural routing only)
+3. Else â†’ `agentIntentPlannerService.buildIntentContractAsync` â†’ `classifyIntentFromLLM` (structured LLM classifier)
+
+Customer chat channels (`FACEBOOK`, `MESSENGER`, `WHATSAPP`) are hardcoded to `llm_structured_only` mode via `isCustomerChatChannel` in the planner, ensuring no keyword/regex routing can affect customer-facing intent decisions.
+
+### 3. Remaining Structural Keyword Usage
+
+The following structural keyword checks are intentionally preserved (not domain routing):
+- `isStrongExecutionConfirmation`, `isCancel`, `isExecutionConfirmation` â€” durable goal state machine
+- `messageHasSlot` â€” slot validation
+- `_containsAgentSpawnClaim` / `_containsProductCreateClaim` â€” anti-hallucination grounding
+- `extractColors` / `extractSizes` / `extractStockPerVariant` â€” product data extraction
+
+## 2026-05-28 Facebook Messenger AI Auto-Reply Context Amnesia and Diversity Resolution
+
+To resolve the Facebook Messenger AI response context-truncation, amnesia, and repetitive/robotic reply issues, we updated the message processing and generation pipeline:
+
+1. **Context Amnesia and Truncation Fixes**:
+   - `CEOAgent.js` now accepts a `conversationHistory` parameter in its compact customer reply builder (`_buildCompactCustomerReplyMessages`).
+   - The sliding window conversation history is formatted and injected conditionally into the user message segment of the model prompt, restoring historical context during handoffs, repairs, and post-tool confirmations.
+   - Call sites inside `CEOAgent.js` pass `customerReplySourceMessage` (resolving to the raw customer query `intentMessage` for Messenger channels) instead of the full prompt to `_buildCompactCustomerReplyMessages`, preventing truncation of the active customer query under the 1200-character slice limit.
+
+2. **Dormant Diversity Service Integration**:
+   - Integrated the previously dead-code `responseDiversityService.js` directly into `aiMessageProcessor.js`'s reply extraction path.
+   - For all incoming messages, the AI's final synthesized response is evaluated against the recent conversation turns (using Jaccard similarity and prefix phrase rules) and rephrased if high similarity (>70%) is detected to guarantee dynamic phrasing and rotate greetings programmatically.
+
+## 2026-05-26 Agent Model Source and Failover Boundary
+
+Agent runtime configs now carry `modelSource` alongside `model`:
+
+1. **Explicit Model Overrides**
+   - `modelSource: "explicit"` means a merchant/operator or caller intentionally selected the model.
+   - Routing failures on that selected model remain visible failures so production does not silently switch away from an explicit choice.
+
+2. **Template Policy Defaults**
+   - `modelSource: "policy-default"` means the model came from an agent template's `modelPolicy.default`.
+   - Facebook sales/support agents can continue to configured fallback models and provider failover when the default model has no available key.
+   - Provider failover performs a bounded retry after a provider-level failure, letting the router cool down a quota-limited key and select another healthy provider/key.
+
+3. **Runtime Defaults**
+   - `modelSource: "runtime-default"` covers compatibility defaults when no template or explicit model is present.
+   - These defaults are also allowed to use the normal fallback path when the policy permits it.
+
+This keeps customer-channel replies dynamic and LLM-generated while making model routing safer and easier to operate.
+
+## 2026-05-26 Customer-Channel Tool Boundary and Product Grounding Architecture
+
+Messenger and WhatsApp customer replies now have a stricter boundary between internal agent/tool execution and customer-visible text:
+
+1. **Native Tool Schemas Stay Internal**
+   - `agentToolRegistry.getToolDescriptions()` can render tool descriptions without parameter schema text for customer prompts.
+   - Native tool definitions still carry the structured schema to capable models, keeping tool calling model-native instead of keyword/template driven.
+
+2. **Output Guardrails Before Sending**
+   - `agentReplyNormalizer` and `agentToolCallParser` now reject raw parameter sections, `query:`/`limit:` style fields, tool traces, schema mentions, and function-call artifacts.
+   - Customer-channel runs can perform one final LLM repair from structured evidence when a model draft is empty, leaked, or grounding-invalid.
+
+3. **Catalog Grounding Utilities**
+   - `productSearchQueryService` expands common Arabic transliteration into searchable catalog candidates and ranks results by normalized product/sku/tag matches.
+   - `product.search` returns structured product facts with money objects, stock status, image URLs, available sizes, and available colors.
+   - `inventory.check` uses the same candidate/ranking path while preserving compatibility with older test mocks.
+
+4. **Diff-Scoped Compliance Scan**
+   - `check-arabic-strings.js --staged` now reads Git diff hunks and scans only added lines when diff data is available.
+   - This keeps the guard focused on new customer/UI hardcoding regressions while legacy prompt/parser files are refactored incrementally.
+
+## 2026-05-26 Automated Compliance Enforcement and Quality Safeguard Pipeline Architecture
+
+To prevent regressions (like hardcoded replies, bloated modular registries, broken tests, and legacy false positives), a local-to-remote automated compliance and quality safeguard pipeline has been integrated into the repository.
+
+### Architecture Updates:
+1. **Local Pre-Commit Hook (Husky + lint-staged)**
+   - Configured Git hooks to automatically run quality and syntax checks locally before code can be committed.
+   - Using a root-level `package.json` to orchestrate dev dependencies on the entire repository workspace.
+   - `lint-staged` automatically tracks modified files and triggers checks ONLY on the staged changes, keeping git operations fast and efficient.
+
+2. **Refactored Arabic Strings Scanner (`scripts/check-arabic-strings.js`)**
+   - **Staged Execution Mode**: Added `--staged` parameter to scan only the modified files list passed by Git/lint-staged.
+   - **Extended Extension Support**: Extended extension scanning to `.tsx` and `.jsx` to cover frontend UI components and templates.
+   - **Inline Comment Stripping**: Automatically strips inline comments (`//`) from code lines before matching Arabic characters, eliminating developer annotations from triggering false positives.
+   - **Safe Prompt Builder Arrays**: Added rules to ignore RAG context headers, intent guards, and array pushes (`parts.push`) utilized in prompt engineering.
+
+3. **Continuous Integration Size Guards (`scripts/check-file-sizes.js`)**
+   - Restricts AI Agent services (under `backend/services/aiAgent/`) from exceeding a clean 150KB limit.
+   - Emits alerts when files approach 50KB+ to guide developers toward modular domain decoupling.
+   - Halts (exits with code 1) the CI/CD pipeline if any monolithic regressions are introduced.
+
+4. **CI/CD Build Hardening (`.github/workflows/deploy.yml`)**
+   - Integrates Git diff staged scanning to verify that all newly modified files satisfy `AGENTS.md` before building.
+   - Enforces the file size guard on every deploy.
+   - Automatically runs the **full AI Agent test suite** (using jest with testPathPattern matching `tests/services/agent` and `tests/services/aiChat`) instead of running just one test, ensuring complete functional integrity before shipping to production.
+   - The workflow keeps compliance checks before dependency install/build and avoids duplicated post-deploy blocks so Actions can validate the YAML and reach the deployment job.
+
+5. **FAQ Management i18n Boundary (`FAQManagement.tsx` + locale JSON)**
+   - FAQ management UI labels, success/error notices, confirmations, categories, and placeholders are resolved through i18n keys.
+   - The AI operator sidebar group also resolves through `sidebar` i18n keys for Agent Manager, AI Chat, RAG Lab, Scheduler, agent map, and skill pages.
+   - This keeps the stricter staged Arabic scanner compatible with merchant-facing TSX while preserving Arabic and English UI coverage.
+   - AI Agent gateway tests that exercise write-tool planning use mocked shared database clients, keeping CI deterministic without requiring runner-side production database credentials.
+
+6. **Agentic RAG Lab Messenger Scenario Runner (`AgenticRAGLab.tsx` + locale JSON)**
+   - The RAG Lab now includes a Messenger-focused scenario runner that reuses the existing `/api/v1/ai/chat/rag-knowledge-evaluate` endpoint with selected custom scenarios.
+   - Operators can run or rerun shipping, returns, missing-knowledge, and guardrail scenarios from the same knowledge-maintenance surface instead of manually pasting prompts.
+   - Scenario labels, notices, and seed text live in the `agenticRagLab` locale namespace, while customer-facing evaluation answers continue to be generated by the LLM from structured RAG/tool context.
+   - FAQ and Policy management remain in the Settings section and are also linked from the AI Operator section and RAG Lab quick actions so knowledge editing is reachable from both administrative and AI-maintenance workflows.
+
+## 2026-05-26 Decoupled and Domain-Scoped Modular Agent Tooling Architecture
+
+To improve AI Agent maintainability, eliminate merge conflicts, and support independent testing, the bloated monolith `agentToolRegistry.js` has been completely decoupled into domain-scoped tool modules and a centralized aggregator.
+
+### Architecture Updates:
+1. **Domain-Scoped Tool Modules (`backend/services/aiAgent/tools/*`)**
+   - Created specialized tool files encapsulating single domain concerns:
+     - `managerTools.js`: Workspace, agent listing, state reading, profile updating.
+     - `hrTools.js`: HR attendance checks and employee registration.
+     - `orderTools.js`: Order lookup, cancellation, refunding, shipping rates, and confirmation.
+     - `productTools.js`: Product creation, lookup, search, and stock status.
+     - `customerTools.js`: Customer lookups and top customer statistics.
+     - `inventoryTools.js`: Inventory catalog status and low stock listings.
+     - `salesTools.js`: Top selling products and sales revenue history.
+
+2. **Centralized Utility Helpers (`backend/services/aiAgent/utils/toolHelpers.js`)**
+   - Consolidated shared logic to avoid duplication across tool files:
+     - `getSharedPrismaClient()`: Optimized tenant context DB accessor.
+     - `formatCurrency()`: Multi-currency formatter returning clean dynamic objects.
+     - `normalizeComparableText()`: Advanced Arabic string normalization.
+     - `normalizeOptionalString()` and `normalizeStringList()`: Pure string sanitization utilities.
+
+3. **Centralized Tool Aggregator (`agentToolRegistry.js`)**
+   - Aggregates the specialized domain files using dynamic object spreading (`...`) to maintain 100% backward-compatibility and zero API breaking changes for the `CEOAgent` execution pipeline.
+
+4. **Merchant Knowledge API Surface (`server.js` + `routes/faq.js`)**
+   - Mounts FAQ management at `/api/v1/faqs`, aligning the `/admin/faqs` UI with the active RAG knowledge-maintenance path.
+   - Keeps FAQs editable from the merchant interface so policy/FAQ knowledge can be maintained without code changes.
+   - `FAQManagement.tsx` normalizes array and grouped FAQ payloads before rendering, allowing the same API shape to support public grouped FAQ reads and merchant table management.
+
+## 2026-05-26 Enhanced RAG Contextual Retrieval, Semantic Cache, and Tool Injection Guardrails Architecture
+
+To support highly precise, high-performance, and secure generative AI agent interactions, the RAG and Tooling systems have been upgraded with Contextual Retrieval, an invalidation-aware Semantic Cache, and an adversarial Tool Gateway protection layer.
+
+### Architecture Updates:
+1. **Contextual Retrieval Engine (`CorrectiveRAGEngine.js` & `RagKnowledgeMaintenanceService.js`)**
+   - **Structured Headers**: Chunks are constructed with descriptive parent headers (e.g. category, document name, parent section) and contextual summaries.
+   - **Contextual Rank Boost**: The hybrid retrieval ranking algorithm calculates metadata overlap and boosts the score of chunks matching search intent keywords, improving vector search accuracy.
+   - **Contextual Embeddings**: Knowledge backfilling automatically embeds the contextualized header along with the chunk content.
+
+2. **Semantic Cache Service (`semanticCacheService.js` & `aiMessageProcessor.js`)**
+   - **Vector Similarity Cache**: Computes local embeddings for incoming support queries and reuses cached RAG context when similarity is >= 0.90.
+   - **Freshness-Aware Invalidation**: Computes a dynamic freshness fingerprint by querying the database for the maximum `updatedAt` value across active `FAQ` and `Policy` records. Cache entries are treated as stale if the dataset is updated or the short process-local TTL expires.
+   - **Dynamic Reply Boundary**: Cached knowledge is never returned directly to the customer. The live LLM still generates the customer-facing reply, and policy validation still runs after generation.
+
+3. **Tool Risk Gateway (`agentToolGatewayService.js`)**
+   - **Adversarial Prompt Scanners**: Analyzes tool execution payloads for system instruction leaks, role bypass attempts, and adversarial overrides (e.g., prompt injections like "Ignore previous instructions").
+   - **Strict Role-to-Tool Scope Verification**: Restricts access based on the AI agent's declared role and allowed skills (e.g., preventing a Customer Support agent from triggering merchant write tools).
+   - **Parameter Shape and Type Validation**: Validates all JSON/string parameters to ensure safe data execution types.
+   - **Domain Tool Modules**: `agentToolRegistry.js` now composes focused modules from `services/aiAgent/tools/` plus shared helpers in `services/aiAgent/utils/toolHelpers.js`, keeping tool behavior easier to test and maintain.
+   - **Machine-Readable Tool Results**: Newly touched tool handlers return English keys, English enum codes, and raw money objects (`{ amount, currency }`) so final customer wording is generated by the LLM, not hardcoded in tool handlers.
+
+4. **Golden Scenarios & Evaluation Suite (`eval_scenarios.json` & `run-evaluation.js`)**
+   - **High-Fidelity Arabic Dataset**: Standardized a set of 15+ golden test cases covering return policies, shipping zones, out-of-stock items, and injection/adversarial attempts.
+   - **Evaluator Runner**: Loads golden scenarios only when explicitly requested, computes lexical expected-term checks and local cosine semantic similarity against golden responses, and keeps tenant auto-evaluation as the production default.
+
+## 2026-03-09 Internationalization (i18n) & Dynamic LLM Reply Architecture
+
+The AI agent runtime and merchant notification systems have been refactored to support internationalization (i18n) for backend system text and fully dynamic LLM synthesis for all user-facing agent replies.
+
+### Architecture Updates:
+1. **i18n System Translation Utility (`backend/services/aiAgent/i18n.js`)**
+   - Implemented a backend Translation service powered by JSON translation files.
+   - Provides key-based localization via `t('key')` for status labels, priority levels, date defaults, and WhatsApp error notifications.
+
+2. **Clean Tool Key Standards (`agentToolRegistry.js`)**
+   - Cleaned all machine-readable output keys (e.g. `Ø±Ù‚Ù…` -> `orderNumber`, `Ø§Ù„Ø¹Ù…ÙŠÙ„` -> `customerName`) to prevent hardcoded Arabic structures from bubbling up.
+   - Tool statuses are now returned as standardized English enums (e.g. `AVAILABLE`, `OUT_OF_STOCK`, `LOW_STOCK`), decoupling business logic from target localization.
+
+3. **Dynamic LLM Reply Engine (`CEOAgent.js`)**
+   - Removed all static Arabic templates.
+   - Forced every tool-calling branch to synthesize natural Arabic replies dynamically via the model through `generateWithLLMResult()`, utilizing live tool JSON data.
+
+4. **Frontend Error Translation (`errorHandler.ts`)**
+   - Integrated frontend i18next translation keys inside the application error handler, resolving dynamic system states like network failures, validation errors, and timeouts.
+
+5. **Arabic Hardcoding Prevention Layer (`scripts/check-arabic-strings.js` & `AGENTS.md`)**
+   - A pre-commit validator script runs before deployments to enforce translation usage and prevent the reintroduction of hardcoded Arabic values into codebases.
+   - `agentReplyNormalizer.js` now blocks internal tool leaks by returning an empty reply signal instead of inventing static customer-facing fallback text.
+
+## 2026-05-25 Dynamic AI Response Generation Pipeline (elimination of deterministic static overrides)
+
+To support fully natural, conversational AI agent responses, the static Arabic deterministic overrides have been disabled by default. The system now utilizes the model to dynamically synthesize Arabic responses for all successful read/action tool executions based on clean structured facts.
+
+### Key Architecture Components Updated:
+
+1. **RAG Corrective Retrieval (`CorrectiveRAGEngine.js`)**
+   - Returns structured `blocked` or `exhausted` flags (`answer: null`) rather than hardcoded apologetic text strings.
+
+2. **AI Inbound Message Processor (`aiMessageProcessor.js`)**
+   - Intercepts blocked RAG queries and routes them through a dedicated LLM call with a polite, custom Arabic refusal prompt, ensuring 100% dynamic AI generation even for security/guardrail refusals.
+
+3. **CEO Agent Orchestrator (`CEOAgent.js`)**
+   - Deprecated direct deterministic response shortcuts. Successful read tools (`inventory.check`, `order.lookup`, `shipping.rates`) are executed through the Tool Gateway as normal (planner-first read), but their raw results are passed into `generateWithLLMResult` inside `toolContext` to let the LLM generate the final dynamic Arabic customer reply.
+   - Handoff tool execution (`deterministicActionExecution`) delegates final reply generation to the model, rather than using a static template.
+   - Supports legacy benchmarks via `task.forceDeterministicReplies === true` toggle.
+
+4. **Tool Registry Payload Cleansing (`agentToolRegistry.js`)**
+   - Cleansed `shipping.rates`, `order.lookup`, and `inventory.check` to return clean keys and error codes (e.g., `SHIPPING_RATE_NOT_FOUND`, `ORDER_NOT_FOUND`, `PRODUCT_NOT_FOUND`) rather than Arabic templates, giving the LLM complete freedom to phrase the user-facing text dynamically.
+
+## 2026-05-25 Facebook Messenger AI Auto-Reply â€” Saved Sub-Agent with Soul & Skills
+
+Facebook Messenger AI auto-replies now use the company's saved sub-agent (with custom soul and skills loaded from the database) instead of a generic fallback agent.
+
+### What Changed
+
+**`backend/services/aiAgent/aiMessageProcessor.js`** â€” `_getOrCreateAgent()` (async)
+- For `FACEBOOK` channel: calls `agentManagerService.ensureFacebookMessengerAgent(companyId)` on first use to load the saved agent from DB (with `id`, `name`, `role`, `persona.soulInstructions`).
+- Builds a `CEOAgent` instance using the saved agent's identity so its soul and skill instructions are applied.
+- Added `if (!this._agents.has(key))` cache guard â€” the DB lookup only runs once per company+channel per server session, not on every message.
+- Falls back to a generic fallback agent if the saved agent cannot be loaded.
+
+**`backend/services/aiAgent/agentManagerService.js`** â€” DB access robustness
+- `hydrateCompanyAgentsFromDB()`: if `prisma.companyAgent.findMany()` returns non-array (outdated Prisma generated client), falls back to `$queryRawUnsafe` to load agents directly via SQL.
+- `ensureFacebookMessengerAgent()` direct query: same pattern â€” inner try/catch on Prisma model, raw SQL fallback if result is undefined.
+- `persistCompanyAgent()`: wraps `prisma.companyAgent.upsert()` in try/catch; falls back to `INSERT ... ON CONFLICT DO UPDATE` raw SQL when the Prisma model is unavailable. Verify step also has a raw SQL fallback.
+
+### Why Raw SQL Fallbacks Are Needed
+The `company_agents` table was created via `ensureAgentTables()` raw DDL, not via Prisma migrations. If the Prisma generated client at `backend/prisma/generated/postgresql_v2` was built before `CompanyAgent` was added to `ai_analytics.prisma`, the model is absent from the client. The deferred proxy in `sharedDatabase.js` silently returns `undefined` for unknown model methods instead of throwing, making the failure invisible without explicit `Array.isArray()` checks.
+
+## 2026-05-25 CEOAgent Tool-Call Leak Recovery (DeepSeek & Non-Agent-Ready Models)
+
+**`backend/services/aiAgent/CEOAgent.js`**
+- When `containsInternalToolSyntax(llmResponse)` is true (model leaked tool-call syntax into its text), the system now checks whether `finalReply` (the reply after stripping) is non-empty.
+- If a usable cleaned reply exists, it is returned to the user with a server-side warning log. The action that triggered the tool call has already completed successfully.
+- `AI_AGENT_TOOL_CALL_LEAK` is only returned when stripping produces an empty reply â€” i.e., when the model's entire response was tool-call syntax with no real answer.
+- This fixes `deepseek-chat` and similar models that emit function-call XML/JSON alongside their actual reply.
+
+## 2026-05-25 WhatsApp Session Health Check & Reconnection System
+- **Health check loop**: `WhatsAppManager.js` runs a 25s interval checking every active session's socket health via `pingServer()`. Stale sockets (Baileys closed the connection without notifying MaxP) are detected and reconnected automatically.
+- **Reconnecting status**: Sessions with valid auth state but no in-memory socket now report as `reconnecting` instead of `disconnected`, preventing false "needs reconnection" errors.
+- **Stuck connection timeout**: Sessions stuck in `connecting` for >120s are force-reconnected with capped exponential backoff (max 30s) and jitter to avoid thundering herd on server restart.
+- **Auth state validation**: `DatabaseAuthState.js` validates loaded auth data before creating a Baileys socket. Corrupted auth falls back to fresh state so a restart cannot hang on unreadable credentials.
+- **Socket status emission**: When a user joins a company room via Socket.IO, all WhatsApp session statuses are emitted automatically. `WhatsAppSettings.tsx` polls every 30s and listens for `whatsapp:sessions:status` events.
+- **Documentation**: See `backend/docs/whatsapp/whatsapp-session-health-reconnect-2026-05-25.md`.
+
+## 2026-05-25 AI Intent Routing â€” Keyword Elimination (60% Refactor)
+
+The AI intent pipeline was refactored to remove ~700 lines of keyword-based routing in favor of a shared LLM pre-classification architecture.
+
+### What Changed
+
+**`backend/services/aiAgent/agentIntentRelevanceService.js`** â€” Rewritten (927 â†’ 255 lines)
+- Removed all 16+ keyword constant arrays: `AGENT_HINTS`, `PRODUCT_CREATION_HINTS`, `HR_ATTENDANCE_HINTS`, `ORDER_CREATE_HINTS`, `INVENTORY_HINTS`, `SALES_HINTS`, `CUSTOMER_HINTS`, `COMPANY_HINTS`, `SKILL_HINTS`, `AGENT_ACTION_HINTS`, `CONFIRMATION_HINTS`, `AGENT_PROPOSAL_HINTS`, `AGENT_FOLLOWUP_HINTS`, `PENDING_RESULT_HINTS`, `LIVE_DATA_HINTS`, `DEVELOPER_UPLOAD_HINTS`, `IMPLEMENTATION_HINTS`.
+- Removed 15 keyword detection functions (`isProductCreationRequest`, `isOrderDraftRequest`, `isExplicitAgentCreationRequest`, `isAuditTrailRequest`, `hasAgentProposalContext`, `hasAgentFollowupContext`, `hasHrFollowupContext`, `hasProductGoalContinuation`, `hasAgentGoalContinuation`, and others).
+- `resolvePolicyPlan()` now has exactly 5 structural candidates (was ~20): ambiguous-create safety gate, active product goal continuation, active agent goal continuation, simple greeting, LLM fallback.
+- Domain routing for products, orders, agents, HR, inventory, sales, etc. is now 100% delegated to `agentIntentClassifierService.classifyIntentFromLLM` via `buildIntentContractAsync`.
+
+**`backend/services/aiAgent/aiChatService.js`** â€” Shared pre-classification
+- Before `processTurn`, checks for active goal (cheap Redis call). If no active goal, calls `classifyIntentFromLLM` **once** and passes `preClassified` to both `processTurn` and `_buildIntentContext`.
+- `_buildIntentContext` now accepts `{ preClassified }` and merges it into context so `buildIntentContractAsync` reuses the result without a second LLM call.
+
+**`backend/services/aiAgent/agentGoalRunService.js`** â€” LLM-primary goal detection
+- `processTurn` accepts optional `preClassified` parameter.
+- Goal start: LLM intent (`agents.manage`, `products.manage`) is primary; existing keywords are fallback.
+- `inferAgentRole` checks `llmSlots.agent` / `llmSlots.skill` text first before message keywords.
+
+**`backend/services/aiAgent/agentIntentPlannerService.js`** â€” Deduplicate LLM call
+- `buildIntentContractAsync` uses `context.preClassified` directly when available, skipping a second `classifyIntentFromLLM` call on the same turn.
+
+### LLM Calls Per Turn (Before â†’ After)
+| Turn Type | Before | After |
+|---|---|---|
+| New request (no active goal) | 1 (routing) + 1 (CEOAgent) = 2 | 1 (pre-classify shared) + 1 (CEOAgent) = 2 |
+| Active goal collecting | 0 (routing skipped) + 1 (CEOAgent) = 1 | 0 (routing skipped) + 1 (CEOAgent) = 1 |
+| Active goal executing | 0 + 1 = 1 | 0 + 1 = 1 |
+
+### What Stays Keyword-Based (Structural 40%)
+`isStrongExecutionConfirmation`, `isCancel`, `isExecutionConfirmation` (durable goal state machine), `messageHasSlot` (slot validation), `_containsAgentSpawnClaim` / `_containsProductCreateClaim` (anti-hallucination grounding), `extractColors` / `extractSizes` / `extractStockPerVariant` (Phase 2: extend LLM schema).
+
+## 2026-05-25 Super Admin Multi-Task Timer Routing
+- **Backend timer ownership**: `startDevTaskTimer` now scopes the running-timer guard to the same `memberId + taskId`, allowing a super admin/dev member to run timers on multiple different dev tasks while still blocking duplicate timers for the same task.
+- **Active timer API contract**: `/api/v1/super-admin/dev/timer/active` keeps the legacy `data` field for the primary timer and adds `timers[]` for all running timers owned by the current member.
+- **Frontend timer state**: `TimerContext` now stores `activeTimers[]`, per-task elapsed seconds, and task-specific lookup helpers while preserving the existing `activeTimer` primary timer contract for older UI surfaces.
+- **Super Admin UI binding**: `DevTaskDetails` resolves controls from the timer attached to the displayed task; `ActiveTimers` passes timer IDs to pause/resume/stop so the exact running record is controlled.
+- **Post-auth routing**: System roles now land directly on `/super-admin/dev-dashboard`, avoiding the empty `/super-admin` intermediate route after login.
+- **Documentation**: See `backend/docs/infrastructure/super-admin-multi-task-timer-2026-05-25.md`.
+
+## 2026-05-25 WhatsApp Inbox Order Creation Tool (Refactored)
+- **Generic QuickOrderModal Props**: `QuickOrderModal.tsx` was refactored to accept individual fields (`conversationId`, `customerId`, `platform`, `pageName`) in addition to the `InboxConversation` object. This allows any platform to use it directly without an adapter.
+- **WhatsApp Direct Integration**: `WhatsAppChat.tsx` now passes WhatsApp data directly to `QuickOrderModal` (no adapter). Button uses `business-icon-button` with `data-tone="warning"` â€” identical to Facebook.
+- **Customer Orders Sidebar**: Sidebar orders section redesigned to match Facebook's `CustomerProfile` design exactly: `business-page-panel`, CSS variables, `color-mix()` status badges, Arabic labels.
+- **Adapter Removed**: `WhatsAppOrderModal.tsx` deleted â€” no longer needed.
+- **Documentation**: See `backend/docs/whatsapp/whatsapp-inbox-order-creation-2026-05-25.md` for full details.
+
+## 2026-05-25 WhatsApp Templates UI Navigation Enhancements
+- **Category Filter Tabs**: Refactored the template category filter in `WhatsAppTemplates.tsx` from a `Select` dropdown to a `Tabs` navigation bar, improving one-click accessibility for category switching.
+- **Sidebar Integration**: Updated `sidebar.ts` to replace "Customer Templates" with "System Templates" (`category=SYSTEM`) inside the WhatsApp Templates submenu accordion.
+
+## 2026-05-25 WhatsApp Templates UI Stability and Error Handling
+- **React Stability**: Fixed `WhatsAppTemplates.tsx` to strictly conform to `WhatsAppPageShellProps`. Invalid props (`loading`, `notice`) were removed and the required `icon` prop was added to prevent runtime evaluation crashes.
+- **Notifications Standard**: Migrated custom notice state inside `WhatsAppTemplates.tsx` to use the globally standard `notistack` `useSnackbar` hook, aligning it with `WhatsAppSettings.tsx` and preventing UI drift.
+
+## 2026-05-25 WhatsApp Templates UI Refactoring & Navigation
+- **Frontend Refactoring**: The WhatsApp templates management UI has been fully extracted from both `WhatsAppSettings.tsx` and `WhatsAppNotifications.tsx` into a new centralized and dedicated view: `WhatsAppTemplates.tsx`.
+- **Navigation Topology**: The main sidebar (`sidebar.ts`) was restructured. The old `orders/whatsapp-notifications` endpoint and its dedicated file (`OrderWhatsAppNotifications.tsx`) were removed. In their place, a new parent menu "Templates" was added under the WhatsApp section, dynamically opening the unified templates page with URL query filtering (e.g. `?category=ORDERS`, `?category=HR`).
+- **Routing Integrity**: App.tsx routes align with the new `/whatsapp/templates` destination, standardizing the application's approach to template management across the platform without redundant pages.
+## 2026-05-24 AI Agent Card Rendering Safety (CompanyAIAgents)
+To ensure the UI doesn't crash when displaying newly spawned or memory-only agents (e.g. CEO Agent before DB persistence), the CompanyAIAgents UI and the backend `/agents` endpoint are normalized:
+- **Frontend**: The stats row in `CompanyAIAgents.tsx` uses fallback evaluation `(agent.rules || []).length` and `(agent.skills || []).length` instead of calling `.length` on potentially undefined properties.
+- **Backend**: The `/agents` endpoint inside `agentManagerRoutes.js` normalizes the returned agent array, ensuring `rules` and `skills` properties are always populated as arrays.
+
+## 2026-03-09 AI Order Tools Integration
+We implemented and registered the governed order tools for merchant AI agents:
+- **order.cancel**: Creates an approval-required cancellation draft after reading the order.
+- **order.refund**: Creates an approval-required refund draft after reading the order and validating the refund amount.
+- **shipping.rates**: Queries `shippingService` to fetch governorate shipping rates. Normalizes query text (e.g., standardizing Arabic governorate spelling).
+- **shipping.update**: Creates an approval-required shipping-update draft after reading the order and validating the requested shipping change.
+- **order.confirm**: Registered `order.confirm` in the tool registry and implemented it as an approval-required confirmation draft.
+- **Conflict guard**: Lifecycle actions on the same order share the `order-lifecycle` conflict scope, while refunds use `order-settlement`.
+
+Key Files:
+- [agentToolRegistry.js](file:///h:/max_p_new/backend/services/aiAgent/agentToolRegistry.js) (implemented the governed tool handlers)
+- [tool-registry](file:///h:/max_p_new/backend/services/aiAgent/tools/) (tool metadata defined in JS handler files)
+
+## 2026-05-24 CEO Agent Sub-Agent Persistence
+CEO-created specialist agents are now backed by database tables:
+- `agent_definitions` stores reusable built-in or template-level agent definitions keyed by type.
+- `company_agents` stores company-scoped active agents with role, parent, model, template slug, soul/rules/skills payloads, and creator metadata.
+- `agentManagerService` ensures the tables, hydrates active agents into the in-memory provisioning registry, and persists new specialist agents created by the CEO Agent.
+- `agentControlRoutes` lists hydrated agents and archives non-CEO agents in `company_agents` when the operator deletes them.
+
+## 2026-05-24 WhatsApp Chat Session Virtualization Frontend Consistency
+The frontend now fully enforces the `"all"` session virtualization structure implemented by the backend. Handlers for deleting, archiving, blocking, pinning, muting, and marking chats as unread correctly fall back to the individual `contact.sessionId` before passing the virtual `selectedSession`, ensuring database and Baileys mutations target the exact connected WhatsApp instance without failing.
+
+## 2026-05-24 WhatsApp Chat UI Request Endpoints Map
+The WhatsApp Chat interface (`WhatsAppChat.tsx` and `useWhatsAppMutations.ts`) now fully maps its user actions to the centralized backend API structure:
+- **Delete Chat**: `POST /api/whatsapp/chats/delete`
+- **Archive Chat**: `POST /api/whatsapp/chats/archive`
+- **Pin Chat**: `POST /api/whatsapp/chats/pin`
+- **Mute Chat**: `POST /api/whatsapp/chats/mute`
+- **Mark Unread**: `POST /api/whatsapp/chats/unread`
+- **Block/Unblock**: The `blockContact` and `unblockContact` endpoints immediately update the local database (`isBlocked`) to ensure the frontend reflects the blocked state immediately across query invalidations without relying solely on the Baileys socket delay.
+
+## 2026-05-24 Sidebar Management System v2 â€” Toggle Switches, Categories, Animations, Per-User Settings
+The Sidebar Management System has been enhanced with a production-quality UI and per-user settings overlay.
+
+### Enhancements
+- **Toggle Switch**: Replaced eye/lock icons with `Switch` component from `@base-ui/react` â€” animated ON/OFF iOS-style toggle with active/unchecked/disabled states.
+- **Category Grouping**: 14 visual categories (Ø±Ø¦ÙŠØ³ÙŠØ©, ØªÙˆØ§ØµÙ„, Ù…Ø¨ÙŠØ¹Ø§Øª, ØªØ­Ù„ÙŠÙ„Ø§Øª, Ø¹Ù…Ù„Ø§Ø¡, ØªØ³ÙˆÙŠÙ‚, Ù…Ø´ØªØ±ÙŠØ§Øª, Ù…Ø®Ø²ÙˆÙ†, Ù…ÙˆØ¸ÙÙŠÙ†, Ø¹Ù…Ù„ÙŠØ§Øª, Ø¥Ø¯Ø§Ø±Ø©, Ù…Ø§Ù„ÙŠØ©, Ø¯Ø¹Ù…, Ù†Ø¸Ø§Ù…) with color-coded badges and inline SVG icons.
+- **Category Bulk Toggle**: One Switch to enable/disable all items in a category.
+- **View Mode**: Toggle between "Categories" (grouped) and "Flat" (traditional section-by-section).
+- **Framer Motion Animations**: `AnimatePresence` + `motion.div` for smooth expand/collapse and role panel transitions.
+- **Per-User Overlay**: localStorage-based `UserSidebarSettings` with two-layer merge (company â†’ user) in `mergeSectionOverrides()`.
+- **Improved Search**: Result count, empty state with clear action.
+- **Performance**: `React.memo` on `CategoryGroup`, `useMemo`/`useCallback` optimizations.
+
+### Key Files
+- `frontend/src/pages/settings/SidebarSettings.tsx` â€” Full rewrite with Switch components, CategoryGroup, Framer Motion
+- `frontend/src/contexts/SidebarSettingsContext.tsx` â€” Added userSettings state + localStorage persistence + toggleUserItem/toggleUserSection/setUserEnabled/resetUserSettings
+- `frontend/src/config/sidebar.ts` â€” New `mergeSectionOverrides()` function for two-layer merge; updated `applySidebarOverrides` signature with `userSettings` parameter
+- `frontend/src/types/layout.ts` â€” Added `UserSidebarSettings` interface
+- `frontend/src/components/layout/Layout.tsx` â€” Passes `userSettings` from context to `getSidebarConfig()`
+- `backend/routes/settingsRoutes.js` â€” Added `GET/PUT /user-sidebar` endpoints for per-user settings
+
+### New Backend Endpoints
+```
+GET /api/v1/settings/user-sidebar  â†’  { success, data: { enabled, sections } }
+PUT /api/v1/settings/user-sidebar  â†’  Body: { settings: { enabled, sections } }
+```
+
+---
+
+### 2026-05-24 Local Hybrid Semantic Router for Intent Classification (Primary Routing)
+The intent classification pipeline now uses the local Semantic Router as the **primary classification layer**, with the keyword router acting as a fallback:
+
+1. **Semantic Router** (`agentSemanticRouterService.js`): Primary classifier matching unstructured queries against 95+ templates using local hybrid n-gram/word overlap similarity scoring. Runs first in `< 1ms` without external API/LLM calls.
+2. **Deterministic Keyword Router** (`agentIntentRelevanceService.js`): Functions as a robust **fallback** layer when no semantic match is found. Reuses priority-scored keyword lists. Protected by architecture guard tests.
+3. **Typed Intent Planner** (`agentIntentPlannerService.js`): Consumes the resolved intent and builds structured contracts with policies, slot validations, and guardrails.
+
+This primary-fallback setup ensures high dialect resilience (Egyptian Egyptian dialect, spelling errors, synonyms) while preserving 100% backward compatibility and test stability.
+
+Key files:
+- `backend/services/aiAgent/agentSemanticRouterService.js` â€” Hybrid n-gram matcher with 13 intent categories and 95+ templates.
+- `backend/services/aiAgent/agentIntentPlannerService.js` â€” Runs semantic router first and resolves the typed contract.
+- `backend/tests/services/agentSemanticRouterService.test.js` â€” Testing normalization, similarity, and 40 dialect scenarios.
+
+## 2026-05-24 Codebase Purge: Company Assistant Schema Removal
+- Deleted `backend/prisma/schema/company_assistant.prisma` containing old conversational AI models (`CompanyAssistantChannel`, `CompanyAssistantCommandLog`, `CompanyAssistantMemory`, `CompanyAssistantPendingAction`).
+- Generated clean Postgres client v2 without these unused schemas.
+
+## 2026-05-23 New Account Apps Landing
+The standard platform registration flow now has a dedicated first-login landing rule:
+- `frontend/src/pages/auth/Register.tsx` sends successful new account creation directly to `/marketplace`.
+- `frontend/src/utils/companyOnboarding.ts` also treats `OWNER` users with an empty `lastLoginAt` as first-login accounts and sends them to `/marketplace` when they enter through `/auth/login`.
+- Existing login routing still preserves merchant, affiliate, system-user, returning-user onboarding, and dashboard behavior.
+- Registration analytics still emits `auth_register`, but the tracked destination is now `/marketplace`.
+- Focused coverage in `frontend/src/pages/auth/__tests__/Register.test.tsx` and `frontend/src/utils/__tests__/companyOnboarding.test.ts` protects the new-account route against regressions.
+
+## 2026-05-23 Arabic RAG and Intent Gating Enhancements
+The Corrective RAG and Intent Gating layers are upgraded to achieve production-grade Arabic linguistic resilience:
+- **Resilient Scoring (`CorrectiveRAGEngine.js`)**: Upgraded from simple whitespace token matching to a hybrid overlap algorithm. It normalizes Arabic letters (ignoring diacritics, normalization of alef/yah/teh marbuta), filters common Arabic/English stop-words, and calculates character bigram and trigram overlap to capture Arabic roots, prefixes, and suffixes.
+- **Dialect Intent Gate (`agentIntentRelevanceService.js`)**: Expanded the deterministic classification gates with key colloquial Egyptian and merchant Arabic synonyms, preventing accidental tool blocking under common turn variations.
+- **Planner-First Reads (`CEOAgent.js`)**: Obvious read-only intents execute through the Tool Gateway before model phrasing, so provider timeouts after a successful read do not prevent the user from receiving grounded system data.
+
+## 2026-05-23 WhatsApp Controller Session Virtualization Topology
+The WhatsApp Controller endpoints are refactored to support seamless session virtualization, particularly when the active frontend view is set to "All Sessions" (`sessionId = "all"`).
+- **Centralized Resolution**: Every interactive endpoint first executes `resolveActiveSessionId(companyId, sessionId)` to resolve the virtual `"all"` session string or `undefined` value into the company's real, active connected WhatsApp session ID.
+- **Propagation to Sub-systems**: The resolved `targetSessionId` is propagated down to all internal Prisma DB lookups, Baileys socket managers (`getWhatsAppSocket`), and outgoing WhatsApp template/broadcast jobs.
+- **Stateful Writes**: DB writes, such as updating statuses in the `whatsAppStatus` table or broadcasting target messages, consistently log under the resolved `targetSessionId` to maintain database integrity.
+
+## 2026-05-22 Merchant Agent Workbench Layer
+The merchant-facing AI pages now use `/admin/ai-agents` as the canonical workbench for CEO Agent and specialist agents.
+
+- `/admin/ai-agents` lists company agents in a side panel and opens the selected agent's controlled `SOUL.md`, `AGENTS.md`, `TOOLS.md`, skill assignments, tool assignments, model preference, and task test runner.
+- `/admin/ai-agent-map` renders the manager/team hierarchy as a tree map using persisted `parentId` relationships from provisioned agents.
+- `/admin/ai-skills` lists shared agent skills and opens each skill in a details dialog showing `SKILL.md` content and allowed tools.
+- `/admin/agent-config` redirects to `/admin/ai-agents?agent=ceo`; `/admin/ai-audit-trail`, `/admin/ai-settings`, and `/admin/ai-approvals` are no longer merchant UI routes.
+- `agentControlRoutes.js` exposes merchant-safe APIs for agent files, profiles, tools, skills, available models, team map, and direct task tests.
+- Workbench-created agents pass the currently selected agent as `parentId`, so nested teams render correctly in the tree map.
+- Available model listing reads enabled `AiModelConfig` rows through the production `aiKey` relation and returns provider/key metadata for per-agent model preference.
+- Merchant CEO chat now hydrates its runtime CEOAgent from the stored manager agent profile before each conversation turn, refreshing the cache when profile fields change and building prompts from the saved `SOUL.md`, `AGENTS.md`, `TOOLS.md`, style, skills, and policies.
+- CEO Agent tool use now runs through native function/tool schemas when the selected provider supports them; text `CALL_TOOL` parsing remains as a compatibility fallback only.
+- Merchant CEO chat supports multiple sessions per user. New sessions start with an assistant greeting that names the current account context and asks how the user wants to be addressed.
+- Super-admin AI provider responses expose computed agent suitability for each active model (`tools`, `toolChoice`, `structuredOutputs`, and `agentReady`) so agent routing and UI can avoid chat-only models.
+- `BaseAgent` records the actual selected provider/model from runtime routing. Routing can prefer an agent model and fall back to provider priority when unavailable.
+
+## 2026-05-21 Agent File System Layer (Manager + Tools + Skills)
+The agentic runtime now has a template-backed operating layer inspired by Paperclip-style manager agents.
+
+- `backend/agents/` stores versioned agent templates for `manager-ceo`, `sales-agent`, `inventory-pricing-agent`, `marketing-agent`, and `support-agent`.
+- Every template contains `agent.json`, `AGENTS.md`, `SOUL.md`, and `TOOLS.md`.
+- `backend/services/aiAgent/tools/*.js` defines company-scoped tools with JSON Schema, side-effect metadata, approval requirements, and handler functions. This is the single source of truth for all tool metadata.
+- `backend/agents/_shared/skills/*` stores compact skill packages, each with `skill.json` and `SKILL.md`.
+- `agentFileSystemService`, `toolRegistryService`, `skillRegistryService`, and `agentProfileLoaderService` load and validate templates, tools, and skills.
+- `BaseAgent`, `CEOAgent`, `agentProvisioningService`, and `agentControlRoutes` now expose template slug, version, allowed tools, and allowed skills.
+
+Remaining structural work after this layer: dedicated Prisma persistence for agent profiles/tasks/runs, UI management for agent files/skills/tools, and real commerce handlers for every registry entry.
+
+## 2026-05-21 Agent Manager Runtime Layer
+The manager-agent backend now has a working control-plane layer beyond static files.
+
+- `toolOrchestratorService.js` is the single gate for agent tool calls. It validates JSON Schema, checks the agent's allowed tool scope, converts approval-required write tools into `AiToolApprovalRequest` drafts, and records audit decisions.
+- `draftProposalService.js` now reads write/read classification from the shared tool registry instead of only its old hardcoded list.
+- `agentInboxService.js` implements task creation, listing, checkout locking, completion/failure, heartbeat recording, and event logging through `AiProviderLog` scope `agent_task`.
+- `agentManagerService.js` provides manager context, hire-agent, delegate-goal, deterministic manager chat summaries, and registered manager tool handlers for `agent.spawn`, `agent.assign_task`, `agent.list_agents`, `agent.read_state`, and `agent.handoff`.
+- `agentManagerRoutes.js` exposes `/api/v1/agent-manager/*` endpoints for manager chat, inbox, hire/delegate, profiles, tools, skills, and tool execution.
+
+Remaining structural work: dedicated Prisma models for agent profiles/artifacts/tasks/runs, UI screens for this manager layer, and real handler implementations for every commerce/marketing/support handler listed in the registry.
+
+## 2026-05-21 Facebook Pages Company Binding & Conflict Resolution Topology
+Facebook pages are integrated into MaxP using User Access Tokens generated during Facebook OAuth onboarding. Structurally, the database isolates webhook traffic and message routing using a strict `companyId` constraint on the `FacebookPage` table.
+- **The Stale Binding Conflict**: If a Facebook page is already connected to one company (e.g. `htm` / `cmlcbycma0000ju8l8tcbrbby`), the system enforces strict isolation to prevent cross-company webhook leaks. Any subsequent attempt by another user to link the same page ID to a different company triggers the onboarding guardrails, skipping the page and recording `already_connected_to_another_company` in the `SkippedFacebookPage` table.
+- **The Resolution Mechanism**: To migrate or re-bind a page safely, stale database records must be purged from both `FacebookPage` and `SkippedFacebookPage` tables. This enables the active company to cleanly link the page through standard Facebook OAuth, fetching fresh, scoped Page Access Tokens without database conflicts.
+
+## 2026-05-21 AI Agent System â€” Production Integration Layer
+
+### Ø§Ù„Ù…Ø´ÙƒÙ„Ø© Ù‚Ø¨Ù„ Ø§Ù„ØªØºÙŠÙŠØ±
+ÙƒØ§Ù†Øª ÙƒÙ„ Ø®Ø¯Ù…Ø§Øª Ø§Ù„Ù€ AI (workingMemoryØŒ episodicMemoryØŒ CorrectiveRAGØŒ CEOAgentØŒ telemetryØŒ dreamerWorker) Ù…ÙˆØ¬ÙˆØ¯Ø© ÙƒÙ€ isolated services Ø¨Ø³ Ù…ÙÙŠØ´ Ø­Ø§Ø¬Ø© Ø¨ØªØ³ØªØ®Ø¯Ù…Ù‡Ù… ÙÙŠ Ø§Ù„Ù€ production flow. Ø§Ù„Ø±Ø³Ø§Ø¦Ù„ Ø§Ù„ÙˆØ§Ø±Ø¯Ø© ÙƒØ§Ù†Øª Ø¨ØªØªØ­ÙØ¸ ÙÙŠ Ø§Ù„Ù€ DB ÙˆØ¨Ø³ Ù…Ù† ØºÙŠØ± Ù…Ø§ ÙŠØ­ØµÙ„ Ø£ÙŠ Ø±Ø¯ AI.
+
+### Ø§Ù„ØªØºÙŠÙŠØ±Ø§Øª Ø§Ù„Ù…Ø¶Ø§ÙØ©
+
+#### `backend/services/aiAgent/aiMessageProcessor.js` â† Ø¬Ø¯ÙŠØ¯
+Integration layer Ø¨ÙŠØ±Ø¨Ø· ÙƒÙ„ Ø®Ø¯Ù…Ø§Øª Ø§Ù„Ù€ AI Ø¨Ø±Ø³Ø§Ø¦Ù„ WhatsApp/Facebook Ø§Ù„ÙˆØ§Ø±Ø¯Ø©.
+
+**Flow:**
+```
+Ø±Ø³Ø§Ù„Ø© ÙˆØ§Ø±Ø¯Ø©
+  â†’ ÙØ­Øµ autoReplyEnabled + Ø³Ø§Ø¹Ø§Øª Ø§Ù„Ø¹Ù…Ù„ (AiSetting)
+  â†’ workingMemoryService.addMessage() â† Ø³ÙŠØ§Ù‚ Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø©
+  â†’ CorrectiveRAGEngine.query() â† Ù„Ùˆ ragEnabled
+  â†’ CEOAgent.processTask(prompt) â† Ù…Ø¹ ModelManager Ù…Ø±Ø¨ÙˆØ·
+  â†’ policyEnforcementEngine.validateAction() â† ÙÙ„ØªØ±Ø© Ø§Ù„Ø±Ø¯ÙˆØ¯
+  â†’ workingMemoryService.addMessage() â† Ø­ÙØ¸ Ø±Ø¯ Ø§Ù„Ù€ AI
+  â†’ Ø¥Ø±Ø¬Ø§Ø¹ replyText Ù„Ù„Ù€ WhatsAppInboundService
+```
+
+#### `backend/services/whatsapp/WhatsAppInboundService.js` â† Ù…Ø¹Ø¯Ù‘Ù„
+Ø£ÙØ¶ÙŠÙ Ø§Ø³ØªØ¯Ø¹Ø§Ø¡ `aiMessageProcessor.processMessage()` Ø¨Ø¹Ø¯ Ø­ÙØ¸ Ø§Ù„Ø±Ø³Ø§Ù„Ø© ÙÙŠ `saveIncomingMessage()` Ù…Ø¨Ø§Ø´Ø±Ø©. ÙŠØ´ØªØºÙ„ Ø¨Ù€ `setImmediate` (fire-and-forget) Ø¹Ø´Ø§Ù† Ù…Ø§ ÙŠØ¨Ø·Ø¦Ø´ Ø§Ù„Ù€ webhook response. Ø¨ÙŠØ¨Ø¹Øª Ø§Ù„Ø±Ø¯ ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹ Ø¨Ù€ `WhatsAppMessageHandler.sendText()` Ù…Ø¹ `isAIResponse: true`.
+
+#### `backend/workers/dreamerWorker.js` â† Ù…ÙØ´ØºÙŽÙ‘Ù„ ÙÙŠ `server.js`
+Ø£ÙØ¶ÙŠÙ `dreamerWorker.run()` ÙÙŠ `server.js` Ø¬Ù†Ø¨ Ø¨Ø§Ù‚ÙŠ Ø§Ù„Ù€ workers Ø¹Ù†Ø¯ Ø§Ù„Ù€ startup. ÙƒØ§Ù† Ù…Ø¹Ø±Ù‘Ù Ø¨Ø³ Ù…Ø´ Ø¨ÙŠØ´ØªØºÙ„ Ø®Ø§Ù„Øµ.
+
+#### `backend/services/aiAgent/aiChatService.js` â† Ø¬Ø¯ÙŠØ¯
+Ø®Ø¯Ù…Ø© chat Ù…Ø¨Ø§Ø´Ø± Ø¨ÙŠÙ† Ø§Ù„ØªØ§Ø¬Ø± ÙˆØ§Ù„Ù€ CEOAgent.
+- Ø¨ØªØ¯ÙŠØ± conversation history Ø¨Ø§Ù„Ù€ workingMemoryService (prefix: `merchant-chat:companyId:userId`)
+- Ø¨ØªØ³ØªØ®Ø¯Ù… CorrectiveRAGEngine Ù„ØªØ¬Ù…ÙŠØ¹ business context
+- Ø¨ØªØ±Ø¨Ø· ModelManager Ø¨Ø§Ù„Ù€ CEOAgent ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹
+- Singleton per companyId Ù„Ù„Ù€ CEOAgent instances
+
+### API Endpoints Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©
+| Method | Path | Ø§Ù„ÙˆØ¸ÙŠÙØ© |
+|--------|------|---------|
+| POST | `/api/v1/ai/chat/message` | Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© Ù„Ù„Ù€ CEOAgent |
+| GET | `/api/v1/ai/chat/history` | Ø¬Ù„Ø¨ ØªØ§Ø±ÙŠØ® Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø© |
+| DELETE | `/api/v1/ai/chat/history` | Ù…Ø³Ø­ Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø© |
+| GET | `/api/v1/ai/chat/status` | Ø­Ø§Ù„Ø© Ø§Ù„Ù€ Agent |
+
+**Auth**: ÙƒÙ„ Ø§Ù„Ù€ endpoints Ù…Ø­Ù…ÙŠØ© Ø¨Ù€ `requireAuth` middleware.
+
+### Frontend
+- `frontend/src/pages/admin/AIChatPage.tsx` â† ØµÙØ­Ø© chat ÙƒØ§Ù…Ù„Ø© Ù…Ø¹ typing indicator Ùˆbubbles Ùˆsuggestion chips
+- Route: `/admin/ai-chat`
+- Sidebar: "Ù…Ø­Ø§Ø¯Ø«Ø© CEO Agent" Ø¶Ù…Ù† Ù‚Ø³Ù… "Ø§Ù„Ø¹Ù…ÙŠÙ„ Ø§Ù„Ø°ÙƒÙŠ AI"
+
+## 2026-05-21 WhatsApp Linked Device ID (LID) JID & Phone Formatting
+To support standard JID-based identity mapping for WhatsApp contacts even during modern backups and history sync events, we prioritize `contact.jid` over `contact.id`/`contact.lid`.
+- **Backend Sync Prioritization**: Modified history contact sync inside `WhatsAppManager.js` (`handleMessagingHistorySet`) to prioritize `contact.jid` over other properties, ensuring the primary DB record is JID-standardized.
+- **Frontend ID Stripping**: Enhanced the frontend `whatsappContactDisplay.ts` (`getContactPhoneNumber`) to check if the stored JID or number string starts with a `lid:` prefix and automatically strip it. Applied this helper across sidebar listings, chat detail pages, and search inputs to consistently render clean numbers.
+
+## 2026-05-21 Platform Onboarding Settings Default Trial
+The `platform_onboarding` settings control the default free trial duration for first-time registrants. The fallback default trial duration has been adjusted from 30 days to 7 days in the backend service `businessSpecialtyService.js`, while remaining fully configurable dynamically by the Super Admin through the `/super-admin/platform-onboarding` UI.
+
+## 2026-05-20 AI Agent Architecture Blueprint (Autonomous Merchant Control Plane)
+We have implemented the next-generation AI Agent framework for MaxP consisting of:
+- **Corrective Stateful Agentic RAG**: Implemented inside [CorrectiveRAGEngine.js](file:///h:/max_p_new/backend/services/rag/CorrectiveRAGEngine.js). A stateful self-healing retrieval model that uses query reformulation, continuous LLM relevance grading, multi-source fallback routing (Vector Store, SQL database catalog, web), and session-state memory to ensure 100% pricing and policy accuracy without loops.
+- **DAG-based Planning & Execution Engine**: Implemented inside [DAGPlannerExecutor.js](file:///h:/max_p_new/backend/services/rag/DAGPlannerExecutor.js). An advanced scheduler that maps complex merchant requests to a Directed Acyclic Graph (DAG) of task dependencies, enabling parallel execution, dynamic parameter passing (`{{task.output.field}}`), task-level retries, and dynamic LLM replanning/self-correction upon sub-task execution failures.
+- **Master Plan**: Detailed specs and schema structures are consolidated in the master plan file: [ai_agent_architecture_master_plan.md](file:///C:/Users/mokhtar/.gemini/antigravity/brain/2d22d2c5-16c3-439e-b3ca-2544bfe5d94d/ai_agent_architecture_master_plan.md).
+
+## 2026-05-20 AI Removal Boundary
+Customer-facing AI surfaces have been removed from the active product. The only
+remaining AI-labeled operational surface is Super Admin provider/key management:
+`/super-admin/ai-providers`, key details, provider priority, and provider logs.
+
+Active company tools now use manual or deterministic automation flows:
+- Smart Replies remain under `/settings/smart-replies`.
+- Product landing pages are image-stack pages with manual image URLs/design notes.
+- Comments, inboxes, orders, returns, Facebook Ads, WhatsApp, and marketplace
+  screens no longer route to customer-facing model generation pages or APIs.
+- `/api/v1/monitor` still loads for operational monitoring; its old response
+  quality collector is now a disabled compatibility shim so startup remains
+  healthy without restoring retired customer-facing generation behavior.
+
+Historical sections below may describe retired architecture for audit context.
+They are not current product surfaces unless explicitly listed in the provider
+management boundary above.
+
+## Shipping Class Settings & Persistence
+The Shipping Class management in Store Settings ensures changes are immediately saved to the database with optimistic UI updates and robust rollback safety:
+- **Immediate Save**: In `frontend/src/pages/settings/StoreSettings.tsx`, adding a new shipping class instantly persists the updated list and associated fees via a PUT request to `/settings/company`.
+- **Optimistic UI Updates**: The local component state (classes list and fee mappings) is updated before the API request resolves to maintain instant responsiveness.
+- **Rollback Safety**: If the API call fails, the UI gracefully rolls back to the previous state and restores the user's unsaved text inputs.
+
+## Workspace Files Management System
+The `/settings/workspace-files` page is a high-performance administration tool designed to manage company-specific agent guidelines and instructions (`AGENTS.md`, `SOUL.md`).
+
+- **Conversational Meta-Prompt Builder**: Introduces a structured conversational configuration panel ("Ø§Ù„Ù…Ø³Ø§Ø¹Ø¯ Ø§Ù„Ø°ÙƒÙŠ") utilizing Gemini (`gemini-2.5-flash` with JSON output formatting constraints). Translates natural language instructions (Arabic) into a structured JSON configuration (`assistantName`, `personalityTone`, `welcomeMessage`, `customRules`) and automatically compiles them into clean, pronoun-safe Markdown templates. The structured configurations are stored and fetched from the `metadata` column in `company_agent_workspace_files` table.
+- **Longest Common Subsequence (LCS) Diffing**: Replaced the primitive line comparison engine with a dynamic programming LCS diffing algorithm. It accurately determines line additions, deletions, and modifications without suffering from offset drifts due to blank lines or formatting shifts.
+- **Zero-Lag Scroll Sync**: Utilizes high-precision `window.requestAnimationFrame` based dual scroll synchronization. It links the textarea scrolling event directly to the line number gutter rendering loop to ensure zero jitter and perfect layout integrity.
+- **Prompt Static Linter**: Incorporates a real-time static code analysis engine that parses the active editor content to detect logical contradictions (e.g. conflicting behavior instructions like "always" vs "never"), syntax violations, structural markdown issues, and safety hazards, rendering findings in an inline warning card. Includes specific warnings for ambiguous bot-name declarations.
+- **Interactive Playground Simulator**: Features a testing tab containing predefined customer scenarios (e.g. shipping policy, shoe sizing guides, custom greetings) and a manual query interface. Operates completely in-client with simulated responses and outputs an "AI Thought Trace" console trace indicating the matching guidelines, rules, and grounding context.
+- **Premium Markdown Preview**: Renders clean, custom regex-parsed markdown documents (styled headers, blockquotes, bullets, and bold markers) directly inside the visual tab for a beautiful glassmorphic formatting preview.
+
+## Company AI Runtime Controls
+`/settings/ai` is the company-owned control surface for customer AI behavior. It is separate from Super Admin provider/key infrastructure.
+
+- **Enablement**: Company users can enable or disable automatic AI replies through `autoReplyEnabled`. Missing `AiSetting` rows remain disabled by default.
+- **Response Length**: Companies can manage `aiMaxTokens` from the UI. The API validates the value between `256` and `8192`, defaults to `2048`, and returns `aiMaxTokensRange` for frontend normalization.
+- **Runtime Consumption**: `companyPolicyResolverService` resolves `AiSetting.aiMaxTokens` into `companyPolicy.model.maxTokens`. `providerGenerationService` and `configuredProviderFallbackService` use that value for customer-facing model calls so direct Gemini and provider fallback replies share the same per-company response-length behavior.
+- **Safety Classification**: Gemini safety blocks are classified from `promptFeedback.blockReason` and candidate `finishReason` values before empty-text handling. These runs record `contextBag.geminiSafetyBlocks` and use `model_safety_blocked` as the suppression reason instead of generic `EMPTY_MODEL_RESPONSE`.
+- **Tool-Calling Budget**: Model-driven tool calling extends the run response budget to `CORE_AI_TOOL_RESPONSE_BUDGET_MS` (default `11000ms`, capped at `15000ms`) before the tool-selection and final-response model calls, preventing the first call from starving the final answer.
+
+## AI Provider Budget Ledger
+Provider routing now has a proactive budget layer supporting both individual API key usage quotas (RPM, RPD, TPM, TPD) and merchant/tenant-level daily limits (tokens and monetary costs).
+
+- **Tenant-Level Daily Budgets (Phase 3)**:
+  - `services/aiAgent/providerBudgetLedgerService.js` reads company daily token and cost limits from `AiSetting.modelSettings` (defaulting to 500,000 tokens and $50.0).
+  - Calculates daily cost consumption dynamically based on standardized pricing rules (`MODEL_PRICES`) per 1K tokens.
+  - Enforces daily budget checks (`isWithinDailyBudget`) and blocks routing when a merchant's daily token or cost limits are exceeded, bubbling up a `BUDGET_EXCEEDED` error.
+  - Automatically triggers high-severity alerts (`triggerBudgetNotification`) saved to the `AiNotification` table. Employs a Redis/in-memory anti-spam cache to guarantee only one notification is sent per company per day.
+- **Key-Level Budgets**:
+  - Reads `rpm`, `rpd`, `tpm`, and `tpd` limits from existing `AiKey.usage`, `AiModelConfig.usage`, or `AiKey.maxRequestsPerDay`, so the first pass does not require a Prisma migration.
+  - `ModelManager.getNextKeySimple(companyId, { estimatedTokens })` filters over-budget keys before `SimpleKeyRotator` performs round-robin selection. If every otherwise-eligible key is budget-blocked, the runtime returns `PROVIDER_BUDGET_EXHAUSTED` with a retry hint.
+  - `ResponseGenerator.generateAIResponse()` passes the existing prompt token estimate into selection, records a budget reservation immediately before the provider call, reconciles actual token usage on success, and stores temporary budget penalties after provider 429/503 responses while preserving the existing key cooldown behavior.
+- **Observability & Analytics**:
+  - The ledger uses the AI `stateManager` Redis adapter when available and falls back to process memory for local/test execution. Limit keys are scoped by provider, model, and key id; raw API keys are never stored. `getBudgetSnapshot()` exposes the current budget/penalty state for Super Admin observability without exposing secrets.
+  - `services/aiAgent/providerCatalogService.js` stores conservative catalog metadata for supported MaxP providers: adapter type, default model, base URL, free-tier caveats, and default limit hints.
+  - `GET /api/v1/super-admin/ai/provider-dashboard` joins provider catalog metadata, provider priority, active keys, budget snapshots, and recent provider logs. `frontend/src/pages/SuperAdminAIProviders.tsx` renders this as the Runtime Dashboard tab, covering the FreeLLMAPI-inspired Keys/Fallback/Analytics view inside the existing Super Admin surface.
+
+## Order Search Resolution Engine (Multi-Word & Phone Normalization)
+The search resolution system inside orders list and global search is designed to be highly resilient to format discrepancies.
+
+- **Multi-Word Name Matching**: Rather than performing a rigid `contains` query on full names, the order search engine now splits multi-word search queries into individual words and verifies matches across `customerName`, `firstName`, and `lastName` fields in both standard and reverse name order. This allows finding orders for a customer named "Ahmed Ali" even if their first name and last name are separated in different database columns.
+- **Egyptian & Generic Phone Normalization**: Egyptian and generic mobile phone formats can vary drastically in storage (e.g., `01012345678`, `1012345678`, `+201012345678`, or `201012345678`). The backend now automatically generates all possible phone format variations for any numeric search term, matching all of them concurrently via database `OR` expressions across `customerPhone`, `customer.phone`, and `guestPhone` columns.
+- **Unified Services Integration**: Both `/api/v1/orders-new/simple` (managed in `backend/routes/orders.js`) and `/api/v1/orders-enhanced` (managed in `backend/services/enhancedOrderService.js`) apply these highly resilient search parameters.
+- **URL Parameter Sync in UI**: In `Orders.tsx`, a reactive `useEffect` hook synchronizes the URL search parameters (`searchParams`) from the header/layout search inputs back to the local `filters`, `page`, and `limit` states. This enables immediate, page-level reactivity when using any global dashboard search bar.
+
+## Dashboard Shell Global Order Search
+The authenticated dashboard navigation chrome now provides a global quick search for orders directly in the Header and the Layout shell, with a dynamic workspace control setting in the Order Columns settings page.
+
+- **Layout Shell Search Button**: In the main desktop shell (`Layout.tsx`), an expanding search button is added next to the `ThemeToggle` (Moon/Sun icon) inside the `business-shell-utility-row`. It renders as a circular magnifying glass icon matching the other circular action buttons. Clicking it expands a sleek inline input field to enter search queries. When submitted, it navigates to `/orders?search=...`.
+- **Header Search**: The secondary navigation `Header.tsx` component embeds a responsive order search input form (visible on `sm` screen sizes and above). It is also embedded directly within the mobile navigation drawer menu to be fully accessible to mobile operators.
+- **Dynamic Configuration**: The visibility of both search entries (in the main layout shell and secondary header) is controlled dynamically by the company's active settings (`company.settings.showOrderSearchInHeader !== false`). If disabled, both search components are completely hidden.
+- **Order Settings Search Toggle**: Inside `OrderColumnsSettings.tsx`, under the "Ø£Ø¹Ù…Ø¯Ø© ØµÙØ­Ø© Ø§Ù„Ø·Ù„Ø¨Ø§Øª" (Order Columns Settings) tab in Order Settings, a premium toggle switch card is added to manage `showOrderSearchInHeader`. Toggling this option fires an instant, optimized PUT request to `/settings/company`, updating the active workspace metadata and dynamically reflecting the UI state changes across the header and layout shells.
+
+## AI Runtime Simplification Pass
+The customer AI architecture is Core-first, but the repository still contained
+obsolete helper files and duplicate frontend pages that were not reachable from
+the live Messenger runtime.
+
+- Removed dead backend AI modules with no live imports: `PromptValidator.js`,
+  `hallucinationGuard.js`, `rateLimitResetService.js`, `imageExtractor.js`, and
+  `promptBuilder.js`.
+- Removed duplicate/unmounted frontend pages: legacy Messenger chat variants
+  `MessengerChat.tsx` and `MessengerChat-fixed.tsx`, plus unmounted Few-Shot
+  pages `FewShotManagementChat.tsx` and `FewShotSimpleEnhanced.tsx`.
+- Kept `services/aiAgent/aiProductionMetricsDashboardService.js` because it is
+  mounted through `controller/aiLearningController.js`; it is not dead code.
+- Kept `RuleBasedResponder.js` for now because it is the `/settings/smart-replies`
+  boundary. It should be renamed after controller/test migration, not deleted.
+- Kept legacy disabled router files (`aiAgentService.js`, `messageProcessor.js`,
+  `AgentFactory.js`) until the remaining compatibility tests and references are
+  migrated to a final deletion-safe state.
+
+## Gemini Model Candidate Policy
+`services/aiAgent/geminiProviderRuntimeService.js` is the single runtime boundary
+that turns configured Gemini models into generation candidates.
+
+- `services/aiAgent/geminiModelPolicy.js` defines retired Gemini names and the
+  stable fallback text model.
+- Env/model-manager values such as `GEMINI_MODEL=gemini-pro` are normalized before
+  generation, so retired models do not reach `getGenerativeModel()`.
+- Endpoint-discovered `generateContent` models are still allowed for text or
+  vision when they are not retired; image-capable Gemini models are not rewritten
+  as text models.
+- Tests in `tests/services/geminiProviderRuntimeService.test.js` and the targeted
+  Core model-candidate gate protect this production behavior.
+
+## Smart Replies Boundary And Natural Conversation Policy
+`/settings/smart-replies` is the only supported UI for optional fixed customer replies.
+
+- Smart Replies are disabled by default. Missing settings return `enableRuleResponses=false`, `allowDefaultRuleResponses=false`, and an empty `customRuleResponses.templates[]`.
+- `controller/aiController.js` normalizes all saved Smart Reply payloads to explicit templates with non-empty keywords and responses; legacy `{ greeting: [...] }` shapes and built-in defaults are discarded.
+- `services/aiAgent/RuleBasedResponder.js` can return a reply only when Smart Replies are enabled and a company-defined template matches. Internal greeting/thanks/farewell defaults are blocked from customer AI runtime.
+- `/settings/rule-responses` is a legacy route and redirects to `/settings/smart-replies`; the duplicate settings component was removed.
+- In AI-first runtime, `customerReplyShapingService.ensureCustomerFacingQuestion()` no longer appends generic sales questions after model replies. It may still add mandatory missing data questions for order creation or shipping totals because those are workflow requirements, not canned conversational style.
+- `customerReplyShapingService.reduceRepeatedProductNameReferences()` only removes redundant wording such as repeated product names around prices; it no longer replaces image replies with fixed text like "Ø¯ÙŠ Ø§Ù„ØµÙˆØ± Ø§Ù„Ù…ØªØ§Ø­Ø©".
+- `productGroundingService.resolveProductFromConversationMemory()` supports a safe high-confidence history fallback for short variant/color follow-ups when broad history guessing is disabled, preserving active product continuity without random catalog guessing.
+- `tests/services/aiConversationDiverseScenarios.test.js` is the focused natural-conversation gate for greeting/inquiry, explicit Smart Replies, price, shipping objection, order request, complaint, and short color follow-up scenarios.
+
+## Image Proxy Media Refresh
+`controller/proxyImageController.js` serves proxied media for protected Facebook/Messenger assets and WhatsApp media.
+
+- Message-scoped Facebook images treat stored `fbcdn`/`fbsbx` URLs as expiring references.
+- When `message.metadata.facebookMessageId` and a page token are available, the proxy refreshes the attachment URL through Graph and uses that fresh URL as fallback after the originally requested URL.
+- Non-Facebook direct URLs still bypass Graph, and WhatsApp `meta-media:` references continue through the Meta media download path.
+- `tests/controller/proxyImageController.test.js` covers transform handling, WhatsApp Meta media proxying, and Facebook message-media refresh after URL expiry.
+
+## Customer AI Conversation State Continuity
+`services/aiAgent/contextPreparationService.js` owns active customer conversation state before model generation.
+
+- Active product/variant/color/size state is loaded from `conversation.metadata.coreAi.conversationSummary` through the conversation state service and merged into the current turn context.
+- Short follow-ups such as color selections, "Ø¨ÙƒØ§Ù… Ø¯Ù‡ØŸ", and size updates recover the active product from conversation memory instead of starting a fresh product search.
+- Facebook source ad/post grounding is also prepared here. If `conversation.metadata.postId` or referral ad metadata maps to a real product through `post_response_settings.featuredProductId` or `facebook_ads.productId`, the context bag includes `sourcePostContext` plus a `channel_context` prompt fragment. The LLM decides whether to use it; backend code only treats clear source-referenced follow-ups such as "Ø§Ù„Ù„ÙŠ ÙÙŠ Ø§Ù„Ø¹Ø±Ø¶ Ø¨ÙƒØ§Ù…" as the grounded product.
+- Shipping follow-ups with an existing active product are also treated as context-dependent turns. They preserve the active product ID and selected variant filters before resolving shipping context, which prevents duplicate product rows with the same name from replacing the customer's current product.
+- `services/aiAgent/conversationStateReplyContractService.js` extends the continuity contract into final reply delivery. It records the active product, missing slots, and forbidden questions for the current turn. When the product is known, finalization and empty-reply recovery may ask for the real missing slot, such as governorate, but cannot ask the customer to identify the same product again.
+- `services/aiAgent/customerReplyFinalizationService.js` applies this contract after sanitization, after question enforcement, and after price/commerce fact guards so safety fallbacks cannot undo conversation understanding.
+- `services/aiAgent/emptyReplyRecoveryService.js` uses the same state contract to recover provider-empty shipping follow-ups with a governorate question instead of producing a silent run.
+- `tests/services/contextPreparationService.test.js` protects stripe-color, image variant-reference, and shipping follow-up continuity.
+
+## Dynamic AI Prompt Sections
+Customer AI system prompts are assembled through a section-based runtime instead of a single growing function.
+
+- `services/aiAgent/providerGenerationService.js` delegates `buildSystemInstruction()` to `services/aiAgent/prompt-sections/index.js`.
+- `DynamicPromptBuilder` selects active sections by `condition(ctx)`, sorts by `priority`, builds a versioned MD5 cache key, returns cached prompts for identical section inputs, and skips a failed optional section without breaking the full prompt.
+- Existing production prompt fragments live as standalone sections: base persona, read-only tool results, RAG data, learning corrections, few-shot examples, AI-first references, order execution facts, matched product constraints, recommended images, authoritative reply blueprint, conversation summary, the LLM-native turn command contract, and skills.
+- New optional context sections are available behind explicit context fields: channel context, shipping context, promotions, customer profile, page info, and personalization. `channel_context` is now used for source Facebook ad/post product grounding when a conversation metadata post/ad reference maps to a real product; it supplies facts to the LLM without becoming an intent classifier or fixed reply.
+- Section `version` values are part of the cache key; changing a section's prompt logic requires bumping its version to invalidate previously cached prompts.
+- `backend/add_provider_col.js` remains a standalone Prisma maintenance script for adding the `provider` column to existing deployments when needed; it is not part of the runtime prompt path.
+
+## Company Workspace Files
+`/settings/workspace-files` is the company-scoped control surface for `AGENTS.md`, `SOUL.md`, and `TOOLS.md`.
+
+- `services/workspaceFileService.js` treats `backend/workspace-defaults/*.md` as safe platform defaults and stores per-company overrides in `company_agent_workspace_files`, with immutable revision rows in `company_agent_workspace_file_revisions`.
+- The storage tables are created lazily with `CREATE TABLE IF NOT EXISTS` so existing deployments do not depend on a manual Prisma migration before the page can load.
+- `routes/workspaceFileRoutes.js` allows company administrators and owners to edit only the active company override. Platform defaults require explicit `scope=platform` and `SUPER_ADMIN`.
+- `services/aiAgent/contextPreparationService.js` resolves the workspace files context first. If customized `SOUL.md` or `AGENTS.md` rules exist for the merchant (i.e. company overrides), the `basePersona` instructions are adjusted dynamically to defer style, tone, and dialect decisions to these files. If no overrides are found, it falls back to the default Egyptian Arabic sales dialect instruction to guarantee backward compatibility.
+- `services/aiAgent/contextPreparationService.js`, `services/aiAgent/providerGenerationService.js`, and `services/aiAgent/messengerLiveExecutionService.js` now carry workspace trace metadata (`loaded`, file sources, versions, hashes, context hash, and prompt injection proof) into run traces, production evaluations, and telemetry without storing the file bodies in trace metadata.
+- `routes/workspaceFileRoutes.js` exposes company-scoped workspace-file proposals. AI-suggested/self-edit changes are stored in `company_agent_workspace_file_proposals` as `PENDING` and only become active company overrides after an administrator approves them.
+- `services/aiAgent/providerGenerationService.js` injects the workspace context as the `workspace_files` prompt section after the base persona and before runtime facts. Verified commerce facts, guardrails, and tool outputs still outrank workspace text.
+- `frontend/src/pages/settings/WorkspaceFilesSettings.tsx` shows the effective source, company override, safe platform default, pending AI proposals, and recent revision history for each file.
+
+
+## WhatsApp History Import And Session Retention
+Baileys sessions now keep the MaxP session as the durable user-facing record while auth and QR state are regenerated as needed.
+
+- `frontend/src/pages/whatsapp/WhatsAppSettings.tsx` adds an optional import-history checkbox for new Baileys sessions, translated in the Arabic and English WhatsApp settings locale files.
+- The add-session dialog also exposes a `keepHistoryOnDelete` checkbox for Baileys numbers. Its default is to retain chat history if the MaxP number is deleted later.
+- `controller/whatsappController.js` accepts `importHistory`/`syncFullHistory`, stores `metadata.importHistoryOnLink` for the session, and passes the sync request into the Baileys manager during create/connect flows.
+- `controller/whatsappController.js` stores `metadata.keepHistoryOnDelete` on session creation and uses it as the delete fallback when the delete request does not explicitly pass `keepHistory`.
+- The delete confirmation modal pre-populates its keep-history checkbox from `metadata.keepHistoryOnDelete`, while an explicit user choice still overrides the saved default for that delete action.
+- `services/whatsapp/WhatsAppManager.js` enables Baileys full-history sync with a desktop browser identity when requested, imports `messaging-history.set` chats/contacts/messages, and suppresses realtime notifications, CRM sync, AI processing, unread counters, and historical media downloads during the import.
+- `restoreAllSessions()` now includes `QR_PENDING` rows so a backend restart regenerates a QR for the same MaxP session instead of leaving the UI without a link prompt.
+- `LOGGED_OUT` is reserved for explicit `closeSession()`/manual logout. Unexpected `loggedOut`, Bad MAC, or Baileys `403` forbidden socket failures clear only Baileys auth state and return the same row to relink/QR recovery.
+- `tests/controller/whatsappController.sessionLifecycle.test.js` covers session creation metadata, delete fallback/override, and reconnect pairing-code behavior on the same MaxP session.
+- `tests/services/WhatsAppManager.messageCapture.test.js` protects the distinction between transient auto-reconnect and corrupted-auth fresh-link recovery.
+
+## Marketplace Catalog Visibility After Specialty Signup
+The business-specialty signup flow now separates starter app installation from marketplace visibility.
+
+- `controller/marketplaceController.js` keeps specialty data as recommendation context, not a hard app-catalog filter.
+- Authenticated marketplace list, category, bundle, install, and subscription paths can see the global active public catalog while each app still exposes `isRecommendedForSpecialty` metadata when relevant.
+- `frontend/src/pages/marketplace/Marketplace.tsx` presents the page as the full app catalog and shows the selected specialty as context only.
+- `backend/docs/infrastructure/specialty-onboarding-marketplace-2026-05-09.md` records that specialty mappings install starter apps during onboarding but no longer limit discovery after registration.
+
+## WhatsApp Baileys Reconnect And Relink Recovery
+Baileys WhatsApp sessions now keep the MaxP session row stable while recovering from transient disconnects or corrupted auth.
+
+- `controller/whatsappController.js` normalizes phone numbers, returns QR/pairing state from create/connect flows, and can force a fresh link state for reconnects.
+- `services/whatsapp/WhatsAppManager.js` tracks reconnect timers, avoids stale socket updates, treats transient disconnects as `CONNECTING`, clears only auth state for Bad MAC/unexpected logout relink, and returns QR or pairing code on the same session. It also triggers a Telegram alert through `telegramAlertService` when a permanent disconnect requiring manual re-linking occurs (not a user logout).
+- `services/whatsapp/DatabaseAuthState.js` persists Baileys key deletions when values are `null` and exposes `clearDatabaseAuthState()` for controlled relink recovery.
+- `frontend/src/pages/whatsapp/WhatsAppSettings.tsx` displays either QR or pairing code during reconnect and listens for `whatsapp:pairing_code` socket events.
+
+## Business Shell Mobile Header
+The authenticated company shell uses `frontend/src/components/layout/Layout.tsx` plus `frontend/src/styles/layout-enterprise.css` for the shared header/sidebar chrome.
+
+- On desktop, the account menu stays in `business-shell-profile-row` beside the company switcher and utility controls.
+- On widths below the shell mobile breakpoint (`<1024px`), the account trigger now moves into the primary header row beside the hamburger toggle and renders as a compact avatar-only control.
+- Company switching plus theme/language/notification utilities remain available on mobile, but they are laid out in a secondary row so they cannot push the logout/profile entry outside the viewport.
+- `frontend/src/components/layout/__tests__/Layout.mobileHeader.test.tsx` is the focused regression check for this responsive account-control behavior.
+
+## Customer AI Runtime Grounding
+Customer-channel AI replies use `CoreAIAgent` as the orchestration layer, with `messengerLiveExecutionService.js` for live Messenger and `replyPreviewExecutionService.js` for test/reply-preview flows.
+
+- **Policy gate**: `companyPolicyResolverService.js` resolves per-company runtime behavior. Real companies default to read-only tool access and `reply.aiFirstCustomerReplies=true`.
+- **Read-only grounding**: model-native tool calling is the default read-only grounding path. In LLM-native mode, pre-generation heuristic tool planning is deferred to the model unless `CORE_AI_PREGEN_READ_ONLY_TOOL_PLANNING=true` is explicitly enabled for compatibility.
+- **Hard final price gate**: `priceIntegrityService.js` owns the DB-backed `verifiedPriceResolver` used by finalization and by `responseDeliveryExecutionService.js` immediately before message persistence/delivery. Price mentions must resolve to a selected product/variant, DB shipping/total, DB-backed shipping-policy threshold, the nearest labeled catalog item before the price, or a product name found directly in the reply and verified against active DB products for the same company. Ambiguous, disabled-policy, or unverified prices are replaced with a safe no-price clarification instead of being sent or silently suppressed.
+- **Provider recovery**: if direct Gemini generation fails after the normal model/tool path, `providerGenerationService` attempts a final model-generated `core_provider_recovery` through the configured provider service. This reduces no-reply turns without sending fixed fallback text. If recovery is empty, the run remains a known suppressed outcome with `providerModelRecovery` metadata.
+- **Provider priority routing**: `GlobalAiConfig.settings.providerPriority` drives Core customer-AI provider order. Super Admin exposes `GET/POST /api/v1/super-admin/ai/provider-priority`; updates preserve unrelated settings, update `defaultProvider` to the first provider, and clear ModelManager caches. `providerGenerationService` exhausts the eligible provider order before returning an authoritative customer-facing blueprint, and the global failover toggle limits generation to the first provider when disabled. If all providers time out or become unavailable and no verified/model-generated text can be sent, `messengerLiveExecutionService` records an internal `ai_provider_failure` handoff with a 15-minute SLA instead of leaving the operator with only a suppressed/no-reply notification.
+- **Commerce fact gate**: `commerceFactIntegrityService.js` verifies stock, variant, delivery, image interpretation, and recommendation claims against DB-backed context. Deictic image/color availability claims such as "Ø§Ù„Ù„ÙˆÙ† Ø¯Ù‡ Ù…ØªØ§Ø­" require a DB-verified selected variant; product-level stock is not enough. Unverified stock/availability output is blocked and recorded with `deliveryBlocked=true` / `fixedRepliesDisabled=true`; it must not be converted into fixed safe customer wording.
+- **Shipping policy amounts**: free-shipping thresholds are classified as `shipping_policy` and are allowed only from `storePromotionSettings.freeShippingEnabled/freeShippingThreshold`. Stale RAG/persona text that mentions old free-shipping thresholds or flat fees fails closed at the final gate.
+- **AI-first replies**: deterministic services may still compute facts, validate unsafe output, create orders, and protect against hallucinations, but customer-facing wording is generated by the model. Fixed deterministic text is used only as an internal fact reference or suppressed when it would replace the model's wording.
+- **Order confirmations**: confirmed order execution remains backend-owned for safety and duplicate prevention. After the order action completes, the model receives locked order facts (`orderNumber`, total, product, selected options) and writes the customer confirmation naturally.
+- **Fail-closed behavior**: when AI-first generation fails or final guardrails reject the response, the system records suppression metadata/notifications instead of sending a canned fallback to the customer.
+
+## Customer AI Final Production Scenario Gate
+The customer AI rescue now has a deterministic final scenario gate for production-grade runtime behavior.
+
+- `tests/services/aiRuntimeFinalProductionScenarios.test.js` runs customer-like scenarios through `replyPreviewExecutionService` with runtime ledger, trace, guardrail, handoff, evaluation, telemetry, reply source, and delivery metadata paths active.
+- Covered scenarios: product inquiry, shipping objection, wrong price conflict, image request, unavailable product, angry customer escalation, active human handoff, order creation, refund request, and duplicate Facebook webhook idempotency.
+- The scenario gate asserts measurable `productionEvaluation.metrics` for pricing, intent, hallucination, handoff, reply quality, and tool success where applicable.
+- Duplicate webhook coverage uses `facebookWebhookDurableIngressService` and verifies stable idempotency keys collapse repeated events at the durable queue boundary.
+- This suite is the final regression gate after lower-level queue, outbox, tool, price, guardrail, handoff, eval, and runtime trace tests.
+
+## Customer AI Evaluation Metrics And Observability
+Customer AI evaluations now expose measurable runtime dimensions instead of only broad PASS/REVIEW/FAIL labels.
+
+- `services/aiAgent/aiEvaluationMetricsService.js` owns the versioned metrics schema.
+- Metrics cover pricing accuracy, intent accuracy, hallucination risk, handoff correctness, reply quality, suppression tracking, and model tool success rate.
+- `services/productionEvaluatorService.js` embeds `evaluationMetrics` into evaluation evidence and metadata, and `getSummary()` aggregates recent metric buckets plus tool success and hallucination rates for dashboards.
+- `services/aiAgent/coreRuntimeSupportService.js` returns metrics in the safe production-evaluation summary and records tracked suppressions even when the customer receives no reply.
+- Live Messenger and reply-preview evaluation metadata includes detected intent, intent confidence, model tool calling results, handoff decision/state, grounding, reply source, delivery, and policy context.
+- Guardrail suppressions now produce measurable evaluation rows when they are tracked with a reason/stage.
+
+## Customer AI Production Guardrails
+Customer AI now runs a shared guardrail layer across input, tool execution, and final output.
+
+- `services/aiAgent/guardrailPipelineService.js` owns versioned guardrail decisions for customer input, tool calls, and finalized replies.
+- Input guardrails block prompt-injection/system-prompt requests, credential/secret requests, and oversized input before context preparation or model generation.
+- `messengerLiveExecutionService.js` and `replyPreviewExecutionService.js` evaluate input guardrails immediately after runtime ledger/trace reservation, record an `input_guardrail` trace step, notify internal suppression once, and complete the run silently.
+- `services/aiAgent/toolOrchestratorService.js` evaluates tool guardrails during preflight before schema validation/execution; it blocks cross-company scope mismatch, oversized tool input, secret-bearing payloads, and raw unsafe query shapes.
+- Output guardrails still block empty replies/internal reasoning leaks, and now also block credential-like leakage and raw tool/runtime JSON leakage.
+- Guardrail results carry layer, reason, violation types, severity, and metadata so suppression tracking and later evals can measure failures instead of hiding them.
+
+## Customer AI Durable Queue And Outbox
+Customer Messenger replies now run through a durable delivery pipeline instead of fire-and-forget promises.
+
+- `services/queueService.js` normalizes logical idempotency keys into BullMQ-safe `jobId` values, avoiding reserved `:` characters while keeping stable duplicate protection.
+- `controller/webhookController.js` calls `facebookWebhookDurableIngressService.enqueueFacebookWebhook()` before acknowledging queueable Facebook customer events.
+- `services/aiAgent/facebookWebhookDurableIngressService.js` writes stable-idempotency BullMQ jobs for Facebook messages, comments, and read receipts; if durable queueing fails, the webhook returns 503 so Meta can retry instead of silently dropping the event.
+- `utils/allFunctions.js` saves the inbound customer message, then calls `facebookMessengerAiDispatchService.dispatchSavedInboundMessage()` instead of directly calling `CoreAIAgent.processMessage()`.
+- `services/aiAgent/aiRuntimeQueueService.js` persists Core AI jobs in `AiRuntimeQueueJob`, claims work with locks, retries failures with backoff, and dedupes duplicate webhooks by queue key.
+- `workers/aiRuntimeQueueWorker.js` drains pending/retry Core AI jobs and invokes `CoreAIAgent.processMessage()` only after a job is locked.
+- `services/aiAgent/responseDeliveryExecutionService.js` saves the outbound message, stages a Messenger send in `AiDeliveryOutbox`, then executes the outbox item.
+- `services/aiAgent/aiDeliveryOutboxService.js` owns delivery locks, retry state, sent/failed status, linked message metadata, and duplicate-send suppression for already-sent outbox items.
+- `workers/aiDeliveryOutboxWorker.js` drains retryable outbox items on startup/interval, and `server.js` starts the runtime queue and outbox workers unless `START_INLINE_AI_RUNTIME_WORKERS=false`.
+
+## Customer AI Handoff State Machine
+Human handoff is represented as durable conversation state, not inferred from assistant wording.
+
+- `services/aiAgent/handoffStateMachineService.js` owns `conversation.metadata.coreAi.handoff`.
+- Supported states are `pending`, `assigned`, `resumed`, and `timeout`; each transition stores reason, source, actor, timestamp, SLA, expiry, and compact history.
+- `messengerLiveExecutionService.js` and `replyPreviewExecutionService.js` call `evaluateHandoffBeforeRun()` before generation and skip AI when handoff is active.
+- Current-turn explicit handoff/support escalations are evaluated into `contextBag.handoffDecision`, then persisted through `recordHandoffAfterAssistantTurn()` with a `handoff_state_transition` trace step.
+- `humanOverrideGuardService.js` records detected human replies as `assigned` so manual takeover is visible instead of being only a boolean.
+- There is no final-response regex handoff detector; assistant wording no longer controls ownership.
+
+## Customer AI Canned Reply Policy
+Customer-facing deterministic replies are disabled unless the text comes from `/settings/smart-replies`.
+
+- `services/aiAgent/authoritativeReplyBlueprintService.js` separates `buildAuthoritativeReplyBlueprint()` from `buildGroundingBlueprint()`.
+- `buildAuthoritativeReplyBlueprint()` and `buildGroundingBlueprint()` no longer return customer-facing fixed text.
+- Commercial product, price, shipping, image, catalog, variant, and order-collection builders are not customer-facing authoritative replies.
+- `services/aiAgent/providerGenerationService.js` no longer short-circuits catalog availability with `buildDeterministicAvailabilityCatalogReply()` before model generation.
+- `contextBag.cannedReplyPolicy` records that fixed customer replies are disabled outside Smart Replies.
+- Dynamic model replies must remain the normal path for commerce; deterministic text must not silently replace model wording.
+
+## Customer AI Runtime Truth Lock
+Customer-facing AI replies carry explicit `replySource` metadata from source selection through final delivery.
+
+- `services/aiAgent/replySourceTruthService.js` owns the source schema and records selected, mutated, replaced, and suppressed reply events.
+- `messengerLiveExecutionService.js` and `replyPreviewExecutionService.js` create the initial source for model and known-outcome replies.
+- `customerReplyFinalizationService.js` records post-generation mutations and suppression reasons instead of hiding them behind the final text.
+- `responseDeliveryExecutionService.js` persists `replySource` into outgoing message metadata, while production evaluation, telemetry, and trace metadata include the same source contract.
+- Trace verification uses the `response_finalized` step to prove which component owns the final reply before delivery.
+
+## Customer AI Legacy Runtime Isolation
+Customer-facing AI runtime is Core-only; deprecated compatibility shells cannot select or execute a legacy agent.
+
+- `services/CoreAIAgent.js` owns response generation through `providerGenerationService.generateResponseContent()` and no longer branches on `useModernAgent`.
+- `services/aiAgent/messageProcessor.js` is a terminal disabled compatibility shell returning `LEGACY_AI_ROUTER_DISABLED` / `CORE_ONLY` instead of calling `AgentFactory`.
+- `services/aiAgent/contextPreparationService.js` now defaults to `intentArchitecture='llm_native_structured_commands'` and builds a neutral `turnCommandContract` for the provider prompt.
+- `services/aiAgent/heuristicIntentRoutingService.js` is a neutral compatibility shim and no longer assigns customer intent labels. Emergency legacy intent authority requires explicit env opt-in.
+- `services/aiAgent/readOnlyToolPlanningService.js` builds planning memory from current runtime `recentMessages`, not legacy conversation memory.
+- `tests/services/aiCustomerLegacyIsolation.test.js` is the guardrail test that fails if `useModernAgent`, `analyzeMessageIntentWithLegacySystem`, legacy memory helpers, or `LegacyAgent` imports return to customer AI runtime files.
+
+## Customer AI Model-Driven Tool Calling
+Customer reply generation can now execute real read-only tools selected by the model before producing the final answer.
+
+- `services/aiAgent/providerGenerationService.js` owns the model tool loop inside the main generation path.
+- The loop exposes only policy-allowed read-only tools from `toolOrchestratorService.listAvailableTools()`.
+- Runtime tool names such as `product.search` are mapped to model-safe function names such as `product_search`, then mapped back before execution.
+- Returned model tool calls are executed with `toolOrchestratorService.executeToolCall({ dryRun: false })`.
+- Tool outputs are injected into the second model call under "Ù†ØªØ§Ø¦Ø¬ Ø§Ù„Ø£Ø¯ÙˆØ§Øª Ø§Ù„Ù…Ù†ÙØ°Ø© ÙØ¹Ù„ÙŠØ§Ù‹ Ù…Ù† Runtime" to generate the final customer reply.
+- `messengerLiveExecutionService.js` and `replyPreviewExecutionService.js` attach company policy, trace, idempotency, and planning metadata to `contextBag` before generation so tool execution is auditable.
+- `contextBag.modelToolCalling` records exposed tools, requested tools, execution statuses, outputs, and final mode.
+
+## Smart Replies Runtime Settings
+`/settings/smart-replies` stores rule-based instant reply settings in `AiSetting.modelSettings.ruleResponses`.
+
+- `controller/aiController.js` exposes `/api/v1/ai/rule-responses` for `enableRuleResponses` and `customRuleResponses.templates`.
+- `services/aiAgent/settingsManager.js` parses those values into the runtime settings object consumed by `RuleBasedResponder`.
+- `services/aiAgent/RuleBasedResponder.js` skips rule-based greetings/thanks/farewells when `enableRuleResponses === false`, and does not use built-in defaults when no company template matches.
+- Saving smart replies invalidates the company settings cache so toggle changes take effect immediately.
+- This switch only controls optional instant templates configured in `/settings/smart-replies`; the broader customer AI auto-reply switch remains `AiSetting.autoReplyEnabled`.
+
+## Order Management
+The system allows merchant users to fully edit existing orders, including address fields, customer information, and the product list. The backend explicitly allows updates to `/simple/:orderNumber` and `/simple/:orderNumber/items` without restricting based on `isMerchantUser`.
+
+
+## WhatsApp Integration & Number Handling
+The system uses a centralized normalization service for all WhatsApp-related phone numbers and JIDs to ensure compatibility with diverse Egyptian phone formats and prevent message delivery failures.
+
+- **Normalization Utility**: `backend/services/whatsapp/contactIdentity.js`. This module handles:
+    - Stripping leading zeros and double country codes (e.g., `2001...` â†’ `201...`).
+    - Enforcing international format with the `20` prefix for Egyptian numbers.
+    - Validating prefixes (10, 11, 12, 15).
+- **JID Standardization**: All message-sending functions in `WhatsAppManager.js` and `WhatsAppMessageHandler.js` must use `normalizeWhatsAppContactIdentity(to).normalizedJid` instead of manual string concatenation.
+- **Verification API**: `backend/controller/whatsappController.js` exposes `/api/whatsapp/check-number`, which uses the normalization logic before querying the WhatsApp socket, ensuring that searches always use the correct JID format.
+- **Session Virtualization**: The frontend implements a virtual "All Sessions" view (ID: `"all"`). For interactive actions (sending messages, checking numbers, sending polls/lists, and inbox operations like deleting/archiving chats or blocking/unblocking contacts), the system automatically resolves this to the first available connected session via the `activeSessionId` helper in `WhatsAppChat.tsx` and a centralized `resolveActiveSessionId` helper in `backend/controller/whatsappController.js`. This ensures that operations always target a concrete, authenticated WhatsApp socket even when the user is browsing a mixed view of all accounts.
+- **Session Retention & Deletion Flow**: When a user unlinks or deletes a WhatsApp session from the settings UI (`WhatsAppSettings.tsx`), they can choose to preserve their chat history via the `keepHistory` toggle. If enabled, the backend `WhatsAppManager.deleteSession` intercepts the hard deletion, wiping only the authentication files and marking the session status as `LOGGED_OUT` with a `{"isDeleted": true}` metadata flag. The fetch queries in `whatsappController.js` filter out these soft-deleted sessions so they no longer appear in the UI, while preserving the critical database relationships for existing messages and contacts. The system also supports granular session history retention settings at session creation time, storing `keepHistoryOnDelete` in the session's database `metadata` (both standard and pairing code flows), which pre-populates the delete confirmation modal's checkbox and acts as the fallback policy when unlinking sessions via the API without an explicit query parameter.
+
+## Wofod AI Runtime Hardening
+Wofod Facebook/Messenger replies now use a Modern Agent runtime wrapper when company settings enable `useModernAgent`, while preserving the existing grounded Core provider pipeline for catalog, shipping, policy, and order logic.
+
+### Runtime Flow
+- **Entry Points**: `facebookCoreAdapter.js`, `messengerLiveExecutionService.js`, and `replyPreviewExecutionService.js` still own channel-specific orchestration.
+- **Modern Wrapper**: `CoreAIAgent.js` creates `ModernAgent` when enabled and passes the full `contextBag`, message type, attachments, RAG data, recommended images, and recent memory.
+- **Core Pipeline Compatibility**: `ModernAgent.js` supports `useCoreProviderPipeline`, delegating generation back through `providerGenerationService.generateResponseContent()` so Wofod gets Modern-mode tracing/metadata without losing existing deterministic grounding.
+- **Evaluation Metadata**: `coreRuntimeSupportService.js` records the active `agentMode` instead of hardcoding `CORE`.
+- **Facebook Comment Context**: `facebookCoreAdapter.js` enriches comment conversations with page/post metadata and fetched post details so price questions from post context can be grounded even when a manual `featuredProductId` setting is missing.
+- **Webhook Prisma Safety**: `utils/allFunctions.js` awaits the async Prisma accessor in Facebook webhook/comment helpers before updating comments, conversations, and diagnostics.
+
+
+## Product Publishing Workflow
+The product editor has two explicit save paths for company-side product management.
+
+- **Primary save** (`Ø­ÙØ¸ Ø§Ù„Ù…Ù†ØªØ¬` / `Ø­ÙØ¸ Ø§Ù„ØªØºÙŠÙŠØ±Ø§Øª`): non-merchant users publish the product by resolving workflow status to `PUBLISHED` and setting `isActive=true`.
+- **Draft save** (`Ø­ÙØ¸ ÙƒÙ…Ø³ÙˆØ¯Ø©`): preserves or creates draft workflow state.
+- **Merchant saves**: keep the merchant-scoped workflow behavior and do not auto-publish through the company primary save rule.
+
+Frontend workflow normalization lives in `frontend/src/pages/products/utils/workflow.ts`, and the product form applies it from `ProductNewFinal.tsx`. Backend enforcement lives in `backend/controller/productController.js` for both `createProduct` and `updateSingleProduct`, where non-merchant `isActive=true` is treated as publish intent so older `metadata.workflow` values cannot keep a product in `DRAFT`.
+
+## Company Assistant AI Agent
+The Company Assistant is a multi-channel (Telegram, WhatsApp, Web Chat) conversational AI agent registered at `backend/services/companyAssistant/CompanyAssistantAgent.js` and routed through `backend/services/companyAssistant/CompanyAssistantChannelRouter.js`.
+
+### Architecture Layers
+1. **Guardrails** (`tryHandleGuardrailMessage`): Blocks sensitive-data disclosure requests.
+2. **Session Management** (`tryHandleSessionMessage`): Handles new-conversation commands and context reset.
+3. **Self-Improvement** (`tryHandleSelfImprovementMessage`): Captures corrections, rule proposals.
+4. **Memory** (`tryHandleMemoryMessage`): Stores/recalls names, facts, and automatic memory captures.
+5. **Active Recall** (`tryHandleActiveRecallMessage`): Proactive memory retrieval when user asks "do you remember".
+6. **Clarification** (`tryHandleDeterministicClarification`): Asks for narrowing when request is too broad.
+7. **Conversational** (`tryHandleConversationalMessage`): Fallback AI-driven conversation with context.
+8. **AI Planner / Tool Execution**: `decideWithAI` or `planWithHeuristics` selects a tool, executes it, and summarizes the result.
+
+### Available Tools (Registered in `companyAssistantTools.js`)
+**100 tools total (45 READ + 55 WRITE with confirmation)**
+
+#### Dashboard & Analytics (3 tools)
+- `get_dashboard_summary` â€” 30-day order/conversation stats
+- `get_sales_analytics` â€” Daily revenue, orders, visits, conversion rate
+- `list_billing_history` â€” Company billing/charge history
+
+#### Orders & Returns (12 tools)
+- `search_orders` â€” Order search by number/customer/phone
+- `get_order_details` â€” Detailed order with items, shipments, status history
+- `update_order_status` â€” Change order status (WRITE)
+- `update_order` â€” Update payment, notes, customer info (WRITE)
+- `add_order_note` â€” Add internal note (WRITE)
+- `search_returns` â€” Search return requests
+- `update_return_status` â€” Update return status (WRITE)
+- `refund_order` â€” Process a refund for an order (WRITE)
+- `cancel_order` â€” Cancel an order (WRITE)
+- `create_shipment` â€” Create new shipment (WRITE)
+- `update_shipment_status` â€” Update shipment status (WRITE)
+- `cancel_shipment` â€” Cancel shipment (WRITE)
+
+#### Products & Inventory (12 tools)
+- `search_products` â€” Product search by name/SKU/tags
+- `get_product_details` â€” Full product with images, variants, category
+- `update_product` â€” Update name, price, stock, status (WRITE)
+- `create_product` â€” Create new product (WRITE)
+- `list_categories` â€” List product categories
+- `create_category` â€” Create category (WRITE)
+- `update_category` â€” Update category (WRITE)
+- `delete_category` â€” Delete product category (WRITE)
+- `list_inventory_locations` â€” Warehouses, low-stock, stock movements
+- `update_inventory_stock` â€” Update stock quantity (WRITE)
+- `create_inventory_transfer` â€” Transfer stock between warehouses (WRITE)
+- `list_product_reviews` â€” Product reviews by status/rating
+
+#### Customers (7 tools)
+- `search_customers` â€” Search by name/phone/email
+- `get_customer_profile` â€” Profile with orders, conversations, returns, block rules
+- `create_customer` â€” Create new customer (WRITE)
+- `update_customer` â€” Update customer details (WRITE)
+- `add_customer_note` â€” Add customer note (WRITE)
+- `get_customer_block_settings` â€” Block rules and messages
+- `update_customer_block_settings` â€” Update blocking settings (WRITE)
+
+#### Coupons & Discounts (5 tools)
+- `list_coupons` â€” List coupons by status
+- `create_coupon` â€” Create discount coupon (WRITE)
+- `update_coupon` â€” Enable/disable coupon (WRITE)
+- `delete_coupon` â€” Delete coupon (WRITE)
+
+#### Conversations & Inbox (3 tools)
+- `list_recent_conversations` â€” Recent conversations across channels
+- `get_conversation_details` â€” Search conversation by customer name/phone
+- `list_conversation_messages` â€” Read messages in a conversation
+
+#### Tasks (3 tools)
+- `list_tasks` â€” Recent tasks by status
+- `create_task` â€” Create task (WRITE)
+- `update_task` â€” Update task status/priority (WRITE)
+
+#### HR â€” Employees (5 tools)
+- `search_employees` â€” Search by name/phone/department/position
+- `get_employee_details` â€” Full profile with salary, department, position
+- `create_employee` â€” Create employee (WRITE)
+- `update_employee` â€” Update employee details (WRITE)
+- `deactivate_employee` â€” Terminate/deactivate employee (WRITE)
+
+#### HR â€” Departments & Positions (5 tools)
+- `list_departments` â€” Departments with employee counts
+- `create_department` â€” Create department (WRITE)
+- `update_department` â€” Update department (WRITE)
+- `list_positions` â€” Job positions by department
+- `create_position` â€” Create position (WRITE)
+
+#### HR â€” Attendance & Leave & Payroll (4 tools)
+- `list_attendance` â€” Attendance records by date/status/employee
+- `list_leave_requests` â€” Leave requests by status/type
+- `approve_leave_request` â€” Approve or reject leave (WRITE)
+- `list_payrolls` â€” Payroll records by month/year/employee
+
+#### Storefront & Settings (5 tools)
+- `get_storefront_status` â€” URL, pages, feature flags, promotions
+- `get_checkout_settings` â€” Checkout form field settings
+- `update_checkout_settings` â€” Update checkout fields (WRITE)
+- `get_footer_settings` â€” Footer about, contact, copyright
+- `update_footer_settings` â€” Update footer settings (WRITE)
+
+#### Media Gallery (2 tools)
+- `list_media_gallery` â€” List gallery files by type
+- `delete_media_file` â€” Delete gallery file (WRITE)
+
+#### Support Tickets (2 tools)
+- `list_support_tickets` â€” Tickets by status/category/priority
+- `update_ticket_status` â€” Update status or assignee (WRITE)
+
+#### Affiliates (2 tools)
+- `list_affiliates` â€” Affiliates with earnings/performance
+- `update_affiliate_status` â€” Approve/reject/suspend affiliate (WRITE)
+
+#### Billing & Subscription (3 tools)
+- `get_subscription_info` â€” Plan, billing cycle, status
+- `list_plan_limits` â€” Subscription plan limits
+- `list_billing_history` â€” Billing history
+
+#### Marketing & Broadcast (8 tools)
+- `list_broadcast_campaigns` â€” Campaigns with delivery stats
+- `create_broadcast_campaign` â€” Create broadcast campaign (WRITE)
+- `send_broadcast_message` â€” Send broadcast message (WRITE)
+- `stop_broadcast_campaign` â€” Stop active campaign (WRITE)
+- `list_whatsapp_quick_replies` â€” WhatsApp quick reply templates
+- `send_whatsapp_message` â€” Send message via WhatsApp (WRITE)
+- `update_whatsapp_template` â€” Update template (WRITE)
+- `list_loyalty_programs` â€” Programs, tiers, point settings (moved from Loyalty)
+
+#### Loyalty Programs (5 tools)
+- `list_loyalty_programs` â€” Programs, tiers, point settings
+- `create_loyalty_program` â€” Create loyalty program (WRITE)
+- `update_loyalty_program` â€” Update program (WRITE)
+- `add_loyalty_points` â€” Add points to customer (WRITE)
+- `redeem_loyalty_points` â€” Redeem points for reward (WRITE)
+
+#### Integrations & Services (5 tools)
+- `get_integration_health` â€” WooCommerce, Telegram, connections
+- `get_whatsapp_session_status` â€” Session, AI mode, queue
+- `get_facebook_ads_summary` â€” Accounts, campaigns, 30-day ROAS
+- `get_shipping_summary` â€” Shipping companies, shipments
+- `search_company_knowledge_base` â€” FAQs, policies, pages
+
+#### Notifications & Activity (3 tools)
+- `list_notifications` â€” Recent system notifications
+- `search_activity_log` â€” Activity log by category/action
+- `list_branches` â€” Company branches/warehouses
+
+#### Reviews (1 tool)
+- `update_review_status` â€” Approve or reject review (WRITE)
+
+### Channel Support
+- **Telegram** (TELEGRAM_BOT provider)
+- **WhatsApp** (WHATSAPP_BAILEYS, WHATSAPP_META_CLOUD providers)
+- **Web Chat** (MAXP_WEB_CHAT provider) â€” browser-based chat via `/company-assistant/chat`
+
+### Controller API
+`backend/controller/companyAssistantController.js` exposes CRUD endpoints for channels, skills, memories, logs, web-chat sessions, self-improvement proposals, memory index management, and Telegram scenario coverage.
+
+## AI Agent Intent Architecture
+Customer intent routing is LLM-native by default.
+
+### Routing Layers
+1. **Turn Command Contract**: `turnCommandContractService.js` exposes the allowed command vocabulary and schema to the 20-section prompt.
+2. **Model Inference**: The model infers the current command from the message, memory, RAG, image context, and tool outputs inside the provider generation pass.
+3. **Deterministic Validators**: Backend services may validate facts, prices, orders, handoff state, and unsafe output, but they do not become semantic intent authority.
+4. **Legacy Opt-in**: `CORE_AI_RULE_BASED_INTENT_AUTHORITY=true` and related legacy flags can re-enable old compatibility behavior for emergency rollback only.
+
+### Legacy Heuristics
+`heuristicIntentRoutingService.js` and `imageIntentClassifierService.js` are neutral shims. Regex-based semantic intent classification is not part of the default customer reply path.
+
+`tests/services/CoreAIAgent.catalogVariantContext.test.js` now keeps the old deterministic catalog expectations in a skipped migration block and uses active LLM-native catalog-contract tests as the release gate: catalog facts must be model-visible, `detectedIntent` must not become authority, model failure must not resurrect deterministic catalog fallbacks, and image sends require explicit image-send context.
+
+### Two-Tone Color Extraction
+The system supports extraction of two-tone color patterns from customer messages (e.g., "Ø§Ø¨ÙŠØ¶ ÙÙŠ Ø§Ø³ÙˆØ¯" â†’ white-and-black).
+- **`catalogVariantService.extractTwoToneColors()`**: Detects `[color1] ÙÙŠ [color2]` patterns in normalized text.
+- **`catalogVariantService.extractRequestedVariantFilters()`**: Uses two-tone colors to find product variants whose color attribute contains both color terms.
+- **`conversationSummaryService`**: Inline color extraction stores two-tone colors as combined labels (e.g., `"Ø§Ø¨ÙŠØ¶ / Ø§Ø³ÙˆØ¯"`) in conversation summaries.
+- **Note**: All Arabic color regexes intentionally omit `\b` word boundaries because JavaScript `\b` only recognizes ASCII word characters.
+
+### Conversation Metadata & AI Summaries
+Conversation-specific data is stored in a stringified JSON `metadata` field in the `Conversation` model.
+- **AI Summaries**: Stored under `metadata.coreAi.conversationSummary`.
+- **Fields**: Includes `product` (name, id), `selection` (color, size), and `customer` (name, phone, governorate, address).
+- **Editing**: Handled via `updateConversation` in `conversationCrudController.js`, which performs a deep patch on the summary object.
+- **Frontend Sync**: Managed by `useConversationActions` hook and `FacebookInbox` parent state to ensure UI consistency.
+
+## Landing Page (Elite Business OS)
+The landing page has been transformed from a standard e-commerce template to a premium Enterprise OS entry point.
+
+### Component Map
+1. **Hero Section**: Dynamic gradient text, glow orbs, and unified messaging.
+2. **Trust Bar**: Moving track of integrated platforms (Meta, WhatsApp, Google, etc.).
+3. **Tools Grid**: 16+ core system tools showcased with micro-interactions.
+4. **Module Explorer**: Tabbed interface showcasing deep system capabilities (CRM, ERP, Growth, HR, AI).
+5. **Sovereignty Section**: Focus on data ownership and AI model freedom.
+6. **ROI Calculator**: Interactive tool for business value estimation.
+7. **FAQ**: Integrated accordion for common onboarding questions.
+
+### Tech Stack
+- **Framework**: React (Vite)
+- **Styling**: Vanilla CSS (platformLanding.css) + Tailwind CSS (utilities)
+- **Animation**: Framer Motion (Scroll Reveal, AnimatePresence)
+- **Icons**: Emoji-based for performance and modern minimalist aesthetic.
+
+## Clarity Analytics
+The system integrates with Microsoft Clarity for session recording and heatmap analytics on storefronts.
+
+### Backend
+- **Controller**: `storefrontSettingsController.js` â€” `getClarityAnalytics` endpoint with in-memory caching (1h TTL).
+- **Schema**: `settings.prisma` â€” `clarityProjectId` and `clarityApiToken` fields on `StorefrontSettings`.
+- **Route**: `storefrontSettingsRoutes.js` â€” `GET /:companyId/clarity-analytics`.
+
+### Frontend
+- **Settings Panel**: `StorefrontClaritySettings.tsx` â€” Configure Clarity project ID and API token.
+- **Analytics Dashboard**: `ClarityAnalyticsPanel.tsx` â€” Visual analytics metrics panel.
+- **Service**: `storefrontSettingsService.ts` â€” API call wrapper.
+
+## Company Assistant (AI Agent)
+The Company Assistant is a per-company AI agent that manages tasks, answers questions, and executes tools.
+
+### Architecture
+- **Controller**: `companyAssistantController.js` â€” Unified entry point for company-scoped AI interactions.
+- **Agent Core**: `CompanyAssistantAgent.js` â€” Orchestrates conversation, tool execution, and response generation.
+- **Tools**: `companyAssistantTools.js` â€” Registry of executable functions the agent can invoke.
+- **Schema**: `company_assistant.prisma` â€” Data models for agent state and configuration.
+
+## Billing & Subscription System
+The billing system manages platform subscriptions, trial periods, and wallet-based payments.
+
+### Components
+- **Controller**: `authController.js` â€” Handles registration flow with trial period assignment.
+- **Service**: `billingService.js` â€” Core billing logic including subscription management and trial end date tracking.
+- **Service**: `billingNotificationService.js` â€” Sends billing-related notifications to users.
+- **Service**: `businessSpecialtyService.js` â€” Business specialty/subscription tier management.
+- **Routes**: `billingRoutes.js`, `platformSubscriptionRoutes.js`, `walletRoutes.js` â€” API endpoints for billing operations.
+- **Schema**: `billing.prisma` â€” Data models for subscriptions, wallets, and billing history.
+- **Migration**: `20260513105853_add_trial_end_date` â€” Adds trial end date tracking to the database.
+
+### Trial Flow
+1. User registers â†’ `authController.js` assigns trial subscription with `trialEndDate`.
+2. `billingService.js` manages trial expiration and conversion to paid plans.
+3. `walletRoutes.js` handles wallet-based payments for subscription renewal.
+
+## WhatsApp Inbox CRM
+
+Full multi-moderator WhatsApp Inbox CRM with number-based isolation, RBAC, internal notes, tags, notifications, per-moderator dashboard, and admin settings.
+
+### Core Operating Model
+- One WhatsApp conversation can have only one live moderator owner at a time.
+- Moderators can see and reply only to their owned conversations.
+- `COMPANY_ADMIN`, `SUPER_ADMIN`, and `TEAM_LEADER` keep supervisory override access for transfer, auditing, and escalation.
+- Queue states now follow the operational flow: `NEW`, `QUEUED`, `ASSIGNED`, `ACTIVE`, `PENDING`, `WAITING_CUSTOMER`, `ESCALATED`, `CLOSED`, `ARCHIVED`.
+- `/settings/roles` is intentionally only a redirect to `/roles`; inbox settings are centralized in `/settings/inbox` to avoid duplicate admin surfaces.
+
+### Prisma Models (`backend/prisma/schema/whatsapp_inbox.prisma`)
+- **ModeratorTeam**, **ModeratorTeamMember** â€” Team grouping with Team Leader role
+- **WhatsAppNumberAssignment** â€” Exclusive number-to-moderator assignment
+- **ConversationModeratorNote** â€” Internal per-conversation notes
+- **ConversationTag** â€” Custom conversation tagging
+- **ModeratorActivityLog** â€” Audit trail for all moderator actions
+- **ModeratorNotification** â€” In-app notification delivery
+- **ModeratorDashboardCache** â€” Pre-computed dashboard stats (30 min refresh)
+- **InboxSettings** â€” Per-company inbox configuration
+
+### Routing, Ownership, and Queue Services
+- **`whatsappAssignmentEngineService.js`** â€” Auto assignment and reassignment engine with PostgreSQL advisory locks, supporting round robin, least-load, and skill-based routing.
+- **`whatsappInboxSettingsService.js`** â€” Normalizes all inbox settings defaults and serializes JSON config blocks for assignment, ownership, queues, skills, SLA, and notifications.
+- **`whatsappInboxMetadata.js`** â€” Shared queue/status helpers for deriving queue keys, session IDs, ownership metadata, and SLA flags from conversation metadata.
+- **`whatsappInboxService.js`** â€” Enforces owner-only visibility for moderators, exposes queue counters/moderator pool summaries, and drives transfer/status/message flows.
+- **`WhatsAppSyncService.js`** â€” Persists session-aware WhatsApp conversation metadata and auto-triggers assignment when new inbound WhatsApp messages arrive.
+
+### Middleware
+- **`numberAccessGuard.js`** â€” Isolates moderators to their assigned WhatsApp numbers only
+- **`rbacMiddleware.js`** â€” 40+ granular permissions with role hierarchy
+
+### Backend Modules
+| Route prefix | Service | Controller |
+|---|---|---|
+| `/api/v1/whatsapp-inbox` | `whatsappInboxService.js` | `whatsappInboxController.js` |
+| `/api/v1/moderator-dashboard` | `moderatorDashboardService.js` | `moderatorDashboardController.js` |
+| `/api/v1/internal-notes` | â€” | `internalNotesController.js` |
+| `/api/v1/admin/whatsapp-numbers` | `numberAssignmentService.js` | `numberAssignmentController.js` |
+| `/api/v1/notifications/inbox` | `inboxNotificationService.js` | `inboxNotificationController.js` |
+| `/api/v1/admin/rbac` | â€” | `rbacAdminController.js` |
+| `/api/v1/inbox-settings` | â€” | `inboxSettingsController.js` |
+
+### RBAC Role Mapping
+- `AGENT` â†’ `MODERATOR` (own numbers only)
+- `MANAGER` â†’ `TEAM_LEADER` (team numbers)
+- `COMPANY_ADMIN` / `ADMIN` / `OWNER` â†’ `ADMIN` (all company numbers)
+- `EMPLOYEE` â†’ `MODERATOR` (legacy moderator alias)
+- `SUPER_ADMIN` â†’ `SUPER_ADMIN` (all companies)
+
+### Admin Surface Notes
+- `ModeratorDashboard.tsx` and `WhatsAppNumberSettings.tsx` are fully localized through the `whatsappInbox` translation namespace and render Arabic copy when the app language is Arabic.
+- Inbox admin pages translate backend errors via `frontend/src/pages/whatsapp-inbox/errorTranslation.ts` instead of exposing raw English API messages.
+- `rbacAdminController.js` now derives team leaders from `ModeratorTeamMember.isTeamLeader`, and the WhatsApp inbox guards normalize legacy roles before permission checks.
+- `moderatorDashboardService.js` must query `Customer.firstName` / `lastName` and the `Conversation.user` relation, then map them back to `customer.name` and `assignedUser` in the response so the moderator dashboard stays compatible with the existing frontend contract without triggering Prisma validation errors.
+- `InboxSettingsPage.tsx` is the canonical operational control center for assignment rules, ownership locks, queue limits, reassignment, skills, SLA, notifications, and working hours.
+- `workspaceCopy.ts` is the localized copy source for `/whatsapp-inbox`, `/notifications/inbox`, and `/settings/inbox`, allowing those surfaces to switch cleanly between Arabic and English without duplicating text across components.
+- `queuePresentation.ts` now formats queue and workflow labels per active locale while still keeping queue badges stable when older payloads omit `queueKey`.
+
+### Frontend Pages (`frontend/src/pages/whatsapp-inbox/`)
+InboxPage, WhatsAppChat, ModeratorDashboard, WhatsAppNumberSettings, InboxSettingsPage, InboxNotifications â€” all lazily loaded in `frontend/src/App.tsx`.
+- Legacy `/settings/roles` no longer mounts a dedicated inbox page. The canonical roles/permissions surface is `/roles`.
+
+## Storefront Themes & Presets
+The storefront uses a modular variant-based architecture managed in `frontend/src/storefront/` â€” Modular Storefront Architecture.
+    - `themes/` â€” Theme manifests and presets (including `butcher-counter-eg`).
+    - `sections/` â€” Artisanal PDP components, interactive weight sliders, and preparation-room logic.
+    - `components/` â€” Premium butcher cards (Oxblood/Brass) and high-density product grids.
+    - `checkout/` â€” Cold-chain logistics with delivery slot selection.
+    - `engine/` â€” Theme resolution and artisanal experience overrides.
+
+### Theme Registry & Variant Architecture
+- **Core Registry**: `themes/index.ts` and `themes/catalog.ts` define available presets and their metadata.
+- **Experience Overrides**: `themes/experienceOverrides.ts` provides runtime adjustments for shared commerce families.
+- **Variant Registry**: `variants/registry.ts` maps section IDs to specific component implementations.
+- **Premium Presets**: Includes specialized identities like `butcher-atelier` (Premium Butcher Shop) with cinematic "Black Label" variants (`butcher-proof-board`, `butcher-cut-map`, `butcher-black-label`).
+- **Production Stabilization**: Large section components (e.g., `HeroBanner.tsx`) use consolidated function-based variants to ensure stable JSX transpilation across various CI and local environments.
+
+## Facebook Ads AI Draft Service
+The `facebookAdsAiDraftService.js` orchestrates AI-powered Facebook ad draft generation.
+
+### Key Features
+- **Draft Generation**: Uses OpenAI to generate ad drafts with targeting, creatives, and budget.
+- **customInstructions**: Optional user-provided instructions appended to the AI prompt for fine-grained control.
+- **Parallel Generation**: Frontend runs up to 3 product drafts concurrently via `runWithConcurrency`.
+- **Draft Lifecycle**: Tracks states â€” `PENDING`, `READY`, `FAILED`, `PUBLISHED`, `LOCAL_SAVE_FAILED`, `META_PARTIAL_FAILED`.
+
+### Frontend Components
+- `AiDraftCard.tsx` â€” Draft card with image preview, checkbox for batch publish, status badges.
+- `AiProductGroupCard.tsx` â€” Collapsible product group with regenerate button.
+- `AiProductSelector.tsx` â€” Product browser/search tool for adding product URLs.
+- `FacebookAdsAiBuilder.tsx` â€” Main page orchestrating generation, batch publish, search/filter.
+- `AiChatPanel.tsx` â€” Fixed right-side AI chat panel for campaign setup, draft generation, draft feedback, and guarded publish requests.
+
+### AI Chat Control Layer
+- **Provider Function Calling**: `GoogleProvider.js`, `OpenRouterProvider.js`, and `responseGenerator.js` pass OpenAI-compatible `tools` through to the active model and normalize Gemini/OpenAI function-call responses into `toolCalls`.
+- **Agent**: `services/facebookAdsAiChat/FacebookAdsChatAgent.js` runs a bounded ReAct loop (max 8 iterations), injects the current AI Builder state, executes tools, and returns assistant text plus tool results.
+- **Tool Registry**: `FacebookAdsToolRegistry.js` registers 7 builder tools: campaign settings, add/remove product URLs, generate drafts, regenerate a product, publish drafts with confirmation, and draft feedback.
+- **Persistence**: `FacebookAdsAiChatSession` and `FacebookAdsAiChatMessage` store sessions, state snapshots, assistant tool calls, and tool results.
+- **API**: `facebookAdsAiChatController.js` exposes `/api/v1/facebook-ads/ai-chat/sessions` endpoints for session CRUD, messages, and context sync with a per-session 30 messages/minute guard.
+- **Safety**: `publish_drafts` refuses duplicate draft IDs and requires explicit confirmation before returning a publish action. The existing AI Builder publish payload still defaults created ads to `PAUSED` unless the backend receives a valid active-publish confirmation token.
+
+## SuperAdmin Dashboard (v2)
+The SuperAdmin workspace provides a high-density "Elite Cockpit" interface for managing enterprise-scale accounts and system-wide health.
+
+### Core Pages
+- **SuperAdmin Dashboard**: `SuperAdminDashboard.tsx`. Main entry point with real-time stats, plan distribution, and recent activity monitors.
+- **Companies Management**: `SuperAdminCompaniesV2/index.tsx`. Specialized flexible "Elite Cockpit" for company lifecycle and CRM follow-ups. Optimized for full-width high-density viewing.
+
+### Components & Design
+- **MetricCards**: Glassmorphic overview cards with cinematic background glows and `font-black` typography.
+- **Plan Distribution**: `PlanDistributionItem` cards with tier-specific gradients and animated progress bars.
+- **CompanyFilters**: Compact chip-based filtering system with integrated search and saved views.
+- **CompaniesTable**: Optimized TanStack Table with high-density cells, premium badges, and mobile-first card layouts.
+- **ResponsiveOverlay**: Unified modal system supporting mobile sheets and elite desktop overlays with `backdrop-blur-xl`.
+
+### Design Tokens
+- **Radius**: `rounded-[40px]` for main containers, `rounded-[32px]` for secondary items, `rounded-full` for chips.
+- **Typography**: `font-black` (900) for H1/Titles, `font-bold` for labels, `tracking-widest` for uppercase sub-labels.
+- **Visuals**: Glassmorphism (`backdrop-blur-xl`), mesh gradients (`primary/10`, `secondary/10`), and premium border colors (`border-border/40`).
+
+## Dynamic Product Order Attributes
+
+The product and AI order systems now treat variant requirements as product metadata instead of hard-coded color/size rules.
+
+### Backend Flow
+- `utils/productNormalizationUtils.js` normalizes category-specific attribute names and unit values such as perfume volume, electronics storage, scent, model, pack, weight, metal color, shoe size, and clothing size.
+- `services/aiAgent/catalogVariantService.js` exposes dynamic helpers:
+  - `normalizeAttributeMap`
+  - `getVariantAttributeValuesByName`
+  - `getVariantAttributeLabel`
+  - `getOrderRequiredVariantFields`
+- `services/aiAgent/conversationSummaryService.js` stores selected dynamic options under `conversationSummary.selection.attributes` while mirroring legacy `color` and `size` only when appropriate.
+- `services/aiAgent/orderCollectionService.js` builds missing-field prompts from required product attributes and writes `productAttributes` into order payloads.
+- `services/enhancedOrderService.js` persists dynamic item attributes and avoids saving unit-based options such as `100ml` as `productSize`.
+- `services/aiAgent/resolvers/ProductCatalogResolver.js` includes dynamic attributes in catalog grounding and searchable product context.
+
+### Frontend Flow
+- `frontend/src/pages/products/components/tabs/AttributesTab.tsx` lets admins mark each variation attribute as required for AI order collection.
+- `frontend/src/pages/products/hooks/useProductApi.ts` saves `metadata.aiOrderOptions.requiredAttributes` and `metadata.aiOrderOptions.attributeLabels`.
+- `frontend/src/pages/products/hooks/useProductVariants.ts` defaults newly-created variation attributes to required-for-order so admins can opt out when needed.
+- `frontend/src/pages/products/ProductNewFinal.tsx` reconstructs existing product attributes with the required-for-order flag.
+
+### Behavior
+- Shoes/clothes can still require `Size`.
+- Perfumes can require `Volume`, `Scent`, or `Concentration`.
+- Electronics can require `Storage` or `Model`.
+- Accessories with no meaningful variant do not force any size question.
+
+## Customer AI Atomic Price Integrity
+
+Customer-facing numeric prices now pass through a DB-backed source of truth immediately before delivery.
+
+### Runtime Flow
+- `services/aiAgent/priceIntegrityService.js` extracts currency mentions from the final reply and verifies them against fresh DB snapshots.
+- Product prices are accepted only from `Product.price` or active `ProductVariant.price` rows scoped to the company.
+- Shipping prices are accepted only from verified `ShippingZone.price` or active flat-shipping promotion settings.
+- Final totals are accepted only when product, shipping, and shipping-class components are all verified.
+- `services/aiAgent/responsePriceValidationService.js` still performs contextual correction, then delegates to `priceIntegrityService` when wired by Core.
+- `services/aiAgent/customerReplyFinalizationService.js` runs a second `pre_delivery_guard` validation after all sanitization and deterministic replacements.
+
+### Failure Behavior
+- A reply with no numeric price skips the price gate.
+- A reply with a numeric price and no DB-verifiable source is suppressed before delivery.
+- Suppression metadata is stored under `contextBag.priceIntegrity` and `contextBag.customerReplySuppression` for traceability.
+- Tests that directly call `_validateResponsePrices` must provide a DB mock when expecting prices to pass.
+
+## Socket Delivery In Workers
+
+`services/socketService.js` supports two runtime shapes:
+
+- Backend HTTP process: owns the Socket.IO server at `this.io` and can inspect local adapter room membership.
+- Worker process: may only have a Redis emitter from `getIO()` and must not read `this.io.sockets`.
+
+Company-level events, including `emitNewConversation`, must publish through the returned `io.to(room).emit(...)` interface and treat room-size logging as best-effort server-only diagnostics.
+
+## Handoff Empty-Generation Outcome
+
+Explicit customer handoff requests are production-support events, not generic model fallback opportunities.
+
+- `services/aiAgent/handoffAcknowledgementReplyService.js` no longer builds deterministic customer acknowledgements; `/settings/smart-replies` is the only fixed-reply source.
+- `services/aiAgent/messengerLiveExecutionService.js` and `services/aiAgent/replyPreviewExecutionService.js` record a handoff transition even when the model returns empty and no customer text can be sent.
+- Runtime truth traces mark these turns as no-customer-reply known outcomes rather than fake delivered acknowledgements.
+- The normal handoff state machine still owns persistence: `recordHandoffAfterAssistantTurn` records `pending` with SLA and transition metadata.
+- Silent empty-generation metadata now carries `handoffDecision`, `handoffState`, `detectedIntent`, and `intentConfidence` to make production audits explainable.
+- `services/aiAgent/handoffStateMachineService.js` only escalates support handoff when the current customer message carries a support/escalation signal, preventing stale support context from hijacking later commerce/off-topic turns.
+- `cron/aiHandoffTimeoutCron.js` sweeps expired `pending` handoffs every 5 minutes and records a `timeout` transition even when no new inbound message reaches that conversation.
+- Active unassigned `support_escalation` handoffs can auto-resume when the next customer message is clearly commerce/product-oriented and contains no current support or explicit human-handoff signal.
+- `messengerLiveExecutionService.js` and `replyPreviewExecutionService.js` pass the current message into `evaluateHandoffBeforeRun` so stale handoff state cannot blindly suppress a new commerce turn.
+- `routes/aiLearningRoutes.js` exposes `GET /api/v1/ai-learning/production-metrics` through `aiProductionMetricsDashboardService` for production truth metrics: reply success, tool success, handoff/escalation, wrong price, silent failure, fallback, suppression, latency, queue/outbox health, and conversion rate when order data is available.
+- `frontend/src/pages/ai/AIProductionLearning.tsx` renders these metrics as the Production Truth Dashboard so operators can see readiness, stale ledgers, suppression reasons, and price/silent-failure risks without running audit scripts.
+
+## Shipping Price-Safety Repair
+
+Shipping questions must not inherit stale FAQ/RAG numeric policy text.
+
+- `customerReplyFinalizationService.js` detects current `shipping_inquiry` turns whose price guard has fallen back to a product-name request.
+- It suppresses that text and records the missing governorate in reply metadata instead of injecting a fixed governorate request.
+- The repair intentionally contains no numeric shipping amount; actual shipping prices must come from DB-backed shipping quote/tool data after a governorate is known.
+
+## Empty Reply Recovery
+
+Empty-generation handling is a guardrail layer, not a generic template engine.
+
+- `services/aiAgent/emptyReplyRecoveryService.js` owns the only non-handoff empty-reply recoveries.
+- Price-question recovery requires a grounded product from the current context or conversation metadata, then fetches the product and active variants from DB before mentioning a price.
+- Verified price recovery writes `contextBag.priceIntegrity.status = "verified"` and locks reply source `verified_price_empty_reply_recovery`.
+- Low-information messages such as repeated letters or punctuation are suppressed as explicit known outcomes if the model cannot generate a reply; the runtime no longer substitutes fixed clarification text.
+- `replyPreviewExecutionService.js` and `messengerLiveExecutionService.js` call this service before empty-generation silence and retry once after final guardrail blocks, but only model/verified recovery text may proceed.
+- `customerReplyFinalizationService.js` preserves verified recovery replies through finalization and does not append generic sales questions to them.
+
+## Runtime No-Silent-Failure Recovery
+
+Messenger live runtime now has an explicit finite-outcome layer for recoverable no-reply cases.
+
+- `services/aiAgent/runtimeLedgerService.js` exposes `reapStaleRunningLedgers` to close expired `RUNNING` ledgers with `knownOutcome = "stale_running_reaped"`.
+- `services/aiAgent/aiRuntimeQueueService.js` exposes `reapStaleRunningJobs` to move expired queue locks from `RUNNING` back to `RETRY` or terminal `FAILED`.
+- `services/aiAgent/aiDeliveryOutboxService.js` exposes `reapStaleRunningItems` to recover expired outbox locks before delivery workers continue.
+- `workers/aiRuntimeQueueWorker.js` runs the ledger and queue reapers before each queue drain.
+- `workers/aiDeliveryOutboxWorker.js` runs the outbox reaper before each outbox drain.
+- `services/aiAgent/messengerLiveExecutionService.js` records locked known outcomes for recoverable input guardrail, final guardrail, empty generation, provider exhaustion, and pre-delivery processing errors. If no AI/Smart Reply text exists, it does not send fixed recovery text.
+- Handoff-active, AI-disabled, and human-intervention skips complete the runtime ledger as `success` with `metadata.knownOutcome.delivered = false` so dashboards can separate intentional no-AI outcomes from unexplained no-reply failures.
+- `services/aiAgent/aiProductionMetricsDashboardService.js` reports `knownOutcomeRate` and excludes explicit known outcomes from `silentFailureRate`, while still surfacing `health.knownOutcomeRuns` and `breakdowns.knownOutcomeReasons`.
+- Production metrics exclude `core_test_chat` / `test-chat` ledgers from production rates and support short windows through `hours` or explicit `since` options.
+
+## Messenger Queue And Outbox Enforcement
+
+Customer Messenger AI replies must not call Facebook delivery directly from the response delivery layer.
+
+- `services/aiAgent/responseDeliveryExecutionService.js` treats `aiDeliveryOutboxService` as mandatory whenever `senderId`, `pageAccessToken`, and customer-visible text or images are present.
+- If the outbox service is unavailable, the delivery layer raises `DELIVERY_OUTBOX_REQUIRED` before creating the outbound message record, preventing phantom successful replies and direct sends.
+- `sendMessengerDelivery` only stages and executes `aiDeliveryOutboxService`; it no longer falls back to `sendProductionFacebookMessage`.
+- `services/aiAgent/aiDeliveryOutboxService.js` remains the only AI reply path that receives `sendProductionFacebookMessage` for actual Messenger transport execution.
+- `utils/allFunctions.js` routes legacy comment Messenger replies and generic `sendFacebookMessage` calls through `sendFacebookMessageViaDeliveryOutbox`.
+- `routes/facebookStatusRoutes.js` uses the same outbox-backed `sendFacebookMessage` path for test messages.
+- `AiDeliveryOutboxService.buildMessengerOutboxKey` includes message content when a durable database message id is not available, so broadcast/test deliveries are deduped by payload instead of only recipient/page/type.
+- `services/aiAgent/aiProductionMetricsDashboardService.js` reports:
+  - `rates.queueCoverageRate`: queued inbound Messenger-eligible customer messages divided by Messenger-eligible customer messages. Facebook comment/comment-reply records are excluded from this denominator because they are not handled by the Messenger queue runtime.
+  - `rates.outboxCoverageRate`: delivered AI output messages covered by a `SENT` outbox row.
+  - `health.missingOutboxMessageIds`: successful AI output messages with no matching `SENT` outbox row.
+  - `totals.queueEligibleCustomerMessages`: the exact denominator used by queue coverage for production validation.
+
+## Facebook Messenger AI Auto-Reply
+
+Facebook Messenger customer messages now trigger AI auto-replies (similar to WhatsApp).
+
+- `backend/services/aiAgent/aiMessageProcessor.js` accepts a dynamic `channel` parameter (defaulting to `'WHATSAPP'`) to support multiple channels including `'FACEBOOK'`.
+- `backend/utils/allFunctions.js:handleFacebookMessage` uses a non-blocking `setImmediate` block to run the AI processor after saving the customer's inbound message.
+- If the AI generates a reply, the system saves the response to the DB as an `ai_reply` message, emits it via Socket.IO so it appears in the dashboard in real-time, updates the conversation status (`lastMessageIsFromCustomer: false`), and sends it to the customer via `sendFacebookMessage`.
+
+## Facebook Comment Core Runtime
+
+Facebook comments can be sent through Core AI reply-only mode, but page-authored comment replies are not customer input.
+
+- `services/facebookCoreAdapter.js` refuses `senderId === pageId` comments before resolving customer/conversation context or reserving Core AI runtime.
+- `utils/allFunctions.js` applies the same guard in `handleFacebookComment` after resolving the page token and before saving the comment or invoking AI.
+- `services/aiAgent/aiProductionMetricsDashboardService.js` excludes page-authored comment echoes from customer-message and AI-runtime metrics, while still counting real customer-authored comment records.
+- This prevents Facebook comment reply echoes from being processed as new customer messages and creating artificial silent failures.
+
+## Core AI Response Budget
+
+Live Core AI generation has a bounded latency budget before delivery.
+
+- `services/aiAgent/providerGenerationService.js` creates `contextBag.responseBudget` for every Core generation attempt.
+- Model-driven tool calling uses one provider attempt per model call and a budgeted timeout (`CORE_AI_MODEL_CALL_TIMEOUT_MS`, default 3200ms) for the tool-selection and final-response calls.
+- Configured non-Google fallback calls receive the remaining budget through `configuredProviderFallbackService`.
+- Direct Gemini fallback calls are wrapped in an explicit timeout and stop retrying once the response budget is exhausted.
+- `services/aiAgent/aiProductionMetricsDashboardService.js` reports customer-visible response latency percentiles: p50, p95, p99, max, and measured run count. It also reports lifecycle latency separately so stale reaper closures do not pollute customer-visible response latency.
+- Suppression metrics count only explicit suppressed output (`SILENT`, `customerReplySuppression`, `metadata.suppression`, or `replySource.suppressed` / `replySource.suppression`). Delivered known outcomes remain in `knownOutcomeRate`, not `suppressionRate`; fixed recovery text is disabled unless it originates from `/settings/smart-replies`.
+- Wrong-price metrics are price-bearing only. `wrongPriceRate` excludes missing-price answers and counts DB-evidence failures (`product_price_mismatch`, `price_without_db_evidence`, or `pricingAccuracy.wrongPrice = true`).
+- Final price-gate metadata (`priceIntegrity`) is persisted with outbound message metadata, delivery outbox metadata, production evaluation metadata, telemetry metadata, and runtime ledger metadata so future price audits can prove DB verification without reconstructing context from model text.
+
+## AI Runtime Recovery Cron
+
+Stale AI runtime records have two recovery owners:
+
+- `workers/aiRuntimeQueueWorker.js` and `workers/aiDeliveryOutboxWorker.js` run stale reapers before each drain.
+- `cron/aiRuntimeRecoveryCron.js` is a backend-process safety net that runs every minute and at startup.
+
+The recovery cron calls:
+
+- `runtimeLedgerService.reapStaleRunningLedgers`
+- `aiRuntimeQueueService.reapStaleRunningJobs`
+- `aiDeliveryOutboxService.reapStaleRunningItems`
+
+If queue or outbox rows are returned to `RETRY`, the cron kicks the matching worker immediately. This keeps `RUNNING` ledger/queue/outbox states finite even when no new inbound message arrives.
+
+## Conversation State And Image Intent
+
+Core AI conversation continuity is assembled from durable conversation metadata plus the current turn context.
+
+- `services/aiAgent/conversationStateService.js` reads and writes:
+  - `metadata.coreAi.lastGrounding` for the last grounded product sent by the assistant.
+  - `metadata.coreAi.conversationSummary` for product, selected attributes, order/customer fields, and update timestamps.
+  - Recent assistant message `metadata.grounding` as a fallback when conversation metadata is missing.
+- `services/aiAgent/productGroundingService.js` resolves follow-up messages from conversation metadata first, then summary, then recent history when allowed.
+- `services/aiAgent/contextPreparationService.js` converts that durable state into transient `contextBag` fields such as `matchedProduct`, `activeGroundedProduct`, `requestedVariantFilters`, `matchedVariants`, neutral image context, and `turnCommandContract`.
+- `services/aiAgent/catalogVariantService.js` owns canonical variant extraction and matching, including two-tone/stripe color phrases such as `Ø§Ù„Ø£Ø¨ÙŠØ¶ Ùˆ Ø§Ù„Ø®Ø· Ø§Ù„Ø£Ø³ÙˆØ¯`.
+- `services/aiAgent/imageIntentClassifierService.js` no longer classifies image semantics. Image understanding is deferred to the LLM-native turn command contract.
+- `services/aiAgent/customerImageHandlingService.js` exposes neutral image and grounding facts only; customer wording remains model-generated or Smart Replies-owned.
+- `services/aiAgent/providerGenerationService.js` adds the turn command contract to the model system instruction so image, order, support, and commerce commands are inferred inside the section prompt rather than by regex labels.
+- For Facebook post-scoped image messages, `contextPreparationService.js` now trusts the post `featuredProduct` before broad catalog image matching, preventing image/reference follow-ups from drifting to a different product.
+- `services/aiAgent/emptyReplyRecoveryService.js` has a verified product-image recovery path that can answer with the grounded product and price when provider generation fails or returns empty.
+- `services/aiAgent/customerReplyShapingService.js` is the final image-reply safety net: if a grounded image reply is generic or omits the database price, it rewrites the reply around the verified product facts.
+- `services/aiAgent/geminiProviderRuntimeService.js` filters Gemini text fallback candidates to safe chat-generation families, excluding TTS/audio/live/image/custom-tools/legacy models from customer reply fallback.
+
+## Conversation State Reply Contract
+
+`services/aiAgent/conversationStateReplyContractService.js` is the final customer-reply contract for state continuity.
+
+- It derives active product state from `matchedProduct`, `activeGroundedProduct`, pricing quote snapshots, and durable conversation summaries.
+- It blocks product-identity questions when the active product is already known.
+- It handles shipping/total follow-ups by requiring a governorate before any shipping amount is sent.
+- It handles variant/color follow-ups by tracking selected color, selected size, matched variants, verified color availability, and missing size slots.
+- `customerReplyFinalizationService.js` applies the contract after sanitization, question enforcement, price integrity, and commerce fact integrity so late fallbacks cannot reintroduce stale product clarification.
+- The contract exposes active product/variant metadata for the model and blocks product-identity questions, but it does not inject canned state-aware questions.
+
+## Dynamic System Prompt Sections
+
+`services/aiAgent/providerGenerationService.js` now exposes a safe prompt migration layer:
+
+- `buildSystemInstructionLegacy()` keeps the current byte-for-byte system prompt behavior.
+- `buildSystemInstructionDynamic()` composes the same output through `services/aiAgent/prompt-sections`.
+- `buildSystemInstruction()` uses the dynamic section-based prompt as the primary path, with the legacy prompt retained only as an emergency fallback and mismatch diagnostic path.
+- `services/aiAgent/prompt-sections/index.js` owns section registration, dependency-based MD5 cache keys, deep-frozen section context, registry validation, critical fallback, and optional prompt-size guardrails.
+- `services/aiAgent/prompt-sections/SECTION_INTERFACE.md` documents the mandatory section contract.
+- `services/aiAgent/prompt-sections/prompt-gaps-report.md` records the maxp2/maxp3 comparison and remaining migration phases.
+
+## Customer Reply Generation Source Policy
+
+Fixed customer replies are allowed only when they come from `/settings/smart-replies`.
+
+- `services/aiAgent/RuleBasedResponder.js` is the Smart Replies boundary; built-in defaults remain disabled for customer AI.
+- `services/aiAgent/replyPreviewExecutionService.js` and `services/aiAgent/messengerLiveExecutionService.js` must call model generation first and stay silent/record a known outcome when generation is empty or blocked.
+- `services/aiAgent/AgentFactory.js` is now a disabled compatibility shell so old factory callers cannot instantiate a customer-facing legacy/modern agent.
+- `services/aiAgent/orderProcessor.js` may create orders, but customer confirmation wording must be model-generated from locked order facts.
+- `services/aiAgent/imageProcessor.js` may attach grounded image/product facts, but uses machine-readable fact markers instead of fixed customer copy.
+- `services/aiAgent/providers/DeepSeekProvider.js` and `services/aiAgent/responseGenerator.js` now fail explicitly on invalid prompt construction instead of returning canned prompt/reply text.
+- `tests/services/aiCustomerGenerationSourcePolicy.test.js` enforces:
+  - no direct Arabic `content` / `response` / `fallback` customer literals in active customer AI runtime files;
+  - legacy compatibility routers return silent Core-only disabled outcomes;
+  - representative product, order, shipping objection, complaint, and image request scenarios use `thinkAndGenerateResponse`;
+  - Gemini receives persona, DB/runtime facts, conversation summary, and user message through `systemInstruction`.
+
+## AI Provider Key Diagnostics
+
+Super Admin AI key management now has a single-key operational view.
+
+- `controller/superAdminAiController.js` exposes `getAIKeyDetails`, which returns a masked key fingerprint, active model, all configured models, routing/test telemetry from `AiKey.usage.routing`, usage counters, and health diagnostics.
+- `routes/superAdminRoutes.js` mounts `GET /api/v1/super-admin/ai/keys/:id/details` before the mutating key routes.
+- Diagnostics currently flag disabled global AI routing, inactive keys, missing enabled models, retired Gemini models, unstable Gemini `*-latest` aliases, failed live tests, never-proven-live keys, exhausted daily usage, and keys that are not part of the current route.
+- `attachRoutingStatus()` redacts last-test errors before returning them to any admin UI.
+- `frontend/src/pages/SuperAdminAIProviders.tsx` remains the key list and routing control surface, while `frontend/src/pages/SuperAdminAIKeyDetails.tsx` is the key-level health page.
+- `frontend/src/pages/ai/AIManagement.tsx` now shows the behavior-source map:
+  - `/settings/workspace-files` controls `AGENTS.md`, `SOUL.md`, and `TOOLS.md`.
+  - `/settings/smart-replies` is the only fixed customer-reply source.
+  - `/ai-skills` controls skill runtime configuration.
+- Gemini picker defaults are intentionally limited to non-retired stable/preview model IDs. Customer runtime policy normalizes retired Gemini IDs and hot-swapped `*-latest` aliases to the pinned stable default before generation, so DB/env/provider preferences cannot silently route customer traffic to stale or unstable Gemini models.
+
+## AI Management Surface Consolidation
+
+The old multi-tab `/ai-management` editor is no longer present in the frontend bundle or route table.
+
+- `/settings/ai` is the company-level AI enablement surface. It reads `GET /settings/ai`, writes only `PUT /settings/ai` with `autoReplyEnabled`, and treats missing AI settings rows as disabled (`autoReplyEnabled=false`).
+- The same `/settings/ai` page owns company queue batching controls through `GET/PUT /settings/queue`. Queue preferences can be saved independently, but queue execution is effective only when `autoReplyEnabled=true`; backend responses expose `effectiveEnabled` to prevent UI ambiguity.
+- `/settings/workspace-files` controls `AGENTS.md`, `SOUL.md`, and `TOOLS.md`.
+- `/settings/smart-replies` is the only fixed customer reply source.
+- `/ai-skills` controls skill configuration and is linked directly from the AI sidebar.
+- `/super-admin/ai-providers` and `/super-admin/ai-providers/keys/:id` remain the central provider/key/model routing and diagnostics surfaces.
+- The removed frontend-only surfaces were response rules, Few-Shot management, advanced AI settings, local Gemini key management, local prompt editing, priority settings, memory settings, analytics, and knowledge policy tabs.
+- The old frontend `/ai-learning` page/service was removed from the bundle and no longer has an authenticated frontend route. The backend `/api/v1/ai-learning` API remains mounted for internal production metrics/evaluation jobs.
+- `frontend/src/pages/SuperAdminAIProviders.tsx` now opens `/super-admin/ai-providers/keys/:id` from the key name itself, removing the separate Details action.
+- `services/aiAgent/emptyReplyRecoveryService.js` records `fixed_recovery_disabled` metadata instead of returning fallback customer text. This keeps no-reply recovery observable without adding canned wording outside Smart Replies.
+- `customerReplyShapingService`, `messengerLiveExecutionService`, and `replyPreviewExecutionService` also enforce this policy: grounded image/product clarification mistakes are suppressed instead of replaced with fixed product/price text, and fixed empty-recovery content is blocked even if a dependency returns it.
+- `tests/routes/settingsRoutes.ai.test.js` and `frontend/src/pages/settings/__tests__/AISettingsSurface.test.ts` protect the enablement default, explicit disable persistence, queue settings safety, cache invalidation, route removal, and sidebar entries.
+
+## Core-Only AI Runtime And Workspace Files
+
+Customer AI now has one supported runtime path: Core AI.
+
+- Removed the old `services/aiAgent/legacy/LegacyAgent.js` and `services/aiAgent/modern/ModernAgent.js` compatibility implementations, plus the unused `modern/tools/*` registry.
+- `services/aiAgent/legacyAgentModeService.js` treats legacy routing as a no-op compatibility shape; `useModernAgent=false` cannot route customer replies to another agent.
+- `services/aiAgent/skillRuntimeService.js` executes enabled read-only skills during context preparation and exposes their grounded tool outputs to the model as internal facts. Unsupported/write tools are blocked instead of simulated.
+- `services/aiAgent/providerGenerationService.js` now uses the dynamic section-based system prompt as the primary prompt path, with legacy prompt fallback only behind the emergency feature flag.
+- `services/aiAgent/inputMessageMeaningService.js` classifies empty, invisible-only, and punctuation-only Messenger text before context/model work so low-information payloads become explicit known outcomes instead of wasting provider calls or creating silent ambiguity.
+- `routes/workspaceFileRoutes.js` and `services/workspaceFileService.js` expose Super Admin-only editing for `AGENTS.md`, `SOUL.md`, and `TOOLS.md`, with allowlisted filenames, path traversal protection, secret-pattern rejection, atomic writes, and audit logging.
+- The dead prompt-template surface (`routes/promptTemplateRoutes.js`, `controller/promptTemplateController.js`, and `frontend/src/components/ai/PromptTemplateManager.tsx`) was removed. Active prompt template management remains under `aiRoutes.js` and `/ai/prompt-templates`.
+- `tests/services/skillRuntimeService.test.js`, `tests/routes/workspaceFileRoutes.test.js`, `tests/services/workspaceFileService.test.js`, `tests/services/responseRulesConfig.test.js`, and runtime inventory tests cover the new boundaries.
+
+## Turbo Integration Observability
+
+Turbo and Turbo AI configuration failures are separated from real runtime failures.
+
+- `services/turboService.js` treats disabled Turbo, missing Turbo API key, and missing company ID as expected configuration-unavailable states. These are logged with `console.warn` and a compact `{ companyId, reason }` payload.
+- `services/turboAIParser.js` applies the same pattern for disabled Turbo, missing Gemini API key, and missing company ID.
+- Unexpected database, client, or provider failures still use `console.error` with the original error object.
+- `tests/services/turboService.configLogging.test.js` prevents disabled-company Turbo checks from polluting production error logs while preserving error-level logging for unexpected failures.
+
+## Conversation Quality Replay Audits
+
+Conversation intelligence audits are read-only and replay saved customer/assistant turns without sending messages.
+
+- `services/aiAgent/conversationQualityEvaluatorService.js` scores each turn for naturalness, state continuity, hallucination safety, task completion, emotional appropriateness, persuasion quality, over-questioning, and confidence correctness.
+- The evaluator detects high-risk intelligence defects that safety tests do not catch: active-product state loss on short color/variant follow-ups, robotic clarification text, unsupported stock/delivery/urgency claims, complaint replies without repair language, weak objection handling, and repeated replies.
+- `services/aiAgent/conversationReplayAuditService.js` fetches recent company conversations, batches consecutive customer messages into the next assistant reply, evaluates the replied-to turn, and emits a redacted failure ledger plus batched-message counts.
+- `scripts/run-conversation-quality-audit.js` is the operational entrypoint. Example: `npm run ai:audit:conversation-quality -- --company-name Wofod --limit 100 --hours 72`.
+- Artifacts are written under `artifacts/` as JSON and Markdown so the team can compare before/after behavior across experiments.
+- `tests/services/conversationQualityEvaluatorService.test.js` and `tests/services/conversationReplayAuditService.test.js` cover the quality dimensions and the replay/failure-ledger contract.
+
+## AI Provider Runtime Logs And Diagnostic Chat
+
+Super Admin provider management now separates key configuration from provider-runtime observability.
+
+- `prisma/schema/ai_analytics.prisma` defines `AiProviderLog` as the durable ledger for provider selection, generation success, routing failures, live key tests, and diagnostic key-chat events.
+- `services/aiAgent/providerLogService.js` owns provider-log writes, filtering, summaries, and secret redaction. It no-ops safely if the table/client is not yet available during rollout.
+- `services/aiAgent/modelManager.js` writes provider log events when routing selects a key, records a successful generation, fails to resolve a route, or runs a live key test.
+- `controller/superAdminAiController.js` exposes:
+  - `GET /api/v1/super-admin/ai/provider-logs` for global provider logs.
+  - `GET /api/v1/super-admin/ai/keys/:id/logs` for per-key logs.
+  - `POST /api/v1/super-admin/ai/keys/:id/test-chat` for a direct provider-key diagnostic chat that never sends a customer message or mutates a conversation.
+- `frontend/src/pages/SuperAdminAIProviderLogs.tsx` is the provider-wide log page with filters, summary cards, metadata, and key drill-down links.
+- `frontend/src/pages/SuperAdminAIKeyDetails.tsx` shows recent logs for one key and includes a Wofod-default diagnostic chat box for testing whether a specific key/model can answer.
+- `tests/controller/superAdminAiProviderDiagnostics.test.js` covers log APIs and key diagnostic chat behavior; `tests/services/aiWofodCriticalConversationScenarios.test.js` covers Wofod intent/state/hallucination/guardrail scenarios.
+
+## Provider Failure Cooldowns And CAPI Delivery
+
+Provider failure handling is part of production stability, not a customer reply source.
+
+- `services/aiAgent/responseGenerator.js` extracts provider retry durations from:
+  - `Retry-After` headers exposed as either Fetch-style `.get()` headers or Axios-style plain objects.
+  - Provider error detail messages such as Groq `Please try again in 35m42.719999999s`.
+  - Compact duration expressions with days/hours/minutes/seconds.
+- Timeout failures mark the active key as `TIMEOUT` with a bounded temporary cooldown and rotate to another key if attempts remain.
+- 429/503 failures mark the active key as `429` with the provider-provided cooldown when available, preventing short retry storms against exhausted providers.
+- These paths return silent/known outcomes through the existing Core runtime and do not introduce fixed customer replies.
+- `services/facebookConversionsService.js` sends CAPI events with `custom_data.contents` directly to the Graph API HTTP endpoint. The Facebook SDK remains available for simpler events, but product purchase/checkout payloads bypass SDK serialization because it has failed in production for contents arrays.
+- `tests/services/responseGenerator.providerTimeout.test.js` and `tests/services/facebookConversionsService.test.js` guard the behavior.
+
+## Production Log Filtering
+
+Production processes install a narrow console filter from `utils/installProductionLogFilter.js`.
+
+- The filter suppresses high-volume, expected operational noise from `console.log`, `console.info`, `console.debug`, and `console.warn`.
+- Suppressed patterns are intentionally limited to known noisy classes such as avatar/image proxy fallback attempts, notification polling, WhatsApp router traces, successful webhook queueing, disabled-company AI skips, timing lines, and conversation socket fanout logs.
+- The filter must not hide arbitrary warnings or errors; `console.error` is not wrapped.
+- `server.js` installs the filter for the API process.
+- `workers/webhookWorker.js` installs the same filter for the standalone PM2 worker before loading webhook and AI runtime services.
+- `tests/utils/installProductionLogFilter.test.js` verifies that known noisy logs are dropped while an unrelated warning still reaches the console.
+- `tests/utils/webhookWorkerProductionLogFilter.test.js` statically guards the worker import order so future changes do not reintroduce unfiltered worker startup logs.
+
+- `utils/allFunctions.js` applies the same guard in `handleFacebookComment` after resolving the page token and before saving the comment or invoking AI.
+- `services/aiAgent/aiProductionMetricsDashboardService.js` excludes page-authored comment echoes from customer-message and AI-runtime metrics, while still counting real customer-authored comment records.
+- This prevents Facebook comment reply echoes from being processed as new customer messages and creating artificial silent failures.
+
+## Core AI Response Budget
+
+Live Core AI generation has a bounded latency budget before delivery.
+
+- `services/aiAgent/providerGenerationService.js` creates `contextBag.responseBudget` for every Core generation attempt.
+- Model-driven tool calling uses one provider attempt per model call and a budgeted timeout (`CORE_AI_MODEL_CALL_TIMEOUT_MS`, default 3200ms) for the tool-selection and final-response calls.
+- Configured non-Google fallback calls receive the remaining budget through `configuredProviderFallbackService`.
+- Direct Gemini fallback calls are wrapped in an explicit timeout and stop retrying once the response budget is exhausted.
+- `services/aiAgent/aiProductionMetricsDashboardService.js` reports customer-visible response latency percentiles: p50, p95, p99, max, and measured run count. It also reports lifecycle latency separately so stale reaper closures do not pollute customer-visible response latency.
+- Suppression metrics count only explicit suppressed output (`SILENT`, `customerReplySuppression`, `metadata.suppression`, or `replySource.suppressed` / `replySource.suppression`). Delivered known outcomes remain in `knownOutcomeRate`, not `suppressionRate`; fixed recovery text is disabled unless it originates from `/settings/smart-replies`.
+- Wrong-price metrics are price-bearing only. `wrongPriceRate` excludes missing-price answers and counts DB-evidence failures (`product_price_mismatch`, `price_without_db_evidence`, or `pricingAccuracy.wrongPrice = true`).
+- Final price-gate metadata (`priceIntegrity`) is persisted with outbound message metadata, delivery outbox metadata, production evaluation metadata, telemetry metadata, and runtime ledger metadata so future price audits can prove DB verification without reconstructing context from model text.
+
+## AI Runtime Recovery Cron
+
+Stale AI runtime records have two recovery owners:
+
+- `workers/aiRuntimeQueueWorker.js` and `workers/aiDeliveryOutboxWorker.js` run stale reapers before each drain.
+- `cron/aiRuntimeRecoveryCron.js` is a backend-process safety net that runs every minute and at startup.
+
+The recovery cron calls:
+
+- `runtimeLedgerService.reapStaleRunningLedgers`
+- `aiRuntimeQueueService.reapStaleRunningJobs`
+- `aiDeliveryOutboxService.reapStaleRunningItems`
+
+If queue or outbox rows are returned to `RETRY`, the cron kicks the matching worker immediately. This keeps `RUNNING` ledger/queue/outbox states finite even when no new inbound message arrives.
+
+## Conversation State And Image Intent
+
+Core AI conversation continuity is assembled from durable conversation metadata plus the current turn context.
+
+- `services/aiAgent/conversationStateService.js` reads and writes:
+  - `metadata.coreAi.lastGrounding` for the last grounded product sent by the assistant.
+  - `metadata.coreAi.conversationSummary` for product, selected attributes, order/customer fields, and update timestamps.
+  - Recent assistant message `metadata.grounding` as a fallback when conversation metadata is missing.
+- `services/aiAgent/productGroundingService.js` resolves follow-up messages from conversation metadata first, then summary, then recent history when allowed.
+- `services/aiAgent/contextPreparationService.js` converts that durable state into transient `contextBag` fields such as `matchedProduct`, `activeGroundedProduct`, `requestedVariantFilters`, `matchedVariants`, neutral image context, and `turnCommandContract`.
+- `services/aiAgent/catalogVariantService.js` owns canonical variant extraction and matching, including two-tone/stripe color phrases such as `Ø§Ù„Ø£Ø¨ÙŠØ¶ Ùˆ Ø§Ù„Ø®Ø· Ø§Ù„Ø£Ø³ÙˆØ¯`.
+- `services/aiAgent/imageIntentClassifierService.js` no longer classifies image semantics. Image understanding is deferred to the LLM-native turn command contract.
+- `services/aiAgent/customerImageHandlingService.js` exposes neutral image and grounding facts only; customer wording remains model-generated or Smart Replies-owned.
+- `services/aiAgent/providerGenerationService.js` adds the turn command contract to the model system instruction so image, order, support, and commerce commands are inferred inside the section prompt rather than by regex labels.
+- For Facebook post-scoped image messages, `contextPreparationService.js` now trusts the post `featuredProduct` before broad catalog image matching, preventing image/reference follow-ups from drifting to a different product.
+- `services/aiAgent/emptyReplyRecoveryService.js` has a verified product-image recovery path that can answer with the grounded product and price when provider generation fails or returns empty.
+- `services/aiAgent/customerReplyShapingService.js` is the final image-reply safety net: if a grounded image reply is generic or omits the database price, it rewrites the reply around the verified product facts.
+- `services/aiAgent/geminiProviderRuntimeService.js` filters Gemini text fallback candidates to safe chat-generation families, excluding TTS/audio/live/image/custom-tools/legacy models from customer reply fallback.
+
+## Conversation State Reply Contract
+
+`services/aiAgent/conversationStateReplyContractService.js` is the final customer-reply contract for state continuity.
+
+- It derives active product state from `matchedProduct`, `activeGroundedProduct`, pricing quote snapshots, and durable conversation summaries.
+- It blocks product-identity questions when the active product is already known.
+- It handles shipping/total follow-ups by requiring a governorate before any shipping amount is sent.
+- It handles variant/color follow-ups by tracking selected color, selected size, matched variants, verified color availability, and missing size slots.
+- `customerReplyFinalizationService.js` applies the contract after sanitization, question enforcement, price integrity, and commerce fact integrity so late fallbacks cannot reintroduce stale product clarification.
+- The contract exposes active product/variant metadata for the model and blocks product-identity questions, but it does not inject canned state-aware questions.
+
+## Dynamic System Prompt Sections
+
+`services/aiAgent/providerGenerationService.js` now exposes a safe prompt migration layer:
+
+- `buildSystemInstructionLegacy()` keeps the current byte-for-byte system prompt behavior.
+- `buildSystemInstructionDynamic()` composes the same output through `services/aiAgent/prompt-sections`.
+- `buildSystemInstruction()` uses the dynamic section-based prompt as the primary path, with the legacy prompt retained only as an emergency fallback and mismatch diagnostic path.
+- `services/aiAgent/prompt-sections/index.js` owns section registration, dependency-based MD5 cache keys, deep-frozen section context, registry validation, critical fallback, and optional prompt-size guardrails.
+- `services/aiAgent/prompt-sections/SECTION_INTERFACE.md` documents the mandatory section contract.
+- `services/aiAgent/prompt-sections/prompt-gaps-report.md` records the maxp2/maxp3 comparison and remaining migration phases.
+
+## Customer Reply Generation Source Policy
+
+Fixed customer replies are allowed only when they come from `/settings/smart-replies`.
+
+- `services/aiAgent/RuleBasedResponder.js` is the Smart Replies boundary; built-in defaults remain disabled for customer AI.
+- `services/aiAgent/replyPreviewExecutionService.js` and `services/aiAgent/messengerLiveExecutionService.js` must call model generation first and stay silent/record a known outcome when generation is empty or blocked.
+- `services/aiAgent/AgentFactory.js` is now a disabled compatibility shell so old factory callers cannot instantiate a customer-facing legacy/modern agent.
+- `services/aiAgent/orderProcessor.js` may create orders, but customer confirmation wording must be model-generated from locked order facts.
+- `services/aiAgent/imageProcessor.js` may attach grounded image/product facts, but uses machine-readable fact markers instead of fixed customer copy.
+- `services/aiAgent/providers/DeepSeekProvider.js` and `services/aiAgent/responseGenerator.js` now fail explicitly on invalid prompt construction instead of returning canned prompt/reply text.
+- `tests/services/aiCustomerGenerationSourcePolicy.test.js` enforces:
+  - no direct Arabic `content` / `response` / `fallback` customer literals in active customer AI runtime files;
+  - legacy compatibility routers return silent Core-only disabled outcomes;
+  - representative product, order, shipping objection, complaint, and image request scenarios use `thinkAndGenerateResponse`;
+  - Gemini receives persona, DB/runtime facts, conversation summary, and user message through `systemInstruction`.
+
+## AI Provider Key Diagnostics
+
+Super Admin AI key management now has a single-key operational view.
+
+- `controller/superAdminAiController.js` exposes `getAIKeyDetails`, which returns a masked key fingerprint, active model, all configured models, routing/test telemetry from `AiKey.usage.routing`, usage counters, and health diagnostics.
+- `routes/superAdminRoutes.js` mounts `GET /api/v1/super-admin/ai/keys/:id/details` before the mutating key routes.
+- Diagnostics currently flag disabled global AI routing, inactive keys, missing enabled models, retired Gemini models, unstable Gemini `*-latest` aliases, failed live tests, never-proven-live keys, exhausted daily usage, and keys that are not part of the current route.
+- `attachRoutingStatus()` redacts last-test errors before returning them to any admin UI.
+- `frontend/src/pages/SuperAdminAIProviders.tsx` remains the key list and routing control surface, while `frontend/src/pages/SuperAdminAIKeyDetails.tsx` is the key-level health page.
+- `frontend/src/pages/ai/AIManagement.tsx` now shows the behavior-source map:
+  - `/settings/workspace-files` controls `AGENTS.md`, `SOUL.md`, and `TOOLS.md`.
+  - `/settings/smart-replies` is the only fixed customer-reply source.
+  - `/ai-skills` controls skill runtime configuration.
+- Gemini picker defaults are intentionally limited to non-retired stable/preview model IDs. Customer runtime policy normalizes retired Gemini IDs and hot-swapped `*-latest` aliases to the pinned stable default before generation, so DB/env/provider preferences cannot silently route customer traffic to stale or unstable Gemini models.
+
+## AI Management Surface Consolidation
+
+The old multi-tab `/ai-management` editor is no longer present in the frontend bundle or route table.
+
+- `/settings/ai` is the company-level AI enablement surface. It reads `GET /settings/ai`, writes only `PUT /settings/ai` with `autoReplyEnabled`, and treats missing AI settings rows as disabled (`autoReplyEnabled=false`).
+- The same `/settings/ai` page owns company queue batching controls through `GET/PUT /settings/queue`. Queue preferences can be saved independently, but queue execution is effective only when `autoReplyEnabled=true`; backend responses expose `effectiveEnabled` to prevent UI ambiguity.
+- `/settings/workspace-files` controls `AGENTS.md`, `SOUL.md`, and `TOOLS.md`.
+- `/settings/smart-replies` is the only fixed customer reply source.
+- `/ai-skills` controls skill configuration and is linked directly from the AI sidebar.
+- `/super-admin/ai-providers` and `/super-admin/ai-providers/keys/:id` remain the central provider/key/model routing and diagnostics surfaces.
+- The removed frontend-only surfaces were response rules, Few-Shot management, advanced AI settings, local Gemini key management, local prompt editing, priority settings, memory settings, analytics, and knowledge policy tabs.
+- The old frontend `/ai-learning` page/service was removed from the bundle and no longer has an authenticated frontend route. The backend `/api/v1/ai-learning` API remains mounted for internal production metrics/evaluation jobs.
+- `frontend/src/pages/SuperAdminAIProviders.tsx` now opens `/super-admin/ai-providers/keys/:id` from the key name itself, removing the separate Details action.
+- `services/aiAgent/emptyReplyRecoveryService.js` records `fixed_recovery_disabled` metadata instead of returning fallback customer text. This keeps no-reply recovery observable without adding canned wording outside Smart Replies.
+- `customerReplyShapingService`, `messengerLiveExecutionService`, and `replyPreviewExecutionService` also enforce this policy: grounded image/product clarification mistakes are suppressed instead of replaced with fixed product/price text, and fixed empty-recovery content is blocked even if a dependency returns it.
+- `tests/routes/settingsRoutes.ai.test.js` and `frontend/src/pages/settings/__tests__/AISettingsSurface.test.ts` protect the enablement default, explicit disable persistence, queue settings safety, cache invalidation, route removal, and sidebar entries.
+
+## Core-Only AI Runtime And Workspace Files
+
+Customer AI now has one supported runtime path: Core AI.
+
+- Removed the old `services/aiAgent/legacy/LegacyAgent.js` and `services/aiAgent/modern/ModernAgent.js` compatibility implementations, plus the unused `modern/tools/*` registry.
+- `services/aiAgent/legacyAgentModeService.js` treats legacy routing as a no-op compatibility shape; `useModernAgent=false` cannot route customer replies to another agent.
+- `services/aiAgent/skillRuntimeService.js` executes enabled read-only skills during context preparation and exposes their grounded tool outputs to the model as internal facts. Unsupported/write tools are blocked instead of simulated.
+- `services/aiAgent/providerGenerationService.js` now uses the dynamic section-based system prompt as the primary prompt path, with legacy prompt fallback only behind the emergency feature flag.
+- `services/aiAgent/inputMessageMeaningService.js` classifies empty, invisible-only, and punctuation-only Messenger text before context/model work so low-information payloads become explicit known outcomes instead of wasting provider calls or creating silent ambiguity.
+- `routes/workspaceFileRoutes.js` and `services/workspaceFileService.js` expose Super Admin-only editing for `AGENTS.md`, `SOUL.md`, and `TOOLS.md`, with allowlisted filenames, path traversal protection, secret-pattern rejection, atomic writes, and audit logging.
+- The dead prompt-template surface (`routes/promptTemplateRoutes.js`, `controller/promptTemplateController.js`, and `frontend/src/components/ai/PromptTemplateManager.tsx`) was removed. Active prompt template management remains under `aiRoutes.js` and `/ai/prompt-templates`.
+- `tests/services/skillRuntimeService.test.js`, `tests/routes/workspaceFileRoutes.test.js`, `tests/services/workspaceFileService.test.js`, `tests/services/responseRulesConfig.test.js`, and runtime inventory tests cover the new boundaries.
+
+## Turbo Integration Observability
+
+Turbo and Turbo AI configuration failures are separated from real runtime failures.
+
+- `services/turboService.js` treats disabled Turbo, missing Turbo API key, and missing company ID as expected configuration-unavailable states. These are logged with `console.warn` and a compact `{ companyId, reason }` payload.
+- `services/turboAIParser.js` applies the same pattern for disabled Turbo, missing Gemini API key, and missing company ID.
+- Unexpected database, client, or provider failures still use `console.error` with the original error object.
+- `tests/services/turboService.configLogging.test.js` prevents disabled-company Turbo checks from polluting production error logs while preserving error-level logging for unexpected failures.
+
+## Conversation Quality Replay Audits
+
+Conversation intelligence audits are read-only and replay saved customer/assistant turns without sending messages.
+
+- `services/aiAgent/conversationQualityEvaluatorService.js` scores each turn for naturalness, state continuity, hallucination safety, task completion, emotional appropriateness, persuasion quality, over-questioning, and confidence correctness.
+- The evaluator detects high-risk intelligence defects that safety tests do not catch: active-product state loss on short color/variant follow-ups, robotic clarification text, unsupported stock/delivery/urgency claims, complaint replies without repair language, weak objection handling, and repeated replies.
+- `services/aiAgent/conversationReplayAuditService.js` fetches recent company conversations, batches consecutive customer messages into the next assistant reply, evaluates the replied-to turn, and emits a redacted failure ledger plus batched-message counts.
+- `scripts/run-conversation-quality-audit.js` is the operational entrypoint. Example: `npm run ai:audit:conversation-quality -- --company-name Wofod --limit 100 --hours 72`.
+- Artifacts are written under `artifacts/` as JSON and Markdown so the team can compare before/after behavior across experiments.
+- `tests/services/conversationQualityEvaluatorService.test.js` and `tests/services/conversationReplayAuditService.test.js` cover the quality dimensions and the replay/failure-ledger contract.
+
+## AI Provider Runtime Logs And Diagnostic Chat
+
+Super Admin provider management now separates key configuration from provider-runtime observability.
+
+- `prisma/schema/ai_analytics.prisma` defines `AiProviderLog` as the durable ledger for provider selection, generation success, routing failures, live key tests, and diagnostic key-chat events.
+- `services/aiAgent/providerLogService.js` owns provider-log writes, filtering, summaries, and secret redaction. It no-ops safely if the table/client is not yet available during rollout.
+- `services/aiAgent/modelManager.js` writes provider log events when routing selects a key, records a successful generation, fails to resolve a route, or runs a live key test.
+- `controller/superAdminAiController.js` exposes:
+  - `GET /api/v1/super-admin/ai/provider-logs` for global provider logs.
+  - `GET /api/v1/super-admin/ai/keys/:id/logs` for per-key logs.
+  - `POST /api/v1/super-admin/ai/keys/:id/test-chat` for a direct provider-key diagnostic chat that never sends a customer message or mutates a conversation.
+- `frontend/src/pages/SuperAdminAIProviderLogs.tsx` is the provider-wide log page with filters, summary cards, metadata, and key drill-down links.
+- `frontend/src/pages/SuperAdminAIKeyDetails.tsx` shows recent logs for one key and includes a Wofod-default diagnostic chat box for testing whether a specific key/model can answer.
+- `tests/controller/superAdminAiProviderDiagnostics.test.js` covers log APIs and key diagnostic chat behavior; `tests/services/aiWofodCriticalConversationScenarios.test.js` covers Wofod intent/state/hallucination/guardrail scenarios.
+
+## Provider Failure Cooldowns And CAPI Delivery
+
+Provider failure handling is part of production stability, not a customer reply source.
+
+- `services/aiAgent/responseGenerator.js` extracts provider retry durations from:
+  - `Retry-After` headers exposed as either Fetch-style `.get()` headers or Axios-style plain objects.
+  - Provider error detail messages such as Groq `Please try again in 35m42.719999999s`.
+  - Compact duration expressions with days/hours/minutes/seconds.
+- Timeout failures mark the active key as `TIMEOUT` with a bounded temporary cooldown and rotate to another key if attempts remain.
+- 429/503 failures mark the active key as `429` with the provider-provided cooldown when available, preventing short retry storms against exhausted providers.
+- These paths return silent/known outcomes through the existing Core runtime and do not introduce fixed customer replies.
+- `services/facebookConversionsService.js` sends CAPI events with `custom_data.contents` directly to the Graph API HTTP endpoint. The Facebook SDK remains available for simpler events, but product purchase/checkout payloads bypass SDK serialization because it has failed in production for contents arrays.
+- `tests/services/responseGenerator.providerTimeout.test.js` and `tests/services/facebookConversionsService.test.js` guard the behavior.
+
+## Production Log Filtering
+
+Production processes install a narrow console filter from `utils/installProductionLogFilter.js`.
+
+- The filter suppresses high-volume, expected operational noise from `console.log`, `console.info`, `console.debug`, and `console.warn`.
+- Suppressed patterns are intentionally limited to known noisy classes such as avatar/image proxy fallback attempts, notification polling, WhatsApp router traces, successful webhook queueing, disabled-company AI skips, timing lines, and conversation socket fanout logs.
+- The filter must not hide arbitrary warnings or errors; `console.error` is not wrapped.
+- `server.js` installs the filter for the API process.
+- `workers/webhookWorker.js` installs the same filter for the standalone PM2 worker before loading webhook and AI runtime services.
+- `tests/utils/installProductionLogFilter.test.js` verifies that known noisy logs are dropped while an unrelated warning still reaches the console.
+- `tests/utils/webhookWorkerProductionLogFilter.test.js` statically guards the worker import order so future changes do not reintroduce unfiltered worker startup logs.
+
+## Company vs Super Admin AI Control Surfaces
+
+AI control is intentionally split by user role.
+
+- Company users use `/settings/ai` as the company-scoped AI Control Center. It owns only company enablement, queue batching, and links to company behavior tools: `/settings/workspace-files`, `/settings/smart-replies`, `/ai-skills`, and `/test-chat`.
+- `/settings/ai` must not expose provider keys, provider logs, model priority, or super-admin infrastructure routes. It may show a coarse central-runtime readiness message, but no key names, provider counts, or diagnostic links.
+- Super Admin users use `/super-admin/ai-providers`, `/super-admin/ai-providers/keys/:id`, and `/super-admin/ai-providers/logs` for infrastructure: keys, providers, model routing, priority, diagnostics, and provider runtime logs.
+- `frontend/src/pages/settings/__tests__/AISettingsSurface.test.ts` statically guards this separation so future UI edits do not leak super-admin infrastructure controls into the company settings page.
+
+## Agentic AI Architecture (Phases 4-20)
+
+The backend features a fully implemented and integrated multi-agent system framework spanning Phases 4 to 20.
+
+### Core Services Structure
+- **Model Router (`modelRouterService.js`)**: Dynamic task classification and capability-based fallback routing for models.
+- **Working Memory (`workingMemoryService.js`)**: Handles session contexts, sliding windows (max 15 messages), and recursive summaries.
+- **Episodic Vector DB (`episodicMemoryService.js`)**: Multi-tenant semantic episodic search via simulated cosine-similarity embeddings.
+- **Truth Arbitration (`truthArbitratorService.js`)**: Multi-source fact ranking, weight scores, conflict resolution, fact expiry, and DB-backed fact metadata (`observedAt`, `frequency`, `source`) fallback resolution.
+- **Temporal Memory (`temporalReasoningService.js`)**: Dynamic time-window constraints (`validFrom` / `validTo`) and seasonal preference detection.
+- **Dreamer Worker (`dreamerWorker.js`)**: Daily offline consolidation task extracting memories and facts from raw logs.
+- **Agent Audit Trail (`agentAuditTrailService.js`)**: Append-only ledger recording tracing IDs, decisions, and token costs in USD.
+- **Draft Proposals (`draftProposalService.js`)**: Scopes and wraps write-actions in approval drafts protected by verification codes.
+- **Agent Conflict Guard (`agentConflictGuardService.js`)**: Derives resource-level conflict keys for write drafts and inbox tasks, blocking active/pending contradictory commands on the same product, order, discount code, message target, or task resource.
+- **Human-in-the-Loop (`humanApprovalService.js`)**: Handles human merchant validation, multi-channel alerts, and attempt locking.
+## Merchant AI Control Center UI (Operator Portal)
+
+The dashboard provides a dedicated Arabic/English control center for operators to manage and coordinate the agentic AI architecture.
+
+### Pages & Interface Structure
+- **AI Agents Workbench (`CompanyAIAgents.tsx` / `/admin/ai-agents`)**: Allows merchants to open each agent from a side list, edit controlled `SOUL.md` / `AGENTS.md` / `TOOLS.md` profile overrides, choose model preference, manage tools/skills, spawn scoped agents, and run direct task smoke tests.
+- **Agent Team Map (`AgentTeamMapPage.tsx` / `/admin/ai-agent-map`)**: Renders the CEO Agent and specialist hierarchy as a tree map using persisted parent-child relationships.
+- **Agent Skills Catalog (`AgentSkillsPage.tsx` / `/admin/ai-skills`)**: Lists shared skills and opens each skill in a details dialog with its `SKILL.md` and allowed tools.
+- **Agent Manager Center (`AgentManagerPage.tsx` / `/admin/agent-manager`)**: A Paperclip-style manager console with manager chat, template-backed hiring, goal delegation, inbox checkout/complete/fail controls, tool-lab execution, and visible conflict-lock indicators.
+- **Runtime Tool Evidence Guard**: CEO-created skills are reloaded from the shared runtime skill root using filesystem freshness checks, and CEO-created agents are reported as successful only after durable `company_agents` persistence is verified. `/api/v1/agent-manager/agents` merges runtime manager context with persisted rows so the manager UI does not show an empty team while the runtime team exists. Agent archive/delete paths now remove the runtime copy after marking the durable row `ARCHIVED`.
+- **Routines Scheduler (`CompanyAIScheduler.tsx` / `/admin/ai-scheduler`)**: An interactive scheduler that compiles bilingual natural language text to cron triggers, managing scheduled jobs and manual routine execution.
+- **Removed duplicate pages**: `/admin/ai-approvals` and `/admin/ai-settings` were removed from the merchant UI; approval/policy behavior remains governed by the manager runtime and canonical agent workbench.
+
+## CEO Agent Native Tool Runtime
+
+- `CEOAgent.processTask()` supports provider-native function calls through `agentToolRegistry.getNativeToolDefinitions()` and the guarded text directive parser for providers that emit structured directives.
+- The runtime filters tool-enabled turns through agent-ready model capability metadata before selecting provider keys, avoiding chat-only models for tool work.
+- Tool results are fed back into the model for final wording. If a model leaves the final answer empty, `BaseAgent.generateWithLLMResult()` treats it as a failed provider call and may retry configured model/provider fallback routes; if no model can answer, `CEOAgent` returns an explicit runtime failure instead of inventing a reply.
+- `agentReplyNormalizer.js` strips model-added outer quotes and blocks known synthetic compatibility messages from becoming assistant bubbles.
+- `CEOAgent` blocks action-success claims unless the matching tool evidence succeeded. Its failure-acknowledgement matcher is token-aware, so Arabic substrings inside words like `Ø§Ù„Ù…Ù‡Ø§Ù…` cannot accidentally bypass the ungrounded-success guard.
+- `aiChatService` stores merchant chat as multiple session-scoped working-memory conversations, injects the current user's identity into the prompt, and filters old canned opening greetings from history/context.
+- `aiChatService` no longer has a planner-only assistant reply path. Goal state is passed to `CEOAgent`, and the selected model must produce any visible assistant response.
+- `agentGoalRunService` supports explicit same-turn execution for fully specified agent creation requests that say `Ù†ÙØ° Ø¨Ø§Ù„Ø£Ø¯Ø§Ø©` / `execute now`, while keeping field-correction turns like `ØªÙ…Ø§Ù… Ø¨Ø³ Ø§Ø³Ù…Ù‡...` in confirmation state.
+- Company runtime intent routing uses a strict classifier gate: local keyword/semantic policy may be recorded as a non-executing hint, but tools are exposed only after a schema-bound classifier decision. Classifier failure disables tools for that turn.
+- Messenger inventory smoke/test prefixes and Arabic availability words are stripped from tool parameters before execution so the tool receives structured product, size, and color slots instead of scenario text.
+- New chat sessions start empty; the visible empty state is UI chrome only, not a persisted assistant message.
+- NVIDIA NIM is represented as the runtime provider. Model suitability is evaluated by model ID as well, so unverified small Meta Llama NIM models are not automatically treated as CEO-agent-ready.
+
+## 2026-05-23 Company Dashboard â€” Mobile Sidebar Responsive Overhaul
+The company dashboard sidebar drawer has been rebuilt for professional mobile behavior:
+
+- **Overlay Container**: New `.business-mobile-overlay` wrapper replaces inline `visibility`/`pointerEvents` toggles. The overlay uses `data-open` attribute for CSS-only visibility control, allowing `transform: translateX(-100%)` transitions to render properly.
+- **Fixed Backdrop**: `.business-mobile-backdrop` changed from `position: absolute` to `position: fixed` to cover the full viewport even when scrolling, preventing the overlay from breaking mid-scroll.
+- **Z-Index Stacking**: Reorganized z-index values (overlay: 40, backdrop: 41, drawer: 42) to prevent any layer conflicts with the header or content.
+- **Scrollable Drawer**: Changed from `overflow: hidden` to `overflow-y: auto` with `overscroll-behavior: contain` so long menus scroll properly without bleeding scroll to the page behind.
+- **Close Button**: Added `.business-sidebar-mobile-close` button with XMarkIcon to the mobile drawer header of all three sidebar variants (ThreeTier, Classic, Minimal).
+- **Escape Key Dismissal**: Added `keydown` event listeners at both the Layout level and inside each sidebar component so the drawer closes when pressing Escape.
+- **Responsive Breakpoints**: Added landscape phone (`max-height: 480px`), very small screen (`max-width: 359px`, full-width drawer), and tablet (`600pxâ€“1023px`, 70vw drawer) media queries.
+- **Enterprise Theme Polish**: Added border-radius for the enterprise theme drawer (RTL: `20px 0 0 20px`, LTR: `0 20px 20px 0`), applied `--shell-overlay-bg/border/shadow` CSS variables.
+- **Accessibility**: Added `role="dialog"`, `aria-modal="true"`, and `aria-label` to the drawer container.
+- **Reduced Motion**: Added `@media (prefers-reduced-motion: reduce)` to disable all transitions for users who prefer reduced motion.
+
+## Sidebar Management System (Dynamic Visibility & Role-Based Access)
+The authenticated company shell sidebar now loads a dynamic configuration layer that merges database-stored settings with the static sidebar definition.
+
+- **Backend API**: `GET /api/v1/settings/sidebar` and `PUT /api/v1/settings/sidebar` in `backend/routes/settingsRoutes.js` read/write sidebar settings from the `Company.settings` JSON column under the `sidebarSettings` key.
+- **Frontend types** (`frontend/src/types/layout.ts`): New interfaces `SidebarItemSettings`, `SidebarSectionSettings`, `SidebarManagementData`.
+- **Settings provider** (`frontend/src/contexts/SidebarSettingsContext.tsx`): `SidebarSettingsProvider` wraps the layout and fetches settings on mount.
+- **Admin settings page** (`frontend/src/pages/settings/SidebarSettings.tsx`): Accessed at `/settings/sidebar`. Visibility/enable toggles, reordering, search, per-item role selectors. Auto-save 800ms after last edit.
+- **Dynamic override engine** (`frontend/src/config/sidebar.ts`): `applySidebarOverrides()` merges DB overrides with static config. A section/item is hidden if: `visible===false`, `enabled===false`, user role not in `requiredRoles[]`, or static config marks it hidden.
+- `Layout integration` (`frontend/src/components/layout/Layout.tsx`): Wraps in `<SidebarSettingsProvider>`, passes `sidebarSettings` as third argument to `getSidebarConfig()`.
+- `backend/docs/infrastructure/sidebar-management-system-2026-05-24.md` records full implementation details.
+
+## 2026-05-24 Conversational AI Routing (Strict Classifier Gateway)
+Reorganized intent routing flow to handle greetings naturally while preventing keyword-based tool execution:
+- **Semantic Router Greeting Support**: `agentSemanticRouterService.js` includes `general.chat` canonical templates such as "Ø§Ø²ÙŠÙƒ ÙŠØ§ Ø¹Ø¨Ø§Ø³", "Ø§Ù„Ø³Ù„Ø§Ù… Ø¹Ù„ÙŠÙƒÙ…", and "ØµØ¨Ø§Ø­ Ø§Ù„Ø®ÙŠØ±".
+- **Non-Executing Local Policy**: `agentIntentRelevanceService.js` can still calculate local policy evidence for traceability, but company runtime wraps that evidence as a classifier hint rather than executing it directly.
+- **LLM-Based Intent Classifier Service (`agentIntentClassifierService.js`)**: The classifier invokes the preferred model with a strict schema-defined `classify_intent` tool, returning intent, slots, ambiguity, and clarification metadata.
+- **Asynchronous Planner Integration (`agentIntentPlannerService.js`)**: `buildIntentContractAsync` is the runtime gate for company turns. Missing/invalid classifier output produces `INTENT_CLASSIFICATION_UNAVAILABLE` and an empty tool allowlist for that turn.
+- **Ambiguous Create Guard**: Generic create turns such as "Ø§Ø¹Ù…Ù„ ÙˆØ§Ø­Ø¯ Ø¬Ø¯ÙŠØ¯" preserve the ambiguous local signal if the classifier guesses a write/workflow intent without slots. `aiChatService` also skips RAG for those turns so old product context cannot decide the user's intent.
+- **No Static Success Replies**: Tool results must be summarized by the selected model and pass grounding/leak validation. The backend no longer fabricates success replies when the model is unavailable or silent.
+- **Isolated Test Harness (`tests/services/agentIntentClassifier.test.js`)**: Tests cover success paths, slot extraction, ambiguity, and classifier-unavailable behavior. LLM classification runs in tests only when explicitly configured via context (`useLLMClassifier: true`).
+
+## 2026-05-31 Fitting Room Studio Storefront Theme
+Added a new marketplace-ready fashion storefront preset focused on mobile app-style cart and checkout review.
+
+- **Theme preset**: `frontend/src/storefront/themes/fitting-room-studio.json` defines a fresh page map for home, shop, PDP, cart, checkout, sale, policy/support pages, and thank-you.
+- **Catalog registration**: `frontend/src/storefront/themes/index.ts` registers `fitting-room-studio`; `frontend/src/storefront/themes/catalog.ts` exposes the preview metadata and `mobile-fashion` category.
+- **New variants**:
+  - `order-summary:fitting-room-summary` renders a compact white Shopping Bag card with product thumbnails, quantity controls, coupon row, subtotal/shipping/bag total lines, and dark CTA.
+  - `checkout-form:fitting-room-checkout` renders a compact rounded checkout form that visually continues the app-card system.
+- **Variant wiring**: `frontend/src/storefront/variants/registry.ts` and `frontend/src/storefront/sections/manifest.ts` expose the new variants to the storefront runtime/editor.
+- **Preview data**: `frontend/src/storefront/preview/marketplaceSampleData.ts` and `frontend/src/storefront/preview/marketplacePreviewCart.ts` seed six fashion products and a three-item cart so marketplace preview links work without live catalog APIs.
+- **Checkout behavior**: the checkout page sets `settings.injectCartItems: false` because the order-summary variant intentionally owns the line-item review.
+- **Documentation**: `docs/fitting-room-studio-storefront-template-plan-2026-05-31.md` records the positioning brief, nearest-theme audit, page signatures, variants, and verification notes.
+- **Deploy guard**: `scripts/check-arabic-strings.js --staged` now scans added diff lines locally and in CI so the release guard catches new hardcoded Arabic without failing on existing storefront sample data.
+
+
+
+
+## [2026-05-31] replaceâ€‘arabicâ€‘withâ€‘i18n Script Handles Backâ€‘ticked Template Literals Correctly
+- Updated documentation to reflect backtick handling fix in the i18n replacement script.
+- Ensured architectural documentation includes this script improvement.
+

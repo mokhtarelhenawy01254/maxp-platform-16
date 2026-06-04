@@ -1,0 +1,120 @@
+model CompetitorSocialProfile {
+  id              String               @id @default(cuid())
+  platform        String               @default("instagram")
+  platformUserId  String?
+  username        String?
+  displayName     String?
+  bio             String?
+  profileImage    String?
+  profileUrl      String?
+  followersCount  Int                  @default(0)
+  followingCount  Int                  @default(0)
+  postsCount      Int                  @default(0)
+  engagementRate  Decimal?             @db.Decimal(5, 2)
+  avgLikes        Int?
+  avgComments     Int?
+  isVerified      Boolean              @default(false)
+  isPrivate       Boolean              @default(false)
+  lastScrapeAt    DateTime?
+  metadata        Json?
+  companyId       String
+  competitorId    String
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  competitor      Competitor           @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  socialPosts     CompetitorSocialPost[]
+  socialMetrics   CompetitorSocialMetrics[]
+  sentiments      CompetitorSentiment[]
+
+  @@unique([competitorId, platform])
+  @@index([competitorId])
+  @@index([companyId])
+  @@map("competitor_social_profiles")
+}
+
+model CompetitorSocialPost {
+  id              String               @id @default(cuid())
+  platform        String               @default("instagram")
+  postId          String?
+  postType        String               @default("post")
+  content         String?              @db.Text
+  caption         String?              @db.Text
+  mediaUrl        String?
+  mediaType       String?
+  thumbnailUrl    String?
+  videoUrl        String?
+  permalink       String?
+  hashtags        String[]
+  mentions        String[]
+  likesCount      Int                  @default(0)
+  commentsCount   Int                  @default(0)
+  sharesCount     Int                  @default(0)
+  viewsCount      Int                  @default(0)
+  savesCount      Int                  @default(0)
+  engagementRate  Decimal?             @db.Decimal(5, 2)
+  publishedAt     DateTime?
+  scrapedAt       DateTime             @default(now())
+  metadata        Json?
+  profileId       String
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  profile         CompetitorSocialProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([profileId, publishedAt])
+  @@index([profileId, postType])
+  @@map("competitor_social_posts")
+}
+
+model CompetitorSocialMetrics {
+  id              String               @id @default(cuid())
+  platform        String               @default("instagram")
+  metricDate      DateTime             @default(now())
+  followersCount  Int
+  followingCount  Int?
+  postsCount      Int?
+  engagementRate  Decimal?             @db.Decimal(5, 2)
+  avgLikes        Int?
+  avgComments     Int?
+  avgViews        Int?
+  totalLikes      Int?
+  totalComments   Int?
+  totalShares     Int?
+  metadata        Json?
+  profileId       String
+  createdAt       DateTime             @default(now())
+
+  profile         CompetitorSocialProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, metricDate])
+  @@index([profileId])
+  @@index([profileId, metricDate])
+  @@map("competitor_social_metrics")
+}
+
+model CompetitorSentiment {
+  id              String               @id @default(cuid())
+  platform        String
+  sentiment       String               @default("neutral")
+  score           Decimal?             @db.Decimal(3, 2)
+  positiveCount   Int                  @default(0)
+  negativeCount   Int                  @default(0)
+  neutralCount    Int                  @default(0)
+  topic           String?
+  aspect          String?
+  periodStart     DateTime
+  periodEnd       DateTime
+  metadata        Json?
+  profileId       String
+  companyId       String
+  createdAt       DateTime             @default(now())
+
+  profile         CompetitorSocialProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([companyId])
+  @@index([profileId, sentiment])
+  @@map("competitor_sentiments")
+}

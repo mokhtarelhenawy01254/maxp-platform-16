@@ -1,0 +1,34 @@
+{
+  "title": "WhatsApp Notifications Analytics",
+  "description": "Comprehensive statistics and reports on sent notifications",
+  "timeRange": {
+    "label": "Time Period",
+    "last7Days": "Last 7 Days",
+    "last30Days": "Last 30 Days",
+    "last90Days": "Last 90 Days",
+    "lastYear": "Last Year"
+  },
+  "stats": {
+    "total": "Total Notifications",
+    "delivered": "Delivered",
+    "read": "Read",
+    "failed": "Failed",
+    "deliveryRate": "Delivery Rate",
+    "readRate": "Read Rate"
+  },
+  "charts": {
+    "byCategory": "Notifications by Category",
+    "topEvents": "Top Sent Events",
+    "noData": "No data available"
+  },
+  "logs": {
+    "title": "Notification Log",
+    "recipient": "Recipient",
+    "type": "Type",
+    "status": "Status",
+    "date": "Date",
+    "noLogs": "No logs found",
+    "rowsPerPage": "Rows per page:",
+    "displayedRows": "{{from}}-{{to}} of {{count}}"
+  }
+}

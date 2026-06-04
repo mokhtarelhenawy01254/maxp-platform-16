@@ -1,0 +1,35 @@
+{
+  "slug": "inventory-pricing-agent",
+  "name": "Inventory & Pricing Agent",
+  "role": "INVENTORY",
+  "version": "1.0.0",
+  "modelPolicy": {
+    "default": "gemini-2.5-flash",
+    "fallback": "gemini-2.5-pro"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md"
+  },
+  "allowedTools": [
+    "product.search",
+    "product.create",
+    "inventory.check",
+    "inventory.adjust",
+    "product.updatePrice",
+    "discount.create_draft",
+    "audit.read"
+  ],
+  "allowedSkills": [
+    "catalog-search",
+    "low-stock-watch",
+    "pricing-review",
+    "discount-proposal"
+  ],
+  "channels": ["dashboard"],
+  "budget": {
+    "dailyUsd": 2,
+    "maxToolCallsPerRun": 6
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "title": "Super Admin Dashboard",
+  "companies": "Companies",
+  "users": "Users",
+  "reports": "Reports",
+  "plans": "Plans",
+  "subscriptions": "Subscriptions",
+  "invoices": "Invoices",
+  "payments": "Payments",
+  "systemManagement": "System Management",
+  "promptLibrary": "Prompt Library",
+  "aiProviders": {
+    "embedding": {
+      "title": "Embeddings",
+      "modelLabel": "Embedding Model",
+      "dimensionsLabel": "Dimensions",
+      "save": "Save",
+      "models": {
+        "geminiEmbedding001": "Gemini Embedding 001 (Text only, legacy)",
+        "geminiEmbedding2": "Gemini Embedding 2 (Multimodal, stable)"
+      },
+      "errors": {
+        "chooseGoogleKey": "Choose an active Google key for embeddings.",
+        "selectKeyToTest": "Select a Google key to test embeddings.",
+        "updateFailed": "Failed to update embedding configuration.",
+        "testFailed": "Embedding test failed."
+      },
+      "messages": {
+        "updated": "Embedding configuration updated.",
+        "testPassed": "Embedding test passed: {{model}} ({{dimension}}d, {{latencyMs}}ms)"
+      },
+      "health": {
+        "title": "Gemini Embedding 2 health",
+        "statusChip": "Status: {{status}}",
+        "fallbackChip": "Fallback: {{fallback}}",
+        "modelChip": "Runtime model: {{model}}",
+        "dimensionChip": "{{dimension}} dimensions",
+        "activeKeysChip": "{{count}} active Google key(s)",
+        "warningsLabel": "Config warnings: {{warnings}}",
+        "runtimeFailure": "Last runtime failure: {{reason}} after {{count}} attempt(s) in {{context}}.",
+        "statuses": {
+          "OK": "Ready",
+          "DEGRADED": "Needs attention",
+          "MISCONFIGURED": "Misconfigured",
+          "UNKNOWN": "Unknown"
+        },
+        "reasons": {
+          "READY": "Gemini Embedding 2 is configured and has an active Google key.",
+          "NO_ACTIVE_GOOGLE_KEY": "No active Google key is available for Gemini embeddings.",
+          "SPECIFIC_KEY_REQUIRED": "A specific embedding key is required but none is selected.",
+          "SPECIFIC_KEY_NOT_FOUND": "The selected embedding key no longer exists.",
+          "SPECIFIC_KEY_NOT_GOOGLE": "The selected embedding key is not a Google provider key.",
+          "SPECIFIC_KEY_INACTIVE": "The selected embedding key is inactive.",
+          "RUNTIME_EMBEDDING_FAILURE": "Gemini Embedding 2 failed during runtime; vector search is degraded.",
+          "GEMINI_EMBEDDING_API_ERROR": "Gemini Embedding API returned an error.",
+          "GEMINI_MULTIMODAL_EMBEDDING_API_ERROR": "Gemini multimodal embedding API returned an error.",
+          "NO_GEMINI_EMBEDDING_KEY": "No Gemini embedding API key was available.",
+          "GEMINI_EMBEDDING_REQUEST_FAILED": "Gemini embedding request failed.",
+          "GEMINI_MULTIMODAL_EMBEDDING_REQUEST_FAILED": "Gemini multimodal embedding request failed.",
+          "GEMINI_EMBEDDING_DIMENSION_MISMATCH": "Gemini returned an unexpected embedding dimension.",
+          "GEMINI_EMBEDDING_2_REQUIRED_FOR_MULTIMODAL": "Multimodal embedding requires Gemini Embedding 2.",
+          "EMPTY_EMBEDDING_CONTENT": "Embedding content was empty.",
+          "UNKNOWN": "Embedding health is not available yet."
+        },
+        "warnings": {
+          "MODEL_OVERRIDDEN_TO_GEMINI_EMBEDDING_2": "Runtime overrides the saved model to Gemini Embedding 2.",
+          "DIMENSION_OVERRIDDEN_TO_768": "Runtime overrides the saved dimension to 768."
+        },
+        "fallbacks": {
+          "NONE": "None",
+          "TEXT_ONLY_SEARCH": "Text-only search",
+          "UNKNOWN": "Unknown"
+        }
+      }
+    }
+  },
+  "evaluation": {
+    "title": "Dev Team Performance Evaluation",
+    "description": "Developer performance analysis based on tasks, time, and goals",
+    "periodOptions": {
+      "WEEKLY": "Weekly",
+      "MONTHLY": "Monthly",
+      "QUARTERLY": "Quarterly"
+    },
+    "bestTitle": "Top 10 Developers - Overall Score",
+    "columns": {
+      "developer": "Developer",
+      "overallScore": "Overall Score",
+      "taskCompletion": "Tasks",
+      "onTimeDelivery": "Timeliness",
+      "estimationAccuracy": "Accuracy",
+      "qualityScore": "Quality",
+      "tasks": "Tasks"
+    },
+    "empty": "No evaluation data for the selected period. Calculate evaluations first.",
+    "member": {
+      "title": "Developer Evaluation",
+      "back": "Back to Evaluations",
+      "radarTitle": "Skills Analysis",
+      "overallScoreLabel": "Overall Score",
+      "outOf": "out of 100",
+      "trendTitle": "Overall Trend",
+      "metrics": {
+        "completedTasks": "Completed Tasks",
+        "workHours": "Work Hours",
+        "hoursSuffix": "h",
+        "goalsAchieved": "Goals Achieved",
+        "reopenedTasks": "Reopened Tasks"
+      },
+      "historyTitle": "Evaluation History",
+      "historyColumns": {
+        "period": "Period",
+        "overallScore": "Overall Score",
+        "taskCompletion": "Tasks Done",
+        "timeliness": "Timeliness",
+        "quality": "Quality",
+        "tasks": "Tasks"
+      },
+      "emptyDetail": "No evaluation data for this period.",
+      "emptyDetailHint": "Calculate evaluation from the main evaluation page."
+    },
+    "sidebar": "Performance Evaluation",
+    "aiModels": "AI Models",
+    "aiProviders": "AI Providers & Keys",
+    "ceoAgentSettings": "CEO Agent Settings",
+    "providerLogs": "Provider Logs"
+  }
+}

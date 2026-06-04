@@ -1,0 +1,27 @@
+{
+  "name": "LUXE Quiet Luxury",
+  "colors": {
+    "luxe": {
+      "50": "#fbf7f2",
+      "100": "#f3e7da",
+      "200": "#e3cbb3",
+      "300": "#d2ae8a",
+      "400": "#c08f61",
+      "500": "#9c5916",
+      "600": "#874c12",
+      "700": "#6f3d0f",
+      "800": "#5a320f",
+      "900": "#44260e"
+    },
+    "luxe-sand": "#f8f7f6",
+    "luxe-night": "#211911",
+    "luxe-ink": "#1b140d"
+  },
+  "fonts": {
+    "heading": "Manrope, sans-serif",
+    "body": "Manrope, sans-serif"
+  },
+  "radius": {
+    "base": "14px"
+  }
+}

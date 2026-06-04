@@ -1,0 +1,57 @@
+const express = require('express');
+const rateLimit = require('express-rate-limit');
+const router = express.Router();
+const { requireAuth, requireRole } = require('../middleware/auth');
+const {
+  listAgents,
+  listModels,
+  listSessions,
+  getSession,
+  createSession,
+  updateSessionTitle,
+  deleteSession,
+  sendChatMessage,
+  streamChatMessage,
+  evaluateResponse,
+  exportSession,
+  listSandboxTools,
+  listRuns,
+  getRun,
+  resumeRun,
+} = require('../controller/aiSandboxController');
+
+const aiSandboxLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'AI_SANDBOX_RATE_LIMITED',
+    code: 'AI_SANDBOX_RATE_LIMITED',
+  },
+});
+
+router.use(requireAuth);
+router.use(requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']));
+router.use(aiSandboxLimiter);
+
+router.get('/agents', listAgents);
+router.get('/models', listModels);
+router.get('/tools', listSandboxTools);
+router.get('/sessions', listSessions);
+router.get('/sessions/:sessionId', getSession);
+router.post('/sessions', createSession);
+router.patch('/sessions/:sessionId', updateSessionTitle);
+router.delete('/sessions/:sessionId', deleteSession);
+router.post('/chat', sendChatMessage);
+router.post('/chat/stream', streamChatMessage);
+router.post('/evaluate', evaluateResponse);
+router.get('/sessions/:sessionId/export', exportSession);
+
+// Run state / HITL pause-resume routes
+router.get('/runs', listRuns);
+router.get('/runs/:runId', getRun);
+router.post('/runs/:runId/resume', resumeRun);
+
+module.exports = router;

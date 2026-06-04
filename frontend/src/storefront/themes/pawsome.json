@@ -1,0 +1,255 @@
+{
+  "id": "pawsome",
+  "name": "Pawsome",
+  "tokens": {
+    "colors": {
+      "primary": "42 85% 55%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "160 45% 92%",
+      "secondaryForeground": "160 55% 18%",
+      "accent": "160 50% 45%",
+      "accentForeground": "0 0% 100%",
+      "background": "38 55% 97%",
+      "foreground": "30 25% 15%",
+      "muted": "38 30% 92%",
+      "mutedForeground": "30 12% 45%",
+      "border": "38 22% 86%",
+      "card": "0 0% 100%",
+      "cardForeground": "30 25% 15%",
+      "ring": "42 85% 55%"
+    },
+    "typography": {
+      "headingFont": "\"Quicksand\", \"Cairo\", sans-serif",
+      "bodyFont": "\"Quicksand\", \"Cairo\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.5rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.5rem",
+      "boxShadow": "0 12px 32px -16px rgba(120, 80, 20, 0.15)",
+      "hoverShadow": "0 20px 48px -20px rgba(120, 80, 20, 0.22)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
+      "surfaceOpacity": "1"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Pawsome",
+    "description": "كل ما يحتاجه صاحبك الصغير من أكل وألعاب وإكسسوارات ومستلزمات عناية — في مكان واحد مع توصيل سريع."
+  },
+  "header": {
+    "brandName": "Pawsome 🐾",
+    "showSearch": true,
+    "navigation": [
+      { "label": "الرئيسية", "to": "/" },
+      { "label": "المتجر", "to": "/shop" },
+      { "label": "الأقسام", "to": "/collections" },
+      { "label": "العروض", "to": "/sale" }
+    ]
+  },
+  "footer": {
+    "description": "متجر Pawsome — مستلزمات الحيوانات الأليفة بجودة عالية وتوصيل سريع داخل مصر.",
+    "copyrightText": "© 2026 Pawsome. جميع الحقوق محفوظة.",
+    "socialLinks": {
+      "facebook": "https://facebook.com",
+      "instagram": "https://instagram.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
+    "navigation": [
+      {
+        "title": "التسوق",
+        "links": [
+          { "label": "كل المنتجات", "to": "/shop" },
+          { "label": "الأقسام", "to": "/collections" },
+          { "label": "العروض", "to": "/sale" }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          { "label": "الشحن والتوصيل", "to": "/shipping" },
+          { "label": "الاستبدال", "to": "/returns" },
+          { "label": "تواصل معنا", "to": "/contact" }
+        ]
+      }
+    ],
+    "legalLinks": [
+      { "label": "سياسة الخصوصية", "to": "/privacy" },
+      { "label": "الشروط والأحكام", "to": "/terms" }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "🐾 عروض حصرية",
+            "message": "شحن مجاني لطلبات فوق 300 جنيه على كل مستلزمات الحيوانات الأليفة!",
+            "saleLabel": "خصم حتى 30%",
+            "shippingLabel": "توصيل خلال 48 ساعة",
+            "returnLabel": "استبدال سهل",
+            "ctaText": "اكتشف العروض",
+            "ctaLink": "/sale"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "warm-cozy",
+          "settings": {
+            "eyebrow": "Pawsome 🐾",
+            "title": "كل ما يحتاجه صاحبك الصغير في مكان واحد",
+            "subtitle": "أكل صحي، ألعاب ممتعة، إكسسوارات أنيقة، ومستلزمات عناية — كلها مختارة بعناية لراحة حيوانك الأليف.",
+            "ctaText": "ابدأ التسوق",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "تصفح الأقسام",
+            "secondaryCtaLink": "/collections"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "playful-bubbles",
+          "settings": {
+            "title": "تصفح حسب القسم",
+            "subtitle": "كل قسم مجهز بمنتجات مختارة تناسب احتياجات حيوانك اليومية.",
+            "limit": 4,
+            "ctaText": "كل الأقسام",
+            "ctaLink": "/collections",
+            "collections": [
+              { "title": "طعام وتغذية", "subtitle": "أكل جاف ورطب وسناكس صحية لكل الأعمار.", "link": "/shop?sort=popular" },
+              { "title": "ألعاب وتسلية", "subtitle": "ألعاب تفاعلية تخلي حيوانك مبسوط ونشيط.", "link": "/collections" },
+              { "title": "عناية ونظافة", "subtitle": "شامبو، فرش، ومستلزمات الاستحمام والعناية.", "link": "/shop?sort=newest" },
+              { "title": "إكسسوارات", "subtitle": "أطواق، حزامات، وأسرّة مريحة لكل الأحجام.", "link": "/sale" }
+            ]
+          }
+        },
+        {
+          "type": "shopping-intents",
+          "settings": {
+            "badge": "اختار حسب حيوانك",
+            "title": "ابدأ من نوع حيوانك الأليف",
+            "subtitle": "كل حيوان ليه احتياجات مختلفة — اختار القسم المناسب وهنوصلك للمنتجات الصح.",
+            "items": [
+              { "eyebrow": "كلاب", "title": "مستلزمات الكلاب", "subtitle": "أكل، ألعاب، طوق، ومستلزمات تدريب.", "link": "/shop?sort=popular", "tone": "primary", "chip": "الأكثر طلباً" },
+              { "eyebrow": "قطط", "title": "مستلزمات القطط", "subtitle": "ليتر، أكل، ألعاب، وأماكن نوم مريحة.", "link": "/collections", "tone": "accent", "chip": "مميز" },
+              { "eyebrow": "طيور", "title": "مستلزمات الطيور", "subtitle": "أقفاص، أكل، ومكملات غذائية.", "link": "/shop?sort=newest", "tone": "emerald", "chip": "جديد" },
+              { "eyebrow": "أسماك", "title": "أحواض وإكسسوارات", "subtitle": "أحواض، فلاتر، وأكل أسماك.", "link": "/sale", "tone": "slate", "chip": "عروض" }
+            ]
+          }
+        },
+        {
+          "type": "features-bar",
+          "settings": {
+            "title": "ليه Pawsome؟",
+            "subtitle": "كل منتج عندنا مختار بعناية لصحة وسعادة حيوانك الأليف.",
+            "items": [
+              { "icon": "shield", "title": "منتجات آمنة", "description": "كل المنتجات آمنة ومعتمدة لصحة الحيوانات." },
+              { "icon": "target", "title": "ماركات موثوقة", "description": "نتعامل مع أفضل الماركات العالمية والمحلية." },
+              { "icon": "grid", "title": "توصيل مؤمّن", "description": "شحن محمي ومتابعة واضحة لطلبك." },
+              { "icon": "search", "title": "دعم بيطري", "description": "فريق متخصص يساعدك في اختيار المنتج المناسب." }
+            ]
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "standard",
+          "settings": { "title": "الأكثر طلباً هذا الأسبوع", "limit": 8 }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "عروض حصرية لعائلة Pawsome 🐾",
+            "subtitle": "اشترك وأنت أول واحد يعرف عن العروض الجديدة والمنتجات اللي وصلت.",
+            "buttonText": "اشترك دلوقتي",
+            "placeholder": "اكتب بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "warm-cozy",
+          "settings": {
+            "eyebrow": "المتجر",
+            "title": "كل مستلزمات حيوانك في مكان واحد",
+            "subtitle": "تصفح المنتجات حسب النوع أو السعر أو الأكثر طلباً.",
+            "ctaText": "ابدأ التصفح",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "settings": {
+            "title": "ابحث بسرعة",
+            "subtitle": "فلتر المنتجات حسب النوع أو السعر.",
+            "searchPlaceholder": "ابحث عن منتج (مثال: طعام كلاب)",
+            "allCategoriesLabel": "كل الأقسام",
+            "resultsLabel": "منتج متاح",
+            "clearButtonText": "مسح الفلاتر",
+            "chipLimit": 6
+          }
+        },
+        "filters-sidebar",
+        {
+          "type": "product-grid",
+          "variant": "standard",
+          "settings": { "title": "كل المنتجات", "limit": 12 }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "تابع الجديد",
+            "subtitle": "منتجات جديدة وعروض حصرية كل أسبوع.",
+            "buttonText": "اشترك",
+            "placeholder": "بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        { "type": "product-gallery", "variant": "standard" },
+        {
+          "type": "product-info",
+          "variant": "accordion",
+          "settings": {
+            "descriptionTitle": "عن المنتج",
+            "shippingTitle": "الشحن والتوصيل",
+            "shippingText": "التجهيز خلال 24-48 ساعة. التوصيل حسب المحافظة.",
+            "guaranteesTitle": "ضمانات Pawsome",
+            "guaranteesSubtitle": "تسوق بأمان لصحة حيوانك.",
+            "guaranteeStyle": "grid",
+            "guaranteeItems": "منتجات آمنة|كل المنتجات معتمدة وآمنة.\nاستبدال سهل|استبدال خلال 14 يوم.\nدفع عند الاستلام|ادفع بعد استلام الطلب."
+          }
+        },
+        { "type": "conversion-stack", "variant": "balanced" },
+        { "type": "bought-together", "variant": "compact", "settings": { "title": "أضف لسلة حيوانك", "subtitle": "منتجات بتكمل طلبك.", "limit": 3 } },
+        { "type": "related-products", "variant": "compact", "settings": { "title": "منتجات مشابهة", "limit": 4 } },
+        { "type": "reviews", "variant": "compact", "settings": { "title": "آراء أصحاب الحيوانات", "listTitle": "أحدث التقييمات", "verifiedLabel": "مشتري موثق", "reviewLimit": 4 } }
+      ]
+    },
+    "cart": {
+      "sections": [
+        { "type": "cart-items", "variant": "compact", "settings": { "title": "سلة حيوانك 🐾", "subtitle": "راجع طلبك قبل الدفع.", "continueShoppingText": "تابع التسوق" } },
+        { "type": "order-summary", "variant": "highlighted", "settings": { "title": "ملخص الطلب", "checkoutButtonText": "إتمام الطلب", "secureCheckoutText": "دفع آمن", "showTrustRow": true, "showFreeShippingProgress": true } }
+      ]
+    },
+    "checkout": {
+      "sections": [
+        { "type": "promo-strip", "settings": { "badge": "تسوق آمن 🐾", "message": "شحن مؤمن ودفع عند الاستلام متاح.", "saleLabel": "SSL Secure", "shippingLabel": "دفع عند الاستلام" } },
+        { "type": "checkout-form", "variant": "split", "settings": { "contactTitle": "بيانات التواصل", "shippingTitle": "عنوان التوصيل" } },
+        { "type": "payment", "variant": "cards", "settings": { "title": "طريقة الدفع", "confirmOrderText": "تأكيد الطلب", "codLabel": "دفع عند الاستلام", "cardLabel": "بطاقة بنكية", "walletLabel": "محفظة إلكترونية" } }
+      ]
+    }
+  }
+}
+

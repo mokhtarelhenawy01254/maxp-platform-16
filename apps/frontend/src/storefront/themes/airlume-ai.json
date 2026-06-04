@@ -1,0 +1,597 @@
+{
+  "id": "airlume-ai",
+  "name": "Airlume Travel",
+  "tokens": {
+    "colors": {
+      "primary": "227 95% 60%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "218 100% 69%",
+      "secondaryForeground": "0 0% 100%",
+      "accent": "191 100% 70%",
+      "accentForeground": "228 46% 18%",
+      "background": "214 100% 99%",
+      "foreground": "228 46% 18%",
+      "muted": "217 71% 96%",
+      "mutedForeground": "222 20% 45%",
+      "border": "216 45% 88%",
+      "card": "0 0% 100%",
+      "cardForeground": "228 46% 18%",
+      "ring": "227 95% 60%"
+    },
+    "typography": {
+      "headingFont": "Cairo, sans-serif",
+      "bodyFont": "Tajawal, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.5rem",
+      "buttonRadius": "999px"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Airlume Travel",
+    "description": "واجهة متجر عربية عصرية تركّز على وضوح العرض، تصفح أسرع، وسلة وشراء جاهزين للاستخدام."
+  },
+  "header": {
+    "variant": "floating-dark",
+    "transparentOnHome": true,
+    "brandName": "AirLume Travel",
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      { "label": "الرئيسية", "to": "/" },
+      { "label": "المتجر", "to": "/shop" },
+      { "label": "العروض", "to": "/sale" },
+      { "label": "التصنيفات", "to": "/collections" },
+      { "label": "الأسئلة الشائعة", "to": "/faq" }
+    ],
+    "actions": [
+      { "label": "تسجيل الدخول", "to": "/auth/login", "style": "link" },
+      { "label": "ابدأ التسوق", "to": "/shop", "style": "primary" }
+    ]
+  },
+  "footer": {
+    "description": "Airlume Travel يحوّل الثيم إلى واجهة متجر واضحة: تصفح أسهل، صفحات دعم حقيقية، وسلة وشراء جاهزان بدل رسائل Landing فقط.",
+    "copyrightText": "© 2026 Airlume Travel. جميع الحقوق محفوظة.",
+    "socialLinks": {},
+    "navigation": [
+      {
+        "title": "التسوق",
+        "links": [
+          { "label": "كل المنتجات", "to": "/shop" },
+          { "label": "العروض", "to": "/sale" },
+          { "label": "التصنيفات", "to": "/collections" },
+          { "label": "الأكثر طلبًا", "to": "/shop?sort=popular" }
+        ]
+      },
+      {
+        "title": "الدعم",
+        "links": [
+          { "label": "الأسئلة الشائعة", "to": "/faq" },
+          { "label": "الشحن والاستبدال", "to": "/shipping" },
+          { "label": "دليل المقاسات", "to": "/size-guide" },
+          { "label": "الخصوصية", "to": "/privacy" }
+        ]
+      }
+    ],
+    "legalLinks": [
+      { "label": "الشروط والأحكام", "to": "/terms" },
+      { "label": "سياسة الخصوصية", "to": "/privacy" }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "جاهز للبيع",
+            "message": "واجهة متجر أوضح من أول زيارة: عروض مرئية، سلة فعالة، ودفع عند الاستلام داخل مصر.",
+            "saleLabel": "عروض موسمية",
+            "shippingLabel": "شحن حسب المحافظة",
+            "returnLabel": "استبدال خلال 14 يوم",
+            "ctaText": "اكتشف العروض",
+            "ctaLink": "/sale"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "split-panel",
+          "settings": {
+            "eyebrow": "Airlume Travel Storefront",
+            "title": "حوّل الزيارة الأولى إلى طلب فعلي",
+            "subtitle": "نسخة متجر جاهزة تركز على الوصول السريع للمنتجات، أقسام بيع أوضح، وصفحات دعم حقيقية بدل تجربة Landing فقط.",
+            "ctaText": "ابدأ من المتجر",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "تصفح العروض",
+            "secondaryCtaLink": "/sale",
+            "backgroundImage": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=1200",
+            "panelEyebrow": "Premium Pass",
+            "panelTitle": "واجهة بيع أنظف تبني ثقة أسرع",
+            "panelSubtitle": "Hierarchy أوضح، بطاقات أغنى، وتجربة متجر تحسسك أن البراند حاضر في كل خطوة.",
+            "panelMetricLabel": "جاهزية البيع",
+            "panelMetricValue": "+24%",
+            "panelNote": "من أول hero لآخر checkout، كل عنصر يخدم قرار الشراء.",
+            "panelImage": "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=1200",
+            "highlights": [
+              { "label": "رحلة شراء أوضح", "value": "من الهوم إلى الدفع" },
+              { "label": "سلة جاهزة", "value": "إضافة ومراجعة وCheckout" },
+              { "label": "صفحات دعم فعلية", "value": "خصوصية وشروط وشحن" }
+            ]
+          }
+        },
+        {
+          "type": "shopping-intents",
+          "settings": {
+            "badge": "ابدأ من نية الشراء",
+            "title": "مسارات أقصر داخل المتجر",
+            "subtitle": "بدل ترك العميل يدور داخل واجهة عامة، هذه المسارات تفتح له أقرب نقطة قرار: الجديد، العروض، التصنيفات، أو الأكثر طلبًا.",
+            "items": "وصل جديد|وصل حديثًا|منتجات أضيفت مؤخرًا لتبدأ منها سريعًا بدل البحث الطويل.|/shop?sort=newest|primary|جديد\nرادار العروض|عروض اليوم|خصومات أوضح ورسائل سعر تساعد العميل على الحسم أسرع.|/sale|accent|خصم\nتسوق بالفئة|التصنيفات|انتقل مباشرة للأقسام بدل التصفح العشوائي داخل الشبكة.|/collections|emerald|منظّم\nاختيارات مجرّبة|الأكثر طلبًا|منتجات يتحرك عليها الطلب وتصلح كبداية آمنة للشراء.|/shop?sort=popular|slate|Top"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "settings": {
+            "title": "مجموعات سريعة تفتح المتجر بوضوح",
+            "subtitle": "بطاقات جاهزة تشرح أين يبدأ العميل بدل ترك الصفحة الرئيسية كمساحة تعريفية فقط.",
+            "limit": 4,
+            "ctaText": "كل التصنيفات",
+            "ctaLink": "/collections",
+            "collections": "وصل جديد|منتجات جديدة دخلت المتجر وتحتاج وصولًا أسرع من الهوم.|https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=900|/shop?sort=newest\nالأكثر طلبًا|اختيارات تتحرك بسرعة وتساعد على بناء الثقة من أول تصفح.|https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=900|/shop?sort=popular\nالعروض|تخفيضات ورسائل قيمة أوضح للعميل الحساس للسعر.|https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=900|/sale\nالدعم قبل الشراء|صفحات شحن واستبدال ومقاسات تساعد العميل قبل اتخاذ القرار.|https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=900|/faq"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "settings": {
+            "badge": "كتل بيع جاهزة",
+            "title": "المتجر صار يبيع لا يشرح فقط",
+            "subtitle": "هذه المساحات تعطيك زوايا جاهزة للعرض والقرار: الجديد، العروض، وسياسات ما بعد الشراء.",
+            "cards": [
+              {
+                "label": "سرعة الوصول",
+                "title": "وصل جديد يحتاج زخمًا من الهوم",
+                "subtitle": "استخدم هذه الكتلة لرفع المنتجات الجديدة أو المجموعات التي تريد دفعها في الواجهة الأولى.",
+                "ctaText": "شاهد الجديد",
+                "link": "/shop?sort=newest",
+                "tone": "primary",
+                "stat": "New"
+              },
+              {
+                "label": "قيمة أوضح",
+                "title": "عروض تدفع العميل للقرار",
+                "subtitle": "ركن بصري يبرز الخصومات ورسائل القيمة بدل ترك العروض مدفونة داخل الشبكة فقط.",
+                "ctaText": "اذهب للعروض",
+                "link": "/sale",
+                "tone": "accent",
+                "stat": "خصومات"
+              },
+              {
+                "label": "ثقة قبل الدفع",
+                "title": "الشحن والاستبدال مرئيان",
+                "subtitle": "سياسات واضحة قبل الدفع تقلل التردد وتمنع كسرة الروابط في الفوتر أو صفحة المنتج.",
+                "ctaText": "اعرف التفاصيل",
+                "link": "/shipping",
+                "tone": "slate",
+                "stat": "Support"
+              }
+            ]
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "overlay-card",
+          "settings": {
+            "title": "منتجات مقترحة من أول شاشة",
+            "limit": 8
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "split-panel",
+          "settings": {
+            "title": "خلك أول من يعرف بالعروض الجديدة",
+            "subtitle": "اجمع الاشتراكات من واجهة متجر حقيقية بدل نموذج عام بلا مسار بيع واضح.",
+            "buttonText": "اشترك الآن",
+            "placeholder": "اكتب بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "split-panel",
+          "settings": {
+            "eyebrow": "كل المنتجات",
+            "title": "واجهة متجر كاملة بدل صفحة عرض عادية",
+            "subtitle": "ابحث، صفّ، وابدأ من القسم المناسب مع سلة مرئية وروابط بيع حقيقية تعمل حتى آخر خطوة.",
+            "ctaText": "تصفح التخفيضات",
+            "ctaLink": "/sale",
+            "secondaryCtaText": "التصنيفات",
+            "secondaryCtaLink": "/collections",
+            "backgroundImage": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1200",
+            "panelEyebrow": "Store Navigation",
+            "panelTitle": "اكتشف الأقسام، العروض، والمنتجات بسرعة",
+            "panelSubtitle": "الهيرو نفسه صار مساحة بيع عملية: يقدم التصنيفات، يوضح القيمة، ويقرب المستخدم من أول قرار شراء.",
+            "panelMetricLabel": "عدد المسارات",
+            "panelMetricValue": "4",
+            "panelNote": "المستخدم يرى أين يذهب فورًا: عروض، تصنيفات، ومنتجات مميزة.",
+            "panelImage": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=1200",
+            "highlights": [
+              { "label": "بحث أسرع", "value": "شريط أوامر أوضح" },
+              { "label": "كروت أقوى", "value": "عرض بصري premium" },
+              { "label": "شراء أسهل", "value": "من القائمة إلى السلة" }
+            ]
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "settings": {
+            "title": "ابحث وقرّر أسرع",
+            "subtitle": "أدوات أوضح للتصفية والبحث حتى لا يضيع العميل بين المنتجات.",
+            "searchPlaceholder": "ابحث عن منتج أو فئة",
+            "resultsLabel": "منتج متاح",
+            "clearButtonText": "إعادة الضبط",
+            "stickyLabel": "أدوات المتجر",
+            "chipLimit": 6
+          }
+        },
+        "filters-sidebar",
+        {
+          "type": "product-grid",
+          "variant": "editorial-card",
+          "settings": {
+            "title": "كل المنتجات",
+            "limit": 12,
+            "emptyStateTitle": "لا توجد منتجات مطابقة الآن",
+            "emptyStateDescription": "جرّب إزالة الفلاتر أو تصفح بقية الأقسام الحالية داخل المتجر.",
+            "clearButtonText": "عرض كل المنتجات"
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "standard"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion",
+          "settings": {
+            "addToCartText": "أضف إلى السلة",
+            "descriptionTitle": "تفاصيل المنتج",
+            "shippingTitle": "الشحن والاستبدال",
+            "shippingText": "يتم احتساب الشحن حسب المحافظة في صفحة الدفع. الاستبدال أو الاسترجاع متاح وفق السياسة المعلنة وبعد مراجعة حالة المنتج.",
+            "guaranteesTitle": "لماذا Airlume Travel؟",
+            "guaranteesSubtitle": "رسائل الثقة الأساسية موجودة الآن داخل صفحة المنتج نفسها بدل تركها موزعة أو مفقودة.",
+            "guaranteeItems": "شحن داخل مصر, دفع عند الاستلام, مراجعات حقيقية, دعم بعد الطلب",
+            "guaranteeStyle": "grid",
+            "sizeGuideText": "دليل المقاسات والاختيار",
+            "sizeGuideLink": "/size-guide",
+            "fitNote": "إذا كان المنتج يعتمد على مقاس أو أبعاد، راجع الدليل قبل الإضافة للسلة لتقليل الاستبدال."
+          }
+        },
+        {
+          "type": "conversion-stack",
+          "variant": "balanced"
+        },
+        {
+          "type": "related-products",
+          "variant": "overlay-card",
+          "settings": {
+            "title": "منتجات قد تناسبك أيضًا",
+            "subtitle": "اقتراحات إضافية تساعد على رفع السلة وإكمال نفس نية الشراء.",
+            "limit": 4
+          }
+        },
+        "reviews"
+      ]
+    },
+    "cart": {
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "editorial",
+          "settings": {
+            "title": "سلة التسوق",
+            "subtitle": "راجع المنتجات قبل الانتقال للدفع، وعدّل الكميات أو ارجع للمتجر في أي وقت.",
+            "emptyTitle": "سلتك فارغة",
+            "emptyText": "أضف بعض المنتجات أولًا ثم ارجع هنا لإكمال الطلب.",
+            "continueShoppingText": "العودة للمتجر"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted",
+          "settings": {
+            "title": "ملخص الطلب",
+            "subtitle": "ملخص واضح قبل الدفع مع مكان الكوبون والتنبيه الخاص بالشحن.",
+            "shippingHelpText": "سيتم احتساب الشحن بعد اختيار المحافظة في صفحة الدفع.",
+            "couponPlaceholder": "كود الخصم",
+            "couponButtonText": "تطبيق",
+            "checkoutButtonText": "إتمام الشراء",
+            "secureCheckoutText": "دفع آمن",
+            "returnsText": "استبدال حسب السياسة"
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "الدفع والتوصيل",
+            "message": "نسخة الثيم الحالية مهيأة بوضوح للدفع عند الاستلام حتى يبقى الـ checkout واقعيًا ومكتملًا.",
+            "saleLabel": "SSL Secure",
+            "shippingLabel": "شحن حسب المحافظة",
+            "returnLabel": "دعم بعد الطلب"
+          }
+        },
+        {
+          "type": "checkout-form",
+          "settings": {
+            "contactTitle": "بيانات التواصل",
+            "shippingTitle": "عنوان الشحن",
+            "notesTitle": "ملاحظات على الطلب",
+            "notesOptionalLabel": "(اختياري)",
+            "fullNameLabel": "الاسم الكامل",
+            "fullNamePlaceholder": "مثال: أحمد علي",
+            "emailLabel": "البريد الإلكتروني",
+            "emailPlaceholder": "name@example.com",
+            "phoneLabel": "رقم الهاتف",
+            "phonePlaceholder": "01xxxxxxxxx",
+            "addressLabel": "العنوان بالتفصيل",
+            "addressPlaceholder": "الشارع، المنطقة، رقم العمارة",
+            "cityLabel": "المدينة",
+            "cityPlaceholder": "مثال: مدينة نصر",
+            "governorateLabel": "المحافظة",
+            "governoratePlaceholder": "اختر المحافظة",
+            "notesPlaceholder": "أي ملاحظات خاصة بالتوصيل أو الطلب"
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "cards",
+          "settings": {
+            "title": "طريقة الدفع",
+            "subtitle": "تم تقييد هذه النسخة على الطريقة المتاحة فعليًا داخل رحلة الطلب الحالية حتى تبقى التجربة مكتملة.",
+            "summaryTitle": "ملخص الطلب",
+            "summaryDescription": "يعرض المجموع، الشحن حسب المحافظة، والطريقة المتاحة قبل تأكيد الطلب.",
+            "confirmOrderText": "تأكيد الطلب",
+            "payButtonPrefix": "ادفع",
+            "processingText": "جارٍ المعالجة...",
+            "shippingPromptText": "اختر المحافظة أولًا لحساب تكلفة الشحن.",
+            "enterGovernorateText": "اختر المحافظة",
+            "subtotalLabel": "المجموع الفرعي",
+            "shippingLabel": "الشحن",
+            "totalLabel": "الإجمالي",
+            "calculatingText": "جارٍ الحساب...",
+            "shippingCalculatedText": "تم حساب الشحن إلى {{governorate}} بنجاح.",
+            "noShippingChargeText": "لا توجد تكلفة شحن مضافة لهذه المحافظة حاليًا.",
+            "shippingErrorText": "تعذر حساب الشحن الآن، وسيتم تأكيده مع الطلب.",
+            "governorateRequiredText": "اختيار المحافظة مطلوب قبل تأكيد الطلب.",
+            "invalidEmailText": "صيغة البريد الإلكتروني غير صحيحة.",
+            "invalidPhoneText": "رقم الهاتف يجب أن يكون رقم موبايل مصري صحيحًا من 11 رقمًا.",
+            "securityText": "Checkout مشفّر وآمن",
+            "enabledMethods": ["cod"],
+            "codLabel": "الدفع عند الاستلام",
+            "codDesc": "ادفع عند وصول الطلب بعد مراجعة بيانات الشحن"
+          }
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "settings": {
+            "title": "تم استلام طلبك بنجاح",
+            "description": "تم تسجيل الطلب وسيتابع فريق المتجر مراجعته والتواصل معك لتأكيد الشحن إن لزم.",
+            "continueShoppingText": "العودة للمتجر",
+            "orderNumberPrefix": "رقم الطلب:",
+            "supportText": "لأي استفسار بخصوص الطلب تواصل معنا عبر"
+          }
+        }
+      ]
+    },
+    "sale": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "خصومات حالية",
+            "message": "مكان واضح للعروض داخل الثيم بدل دفن المنتجات المخفضة وسط بقية الشبكة.",
+            "saleLabel": "أسعار أقل",
+            "shippingLabel": "شحن حسب المحافظة",
+            "returnLabel": "استبدال وفق السياسة",
+            "ctaText": "ابدأ الشراء",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "split-panel",
+          "settings": {
+            "eyebrow": "Sale",
+            "title": "العروض تحتاج صفحة حقيقية لا مجرد رابط",
+            "subtitle": "هذه الصفحة تعطي التخفيضات مسارًا واضحًا وقابلًا للتصفح والشراء مباشرة.",
+            "ctaText": "شاهد المنتجات",
+            "ctaLink": "#products",
+            "secondaryCtaText": "كل التصنيفات",
+            "secondaryCtaLink": "/collections",
+            "backgroundImage": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&q=80&w=1200",
+            "panelEyebrow": "Sale Focus",
+            "panelTitle": "صفحة عروض تشتغل كحملة بيع مستمرة",
+            "panelSubtitle": "العروض أصبحت section حي: أوضح بصريًا، أسهل في التصفح، وأسرع في توصيل القيمة.",
+            "panelMetricLabel": "خصومات مرئية",
+            "panelMetricValue": "12+",
+            "panelNote": "تمييز العروض بصريًا يرفع إحساس الفرصة ويقلل التشتت.",
+            "panelImage": "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&q=80&w=1200",
+            "highlights": [
+              { "label": "إحساس الحملة", "value": "عرض أوضح للعروض" },
+              { "label": "قرار أسرع", "value": "سعر وخصم أوضح" },
+              { "label": "تصفح مباشر", "value": "من الهيرو للمنتجات" }
+            ]
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "minimal-card",
+          "settings": {
+            "title": "منتجات مخفضة",
+            "limit": 12,
+            "saleOnly": true,
+            "emptyStateTitle": "لا توجد عروض متاحة الآن",
+            "emptyStateDescription": "ارجع لاحقًا أو تصفح بقية المنتجات الحالية داخل المتجر.",
+            "clearButtonText": "كل المنتجات"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "اعرف العروض قبل الجميع",
+            "subtitle": "اشترك ليصلك تنبيه بالعروض الجديدة والخصومات المحدودة.",
+            "buttonText": "اشترك",
+            "placeholder": "بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "collections": {
+      "sections": [
+        {
+          "type": "featured-collections",
+          "settings": {
+            "title": "تصفّح حسب المسار الأنسب",
+            "subtitle": "واجهة أقسام توضّح كيف يبدأ العميل بدل الاكتفاء بروابط عامة في الهيدر.",
+            "limit": 6,
+            "ctaText": "العودة للمتجر",
+            "ctaLink": "/shop",
+            "collections": "وصل جديد|منتجات جديدة دخلت المتجر وتحتاج وصولًا أسرع من الهوم.|https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=900|/shop?sort=newest\nالأكثر طلبًا|اختيارات سريعة للزوار الذين يريدون بداية آمنة.|https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=900|/shop?sort=popular\nالعروض|التخفيضات الحالية في صفحة مستقلة وسهلة التصفح.|https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=900|/sale\nالدعم قبل الشراء|ارجع للسياسات والأسئلة قبل إتمام الطلب.|https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=900|/faq"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "standard",
+          "settings": {
+            "title": "ابدأ من الأكثر طلبًا",
+            "limit": 12
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "خلك قريبًا من الجديد",
+            "subtitle": "تنبيهات بالعروض، المنتجات الجديدة، وأقسام البيع المهمة أولًا.",
+            "buttonText": "اشترك",
+            "placeholder": "بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "size-guide": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "دليل الاختيار",
+            "title": "دليل المقاسات والاختيار قبل الطلب",
+            "subtitle": "هذه الصفحة موجودة الآن كمرجع فعلي بدل رابط مكسور، ويمكن استخدامها حتى للمنتجات التي تعتمد على أبعاد أو سعات وليس مقاسات ملابس فقط.",
+            "body": "راجع دائمًا وصف المنتج وخياراته قبل الإضافة للسلة. إذا كان المنتج يعتمد على مقاس أو أبعاد أو سعة، ستجد هذه البيانات داخل صفحة المنتج نفسها مع الخيارات المتاحة.\n\nإذا كنت مترددًا بين خيارين، اختر الأنسب لاستخدامك الفعلي وراجع سياسة الاستبدال قبل إتمام الطلب. الهدف من هذه الصفحة هو تقليل القرارات العشوائية وتقليل طلبات الاستبدال بعد الشراء.\n\nعند وجود أي غموض في المقاس أو المواصفات، يفضل التواصل مع الدعم وإرسال اسم المنتج أو رقم الطلب إن وجد لتلقي توضيح أدق.",
+            "detailsTitle": "نقاط سريعة",
+            "details": "قبل الإضافة للسلة|راجع الوصف والخيارات الظاهرة في صفحة المنتج\nللمنتجات ذات الأبعاد|قارن القياس بوحدة الاستخدام الفعلية لديك\nعند التردد|راجع الشحن والاستبدال أو تواصل مع الدعم",
+            "ctaText": "العودة للمتجر",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "faq": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "FAQ",
+            "title": "الأسئلة الشائعة",
+            "subtitle": "صفحة دعم ثابتة بدل تحويل الأسئلة إلى رابط غير موجود أو صفحة لا تناسب المتجر.",
+            "body": "يعتمد هذا الثيم الآن على صفحات دعم حقيقية حتى لا تنكسر الرحلة بعد أول نقرة من الهيدر أو الفوتر.\n\nإذا كان العميل يبحث عن الشحن أو الاستبدال أو طريقة الدفع، فالمفترض أن يجد الإجابة هنا أو في الصفحات المخصصة بدل الخروج من المسار الشرائي.\n\nيمكنك لاحقًا تخصيص هذه الصفحة حسب سياسات النشاط نفسه، لكن وجودها الآن يمنع 404 ويجعل الثيم جاهزًا للتشغيل.",
+            "detailsTitle": "إجابات مختصرة",
+            "details": "الدفع المتاح حاليًا|الدفع عند الاستلام داخل رحلة الطلب الحالية\nتكلفة الشحن|تظهر بعد اختيار المحافظة في صفحة الدفع\nالاستبدال والاسترجاع|يتم حسب السياسة المعلنة وبعد مراجعة حالة المنتج\nالخصوصية والشروط|متاحة الآن من الفوتر داخل صفحات فعلية",
+            "ctaText": "ابدأ التسوق",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشحن والاستبدال",
+            "title": "معلومات الشحن وما بعد الطلب",
+            "subtitle": "هذه الصفحة تضيف وضوحًا فعليًا للمتجر وتمنع كسر الثقة الناتج عن غياب معلومات التوصيل والاستبدال.",
+            "body": "يتم احتساب تكلفة الشحن داخل صفحة الدفع بعد اختيار المحافظة، لذلك قد تختلف التكلفة حسب مكان التوصيل.\n\nمراجعة بيانات الشحن بدقة قبل تأكيد الطلب تساعد على تسريع المعالجة وتقليل التأخير في التسليم أو الحاجة لإعادة التواصل.\n\nبالنسبة للاستبدال أو الاسترجاع، تتم مراجعة الطلب وفق سياسة المتجر وحالة المنتج بعد الاستلام. احتفظ برقم الطلب لتسهيل المتابعة مع فريق الدعم.",
+            "detailsTitle": "تفاصيل سريعة",
+            "details": "حساب الشحن|بعد اختيار المحافظة في صفحة الدفع\nدقة البيانات|العنوان ورقم الهاتف الصحيحان يقللان التأخير\nبدء طلب الاستبدال|أرسل رقم الطلب وسبب الطلب لفريق الدعم",
+            "ctaText": "إكمال التسوق",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشروط والأحكام",
+            "title": "الشروط والأحكام",
+            "subtitle": "وجود صفحة شروط حقيقية أفضل من رابط قانوني مكسور خصوصًا في ثيم موجه للبيع.",
+            "body": "استخدام هذا المتجر يعني الموافقة على سياسات الشراء والشحن والاستبدال المعمول بها داخل النشاط.\n\nتأكيد الطلب يظل خاضعًا لتوفر المنتج وصحة البيانات المدخلة وإمكانية تنفيذ الشحن حسب النطاق والخدمة المتاحة.\n\nقد يتم تحديث بعض التفاصيل التشغيلية أو السياسات مع الوقت بما يتناسب مع تشغيل المتجر، لذلك يفضل مراجعة هذه الصفحة دوريًا عند الحاجة.",
+            "detailsTitle": "مختصر قانوني",
+            "details": "تأكيد الطلب|مرتبط بتوفر المنتج وصحة البيانات\nالدفع|بحسب الوسيلة المتاحة داخل صفحة الدفع\nالتحديثات|قد تُراجع السياسات التشغيلية عند الحاجة",
+            "ctaText": "العودة للرئيسية",
+            "ctaLink": "/"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الخصوصية",
+            "title": "سياسة الخصوصية",
+            "subtitle": "صفحة خصوصية فعلية تساعد المتجر على الظهور بشكل أكثر اكتمالًا وثقة.",
+            "body": "تستخدم بيانات العميل الأساسية لمعالجة الطلبات، إتمام الشحن، والتواصل عند الحاجة بخصوص الطلب أو الخدمة.\n\nلا ينبغي استخدام البيانات خارج أغراض تشغيل المتجر المعلنة إلا ضمن ما تسمح به السياسات والقوانين المعمول بها.\n\nإذا احتجت للاستفسار عن كيفية استخدام بياناتك أو تحديثها، يمكن التواصل مع فريق الدعم عبر القنوات الرسمية الخاصة بالمتجر.",
+            "detailsTitle": "ما الذي نستخدمه",
+            "details": "بيانات التواصل|لتأكيد الطلب والمتابعة والتوصيل\nبيانات العنوان|لتنفيذ الشحن وحساب التكلفة حسب المحافظة\nالمراجعات والدعم|لتحسين الخدمة والاستجابة للاستفسارات",
+            "ctaText": "تصفح المتجر",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        {
+          "type": "member-registration",
+          "settings": {
+            "title": "انضم لقائمة Airlume Travel",
+            "subtitle": "سجل بياناتك لتصلك العروض الجديدة وتحديثات المنتجات وصفحات الدعم المهمة أولًا."
+          }
+        }
+      ]
+    }
+  }
+}

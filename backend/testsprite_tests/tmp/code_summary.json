@@ -1,0 +1,19 @@
+{
+    "tech_stack": [
+        "Node.js",
+        "Express",
+        "Prisma",
+        "PostgreSQL"
+    ],
+    "features": [
+        {
+            "name": "Marketplace Management",
+            "description": "Super Admin tools for managing marketplace apps, pricing rules, bundles, and enterprise plans.",
+            "files": [
+                "controller/marketplaceManagementController.js",
+                "routes/marketplaceManagementRoutes.js",
+                "prisma/schema/marketplace.prisma"
+            ]
+        }
+    ]
+}

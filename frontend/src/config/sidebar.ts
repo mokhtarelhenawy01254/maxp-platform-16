@@ -1,0 +1,1025 @@
+import {
+    UserCircleIcon,
+    ChartBarIcon,
+    ChatBubbleLeftRightIcon,
+    UsersIcon,
+    ShoppingBagIcon,
+    DocumentTextIcon,
+    CogIcon,
+    BuildingOfficeIcon,
+    BuildingStorefrontIcon,
+    CalendarIcon,
+    CheckCircleIcon,
+    SpeakerWaveIcon,
+    TagIcon,
+    ArchiveBoxIcon,
+    TicketIcon,
+    ClipboardDocumentListIcon,
+    BanknotesIcon,
+    CreditCardIcon,
+    PresentationChartLineIcon,
+    WrenchScrewdriverIcon,
+    BellIcon,
+    BellAlertIcon,
+    ExclamationTriangleIcon,
+    XCircleIcon,
+    BeakerIcon,
+    UserGroupIcon,
+    KeyIcon,
+    ClipboardDocumentCheckIcon,
+    ShieldExclamationIcon,
+    GiftIcon,
+    CurrencyDollarIcon,
+    TruckIcon,
+    MapPinIcon,
+    ArrowUturnLeftIcon,
+    FunnelIcon,
+    ShoppingCartIcon,
+    SparklesIcon,
+    MagnifyingGlassIcon,
+    ClockIcon,
+    BoltIcon,
+    MegaphoneIcon,
+    QuestionMarkCircleIcon,
+    RocketLaunchIcon,
+    StarIcon,
+    ArrowTrendingUpIcon,
+    PaperAirplaneIcon,
+    PencilSquareIcon,
+    ComputerDesktopIcon,
+    Cog6ToothIcon,
+    QueueListIcon,
+    ShieldCheckIcon,
+    WalletIcon,
+    CubeIcon,
+    SwatchIcon,
+    UserPlusIcon,
+    CalculatorIcon,
+    TrophyIcon,
+    ArrowsRightLeftIcon,
+    AcademicCapIcon,
+} from '@heroicons/react/24/outline';
+
+import i18n from '../i18n';
+import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
+
+
+type SidebarCompany = {
+    activeApps?: unknown[];
+    isCurrent?: boolean;
+    name?: string | null;
+    plan?: string | null;
+    sidebarLayout?: string | null;
+};
+
+type SidebarUser = {
+    affiliate?: {
+        canCreateOrdersForOthers?: boolean | null;
+        canViewCustomerData?: boolean | null;
+        status?: string | null;
+    } | null;
+    companies?: SidebarCompany[] | null;
+    company?: SidebarCompany | null;
+    email?: string | null;
+    id?: number | string | null;
+    role?: string | null;
+};
+
+const hasRoleAccess = (userRole: string | undefined | null, requiredRoles: string[] | undefined): boolean => {
+    if (!requiredRoles || requiredRoles.length === 0) return true;
+    if (!userRole) return false;
+    return requiredRoles.includes(userRole);
+};
+
+const getItemId = (item: { to: string; itemId?: string }): string => {
+    return item.itemId || item.to.replace(/[^a-zA-Z0-9]/g, '_');
+};
+
+const mergeSectionOverrides = (
+    section: SidebarSection,
+    dbSection: SidebarSectionSettings | undefined,
+    userDb: SidebarSectionSettings | undefined,
+    userRole: string | undefined | null,
+): SidebarSection => {
+    // Layer 1: Company-level settings
+    // Layer 2: User-level settings (override company settings)
+    const effectiveVisible = userDb?.visible ?? dbSection?.visible;
+    const effectiveRoles = userDb?.requiredRoles ?? dbSection?.requiredRoles;
+
+    const sectionVisible = effectiveVisible !== false;
+    const sectionRoleAccess = hasRoleAccess(userRole, effectiveRoles);
+
+    if (!sectionVisible || !sectionRoleAccess) {
+        return { ...section, hidden: true };
+    }
+
+    const effectiveItems = userDb?.items ?? dbSection?.items;
+
+    const overriddenItems = section.items
+        .map((item) => {
+            const itemId = getItemId(item);
+            const dbItem = effectiveItems?.[itemId];
+            if (!dbItem) return item;
+
+            const itemVisible = dbItem.visible !== false;
+            const itemEnabled = dbItem.enabled !== false;
+            const itemRoleAccess = hasRoleAccess(userRole, dbItem.requiredRoles);
+
+            const isHidden = !itemVisible || !itemEnabled || !itemRoleAccess || item.hidden === true;
+
+            return { ...item, hidden: isHidden, itemId, requiredRoles: dbItem.requiredRoles };
+        })
+        .sort((a, b) => {
+            const aId = getItemId(a);
+            const bId = getItemId(b);
+            const aOrder = effectiveItems?.[aId]?.order ?? 0;
+            const bOrder = effectiveItems?.[bId]?.order ?? 0;
+            return aOrder - bOrder;
+        });
+
+    return { ...section, items: overriddenItems };
+};
+
+const applySidebarOverrides = (
+    sections: SidebarSection[],
+    managementData: SidebarManagementData | undefined,
+    userRole: string | undefined | null,
+    userSettings?: { enabled: boolean; sections: Record<string, SidebarSectionSettings> } | undefined,
+): SidebarSection[] => {
+    const dbSections = managementData?.sections;
+    const userSections = userSettings?.enabled ? userSettings.sections : undefined;
+
+    if ((!dbSections || Object.keys(dbSections).length === 0) && (!userSections || Object.keys(userSections).length === 0)) {
+        return sections;
+    }
+
+    return sections
+        .map((section) => {
+            const dbSection = dbSections?.[section.id];
+            const userSection = userSections?.[section.id];
+            return mergeSectionOverrides(section, dbSection, userSection, userRole);
+        })
+        .sort((a, b) => {
+            const aDb = dbSections?.[a.id];
+            const bDb = dbSections?.[b.id];
+            const aUser = userSections?.[a.id];
+            const bUser = userSections?.[b.id];
+            const aOrder = aUser?.order ?? aDb?.order ?? 0;
+            const bOrder = bUser?.order ?? bDb?.order ?? 0;
+            return aOrder - bOrder;
+        });
+};
+
+export const getSidebarConfig = (
+    t: (key: string) => string,
+    user: SidebarUser,
+    sidebarManagementData?: SidebarManagementData,
+    userSidebarSettings?: { enabled: boolean; sections: Record<string, SidebarSectionSettings> },
+): SidebarSection[] => {
+    const debugWindow =
+        typeof window !== 'undefined'
+            ? (window as Window & { debugSidebar?: boolean; debug?: boolean })
+            : undefined;
+    const shouldDebugSidebar =
+        import.meta.env?.DEV &&
+        ((debugWindow?.debugSidebar === true) || (debugWindow?.debug === true));
+
+    // 🔍 DEBUG: Track user role for sidebar visibility
+    if (shouldDebugSidebar) {
+        console.log('🔍 [SIDEBAR] getSidebarConfig called with user:', {
+            role: user?.role,
+            email: user?.email,
+            id: user?.id,
+        });
+    }
+
+    const currentCompany = user?.companies?.find((c) => c.isCurrent) || user?.company;
+    const activeApps = currentCompany?.activeApps || [];
+    const plan = currentCompany?.plan?.toUpperCase();
+    const isSuperCompany = plan === 'ENTERPRISE';
+
+    if (shouldDebugSidebar) {
+        console.log('🔍 [SIDEBAR-DEBUG] Current Company:', currentCompany?.name);
+        console.log('🔍 [SIDEBAR-DEBUG] Raw Plan:', currentCompany?.plan);
+        console.log('🔍 [SIDEBAR-DEBUG] Normalized Plan:', plan);
+        console.log('🔍 [SIDEBAR-DEBUG] Active Apps Count:', activeApps?.length);
+        console.log('🔍 [SIDEBAR-DEBUG] Active Apps List:', activeApps);
+    }
+
+    const isAppActive = (slug: string) => {
+        // Super Admin can see everything if we want, but for testing, let's keep it filtered
+        // unless they are in a super company
+        if (isSuperCompany) return true;
+
+        // Ensure activeApps is an array and check for the slug
+        return Array.isArray(activeApps) && activeApps.some(a =>
+            typeof a === 'string' && a.toLowerCase() === slug.toLowerCase()
+        );
+    };
+    const isAnyAppActive = (slugs: string[]) => slugs.some((slug) => isAppActive(slug));
+    const canManageTaskIntegrations = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'].includes(user?.role || '');
+
+    if (user?.role === 'MERCHANT') {
+        return [
+            {
+                id: 'merchant-portal',
+                title: t('sidebar.merchantPortalSection'),
+                icon: BuildingStorefrontIcon,
+                items: [
+                    { to: '/merchant-portal', icon: ChartBarIcon, label: t('sidebar.merchantPortal') },
+                    { to: '/products', icon: ShoppingBagIcon, label: t('sidebar.merchantProducts') },
+                    { to: '/inventory', icon: CubeIcon, label: t('sidebar.inventory') },
+                    { to: '/orders', icon: ArchiveBoxIcon, label: t('sidebar.merchantOrders') },
+                    { to: '/merchant-portal/commissions', icon: BanknotesIcon, label: t('sidebar.merchantCommissions') },
+                ],
+            },
+            {
+                id: 'merchant-account',
+                title: t('sidebar.myAccountSection'),
+                icon: UserCircleIcon,
+                items: [
+                    { to: '/profile', icon: UserCircleIcon, label: t('sidebar.myProfile') },
+                ],
+            },
+        ];
+    }
+
+    if (user?.role === 'AFFILIATE') {
+        const affiliateProfile = user.affiliate;
+        const canCreateOrdersForOthers = affiliateProfile?.canCreateOrdersForOthers !== false;
+        const canViewCustomerData = affiliateProfile?.canViewCustomerData !== false;
+        const affiliateItems = [
+            { to: '/affiliates/dashboard', icon: ChartBarIcon, label: t('dashboard.title') },
+            { to: '/affiliates/orders', icon: ArchiveBoxIcon, label: t('sidebar.myOrders') },
+            ...(canCreateOrdersForOthers
+                ? [{ to: '/affiliates/orders/create', icon: PencilSquareIcon, label: t('sidebar.affiliateCreateOrder') }]
+                : []),
+            ...(canViewCustomerData
+                ? [{ to: '/affiliates/customers', icon: UsersIcon, label: t('sidebar.customers') }]
+                : []),
+            { to: '/affiliates/referrals', icon: ArrowTrendingUpIcon, label: t('sidebar.referrals') },
+            { to: '/affiliates/commission', icon: BanknotesIcon, label: t('sidebar.commissions') },
+        ];
+
+        return [
+            {
+                id: 'affiliate-portal',
+                title: t('sidebar.affiliateSection'),
+                icon: CurrencyDollarIcon,
+                items: affiliateItems,
+            },
+            {
+                id: 'affiliate-account',
+                title: t('sidebar.myAccountSection'),
+                icon: UserCircleIcon,
+                items: [
+                    { to: '/profile', icon: UserCircleIcon, label: t('sidebar.myProfile') },
+                ],
+            },
+        ];
+    }
+
+    if (shouldDebugSidebar) {
+        console.log('🔍 [SIDEBAR] Full user object:', user);
+        console.log('🔍 [SIDEBAR] Company data:', user?.company);
+    }
+
+    const isAffiliateDemoCompany = currentCompany?.sidebarLayout === 'affiliate-demo';
+    const isCompanyOperator = ['OWNER', 'COMPANY_ADMIN'].includes(user?.role || '');
+
+    if (isAffiliateDemoCompany && isCompanyOperator) {
+        return [
+            {
+                id: 'main',
+                title: t('sidebar.mainSection'),
+                icon: ChartBarIcon,
+                items: [
+                    { to: '/company-dashboard', icon: ChartBarIcon, label: t('sidebar.dashboard') },
+                    { to: '/company-links', icon: BuildingOfficeIcon, label: t('sidebar.companyLinks') },
+                ],
+            },
+            {
+                id: 'storefront-design',
+                title: t('sidebar.storefrontSection'),
+                icon: SwatchIcon,
+                items: [
+                    {
+                        to: '/shop',
+                        icon: BuildingStorefrontIcon,
+                        label: t('sidebar.visitStore'),
+                        external: true,
+                    },
+                    { to: '/settings/store-pages', icon: DocumentTextIcon, label: t('sidebar.storePages') },
+                    { to: '/settings/store?tab=branches', icon: BuildingStorefrontIcon, label: t('sidebar.storeSettings') },
+                    { to: '/settings/store/product-conversion', icon: SparklesIcon, label: t('sidebar.storefrontStudio') },
+                ],
+            },
+            {
+                id: 'affiliate',
+                title: t('sidebar.affiliateSection'),
+                icon: CurrencyDollarIcon,
+                items: [
+                    { to: '/affiliates/management', icon: UserGroupIcon, label: t('sidebar.affiliateManagement') },
+                    { to: '/affiliates/quick-actions', icon: BoltIcon, label: t('sidebar.quickActions') },
+                    { to: '/merchants', icon: BuildingStorefrontIcon, label: t('sidebar.merchants') },
+                    { to: '/platform/commissions', icon: CurrencyDollarIcon, label: t('sidebar.commissions') },
+                    { to: '/affiliates/settings', icon: CogIcon, label: t('sidebar.affiliateSettings') },
+                ],
+            },
+            {
+                id: 'products',
+                title: t('sidebar.productsSection'),
+                icon: ShoppingBagIcon,
+                items: [
+                    { to: '/products', icon: ShoppingBagIcon, label: t('sidebar.products') },
+                    { to: '/inventory', icon: ArchiveBoxIcon, label: t('sidebar.inventory') },
+                    { to: '/inventory/warehouses', icon: BuildingOfficeIcon, label: t('sidebar.warehouses') },
+                    { to: '/shipping-companies', icon: TruckIcon, label: t('sidebar.shippingCompanies') },
+                ],
+            },
+            {
+                id: 'procurement',
+                title: t('sidebar.procurement'),
+                icon: ClipboardDocumentListIcon,
+                items: [
+                    { to: '/procurement/dashboard', icon: ChartBarIcon, label: t('dashboard.title') },
+                    { to: '/procurement/suppliers', icon: UserGroupIcon, label: t('sidebar.suppliers') },
+                    { to: '/procurement/purchase-orders', icon: DocumentTextIcon, label: t('sidebar.purchaseOrders') },
+                    { to: '/procurement/purchase-invoices', icon: ClipboardDocumentCheckIcon, label: t('sidebar.purchaseInvoices') },
+                    { to: '/procurement/supplier-payments', icon: BanknotesIcon, label: t('sidebar.supplierPayments') },
+                ],
+            },
+            {
+                id: 'orders',
+                title: t('sidebar.ordersSection'),
+                icon: ArchiveBoxIcon,
+                items: [
+                    { to: '/orders', icon: ArchiveBoxIcon, label: t('sidebar.orders') },
+                    { to: '/orders/manual', icon: PencilSquareIcon, label: t('sidebar.manualOrder') },
+                    { to: '/orders/analytics', icon: ChartBarIcon, label: t('sidebar.orderAnalytics') },
+                ],
+            },
+            {
+                id: 'customers',
+                title: t('sidebar.customers'),
+                icon: UsersIcon,
+                items: [
+                    { to: '/customers', icon: UsersIcon, label: t('sidebar.customers') },
+                    { to: '/leads', icon: UserPlusIcon, label: t('sidebar.leads') },
+                ],
+            },
+            {
+                id: 'marketplace',
+                title: t('sidebar.marketplace'),
+                icon: CubeIcon,
+                items: [
+                    { to: '/marketplace', icon: CubeIcon, label: t('sidebar.browseApps') },
+                    { to: '/my-apps', icon: CheckCircleIcon, label: t('sidebar.activatedApps') },
+                    { to: '/billing/wallet', icon: WalletIcon, label: t('sidebar.wallet') },
+                    { to: '/subscription', icon: CreditCardIcon, label: t('sidebar.subscription') },
+                ],
+            },
+            {
+                id: 'company',
+                title: t('sidebar.companyManagementSection'),
+                icon: UserGroupIcon,
+                items: [
+                    { to: '/settings/company', icon: Cog6ToothIcon, label: t('sidebar.companySettings') },
+                    { to: '/users', icon: UserGroupIcon, label: t('sidebar.usersManagement') },
+                    { to: '/roles', icon: KeyIcon, label: t('sidebar.rolesManagement') },
+                    { to: '/profile', icon: UserCircleIcon, label: t('sidebar.myProfile') },
+                ],
+            },
+        ];
+    }
+
+    const sidebarConfig = [
+        // 1️⃣ الرئيسية
+        {
+            id: 'main',
+            title: t('sidebar.mainSection'),
+            icon: ChartBarIcon,
+            items: [
+                { to: '/company-dashboard', icon: ChartBarIcon, label: t('sidebar.dashboard') },
+                { to: '/company-links', icon: BuildingOfficeIcon, label: t('sidebar.companyLinks') },
+            ],
+            // 🔒 إخفاء القسم للمسوقين (سيظهر لهم في قسم الافليت)
+            hidden: user?.role === 'AFFILIATE'
+        },
+        // 2️⃣ فيسبوك
+        {
+            id: 'facebook',
+            title: t('sidebar.facebookSection'),
+            icon: ChatBubbleLeftRightIcon,
+            items: [
+                { to: '/facebook-inbox', icon: ChatBubbleLeftRightIcon, label: t('sidebar.facebookInbox') },
+                { to: '/unified-inbox', icon: ChatBubbleLeftRightIcon, label: t('sidebar.unifiedInbox') },
+                { to: '/unified-comments', icon: ChatBubbleLeftRightIcon, label: t('sidebar.unifiedComments') },
+
+                { to: '/employee-stats', icon: ChartBarIcon, label: t('sidebar.employeeStats') },
+                { to: '/sent-messages-stats', icon: ChartBarIcon, label: t('sidebar.sentMessagesStats') },
+                { to: '/campaign-calculator', icon: CalculatorIcon, label: t('sidebar.campaignCalculator') },
+                { to: '/settings/facebook', icon: CogIcon, label: t('sidebar.facebookSettings') },
+                { to: '/settings/facebook-oauth', icon: ShieldCheckIcon, label: t('sidebar.facebookOAuth') },
+                { to: '/settings/agent-inbox', icon: KeyIcon, label: 'Agent Inbox API' },
+                { to: '/settings/smart-replies', icon: ChatBubbleLeftRightIcon, label: t('sidebar.smartReplies') },
+            ],
+            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('crm-basic'),
+        },
+
+        // 2️⃣.1 إنستجرام
+        {
+            id: 'instagram',
+            title: t('sidebar.instagramSection'),
+            icon: ChatBubbleLeftRightIcon,
+            items: [
+                { to: '/instagram-inbox', icon: ChatBubbleLeftRightIcon, label: t('sidebar.instagramInbox') },
+                { to: '/settings/instagram', icon: CogIcon, label: t('sidebar.instagramSettings') },
+            ],
+            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('crm-basic'),
+        },
+
+        // 2️⃣.5 واتساب
+        {
+            id: 'whatsapp',
+            title: t('sidebar.whatsappSection'),
+            icon: ChatBubbleLeftRightIcon,
+            items: [
+                { to: '/whatsapp', icon: ChatBubbleLeftRightIcon, label: t('sidebar.whatsapp') },
+                { to: '/whatsapp/notifications', icon: BellIcon, label: t('sidebar.whatsappNotifications') },
+                { 
+                    to: '/whatsapp/templates', 
+                    icon: DocumentTextIcon, 
+                    label: i18n.language === 'ar' ? 'القوالب' : 'Templates',
+                    children: [
+                        { to: '/whatsapp/templates?category=ORDERS', label: i18n.language === 'ar' ? 'قوالب الطلبات' : 'Orders Templates' },
+                        { to: '/whatsapp/templates?category=HR', label: i18n.language === 'ar' ? 'قوالب الـ HR' : 'HR Templates' },
+                        { to: '/whatsapp/templates?category=SYSTEM', label: i18n.language === 'ar' ? 'قوالب النظام' : 'System Templates' },
+                    ]
+                },
+                { to: '/whatsapp-inbox', icon: ArrowsRightLeftIcon, label: t('sidebar.whatsappRouting') },
+                { to: '/whatsapp/settings', icon: CogIcon, label: t('sidebar.whatsappSettings') },
+                { to: '/settings/inbox', icon: Cog6ToothIcon, label: t('sidebar.whatsappInboxSettings') },
+                { to: '/whatsapp/analytics', icon: ChartBarIcon, label: t('sidebar.whatsappAnalytics') },
+            ],
+            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-integration'),
+        },
+
+        // 2️⃣.6 تليجرام
+        {
+            id: 'telegram',
+            title: t('sidebar.telegramSection'),
+            icon: PaperAirplaneIcon,
+            items: [
+                { to: '/telegram/pro', icon: PaperAirplaneIcon, label: t('sidebar.telegramPro') },
+                { to: '/telegram-userbot', icon: UserCircleIcon, label: t('sidebar.telegramUserbot') },
+                { to: '/telegram/auto-reply', icon: BoltIcon, label: t('sidebar.autoReply') },
+                { to: '/telegram/bulk-messages', icon: MegaphoneIcon, label: t('sidebar.bulkMessages') },
+                { to: '/telegram/scheduler', icon: ClockIcon, label: t('sidebar.scheduler') },
+                { to: '/telegram/campaigns', icon: MegaphoneIcon, label: t('sidebar.campaigns') },
+                { to: '/telegram/groups', icon: UserGroupIcon, label: t('sidebar.groups') },
+                { to: '/settings/telegram', icon: CogIcon, label: t('sidebar.telegramSettings') },
+            ],
+            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('telegram-integration'),
+        },
+
+        // 3️⃣ إدارة الطلبات (قسم مستقل شامل)
+        {
+            id: 'orders',
+            title: t('sidebar.ordersSection'),
+            icon: ArchiveBoxIcon,
+            items: [
+                { to: '/orders', icon: ArchiveBoxIcon, label: t('sidebar.orders') },
+                { to: '/orders/workspace', icon: UserCircleIcon, label: t('sidebar.agentWorkspace') },
+                { to: '/orders/preparation', icon: BeakerIcon, label: t('sidebar.orderPreparation') },
+                { to: '/orders/incomplete', icon: ExclamationTriangleIcon, label: t('sidebar.incompleteOrders') },
+                { to: '/pos', icon: CreditCardIcon, label: t('sidebar.pos') },
+                { to: '/orders/invoices', icon: DocumentTextIcon, label: t('sidebar.orderInvoices') },
+                { to: '/orders/manual', icon: PencilSquareIcon, label: t('sidebar.manualOrder') },
+                { to: '/bulk-search', icon: QueueListIcon, label: t('sidebar.bulkSearch') },
+                { to: '/products/reviews', icon: StarIcon, label: t('sidebar.productReviews') },
+                { to: '/settings/orders', icon: CogIcon, label: t('sidebar.ordersSettings') },
+                { to: '/settings/customer-blocks', icon: ShieldExclamationIcon, label: t('sidebar.customerBlockSettings') },
+                { to: '/settings/turbo', icon: RocketLaunchIcon, label: t('sidebar.turboSettings') },
+                { to: '/orders/turbo-records', icon: TruckIcon, label: t('sidebar.turboRecords') },
+                { to: '/tickets', icon: TicketIcon, label: t('sidebar.turboTickets') },
+                { to: '/shipping-companies', icon: TruckIcon, label: t('sidebar.shippingCompanies') },
+                { to: '/returns', icon: CheckCircleIcon, label: t('sidebar.returnReviews') },
+                { to: '/orders/analytics', icon: ChartBarIcon, label: t('sidebar.orderAnalytics') },
+                { to: '/returns/settings', icon: CogIcon, label: t('sidebar.returnSettings') },
+                { to: '/platform-integrations', icon: BoltIcon, label: t('sidebar.platformIntegrations') },
+                { to: '/whatsapp/templates?category=ORDERS', icon: BellIcon, label: t('sidebar.whatsappNotifications') },
+            ],
+            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('ecommerce-basic')
+        },
+
+        // 3️⃣.5 إحصائيات الطلبات
+        {
+            id: 'orders-analytics',
+            title: t('sidebar.orderAnalytics'),
+            icon: ChartBarIcon,
+            items: [
+                { to: '/analytics/orders', icon: ChartBarIcon, label: t('dashboard.overview') },
+                { to: '/analytics/orders/orders', icon: ArchiveBoxIcon, label: t('sidebar.orderAnalytics') },
+                { to: '/analytics/orders/revenue', icon: BanknotesIcon, label: t('sidebar.revenueAnalytics') },
+                { to: '/analytics/orders/products', icon: ShoppingBagIcon, label: t('sidebar.productAnalytics') },
+                { to: '/analytics/orders/variations', icon: TagIcon, label: t('sidebar.variationAnalytics') },
+                { to: '/analytics/orders/categories', icon: TagIcon, label: t('sidebar.categoryAnalytics') },
+                { to: '/analytics/orders/coupons', icon: TicketIcon, label: t('sidebar.couponAnalytics') },
+                { to: '/analytics/orders/stock', icon: ClipboardDocumentListIcon, label: t('sidebar.stockAnalytics') },
+                { to: '/analytics/orders/customers', icon: UsersIcon, label: t('sidebar.customerAnalytics') },
+                { to: '/analytics/orders/payments', icon: CreditCardIcon, label: t('sidebar.paymentMethods') },
+                { to: '/analytics/orders/campaign-attribution', icon: MegaphoneIcon, label: 'تحليل الحملات' },
+                { to: '/analytics/orders/profit', icon: CurrencyDollarIcon, label: t('sidebar.profitAnalytics') },
+                { to: '/analytics/orders/cod-performance', icon: TruckIcon, label: t('sidebar.codPerformance') },
+                { to: '/analytics/orders/cancellations', icon: XCircleIcon, label: t('sidebar.cancellationAnalytics') },
+                { to: '/analytics/orders/delivery-rate', icon: TruckIcon, label: t('sidebar.deliveryRate') },
+                { to: '/analytics/orders/regions', icon: MapPinIcon, label: t('sidebar.regionAnalytics') },
+                { to: '/analytics/orders/returns', icon: ArrowUturnLeftIcon, label: t('sidebar.returnAnalytics') },
+                { to: '/analytics/orders/funnel', icon: FunnelIcon, label: t('sidebar.conversionFunnel') },
+                { to: '/analytics/orders/conversion', icon: ChartBarIcon, label: t('sidebar.conversionRate') },
+                { to: '/analytics/orders/team-performance', icon: UsersIcon, label: t('sidebar.teamPerformance') },
+                { to: '/analytics/orders/abandoned-cart', icon: ShoppingCartIcon, label: t('sidebar.abandonedCart') },
+                { to: '/analytics/orders/advanced-plan', icon: ClipboardDocumentCheckIcon, label: t('sidebar.developmentPlan') },
+            ],
+            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('analytics-advanced')
+        },
+
+        // 4️⃣ المنتجات
+        {
+            id: 'products',
+            title: t('sidebar.productsSection'),
+            icon: ShoppingBagIcon,
+            items: [
+                { to: '/products', icon: ShoppingBagIcon, label: t('sidebar.products') },
+                { to: '/categories', icon: TagIcon, label: t('sidebar.categories') },
+                { to: '/settings/upsell', icon: ArrowTrendingUpIcon, label: 'إدارة الـ Upsell' },
+                { to: '/analytics/store', icon: ArrowTrendingUpIcon, label: t('sidebar.storeAnalytics') },
+            ],
+            // ✅ صفحة المنتجات أصبحت متاحة لكل الشركات، مع بقاء حجبها عن المسوقين فقط
+            hidden: user?.role === 'AFFILIATE'
+        },
+
+        // 4️⃣.1 تصميم وتنسيق المتجر (Storefront Design)
+        {
+            id: 'storefront-design',
+            title: t('sidebar.storefrontSection'),
+            icon: SwatchIcon,
+            items: [
+                {
+                    to: '/shop',
+                    icon: BuildingStorefrontIcon,
+                    label: t('sidebar.visitStore'),
+                    external: true
+                },
+                { to: '/settings/store-pages', icon: DocumentTextIcon, label: t('sidebar.storePages') },
+                { to: '/settings/store?tab=branches', icon: BuildingStorefrontIcon, label: t('sidebar.storeSettings') },
+                { to: '/settings/store/product-conversion', icon: SparklesIcon, label: 'أدوات التحويل' },
+                { to: '/settings/store/offers-bundles', icon: GiftIcon, label: 'العروض والباقات' },
+                { to: '/settings/store/growth-widgets', icon: ComputerDesktopIcon, label: 'ودجات الموقع' },
+                { to: '/settings/store/selling-modes', icon: ArrowsRightLeftIcon, label: 'أوضاع البيع' },
+                { to: '/settings/store/reviews-social-proof', icon: StarIcon, label: 'المراجعات والثقة' },
+                { to: '/settings/store?tab=shipping', icon: TruckIcon, label: t('sidebar.storeShipping') },
+                { to: '/settings/store?tab=footer', icon: DocumentTextIcon, label: t('sidebar.footerSettings') },
+                { to: '/settings/promotion', icon: GiftIcon, label: t('sidebar.freeShippingSettings') },
+                { to: '/settings/clarity', icon: ChartBarIcon, label: 'Microsoft Clarity' },
+                { to: '/coupons', icon: TicketIcon, label: t('sidebar.coupons') },
+                {
+                    to: '/analytics/orders/coupons',
+                    icon: TicketIcon,
+                    label: t('sidebar.couponAnalytics'),
+                    hidden: !isAppActive('analytics-advanced')
+                },
+                {
+                    to: '/analytics/orders/funnel',
+                    icon: FunnelIcon,
+                    label: t('sidebar.conversionFunnel'),
+                    hidden: !isAppActive('analytics-advanced')
+                },
+                {
+                    to: '/analytics/orders/abandoned-cart',
+                    icon: ShoppingCartIcon,
+                    label: t('sidebar.abandonedCart'),
+                    hidden: !isAppActive('analytics-advanced')
+                },
+            ],
+            // 🔒 متاح للمالك والأدمن فقط لتغيير تصميم المتجر
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['ecommerce-basic', 'conversion-suite'])
+        },
+
+        // 4️⃣.2 العملاء
+        {
+            id: 'customers',
+            title: t('sidebar.customers'),
+            icon: UsersIcon,
+            items: [
+                { to: '/customers', icon: UsersIcon, label: t('sidebar.customers') },
+                { to: '/leads', icon: UserPlusIcon, label: t('sidebar.leads') },
+                { to: '/customers/whatsapp-notify', icon: MegaphoneIcon, label: t('sidebar.whatsappNotifications') },
+
+                { to: '/customers/occasions-notify', icon: CalendarIcon, label: t('sidebar.customersOccasions') },
+                { to: '/customers/birthday-whatsapp-notify', icon: GiftIcon, label: t('sidebar.customersBirthday') },
+                { to: '/whatsapp/customer-journey', icon: SparklesIcon, label: t('sidebar.whatsappJourney') },
+                ...(user?.role === 'CUSTOMER' ? [{ to: '/wallet', icon: WalletIcon, label: t('sidebar.wallet') }] : []),
+                { to: '/customers/loyalty-programs', icon: GiftIcon, label: t('sidebar.loyaltyPrograms') },
+                { to: '/customers/loyalty-tiers', icon: StarIcon, label: t('sidebar.loyaltyTiers') },
+                { to: '/customers/loyalty-members', icon: UserGroupIcon, label: t('sidebar.loyaltyMembers') },
+                { to: '/customers/loyalty-analytics', icon: ChartBarIcon, label: t('sidebar.loyaltyAnalytics') },
+                { to: '/customers/points-center', icon: TrophyIcon, label: t('sidebar.customerPointsCenter') },
+                { to: '/customers/cashback', icon: CurrencyDollarIcon, label: t('sidebar.cashbackSettings') },
+            ],
+            // 🔒 إخفاء القسم للمسوقين
+            hidden: user?.role === 'AFFILIATE'
+        },
+
+        // 4️⃣.3 المشتريات
+        {
+            id: 'procurement',
+            title: t('sidebar.procurement'),
+            icon: ClipboardDocumentListIcon,
+            items: [
+                { to: '/procurement/dashboard', icon: ChartBarIcon, label: t('dashboard.title') },
+                { to: '/procurement/suppliers', icon: UserGroupIcon, label: t('sidebar.suppliers') },
+                { to: '/procurement/purchase-orders', icon: DocumentTextIcon, label: t('sidebar.purchaseOrders') },
+                { to: '/procurement/purchase-invoices', icon: ClipboardDocumentCheckIcon, label: t('sidebar.purchaseInvoices') },
+                { to: '/procurement/supplier-payments', icon: BanknotesIcon, label: t('sidebar.supplierPayments') },
+            ],
+            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['procurement-pro', 'ecommerce-pro'])
+        },
+
+        // 4️⃣.5 الافليت والدروب شيبنج
+        {
+            id: 'affiliate',
+            title: t('sidebar.affiliateSection'),
+            icon: CurrencyDollarIcon,
+            items: [
+                ...(user?.role === 'OWNER' || user?.role === 'COMPANY_ADMIN' || user?.role === 'SUPER_ADMIN' ? [
+                    { to: '/affiliates/management', icon: UserGroupIcon, label: t('sidebar.affiliateManagement') },
+                    { to: '/affiliates/quick-actions', icon: BoltIcon, label: t('sidebar.quickActions') },
+                    { to: '/merchants', icon: BuildingStorefrontIcon, label: t('sidebar.merchants') },
+                    { to: '/platform/commissions', icon: CurrencyDollarIcon, label: t('sidebar.commissions') },
+                    { to: '/affiliates/settings', icon: CogIcon, label: t('sidebar.affiliateSettings') },
+                ] : []),
+                ...(user?.role === 'AFFILIATE' ? [
+                    { to: '/affiliates/dashboard', icon: ChartBarIcon, label: t('dashboard.title') },
+                    { to: '/affiliates/orders', icon: ArchiveBoxIcon, label: t('sidebar.myOrders') },
+                    { to: '/affiliates/orders/create', icon: PencilSquareIcon, label: t('sidebar.affiliateCreateOrder') },
+                    { to: '/affiliates/commission', icon: BanknotesIcon, label: t('sidebar.commissions') },
+                ] : [])
+            ]
+        },
+
+        // 4️⃣.6 برنامج شركاء المنصة (Platform Partner Program)
+        {
+            id: 'platform-partner',
+            title: t('sidebar.partnerProgram'),
+            icon: UserPlusIcon,
+            items: [
+                { to: '/partner-dashboard', icon: UserGroupIcon, label: t('sidebar.partnerDashboard') },
+            ],
+            // 🔓 متاح للجميع للاشتراك
+        },
+
+        // 4️⃣.5 المخزون
+        {
+            id: 'inventory',
+            title: t('sidebar.inventorySection'),
+            icon: ClipboardDocumentListIcon,
+            items: [
+                { to: '/inventory', icon: ArchiveBoxIcon, label: t('sidebar.inventory') },
+                { to: '/inventory/warehouses', icon: BuildingOfficeIcon, label: t('sidebar.warehouses') },
+                { to: '/inventory/audits', icon: ClipboardDocumentListIcon, label: t('sidebar.inventoryAudits') },
+                { to: '/inventory/analytics', icon: ChartBarIcon, label: t('sidebar.orderAnalytics') },
+                { to: '/inventory/reports', icon: ChartBarIcon, label: t('sidebar.inventoryReports') },
+            ],
+            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('ecommerce-basic')
+        },
+
+        // 5️⃣ التسويق والإعلانات
+        {
+            id: 'marketing',
+            title: t('sidebar.marketingSection'),
+            icon: MegaphoneIcon,
+            items: [
+                { to: '/broadcast', icon: SpeakerWaveIcon, label: t('sidebar.broadcast'), hidden: !isAppActive('crm-basic') },
+                { to: '/facebook/create-post', icon: PencilSquareIcon, label: t('sidebar.facebookPost') },
+                { to: '/advertising/facebook-pixel', icon: ChartBarIcon, label: t('sidebar.facebookPixel') },
+                { to: '/advertising/google-tag-manager', icon: ChartBarIcon, label: t('sidebar.googleTagManager') },
+                { to: '/advertising/facebook-ads', icon: MegaphoneIcon, label: t('sidebar.facebookAds'), hidden: false },
+                { to: '/advertising/facebook-ads/decision-reports', icon: ChartBarIcon, label: t('sidebar.facebookAdsReports'), hidden: false },
+                { to: '/advertising/facebook-ads/ad-library', icon: MagnifyingGlassIcon, label: 'مكتبة الإعلانات' },
+                { to: '/advertising/product-landing-pages', icon: ComputerDesktopIcon, label: 'صفحات هبوط المنتجات' },
+                { to: '/advertising/facebook-ads/tests', icon: BeakerIcon, label: t('sidebar.abTests') },
+                { to: '/advertising/facebook-ads/audiences', icon: UserGroupIcon, label: t('sidebar.audiences') },
+                { to: '/advertising/facebook-ads/catalogs', icon: ShoppingBagIcon, label: t('sidebar.productCatalogs') },
+            ],
+            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['facebook-ads-pro', 'crm-basic'])
+        },
+
+
+        // 5️⃣.5 تحليل المنافسين
+        {
+            id: 'competitors',
+            title: t('sidebar.competitors'),
+            icon: ArrowTrendingUpIcon,
+            items: [
+                { to: '/competitors', icon: ArrowTrendingUpIcon, label: t('sidebar.competitors') },
+                { to: '/competitors/gap-analysis', icon: PresentationChartLineIcon, label: t('sidebar.gapAnalysis') },
+                { to: '/competitors/reports', icon: ClipboardDocumentListIcon, label: t('sidebar.competitorReports') },
+                { to: '/competitors/settings', icon: Cog6ToothIcon, label: t('sidebar.competitorSettings') },
+            ],
+            hidden: user?.role === 'AFFILIATE'
+        },
+
+        // 6️⃣ حسابي (للموظف)
+        {
+            id: 'my-account',
+            title: t('sidebar.myAccountSection'),
+            icon: UserCircleIcon,
+            items: [
+                { to: '/my-dashboard', icon: ChartBarIcon, label: t('sidebar.myDashboard') },
+                { to: '/my-attendance', icon: ClockIcon, label: t('sidebar.attendance') },
+                { to: '/my-leaves', icon: CalendarIcon, label: t('sidebar.myLeaves') },
+                { to: '/my-permissions', icon: ClockIcon, label: t('sidebar.myPermissions') },
+                { to: '/my-payroll', icon: BanknotesIcon, label: t('sidebar.myPayroll') },
+                { to: '/my-deductions', icon: BanknotesIcon, label: t('sidebar.myDeductions') },
+                { to: '/my-warnings', icon: ExclamationTriangleIcon, label: t('sidebar.warnings') },
+                { to: '/my-promotions', icon: ArrowTrendingUpIcon, label: t('sidebar.myPromotions') },
+                { to: '/my-rewards', icon: TrophyIcon, label: t('sidebar.myRewards') },
+                { to: '/my-training', icon: AcademicCapIcon, label: t('sidebar.myTraining') },
+                { to: '/my-custody', icon: ComputerDesktopIcon, label: t('sidebar.myCustody') },
+
+                { to: '/my-feedback', icon: DocumentTextIcon, label: t('sidebar.mySuggestions') },
+                { to: '/my-resignation', icon: DocumentTextIcon, label: t('sidebar.myResignation') },
+                { to: '/my-advances', icon: BanknotesIcon, label: t('sidebar.myAdvances') },
+                { to: '/profile', icon: UserCircleIcon, label: t('sidebar.myProfile') },
+            ]
+        },
+
+        // 6️⃣.5 شركاتي (للمالك فقط)
+        ...(user?.role === 'OWNER' ? [{
+            id: 'my-companies',
+            title: t('sidebar.myCompaniesSection'),
+            icon: BuildingOfficeIcon,
+            items: [
+                { to: '/my-companies/hr', icon: ChartBarIcon, label: t('sidebar.companiesDashboard') },
+                { to: '/my-companies/reports', icon: PresentationChartLineIcon, label: t('sidebar.unifiedReports') },
+                { to: '/my-companies/attendance', icon: CheckCircleIcon, label: t('sidebar.attendanceReport') },
+                { to: '/my-companies/users', icon: UsersIcon, label: t('sidebar.usersManagement') },
+                { to: '/settings/company', icon: Cog6ToothIcon, label: t('sidebar.companySettings') },
+                { to: '/subscription', icon: CreditCardIcon, label: t('sidebar.subscription') },
+            ]
+        }] : []),
+
+        // 7️⃣ الموارد البشرية (للإدارة)
+        // 7️⃣ الموارد البشرية (للإدارة)
+        ...(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER'].includes(user?.role || '') ? [{
+            id: 'hr',
+            title: t('sidebar.hrSection'),
+            icon: UserGroupIcon,
+            items: [
+                { to: '/hr', icon: ChartBarIcon, label: t('sidebar.hrDashboard') },
+                { to: '/hr/employees', icon: UsersIcon, label: t('sidebar.employees') },
+                { to: '/hr/departments', icon: BuildingOfficeIcon, label: t('sidebar.departments') },
+                { to: '/hr/attendance', icon: CheckCircleIcon, label: t('sidebar.attendance') },
+                { to: '/hr/leaves', icon: CalendarIcon, label: t('sidebar.leaves') },
+                { to: '/hr/permissions', icon: ClockIcon, label: t('sidebar.permissions') },
+                { to: '/hr/shifts', icon: CalendarIcon, label: t('sidebar.shifts') },
+                { to: '/hr/payroll', icon: BanknotesIcon, label: t('sidebar.payroll') },
+                { to: '/hr/salary-updates', icon: BanknotesIcon, label: t('sidebar.salaryUpdates') },
+                { to: '/hr/salary-history', icon: ClipboardDocumentListIcon, label: t('sidebar.salaryHistory') },
+                { to: '/hr/deductions', icon: BanknotesIcon, label: t('sidebar.deductions') },
+                { to: '/hr/benefits', icon: BanknotesIcon, label: t('sidebar.benefits') },
+                { to: '/hr/performance-reviews', icon: ChartBarIcon, label: t('sidebar.performanceReviews') },
+                { to: '/hr/training', icon: CheckCircleIcon, label: t('sidebar.training') },
+                { to: '/hr/feedback', icon: DocumentTextIcon, label: t('sidebar.feedback') },
+                { to: '/hr/warnings', icon: DocumentTextIcon, label: t('sidebar.warnings') },
+                { to: '/hr/promotions', icon: ArrowTrendingUpIcon, label: t('sidebar.promotions') },
+                { to: '/hr/resignations', icon: DocumentTextIcon, label: t('sidebar.resignations') },
+                { to: '/hr/advances', icon: BanknotesIcon, label: t('sidebar.advances') },
+                { to: '/hr/audit-logs', icon: ClipboardDocumentListIcon, label: t('sidebar.auditLogs') },
+                { to: '/hr/company-policy', icon: DocumentTextIcon, label: t('sidebar.companyPolicy') },
+                { to: '/hr/reports-hub', icon: DocumentTextIcon, label: t('sidebar.hrReports') },
+                { to: '/hr/reporting/forms', icon: ClipboardDocumentListIcon, label: 'فورمات التقارير' },
+                { to: '/hr/assets', icon: ComputerDesktopIcon, label: t('sidebar.assets') },
+                { to: '/hr/recruitment', icon: UserGroupIcon, label: t('sidebar.recruitment') },
+                { to: '/hr/settings', icon: Cog6ToothIcon, label: t('sidebar.hrSettings') },
+                { to: '/whatsapp/templates?category=HR', icon: BellIcon, label: t('sidebar.whatsappNotifications') },
+                { to: '/hr/rewards', icon: StarIcon, label: t('sidebar.rewards') },
+            ],
+            // 🔒 إخفاء إذا كان غير مفعل
+            hidden: !isAppActive('hr-basic')
+        }] : []),
+
+        // 7️⃣ الأعمال والمواعيد
+        {
+            id: 'business',
+            title: t('sidebar.businessSection'),
+            icon: CalendarIcon,
+            items: [
+                { to: '/appointments', icon: CalendarIcon, label: t('sidebar.appointments') },
+                {
+                    to: '/tasks',
+                    icon: CheckCircleIcon,
+                    label: t('sidebar.tasks'),
+                    children: [
+                        { to: '/goals', label: t('sidebar.goals') },
+                        { to: '/tasks/projects', label: t('sidebar.taskProjects') },
+                        { to: '/tasks/categories', label: t('sidebar.taskCategories') },
+                        { to: '/tasks/settings', label: 'إعدادات المهام' },
+                        {
+                            to: '/tasks/integrations',
+                            label: t('sidebar.taskIntegrations'),
+                            hidden: !canManageTaskIntegrations,
+                        },
+                    ],
+                },
+            ]
+        },
+
+        // 8️⃣ التقارير والتحليلات
+        {
+            id: 'analytics',
+            title: t('sidebar.analyticsSection'),
+            icon: PresentationChartLineIcon,
+            items: [
+                { to: '/reports', icon: ChartBarIcon, label: t('sidebar.reports') },
+                { to: '/analytics', icon: PresentationChartLineIcon, label: t('sidebar.advancedAnalytics') },
+            ],
+            // 🔒 إخفاء إذا كان غير مفعل
+            hidden: !isAppActive('analytics-advanced')
+        },
+
+        // 🔟 الدعم الفني
+        {
+            id: 'support',
+            title: t('sidebar.supportSection'),
+            icon: TicketIcon,
+            items: [
+                { to: '/support', icon: ChatBubbleLeftRightIcon, label: t('sidebar.supportCenter') },
+                { to: '/support/tickets', icon: TicketIcon, label: t('sidebar.myTickets') },
+                { to: '/support/tickets/new', icon: DocumentTextIcon, label: t('sidebar.newTicket') },
+                { to: '/support/faq', icon: QuestionMarkCircleIcon, label: t('sidebar.supportFaq') },
+                ...(user?.role === 'SUPER_ADMIN' || user?.role === 'COMPANY_ADMIN' || user?.role === 'OWNER' ? [
+                    { to: '/admin/support', icon: WrenchScrewdriverIcon, label: t('sidebar.supportManagement') }
+                ] : [])
+            ]
+        },
+
+        // 1️⃣1️⃣ Marketplace - متجر الأدوات
+        {
+            id: 'marketplace',
+            title: t('sidebar.marketplace'),
+            icon: CubeIcon,
+            items: [
+                { to: '/marketplace', icon: CubeIcon, label: t('sidebar.browseApps') },
+                { to: '/marketplace/themes', icon: SwatchIcon, label: 'قوالب المتجر' },
+                { to: '/marketplace/feature-audit', icon: ClipboardDocumentCheckIcon, label: t('sidebar.featureAudit'), hidden: !isCompanyOperator },
+                { to: '/my-apps', icon: CheckCircleIcon, label: t('sidebar.activatedApps') },
+                { to: '/billing/wallet', icon: WalletIcon, label: t('sidebar.wallet') },
+            ],
+            // 🔒 إخفاء القسم للمسوقين
+            hidden: user?.role === 'AFFILIATE'
+        },
+
+        // 1️⃣2️⃣ الفواتير والاشتراكات
+        {
+            id: 'billing',
+            title: t('sidebar.billingSection'),
+            icon: BanknotesIcon,
+            items: [
+                { to: '/invoices', icon: DocumentTextIcon, label: t('sidebar.myInvoices') },
+                { to: '/payments', icon: BanknotesIcon, label: t('sidebar.myPayments') },
+                { to: '/subscription', icon: CreditCardIcon, label: t('sidebar.mySubscription') },
+            ]
+        },
+
+        // 1️⃣2️⃣ الإشعارات والأدوات
+        {
+            id: 'notifications',
+            title: t('sidebar.notificationsSection'),
+            icon: BellIcon,
+            items: [
+                { to: '/notifications', icon: BellIcon, label: t('sidebar.notifications') },
+                { to: '/reminders', icon: BellAlertIcon, label: t('sidebar.reminders') },
+                { to: '/notification-settings', icon: CogIcon, label: t('sidebar.notificationSettings') },
+            ],
+            hidden: !isAnyAppActive(['notification-automation'])
+        },
+
+        // 1️⃣3️⃣ سجل النشاطات
+        {
+            id: 'activity',
+            title: t('sidebar.activitySection'),
+            icon: ClipboardDocumentListIcon,
+            items: [
+                { to: '/my-activity', icon: ClipboardDocumentListIcon, label: t('sidebar.myActivity') },
+                ...(user?.role === 'SUPER_ADMIN' || user?.role === 'COMPANY_ADMIN' || user?.role === 'OWNER' ? [
+                    { to: '/company/activity', icon: ChartBarIcon, label: t('sidebar.companyActivity') }
+                ] : [])
+            ]
+        },
+
+        // 1️⃣4️⃣ الإعدادات (قسم موحد)
+        {
+            id: 'settings',
+            title: t('sidebar.settingsSection'),
+            icon: Cog6ToothIcon,
+            items: [
+                { to: '/settings', icon: CogIcon, label: t('sidebar.settings') },
+                { to: '/admin/faqs', icon: QuestionMarkCircleIcon, label: t('sidebar.faqs') },
+                { to: '/admin/policies', icon: ClipboardDocumentCheckIcon, label: t('sidebar.policies') },
+                { to: '/settings/order-workflow', icon: ArrowsRightLeftIcon, label: t('sidebar.orderWorkflow') },
+            ]
+        },
+
+        // 1️⃣4️⃣.5 العميل الذكي AI (للأدمن والمالك)
+        ...(user?.role === 'SUPER_ADMIN' || user?.role === 'COMPANY_ADMIN' || user?.role === 'OWNER' ? [{
+            id: 'ai-operator',
+            title: t('sidebar.aiOperatorSection'),
+            icon: SparklesIcon,
+            items: [
+                { to: '/admin/ai-agents', icon: UserGroupIcon, label: t('sidebar.aiAgentsTeam') },
+                { to: '/admin/ai-agent-map', icon: QueueListIcon, label: t('sidebar.aiAgentMap') },
+                { to: '/admin/ai-skills', icon: AcademicCapIcon, label: t('sidebar.aiAgentSkills') },
+                { to: '/admin/ai-tools', icon: WrenchScrewdriverIcon, label: t('sidebar.aiAgentTools') },
+                { to: '/admin/agent-manager', icon: SparklesIcon, label: t('sidebar.agentManager') },
+                { to: '/admin/ai-chat', icon: ChatBubbleLeftRightIcon, label: t('sidebar.ceoAgentChat') },
+{ to: '/admin/ai-rag-lab', icon: BeakerIcon, label: t('sidebar.aiRagLab') },
+                { to: '/admin/ai-agent-sandbox', icon: BeakerIcon, label: t('sidebar.aiAgentSandbox') },
+                { to: '/admin/faqs', icon: QuestionMarkCircleIcon, label: t('sidebar.faqs') },
+                { to: '/admin/policies', icon: ClipboardDocumentCheckIcon, label: t('sidebar.policies') },
+                { to: '/admin/ai-scheduler', icon: ClockIcon, label: t('sidebar.aiScheduler') },
+            ]
+        }] : []),
+
+        // 1️⃣5️⃣ إدارة متقدمة (للأدمن)
+        ...(user?.role === 'SUPER_ADMIN' || user?.role === 'COMPANY_ADMIN' || user?.role === 'OWNER' ? [{
+            id: 'admin',
+            title: t('sidebar.advancedAdminSection'),
+            icon: WrenchScrewdriverIcon,
+            items: [
+                { to: '/monitoring', icon: ChartBarIcon, label: t('sidebar.systemMonitoring') },
+                { to: '/alert-settings', icon: ExclamationTriangleIcon, label: t('sidebar.alertSettings') },
+            ]
+        }] : []),
+
+        // 1️⃣6️⃣ إدارة النظام (للسوبر أدمن)
+        ...(user?.role === 'SUPER_ADMIN' ? [{
+            id: 'system',
+            title: t('sidebar.systemManagementSection'),
+            icon: BuildingOfficeIcon,
+            items: [
+                { to: '/companies', icon: BuildingOfficeIcon, label: t('sidebar.companiesManagement') },
+                { to: '/super-admin/queue-monitor', icon: QueueListIcon, label: t('sidebar.systemMonitoring') }, // BullMQ Monitor
+                { to: '/super-admin/db-migration', icon: WrenchScrewdriverIcon, label: t('sidebar.dbMigration') },
+                { to: '/super-admin/billing-overview', icon: BanknotesIcon, label: t('sidebar.billingOverview') },
+                { to: '/super-admin/marketplace-management', icon: CubeIcon, label: t('sidebar.marketplaceManagement') },
+                { to: '/super-admin/storefront-themes', icon: SwatchIcon, label: 'تسعير قوالب المتجر' },
+                { to: '/super-admin/marketing-links', icon: MegaphoneIcon, label: t('sidebar.marketingLinks') },
+                { to: '/super-admin/homepage-templates', icon: ComputerDesktopIcon, label: 'قوالب لاندنج المنصة' },
+                { to: '/super-admin/new-section', icon: SparklesIcon, label: t('sidebar.productStudio') },
+                { to: '/settings/store', icon: SwatchIcon, label: t('sidebar.shopStudio') },
+                { to: '/settings/store', icon: SwatchIcon, label: t('sidebar.shopTemplates') },
+                { to: '/super-admin/premium-product-demo', icon: SparklesIcon, label: t('sidebar.premiumDemo') },
+                { to: '/super-admin/changelog', icon: ClipboardDocumentListIcon, label: t('sidebar.changelog') },
+                { to: '/super-admin/partner-management', icon: UserGroupIcon, label: t('sidebar.partnerManagement') },
+                { to: '/super-admin/dev-leaderboard', icon: ChartBarIcon, label: t('sidebar.devLeaderboard') },
+            ]
+        }] : []),
+
+        // 1️⃣7️⃣ إدارة الشركة
+        ...(user?.role === 'COMPANY_ADMIN' || user?.role === 'OWNER' || user?.role === 'SUPER_ADMIN' ? [{
+            id: 'company',
+            title: t('sidebar.companyManagementSection'),
+            icon: UserGroupIcon,
+            items: [
+                { to: '/users', icon: UserGroupIcon, label: t('sidebar.usersManagement') },
+                { to: '/roles', icon: KeyIcon, label: t('sidebar.rolesManagement') },
+            ]
+        }] : []),
+
+        // 1️⃣8️⃣ الشروط والخصوصية
+        {
+            id: 'legal',
+            title: t('sidebar.legalSection'),
+            icon: ClipboardDocumentCheckIcon,
+            items: [
+                { to: '/terms', icon: ClipboardDocumentCheckIcon, label: t('sidebar.terms') },
+                { to: '/privacy', icon: ShieldExclamationIcon, label: t('sidebar.privacy') },
+            ]
+        },
+    ];
+
+    // Apply dynamic sidebar management overrides (from DB settings + user settings)
+    return applySidebarOverrides(sidebarConfig, sidebarManagementData, user?.role, userSidebarSettings);
+};

@@ -1,0 +1,186 @@
+{
+  "id": "fresh-cart",
+  "name": "Fresh Cart",
+  "tokens": {
+    "colors": {
+      "primary": "145 65% 42%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "25 85% 95%",
+      "secondaryForeground": "145 50% 15%",
+      "accent": "25 90% 55%",
+      "accentForeground": "0 0% 100%",
+      "background": "0 0% 99%",
+      "foreground": "145 20% 12%",
+      "muted": "145 12% 93%",
+      "mutedForeground": "145 8% 42%",
+      "border": "145 10% 87%",
+      "card": "0 0% 100%",
+      "cardForeground": "145 20% 12%",
+      "ring": "145 65% 42%"
+    },
+    "typography": {
+      "headingFont": "\"Inter\", \"Cairo\", sans-serif",
+      "bodyFont": "\"Inter\", \"Cairo\", sans-serif",
+      "baseSize": "15px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0.75rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "0.75rem",
+      "boxShadow": "0 4px 16px -8px rgba(20, 80, 50, 0.1)",
+      "hoverShadow": "0 8px 24px -10px rgba(20, 80, 50, 0.16)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
+      "surfaceOpacity": "1"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Fresh Cart",
+    "description": "سوبرماركت أونلاين — خضار وفاكهة طازجة، ألبان، لحوم، ومنتجات تنظيف. توصيل خلال ساعتين!"
+  },
+  "header": {
+    "brandName": "Fresh Cart 🛒",
+    "showSearch": true,
+    "navigation": [
+      { "label": "الرئيسية", "to": "/" },
+      { "label": "المتجر", "to": "/shop" },
+      { "label": "الأقسام", "to": "/collections" },
+      { "label": "عروض اليوم", "to": "/sale" }
+    ]
+  },
+  "footer": {
+    "description": "Fresh Cart — كل احتياجات بيتك في مكان واحد مع توصيل سريع وأسعار مناسبة.",
+    "copyrightText": "© 2026 Fresh Cart. جميع الحقوق محفوظة.",
+    "socialLinks": { "facebook": "https://facebook.com", "whatsapp": "https://wa.me/201000000000" },
+    "navigation": [
+      { "title": "التسوق", "links": [{ "label": "كل المنتجات", "to": "/shop" }, { "label": "الأقسام", "to": "/collections" }, { "label": "عروض اليوم", "to": "/sale" }] },
+      { "title": "المساعدة", "links": [{ "label": "التوصيل", "to": "/shipping" }, { "label": "الاستبدال", "to": "/returns" }, { "label": "اتصل بنا", "to": "/contact" }] }
+    ],
+    "legalLinks": [{ "label": "الخصوصية", "to": "/privacy" }, { "label": "الشروط", "to": "/terms" }]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "🚀 توصيل سريع",
+            "message": "اطلب دلوقتي وتوصيلك خلال ساعتين! شحن مجاني لطلبات فوق 200 جنيه.",
+            "saleLabel": "عروض يومية",
+            "shippingLabel": "توصيل خلال ساعتين",
+            "returnLabel": "استبدال فوري",
+            "ctaText": "اطلب الآن",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "speed-banner",
+          "settings": {
+            "eyebrow": "Fresh Cart 🛒",
+            "title": "كل احتياجات بيتك في مكان واحد",
+            "subtitle": "خضار وفاكهة طازجة كل يوم، ألبان، لحوم، مشروبات، ومنتجات تنظيف — كلها بسعر السوبرماركت.",
+            "ctaText": "ابدأ التسوق",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "عروض اليوم",
+            "secondaryCtaLink": "/sale"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "fast-nav-grid",
+          "settings": {
+            "title": "تصفح حسب القسم",
+            "subtitle": "كل قسم مرتب حسب النوع والعلامة التجارية.",
+            "limit": 6,
+            "ctaText": "كل الأقسام",
+            "ctaLink": "/collections",
+            "collections": [
+              { "title": "خضار وفاكهة 🥦", "subtitle": "طازج كل يوم من المزرعة.", "image": "/assets/themes/elessi-harvest-fold/fruit-crate.jpg", "link": "/shop?sort=popular" },
+              { "title": "ألبان وأجبان 🧀", "subtitle": "حليب، جبنة، زبادي، وأكتر.", "image": "https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=900&q=80", "link": "/collections" },
+              { "title": "لحوم ودواجن 🍗", "subtitle": "لحوم طازجة ومجمدة.", "image": "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&w=900&q=80", "link": "/shop?sort=newest" },
+              { "title": "مشروبات 🥤", "subtitle": "عصائر، مياه، ومشروبات غازية.", "image": "/assets/themes/elessi-harvest-fold/date-syrup.jpg", "link": "/sale" },
+              { "title": "سناكس وحلويات 🍫", "subtitle": "شيبسي، شوكولاتة، وبسكويت.", "image": "/assets/themes/elessi-harvest-fold/pantry-closeup.jpg", "link": "/shop" },
+              { "title": "تنظيف 🧹", "subtitle": "منظفات، معطرات، وأدوات منزلية.", "image": "https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=900&q=80", "link": "/collections" }
+            ]
+          }
+        },
+        {
+          "type": "shopping-intents",
+          "settings": {
+            "badge": "ابدأ من هنا",
+            "title": "طريقة أسرع للتسوق",
+            "subtitle": "اختار الطريقة اللي تناسبك.",
+            "items": [
+              { "eyebrow": "عروض حية", "title": "عروض اليوم 🔥", "subtitle": "خصومات متغيرة كل يوم.", "link": "/sale", "tone": "accent", "chip": "عرض" },
+              { "eyebrow": "الأعلى مبيعاً", "title": "الأكثر طلباً", "subtitle": "المنتجات اللي الكل بيشتريها.", "link": "/shop?sort=popular", "tone": "primary", "chip": "مميز" },
+              { "eyebrow": "جديد", "title": "وصل حديثاً", "subtitle": "منتجات جديدة في المتجر.", "link": "/shop?sort=newest", "tone": "emerald", "chip": "جديد" },
+              { "eyebrow": "باقات", "title": "باقات جاهزة", "subtitle": "باقات مجمعة بسعر أوفر.", "link": "/collections", "tone": "slate", "chip": "وفّر" }
+            ]
+          }
+        },
+        {
+          "type": "offer-bento",
+          "settings": {
+            "badge": "باقات ذكية",
+            "title": "باقات جاهزة لبيتك",
+            "subtitle": "وفّر وقتك — باقات مجمعة لأكتر الطلبات تكراراً.",
+            "cards": [
+              { "label": "باقة الإفطار", "title": "جبنة + بيض + عيش + عصير", "subtitle": "إفطار كامل لعائلة من 4.", "ctaText": "اطلب الباقة", "link": "/sale", "tone": "primary", "stat": "99 جنيه" },
+              { "label": "باقة العزومة", "title": "لحوم + خضار + أرز + مشروبات", "subtitle": "كل اللي تحتاجه لعزومة 6 أشخاص.", "ctaText": "اطلب الباقة", "link": "/shop?sort=popular", "tone": "accent", "stat": "299 جنيه" }
+            ]
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "compact",
+          "settings": { "title": "الأكثر طلباً 🛒", "limit": 12 }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "عروض يومية في بريدك",
+            "subtitle": "تنبيهات بالعروض الجديدة كل صباح.",
+            "buttonText": "اشترك",
+            "placeholder": "بريدك الإلكتروني"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        { "type": "shop-command-bar", "variant": "marketplace-dense", "settings": { "title": "ابحث بسرعة", "searchPlaceholder": "ابحث (مثال: حليب كامل الدسم)", "allCategoriesLabel": "كل الأقسام", "resultsLabel": "منتج", "clearButtonText": "مسح", "chipLimit": 8 } },
+        "filters-sidebar",
+        { "type": "product-grid", "variant": "compact", "settings": { "title": "كل المنتجات", "limit": 20 } }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        { "type": "product-gallery", "variant": "standard" },
+        { "type": "product-info", "variant": "standard", "settings": { "descriptionTitle": "عن المنتج", "shippingTitle": "التوصيل", "shippingText": "توصيل خلال ساعتين للقاهرة والجيزة.", "guaranteesTitle": "ضمانات Fresh Cart", "guaranteeStyle": "strip", "guaranteeItems": "طازج ومضمون|كل المنتجات طازجة.\nاستبدال فوري|استبدال في نفس اليوم.\nدفع عند الاستلام|ادفع بعد التأكد." } },
+        { "type": "conversion-stack", "variant": "minimal" },
+        { "type": "bought-together", "variant": "compact", "settings": { "title": "اشترِ مع بعض", "subtitle": "منتجات بتكمل طلبك.", "limit": 4 } },
+        { "type": "related-products", "variant": "compact", "settings": { "title": "منتجات مشابهة", "limit": 4 } }
+      ]
+    },
+    "cart": {
+      "sections": [
+        { "type": "cart-items", "variant": "compact", "settings": { "title": "سلة المشتريات 🛒", "continueShoppingText": "أضف منتجات تانية" } },
+        { "type": "order-summary", "variant": "highlighted", "settings": { "title": "ملخص الطلب", "checkoutButtonText": "إتمام الطلب", "secureCheckoutText": "دفع آمن", "showTrustRow": true, "showFreeShippingProgress": true } }
+      ]
+    },
+    "checkout": {
+      "sections": [
+        { "type": "promo-strip", "settings": { "badge": "توصيل سريع 🚀", "message": "طلبك هيوصلك خلال ساعتين!", "saleLabel": "سريع", "shippingLabel": "دفع عند الاستلام" } },
+        { "type": "checkout-form", "variant": "compact", "settings": { "contactTitle": "بياناتك", "shippingTitle": "عنوان التوصيل", "notesTitle": "ملاحظات", "notesDescription": "وقت التوصيل المفضل أو أي تفاصيل." } },
+        { "type": "payment", "variant": "cards", "settings": { "title": "طريقة الدفع", "confirmOrderText": "تأكيد الطلب", "codLabel": "دفع عند الاستلام", "cardLabel": "بطاقة بنكية", "walletLabel": "محفظة إلكترونية" } }
+      ]
+    }
+  }
+}
+

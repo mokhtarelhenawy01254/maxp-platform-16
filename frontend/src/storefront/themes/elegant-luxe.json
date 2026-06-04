@@ -1,0 +1,974 @@
+{
+  "id": "elegant-luxe",
+  "name": "Elegant Luxe",
+  "description": "دار أزياء فاخرة بطابع صالون تحريري، توازن بين رهبة الخامة وسهولة الاكتشاف والحسم الهادئ.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "339 20% 16%",
+      "primaryForeground": "36 55% 97%",
+      "secondary": "34 34% 93%",
+      "secondaryForeground": "339 20% 16%",
+      "accent": "24 58% 60%",
+      "accentForeground": "20 22% 12%",
+      "background": "34 33% 97%",
+      "foreground": "339 16% 14%",
+      "muted": "30 20% 90%",
+      "mutedForeground": "339 8% 38%",
+      "border": "28 22% 82%",
+      "card": "36 42% 99%",
+      "cardForeground": "339 16% 14%",
+      "ring": "24 58% 60%"
+    },
+    "typography": {
+      "headingFont": "\"Cormorant Garamond\", \"Cairo\", serif",
+      "bodyFont": "\"Alexandria\", \"Cairo\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.4rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.15rem",
+      "boxShadow": "0 22px 64px -44px rgba(71, 35, 43, 0.2)",
+      "hoverShadow": "0 30px 82px -42px rgba(71, 35, 43, 0.26)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
+      "surfaceOpacity": "1"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Elegant Luxe",
+    "description": "قالب أزياء فاخرة بطابع صالون تحريري: تشكيلات واضحة، صفحات دعم مكتملة، ومسار شراء أهدأ من البوتيكات المكررة."
+  },
+  "preview": {
+    "imageUrl": "/assets/themes/elegant-luxe/preview.png",
+    "colors": [
+      "339 20% 16%",
+      "34 34% 93%",
+      "24 58% 60%"
+    ]
+  },
+  "header": {
+    "variant": "fashion-retail",
+    "brandName": "Elegant Luxe",
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "جلسات فاخرة وخامات أوضح ومسار شراء أهدأ.",
+    "announcementLinkText": "العروض الحالية",
+    "announcementLinkTo": "/sale",
+    "navigation": [
+      {
+        "label": "الرئيسية",
+        "to": "/"
+      },
+      {
+        "label": "المتجر",
+        "to": "/shop"
+      },
+      {
+        "label": "التشكيلات",
+        "to": "/collections"
+      },
+      {
+        "label": "اللوك بوك",
+        "to": "/lookbook"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      },
+      {
+        "label": "دليل المقاسات",
+        "to": "/size-guide"
+      }
+    ],
+    "actions": [
+      {
+        "label": "ابدئي من التشكيلات",
+        "to": "/collections",
+        "style": "primary"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "signature-panel",
+    "description": "Elegant Luxe تقرأ كجلسة عرض خاصة لا كرف متكرر: تشكيلات جاهزة، خامات أوضح، وخطوات دعم تظل قريبة من العميلة حتى بعد الطلب.",
+    "copyrightText": "© 2026 Elegant Luxe. جميع الحقوق محفوظة.",
+    "contactRows": [
+      {
+        "label": "واتساب الطلبات",
+        "value": "+20 100 000 0000",
+        "href": "https://wa.me/201000000000"
+      },
+      {
+        "label": "بريد المتجر",
+        "value": "hello@elegantluxe.com",
+        "href": "mailto:hello@elegantluxe.com"
+      }
+    ],
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
+    "navigation": [
+      {
+        "title": "التشكيلات",
+        "links": [
+          {
+            "label": "كل القطع",
+            "to": "/shop"
+          },
+          {
+            "label": "جلسات الظهور",
+            "to": "/collections"
+          },
+          {
+            "label": "اللوك بوك",
+            "to": "/lookbook"
+          }
+        ]
+      },
+      {
+        "title": "الخدمة",
+        "links": [
+          {
+            "label": "دليل المقاسات",
+            "to": "/size-guide"
+          },
+          {
+            "label": "الشحن والتوصيل",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال والاسترجاع",
+            "to": "/returns"
+          },
+          {
+            "label": "تواصل معنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "سياسة الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط والأحكام",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "style-ledger",
+          "settings": {
+            "eyebrow": "جلسة الدار",
+            "title": "فخامة تقود العين\nثم تقفل القرار",
+            "subtitle": "Elegant Luxe ليست بوتيكًا هادئًا فقط. هي صالون عرض تحريري يبرز الخامة والصورة والتنسيق، ثم يفتح الطريق إلى القطعة الأقرب للحسم بدون ازدحام.",
+            "ctaText": "ابدئي من التشكيلات",
+            "ctaLink": "/collections",
+            "secondaryCtaText": "ادخلي المتجر",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1600",
+            "panelImage": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&q=80&w=1400",
+            "panelEyebrow": "دفتر الجلسة",
+            "panelTitle": "ابدئي من مشهد الظهور لا من رف عادي",
+            "panelSubtitle": "نهار مرتب، عشاء خاص، أو هدية فاخرة. كل مدخل يختصر الحيرة ويقربك من القطعة المناسبة.",
+            "panelMetricLabel": "إيقاع الصفحة",
+            "panelMetricValue": "تحريري + بيّاع",
+            "highlights": [
+              {
+                "label": "الشخصية",
+                "value": "صالون فاخر"
+              },
+              {
+                "label": "الهدف",
+                "value": "هوية + حسم"
+              },
+              {
+                "label": "المسار",
+                "value": "تشكيلات واضحة"
+              }
+            ]
+          }
+        },
+        {
+          "type": "promo-strip",
+          "variant": "benefit-ribbon",
+          "settings": {
+            "badge": "ما بعد الانبهار",
+            "message": "شحن محافظات، استبدال أوضح، وتأكيد مرتب قبل التجهيز حتى تظل الثقة حاضرة مع الإحساس الفاخر.",
+            "saleLabel": "تشكيلات موسمية",
+            "shippingLabel": "شحن واضح",
+            "returnLabel": "استبدال مرتب",
+            "ctaText": "اعرفي التفاصيل",
+            "ctaLink": "/shipping"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "editorial-categories",
+          "settings": {
+            "title": "ابدئي من مشهد الظهور",
+            "subtitle": "كل مجموعة هنا تقودك من الإحساس الذي تريدينه إلى القطع الأقرب له بدل أن تتركيك في شبكة عامة متشابهة.",
+            "limit": 4,
+            "ctaText": "شاهدي كل التشكيلات",
+            "ctaLink": "/collections",
+            "collections": [
+              {
+                "title": "نهار مرتب",
+                "subtitle": "فساتين وأطقم تعطي حضورًا واضحًا بدون مبالغة.",
+                "image": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=dresses"
+              },
+              {
+                "title": "مساء خاص",
+                "subtitle": "قصات أهدأ من سهرة صاخبة لكنها لا تمر من غير أثر.",
+                "image": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?search=سهرة"
+              },
+              {
+                "title": "طبقات التوقيع",
+                "subtitle": "جاكيتات وطبقات خفيفة تكمل المشهد بدل أن تزاحمه.",
+                "image": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=layers"
+              },
+              {
+                "title": "هدايا فاخرة",
+                "subtitle": "إكسسوارات وقطع صغيرة بتغليف أنيق وسهولة أكبر في الحسم.",
+                "image": "https://images.unsplash.com/photo-1745284300322-1789f1718463?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=accessories"
+              }
+            ]
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "luxury-card",
+          "settings": {
+            "title": "مختارات Elegant Luxe",
+            "subtitle": "رف رئيسي ببطاقات أنظف وإيقاع أهدأ حتى تبقى القطعة نفسها هي محور القرار.",
+            "limit": 8
+          }
+        },
+        {
+          "type": "story-parallax",
+          "settings": {
+            "badge": "لغة الخامة",
+            "title": "القطعة عندنا لا تُباع بالصوت العالي",
+            "content": "نحن نفضّل المسافة النظيفة، الصورة الواثقة، ووعد الخدمة الواضح. لذلك تأتي Elegant Luxe كلغة صالون معاصر: أقل صخبًا من قوالب الأزياء العامة وأكثر اكتمالًا من البوتيكات الهادئة المكررة.",
+            "image": "https://images.unsplash.com/photo-1606259458027-54d2a728b6ab?auto=format&fit=crop&q=80&w=1400"
+          }
+        },
+        {
+          "type": "journal-strip",
+          "variant": "editorial-cards",
+          "settings": {
+            "title": "دفتر الجلسة",
+            "subtitle": "قصص قصيرة تساعد العميلة على قراءة القطعة داخل سياقها: كيف تظهر، متى تناسب، وما الذي يكملها فعلاً.",
+            "items": [
+              {
+                "title": "كيف تتحول الطبقة الخفيفة إلى توقيع كامل للمشهد",
+                "meta": "طبقات",
+                "image": "https://images.unsplash.com/photo-1760975979242-dcdaafdb8f49?auto=format&fit=crop&q=80&w=1200",
+                "link": "/lookbook",
+                "excerpt": "طبقة واحدة أحيانًا تكفي لرفع الفستان أو الطقم من مرتب إلى لا يُنسى."
+              },
+              {
+                "title": "لماذا تبدو الخامة الغنية أفضل مع شبكة أهدأ",
+                "meta": "اتجاه بصري",
+                "image": "https://images.unsplash.com/photo-1606259458027-54d2a728b6ab?auto=format&fit=crop&q=80&w=1200",
+                "link": "/collections",
+                "excerpt": "كلما خفّ الضجيج حول المنتج، ظهرت الخامة بشكل أصدق وأقرب إلى الحسم."
+              },
+              {
+                "title": "هدية فاخرة لا تحتاج شرحًا طويلًا",
+                "meta": "هدايا",
+                "image": "https://images.unsplash.com/photo-1745284300322-1789f1718463?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=accessories",
+                "excerpt": "قطعة صغيرة واضحة مع تغليف مرتب قد تكون أقرب قرار هدية يمكن أخذه بسرعة."
+              }
+            ]
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "editorial-strip",
+          "settings": {
+            "title": "ادخلي القائمة الخاصة",
+            "subtitle": "تنبيهات بالتشكيلات الجديدة، القطع المحدودة، والخصومات التي تظهر أولًا للمشتركات.",
+            "buttonText": "اشتركي",
+            "placeholder": "اكتبي بريدك الإلكتروني"
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "variant": "decision-deck",
+          "settings": {
+            "title": "غرفة قرار Elegant Luxe",
+            "subtitle": "ابدئي من اسم القطعة أو مزاج المناسبة أو التشكيلة، ثم ضيقي الشبكة حول ما يستحق النظر فعلًا بدل المرور على رف متكرر.",
+            "searchPlaceholder": "ابحثي عن فستان توقيع، طبقة خفيفة، أو هدية فاخرة",
+            "allCategoriesLabel": "كل القطع",
+            "resultsLabel": "قطعة",
+            "clearButtonText": "امسحي الترشيحات",
+            "stickyLabel": "غرفة القرار",
+            "chipLimit": 7
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "editorial-categories",
+          "settings": {
+            "title": "مداخل أسرع من الرف العام",
+            "subtitle": "اختاري من أي باب تريدين الدخول: مشهد النهار، جلسة المساء، الطبقات، أو الهدايا.",
+            "limit": 4,
+            "ctaText": "كل التشكيلات",
+            "ctaLink": "/collections"
+          }
+        },
+        {
+          "type": "filters-sidebar",
+          "settings": {
+            "badge": "فلترة مرتبة",
+            "title": "ضيّقي الخيارات بهدوء",
+            "subtitle": "القسم والميزانية والترتيب تبقى أمامك من غير أن تتحول الصفحة إلى لوحة أدوات مزعجة.",
+            "showSearch": false,
+            "showSort": true,
+            "showCategories": true,
+            "showPriceFilter": true,
+            "allProductsLabel": "كل القطع",
+            "clearButtonText": "مسح الفلاتر",
+            "showMobileLabel": "أدوات Elegant Luxe",
+            "hideMobileLabel": "إخفاء الأدوات",
+            "mobileTitle": "فلترة Elegant Luxe",
+            "mobileSubtitle": "راجعي القسم والميزانية والترتيب ثم عودي إلى الشبكة مباشرة.",
+            "mobileApplyText": "اعرضي القطع",
+            "mobileResetText": "امسحي الاختيارات"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "luxury-card",
+          "settings": {
+            "title": "كل القطع",
+            "subtitle": "بطاقات أكثر هدوءًا من المتاجر العامة، لكنها أقرب للحسم من البوتيكات التأملية.",
+            "limit": 12,
+            "clearButtonText": "عرض كل القطع"
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "collections": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "benefit-ribbon",
+          "settings": {
+            "badge": "جلسات جاهزة",
+            "message": "هذه ليست أقسامًا جامدة، بل مداخل قراءة تساعدك على الوصول إلى القطعة الصحيحة من زاوية الظهور نفسه.",
+            "saleLabel": "مشهد النهار",
+            "shippingLabel": "مساء خاص",
+            "returnLabel": "هدايا مرتبة",
+            "ctaText": "ادخلي المتجر",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "editorial-categories",
+          "settings": {
+            "title": "تشكيلات Elegant Luxe",
+            "subtitle": "كل بطاقة تمهّد لمشهد مختلف وتفتح طريقًا أقرب إلى القطع التي تناسبه.",
+            "limit": 6,
+            "ctaText": "كل القطع",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "overlay-card",
+          "settings": {
+            "title": "قطع تقود كل تشكيلة",
+            "subtitle": "منتجات محورية تصلح كبداية للتشكيلة أو كخاتمة تكملها.",
+            "limit": 8
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "sale": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "sale-signal",
+          "settings": {
+            "badge": "LUXE EDITS",
+            "message": "عروض Elegant Luxe لا تعرض الخصم فقط، بل توضّح أي القطع ما زالت تحافظ على إحساسها الفاخر حتى داخل التخفيض.",
+            "saleLabel": "تنزيلات واضحة",
+            "shippingLabel": "شحن محافظات",
+            "returnLabel": "خدمة ما بعد الطلب",
+            "ctaText": "ارجعي للمتجر",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "campaign-stack",
+          "settings": {
+            "badge": "مسارات الخصم",
+            "title": "3 زوايا للخصم لا تبدو رخيصة",
+            "subtitle": "العرض هنا منظم بحسب القيمة والاستخدام، لا مجرد سعر أقل بلا سياق.",
+            "cards": [
+              {
+                "label": "نهار مرتب",
+                "title": "قطع عملية لكن بلمسة أهدأ",
+                "subtitle": "فساتين وأطقم صالحة للدخول اليومي مع سعر يجعل القرار أسرع.",
+                "ctaText": "شاهدي المختارات",
+                "link": "/shop?category=dresses",
+                "tone": "primary",
+                "stat": "حتى 20%"
+              },
+              {
+                "label": "هدايا أوضح",
+                "title": "إكسسوارات تحسم الهدية بسرعة",
+                "subtitle": "منتجات أصغر حجمًا وأسرع في القرار من غير أن تبدو عادية.",
+                "ctaText": "شاهدي الهدايا",
+                "link": "/shop?category=accessories",
+                "tone": "accent",
+                "stat": "خصم خاص"
+              },
+              {
+                "label": "آخر القطع",
+                "title": "المقاسات المحدودة تستحق المرور أولًا",
+                "subtitle": "اختيارات نهائية لمن تعرف بالضبط ما تبحث عنه ولا تريد الدوران كثيرًا.",
+                "ctaText": "تصفحي الآن",
+                "link": "/sale",
+                "tone": "slate",
+                "stat": "محدود"
+              }
+            ]
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "overlay-card",
+          "settings": {
+            "title": "كل العروض",
+            "subtitle": "شبكة عرض مخفضة لكن ما زالت تحافظ على إحساس Elegant Luxe بدل أن تتحول إلى رف خصومات عام.",
+            "saleOnly": true,
+            "limit": 12,
+            "clearButtonText": "عرض كل المنتجات"
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "masonry"
+        },
+        {
+          "type": "product-info",
+          "variant": "bento-specs",
+          "settings": {
+            "descriptionTitle": "تفاصيل القطعة",
+            "shippingTitle": "الشحن والاستبدال",
+            "shippingText": "نوضح الخامة والسقوط وموعد التجهيز بعناية قبل الحسم. الشحن يظهر بوضوح قبل التأكيد، والقطع المؤهلة للاستبدال تبقى مساراتها مفهومة بعد الطلب.",
+            "guaranteesTitle": "لماذا هذه القطعة؟",
+            "guaranteeStyle": "grid",
+            "guaranteeItems": "الخامة|مظهر أصدق للخامة في الصور والوصف.\nالحضور|تقرأ القطعة بوضوح داخل مشهد النهار أو المساء.\nالخدمة|إرشاد أوضح للمقاس والشحن وما بعد الطلب.",
+            "sizeGuideText": "دليل المقاسات",
+            "sizeGuideLink": "/size-guide",
+            "fitNote": "إذا كنتِ بين مقاسين وتحبين سقوطًا أهدأ على الجسم فابدئي غالبًا بالمقاس الأكبر."
+          }
+        },
+        {
+          "type": "conversion-stack",
+          "variant": "couture-minimal"
+        },
+        {
+          "type": "bought-together",
+          "variant": "pairing-rail",
+          "settings": {
+            "title": "كمّلي المشهد",
+            "subtitle": "إضافات قريبة من نفس المزاج البصري حتى تبقى السلة متناسقة لا مبعثرة.",
+            "limit": 3
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "luxury-card",
+          "settings": {
+            "title": "بدائل على نفس الروح",
+            "subtitle": "ألوان أو قصات أو خامات مختلفة لكن بنفس منطق الظهور.",
+            "limit": 4
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "voice-notes",
+          "settings": {
+            "title": "ملاحظات العميلات",
+            "subtitle": "مراجعات مختصرة وواضحة تساعد على الحسم بدل إغراق الصفحة في شهادات طويلة.",
+            "reviewLimit": 4
+          }
+        }
+      ],
+      "pageGoal": "trust",
+      "compositionPolicy": {
+        "pageGoal": "trust",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "editorial",
+          "settings": {
+            "title": "راجعي اختيارك الأخير",
+            "subtitle": "شبكة مراجعة أنظف قبل الانتقال إلى العنوان والدفع، حتى يبقى القرار متماسكًا إلى آخر خطوة.",
+            "continueShoppingText": "العودة للمتجر",
+            "serviceHighlights": [
+              "تأكيد أوضح قبل التجهيز",
+              "شحن محسوب حسب المحافظة",
+              "تبديل مرتب للقطع المؤهلة"
+            ]
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted",
+          "settings": {
+            "title": "ملخص الطلب",
+            "subtitle": "السعر والشحن والخطوة التالية مجمعة في كتلة واحدة واضحة بدل تفاصيل متناثرة.",
+            "headerBadge": "Elegant Luxe",
+            "checkoutButtonText": "متابعة إلى الدفع",
+            "couponPlaceholder": "أضيفي كود الخصم",
+            "assuranceTitle": "يشملك مع الطلب",
+            "assuranceItems": [
+              "مراجعة أخيرة قبل التجهيز",
+              "وضوح الشحن حسب المحافظة",
+              "دعم أسهل بعد الطلب"
+            ],
+            "nextStepsTitle": "بعد المتابعة",
+            "nextSteps": [
+              "تكتبي العنوان والمدينة مرة واحدة",
+              "يظهر تقدير الشحن قبل التأكيد",
+              "يصل رقم الطلب فور التثبيت"
+            ],
+            "secureCheckoutText": "بياناتك محفوظة",
+            "returnsText": "استبدال أوضح للقطع المؤهلة",
+            "showTrustRow": true
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "benefit-ribbon",
+          "settings": {
+            "badge": "CONFIRM WITH CLARITY",
+            "message": "العنوان والشحن وطريقة الدفع كلها تبقى أمامك بوضوح حتى يظل الإحساس الفاخر مصحوبًا بثقة تشغيلية حقيقية.",
+            "saleLabel": "عنوان أوضح",
+            "shippingLabel": "شحن محسوب",
+            "returnLabel": "دفع آمن"
+          }
+        },
+        {
+          "type": "cart-items",
+          "variant": "editorial",
+          "settings": {
+            "title": "مراجعة سريعة للقطع",
+            "subtitle": "راجعي المنتجات والكميات والسعر قبل إدخال العنوان وطريقة الدفع.",
+            "showUpsell": false
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "split",
+          "settings": {
+            "contactTitle": "بيانات التواصل",
+            "contactDescription": "أقل قدر من البيانات، لكن بصياغة أوضح تضمن المتابعة الصحيحة بعد الطلب.",
+            "shippingTitle": "عنوان التوصيل",
+            "shippingDescription": "العنوان والمحافظة مهمان لتقدير الشحن وزمن الوصول بدقة أكبر.",
+            "notesTitle": "ملاحظات إضافية",
+            "notesDescription": "مثلاً: توقيت الاتصال المناسب أو طلب تغليف هدية أو ملاحظة خاصة بالمقاس.",
+            "notesPlaceholder": "أي ملاحظة عن المقاس أو العنوان أو التوصيل",
+            "autoDetectSuccessText": "تم اقتراح المحافظة تلقائيًا. راجعيها سريعًا ثم كملي الطلب."
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "cards",
+          "settings": {
+            "title": "طريقة الدفع",
+            "subtitle": "اختاري الوسيلة الأنسب ثم راجعي الطلب مرة أخيرة قبل تثبيته.",
+            "confirmOrderText": "تأكيد الطلب",
+            "codLabel": "دفع عند الاستلام",
+            "cardLabel": "بطاقة بنكية",
+            "walletLabel": "تحويل أو محفظة"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted",
+          "settings": {
+            "title": "ملخص الطلب",
+            "subtitle": "يبقى الملخص أمامك أثناء إكمال البيانات حتى لا يضيع السياق بين الخطوات.",
+            "hideCheckoutButton": true,
+            "showCouponField": false,
+            "secureCheckoutText": "بياناتك محفوظة",
+            "returnsText": "دعم واضح بعد الطلب"
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "lookbook": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "fashion-billboard",
+          "settings": {
+            "eyebrow": "اللوك بوك",
+            "title": "مشاهد تقودك\nإلى القطعة لا إلى الضوضاء",
+            "subtitle": "صفحة إلهام تقرأ كدفتر جلسات: كيف تتكوّن الإطلالة، ما الذي يرفعها، وما الذي يكفي بدل أن يفتح عليك طريقًا جديدًا بالكامل.",
+            "ctaText": "تسوّقي الإلهام",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شاهدي التشكيلات",
+            "secondaryCtaLink": "/collections",
+            "backgroundImage": "https://images.unsplash.com/photo-1760975979242-dcdaafdb8f49?auto=format&fit=crop&q=80&w=1400",
+            "panelImage": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&q=80&w=1200",
+            "highlights": [
+              {
+                "label": "إلهام",
+                "value": "قابل للتسوّق"
+              },
+              {
+                "label": "لغة الصفحة",
+                "value": "تحريرية"
+              },
+              {
+                "label": "النتيجة",
+                "value": "قرار أسرع"
+              }
+            ]
+          }
+        },
+        {
+          "type": "lookbook-showcase",
+          "variant": "standard",
+          "settings": {
+            "badge": "جلسات مختارة",
+            "title": "أربع زوايا تبني اللوك من أول نظرة",
+            "subtitle": "كل بطاقة هنا تحكي مزاجًا كاملًا ثم تقودك إلى القطع التي تخدمه من غير التواء في المسار.",
+            "limit": 4,
+            "ctaText": "ادخلي المتجر",
+            "ctaLink": "/shop",
+            "categoryCards": "dresses|مشهد نهاري مرتب|فساتين ناعمة تعيش من المكتب إلى اللقاء الهادئ.|نهار هادئ|https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&q=80&w=1200|/shop?category=dresses\nlayers|طبقة توقيع|جاكيت أو طبقة خفيفة ترفع الإطلالة بدل أن تثقلها.|طبقة ذكية|https://images.unsplash.com/photo-1760975979242-dcdaafdb8f49?auto=format&fit=crop&q=80&w=1200|/shop?category=layers\nsets|مساء خاص|أطقم وقصات تمنح حضورًا واضحًا بصوت أقل.|مساء رصين|https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1200|/shop?search=سهرة\naccessories|هدية فاخرة|إكسسوار يكمّل الهدية أو يحسمها من أول قرار.|هدية قريبة|https://images.unsplash.com/photo-1745284300322-1789f1718463?auto=format&fit=crop&q=80&w=1200|/shop?category=accessories"
+          }
+        },
+        {
+          "type": "journal-strip",
+          "variant": "editorial-cards",
+          "settings": {
+            "title": "حواشي الدفتر",
+            "subtitle": "ملاحظات قصيرة تجعل الإلهام عمليًا وقابلًا للشراء لا مجرد صور جميلة.",
+            "items": [
+              {
+                "title": "قطعة واحدة قد تعطي الإطلالة كلها سببها",
+                "meta": "منهج Elegant Luxe",
+                "image": "https://images.unsplash.com/photo-1606259458027-54d2a728b6ab?auto=format&fit=crop&q=80&w=1200",
+                "link": "/collections",
+                "excerpt": "حين تكون البداية صحيحة، لا تحتاج الإطلالة إلى ثلاث إضافات لتبدو كاملة."
+              },
+              {
+                "title": "المشهد الليلي لا يحتاج بالضرورة لمعانًا زائدًا",
+                "meta": "مساء خاص",
+                "image": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?search=سهرة",
+                "excerpt": "القصة قد تأتي من القصة والخامة والسقوط لا من الزينة الكثيفة."
+              },
+              {
+                "title": "كيف تختارين الهدية التي لا تبدو متعجلة",
+                "meta": "هدايا",
+                "image": "https://images.unsplash.com/photo-1745284300322-1789f1718463?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=accessories",
+                "excerpt": "أحيانًا تكفي قطعة أصغر لكنها موضوعة في سياق أجمل وأوضح."
+              }
+            ]
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "overlay-card",
+          "settings": {
+            "title": "تسوّقي من اللوك بوك",
+            "subtitle": "منتجات مختارة من نفس مزاج الصفحة حتى يبقى الانتقال إلى السلة طبيعيًا.",
+            "limit": 8
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "editorial-strip",
+          "settings": {
+            "title": "خذي الإلهام أولًا",
+            "subtitle": "اشتركي ليصلك الجديد من جلسات Elegant Luxe قبل نزوله إلى الصفحة الرئيسية.",
+            "buttonText": "اشتركي",
+            "placeholder": "اكتبي بريدك الإلكتروني"
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشحن",
+            "title": "الشحن والتوصيل",
+            "subtitle": "تفاصيل واضحة تحافظ على ثقة ما بعد الانبهار.",
+            "body": "نجهز أغلب الطلبات خلال 24 إلى 48 ساعة عمل، ثم يظهر تقدير الشحن حسب المحافظة قبل تأكيد الطلب النهائي.\n\nإذا كانت القطعة ضمن تشكيلات محدودة أو تحتاج مراجعة إضافية للمقاس أو التغليف، نوضح ذلك قبل التنفيذ بدل أن يظهر متأخرًا بعد الدفع.",
+            "detailsTitle": "معلومات سريعة",
+            "details": "التجهيز|من 24 إلى 48 ساعة عمل\nالشحن|يتحدد حسب المحافظة قبل التأكيد\nالمتابعة|يصلك رقم الطلب وتحديثاته بعد التثبيت",
+            "ctaText": "العودة للمتجر",
+            "ctaLink": "/shop"
+          }
+        }
+      ],
+      "pageGoal": "trust",
+      "compositionPolicy": {
+        "pageGoal": "trust",
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "returns": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الاستبدال",
+            "title": "الاستبدال والاسترجاع",
+            "subtitle": "سياسة مفهومة قبل الحسم، لا مفاجأة بعده.",
+            "body": "القطع المؤهلة للاستبدال أو الاسترجاع يمكن التعامل معها خلال المدة المعلنة بشرط بقاء حالتها الأصلية. نحاول دائمًا تقليل الحاجة للإرجاع عبر صور أوضح ووصف أقرب للخامة والمقاس.\n\nإذا احتجت تعديل المقاس أو مراجعة العنوان بعد الطلب، يبقى التواصل المبكر أسرع وأسهل من الانتظار حتى الشحن.",
+            "detailsTitle": "يشمل ذلك",
+            "details": "الأهلية|بحسب حالة القطعة والسياسة المعلنة\nالمقاس|المراجعة المبكرة تسهّل التبديل\nالبداية|ابدئي برقم الطلب وقناة الدعم المعتمدة",
+            "ctaText": "تواصلي معنا",
+            "ctaLink": "/contact"
+          }
+        }
+      ],
+      "pageGoal": "trust",
+      "compositionPolicy": {
+        "pageGoal": "trust",
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "contact": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الدعم",
+            "title": "تواصل معنا",
+            "subtitle": "لأسئلة الطلبات، المقاسات، والتغليف وخدمة ما بعد البيع.",
+            "body": "فريق Elegant Luxe يراجع استفسارات الطلبات والشحن والمقاسات خلال أوقات العمل. إذا كان سؤالك يخص مقاسًا أو تعديلًا بعد الطلب، أرسلي رقم الطلب أو اسم القطعة لتكون المتابعة أسرع.\n\nنفضّل أن تظل قنوات الدعم امتدادًا لهدوء التجربة نفسها: مختصرة، واضحة، ومباشرة.",
+            "detailsTitle": "قنوات التواصل",
+            "details": "واتساب|للمتابعة السريعة وتعديلات الطلب\nالبريد|للاستفسارات الرسمية أو ما بعد البيع\nأوقات العمل|من الأحد إلى الخميس من 10 ص إلى 6 م",
+            "ctaText": "ابدئي التسوق",
+            "ctaLink": "/shop"
+          }
+        }
+      ],
+      "pageGoal": "trust",
+      "compositionPolicy": {
+        "pageGoal": "trust",
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الخصوصية",
+            "title": "سياسة الخصوصية",
+            "subtitle": "كيف نتعامل مع بياناتك أثناء الطلب والمتابعة.",
+            "body": "نستخدم بياناتك لتنفيذ الطلب، متابعة الشحن، والتواصل بشأن الخدمة المرتبطة به فقط. لا نحتاج إلى بيانات أكثر من اللازم، ولا نستخدمها خارج أغراض تشغيل المتجر والخدمة بعد البيع إلا وفق ما تسمح به السياسة المعلنة.\n\nهدفنا أن تبقى الثقة التشغيلية مساوية لجودة العرض البصري، لا أقل منها.",
+            "detailsTitle": "ملخص سريع",
+            "details": "بيانات التواصل|الاسم والهاتف والبريد عند الحاجة\nبيانات الطلب|العنوان والمنتجات ووسيلة المتابعة\nالغرض|تنفيذ الطلب وخدمة ما بعد البيع والتحديثات المرتبطة به",
+            "ctaText": "العودة للرئيسية",
+            "ctaLink": "/"
+          }
+        }
+      ],
+      "pageGoal": "trust",
+      "compositionPolicy": {
+        "pageGoal": "trust",
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشروط",
+            "title": "الشروط والأحكام",
+            "subtitle": "النقاط الأساسية المرتبطة بالشراء والدفع والشحن.",
+            "body": "تأكيد الطلب يرتبط بتوفر المنتج وصحة البيانات المدخلة، كما تطبق وسيلة الدفع المختارة وما يرتبط بها من تحقق أو رسوم عند الحاجة.\n\nقد يتم تحديث بعض التفاصيل التشغيلية مع بقاء حقوق العميل والنقاط الأساسية واضحة داخل المتجر، بحيث لا تتحول المرونة التشغيلية إلى غموض يربك العميلة.",
+            "detailsTitle": "يشمل ذلك",
+            "details": "الطلبات|مرتبطة بصحة البيانات وتوفر المنتج\nالدفع|بحسب الوسيلة المختارة وما يتبعها من تحقق\nالتشغيل|يجوز تحديث التفاصيل بما لا يخل بحقوق العميل الأساسية",
+            "ctaText": "سياسة الشحن",
+            "ctaLink": "/shipping"
+          }
+        }
+      ],
+      "pageGoal": "trust",
+      "compositionPolicy": {
+        "pageGoal": "trust",
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "size-guide": {
+      "sections": [
+        {
+          "type": "size-guide",
+          "variant": "detailed",
+          "settings": {
+            "badge": "دليل المقاس",
+            "title": "دليل المقاسات النسائي",
+            "subtitle": "مرجع عام للفساتين والأطقم والطبقات داخل Elegant Luxe قبل إضافة القطعة للسلة.",
+            "note": "عمود CM يشير إلى قياس الصدر التقريبي. إذا كنتِ بين مقاسين وتفضلين سقوطًا أهدأ، فاختاري الأكبر غالبًا.",
+            "ctaText": "العودة للمتجر",
+            "ctaLink": "/shop",
+            "guideRows": "default|34|6|2|82\ndefault|36|8|4|86\ndefault|38|10|6|90\ndefault|40|12|8|94\ndefault|42|14|10|98\ndefault|44|16|12|102",
+            "measurementSteps": "قيسي الصدر والخصر بهدوء|يفضل القياس فوق طبقة خفيفة أو مباشرة على الجسم بدون شد متر القياس.\nقارني القياس بالأقرب لك|ابدئي بالقياس الأقرب لمنطقة الصدر ثم راجعي سقوط القطعة إذا كانت واسعة أو محددة.\nبين مقاسين؟ اختاري الأكبر|خصوصًا في القصات المحددة أو إذا كنتِ تحبين حركة أهدأ للقماش.",
+            "fitTips": "الفستان المحدد يحتاج دقة أعلى من الطبقات المفتوحة.\nإذا كانت القطعة مناسبة للمساء وتحبينها أقل التصاقًا بالجسم فاختاري المقاس الأكبر.\nالطبقات الخفيفة تتحمل مساحة إضافية بسيطة أكثر من القطع المنظمة."
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "variant": "soft-thanks",
+          "settings": {
+            "title": "تم تثبيت طلبك من Elegant Luxe",
+            "description": "نراجع الآن التوفر والعنوان والتغليف، ثم نرسل لكِ تحديثات أوضح خطوة بخطوة حتى تصل التجربة الفاخرة إلى ما بعد الضغط على زر الطلب.",
+            "continueShoppingText": "شاهدي تشكيلات أخرى",
+            "orderNumberPrefix": "رقم الطلب:",
+            "supportText": "إذا احتجتِ تعديلًا على المقاس أو العنوان أو متابعة أسرع تواصلي معنا عبر",
+            "statusLabel": "مراجعة وتجهيز",
+            "showTimeline": true,
+            "showTrackOrder": true,
+            "showReorder": true,
+            "showRecommended": true,
+            "trackOrderTitle": "راجعي حالة الطلب",
+            "trackOrderDescription": "اكتبي نفس رقم الموبايل المستخدم وقت الطلب لمعرفة آخر تحديث على المراجعة والتجهيز والشحن.",
+            "trackOrderButtonText": "اعرضي آخر تحديث",
+            "reorderTitle": "أعيدي نفس الاختيارات بسهولة",
+            "reorderDescription": "لو حبيتي تكرري نفس القطع أو تبني طلبًا قريبًا منها، رجعيها إلى السلة بضغطة واحدة.",
+            "reorderButtonText": "أضيفي نفس القطع للسلة",
+            "reorderSuccessText": "رجعنا نفس الاختيارات إلى السلة.",
+            "recommendedTitle": "قطع قد تكمل الطلب",
+            "recommendedSubtitle": "إضافات قريبة من روح الطلب الحالي لو حبيتي لمسة أخيرة بعد التأكيد.",
+            "recommendedBadge": "اقتراحات Elegant Luxe",
+            "recommendedLimit": 3,
+            "recommendedCtaLabel": "أضيفيها للسلة",
+            "recommendedChooseOptionsLabel": "شاهدي التفاصيل"
+          }
+        }
+      ],
+      "pageGoal": "trust",
+      "compositionPolicy": {
+        "pageGoal": "trust",
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "registration": {
+      "sections": [
+        "member-registration"
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    }
+  }
+}

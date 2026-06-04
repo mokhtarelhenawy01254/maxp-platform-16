@@ -1,0 +1,23 @@
+{
+  "pageTitle": "تفاصيل التعليق",
+  "loadingDetails": "جاري تحميل تفاصيل التعليق...",
+  "notFoundTitle": "لم يتم العثور على التعليق",
+  "notFoundDesc": "لم يتم العثور على التعليق المطلوب.",
+  "backToComments": "العودة إلى التعليقات",
+  "infoTitle": "معلومات التعليق",
+  "commentId": "معرّف التعليق",
+  "postId": "معرّف المنشور",
+  "senderName": "اسم المرسل",
+  "senderId": "معرّف المرسل",
+  "commentDate": "تاريخ التعليق",
+  "commentText": "نص التعليق",
+  "repliedAt": "تاريخ الرد",
+  "previousReply": "الرد السابق",
+  "replySectionTitle": "الرد",
+  "yourReply": "ردك",
+  "replyPlaceholder": "اكتب ردك على هذا التعليق...",
+  "sending": "جاري الإرسال...",
+  "sendReplyToFacebook": "إرسال الرد إلى فيسبوك",
+  "deleteComment": "حذف التعليق",
+  "note": "ملاحظة: عند إرسال الرد، سيتم حفظه في قاعدة البيانات وإرساله تلقائيًا إلى فيسبوك كرد على التعليق الأصلي."
+}

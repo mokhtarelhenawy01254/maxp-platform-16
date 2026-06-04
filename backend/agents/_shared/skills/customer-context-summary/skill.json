@@ -1,0 +1,9 @@
+{
+  "id": "customer-context-summary",
+  "displayName": "Customer Context Summary",
+  "version": "1.0.0",
+  "description": "Summarize a customer's useful context without exposing unrelated data.",
+  "allowedTools": ["customer.info", "order.lookup"],
+  "requiresHumanApproval": false,
+  "maxToolCount": 2
+}

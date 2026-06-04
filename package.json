@@ -1,0 +1,19 @@
+{
+  "name": "maxp-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MaxP platform root development configuration",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.0.1",
+    "lint-staged": "^15.2.2"
+  },
+  "lint-staged": {
+    "backend/**/*.js": [
+      "node scripts/check-arabic-strings.js --staged",
+      "node --check"
+    ]
+  }
+}

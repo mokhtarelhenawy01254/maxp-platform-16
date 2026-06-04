@@ -1,0 +1,1598 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Activity,
+  AlertTriangle,
+  BadgeCheck,
+  Eye,
+  Loader2,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  Trash2,
+  UserRound,
+  Users,
+} from "lucide-react";
+
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+} from "../components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "../components/ui/alert-dialog";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../components/ui/avatar";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import { Switch } from "../components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
+import {
+  BusinessFilterSheet,
+  BusinessMobileSearchPanel,
+} from "../components/business/BusinessFilters";
+import { BusinessMetricsStrip } from "../components/business/BusinessMetrics";
+import {
+  BusinessPageHero,
+  BusinessPageShell,
+  BusinessSectionPanel,
+} from "../components/business/BusinessSurface";
+import { useAuth } from "../hooks/useAuthSimple";
+import { cn } from "../lib/utils";
+import tokenManager from "../utils/tokenManager";
+import { buildApiUrl } from "../utils/urlHelper";
+
+type AvailabilityValue = "available" | "busy" | "away" | "offline";
+
+type UserRecord = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string | null;
+  role?: string | null;
+  skills?: string | string[] | null;
+  department?: string | null;
+  availability?: AvailabilityValue | string | null;
+  isActive: boolean;
+  isEmailVerified?: boolean;
+  lastLoginAt?: string | null;
+  avatar?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
+type FiltersState = {
+  search: string;
+  isActive: string;
+};
+
+type UserFormState = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  phone: string;
+  role: string;
+  skills: string;
+  department: string;
+  availability: AvailabilityValue;
+  isActive: boolean;
+};
+
+type UserFormErrors = Partial<Record<keyof UserFormState, string>>;
+
+type UsersListResponse = {
+  success?: boolean;
+  message?: string;
+  data?: UserRecord[];
+  pagination?: {
+    pages?: number;
+    total?: number;
+  };
+};
+
+type UserMutationResponse = {
+  success?: boolean;
+  message?: string;
+  data?: UserRecord;
+};
+
+type SettingsResponse = {
+  success?: boolean;
+  message?: string;
+  data?: {
+    permissions?: Record<string, unknown>;
+  };
+};
+
+const FALLBACK_ROLES = ["SUPER_ADMIN", "COMPANY_ADMIN", "MANAGER", "AGENT"];
+const PAGE_SIZE_OPTIONS = ["10", "25", "50", "100"];
+
+const AVAILABILITY_OPTIONS: Array<{ value: AvailabilityValue; label: string }> = [
+  { value: "available", label: "متاح" },
+  { value: "busy", label: "مشغول" },
+  { value: "away", label: "بعيد" },
+  { value: "offline", label: "غير متصل" },
+];
+
+const createInitialForm = (): UserFormState => ({
+  firstName: "",
+  lastName: "",
+  email: "",
+  password: "",
+  phone: "",
+  role: "",
+  skills: "",
+  department: "",
+  availability: "available",
+  isActive: true,
+});
+
+const getAuthHeaders = (): HeadersInit =>
+  tokenManager.createAuthHeaders({
+    "Content-Type": "application/json",
+  });
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as { message?: string }).message === "string" &&
+    (error as { message?: string }).message?.trim()
+  ) {
+    return (error as { message: string }).message;
+  }
+
+  return fallback;
+};
+
+const normalizeSkillsValue = (value?: string | string[] | null) =>
+  Array.isArray(value) ? value.join(", ") : value ?? "";
+
+const getInitials = (firstName?: string | null, lastName?: string | null) =>
+  `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.trim() || "SA";
+
+const formatDateTime = (value?: string | null) => {
+  if (!value) {
+    return "لم يسجل دخول بعد";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "لم يسجل دخول بعد";
+  }
+
+  return date.toLocaleString("ar-EG", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const getRoleLabel = (role?: string | null) => {
+  switch (role) {
+    case "SUPER_ADMIN":
+      return "سوبر أدمن";
+    case "COMPANY_ADMIN":
+      return "مدير شركة";
+    case "MANAGER":
+      return "مدير";
+    case "AGENT":
+      return "موظف";
+    default:
+      return role?.replace(/_/g, " ") || "غير محدد";
+  }
+};
+
+const getAvailabilityLabel = (value?: string | null) => {
+  switch (value) {
+    case "available":
+      return "متاح";
+    case "busy":
+      return "مشغول";
+    case "away":
+      return "بعيد";
+    case "offline":
+      return "غير متصل";
+    default:
+      return "غير محدد";
+  }
+};
+
+const getRoleClassName = (role?: string | null) => {
+  switch (role) {
+    case "SUPER_ADMIN":
+      return "border-violet-200 bg-violet-500/10 text-violet-700";
+    case "COMPANY_ADMIN":
+      return "border-sky-200 bg-sky-500/10 text-sky-700";
+    case "MANAGER":
+      return "border-amber-200 bg-amber-500/10 text-amber-700";
+    case "AGENT":
+      return "border-emerald-200 bg-emerald-500/10 text-emerald-700";
+    default:
+      return "border-border bg-muted text-foreground";
+  }
+};
+
+const getAvailabilityClassName = (value?: string | null) => {
+  switch (value) {
+    case "available":
+      return "border-emerald-200 bg-emerald-500/10 text-emerald-700";
+    case "busy":
+      return "border-rose-200 bg-rose-500/10 text-rose-700";
+    case "away":
+      return "border-amber-200 bg-amber-500/10 text-amber-700";
+    case "offline":
+      return "border-slate-200 bg-slate-500/10 text-slate-700";
+    default:
+      return "border-border bg-muted text-foreground";
+  }
+};
+
+const getStatusClassName = (isActive: boolean) =>
+  isActive
+    ? "border-emerald-200 bg-emerald-500/10 text-emerald-700"
+    : "border-slate-200 bg-slate-500/10 text-slate-700";
+
+interface FormFieldProps {
+  label: string;
+  htmlFor?: string;
+  error?: string;
+  hint?: string;
+  className?: string;
+  children: React.ReactNode;
+}
+
+const FormField: React.FC<FormFieldProps> = ({
+  label,
+  htmlFor,
+  error,
+  hint,
+  className,
+  children,
+}) => (
+  <div className={cn("space-y-2", className)}>
+    <Label htmlFor={htmlFor}>{label}</Label>
+    {children}
+    {error ? (
+      <p className="text-xs text-destructive">{error}</p>
+    ) : hint ? (
+      <p className="text-xs text-muted-foreground">{hint}</p>
+    ) : null}
+  </div>
+);
+
+const SuperAdminUsersManagement: React.FC = () => {
+  const { user } = useAuth();
+
+  const [users, setUsers] = useState<UserRecord[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<string[]>(FALLBACK_ROLES);
+  const [loading, setLoading] = useState(true);
+  const [rolesLoading, setRolesLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [filters, setFilters] = useState<FiltersState>({
+    search: "",
+    isActive: "",
+  });
+  const [searchInput, setSearchInput] = useState("");
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [editorMode, setEditorMode] = useState<"create" | "edit" | null>(null);
+  const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
+  const [detailsUser, setDetailsUser] = useState<UserRecord | null>(null);
+  const [pendingDeleteUser, setPendingDeleteUser] = useState<UserRecord | null>(
+    null,
+  );
+  const [submitting, setSubmitting] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [formData, setFormData] = useState<UserFormState>(createInitialForm);
+  const [formErrors, setFormErrors] = useState<UserFormErrors>({});
+
+  const mountedRef = useRef(true);
+  const requestRef = useRef(0);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const redirectToLogin = (message?: string) => {
+    setError(message || "انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى");
+    tokenManager.clearTokens();
+    window.location.href = "/auth/login";
+  };
+
+  const fetchUsers = useCallback(async () => {
+    const requestId = requestRef.current + 1;
+    requestRef.current = requestId;
+
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
+
+      if (filters.search.trim()) {
+        params.set("search", filters.search.trim());
+      }
+      if (filters.isActive) {
+        params.set("isActive", filters.isActive);
+      }
+
+      const response = await fetch(
+        buildApiUrl(`super-admin/users?${params.toString()}`),
+        {
+          headers: getAuthHeaders(),
+        },
+      );
+
+      let payload: UsersListResponse = {};
+      try {
+        payload = (await response.json()) as UsersListResponse;
+      } catch {
+        payload = {};
+      }
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          redirectToLogin(payload.message);
+          return;
+        }
+        throw new Error(payload.message || `HTTP ${response.status}`);
+      }
+
+      if (!mountedRef.current || requestId !== requestRef.current) {
+        return;
+      }
+
+      if (payload.success) {
+        const nextUsers = Array.isArray(payload.data) ? payload.data : [];
+        setUsers(nextUsers);
+        setTotalPages(payload.pagination?.pages || 0);
+        setTotalCount(payload.pagination?.total || nextUsers.length);
+        setError(null);
+      } else {
+        setUsers([]);
+        setTotalPages(0);
+        setTotalCount(0);
+        setError(payload.message || "فشل في تحميل مستخدمي السوبر أدمن");
+      }
+    } catch (fetchError: unknown) {
+      if (!mountedRef.current || requestId !== requestRef.current) {
+        return;
+      }
+
+      setUsers([]);
+      setTotalPages(0);
+      setTotalCount(0);
+      setError(getErrorMessage(fetchError, "فشل في تحميل مستخدمي السوبر أدمن"));
+    } finally {
+      if (mountedRef.current && requestId === requestRef.current) {
+        setLoading(false);
+      }
+    }
+  }, [filters.isActive, filters.search, limit, page]);
+
+  const fetchRoles = useCallback(async () => {
+    try {
+      setRolesLoading(true);
+      const response = await fetch(buildApiUrl("super-admin/dev/settings"), {
+        headers: getAuthHeaders(),
+      });
+
+      let payload: SettingsResponse = {};
+      try {
+        payload = (await response.json()) as SettingsResponse;
+      } catch {
+        payload = {};
+      }
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          redirectToLogin(payload.message);
+          return;
+        }
+        throw new Error(payload.message || `HTTP ${response.status}`);
+      }
+
+      const nextRoles = Object.keys(payload.data?.permissions || {});
+      setAvailableRoles(nextRoles.length > 0 ? nextRoles : FALLBACK_ROLES);
+    } catch {
+      setAvailableRoles(FALLBACK_ROLES);
+    } finally {
+      if (mountedRef.current) {
+        setRolesLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchUsers();
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    void fetchRoles();
+  }, [fetchRoles]);
+
+  useEffect(() => {
+    if (!success) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setSuccess(null);
+    }, 4500);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [success]);
+
+  const resetForm = () => {
+    setFormData(createInitialForm());
+    setFormErrors({});
+  };
+
+  const closeEditor = () => {
+    setEditorMode(null);
+    setEditingUser(null);
+    resetForm();
+  };
+
+  const updateForm = <Key extends keyof UserFormState>(
+    field: Key,
+    value: UserFormState[Key],
+  ) => {
+    setFormData((current) => ({
+      ...current,
+      [field]: value,
+    }));
+
+    setFormErrors((current) =>
+      current[field]
+        ? {
+            ...current,
+            [field]: "",
+          }
+        : current,
+    );
+  };
+
+  const openCreateDialog = () => {
+    const nextForm = createInitialForm();
+    nextForm.role = availableRoles.includes("SUPER_ADMIN")
+      ? "SUPER_ADMIN"
+      : (availableRoles[0] ?? "");
+    setFormData(nextForm);
+    setFormErrors({});
+    setEditingUser(null);
+    setEditorMode("create");
+  };
+
+  const openEditDialog = (userItem: UserRecord) => {
+    setFormData({
+      firstName: userItem.firstName || "",
+      lastName: userItem.lastName || "",
+      email: userItem.email || "",
+      password: "",
+      phone: userItem.phone || "",
+      role: userItem.role || "",
+      skills: normalizeSkillsValue(userItem.skills),
+      department: userItem.department || "",
+      availability:
+        (userItem.availability as AvailabilityValue | undefined) || "available",
+      isActive: userItem.isActive ?? true,
+    });
+    setFormErrors({});
+    setEditingUser(userItem);
+    setEditorMode("edit");
+  };
+
+  const validateForm = () => {
+    const nextErrors: UserFormErrors = {};
+
+    if (!formData.firstName.trim()) {
+      nextErrors.firstName = "الاسم الأول مطلوب";
+    }
+
+    if (!formData.lastName.trim()) {
+      nextErrors.lastName = "الاسم الأخير مطلوب";
+    }
+
+    if (!formData.email.trim()) {
+      nextErrors.email = "البريد الإلكتروني مطلوب";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      nextErrors.email = "البريد الإلكتروني غير صحيح";
+    }
+
+    if (editorMode !== "edit" && !formData.password.trim()) {
+      nextErrors.password = "كلمة المرور مطلوبة";
+    } else if (
+      formData.password.trim() &&
+      formData.password.trim().length < 8
+    ) {
+      nextErrors.password = "كلمة المرور يجب أن تكون 8 أحرف على الأقل";
+    }
+
+    if (formData.phone.trim() && !/^[+0-9\\s()\\-]{6,20}$/.test(formData.phone.trim())) {
+      nextErrors.phone = "تنسيق رقم الهاتف غير صحيح";
+    }
+
+    if (!formData.role) {
+      nextErrors.role = "اختيار الدور مطلوب";
+    }
+
+    setFormErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const applySearch = () => {
+    setPage(1);
+    setFilters((current) => ({
+      ...current,
+      search: searchInput.trim(),
+    }));
+  };
+
+  const clearFilters = () => {
+    setSearchInput("");
+    setFilters({
+      search: "",
+      isActive: "",
+    });
+    setPage(1);
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError(null);
+
+      const payload: Record<string, unknown> = {
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim() || undefined,
+        role: formData.role,
+        skills: formData.skills.trim() || undefined,
+        department: formData.department.trim() || undefined,
+        availability: formData.availability,
+        isActive: formData.isActive,
+      };
+
+      if (formData.password.trim()) {
+        payload["password"] = formData.password.trim();
+      }
+
+      const isEditing = editorMode === "edit" && editingUser;
+      const response = await fetch(
+        buildApiUrl(
+          isEditing
+            ? `super-admin/users/${editingUser.id}`
+            : "super-admin/users",
+        ),
+        {
+          method: isEditing ? "PUT" : "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload),
+        },
+      );
+
+      let result: UserMutationResponse = {};
+      try {
+        result = (await response.json()) as UserMutationResponse;
+      } catch {
+        result = {};
+      }
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          redirectToLogin(result.message);
+          return;
+        }
+        throw new Error(result.message || `HTTP ${response.status}`);
+      }
+
+      if (result.success) {
+        closeEditor();
+        setSuccess(
+          result.message ||
+            (isEditing ? "تم تحديث المستخدم بنجاح" : "تم إنشاء المستخدم بنجاح"),
+        );
+        void fetchUsers();
+      } else {
+        setError(result.message || "فشل في حفظ المستخدم");
+      }
+    } catch (submitError: unknown) {
+      setError(getErrorMessage(submitError, "فشل في حفظ المستخدم"));
+    } finally {
+      if (mountedRef.current) {
+        setSubmitting(false);
+      }
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!pendingDeleteUser) {
+      return;
+    }
+
+    try {
+      setDeleteLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        buildApiUrl(`super-admin/users/${pendingDeleteUser.id}`),
+        {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+        },
+      );
+
+      let result: UserMutationResponse = {};
+      try {
+        result = (await response.json()) as UserMutationResponse;
+      } catch {
+        result = {};
+      }
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          redirectToLogin(result.message);
+          return;
+        }
+        throw new Error(result.message || `HTTP ${response.status}`);
+      }
+
+      if (result.success) {
+        setPendingDeleteUser(null);
+        setSuccess(result.message || "تم حذف المستخدم بنجاح");
+
+        if (users.length === 1 && page > 1) {
+          setPage((current) => current - 1);
+        } else {
+          void fetchUsers();
+        }
+      } else {
+        setError(result.message || "فشل في حذف المستخدم");
+      }
+    } catch (deleteError: unknown) {
+      setError(getErrorMessage(deleteError, "فشل في حذف المستخدم"));
+    } finally {
+      if (mountedRef.current) {
+        setDeleteLoading(false);
+      }
+    }
+  };
+
+  const activeUsersCount = users.filter((userItem) => userItem.isActive).length;
+  const verifiedUsersCount = users.filter(
+    (userItem) => userItem.isEmailVerified,
+  ).length;
+  const superAdminCount = users.filter(
+    (userItem) => userItem.role === "SUPER_ADMIN",
+  ).length;
+
+  const metrics = useMemo(
+    () => [
+      {
+        title: "إجمالي المستخدمين",
+        value: totalCount,
+        subtitle: totalCount > 0 ? `صفحة ${page} من ${Math.max(totalPages, 1)}` : "لا توجد نتائج بعد",
+        tone: "primary" as const,
+        icon: Users,
+      },
+      {
+        title: "الحسابات النشطة",
+        value: activeUsersCount,
+        subtitle: "ضمن النتائج الحالية",
+        tone: "success" as const,
+        icon: Activity,
+      },
+      {
+        title: "البريد المؤكد",
+        value: verifiedUsersCount,
+        subtitle: "حسابات جاهزة للعمل فورًا",
+        tone: "secondary" as const,
+        icon: BadgeCheck,
+      },
+      {
+        title: "سوبر أدمن",
+        value: superAdminCount,
+        subtitle: "ضمن الصفحة الحالية",
+        tone: "warning" as const,
+        icon: ShieldCheck,
+      },
+    ],
+    [activeUsersCount, page, superAdminCount, totalCount, totalPages, verifiedUsersCount],
+  );
+
+  const filterCount = Number(Boolean(filters.search)) + Number(Boolean(filters.isActive));
+
+  const activeFilterLabels = useMemo(() => {
+    const labels: string[] = [];
+    if (filters.search) {
+      labels.push(`بحث: ${filters.search}`);
+    }
+    if (filters.isActive === "true") {
+      labels.push("الحسابات النشطة");
+    }
+    if (filters.isActive === "false") {
+      labels.push("الحسابات غير النشطة");
+    }
+    return labels;
+  }, [filters.isActive, filters.search]);
+
+  const visibleFrom = totalCount === 0 ? 0 : (page - 1) * limit + 1;
+  const visibleTo = totalCount === 0 ? 0 : Math.min(page * limit, totalCount);
+
+  return (
+    <BusinessPageShell className="space-y-4" dir="rtl">
+      <BusinessPageHero
+        eyebrow="SUPER ADMIN • USERS"
+        title="إدارة مستخدمي السوبر أدمن"
+        description={
+          user?.email
+            ? `لوحة مركزية لإدارة الحسابات الإدارية العليا مع بحث أسرع وتجربة موبايل أوضح. الجلسة الحالية: ${user.email}`
+            : "لوحة مركزية لإدارة الحسابات الإدارية العليا مع بحث أسرع وتجربة موبايل أوضح."
+        }
+        actions={
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 rounded-2xl"
+              onClick={() => void fetchUsers()}
+              disabled={loading}
+            >
+              <RefreshCw className={cn("size-4", loading && "animate-spin")} />
+              تحديث البيانات
+            </Button>
+            <Button
+              type="button"
+              className="h-11 rounded-2xl"
+              onClick={openCreateDialog}
+            >
+              <Plus className="size-4" />
+              إضافة مستخدم
+            </Button>
+          </div>
+        }
+      />
+
+      <BusinessMetricsStrip items={metrics} />
+
+      {error ? (
+        <Alert variant="destructive" className="business-page-panel border-0 shadow-none">
+          <AlertTriangle className="size-4" />
+          <AlertTitle>تعذر تحميل الصفحة بشكل كامل</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+          <AlertAction>
+            <Button variant="outline" size="sm" onClick={() => void fetchUsers()}>
+              إعادة المحاولة
+            </Button>
+          </AlertAction>
+        </Alert>
+      ) : null}
+
+      {success ? (
+        <Alert className="business-page-panel border-0 shadow-none">
+          <BadgeCheck className="size-4 text-emerald-600" />
+          <AlertTitle>تم تنفيذ العملية بنجاح</AlertTitle>
+          <AlertDescription>{success}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      <BusinessMobileSearchPanel
+        searchId="super-admin-users-search-mobile"
+        searchName="super-admin-users-search-mobile"
+        searchLabel="بحث سريع"
+        searchPlaceholder="ابحث بالاسم أو البريد الإلكتروني"
+        searchValue={searchInput}
+        searchAriaLabel="ابحث في مستخدمي السوبر أدمن"
+        onSearchChange={setSearchInput}
+        onSearchSubmit={applySearch}
+        onOpenFilters={() => setFilterSheetOpen(true)}
+        filterCount={filterCount}
+        summaryIcon={<Users className="size-3.5" />}
+        summary={
+          <span>
+            {totalCount > 0
+              ? `${visibleFrom}-${visibleTo} من ${totalCount} مستخدم`
+              : "لا توجد نتائج حالية"}
+          </span>
+        }
+        activeFilters={activeFilterLabels}
+      />
+
+      <BusinessFilterSheet
+        open={filterSheetOpen}
+        onOpenChange={setFilterSheetOpen}
+        title="فلاتر المستخدمين"
+        description="اختَر الحالة المناسبة ثم طبّق الفلاتر على النتائج."
+        onClear={() => {
+          clearFilters();
+          setFilterSheetOpen(false);
+        }}
+        onApply={() => {
+          applySearch();
+          setFilterSheetOpen(false);
+        }}
+      >
+        <FormField label="بحث سريع" htmlFor="super-admin-users-search-sheet">
+          <Input
+            id="super-admin-users-search-sheet"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder="اسم المستخدم أو بريده الإلكتروني"
+            className="h-11 rounded-2xl"
+          />
+        </FormField>
+
+        <FormField label="حالة الحساب">
+          <Select
+            name="super-admin-users-status-filter-sheet"
+            value={filters.isActive || null}
+            onValueChange={(value) => {
+              setPage(1);
+              setFilters((current) => ({
+                ...current,
+                isActive: value || "",
+              }));
+            }}
+          >
+            <SelectLabel className="sr-only">حالة الحساب</SelectLabel>
+            <SelectTrigger aria-label="حالة الحساب" className="h-11 rounded-2xl">
+              <SelectValue placeholder="كل الحالات" />
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem value={null}>كل الحالات</SelectItem>
+              <SelectItem value="true">الحسابات النشطة</SelectItem>
+              <SelectItem value="false">الحسابات غير النشطة</SelectItem>
+            </SelectContent>
+          </Select>
+        </FormField>
+
+        <FormField label="عدد النتائج لكل صفحة">
+          <Select
+            name="super-admin-users-page-size-sheet"
+            value={String(limit)}
+            onValueChange={(value) => {
+              setLimit(Number(value || "25"));
+              setPage(1);
+            }}
+          >
+            <SelectLabel className="sr-only">عدد النتائج لكل صفحة</SelectLabel>
+            <SelectTrigger aria-label="عدد النتائج لكل صفحة" className="h-11 rounded-2xl">
+              <SelectValue placeholder="عدد النتائج" />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {PAGE_SIZE_OPTIONS.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormField>
+      </BusinessFilterSheet>
+      
+      <BusinessSectionPanel
+        title="قائمة المستخدمين"
+        description="نسخة أخف للموبايل مع نفس عمليات الإنشاء والتعديل والحذف."
+        headerAside={
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="rounded-full px-3 py-1">
+              {totalCount > 0
+                ? `عرض ${visibleFrom}-${visibleTo} من ${totalCount}`
+                : "لا توجد نتائج"}
+            </Badge>
+            <Badge variant="outline" className="rounded-full px-3 py-1">
+              {rolesLoading ? "تحميل الأدوار..." : `${availableRoles.length} أدوار متاحة`}
+            </Badge>
+          </div>
+        }
+        contentClassName="space-y-4 p-4 md:p-6"
+      >
+        <div className="hidden gap-3 md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,0.85fr)_minmax(0,0.7fr)_auto_auto]">
+          <FormField label="بحث سريع" htmlFor="super-admin-users-search-desktop">
+            <div className="flex gap-2">
+              <Input
+                id="super-admin-users-search-desktop"
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    applySearch();
+                  }
+                }}
+                placeholder="ابحث بالاسم أو البريد الإلكتروني"
+                className="h-11 rounded-2xl"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 rounded-2xl px-4"
+                onClick={applySearch}
+              >
+                <Search className="size-4" />
+                بحث
+              </Button>
+            </div>
+          </FormField>
+
+          <FormField label="حالة الحساب">
+            <Select
+              name="super-admin-users-status-filter-desktop"
+              value={filters.isActive || null}
+              onValueChange={(value) => {
+                setPage(1);
+                setFilters((current) => ({
+                  ...current,
+                  isActive: value || "",
+                }));
+              }}
+            >
+              <SelectLabel className="sr-only">حالة الحساب</SelectLabel>
+              <SelectTrigger aria-label="حالة الحساب" className="h-11 rounded-2xl">
+                <SelectValue placeholder="كل الحالات" />
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectItem value={null}>كل الحالات</SelectItem>
+                <SelectItem value="true">الحسابات النشطة</SelectItem>
+                <SelectItem value="false">الحسابات غير النشطة</SelectItem>
+              </SelectContent>
+            </Select>
+          </FormField>
+
+          <FormField label="عدد الصفوف">
+            <Select
+              name="super-admin-users-page-size-desktop"
+              value={String(limit)}
+              onValueChange={(value) => {
+                setLimit(Number(value || "25"));
+                setPage(1);
+              }}
+            >
+              <SelectLabel className="sr-only">عدد الصفوف</SelectLabel>
+              <SelectTrigger aria-label="عدد الصفوف" className="h-11 rounded-2xl">
+                <SelectValue placeholder="العدد" />
+              </SelectTrigger>
+              <SelectContent align="end">
+                {PAGE_SIZE_OPTIONS.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+
+          <div className="flex items-end">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 rounded-2xl"
+              onClick={clearFilters}
+            >
+              مسح الفلاتر
+            </Button>
+          </div>
+
+          <div className="flex items-end">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 rounded-2xl"
+              onClick={() => void fetchUsers()}
+              disabled={loading}
+            >
+              <RefreshCw className={cn("size-4", loading && "animate-spin")} />
+              تحديث
+            </Button>
+          </div>
+        </div>
+
+        {loading && users.length === 0 ? (
+          <div className="flex min-h-[18rem] items-center justify-center rounded-[2rem] border border-dashed border-border/70 bg-background/70">
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              جاري تحميل المستخدمين...
+            </div>
+          </div>
+        ) : users.length === 0 ? (
+          <div className="flex min-h-[18rem] flex-col items-center justify-center rounded-[2rem] border border-dashed border-border/70 bg-background/70 px-6 text-center">
+            <UserRound className="mb-3 size-10 text-muted-foreground" />
+            <h3 className="text-lg font-semibold text-foreground">
+              لا يوجد مستخدمون مطابقون
+            </h3>
+            <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
+              جرّب توسيع البحث أو مسح الفلاتر، أو أضف مستخدمًا جديدًا من الزر العلوي.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-3 md:hidden">
+              {users.map((userItem) => (
+                <div
+                  key={userItem.id}
+                  className="rounded-[2rem] border border-border/70 bg-background/80 p-4 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Avatar className="size-12 border border-white/20">
+                        <AvatarImage src={userItem.avatar || undefined} alt={userItem.email} />
+                        <AvatarFallback>{getInitials(userItem.firstName, userItem.lastName)}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="truncate text-base font-semibold text-foreground">
+                          {userItem.firstName} {userItem.lastName}
+                        </p>
+                        <p className="truncate text-sm text-muted-foreground">
+                          {userItem.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button variant="outline" size="icon-sm" className="rounded-full" />
+                        }
+                      >
+                        <MoreHorizontal className="size-4" />
+                        <span className="sr-only">إجراءات المستخدم</span>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setDetailsUser(userItem)}>
+                          <Eye className="size-4" />
+                          عرض التفاصيل
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openEditDialog(userItem)}>
+                          <Pencil className="size-4" />
+                          تعديل المستخدم
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setPendingDeleteUser(userItem)}
+                        >
+                          <Trash2 className="size-4" />
+                          حذف المستخدم
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Badge className={cn("rounded-full border px-3 py-1", getRoleClassName(userItem.role))}>
+                      {getRoleLabel(userItem.role)}
+                    </Badge>
+                    <Badge className={cn("rounded-full border px-3 py-1", getStatusClassName(userItem.isActive))}>
+                      {userItem.isActive ? "نشط" : "غير نشط"}
+                    </Badge>
+                    <Badge
+                      className={cn(
+                        "rounded-full border px-3 py-1",
+                        getAvailabilityClassName(userItem.availability),
+                      )}
+                    >
+                      {getAvailabilityLabel(userItem.availability)}
+                    </Badge>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div className="rounded-2xl border border-border/60 bg-muted/40 px-3 py-2">
+                      <p className="text-xs text-muted-foreground">القسم</p>
+                      <p className="mt-1 font-medium text-foreground">
+                        {userItem.department || "-"}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-border/60 bg-muted/40 px-3 py-2">
+                      <p className="text-xs text-muted-foreground">الهاتف</p>
+                      <p className="mt-1 font-medium text-foreground">
+                        {userItem.phone || "-"}
+                      </p>
+                    </div>
+                    <div className="col-span-2 rounded-2xl border border-border/60 bg-muted/40 px-3 py-2">
+                      <p className="text-xs text-muted-foreground">آخر تسجيل دخول</p>
+                      <p className="mt-1 font-medium text-foreground">
+                        {formatDateTime(userItem.lastLoginAt)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden overflow-hidden rounded-[2rem] border border-border/70 md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right">المستخدم</TableHead>
+                    <TableHead className="text-right">الدور</TableHead>
+                    <TableHead className="text-right">القسم</TableHead>
+                    <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-right">التواجد</TableHead>
+                    <TableHead className="text-right">آخر تسجيل دخول</TableHead>
+                    <TableHead className="text-right">الإجراءات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((userItem) => (
+                    <TableRow key={userItem.id}>
+                      <TableCell>
+                        <div className="flex min-w-0 items-center gap-3">
+                          <Avatar className="size-10 border border-white/20">
+                            <AvatarImage src={userItem.avatar || undefined} alt={userItem.email} />
+                            <AvatarFallback>
+                              {getInitials(userItem.firstName, userItem.lastName)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-foreground">
+                              {userItem.firstName} {userItem.lastName}
+                            </p>
+                            <p className="truncate text-sm text-muted-foreground">
+                              {userItem.email}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={cn("rounded-full border px-3 py-1", getRoleClassName(userItem.role))}>
+                          {getRoleLabel(userItem.role)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{userItem.department || "-"}</TableCell>
+                      <TableCell>
+                        <Badge className={cn("rounded-full border px-3 py-1", getStatusClassName(userItem.isActive))}>
+                          {userItem.isActive ? "نشط" : "غير نشط"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={cn(
+                            "rounded-full border px-3 py-1",
+                            getAvailabilityClassName(userItem.availability),
+                          )}
+                        >
+                          {getAvailabilityLabel(userItem.availability)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{formatDateTime(userItem.lastLoginAt)}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button variant="outline" size="icon-sm" className="rounded-full" />
+                            }
+                          >
+                            <MoreHorizontal className="size-4" />
+                            <span className="sr-only">إجراءات المستخدم</span>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setDetailsUser(userItem)}>
+                              <Eye className="size-4" />
+                              عرض التفاصيل
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEditDialog(userItem)}>
+                              <Pencil className="size-4" />
+                              تعديل المستخدم
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => setPendingDeleteUser(userItem)}
+                            >
+                              <Trash2 className="size-4" />
+                              حذف المستخدم
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-border/60 pt-4 md:flex-row md:items-center md:justify-between">
+              <p className="text-sm text-muted-foreground">
+                {totalCount > 0
+                  ? `عرض ${visibleFrom} إلى ${visibleTo} من أصل ${totalCount} مستخدم`
+                  : "لا توجد نتائج حالية"}
+              </p>
+
+              <div className="flex items-center justify-between gap-2 md:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-2xl"
+                  disabled={page <= 1 || loading}
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                >
+                  السابق
+                </Button>
+                <div className="rounded-full border border-border/70 px-4 py-2 text-sm text-muted-foreground">
+                  صفحة {page} من {Math.max(totalPages, 1)}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-2xl"
+                  disabled={loading || (totalPages > 0 ? page >= totalPages : users.length < limit)}
+                  onClick={() =>
+                    setPage((current) =>
+                      totalPages > 0 ? Math.min(totalPages, current + 1) : current + 1,
+                    )
+                  }
+                >
+                  التالي
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </BusinessSectionPanel>
+      
+      <Dialog open={editorMode !== null} onOpenChange={(open) => !open && closeEditor()}>
+        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editorMode === "edit" ? "تعديل مستخدم" : "إضافة مستخدم جديد"}
+            </DialogTitle>
+            <DialogDescription>
+              أنشئ أو عدّل الحساب الإداري مع الحفاظ على نفس الـ API الحالية.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <FormField label="الاسم الأول" htmlFor="super-admin-user-first-name" error={formErrors.firstName}>
+              <Input
+                id="super-admin-user-first-name"
+                value={formData.firstName}
+                onChange={(event) => updateForm("firstName", event.target.value)}
+                className="h-11 rounded-2xl"
+                maxLength={50}
+              />
+            </FormField>
+
+            <FormField label="الاسم الأخير" htmlFor="super-admin-user-last-name" error={formErrors.lastName}>
+              <Input
+                id="super-admin-user-last-name"
+                value={formData.lastName}
+                onChange={(event) => updateForm("lastName", event.target.value)}
+                className="h-11 rounded-2xl"
+                maxLength={50}
+              />
+            </FormField>
+
+            <FormField
+              label="البريد الإلكتروني"
+              htmlFor="super-admin-user-email"
+              error={formErrors.email}
+              className="md:col-span-2"
+            >
+              <Input
+                id="super-admin-user-email"
+                type="email"
+                value={formData.email}
+                onChange={(event) => updateForm("email", event.target.value)}
+                className="h-11 rounded-2xl"
+                maxLength={120}
+              />
+            </FormField>
+
+            <FormField
+              label={editorMode === "edit" ? "كلمة المرور الجديدة" : "كلمة المرور"}
+              htmlFor="super-admin-user-password"
+              error={formErrors.password}
+              hint={
+                editorMode === "edit"
+                  ? "اترك الحقل فارغًا إذا لم ترد تغيير كلمة المرور."
+                  : "8 أحرف على الأقل."
+              }
+            >
+              <Input
+                id="super-admin-user-password"
+                type="password"
+                value={formData.password}
+                onChange={(event) => updateForm("password", event.target.value)}
+                className="h-11 rounded-2xl"
+                maxLength={128}
+              />
+            </FormField>
+
+            <FormField label="الدور" error={formErrors.role}>
+              <Select
+                name="super-admin-user-role"
+                value={formData.role || null}
+                onValueChange={(value) => updateForm("role", value || "")}
+              >
+                <SelectLabel className="sr-only">الدور</SelectLabel>
+                <SelectTrigger aria-label="الدور" className="h-11 rounded-2xl">
+                  <SelectValue
+                    placeholder={rolesLoading ? "جاري تحميل الأدوار..." : "اختر الدور"}
+                  />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {availableRoles.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {getRoleLabel(role)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+
+            <FormField label="الهاتف" htmlFor="super-admin-user-phone" error={formErrors.phone}>
+              <Input
+                id="super-admin-user-phone"
+                value={formData.phone}
+                onChange={(event) => updateForm("phone", event.target.value)}
+                className="h-11 rounded-2xl"
+                placeholder="+20 1xx xxx xxxx"
+              />
+            </FormField>
+
+            <FormField label="القسم" htmlFor="super-admin-user-department">
+              <Input
+                id="super-admin-user-department"
+                value={formData.department}
+                onChange={(event) => updateForm("department", event.target.value)}
+                className="h-11 rounded-2xl"
+                placeholder="مثال: Platform Ops"
+              />
+            </FormField>
+
+            <FormField label="الحالة التشغيلية">
+              <Select
+                name="super-admin-user-availability"
+                value={formData.availability}
+                onValueChange={(value) =>
+                  updateForm("availability", (value as AvailabilityValue) || "available")
+                }
+              >
+                <SelectLabel className="sr-only">الحالة التشغيلية</SelectLabel>
+                <SelectTrigger aria-label="الحالة التشغيلية" className="h-11 rounded-2xl">
+                  <SelectValue placeholder="اختر الحالة" />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {AVAILABILITY_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+
+            <FormField
+              label="المهارات"
+              htmlFor="super-admin-user-skills"
+              hint="اكتب المهارات مفصولة بفواصل إذا احتجت."
+              className="md:col-span-2"
+            >
+              <Input
+                id="super-admin-user-skills"
+                value={formData.skills}
+                onChange={(event) => updateForm("skills", event.target.value)}
+                className="h-11 rounded-2xl"
+                placeholder="React, Node.js, Security"
+              />
+            </FormField>
+
+            <FormField label="تفعيل الحساب" className="md:col-span-2">
+              <div className="flex min-h-12 items-center justify-between rounded-2xl border border-border bg-background px-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    السماح بتسجيل الدخول
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    أغلق المفتاح لتعطيل الحساب دون حذفه.
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) => updateForm("isActive", Boolean(checked))}
+                  aria-label="تفعيل المستخدم"
+                />
+              </div>
+            </FormField>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeEditor}
+              className="rounded-2xl"
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              className="rounded-2xl"
+              disabled={submitting}
+            >
+              {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
+              {editorMode === "edit" ? "حفظ التعديلات" : "إنشاء المستخدم"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(detailsUser)} onOpenChange={(open) => !open && setDetailsUser(null)}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>تفاصيل المستخدم</DialogTitle>
+            <DialogDescription>
+              عرض سريع للحالة الحالية والبيانات الرئيسية للحساب.
+            </DialogDescription>
+          </DialogHeader>
+
+          {detailsUser ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 rounded-[2rem] border border-border/70 bg-muted/40 p-4">
+                <Avatar className="size-14 border border-white/20">
+                  <AvatarImage src={detailsUser.avatar || undefined} alt={detailsUser.email} />
+                  <AvatarFallback>
+                    {getInitials(detailsUser.firstName, detailsUser.lastName)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="text-lg font-semibold text-foreground">
+                    {detailsUser.firstName} {detailsUser.lastName}
+                  </p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {detailsUser.email}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-2xl border border-border/70 bg-background px-4 py-3">
+                  <p className="text-xs text-muted-foreground">الدور</p>
+                  <p className="mt-1 font-medium text-foreground">
+                    {getRoleLabel(detailsUser.role)}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border/70 bg-background px-4 py-3">
+                  <p className="text-xs text-muted-foreground">القسم</p>
+                  <p className="mt-1 font-medium text-foreground">
+                    {detailsUser.department || "-"}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border/70 bg-background px-4 py-3">
+                  <p className="text-xs text-muted-foreground">الهاتف</p>
+                  <p className="mt-1 font-medium text-foreground">
+                    {detailsUser.phone || "-"}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border/70 bg-background px-4 py-3">
+                  <p className="text-xs text-muted-foreground">التواجد</p>
+                  <p className="mt-1 font-medium text-foreground">
+                    {getAvailabilityLabel(detailsUser.availability)}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border/70 bg-background px-4 py-3">
+                  <p className="text-xs text-muted-foreground">الحالة</p>
+                  <p className="mt-1 font-medium text-foreground">
+                    {detailsUser.isActive ? "نشط" : "غير نشط"}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border/70 bg-background px-4 py-3">
+                  <p className="text-xs text-muted-foreground">آخر تسجيل دخول</p>
+                  <p className="mt-1 font-medium text-foreground">
+                    {formatDateTime(detailsUser.lastLoginAt)}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border/70 bg-background px-4 py-3 md:col-span-2">
+                  <p className="text-xs text-muted-foreground">المهارات</p>
+                  <p className="mt-1 font-medium text-foreground">
+                    {normalizeSkillsValue(detailsUser.skills) || "-"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={Boolean(pendingDeleteUser)}
+        onOpenChange={(open) => !open && setPendingDeleteUser(null)}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-destructive/10 text-destructive">
+              <Trash2 className="size-5" />
+            </AlertDialogMedia>
+            <AlertDialogTitle>حذف المستخدم</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDeleteUser
+                ? `سيتم حذف ${pendingDeleteUser.firstName} ${pendingDeleteUser.lastName} نهائيًا من لوحة السوبر أدمن.`
+                : "سيتم حذف المستخدم نهائيًا."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLoading}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deleteLoading}
+              onClick={handleDelete}
+            >
+              {deleteLoading ? <Loader2 className="size-4 animate-spin" /> : null}
+              تأكيد الحذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </BusinessPageShell>
+  );
+};
+
+export default SuperAdminUsersManagement;

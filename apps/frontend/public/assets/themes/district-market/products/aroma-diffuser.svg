@@ -1,0 +1,27 @@
+<svg width="800" height="960" viewBox="0 0 800 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="960" rx="48" fill="#FFF8F2"/>
+  <rect x="36" y="36" width="728" height="888" rx="36" fill="url(#bg)"/>
+  <g opacity="0.16" stroke="#E8D8CD">
+    <path d="M120 0V960"/>
+    <path d="M280 0V960"/>
+    <path d="M440 0V960"/>
+    <path d="M600 0V960"/>
+    <path d="M0 220H800"/>
+    <path d="M0 420H800"/>
+    <path d="M0 620H800"/>
+    <path d="M0 820H800"/>
+  </g>
+  <ellipse cx="400" cy="808" rx="230" ry="54" fill="#E8D8CC"/>
+  <path d="M292 524C292 469.876 335.876 426 390 426H410C464.124 426 508 469.876 508 524V634C508 699.17 455.17 752 390 752H410C344.83 752 292 699.17 292 634V524Z" fill="#FFF8F1" stroke="#D1B29E" stroke-width="12"/>
+  <path d="M342 412C342 380.52 367.52 355 399 355H401C432.48 355 458 380.52 458 412V430H342V412Z" fill="#1A7E88"/>
+  <path d="M386 282C386 248.863 412.863 222 446 222" stroke="#EE742F" stroke-width="18" stroke-linecap="round"/>
+  <path d="M354 312C354 280.52 379.52 255 411 255" stroke="#1A7E88" stroke-width="14" stroke-linecap="round"/>
+  <path d="M430 322C430 298.252 449.252 279 473 279" stroke="#231A16" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="554" cy="500" r="88" fill="#DFF0F2" opacity="0.8"/>
+  <defs>
+    <linearGradient id="bg" x1="96" y1="92" x2="694" y2="874" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFDFC"/>
+      <stop offset="1" stop-color="#EFF6F7"/>
+    </linearGradient>
+  </defs>
+</svg>

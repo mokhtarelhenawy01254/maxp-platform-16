@@ -1,0 +1,41 @@
+{
+  "title": "التقارير",
+  "salesReport": "تقرير المبيعات",
+  "customerReport": "تقرير العملاء",
+  "productReport": "تقرير المنتجات",
+  "generateReport": "إنشاء تقرير",
+  "exportReport": "تصدير التقرير",
+  "dateRange": "نطاق التاريخ",
+  "from": "من",
+  "to": "إلى",
+  "presets": {
+    "today": "اليوم",
+    "yesterday": "أمس",
+    "last7Days": "آخر 7 أيام",
+    "last30Days": "آخر 30 يوم",
+    "thisMonth": "هذا الشهر",
+    "lastMonth": "الشهر الماضي"
+  },
+  "periods": {
+    "daily": "يومي",
+    "weekly": "أسبوعي",
+    "monthly": "شهري",
+    "custom": "مخصص"
+  },
+  "partialErrors": "تعذر جلب بعض التقارير: {{reports}}",
+  "topProducts": "أعلى المنتجات مبيعاً",
+  "availableReports": "التقارير الأساسية",
+  "availableReportsHint": "اختر نوع التقرير من هنا لتبديل المحتوى في نفس الصفحة بدل التنقل بين قوائم متكررة.",
+  "relatedViews": "مسارات مرتبطة",
+  "relatedViewsHint": "للتقارير المتخصصة أو التحليلات الأوسع، استخدم هذه المسارات الواضحة بدل توزيعها في أكثر من مكان.",
+  "selectedReport": "التقرير المختار",
+  "selectedReportHint": "التفاصيل الكاملة للتقرير تظهر هنا مع آخر تحديث وبدون تشتت إضافي.",
+  "openRoute": "فتح المسار",
+  "profitLossTitle": "الأرباح والخسائر",
+  "profitLossDescription": "عرض مالي مباشر للإيراد والتكلفة وإجمالي الربح في شاشة مستقلة.",
+  "advancedAnalyticsTitle": "التحليلات المتقدمة",
+  "advancedAnalyticsDescription": "لوحة أوسع للمقارنات والاتجاهات والتفصيلات التفاعلية.",
+  "exportPdfSoon": "تصدير PDF قريبًا",
+  "exportExcelSoon": "تصدير Excel قريبًا",
+  "exportSoonHint": "سيتم توفير التصدير قريبًا"
+}

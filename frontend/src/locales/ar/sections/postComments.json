@@ -1,0 +1,22 @@
+{
+  "pageTitle": "تعليقات المنشور",
+  "backToPosts": "العودة إلى المنشورات",
+  "postIdLabel": "معرف المنشور",
+  "status": "الحالة",
+  "allComments": "كل التعليقات",
+  "responded": "تم الرد عليها",
+  "pending": "قيد الانتظار",
+  "refresh": "تحديث",
+  "autoResponseSettings": "إعدادات الرد التلقائي",
+  "deleteSelected": "حذف المحدد",
+  "loadingComments": "جاري تحميل التعليقات...",
+  "noComments": "لا توجد تعليقات",
+  "noCommentsDesc": "لا توجد تعليقات لهذا المنشور حتى الآن.",
+  "selectAll": "تحديد الكل",
+  "respondedLabel": "تم الرد",
+  "pendingLabel": "قيد الانتظار",
+  "reply": "رد",
+  "delete": "حذف",
+  "replyPrompt": "اكتب ردك هنا:",
+  "repliedAt": "رد في"
+}

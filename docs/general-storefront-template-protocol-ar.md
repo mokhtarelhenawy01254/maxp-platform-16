@@ -1,0 +1,611 @@
+# بروتوكول إنشاء قالب متجر عام
+
+هذه الوثيقة هي المرجع الإلزامي قبل اعتماد أي قالب `متجر عام`.
+
+## الهدف
+
+- منع التصميمات القديمة أو الآمنة أكثر من اللازم.
+- منع البدء من الكود قبل وضوح الاتجاه.
+- جعل كل قالب يمر بنفس البوابات بدل الاعتماد على الذوق اللحظي.
+- منع `silent fallback` التي تجعل القالب يطلب variant ثم يحصل على surface عامة بدون كشف ذلك.
+- منع تقارب القوالب بسبب تشابه `palette / typography / shape / component anatomy / interaction`.
+
+## التسلسل الإلزامي
+
+1. **Brief Snapshot**
+   - نوع المتجر
+   - الجمهور
+   - الطابع
+   - مستوى السعر
+   - ما الذي يجب أن يميّز القالب عن القوالب العامة الأخرى
+2. **Objective Strategy**
+   - يجب تحديد الهدف الأساسي للقالب:
+     - `Sales-led`
+     - `Brand-led`
+     - `Hybrid`
+   - يجب تحديد:
+     - الهدف الثانوي
+     - ما الذي يجب أن يحدث في أول زيارة
+     - ما الذي لا يجب أن يطغى على الهدف
+   - تعريف الأهداف:
+     - `Sales-led`: القالب يقود المستخدم بسرعة إلى الاكتشاف والحسم وبناء السلة
+     - `Brand-led`: القالب يقود المستخدم إلى الإحساس بالهوية والتميّز والثقة في البراند قبل التحويل
+     - `Hybrid`: القالب يوازن بوضوح بين الهوية والتحويل بدون أن يسقط في نصفين متصارعين
+3. **Current Benchmark Scan**
+   - 3 إلى 5 مراجع حديثة
+   - ما الذي يبدو current
+   - ما الذي يبدو stale
+   - ما الذي لن نكرره
+   - يجوز إدخال `reference theme/template` خارجي مثل:
+     - `ThemeForest demo`
+     - `Shopify theme demo`
+     - `WooCommerce demo`
+     - أي storefront حي غني بالصفحات والعناصر
+   - دور `reference theme/template` المسموح:
+     - `pattern inventory`
+     - `capability benchmark`
+     - `section ideas`
+     - `component anatomy cues`
+     - `merchandising mechanics`
+     - `mobile / RTL behavior cues`
+   - لا يجوز أن يتحول `reference theme/template` إلى:
+     - skeleton افتراضي للقالب
+     - مصدر مباشر لـ `page architecture`
+     - مصدر مباشر لـ `section order`
+     - مصدر مباشر لـ `conversion flow`
+     - مصدر مباشر لـ `PDP decision logic`
+   - عند استخدامه يجب توثيق:
+     - اسم المرجع أو الرابط
+     - الصفحات التي تمت مراجعتها
+     - ما الذي سيتم استخراجه منه
+     - ما الذي سيتم رفضه منه
+     - كيف سيتم تفكيكه إلى `sections / variants / capabilities` بدل نسخه كصفحة جاهزة
+   - في القوالب `All-New Variants`:
+     - يجوز أن يلهم `reference theme/template` الوظائف أو أدوار الـ sections
+     - لا يجوز أن يعيد نفس الـ anatomy أو نفس الإيقاع العام ثم يُعاد تلوينه فقط
+   - أي عنصر مأخوذ من `reference theme/template` يجب أن يمر لاحقًا عبر:
+     - `Section vs Variant Decision Gate`
+     - `Perceptual Novelty Gate`
+     - `Shared Anatomy Audit`
+     - `Theme Distance Gate`
+4. **Reference-Locked Expansion Pack Mode**
+   - يُستخدم هذا الوضع عندما يكون المطلوب:
+     - عدة قوالب دفعة واحدة
+     - من مرجع خارجي anchor واحد
+     - والهدف المعلن هو `توسيع المكتبة` لا استهلاكها
+   - يجب توثيق:
+     - اسم المرجع anchor
+     - عدد القوالب المستهدفة
+     - ما هي `DNA` المشتركة التي يجب أن تبقى واضحة عبر كل القوالب
+     - ما محاور الاختلاف الإلزامية بين القوالب
+   - إذا كان الـ pack `reference-locked`:
+     - كل `user-facing critical section family` داخل scope يجب أن تكون `New to library`
+     - لا يجوز اعتماد القوالب على variants مرئية قديمة من المكتبة الحالية ثم الادعاء أنها تضيف إليها
+     - المسموح فقط بإعادة استخدام:
+       - engines
+       - data plumbing
+       - business logic
+       - registries
+       - tokens infrastructure
+   - يجب على كل قالب داخل الـ pack أن يوضح:
+     - ما الصفحات أو patterns في المرجع anchor التي تم الاستخراج منها
+     - ما الـ `new library additions` التي سيضيفها
+     - ما الذي يجعله مختلفًا عن بقية قوالب الـ pack رغم وحدة المرجع
+   - يجب تنفيذ `Library Delta Audit` على مستوى الـ pack:
+     - ما الذي أضيف للمكتبة
+     - ما الذي أُعيد استخدامه داخليًا فقط
+     - ما الـ families الجديدة فعلًا
+     - ما الـ capabilities الجديدة فعلًا
+   - لا يُقبل أي قالب داخل هذا الوضع إذا كان:
+     - يستهلك families مرئية من المكتبة أكثر مما يضيف
+     - أو يعتمد على نفس anatomy القديمة مع أسماء جديدة
+5. **Anti-Stale Gate**
+   - ممنوع `hero + 3 feature cards` بشكل templated
+   - يحظر أسلوب `box-in-box / card-inside-card / المربعات اللي جوه بعض` كحل افتراضي في surfaces البيع والحسم
+   - ما يعتبر محظورًا:
+     - outer card كبيرة بداخلها inner card ثانية ثم inner card ثالثة للـ selector أو العرض
+     - تكديس panels أو wrappers مدوّرة فوق بعضها بدون ضرورة وظيفية واضحة
+     - تحويل `quantity-offers` أو `buybox` أو `trust surfaces` إلى طبقات متداخلة من chrome بدل surface قرار واحدة
+   - الاستثناء الضيق الوحيد:
+     - يسمح بسطح داخلي إذا كان وظيفيًا وخفيفًا بصريًا ولا يُقرأ ككرت ثانية مستقلة
+     - أمثلة مقبولة: image crop area أو chips row أو inline selector strip
+     - أمثلة غير مقبولة: bordered card داخل bordered card ثم CTA داخل card ثالثة
+   - ممنوع الخلط غير المقصود بين العربي والإنجليزي
+   - ممنوع أي composition تبدو منقولة من تدريب النموذج بدل هوية القالب
+6. **External Design Skill Reference**
+   - يجوز استخدام `external design skill` مثل `TypeUI` أو أي design-layer registry مشابه كمرجع بصري وسلوكي اختياري
+   - هذا البند يخص design-layer skills فقط
+   - أما `reference themes/templates` الخارجية فتخضع أولًا لقواعد `Current Benchmark Scan` أعلاه، لا لهذا البند وحده
+   - دورها المسموح:
+     - `theme foundation`
+     - `component styling`
+     - `interaction states`
+     - `accessibility rules`
+     - `density / spacing / typography patterns`
+   - لا يجوز أن تحل محل:
+     - `Brief Snapshot`
+     - `Objective Strategy`
+     - `Current Benchmark Scan`
+     - `Mobile Experience Strategy`
+     - `Variant Strategy`
+     - `Capability Matrix`
+     - `Conversion Stack & Upsell Strategy`
+   - عند استخدامها يجب توثيق:
+     - اسم skill أو المصدر
+     - لماذا تم اختيارها
+     - ما الذي سيؤخذ منها
+     - ما الذي سيتم رفضه منها
+     - كيف سيتم تكييفها مع هوية القالب والسوق
+   - لا يجوز أن تحدد مباشرة:
+     - `page architecture`
+     - `section order`
+     - `conversion flow`
+     - `PDP decision logic`
+   - ممنوع نسخ composition جاهزة منها حرفيًا إذا أدى ذلك إلى pattern templated أو stale
+   - إذا تعارضت skill الخارجية مع هدف القالب أو البروتوكول، فالبروتوكول هو المرجع الأعلى
+7. **Design Style Definition**
+   - يجب أن يملك كل قالب `Design Style` صريحة، لا implicit في ذهن المصمم فقط
+   - الحد الأدنى الإلزامي:
+     - `style model name`
+     - `art direction / mood`
+     - ما الذي يجب أن يشعر به المستخدم في أول 5 ثوانٍ
+     - ما الذي لا يجب أن يكون عليه القالب
+     - `commerce style`
+     - `image direction`
+     - `page composition rules`
+   - لا يجوز اعتماد قالب لأن الـ variants جديدة فقط بينما style definition نفسها غير واضحة
+   - يجب أن يحدد كل قالب هل هو:
+     - يضيف `Design Style model` جديدة إلى المكتبة
+     - أم يشتق branch واضحة من model موجودة
+   - يجب أن يساهم كل قالب مرجعي معتمد في `Design Style Library` مشتركة تتضمن:
+     - اسم الـ model
+     - أين تصلح
+     - أين لا تصلح
+     - palette logic
+     - typography logic
+     - chrome logic
+     - CTA tone
+     - image direction
+   - لا يجوز أن تبقى style model ضمنية داخل plan فقط ثم تضيع بعد انتهاء القالب
+8. **Theme Foundation**
+   - لا تختزل في `primary / accent` فقط
+   - يجب تحديد:
+     - `color strategy`
+     - `typography strategy`
+     - `shape language`
+     - `component language`
+     - `interaction model`
+     - `page chrome rules`
+     - اتجاه الموبايل والـ RTL
+      - `wide-screen centering rules` خاصة في `RTL`
+   - يجب أن تكون هذه العناصر قابلة للتمييز عن أقرب القوالب المرجعية، لا مجرد اختلاف hue بسيط
+   - في القوالب المعتمدة على `.container` أو أي max-width shell:
+     - يجب أن يبقى المحتوى متمركزًا بصريًا على الشاشات العريضة
+     - لا يجوز أن تنزاح الكتلة كلها إلى اليمين أو اليسار بسبب `RTL/LTR` أو max-width logic
+     - أي asymmetry يجب أن تكون intentional داخل grid نفسها، لا بسبب outer shell
+   - يجب تنفيذ `Theme Token Coverage Audit`:
+     - ما الذي يأتي من tokens فعلية
+     - ما الذي ما زال يأتي من branch داخل component
+     - ما surfaces التي تملك token coverage كافية:
+       - header
+       - footer
+       - mobile dock
+       - marketplace preview card
+       - hero
+       - shop chrome
+       - PDP decision surfaces
+       - trust surfaces
+   - لا يجوز الادعاء بأن القالب مختلف بينما أغلب الاختلاف يأتي من overrides أو branches بلا token coverage واضحة
+9. **Section vs Variant Decision Gate**
+   - يجب حسم نوع التغيير قبل التنفيذ:
+     - `Token-only`
+     - `Variant`
+     - `Section`
+   - `Token-only` عندما يكون المطلوب mood مختلفًا بدون تغيير hierarchy أو decision flow
+   - `Variant` عندما يبقى دور الـ section نفسه لكن تتغير anatomy أو behavior أو CTA treatment
+   - `Section` جديدة عندما يتغير:
+     - ownership of CTA
+     - page hierarchy
+     - decision sequence
+     - block responsibility
+   - لا يجوز استخدام variant جديدة فقط لإخفاء أن الصفحة تحتاج section مختلفة فعلًا
+10. **Mobile Experience Strategy**
+   - يجب تحديد سلوك وضع الموبايل صراحة:
+     - `web-native`
+     - `app-like`
+     - `hybrid`
+   - لا يجوز ترك إحساس الموبايل يتشكل بالصدفة من desktop sections مصغّرة فقط
+   - يجب توثيق:
+     - هل يوجد `bottom nav / bottom dock`
+     - هل يوجد `sticky CTA` أو `sticky buy bar`
+     - كيف تعمل filters / sort على الموبايل:
+       - chips
+       - drawer
+       - bottom-sheet
+     - هل `PDP` يجب أن تقرأ كتطبيق تسوق أم صفحة ويب كلاسيكية
+     - كيف سيتم تقليل footer والضوضاء السفلية على الموبايل
+   - قاعدة القرار:
+     - القوالب `Sales-led` و`mobile-first` يجب أن تحسم صراحة هل تريد app-like behavior أم لا
+     - إذا كان المطلوب `app-like` فلا يكفي تكبير الأزرار فقط؛ يجب أن يظهر ذلك في الـ navigation والـ CTA والـ rhythm العام
+   - أي إصلاح لـ `wide-screen centering` أو desktop shell يجب ألا يسبب انكماشًا أو offset غير مقصود على الموبايل
+11. **Variant Strategy**
+   - يجب حسم `variant posture` للقالب قبل اختيار أي family:
+     - `Mixed strategy`
+     - `All-New Variants`
+   - إذا كان القالب `All-New Variants`:
+     - كل section family user-facing داخل scope يجب أن تكون `New`
+     - لا يجوز اعتماد `Reuse` أو `Extend` في surfaces الواجهة نفسها
+     - المسموح فقط هو إعادة استخدام:
+       - engines
+       - data plumbing
+       - business logic
+       - registry wiring
+     - لكن الـ composition والـ markup والـ visual behavior والـ CTA structure نفسها يجب أن تكون جديدة
+     - يجب توثيق أي reuse داخلي غير مرئي للمستخدم حتى لا يختلط الأمر بين `new variant` و`same variant with restyling`
+   - يجب تحديد القرار صراحة لكل section family المهمة:
+     - `Reuse`
+     - `Extend`
+     - `New`
+   - لا يجوز ترك قرار الـ variants ضمنيًا حتى مرحلة التنفيذ
+   - معيار القرار:
+     - هل الـ variant الحالية تخدم الفكرة بدون ليّ واضح؟
+     - هل ستجعل القالب قريبًا جدًا من ثيمات أخرى؟
+     - هل سنحتاج overrides كثيرة ومحرجة؟
+     - هل الفرق المطلوب styling فقط أم composition / behavior جديد فعلاً؟
+   - تعريف القرارات:
+     - `Reuse`: استخدام variant موجودة كما هي إذا كانت مناسبة فعلًا
+     - `Extend`: استخدام variant موجودة مع branch واضحة للثيم إذا كان الأساس صالحًا لكن الشخصية تحتاج تخصيصًا
+     - `New`: إنشاء variant جديدة إذا كانت الموجودات الحالية تفرض pattern قديمًا أو تمنع هوية القالب
+   - إذا كان الهدف `All-New Variants`:
+     - `New` لا تعني restyling فوق variant قديمة
+     - `New` تعني surface جديدة إدراكيًا للمستخدم، لا مجرد palette مختلفة أو spacing مختلفة
+12. **No Silent Fallback Rule**
+   - في القوالب المرجعية أو القوالب قيد الاعتماد لا يجوز وجود `silent fallback` user-facing
+   - إذا طلبت الثيم variant أو surface معينة:
+     - يجب أن يكون لها implementation صريحة
+     - أو يفشل `validation`
+   - fallback مسموحة فقط في:
+     - legacy content migration
+     - draft experimentation غير المعتمدة
+   - لا يجوز أن تعود Hero أو Product Grid أو PDP surface إلى layout عامة بينما plan تدّعي أن القالب `All-New Variants`
+   - يجب تنفيذ `Variant Wiring Audit`:
+     - declared variant ids
+     - actual implementation coverage
+     - aliases used intentionally
+     - any fallback path
+13. **Perceptual Novelty Gate**
+   - لا يكفي أن تكون الـ variant `New` في الكود؛ يجب أن تُحَس جديدة بصريًا وسلوكيًا
+   - يجب أن تغيّر كل variant جديدة user-facing ما لا يقل عن `3` من العناصر التالية:
+     - layout
+     - hierarchy
+     - card anatomy
+     - interaction model
+     - content rhythm
+     - CTA placement / ownership
+   - `restyling only` لا يُحسب كـ novelty كافية في القوالب `All-New Variants`
+   - `novelty` لا تتحقق بمضاعفة wrappers أو تحويل السطح إلى `box-in-box`; ذلك يُحسب تدهورًا في clarity لا جِدة
+   - يجب تنفيذ `Similarity Audit` على:
+     - `home`
+     - `shop`
+     - `pdp`
+     - وأقرب قالبين مرجعيين في نفس الفئة
+   - أسئلة الـ `Similarity Audit`:
+     - هل الصفحة ما زالت تقرأ بنفس الإيقاع العام رغم تغيير أسماء الـ variants؟
+     - هل يوجد أكثر من surface متتالية من نفس family البصرية؟
+     - هل يمكن تمييز القالب عن أقرب قالبين بصريًا بدون قراءة اسمه؟
+   - `Family Repetition Cap`:
+     - لا يجوز تكرار أكثر من `2` surfaces متجاورة من نفس family البصرية إلا بسبب موثق
+     - إذا كانت عدة surfaces تعتمد نفس variant family، يجب كسر الإيقاع بينها في:
+       - density
+       - wrapper shape
+       - heading rhythm
+       - CTA treatment
+   - `Side-by-Side Evidence`:
+     - في القوالب `All-New Variants` يجب حفظ مقارنة مرئية واحدة على الأقل:
+       - قبل / بعد
+       - أو القالب الحالي / أقرب قالب مشابه
+     - لا يعتمد الحكم على الوصف النصي فقط
+   - `Blind Review Question`:
+     - إذا أزلنا أسماء الـ variants، هل سيشعر المراجع أن هذا قالب جديد فعلًا؟
+     - إذا كانت الإجابة `لا`، فالقالب لا يمر كـ `All-New Variants`
+14. **Shared Anatomy Audit**
+   - لا يكفي أن تملك sections أسماء variants مختلفة إذا كانت تعود فعليًا إلى نفس anatomy
+   - يجب مراجعة:
+     - card shell
+     - media frame
+     - CTA placement
+     - content stack
+     - trust surface structure
+   - إذا كانت أكثر من variant id تعود إلى نفس anatomy مع restyling محدود:
+     - تعتبر family واحدة
+     - ولا يجوز احتسابها كـ `All-New Variants`
+15. **Theme Distance Gate**
+   - يجب قياس distance عن أقرب قالبين مرجعيين في:
+     - palette family
+     - typography pair
+     - button/card radii
+     - hero chrome
+     - shop chrome
+     - PDP decision chrome
+     - product card anatomy
+   - لا يكفي اختلاف `accent hue` وحده
+   - إذا كان قالبان share:
+     - نفس body/heading pairing
+     - نفس button pill language
+     - نفس warm-light neutrals
+     - نفس product card family
+     - ونفس page rhythm
+     - فهما يعتبران متقاربين أكثر من اللازم حتى لو كانت ids مختلفة
+   - يجب تنفيذ `Route-by-Route Distance Gate` داخل القالب نفسه:
+     - `home`
+     - `shop`
+     - `sale` إذا وجدت
+     - `pdp`
+     - `cart`
+     - `checkout`
+     - `thank-you`
+   - لا يكفي أن يختلف القالب عن قالب آخر إذا كانت `home / shop / sale` داخله تقرأ كلها بنفس الإيقاع والعائلة نفسها
+   - يجب حسم `Marketplace Surface Gate`:
+     - بطاقة القالب في صفحة القوالب
+     - preview image
+     - preview chrome
+   - لا يجوز أن يعتمد تمييز القالب في marketplace على preview image فقط بينما card shell نفسها موحدة تمامًا
+16. **Capability Matrix**
+   - يجب تحديد الأدوات/القدرات التي يجب أن يحملها القالب بحسب الهدف
+   - لا يجوز اعتماد قالب بدون ربط كل capability بـ section أو behavior واضح
+   - أمثلة الحد الأدنى:
+     - `Sales-led`
+       - بحث أو routing واضح
+       - category entry سريع
+       - merchandising sections
+       - offers / value surfaces
+       - trust signals
+       - shipping / returns / payment clarity
+       - support لبناء السلة والحسم
+     - `Brand-led`
+       - hero وهوية بصرية قوية
+       - storytelling أو editorial sections
+       - visual distinction واضح
+       - media direction مقصود
+       - brand trust signals
+       - conversion anchors موجودة لكن لا تخنق الهوية
+     - `Hybrid`
+       - توازن صريح بين discovery / trust / brand expression / conversion
+   - يجب توثيق:
+     - capability المطلوبة
+     - أين تظهر داخل القالب
+     - ما الذي ما زال ناقصًا
+17. **Conversion Stack & Upsell Strategy**
+   - يجب تحديد stack التحويل بوضوح، خصوصًا في القوالب `Sales-led`
+   - لا يكفي أن تكون أدوات التحويل موجودة في الكود؛ يجب أن تكون مقصودة ومبررة داخل الخطة
+   - المعمارية الافتراضية:
+     - أدوات التحويل الأساسية يجب أن تُخطط كـ `sections` مستقلة مثل:
+       - `low-stock`
+       - `delivery-proof`
+       - `viewer-counter`
+       - `trusted-badges`
+       - `bulk-savings`
+       - `quantity-offers` عندما يعتمد الحسم على عروض القطعتين/الثلاثة أو mix-and-match
+     - `quantity-offers` يجب أن تُبنى كـ `section/variant` فوق engine بيانات العروض، لا كعنصر مزروع ضمن `product-info`
+     - `conversion-stack` ليست default في القوالب الجديدة
+     - يسمح باستخدام `conversion-stack` فقط كـ orchestrator عندما يكون التجميع مقصودًا ومبررًا
+   - إذا كانت `quantity-offers` موجودة على `PDP`:
+     - يجب حسم `decision mode` صراحة:
+       - `supporting`
+       - `primary`
+     - إذا كانت `primary`:
+       - تصبح هي مصدر القرار الأساسي للكمية/العرض والمتغيرات
+       - لا يجوز ترك `top variant selector` فوقها كـ control نشط
+       - يسمح فقط بـ summary أعلى الصفحة، لا مصدر قرار ثانٍ
+   - إذا كان هناك `quick order` أو form مدمجة داخل `PDP`:
+     - يجب حسم `surface mode` صراحة:
+       - `standalone`
+       - `merged-buybox`
+     - إذا كانت `merged-buybox`:
+       - يجب أن تقرأ المتغيرات + العرض + الفورم ككتلة حسم واحدة
+       - لا يجوز أن يشعر المستخدم أنه انتقل من buybox أولى إلى buybox ثانية منفصلة
+   - إذا كانت `bought-together` أو `bundle add-ons` جزءًا من مسار البيع:
+     - يجب حسم هل هي:
+       - `teaser links`
+       - `true configurable bundle`
+     - إذا كانت `true configurable bundle`:
+       - يجب أن يتم اختيار لون/مقاس الإضافات من نفس البلوك
+       - لا يجوز إجبار المستخدم على مغادرة البلوك لصفحة منتج أخرى ثم الادعاء أن CTA الحالية تضيف الباقة نفسها
+       - يجب أن تدخل الإضافات للسلة أو الطلب بنفس `variantId` وattributes المختارة داخل البلوك
+       - يجب أن تمنع الصفحة أي إضافة جزئية إذا كان المنتج الأساسي أو أي إضافة variant غير مكتملة
+   - ملكية الـ CTA يجب أن تكون محسومة:
+     - block الاختيار تملك CTA انتقال مثل `متابعة الطلب` إذا كانت هناك form نهائية
+     - block الحسم النهائي تملك CTA شراء واحدة فقط
+     - لا يجوز تكرار `Add to cart / Buy now` لنفس القرار في مكانين داخل نفس الـ flow
+   - في `cart upsell` و`PDP recommendations` و`bundle add-ons` التي تحتاج variants:
+     - CTA لا يجوز أن تبقى generic مثل `اختر الخيارات` إذا كان المطلوب الحقيقي معروفًا
+     - يجب أن تسمي المطلوب بوضوح:
+       - `اختاري اللون`
+       - `اختاري المقاس`
+       - `اختاري اللون والمقاس`
+     - النص التوضيحي والـ CTA يجب أن يكونا متطابقين، لا one says `color only` while the button says `color + size`
+   - في preview flows التي تتضمن `thank-you`:
+     - يجب أن تعكس صفحة `thank-you` الطلب الذي تم إرساله فعليًا، لا بيانات seeded قديمة
+     - يجب أن يبقى order reference مرتبطًا بنفس الطلب بعد الـ refresh أو track order
+   - الحد الأدنى في القوالب البيعية:
+     - `primary CTA` واضحة
+     - `buy now / quick order / sticky add-to-cart` إذا كانت تخدم الفئة فعلاً
+     - surfaces للعروض أو الحسم إذا كانت منطقية
+     - `PDP related / bought together`
+     - `cart upsell`
+     - `post-purchase upsell` أو `reorder hook` إذا كان ذلك مناسبًا للفئة
+     - وضوح الشحن / الدفع / الاستبدال / الإرجاع
+   - يجب توثيق:
+     - الأداة
+     - هل هي `standalone section` أم `orchestrated block`
+     - الصفحة أو الموضع
+     - الهدف منها
+     - متى تكون annoying أو زائدة
+     - `decision mode` و`surface mode` إذا كان هناك `quantity-offers` أو `quick order`
+18. **Product Data Depth Gate**
+   - في الفئات الحساسة للمتغيرات مثل:
+     - الأحذية
+     - الأزياء
+     - الحقائب
+     - المنتجات التي يعتمد قرار شرائها على المقاس أو اللون أو المقاس/الموديل
+   - يجب أن تحتوي المنتجات الأساسية في sample data أو preview data على:
+     - `4+` صور حقيقية لكل منتج أساسي أو featured SKU
+     - `meaningful variants` مثل المقاس أو اللون أو الـ fit بحسب الفئة
+     - تفسير واضح إذا كان منتج معين بلا variants رغم أن الفئة عادة تحتاجها
+   - لا يجوز اعتماد قالب بيع في فئة variant-sensitive على:
+     - منتج بصورة واحدة فقط
+     - منتجات بلا variants بشكل افتراضي
+     - galleries سطحية لا تسمح بمراجعة المنتج بصريًا
+19. **Sample Data Strategy**
+   - تحديد pack مناسبة أو dataset واضحة
+   - لا يجوز اختبار القالب على بيانات ضعيفة أو عشوائية
+20. **Image Realism Gate**
+   - يجب تحديد `Photo Source Policy` صراحة قبل التنفيذ:
+     - `Real photos`
+     - `Approved photo pack`
+     - `Stylized / generated imagery`
+   - لا يجوز خلط مصادر الصور بلا منطق داخل نفس القالب
+   - قواعد القرار:
+     - `Sales-led`: الصور الأساسية على surfaces البيع يجب أن تكون فوتوغرافية ومقنعة جدًا
+     - `Hybrid`: الصور الأساسية يجب أن تبقى قريبة من الواقعية على الأقل في المسارات التجارية
+     - `Brand-led`: يمكن قبول stylized imagery فقط إذا كانت مقصودة وتخدم الهوية، وليس لأنها fallback رخيص
+   - ممنوع استخدام:
+     - product art توضيحي أو SVG illustrations بدل صور منتجات في المسارات التجارية
+     - صور توليدية تبدو مفبركة أو غير منتمية لنفس اللغة البصرية
+     - صور fake mock sheets داخل product cards إذا كانت تضعف الثقة
+   - يجب توثيق:
+     - مصدر الصور الأساسي
+     - أين يسمح بأسلوب غير فوتوغرافي
+     - أين الواقعية إلزامية
+     - ما المخاطر المتبقية
+21. **Implementation**
+   - التسجيل في theme registry
+   - metadata
+   - preview assets
+   - wiring صحيح
+   - لا يجوز ترك theme-specific variants بألوان hex hardcoded إلا إذا كانت:
+     - جزءًا من brand mark أو asset ثابتة
+     - وموثقة بوضوح
+   - الأصل أن surfaces الثيمية تقرأ من tokens لا من ألوان ثابتة داخل component
+22. **Verification & Tests**
+   - يجب تشغيل الفحوصات المناسبة قبل الاعتماد
+   - الحد الأدنى:
+     - `validate-themes.ts`
+     - أي tests مركزة تتأثر بالثيم أو الـ preview data
+     - tests إضافية لو تم إنشاء variants جديدة أو تغيير behavior فعلي
+     - `Variant Wiring Audit`
+     - `Shared Anatomy Audit`
+     - `Hardcoded Color Audit`
+     - `Theme Distance Review`
+     - `Theme Token Coverage Audit`
+   - لا يجوز الاكتفاء بالمعاينة البصرية فقط إذا كان هناك logic أو wiring جديد
+23. **Visual QA**
+   - home
+   - shop
+   - pdp
+   - cart
+   - checkout
+   - desktop
+   - mobile
+   - RTL
+   - marketplace card
+   - preview image
+   - preview chrome
+   - يجب أن تتم `Authenticated Preview QA` على route الصحيحة وفي السياق الصحيح:
+     - إذا كانت صفحة localhost العامة تُظهر login shell لكن التبويب المفتوح للمراجعة يملك session صحيحة، فالمرجع هو session الصحيحة
+     - لا تعتمد screenshot headless غير موثقة كبديل كامل عن authenticated preview
+24. **Final Gate**
+   - لا يتم اعتبار القالب جاهزًا قبل مراجعة:
+     - test coverage / validation status
+     - objective fit
+     - external design layer fit إذا تم استخدام skill خارجية
+     - design style clarity
+     - theme foundation clarity
+     - section-vs-variant decision quality
+     - no silent fallback status
+     - capability coverage
+     - conversion tool fit
+     - upsell coverage
+     - product data depth
+     - variant coverage
+     - shared anatomy audit result
+     - theme distance result
+     - route-by-route distance result
+     - marketplace surface result
+     - perceptual novelty
+     - similarity audit result
+     - image realism
+     - hardcoded color audit
+     - token coverage result
+     - nested-surface audit
+     - currentness
+     - clarity
+     - mobile app-feel fit
+     - mobile ergonomics
+     - merchandising logic
+     - distinction from nearby themes
+     - design style library contribution
+
+## Hard Fail
+
+هذه البنود توقف العمل حتى يتم إصلاحها:
+
+- غياب brief واضحة
+- غياب Objective Strategy واضحة
+- غياب benchmark scan
+- استخدام `external design skill` بلا توثيق واضح لسبب الاختيار وحدود adoption
+- استخدام `reference theme/template` خارجي بلا توثيق الصفحات المفحوصة وحدود adoption والاستخراج
+- غياب توثيق `reference-locked expansion pack mode` عندما يكون المطلوب عدة قوالب من anchor واحد
+- غياب Mobile Experience Strategy واضحة في قالب `mobile-first` أو `Sales-led`
+- غياب Variant Strategy واضحة
+- غياب `Perceptual Novelty Gate` واضحة في قالب `All-New Variants`
+- غياب Capability Matrix واضحة
+- غياب Design Style Definition واضحة
+- غياب `style model name` واضحة أو غياب قرار مساهمة القالب في `Design Style Library`
+- غياب Theme Foundation واضحة بما يكفي لإنتاج شخصية مختلفة
+- غياب Section vs Variant Decision Gate واضحة
+- غياب Conversion Stack & Upsell Strategy واضحة
+- اعتماد `external design skill` كمصدر للـ `page architecture` أو `conversion flow` أو `PDP decision logic` بدل البروتوكول
+- اعتماد `reference theme/template` خارجي كمصدر مباشر للـ `page architecture` أو `section order` أو `conversion flow` أو `PDP decision logic`
+- نسخ skeleton أو ترتيب sections أو anatomy مرئية من `reference theme/template` ثم الاكتفاء بـ restyling أو copy swaps
+- في `reference-locked expansion pack`: استخدام families مرئية قديمة من المكتبة الحالية بدل إضافة families جديدة لها
+- غياب `Library Delta Audit` أو فشله في إثبات أن الـ pack يضيف للمكتبة أكثر مما يستهلك منها
+- وجود `silent fallback` في surface user-facing معلنة داخل الثيم
+- وجود variant ids معلنة لكن بلا implementation صريحة
+- نجاح variant wiring اسميًا مع رجوع التنفيذ إلى generic surface
+- تجميع كل أدوات التحويل في block واحدة بلا سبب واضح
+- وجود source قرار مزدوجة لنفس الـ PDP مثل:
+  - variant selector أعلى الصفحة
+  - و`quantity-offers` primary أسفلها
+- وجود `bought-together` تدّعي bundle قابلة للإضافة بينما variant add-ons لا تُختار إلا خارج البلوك
+- ضياع متغيرات الإضافات عند إضافة bundle أو دخولها للسلة كمنتجات عامة
+- تكرار CTA الحسم نفسها في أكثر من block داخل نفس flow
+- نجاح اسمي للـ variants مع فشل إدراكي واضح: أسماء جديدة لكن نفس الإيقاع أو نفس composition
+- وجود عدة variant ids مختلفة تعود فعليًا إلى نفس anatomy مع restyling محدود
+- تكرار أكثر من surface متجاورة من نفس family البصرية بدون سبب موثق
+- فشل `Theme Distance Gate`: palette / type / shape / chrome قريبة جدًا من قالبين مرجعيين
+- فشل `Route-by-Route Distance Gate`: `home / shop / sale / pdp` تقرأ كنسخ متقاربة جدًا داخل القالب نفسه
+- فشل `Marketplace Surface Gate`: بطاقة القالب أو preview chrome لا تعكس شخصية القالب إلا عبر الصورة فقط
+- اعتماد surfaces theme-specific على hardcoded colors بدل tokens بشكل يجعل التخصيص صوريًا فقط
+- غياب `Theme Token Coverage Audit` أو ثبوت أن أغلب تمييز القالب قائم على branches مؤقتة لا tokens واضحة
+- وجود `box-in-box / card-inside-card / المربعات اللي جوه بعض` في surfaces البيع أو الحسم بشكل يجعل الصفحة تُقرأ كطبقات كروت متداخلة بدل decision surface واضحة
+- وصول `thank-you` preview إلى بيانات seeded لا تخص الطلب الحالي
+- غياب Product Data Depth Gate واضحة في الفئات الحساسة للمتغيرات
+- غياب sample data مناسبة
+- غياب Photo Source Policy واضحة
+- عدم تشغيل الفحوصات المناسبة
+- وجود mixed-language copy غير مقصود
+- نجاح تقني مع فشل بصري واضح
+- وجود صور غير واقعية أو مفبركة على surfaces البيع
+- وجود منتجات featured بصورة واحدة فقط في فئة تحتاج gallery أعمق
+- غياب variants من منتجات أحذية/أزياء رغم أن القرار الشرائي يعتمد عليها
+- غياب cart upsell / PDP recommendations / primary CTA logic في قالب معلن عنه كـ `Sales-led`
+- خلط لغة فوتوغرافية وأخرى توضيحية بدون قصد واضح
+- وجود sections زخرفية لا تخدم هدف القالب
+- اعتماد القالب على nested cards بدل composition مقصودة
+- عدم إجراء QA حي على المعاينة
+- اعتماد QA على screenshot غير authenticated بينما المعاينة الحقيقية موجودة في session أخرى
+
+## تعريف الالتزام
+
+إذا لم تُوثَّق البوابة داخل الخطة أو الـ audit، فهي تعتبر غير منفذة حتى لو تم تنفيذ جزء منها ضمنيًا أثناء الشغل.

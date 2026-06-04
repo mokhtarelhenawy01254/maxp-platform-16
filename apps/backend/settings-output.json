@@ -1,0 +1,34 @@
+{
+  "companyId": "cmmhkxobb0000vpk440j1n6ui",
+  "designTokens": {
+    "themeId": "aura-chic",
+    "currency": "EGP",
+    "pdpStudio": {
+      "updatedAt": "2026-03-17T08:31:16.436Z",
+      "productPages": [
+        {
+          "id": "product-page-flatsome-product",
+          "name": "Flatsome Product Details",
+          "variantId": "flatsome-product",
+          "settingsMode": "inherit"
+        }
+      ],
+      "productDisplayAssignments": {
+        "updatedAt": "2026-03-17T08:31:16.436Z",
+        "mobileStudioPageId": "product-page-flatsome-product",
+        "desktopStudioPageId": "product-page-flatsome-product"
+      }
+    },
+    "storeName": "MaxP Platform",
+    "storefrontPageAssignments": {
+      "product": {
+        "mode": "studio-page",
+        "studioPageId": "product-page-flatsome-product"
+      },
+      "homepage": {
+        "mode": "template-page"
+      },
+      "updatedAt": "2026-03-17T08:31:16.436Z"
+    }
+  }
+}

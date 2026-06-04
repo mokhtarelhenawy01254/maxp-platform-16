@@ -1,0 +1,20 @@
+model Member {
+  id              String   @id @default(cuid())
+  companyId       String
+  fullName        String
+  constituency    String?
+  politicalParty  String?
+  position        String?
+  birthDate       DateTime?
+  gender          Gender?
+  vision          String?
+  photo           String?
+  education       Json?
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("members")
+}

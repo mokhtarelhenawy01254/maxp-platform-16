@@ -1,0 +1,675 @@
+{
+  "id": "pc-hub-eg",
+  "name": "PC HUB",
+  "description": "قالب عربي لبيع أجهزة الكمبيوتر واللاب توب والإكسسوارات في السوق المصري، يركز على وضوح السعر، سهولة المقارنة، وثقة الشحن والضمان.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "47 100% 54%",
+      "primaryForeground": "220 28% 12%",
+      "secondary": "217 26% 17%",
+      "secondaryForeground": "0 0% 100%",
+      "accent": "7 84% 60%",
+      "accentForeground": "0 0% 100%",
+      "background": "220 20% 97%",
+      "foreground": "220 28% 12%",
+      "muted": "220 18% 93%",
+      "mutedForeground": "220 10% 42%",
+      "border": "220 18% 88%",
+      "card": "0 0% 100%",
+      "cardForeground": "220 28% 12%",
+      "ring": "47 100% 54%"
+    },
+    "typography": {
+      "headingFont": "\"IBM Plex Sans Arabic\", \"Tajawal\", sans-serif",
+      "bodyFont": "\"IBM Plex Sans Arabic\", \"Tajawal\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.45rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.45rem",
+      "boxShadow": "0 18px 42px -28px rgba(15, 23, 42, 0.14)",
+      "hoverShadow": "0 26px 54px -28px rgba(15, 23, 42, 0.18)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
+      "surfaceOpacity": "1"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | PC HUB",
+    "description": "قالب إلكترونيات عربي لأجهزة الكمبيوتر واللاب توب والإكسسوارات، يوازن بين كثافة عرض مناسبة، مسارات شراء عملية، وثقة لوجستية مناسبة للسوق المصري."
+  },
+  "preview": {
+    "imageUrl": "/assets/themes/pc-hub-eg/preview.svg",
+    "colors": ["46 100% 50%", "218 18% 14%", "42 38% 97%"]
+  },
+  "header": {
+    "brandName": "PC HUB",
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      {
+        "label": "الرئيسية",
+        "to": "/"
+      },
+      {
+        "label": "المتجر",
+        "to": "/shop"
+      },
+      {
+        "label": "لابتوبات",
+        "to": "/shop?category=laptops"
+      },
+      {
+        "label": "تجميعات",
+        "to": "/shop?category=desktop-pcs"
+      },
+      {
+        "label": "إكسسوارات",
+        "to": "/shop?category=accessories"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      }
+    ]
+  },
+  "footer": {
+    "description": "PC HUB متجر عربي لأجهزة الكمبيوتر واللاب توب والإكسسوارات، مبني حول المقارنة السريعة، الضمان الواضح، والشحن العملي داخل مصر.",
+    "copyrightText": "© 2026 PC HUB. جميع الحقوق محفوظة.",
+    "socialLinks": {
+      "facebook": "https://facebook.com",
+      "instagram": "https://instagram.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
+    "navigation": [
+      {
+        "title": "التسوق",
+        "links": [
+          {
+            "label": "كل المنتجات",
+            "to": "/shop"
+          },
+          {
+            "label": "لابتوبات",
+            "to": "/shop?category=laptops"
+          },
+          {
+            "label": "إكسسوارات",
+            "to": "/shop?category=accessories"
+          },
+          {
+            "label": "العروض",
+            "to": "/sale"
+          }
+        ]
+      },
+      {
+        "title": "الدعم",
+        "links": [
+          {
+            "label": "الشحن والتوصيل",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال والاسترجاع",
+            "to": "/returns"
+          },
+          {
+            "label": "الضمان",
+            "to": "/warranty"
+          }
+        ]
+      },
+      {
+        "title": "خدمات PC HUB",
+        "links": [
+          {
+            "label": "التقسيط",
+            "to": "/terms"
+          },
+          {
+            "label": "العروض",
+            "to": "/sale"
+          },
+          {
+            "label": "وصل حديثًا",
+            "to": "/shop?sortBy=latest"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "سياسة الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط والأحكام",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "soft-showcase",
+          "settings": {
+            "eyebrow": "اختيار هذا الأسبوع",
+            "title": "كل ما تحتاجه لجهازك ومكتبك في مكان واحد",
+            "subtitle": "لابتوبات للعمل والدراسة، شاشات للمكتب والتصميم، وتجميعات جاهزة مع سعر واضح وخيارات تقسيط وضمان موضح قبل الطلب.",
+            "ctaText": "ابدأ التسوق",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شاهد العروض",
+            "secondaryCtaLink": "/sale",
+            "backgroundImage": "/assets/themes/pc-hub-eg/hero-photo.jpg",
+            "panelImage": "/assets/themes/pc-hub-eg/workbook-14-air.jpg",
+            "highlights": [
+              {
+                "label": "تقسيط",
+                "value": "حتى 12 شهر"
+              },
+              {
+                "label": "شحن",
+                "value": "24-48 ساعة"
+              },
+              {
+                "label": "ضمان",
+                "value": "حتى سنتين"
+              }
+            ],
+            "panelMetricValue": "EGP 56,770.00",
+            "panelMetricLabel": "EGP 62,990.00",
+            "panelNote": "تقسيط حتى 12 شهر وشحن 24-48 ساعة داخل المحافظات الرئيسية."
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "catalog-pills",
+          "settings": {
+            "hideHeader": true,
+            "limit": 6,
+            "collections": [
+              {
+                "title": "لابتوبات وكمبيوترات",
+                "subtitle": "أجهزة للعمل والدراسة والاستخدام اليومي.",
+                "link": "/shop?category=laptops"
+              },
+              {
+                "title": "تجميعات جاهزة",
+                "subtitle": "حلول جاهزة للألعاب والإنتاجية.",
+                "link": "/shop?category=desktop-pcs"
+              },
+              {
+                "title": "شاشات",
+                "subtitle": "شاشات QHD و4K للمكتب والتصميم.",
+                "link": "/shop?category=monitors"
+              },
+              {
+                "title": "إكسسوارات",
+                "subtitle": "كيبوردات وماوسات ووحدات توصيل.",
+                "link": "/shop?category=accessories"
+              },
+              {
+                "title": "العروض",
+                "subtitle": "خصومات مختارة على أجهزة وإكسسوارات.",
+                "link": "/sale"
+              },
+              {
+                "title": "ترقيات المكتب",
+                "subtitle": "ملحقات تحسن مكتبك بدون تعقيد.",
+                "link": "/shop?category=accessories"
+              }
+            ]
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "retail-air-grid",
+          "settings": {
+            "eyebrow": "موصى به لك",
+            "title": "مختار لك من PC HUB",
+            "subtitle": "",
+            "showResultsMeta": false,
+            "limit": 8
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "variant": "decision-deck",
+          "settings": {
+            "title": "ابدأ من الجهاز المناسب ثم صفّي الباقي بسرعة",
+            "subtitle": "ابحث باسم الجهاز أو الفئة، وراقب عدد النتائج والترتيب قبل ما تدخل على صفحة المنتج.",
+            "searchPlaceholder": "ابحث عن لابتوب، شاشة، تجميعة، أو إكسسوار",
+            "allCategoriesLabel": "كل الأقسام",
+            "resultsLabel": "منتج متاح",
+            "clearButtonText": "مسح الفلاتر",
+            "stickyLabel": "غرفة القرار",
+            "chipLimit": 8
+          }
+        },
+        {
+          "type": "filters-sidebar",
+          "settings": {
+            "title": "صفِّ النتائج بهدوء",
+            "subtitle": "اختصر الطريق: اختر القسم أو الميزانية هنا، واترك المقارنة السريعة للرف الرئيسي.",
+            "badge": "تصفية أدق",
+            "showSort": false,
+            "showCategories": true,
+            "showPriceFilter": true,
+            "clearButtonText": "ارجع للوضع الافتراضي",
+            "showMobileLabel": "تصفية أدق",
+            "hideMobileLabel": "إغلاق التصفية",
+            "mobileTitle": "لوحة التصفية السريعة",
+            "mobileSubtitle": "راجع القسم والميزانية والفرز من شاشة واحدة ثم ارجع مباشرة لرف المقارنة.",
+            "mobileApplyText": "اعرض المنتجات",
+            "mobileResetText": "ابدأ من جديد"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "spec-rack",
+          "settings": {
+            "eyebrow": "رف المقارنة",
+            "title": "الأقرب لاحتياجك الآن",
+            "subtitle": "رف أوضح للمقارنة بين اللابتوبات والتجميعات والإكسسوارات، مع بطاقات أخف وسعر أوضح من أول نظرة.",
+            "limit": 16
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail",
+          "settings": {
+            "badge": "قبل ما تحسم",
+            "title": "معلومات تريحك أثناء التصفح",
+            "subtitle": "بدل ما تدور بعدين، خليك شايف الضمان والشحن والتقسيط وإضافات المكتب من نفس صفحة المتجر.",
+            "spotlightLabel": "باقة الأسبوع",
+            "spotlightTitle": "ابدأ من الجهاز ثم كمّل مكتبك أو منصة اللعب",
+            "spotlightText": "اللابتوب أو التجميعة أولًا، ثم الشاشة والكيبورد ووحدة التوصيل من نفس الجولة بدون ما تحس بزحمة الصفحة.",
+            "ctaText": "شاهد العروض",
+            "ctaLink": "/sale",
+            "trustItems": "ضمان واضح|مدة الضمان وحق الاستبدال يظهران قبل ما تكمل الطلب.\nشحن محمي|تغليف مناسب لفئة الإلكترونيات مع متابعة بعد الإرسال.\nتقسيط ودفع مرن|اختر الأنسب قبل الانتقال للدفع النهائي.",
+            "highlights": "قرار أسرع|من أول رف\nإكسسوارات مكملة|بدون تشتيت\nشحن مصر|خلال 48 ساعة"
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "collections": {
+      "sections": [
+        {
+          "type": "featured-collections",
+          "variant": "fast-nav-grid",
+          "settings": {
+            "title": "كل الأقسام",
+            "subtitle": "قسم اللابتوبات، التجميعات، الشاشات، والإكسسوارات داخل تصفح سريع وواضح.",
+            "limit": 4,
+            "ctaText": "ارجع للمتجر",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "list-card",
+          "settings": {
+            "title": "منتجات مختارة من كل قسم",
+            "limit": 8
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "command-stage"
+        },
+        {
+          "type": "product-info",
+          "variant": "command-specs",
+          "settings": {
+            "descriptionTitle": "المواصفات والتفاصيل",
+            "shippingTitle": "الشحن والاستلام",
+            "shippingText": "تجهيز خلال 24 إلى 48 ساعة عمل داخل المدن الرئيسية، مع تغليف مناسب للإلكترونيات ورسالة متابعة بعد الشحن.",
+            "guaranteesTitle": "ضمانات PC HUB",
+            "guaranteeStyle": "grid",
+            "guaranteeItems": "ضمان واضح|مدة الضمان موضحة قبل الطلب.\nدعم توافق|نساعدك تتأكد من الاختيار المناسب.\nشحن آمن|تغليف مناسب لفئة الإلكترونيات."
+          }
+        },
+        {
+          "type": "delivery-proof",
+          "variant": "minimal",
+          "settings": {
+            "estimatedDeliveryLabel": "موعد الوصول المتوقع"
+          }
+        },
+        {
+          "type": "low-stock",
+          "variant": "minimal",
+          "settings": {
+            "lowStockLabel": "كمية محدودة",
+            "lowStockMessage": "متبقي {count} فقط بالسعر الحالي"
+          }
+        },
+        {
+          "type": "trusted-badges",
+          "variant": "minimal",
+          "settings": {
+            "trustedBadgeTitle": "قبل ما تحسم الطلب",
+            "trustedBadgeSubtitle": "ثلاث رسائل قصيرة أهم من كلام تسويقي طويل.",
+            "trustedBadgeItems": "ضمان مكتوب,شحن داخل مصر,دعم توافق قبل الشراء",
+            "trustedBadgeStyle": "minimal"
+          }
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact",
+          "settings": {
+            "title": "كمّل تجهيزتك",
+            "subtitle": "إضافات عملية تكمل الجهاز أو المكتب بدون مشتتات.",
+            "limit": 3
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "command-alternatives",
+          "settings": {
+            "title": "بدائل جاهزة للمقارنة",
+            "subtitle": "موديلات قريبة في نفس الفئة مع فرق أوضح في الاستخدام والسعر قبل ما تغيّر قرارك.",
+            "limit": 4
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "command-proof",
+          "settings": {
+            "title": "آراء العملاء",
+            "subtitle": "مراجعات مختصرة من استخدام حقيقي مع إشارات تطمّن على الضمان والشحن.",
+            "reviewLimit": 4
+          }
+        },
+        {
+          "type": "viewer-counter",
+          "variant": "minimal",
+          "settings": {
+            "fakeVisitorMessage": "عليه اهتمام الآن"
+          }
+        }
+      ],
+      "pageGoal": "trust",
+      "compositionPolicy": {
+        "pageGoal": "trust",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "command-cart",
+          "settings": {
+            "title": "سلة التجهيز",
+            "subtitle": "راجع الأجهزة والإضافات، ولو محتاج فاتورة أو مراجعة توافق سيب ملاحظتك قبل اعتماد الطلب.",
+            "continueShoppingText": "تابع التسوق",
+            "headerBadge": "محطة المراجعة الأخيرة",
+            "serviceHighlights": [
+              "تغليف محمي",
+              "ضمان على القطع المعتمدة",
+              "مساعدة توافق قبل الإرسال"
+            ],
+            "serviceNoteLabel": "قبل ما نؤكد الطلب",
+            "serviceNote": "لو محتاج فاتورة باسم شركة أو مراجعة توافق قطعة مع جهازك، اكتبها في الملاحظات وسنراجعها قبل الشحن."
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "command-summary",
+          "settings": {
+            "title": "ملخص الطلب",
+            "checkoutButtonText": "إتمام الطلب",
+            "showTrustRow": true,
+            "showFreeShippingProgress": true,
+            "headerBadge": "قرار الشراء",
+            "freeShippingTitle": "أضف {{remaining}} للحصول على شحن محمي مجاني",
+            "freeShippingReachedText": "تم تفعيل الشحن المحمي المجاني",
+            "shippingHelpText": "الشحن النهائي يتحدد حسب المحافظة ونوع الجهاز في خطوة الدفع.",
+            "assuranceTitle": "يشملك مع الطلب",
+            "assuranceItems": [
+              "تغليف محمي للأجهزة الحساسة",
+              "ضمان مكتوب على القطع المعتمدة",
+              "تأكيد هاتفي قبل الشحن عند الحاجة"
+            ],
+            "nextStepsTitle": "بعد الضغط على إتمام الطلب",
+            "nextSteps": [
+              "تدخل لخطوة العنوان والدفع",
+              "نحسب الشحن حسب المحافظة",
+              "نراجع الطلب قبل التجهيز"
+            ]
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "اعتماد آمن",
+            "message": "نراجع البيانات والموديل والشحن النهائي قبل التنفيذ، مع تحديثات واضحة من لحظة التأكيد حتى الاستلام.",
+            "saleLabel": "مراجعة قبل الشحن",
+            "shippingLabel": "متابعة الطلب",
+            "returnLabel": "ضمان مكتوب"
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "command-checkout",
+          "settings": {
+            "contactTitle": "بيانات الاستلام",
+            "contactDescription": "اكتب الاسم والموبايل الصحيحين لتأكيد الموديل وموعد التوصيل أو أي مراجعة قبل الشحن.",
+            "shippingTitle": "عنوان التسليم",
+            "shippingDescription": "العنوان الدقيق يقلل المكالمات ويُسرّع تسليم الأجهزة والإكسسوارات بأمان.",
+            "notesTitle": "ملاحظات الفاتورة أو التوافق",
+            "notesDescription": "اكتب لو محتاج فاتورة باسم شركة، مكالمة قبل الشحن، أو مراجعة توافق قطعة مع جهازك.",
+            "notesPlaceholder": "مثال: محتاج فاتورة ضريبية / تأكيد منفذ HDMI / الاتصال قبل الوصول",
+            "assuranceBadge": "إتمام آمن",
+            "assuranceTitle": "3 خطوات واضحة من البيانات حتى اعتماد الطلب.",
+            "assuranceItems": [
+              "تأكيد بياناتك قبل التنفيذ",
+              "تغليف محمي للأجهزة والإكسسوارات",
+              "متابعة معك حتى التسليم"
+            ]
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "command-payment",
+          "settings": {
+            "title": "الدفع وتأكيد التنفيذ",
+            "subtitle": "اختر وسيلة الدفع الأنسب وسنراجع الشحن النهائي قبل اعتماد الطلب.",
+            "summaryTitle": "الإجمالي قبل الاعتماد",
+            "summaryDescription": "السعر النهائي يشمل الشحن الفعلي والخصم ويظهر بوضوح قبل التأكيد.",
+            "confirmOrderText": "اعتماد الطلب",
+            "codLabel": "دفع عند الاستلام",
+            "cardLabel": "بطاقة بنكية",
+            "walletLabel": "محفظة إلكترونية",
+            "securityText": "بياناتك محفوظة والتأكيد النهائي يمر بمراجعة سريعة قبل التنفيذ",
+            "codDesc": "الأفضل للطلبات عالية القيمة مع دفع عند الاستلام بعد التأكيد",
+            "cardDesc": "أنسب لو تريد تسريع تجهيز الطلب والدخول مباشرة في التنفيذ",
+            "walletDesc": "تحويل سريع من الموبايل مع متابعة واضحة وتأكيد على نفس اليوم",
+            "assuranceBadge": "طمأنة قبل الدفع",
+            "assuranceTitle": "قبل ما تؤكد",
+            "assuranceItems": [
+              "نراجع العنوان والموديل المطلوب",
+              "نثبت تكلفة الشحن حسب المحافظة",
+              "نرسل متابعة واضحة حتى الاستلام"
+            ],
+            "postConfirmStepsTitle": "بعد تأكيد الطلب",
+            "postConfirmSteps": [
+              "يصلك رقم الطلب فورًا",
+              "نراجع توفر القطع والتجهيز",
+              "ننسق معك الشحن أو التأكيد النهائي"
+            ]
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "command-summary",
+          "settings": {
+            "title": "مراجعة أخيرة",
+            "subtitle": "تذكير سريع بما يشملك بعد اعتماد الطلب.",
+            "showCouponField": false,
+            "showFreeShippingProgress": false,
+            "hideCheckoutButton": true,
+            "headerBadge": "قبل التأكيد",
+            "assuranceTitle": "تذكير سريع",
+            "assuranceItems": [
+              "التغليف المحمي يظل مفعّلًا مع الأجهزة الحساسة",
+              "سنراجع العنوان والهاتف قبل التنفيذ",
+              "يظهر رقم الطلب فور اعتماده"
+            ],
+            "nextStepsTitle": "بعد الاعتماد",
+            "nextSteps": [
+              "يصلك رقم الطلب مباشرة",
+              "نراجع التوفر والتجهيز",
+              "ننسق معك الشحن أو المتابعة النهائية"
+            ]
+          }
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "settings": {
+            "title": "تم تسجيل طلبك وجارٍ مراجعته",
+            "description": "رقم الطلب عندك جاهز، ونحن نراجع التوفر والتغليف والشحن قبل التنفيذ حتى تستلم التجهيزة بشكل واضح وآمن.",
+            "continueShoppingText": "تابع تصفح الأجهزة",
+            "orderNumberPrefix": "رقم الطلب:",
+            "supportText": "لو محتاج تعديل موديل أو فاتورة شركة تواصل معنا عبر",
+            "statusLabel": "مراجعة وتجهيز",
+            "whatsappSupportLabel": "راجع الطلب على واتساب",
+            "trackOrderTitle": "تابع حالة التجهيز",
+            "trackOrderDescription": "أدخل نفس رقم الموبايل المستخدم وقت الطلب لمعرفة آخر تحديث على المراجعة والتجهيز والشحن.",
+            "trackOrderButtonText": "اعرض آخر تحديث",
+            "trackOrderPhoneLabel": "رقم الموبايل المستخدم وقت الطلب",
+            "reorderTitle": "أعد نفس التجهيزة بسرعة",
+            "reorderDescription": "ارجّع نفس الجهاز والإضافات إلى السلة مرة واحدة لو تريد تكرار الطلب أو تجهيز طلب مشابه.",
+            "reorderButtonText": "أضف نفس التجهيزة للسلة",
+            "reorderSuccessText": "رجّعنا نفس التجهيزة إلى السلة.",
+            "recommendedTitle": "إضافات تكمل الطلب",
+            "recommendedSubtitle": "شاشات وملحقات وترقيات أقرب لنفس قرار الشراء لو حبيت تكمل الطلب من نفس الرحلة.",
+            "recommendedBadge": "ترشيحات ما بعد الاعتماد",
+            "recommendedCtaLabel": "أضف بسرعة",
+            "recommendedChooseOptionsLabel": "راجع الخيارات",
+            "recommendedVariantChoicesLabel": "خيارات الجهاز"
+          }
+        }
+      ]
+    },
+    "sale": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "عروض الكمبيوتر",
+            "message": "خصومات مختارة على لابتوبات وإكسسوارات وشاشات مع فرق سعر واضح من أول نظرة.",
+            "saleLabel": "حتى 12% خصم",
+            "shippingLabel": "شحن 24-48 ساعة",
+            "returnLabel": "ضمان واضح"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "compact",
+          "settings": {
+            "title": "العروض الحالية",
+            "subtitle": "منتجات مخفضة بترتيب واضح للسعر والمواصفات.",
+            "limit": 12,
+            "saleOnly": true
+          }
+        }
+      ]
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشحن",
+            "title": "الشحن والتوصيل",
+            "subtitle": "المهم فقط قبل ما تؤكد طلبك.",
+            "body": "نجهز معظم الطلبات خلال 24 إلى 48 ساعة عمل داخل المدن الرئيسية، وتظهر رسوم الشحن قبل التأكيد حسب المحافظة والوزن.\n\nالأجهزة تُغلف بعناية، وبعد خروج الطلب للتوصيل تصلك رسالة متابعة برقم الشحنة وحالتها.",
+            "detailsTitle": "معلومات سريعة",
+            "details": "مدة التجهيز|24 إلى 48 ساعة عمل\nالمتابعة|رسالة بحالة الطلب بعد الشحن\nالاستلام|داخل المدن الرئيسية أولًا",
+            "ctaText": "ارجع للمتجر",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "returns": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الاستبدال",
+            "title": "الاستبدال والاسترجاع",
+            "subtitle": "سياسة مختصرة وواضحة بدل فقرات طويلة.",
+            "body": "إذا وصل المنتج بحالة غير سليمة أو ظهر اختلاف واضح عن المواصفات المعلنة، تواصل معنا مع رقم الطلب خلال المدة المحددة في السياسة.\n\nالإكسسوارات الصغيرة تتبع حالة المنتج والتغليف، والأجهزة تُراجع وفق شروط الضمان المعلنة قبل الطلب.",
+            "detailsTitle": "قبل فتح الطلب",
+            "details": "راجع المواصفات|وتأكد من الفئة المناسبة قبل الحسم\nاحتفظ بالتغليف|في حالة الحاجة للمراجعة أو الاستبدال\nتواصل معنا|برقم الطلب ووصف المشكلة",
+            "ctaText": "تواصل معنا",
+            "ctaLink": "/contact"
+          }
+        }
+      ]
+    },
+    "warranty": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الضمان",
+            "title": "الضمان والدعم",
+            "subtitle": "نعرض تفاصيل الضمان والدعم بوضوح قبل الدفع.",
+            "body": "مدة الضمان تختلف حسب فئة المنتج والشركة، لذلك نعرضها بوضوح على المنتجات الأساسية ونربطها برسائل الدعم والتوافق قبل الطلب.\n\nإذا احتجت استفسارًا عن التوافق أو الترقية أو شروط الضمان، تواصل معنا قبل إتمام الطلب لنساعدك تختار بشكل أدق.",
+            "detailsTitle": "ما الذي نوضحه؟",
+            "details": "مدة الضمان|حسب المنتج والشركة\nالتوافق|مساعدة قبل الطلب في الحالات المهمة\nالدعم|متابعة بعد الشراء للحالات المغطاة",
+            "ctaText": "ارجع للمتجر",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    }
+  }
+}

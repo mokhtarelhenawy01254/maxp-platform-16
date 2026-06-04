@@ -1,0 +1,813 @@
+{
+  "id": "closet-os",
+  "name": "Closet OS",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "169 18% 18%",
+      "primaryForeground": "48 33% 96%",
+      "secondary": "42 28% 90%",
+      "secondaryForeground": "169 18% 18%",
+      "accent": "149 28% 42%",
+      "accentForeground": "48 33% 96%",
+      "background": "42 36% 96%",
+      "foreground": "168 13% 17%",
+      "muted": "42 20% 86%",
+      "mutedForeground": "165 9% 36%",
+      "border": "40 16% 74%",
+      "card": "45 31% 98%",
+      "cardForeground": "168 13% 17%",
+      "ring": "149 28% 42%"
+    },
+    "typography": {
+      "headingFont": "\"IBM Plex Sans Arabic\", \"Cairo\", sans-serif",
+      "bodyFont": "\"IBM Plex Sans Arabic\", \"Cairo\", sans-serif",
+      "baseSize": "15px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.1rem",
+      "boxShadow": "0 22px 56px -42px rgba(31, 42, 38, 0.24)",
+      "hoverShadow": "0 30px 72px -40px rgba(31, 42, 38, 0.3)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
+      "surfaceOpacity": "1"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Closet OS",
+    "description": "قمصان وبناطيل وطبقات يومية بتركب بسهولة من الشغل للمشاوير لآخر الأسبوع."
+  },
+  "preview": {
+    "imageUrl": "/assets/themes/closet-os/preview.jpg",
+    "colors": [
+      "169 18% 18%",
+      "42 36% 96%",
+      "149 28% 42%"
+    ]
+  },
+  "header": {
+    "brandName": "Closet OS",
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      {
+        "label": "الرئيسية",
+        "to": "/"
+      },
+      {
+        "label": "الخزانة",
+        "to": "/shop"
+      },
+      {
+        "label": "خطة الأسبوع",
+        "to": "/collections"
+      },
+      {
+        "label": "الأساسيات",
+        "to": "/shop?search=أساسي"
+      },
+      {
+        "label": "التخفيضات",
+        "to": "/sale"
+      },
+      {
+        "label": "المقاسات",
+        "to": "/size-guide"
+      }
+    ],
+    "actions": [
+      {
+        "label": "ابدأ من الأسبوع",
+        "to": "/collections",
+        "style": "primary"
+      }
+    ]
+  },
+  "footer": {
+    "description": "قمصان مرتبة، طبقات خفيفة، وقطع بتتكرر بسهولة من أول الشغل لآخر الأسبوع.",
+    "copyrightText": "© 2026 Closet OS. جميع الحقوق محفوظة.",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "tiktok": "https://tiktok.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
+    "navigation": [
+      {
+        "title": "التسوق",
+        "links": [
+          {
+            "label": "كل القطع",
+            "to": "/shop"
+          },
+          {
+            "label": "خطة الأسبوع",
+            "to": "/collections"
+          },
+          {
+            "label": "التخفيضات",
+            "to": "/sale"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "دليل المقاسات",
+            "to": "/size-guide"
+          },
+          {
+            "label": "الشحن",
+            "to": "/shipping"
+          },
+          {
+            "label": "تواصل معنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "سياسة الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط والأحكام",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "خزانة الأسبوع",
+            "message": "ابدأ من يومك: شغل، مشوار، سفر خفيف، أو أساسيات هترجع لها أكتر من مرة.",
+            "saleLabel": "خصم الكابسولة 10%",
+            "shippingLabel": "شحن خلال 48 ساعة",
+            "returnLabel": "استبدال 14 يوم",
+            "ctaText": "ابدأ من الخطة",
+            "ctaLink": "/collections"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "wardrobe-planner",
+          "settings": {
+            "eyebrow": "خطة الأسبوع",
+            "title": "خزانة الأسبوع\nمن غير زحمة",
+            "subtitle": "قمصان نضيفة، تيشيرتات قاعدة، وطبقات خفيفة تعرف بسرعة إمتى تلبسها ومع إيه تركبها.",
+            "ctaText": "ابنِ الأسبوع",
+            "ctaLink": "/collections",
+            "secondaryCtaText": "افتح الخزانة",
+            "secondaryCtaLink": "/shop",
+            "backgroundImage": "/assets/themes/closet-os/products/weekend-capsule-stone.jpg",
+            "panelImage": "/assets/themes/closet-os/products/weekday-poplin-cloud.jpg",
+            "highlights": [
+              {
+                "label": "التكرار",
+                "value": "3-5 لبسات"
+              },
+              {
+                "label": "العناية",
+                "value": "غسيل بارد"
+              },
+              {
+                "label": "الروتين",
+                "value": "شغل + مشوار"
+              },
+              {
+                "label": "الشحن",
+                "value": "48 ساعة"
+              }
+            ],
+            "floatingCards": [
+              {
+                "badge": "الاثنين / شغل",
+                "title": "قميص + بنطلون",
+                "value": "بداية آمنة",
+                "description": "اختيار بسيط للشغل أو الجامعة: قطعة فوق مرتبة وبنطلون ينفع تكرره أكتر من مرة.",
+                "tone": "light"
+              },
+              {
+                "badge": "الأربع / إعادة لبس",
+                "title": "تيشيرت القاعدة",
+                "value": "أساس متكرر",
+                "description": "قطعة تلبسها لوحدها أو تحت الطبقات وبتقلل حيرة اللبس في الأيام السريعة.",
+                "tone": "glass"
+              },
+              {
+                "badge": "الجمعة / طبقة خفيفة",
+                "title": "أوفرشيرت خفيف",
+                "value": "طبقة الإغلاق",
+                "description": "لما تحتاج حضور أكتر من غير ما تغيّر اللوك كله أو تشتري طقم جديد.",
+                "tone": "indigo"
+              },
+              {
+                "badge": "الويك إند / كابسولة",
+                "title": "طقم نهاية الأسبوع",
+                "value": "أسرع قرار",
+                "description": "حل جاهز للسفر الخفيف أو خروجة طويلة لما ما تبقاش عايز تركّب اللوك من الصفر.",
+                "tone": "light"
+              }
+            ],
+            "stickers": [
+              {
+                "label": "جاهز للتكرار",
+                "tone": "primary",
+                "position": "left-mid"
+              },
+              {
+                "label": "غسيل بارد",
+                "tone": "outline",
+                "position": "right-mid"
+              },
+              {
+                "label": "أسبوع 01",
+                "tone": "light",
+                "position": "right-bottom"
+              }
+            ],
+            "panelEyebrow": "خريطة اللبس",
+            "panelTitle": "كل قطعة لها خانة",
+            "panelSubtitle": "اعرف القطعة هتدخل في يومك إزاي، إيه اللي يكملها، وإيه اللي يستاهل تضيفه معاها.",
+            "panelMetricLabel": "أيام الشغل",
+            "panelMetricValue": "5 أيام",
+            "panelNote": "مناسبة للأساسيات اليومية، الطبقات الخفيفة، والكابسولات الجاهزة."
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "service-clarity",
+          "settings": {
+            "title": "شراء يومي أوضح",
+            "subtitle": "كل كارت بيقولك تلبس القطعة فين، هتكررها إزاي، وإيه اللي يكملها.",
+            "image": "/assets/themes/closet-os/products/laundry-tote-sage.jpg",
+            "imageAlt": "شنطة قماش يومية",
+            "items": [
+              {
+                "icon": "clipboard",
+                "title": "يكمل مع إيه",
+                "description": "تبدأ بإيه؟ وإيه اللي يكمل القطعة خلال الأسبوع."
+              },
+              {
+                "icon": "grid",
+                "title": "يتكرر إزاي",
+                "description": "التركيز على القطع اللي هتلبسها في أكتر من مناسبة."
+              },
+              {
+                "icon": "target",
+                "title": "عناية أوضح",
+                "description": "معلومة القماش والعناية قريبة من قرار الشرا."
+              },
+              {
+                "icon": "shield",
+                "title": "ثقة أولًا",
+                "description": "الشحن والاستبدال باينين قبل الدفع."
+              }
+            ]
+          }
+        },
+        {
+          "type": "shopping-intents",
+          "settings": {
+            "badge": "خطط أسهل",
+            "title": "ابدأ من يومك",
+            "subtitle": "ابدأ من استخدامك اليومي واختصر الطريق للقطع اللي هتخدمه.",
+            "items": "شغل كل يوم|قميص + بنطلون مرتب|اختيارات مريحة ونضيفة للمكتب والجامعة والاجتماعات الخفيفة.|/shop?search=قميص|primary|شغل\nالقاعدة المتكررة|تيشيرتات وأسفل بسيط|قطع هتعيش معاك أكتر من مرة في الأسبوع من غير ما تزهق منها بسرعة.|/shop?search=تيشيرت|slate|أساس\nطبقة خفيفة|أوفرشيرت وكارديجان|لما تحتاج حضور أكتر فوق القاعدة الأساسية من غير ثقل.|/shop?search=طبقة|accent|طبقة\nنهاية الأسبوع|كابسولات جاهزة|طقم مختصر للسفر الخفيف أو الخروجات الطويلة.|/sale|emerald|ويك إند"
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "minimal-card",
+          "settings": {
+            "title": "اختيارات اليوم",
+            "subtitle": "بطاقات هادية بتوضح الاستخدام، التكرار، وسهولة الدمج مع باقي القطع.",
+            "limit": 8,
+            "contentAlign": "start"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "تابع رجوع المقاسات وخطط الأسبوع",
+            "subtitle": "سيب بريدك عشان يوصلك رجوع المقاسات والألوان والقطع اللي تكمل لبسك اليومي.",
+            "buttonText": "اشترك الآن",
+            "placeholder": "اكتب بريدك الإلكتروني"
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "افتح الخزانة",
+            "message": "دوّر باسم القطعة أو بنوع يومك، وبعدها راجع السعر والعناية وإيه اللي يكمل اللبسة بسرعة.",
+            "saleLabel": "خصم الكابسولة 10%",
+            "shippingLabel": "شحن 48 ساعة",
+            "returnLabel": "استبدال 14 يوم",
+            "ctaText": "خطة الأسبوع",
+            "ctaLink": "/collections"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "service-clarity",
+          "settings": {
+            "title": "فلترة أقرب للواقع",
+            "subtitle": "ابدأ بالقميص أو التيشيرت أو الطبقة، وبعدها قارن اللي يخدم يومك بجد.",
+            "image": "/assets/themes/closet-os/products/commute-trouser-ink.jpg",
+            "imageAlt": "بنطال يومي",
+            "items": [
+              {
+                "icon": "search",
+                "title": "ابحث باسم القطعة",
+                "description": "قميص، تيشيرت، طبقة، بنطلون أو طقم."
+              },
+              {
+                "icon": "grid",
+                "title": "مقارنة أسرع",
+                "description": "بطاقات أهدى وتنظيم أوضح."
+              },
+              {
+                "icon": "clipboard",
+                "title": "عناية وتكرار",
+                "description": "ملخص سريع للعناية والتكرار."
+              },
+              {
+                "icon": "shield",
+                "title": "شراء أوضح",
+                "description": "الشحن والاستبدال باينين من البداية."
+              }
+            ]
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "minimal-toolbar",
+          "settings": {
+            "title": "ابحث في القطع اليومية",
+            "subtitle": "ابدأ من القطعة أو من الروتين اللي بتحاول ترتبه الأسبوع ده.",
+            "searchPlaceholder": "ابحث عن قميص، تيشيرت، طبقة، بنطلون أو طقم",
+            "allCategoriesLabel": "كل القطع",
+            "resultsLabel": "قطعة",
+            "clearButtonText": "مسح الفلاتر",
+            "stickyLabel": "خريطة الخزانة",
+            "chipLimit": 6
+          }
+        },
+        {
+          "type": "filters-sidebar",
+          "settings": {
+            "title": "فلتر الخزانة"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "minimal-card",
+          "settings": {
+            "title": "كل القطع",
+            "subtitle": "شبكة هادية بس مقصودة: قرار اللبس الأول، وبعدها الشكل والسعر والتوافق.",
+            "limit": 12,
+            "clearButtonText": "عرض كل القطع"
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "campaign-rail",
+          "settings": {
+            "badge": "ابنِ الأسبوع",
+            "title": "كمّل الأسبوع بدل ما تضيف قطعة وخلاص",
+            "subtitle": "أضف اللي يكمل اللبسة نفسها بدل قطعة معزولة مش هتدخل في يومك.",
+            "spotlightLabel": "دفعة الكابسولة",
+            "spotlightTitle": "زوّد القطعة التالتة بسعر أحسن على اختيارات الأسبوع",
+            "spotlightText": "مفيد للقمصان والتيشيرتات والبناطيل اللي بتتكرر بين الشغل والمشاوير والسفر الخفيف.",
+            "ctaText": "ابدأ من الخطة",
+            "ctaLink": "/collections",
+            "trustItems": "التوافق|بنرشح اللي يركب مع القطعة قبل ما يزاحمها.\nالعناية|معلومات القماش والغسيل قريبة من القرار.\nالشحن|تكلفة الشحن بتبان قبل ما تثبت الطلب.",
+            "highlights": "تكرار أعلى|3-5 لبسات\nغسيل بارد|أسهل عناية\nاستبدال|14 يوم"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "رجوع الألوان والمقاسات",
+            "subtitle": "سيب بريدك عشان يوصلك رجوع المقاس أو اللون اللي يكمل خطتك الأسبوعية."
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "stacked"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion",
+          "settings": {
+            "descriptionTitle": "القماش والاستعمال اليومي",
+            "shippingTitle": "الشحن والاستبدال",
+            "shippingText": "هنوضح نوع القماش، طبيعة القصّة، وتعليمات العناية قبل ما تضيف للسلة. المقاسات المؤهلة ينفع تتبدل خلال المدة المعلنة.",
+            "guaranteesTitle": "إيه اللي هتضيفه القطعة دي؟",
+            "guaranteeStyle": "grid",
+            "guaranteeItems": "التكرار|تنفع تلبسها أكتر من مرة خلال الأسبوع.\nالتوافق|أنسب القطع اللي تركب معاها في نفس اللبسة أو نفس اليوم.\nالعناية|هتحتاج غسيل بارد أو عناية أخف.",
+            "sizeGuideText": "دليل المقاسات",
+            "sizeGuideLink": "/size-guide",
+            "fitNote": "لو إنت بين مقاسين وعايز مساحة أوسع للطبقات، غالبًا ابدأ بالمقاس الأكبر."
+          }
+        },
+        {
+          "type": "conversion-stack",
+          "variant": "minimal",
+          "settings": {
+            "countdownStyle": "minimal",
+            "lowStockStyle": "minimal",
+            "estimatedDeliveryStyle": "timeline",
+            "fakeVisitorStyle": "minimal",
+            "soldCounterStyle": "minimal",
+            "backInStockStyle": "inline"
+          }
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact",
+          "settings": {
+            "title": "يكمل نفس الأسبوع",
+            "subtitle": "قطع أقرب للتوافق الحقيقي مع القطعة دي بدل ترشيحات عشوائية بعيدة عن نفس الاستخدام.",
+            "limit": 3
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "list",
+          "settings": {
+            "title": "بدائل داخل نفس المنطق",
+            "subtitle": "نفس فكرة اللبس لكن بقماش أو لون أو قصّة مختلفة عشان تقارن أسرع.",
+            "limit": 4
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial",
+          "settings": {
+            "showMediaFeed": false,
+            "reviewLimit": 4,
+            "listTitle": "مراجعات العملاء"
+          }
+        }
+      ],
+      "pageGoal": "trust",
+      "compositionPolicy": {
+        "pageGoal": "trust",
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "راجع القطع قبل الطلب",
+            "subtitle": "تأكد من المقاس والكمية وإن القطع فعلاً ماشية مع خطتك قبل ما تكمل للدفع.",
+            "continueShoppingText": "العودة للتسوق",
+            "emptyTitle": "السلة ما زالت فارغة",
+            "emptyText": "ابدأ بتيشيرت قاعدة أو بطقم جاهز وبعدها ارجع هنا وكمّل الطلب.",
+            "productLabel": "القطعة",
+            "removeLabel": "إزالة القطعة"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted",
+          "settings": {
+            "title": "ملخص الطلب",
+            "subtitle": "الإجمالي، الشحن، والكود في مكان واحد مع تذكير سريع بالعناية والاستبدال.",
+            "shippingHelpText": "رسوم الشحن بتظهر بعد ما تختار المحافظة في بيانات التوصيل.",
+            "couponPlaceholder": "كود الخصم إن وجد",
+            "couponButtonText": "تطبيق الكود",
+            "checkoutButtonText": "الانتقال إلى الدفع",
+            "secureCheckoutText": "الدفع آمن وبياناتك محمية",
+            "returnsText": "استبدال واضح على القطع المؤهلة",
+            "showTrustRow": true,
+            "showFreeShippingProgress": true
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "ثبّت الأسبوع",
+            "message": "راجع المقاس والعنوان وطريقة الدفع. كل حاجة تخص الشحن والاستبدال باينة قدامك قبل تثبيت الطلب.",
+            "saleLabel": "استبدال واضح",
+            "shippingLabel": "شحن محافظات",
+            "returnLabel": "دفع آمن"
+          }
+        },
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "مراجعة الطلب",
+            "subtitle": "القطع والكمية وسعرها باينين قدامك قبل ما تأكد البيانات."
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "split",
+          "settings": {
+            "contactTitle": "بيانات التواصل",
+            "contactDescription": "بنطلب أقل بيانات ممكنة عشان نأكد الطلب والتوصيل ونتابع معاك وقت الحاجة.",
+            "shippingTitle": "عنوان التوصيل",
+            "shippingDescription": "المحافظة والعنوان مهمين عشان نحسب الشحن ونوضح وقت الوصول المتوقع.",
+            "notesTitle": "ملاحظات على الطلب",
+            "notesDescription": "مثلاً: أفضل مكالمة قبل التوصيل أو محتاج تبديل المقاس لو القطعة طلعت أضيق من المتوقع.",
+            "fullNamePlaceholder": "مثال: أحمد محمد",
+            "emailPlaceholder": "you@example.com",
+            "notesPlaceholder": "أي ملاحظة عن المقاس أو العنوان أو وقت الاستلام"
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "cards",
+          "settings": {
+            "title": "اختر طريقة الدفع",
+            "subtitle": "راجع الملخص النهائي واختار طريقة الدفع المتاحة لطلبك.",
+            "summaryTitle": "الملخص النهائي",
+            "summaryDescription": "الإجمالي، الشحن، وطريقة السداد باينين قدامك بوضوح.",
+            "confirmOrderText": "تأكيد الطلب",
+            "securityText": "الدفع مؤمّن ومشفّر بالكامل"
+          }
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "settings": {
+            "title": "تم تأكيد طلبك بنجاح",
+            "description": "طلبك دخل التجهيز. لو احتجنا نأكد المقاس أو العنوان هنتواصل معاك قبل خروج الشحنة.",
+            "continueShoppingText": "العودة للتسوق",
+            "orderNumberPrefix": "رقم الطلب:",
+            "supportText": "محتاج تعديل على الطلب أو متابعة أسرع؟ كلمنا",
+            "whatsappSupportLabel": "واتساب الدعم",
+            "trackOrderTitle": "تابع حالة الطلب",
+            "trackOrderDescription": "استخدم نفس رقم الموبايل اللي سجلت بيه الطلب عشان توصلك آخر تحديثات.",
+            "trackOrderButtonText": "تحقّق من حالة الطلب",
+            "trackOrderPhoneLabel": "رقم الهاتف المستخدم في الطلب",
+            "reorderTitle": "أعد نفس القطع بسهولة",
+            "reorderDescription": "لو الخطة ظبطت معاك، تقدر تضيف نفس القطع للسلة مرة تانية.",
+            "reorderButtonText": "أضف نفس القطع",
+            "reorderSuccessText": "أضفنا القطع نفسها إلى السلة مرة أخرى.",
+            "recommendedTitle": "قد يعجبك أيضًا",
+            "recommendedSubtitle": "ترشيحات لنفس الروتين لو حابب تكمّل اللبسة.",
+            "recommendedBadge": "اقتراح بعد الطلب",
+            "recommendedCtaLabel": "أضف للسلة",
+            "recommendedChooseOptionsLabel": "اختر المقاس",
+            "showTimeline": true,
+            "showTrackOrder": true,
+            "showRecommended": true,
+            "showReorder": true
+          }
+        }
+      ]
+    },
+    "collections": {
+      "sections": [
+        {
+          "type": "featured-collections",
+          "variant": "standard-showcase",
+          "settings": {
+            "title": "خطة الأسبوع بدل الكوليكشن",
+            "subtitle": "شغل، أساسيات، طبقة خفيفة، أو كابسولة لآخر الأسبوع.",
+            "limit": 4,
+            "ctaText": "العودة للتسوق",
+            "ctaLink": "/shop",
+            "collections": [
+              {
+                "title": "بداية الشغل",
+                "subtitle": "قميص مرتب مع بنطلون ثابت لأيام المكتب والجامعة.",
+                "image": "/assets/themes/closet-os/products/weekday-poplin-cloud.jpg",
+                "link": "/shop?search=قميص"
+              },
+              {
+                "title": "القاعدة اليومية",
+                "subtitle": "تيشيرت وبنطلون بسيط هتكررهم أكتر من مرة من غير مجهود.",
+                "image": "/assets/themes/closet-os/products/relay-tee-sand.jpg",
+                "link": "/shop?search=تيشيرت"
+              },
+              {
+                "title": "طبقة خفيفة",
+                "subtitle": "أوفرشيرت أو كارديجان يدي حضور فوق القاعدة من غير ثقل.",
+                "image": "/assets/themes/closet-os/products/slot-overshirt-sage.jpg",
+                "link": "/shop?search=طبقة"
+              },
+              {
+                "title": "نهاية الأسبوع",
+                "subtitle": "كابسولة جاهزة للسفر الخفيف أو الخروجات الطويلة.",
+                "image": "/assets/themes/closet-os/products/weekend-capsule-stone.jpg",
+                "link": "/sale"
+              }
+            ]
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "minimal-card",
+          "settings": {
+            "title": "قطع مختارة من خطة الأسبوع",
+            "subtitle": "اختيارات مرتبة على حسب الاستخدام اليومي مش على حسب الزحمة.",
+            "limit": 12
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "sale": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "توفير الويك إند",
+            "message": "خصومات على القطع اللي بتبني لبس بيتكرر وسهل تلبّقه.",
+            "saleLabel": "خصومات الكابسولة",
+            "shippingLabel": "شحن سريع",
+            "returnLabel": "استبدال أوضح",
+            "ctaText": "كل القطع",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "minimal-card",
+          "settings": {
+            "title": "العروض الحالية",
+            "subtitle": "عروض على قطع لسه هتخدم يومك حتى بعد الخصم.",
+            "limit": 12,
+            "saleOnly": true
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "تابع رجوع الألوان والعروض",
+            "subtitle": "سجّل بريدك عشان توصلك العروض الجديدة ورجوع المقاسات قبل ما تخلص.",
+            "buttonText": "اشترك الآن"
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "size-guide": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "المقاسات",
+            "title": "كيف تختار المقاس المناسب",
+            "subtitle": "الدليل ده يساعدك تفهم نوع القصّة والقطعة هتقعد عليك إزاي فعليًا، مش مجرد رقم مقاس.",
+            "body": "ابدأ الأول من نوع القصّة: القطعة مستقيمة، مريحة، ولا قريبة من الجسم؟ المعلومة دي أهم من الرقم لوحده لأنها بتفرق في إحساس اللبس طول الأسبوع.\n\nلو إنت بين مقاسين وبتحب مساحة أوسع للطبقات، غالبًا ابدأ بالمقاس الأكبر. إنما لو القطعة معمولة بقصّة نضيفة أو أقرب للجسم، راجع وصف المنتج قبل ما تحسم.\n\nمعلومات العناية بالقماش، طول القطعة، وهل تنفع للتكرار أو للطبقات هتلاقيها كمان في صفحة المنتج نفسها عشان ما تعتمدش على جدول عام وبس.",
+            "detailsTitle": "تذكير سريع",
+            "details": "قصّة ضيقة|أقرب للجسم لو عايز شكل محدد أكتر\nقصّة مستقيمة|اختيار متوازن للبسة اليومية وغالبًا هو الآمن\nقصّة مريحة|مساحة أوسع للحركة والطبقات\nبين مقاسين؟|اختار الأكبر لو بتحب راحة أكتر أو هتلبس طبقة داخلية",
+            "ctaText": "ابدأ التسوق",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشحن",
+            "title": "الشحن والتوصيل",
+            "subtitle": "كل اللي محتاج تعرفه قبل ما تأكد الطلب.",
+            "body": "بنجهّز أغلب الطلبات خلال 24 إلى 48 ساعة عمل، ورسوم الشحن بتظهر بعد ما تدخل المحافظة والعنوان في صفحة الدفع.\n\nلو الطلب فيه أكتر من قطعة أو محتاج مراجعة مقاس، بنراجع التفاصيل بسرعة قبل ما الشحنة تخرج للتوصيل.",
+            "detailsTitle": "معلومات سريعة",
+            "details": "مدة التجهيز|من 24 إلى 48 ساعة عمل\nمتابعة الشحنة|بتوصلك بعد ما نسلم الطلب لشركة التوصيل\nالشحن|بيظهر حسب المحافظة قبل تأكيد الطلب",
+            "ctaText": "العودة للتسوق",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "returns": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الاستبدال",
+            "title": "سياسة الاستبدال والاسترجاع",
+            "subtitle": "المقاسات والطبقات محتاجة كلام واضح قبل الشرا من أول لحظة.",
+            "body": "لو المنتج وصلك والمقاس مش مناسب، تقدر تطلب استبدال أو استرجاع خلال المدة المحددة بشرط إن القطعة تفضل بحالتها الأصلية وما تكونش اتلبست بره تجربة البيت.\n\nالقطع المؤهلة بنوضحها جوه صفحة المنتج نفسها عشان كل حاجة تبقى واضحة قبل ما تكمل الشرا.",
+            "detailsTitle": "أهم البنود",
+            "details": "المدة|بحسب السياسة الحالية على القطع المؤهلة\nالحالة المقبولة|القطعة تبقى بحالتها الأصلية مع التاج والتغليف\nبدء الطلب|من خلال الدعم مع رقم الطلب والمقاس المطلوب",
+            "ctaText": "تواصل معنا",
+            "ctaLink": "/contact"
+          }
+        }
+      ]
+    },
+    "contact": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الدعم",
+            "title": "تواصل معنا",
+            "subtitle": "لو عندك سؤال عن المقاسات، متابعة الطلب، أو رجوع المخزون.",
+            "body": "فريق الدعم بيرد على أسئلة الطلبات والمقاسات والشحن وما بعد البيع خلال ساعات العمل الرسمية.\n\nلو بتكلمنا على طلب قائم، ابعت رقم الطلب والمقاس اللي محتاجه عشان نراجع الحالة أسرع.",
+            "detailsTitle": "قنوات التواصل",
+            "details": "واتساب|للأسئلة السريعة والمقاسات\nالبريد الإلكتروني|للمتابعات الرسمية والشكاوى\nأوقات الدعم|من الأحد للخميس من 10 ص لـ 6 م",
+            "ctaText": "ابدأ التسوق",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الخصوصية",
+            "title": "سياسة الخصوصية",
+            "subtitle": "بنتعامل مع بياناتك إزاي وقت التصفح والطلب.",
+            "body": "بنستخدم بياناتك بس عشان نعالج الطلبات والتوصيل وخدمة ما بعد البيع.\n\nما بنشاركش بياناتك مع أي طرف مش ضروري، غير الجهات المرتبطة بإتمام الطلب زي شركات الشحن أو مزودات الدفع.",
+            "detailsTitle": "مختصر السياسة",
+            "details": "بيانات الطلب|بتستخدم للتجهيز والتوصيل وبس\nالدفع|بيتم عبر قنوات محمية\nالتسويق|تقدر تلغي الاشتراك في أي وقت",
+            "ctaText": "العودة للتسوق",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشروط",
+            "title": "الشروط والأحكام",
+            "subtitle": "الشروط العامة لإتمام الطلبات والدفع والشحن والاستبدال.",
+            "body": "باستخدام الموقع ده إنت موافق على سياسات الطلب والدفع والشحن والاستبدال الموضحة في الصفحات المرتبطة بيها.\n\nممكن بعض الأسعار أو التوافر يتغيروا حسب المخزون الحالي، وإحنا ملتزمين نوضح التكلفة النهائية قبل ما تأكد الطلب.",
+            "detailsTitle": "نقاط أساسية",
+            "details": "المخزون|حسب التوفر الفعلي وقت الطلب\nالدفع|بيظهر بوضوح قبل التأكيد\nالاستبدال|حسب السياسة المعلنة على القطع المؤهلة",
+            "ctaText": "العودة للتسوق",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    }
+  }
+}

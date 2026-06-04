@@ -1,0 +1,6 @@
+{
+  "title": "Inventory",
+  "stockLevel": "Stock Level",
+  "lowStock": "Low Stock",
+  "updateStock": "Update Stock"
+}

@@ -1,0 +1,18 @@
+{
+  "title": "Regions Analytics",
+  "subtitle": "Profitable Regions and Cities",
+  "fetchError": "Error fetching data",
+  "retry": "Retry",
+  "last7Days": "Last 7 Days",
+  "last30Days": "Last 30 Days",
+  "last90Days": "Last 90 Days",
+  "lastYear": "Last Year",
+  "revenueByRegion": "Revenue by Region",
+  "revenue": "Revenue",
+  "ordersDistribution": "Orders Distribution",
+  "regionDetails": "Region Details",
+  "region": "Region",
+  "ordersCount": "Orders Count",
+  "deliveryRate": "Delivery Rate",
+  "codAcceptanceRate": "COD Acceptance Rate"
+}

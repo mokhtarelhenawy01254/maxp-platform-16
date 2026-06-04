@@ -1,0 +1,34 @@
+{
+  "title": "تحليلات إشعارات واتساب",
+  "description": "إحصائيات وتقارير شاملة عن الإشعارات المرسلة",
+  "timeRange": {
+    "label": "الفترة الزمنية",
+    "last7Days": "آخر 7 أيام",
+    "last30Days": "آخر 30 يوم",
+    "last90Days": "آخر 90 يوم",
+    "lastYear": "آخر سنة"
+  },
+  "stats": {
+    "total": "إجمالي الإشعارات",
+    "delivered": "تم التوصيل",
+    "read": "تمت القراءة",
+    "failed": "فشل",
+    "deliveryRate": "معدل التوصيل",
+    "readRate": "معدل القراءة"
+  },
+  "charts": {
+    "byCategory": "الإشعارات حسب التصنيف",
+    "topEvents": "أكثر الأحداث إرسالاً",
+    "noData": "لا توجد بيانات"
+  },
+  "logs": {
+    "title": "سجل الإشعارات",
+    "recipient": "المستلم",
+    "type": "النوع",
+    "status": "الحالة",
+    "date": "التاريخ",
+    "noLogs": "لا توجد سجلات",
+    "rowsPerPage": "عدد الصفوف:",
+    "displayedRows": "{{from}}-{{to}} من {{count}}"
+  }
+}

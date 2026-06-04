@@ -1,0 +1,215 @@
+# Checklist قالب متجر عام
+
+## قبل التنفيذ
+
+- [ ] brief واضحة
+- [ ] الجمهور معروف
+- [ ] الهدف التجاري معروف
+- [ ] `Objective Strategy` محددة:
+  - `Sales-led`
+  - `Brand-led`
+  - `Hybrid`
+- [ ] ما يجب أن يحدث في أول زيارة واضح
+- [ ] ما لا يجب أن يطغى على الهدف واضح
+- [ ] `Mobile Experience Strategy` محددة
+- [ ] هل وضع الموبايل:
+  - `web-native`
+  - `app-like`
+  - `hybrid`
+- [ ] bottom nav / sticky CTA / filters behavior / footer minimization على الموبايل محسومة
+- [ ] 3-5 مراجع حديثة
+- [ ] إذا تم استخدام `reference theme/template` خارجي: الاسم أو الرابط موثق
+- [ ] إذا تم استخدام `reference theme/template` خارجي: الصفحات التي تمت مراجعتها موثقة
+- [ ] إذا تم استخدام `reference theme/template` خارجي: واضح ما الذي سنستخرجه منه وما الذي سنرفضه
+- [ ] إذا تم استخدام `reference theme/template` خارجي: واضح أنه `pattern inventory / capability benchmark` وليس skeleton جاهز
+- [ ] إذا كان المطلوب `reference-locked expansion pack`: اسم المرجع anchor وعدد القوالب موثق
+- [ ] إذا كان المطلوب `reference-locked expansion pack`: `DNA` المشتركة ومحاور الاختلاف بين القوالب موثقة
+- [ ] إذا كان المطلوب `reference-locked expansion pack`: واضح أن كل `critical user-facing families` داخل scope يجب أن تكون `New to library`
+- [ ] قائمة `No-Go Patterns`
+- [ ] تم حظر `box-in-box / card-inside-card / المربعات اللي جوه بعض` صراحة في surfaces البيع والحسم
+- [ ] `Design Style Definition` مكتوبة بوضوح
+- [ ] `style model name` محددة
+- [ ] واضح هل القالب يضيف model جديدة إلى `Design Style Library` أم يشتق من model موجودة
+- [ ] `art direction / mood` واضحة
+- [ ] واضح ما الذي يجب أن يشعر به المستخدم في أول 5 ثوانٍ
+- [ ] واضح ما الذي لا يجب أن يكون عليه القالب
+- [ ] `commerce style` واضحة
+- [ ] `image direction` واضحة
+- [ ] `page composition rules` واضحة
+- [ ] إذا تم استخدام `external design skill`: اسمها أو مصدرها موثق
+- [ ] إذا تم استخدام `external design skill`: سبب اختيارها واضح
+- [ ] إذا تم استخدام `external design skill`: واضح ما الذي سنأخذه منها وما الذي سنرفضه
+- [ ] إذا تم استخدام `external design skill`: واضح أنها design layer وليست source للـ `page architecture` أو `conversion flow`
+- [ ] `Theme Foundation` لا تقتصر على `primary/accent`
+- [ ] `color strategy` محددة
+- [ ] `typography strategy` محددة
+- [ ] `shape language` محددة
+- [ ] `component language` محددة
+- [ ] `interaction model` محدد
+- [ ] `page chrome rules` محددة
+- [ ] `wide-screen centering rules` محسومة، خصوصًا في `RTL`
+- [ ] `Theme Token Coverage Audit` محسومة
+- [ ] واضح ما الذي يأتي من tokens فعلية وما الذي ما زال branch داخل component
+- [ ] `Section vs Variant Decision Gate` محسومة
+- [ ] واضح ما الذي هو:
+  - `Token-only`
+  - `Variant`
+  - `Section`
+- [ ] تحديد `Variant Strategy`
+- [ ] تم حسم `variant posture`:
+  - `Mixed strategy`
+  - `All-New Variants`
+- [ ] حسم هل الـ variants ستكون:
+  - `Reuse`
+  - `Extend`
+  - `New`
+- [ ] إذا كان القالب `All-New Variants`: كل section family user-facing داخل scope محددة كـ `New`
+- [ ] إذا كان القالب `All-New Variants`: أي reuse داخلي محصور في engine / data / logic فقط وليس في surface نفسها
+- [ ] `Perceptual Novelty Gate` محددة
+- [ ] واضح ما الذي سيجعل الـ variants الجديدة تُحَس جديدة لا مجرد restyling
+- [ ] في القوالب `All-New Variants`: تم تحديد 3 تغييرات إدراكية على الأقل لكل family حرجة
+- [ ] `No Silent Fallback Rule` محسومة
+- [ ] واضح أن أي variant معلنة في الثيم يجب أن تكون implemented أو fail validation
+- [ ] `Theme Distance Gate` محددة
+- [ ] أقرب قالبين مرجعيين معروفان
+- [ ] واضح كيف سنختلف عنهما في:
+  - palette family
+  - typography pair
+  - shape language
+  - chrome
+  - product card anatomy
+- [ ] خطة `Similarity Audit` واضحة
+- [ ] `Route-by-Route Distance Gate` محددة
+- [ ] `Marketplace Surface Gate` محددة
+- [ ] `Family Repetition Cap` محسومة
+- [ ] `Capability Matrix` محددة
+- [ ] الأدوات/القدرات المطلوبة للقالب معروفة
+- [ ] `Conversion Stack & Upsell Strategy` محددة
+- [ ] أدوات التحويل الأساسية معروفة
+- [ ] واضح هل الأدوات ستكون `sections` مستقلة أم orchestrated intentionally
+- [ ] إذا كانت الفئة تعتمد على عروض كمية أو mix-and-match: تم حسم `quantity-offers` كـ `section/variant` مستقلة
+- [ ] إذا كانت `quantity-offers` موجودة على `PDP`: تم حسم `decision mode`
+  - `supporting`
+  - `primary`
+- [ ] إذا كانت `quick order` موجودة: تم حسم `surface mode`
+  - `standalone`
+  - `merged-buybox`
+- [ ] إذا كانت `bought-together / bundle add-ons` مهمة في القالب: تم حسم هل هي `teaser links` أم `true configurable bundle`
+- [ ] تم حسم من يملك CTA النهائية:
+  - block الاختيار
+  - أم الفورم النهائية
+- [ ] مواضع الـ upsell / cross-sell / reorder واضحة
+- [ ] `Product Data Depth Gate` محددة
+- [ ] المنتجات الحساسة للمتغيرات معروفة
+- [ ] الحد الأدنى لعدد الصور لكل منتج أساسي واضح
+- [ ] تحديد sample data
+- [ ] `Photo Source Policy` محددة
+- [ ] تم حسم أين الواقعية إلزامية وأين يسمح بالأسلوب stylized
+
+## أثناء التنفيذ
+
+- [ ] theme registered
+- [ ] metadata موجودة
+- [ ] preview asset موجودة
+- [ ] كل capability مهمة مربوطة بـ section أو behavior واضح
+- [ ] كل أداة تحويل مهمة مربوطة بصفحة وهدف واضح
+- [ ] أدوات التحويل ليست مجمعة كلها داخل block واحدة إلا لو كان ذلك مقصودًا ومبررًا
+- [ ] لا يوجد مصدران نشطان لنفس قرار الـ PDP
+- [ ] إذا كانت `quantity-offers` هي `primary`: variant selector العلوية ليست control ثانية
+- [ ] إذا كانت هناك form نهائية: CTA الحسم ليست مكررة بين العرض والفورم
+- [ ] إذا كانت `bought-together` قابلة للإضافة: لون/مقاس الإضافات تُختار من نفس البلوك لا من صفحة أخرى
+- [ ] bundle add-ons تدخل السلة/الطلب بالـ `variantId` والattributes المختارة فعلًا
+- [ ] cart upsell / PDP recommendations / post-purchase hooks محددة حسب الهدف
+- [ ] أي CTA في `cart upsell` أو `PDP recommendations` لمنتج variant-sensitive تسمي المطلوب الحقيقي:
+  - `اختاري اللون`
+  - `اختاري المقاس`
+  - `اختاري اللون والمقاس`
+- [ ] النص التوضيحي والـ CTA متطابقان في بطاقات الـ upsell ولا يرسلان إشارتين مختلفتين
+- [ ] app-like behaviors على الموبايل موجودة فعلًا إذا كانت مطلوبة في الخطة
+- [ ] الـ footer أو chrome السفلي على الموبايل لا يضعف مسار الشراء
+- [ ] إذا تم استخدام `external design skill`: تم تكييفها مع السوق وهوية القالب بدل نسخ composition جاهزة حرفيًا
+- [ ] إذا تم استخدام `external design skill`: لا تتحكم في `section order` أو `conversion flow` أو `PDP decision logic`
+- [ ] إذا تم استخدام `reference theme/template` خارجي: تم تفكيك الأفكار إلى `sections / variants / capabilities` بدل نقل الصفحة كما هي
+- [ ] إذا تم استخدام `reference theme/template` خارجي: لا يتحكم في `page architecture` أو `section order` أو `conversion flow` أو `PDP decision logic`
+- [ ] إذا كان القالب `All-New Variants`: المرجع الخارجي لم يُترجم إلى نفس anatomy المرئية مع restyling فقط
+- [ ] إذا كان الشغل `reference-locked expansion pack`: لا توجد families مرئية قديمة من المكتبة الحالية داخل surfaces الحرجة
+- [ ] إذا كان الشغل `reference-locked expansion pack`: كل قالب يوضح ما يضيفه للمكتبة لا ما يستهلكه منها فقط
+- [ ] لا يوجد `silent fallback` في surfaces user-facing
+- [ ] كل variant id معلنة داخل الثيم لها implementation صريحة أو alias موثقة
+- [ ] قرار الـ variants موثق داخل plan
+- [ ] لا توجد overrides كثيرة فقط لأن variant المختارة غير مناسبة
+- [ ] إذا كان القالب `All-New Variants`: لا توجد surfaces موروثة شكليًا تحت اسم جديد
+- [ ] إذا كان القالب `All-New Variants`: كل surface حرجة تغيّر layout أو hierarchy أو card anatomy أو interaction أو content rhythm بشكل واضح
+- [ ] `Shared Anatomy Audit` راجعت أي variants مختلفة تعود إلى نفس core anatomy
+- [ ] إذا كانت عدة variant ids تعود إلى نفس anatomy فهي موثقة كـ family واحدة لا new families متعددة
+- [ ] لا توجد أكثر من surface متجاورة من نفس family البصرية بلا سبب موثق
+- [ ] تم حفظ لقطات مقارنة مرئية `Side-by-Side Evidence` عند الحاجة
+- [ ] لا توجد theme-specific surfaces تعتمد على hardcoded colors بدل tokens إلا باستثناء موثق
+- [ ] marketplace card shell تعكس شخصية القالب ولا تعتمد على preview image فقط
+- [ ] preview chrome تعكس شخصية القالب بوضوح
+- [ ] أي shell تعتمد على `.container` أو max-width لا تنزاح يمينًا/يسارًا على الشاشات العريضة
+- [ ] المنتجات الأساسية في الفئات الحساسة للمتغيرات تملك `4+` صور
+- [ ] المنتجات التي تحتاج مقاس/لون/fit تملك variants حقيقية ومفهومة
+- [ ] الصور في surfaces البيع مقنعة ومتسقة مع الهدف
+- [ ] لا توجد product illustrations ضعيفة داخل product cards أو merchandising surfaces
+- [ ] لا توجد sections زخرفية لا تخدم الهدف
+- [ ] القالب لا يكرر pattern قديم
+- [ ] لا يوجد `box-in-box / card-inside-card / المربعات اللي جوه بعض` في buybox أو quantity-offers أو trust surfaces أو أي decision surface
+- [ ] أي سطح داخلي موجود وظيفي وخفيف بصريًا ولا يُقرأ ككرت ثانية مستقلة
+- [ ] لا يوجد copy عربي/إنجليزي مختلطة بلا قصد
+- [ ] `validate-themes` أو ما يعادلها تم تشغيله
+- [ ] tests مركزة تم تشغيلها إذا كان هناك wiring أو preview data أو variants جديدة
+
+## قبل الاعتماد
+
+- [ ] home reviewed
+- [ ] shop reviewed
+- [ ] pdp reviewed
+- [ ] cart reviewed
+- [ ] checkout reviewed
+- [ ] mobile reviewed
+- [ ] mobile app-feel reviewed
+- [ ] RTL reviewed
+- [ ] wide-screen reviewed على `1920px+`
+- [ ] تمركز الـ outer shell reviewed في `RTL` و`LTR` عند الحاجة
+- [ ] `audit:storefront-centering` passed أو ما يعادلها على الثيمات/الصفحات داخل scope
+- [ ] marketplace card reviewed
+- [ ] preview image reviewed
+- [ ] preview chrome reviewed
+- [ ] `Authenticated Preview QA` reviewed على session الصحيحة
+- [ ] objective fit reviewed
+- [ ] capability coverage reviewed
+- [ ] conversion tools reviewed
+- [ ] conversion tools structure reviewed
+- [ ] upsell / cross-sell coverage reviewed
+- [ ] cart upsell CTA semantics reviewed ضد variant axes الفعلية
+- [ ] bought-together / bundle behavior reviewed إذا كانت موجودة
+- [ ] product gallery depth reviewed
+- [ ] variant coverage reviewed
+- [ ] variant wiring reviewed
+- [ ] no silent fallback reviewed
+- [ ] `variant posture` reviewed:
+  - هل القالب فعلًا `All-New Variants`
+  - أم هو `Mixed strategy` جيدة فقط
+- [ ] `Blind Review Question` reviewed:
+  - لو حذفنا أسماء الـ variants هل سيظهر القالب جديدًا فعلًا؟
+- [ ] `Shared Anatomy Audit` reviewed
+- [ ] `Theme Distance Gate` reviewed
+- [ ] `Route-by-Route Distance Gate` reviewed
+- [ ] `Marketplace Surface Gate` reviewed
+- [ ] `Similarity Audit` reviewed
+- [ ] `Family Repetition Cap` reviewed
+- [ ] hardcoded color audit reviewed
+- [ ] token coverage audit reviewed
+- [ ] image realism reviewed
+- [ ] nested-surface audit reviewed
+- [ ] validation status reviewed
+- [ ] preview `thank-you` reviewed ضد الطلب الفعلي لا seeded fallback
+- [ ] preview order reference reviewed
+- [ ] مساهمة القالب في `Design Style Library` updated
+- [ ] currentness reviewed
+- [ ] الفرق عن القوالب القريبة واضح
+- [ ] إذا تم استخدام `external design skill`: جودة التكييف reviewed ضد `objective fit` و`anti-stale gate`
+- [ ] إذا تم استخدام `reference theme/template` خارجي: جودة الاستخراج والتكييف reviewed ضد `theme distance` و`perceptual novelty`
+- [ ] إذا كان الشغل `reference-locked expansion pack`: `Library Delta Audit` reviewed على مستوى كل قالب وعلى مستوى الـ pack
+- [ ] التوثيق updated

@@ -1,0 +1,87 @@
+{
+  "dashboard": {
+    "title": "Partner Program Dashboard",
+    "hello": "Hello,",
+    "subtitle": "Platform Partner Program Dashboard",
+    "copyLink": "Copy Link",
+    "partnerCodeCopied": "Partner code copied!",
+    "referralLinkCopied": "Referral link copied!",
+    "accountRequired": "Partner Account Required",
+    "accountRequiredDesc": "This section is for company owners registered on the platform. If you own a company, your account will be activated here automatically.",
+    "referrals": {
+      "historyTitle": "Referral History (Registrations)",
+      "companyName": "Company Name",
+      "status": "Status",
+      "date": "Date",
+      "noReferrals": "No registrations via your link yet"
+    },
+    "stats": {
+      "totalEarnings": "Total Earnings",
+      "availablePayout": "Available for Payout",
+      "directReferrals": "Direct Referrals",
+      "totalNetwork": "Total Network",
+      "active": "Active",
+      "now": "Now",
+      "levels": "4 Levels"
+    },
+    "status": {
+      "paid": "Paid",
+      "confirmed": "Confirmed",
+      "pending": "Pending",
+      "processed": "Processed",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "commissions": {
+      "title": "Recent Commissions",
+      "source": "Source",
+      "amount": "Amount",
+      "level": "Level",
+      "status": "Status",
+      "date": "Date",
+      "system": "System",
+      "noCommissions": "No commissions recorded yet"
+    },
+    "payout": {
+      "readyForWithdrawal": "Ready for Withdrawal",
+      "amountToWithdraw": "Amount to Withdraw",
+      "method": "Payout Method",
+      "withdrawFunds": "Withdraw Funds",
+      "processing": "Processing...",
+      "minimumAmount": "Minimum withdrawal amount is 100 EGP.",
+      "validAmountError": "Please enter a valid amount",
+      "success": "Payout request submitted successfully",
+      "error": "Error requesting payout",
+      "recentPayouts": "Recent Payouts",
+      "amount": "Amount",
+      "status": "Status",
+      "date": "Date",
+      "noPayouts": "No payouts recorded yet",
+      "methods": {
+        "vodafoneCash": "Vodafone Cash",
+        "instapay": "InstaPay",
+        "bankTransfer": "Bank Transfer",
+        "cash": "Cash",
+        "wallet": "Wallet"
+      }
+    },
+    "rankings": {
+      "title": "Your Rankings",
+      "nextRank": "Next rank:",
+      "seniorPartner": "Senior Partner",
+      "maxRank": "Top rank reached"
+    },
+    "errors": {
+      "fetchDashboard": "Error fetching dashboard data"
+    },
+    "ranks": {
+      "PARTNER": "Partner",
+      "SENIOR_PARTNER": "Senior Partner",
+      "MASTER_PARTNER": "Master Partner",
+      "EXECUTIVE_PARTNER": "Executive Partner",
+      "ENTERPRISE_PARTNER": "Enterprise Partner"
+    }
+  }
+}

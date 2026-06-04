@@ -1,0 +1,22 @@
+{
+  "title": "Stock Analytics",
+  "subtitle": "Track Stock Levels and Alerts",
+  "fetchError": "Error fetching data",
+  "retry": "Retry",
+  "last7Days": "Last 7 Days",
+  "last30Days": "Last 30 Days",
+  "last90Days": "Last 90 Days",
+  "lastYear": "Last Year",
+  "lowStockProducts": "Low Stock Products",
+  "outOfStockProducts": "Out of Stock Products",
+  "fastMovingProducts": "Fast Moving Products",
+  "replenishAlert": "Alert: Products Need Replenishment",
+  "product": "Product",
+  "currentStock": "Current Stock",
+  "threshold": "Threshold",
+  "fastestMovingProducts": "Fastest Moving Products",
+  "salesVelocity": "Sales Velocity",
+  "overstockedProducts": "Overstocked Products",
+  "averageSalesPerMonth": "Avg Sales/Month",
+  "monthsToSell": "Months to Sell"
+}

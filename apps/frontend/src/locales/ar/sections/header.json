@@ -1,0 +1,15 @@
+{
+  "dashboard": "لوحة التحكم",
+  "customers": "العملاء",
+  "conversations": "المحادثات",
+  "products": "المنتجات",
+  "orders": "الطلبات",
+  "reports": "التقارير",
+  "profile": "الملف الشخصي",
+  "settings": "الإعدادات",
+  "logout": "تسجيل الخروج",
+  "notifications": "الإشعارات",
+  "openMenu": "فتح القائمة",
+  "closeMenu": "إغلاق القائمة",
+  "platformName": "منصة التواصل"
+}

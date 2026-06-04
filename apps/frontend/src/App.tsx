@@ -1,0 +1,6427 @@
+import React, { Suspense } from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "./hooks/useAuthSimple";
+import tokenManager from "./utils/tokenManager";
+import { shouldBootstrapStorefront } from "./bootstrap/requestTarget";
+import {
+  shouldRedirectAffiliateToDashboard,
+  shouldRedirectMerchantToPortal,
+} from "./utils/merchantAccess";
+
+// Providers
+import AppProviders from "./providers/AppProviders";
+
+import PerformanceOptimizer from "./components/PerformanceOptimizer";
+
+const Layout = React.lazy(() => import("./components/layout/Layout"));
+const AuthLayout = React.lazy(() => import("./components/layout/AuthLayout"));
+
+
+// Import pages directly
+// const Dashboard = React.lazy(() => import('./pages/dashboard/Dashboard'));
+const ModernLogin = React.lazy(() => import("./pages/auth/ModernLogin"));
+
+const Register = React.lazy(() => import("./pages/auth/Register"));
+const CustomerRegister = React.lazy(
+  () => import("./pages/auth/CustomerRegister"),
+);
+const ForgotPassword = React.lazy(() => import("./pages/auth/ForgotPassword"));
+const ResetPassword = React.lazy(() => import("./pages/auth/ResetPassword"));
+const AcceptInvitation = React.lazy(
+  () => import("./pages/auth/AcceptInvitation"),
+);
+const OnboardingWizard = React.lazy(
+  () => import("./pages/onboarding/OnboardingWizard"),
+);
+
+// Import HR pages
+const PayrollTesting = React.lazy(() => import("./pages/hr/PayrollTesting"));
+
+// Import pages
+const CustomerList = React.lazy(() => import("./pages/customers/CustomerList"));
+const CustomerCreate = React.lazy(
+  () => import("./pages/customers/CustomerCreate"),
+);
+const LeadsList = React.lazy(() => import("./pages/customers/LeadsList"));
+const CustomerDetails = React.lazy(
+  () => import("./pages/customers/CustomerDetails"),
+);
+const CustomerEdit = React.lazy(() => import("./pages/customers/CustomerEdit"));
+const CustomerWhatsAppNotify = React.lazy(
+  () => import("./pages/customers/CustomerWhatsAppNotify"),
+);
+const CustomerBirthdayWhatsAppNotify = React.lazy(
+  () => import("./pages/customers/CustomerBirthdayWhatsAppNotify"),
+);
+
+const CustomerOccasionsWhatsAppNotify = React.lazy(
+  () => import("./pages/customers/CustomerOccasionsWhatsAppNotify"),
+);
+const CommentsManagement = React.lazy(
+  () => import("./pages/comments/CommentsManagement"),
+);
+const CommentDetails = React.lazy(
+  () => import("./pages/comments/CommentDetails"),
+);
+const CommentSettings = React.lazy(
+  () => import("./pages/comments/CommentSettings"),
+);
+const PostsManagement = React.lazy(
+  () => import("./pages/comments/PostsManagement"),
+);
+const PostSettings = React.lazy(() => import("./pages/comments/PostSettings"));
+const PostComments = React.lazy(() => import("./pages/comments/PostComments"));
+
+const MessengerChat = React.lazy(
+  () => import("./pages/conversations/MessengerChat-final"),
+);
+
+const SentMessagesStats = React.lazy(
+  () => import("./pages/conversations/SentMessagesStats"),
+);
+// const CampaignResultsPredictor = React.lazy(() => import('./pages/conversations/CampaignResultsPredictor'));
+const CampaignPredictionCalculator = React.lazy(
+  () => import("./pages/conversations/CampaignPredictionCalculator"),
+);
+const FacebookInbox = React.lazy(
+  () => import("./pages/facebook-inbox/FacebookInbox"),
+);
+const InstagramInbox = React.lazy(
+  () => import("./pages/instagram-inbox/InstagramInbox"),
+);
+const FacebookPostCreator = React.lazy(
+  () => import("./pages/facebook-inbox/FacebookPostCreator"),
+);
+const UnifiedInbox = React.lazy(
+  () => import("./pages/unified-inbox/UnifiedInbox"),
+);
+const InboxPage = React.lazy(
+  () => import("./pages/whatsapp-inbox/WhatsAppInboxHome"),
+);
+const InboxChat = React.lazy(
+  () => import("./pages/whatsapp-inbox/WhatsAppChat"),
+);
+const ModeratorDashboard = React.lazy(
+  () => import("./pages/whatsapp-inbox/ModeratorDashboard"),
+);
+const WhatsAppNumberSettings = React.lazy(
+  () => import("./pages/whatsapp-inbox/WhatsAppNumberSettings"),
+);
+const InboxSettingsPage = React.lazy(
+  () => import("./pages/whatsapp-inbox/InboxSettingsPage"),
+);
+const InboxNotifications = React.lazy(
+  () => import("./pages/whatsapp-inbox/InboxNotifications"),
+);
+const Products = React.lazy(() => import("./pages/products/Products"));
+const ProductsTrash = React.lazy(
+  () => import("./pages/products/ProductsTrash"),
+);
+const ProductNewFinal = React.lazy(
+  () => import("./pages/products/ProductNewFinal"),
+);
+const AffiliateSystemSettings = React.lazy(
+  () => import("./pages/affiliates/AffiliateSystemSettings"),
+);
+const AffiliatesManagement = React.lazy(
+  () => import("./pages/affiliates/AffiliatesManagement"),
+);
+const AffiliateProfile = React.lazy(
+  () => import("./pages/affiliates/AffiliateProfile"),
+);
+const AffiliateQuickActions = React.lazy(
+  () => import("./pages/affiliates/AffiliateQuickActions"),
+);
+const AffiliateDashboard = React.lazy(
+  () => import("./pages/affiliates/AffiliateDashboard"),
+);
+const AffiliateRegister = React.lazy(
+  () => import("./pages/affiliates/AffiliateRegister"),
+);
+const AffiliateCommission = React.lazy(
+  () => import("./pages/affiliates/AffiliateCommission"),
+);
+const AffiliateOrders = React.lazy(
+  () => import("./pages/affiliates/AffiliateOrders"),
+);
+const AffiliateOrderDetails = React.lazy(
+  () => import("./pages/affiliates/AffiliateOrderDetails"),
+);
+const AffiliateCustomers = React.lazy(
+  () => import("./pages/affiliates/AffiliateCustomers"),
+);
+const AffiliateReferrals = React.lazy(
+  () => import("./pages/affiliates/AffiliateReferrals"),
+);
+const AffiliateMarketplace = React.lazy(
+  () => import("./pages/affiliates/AffiliateMarketplace"),
+);
+const AffiliateProducts = React.lazy(
+  () => import("./pages/affiliates/AffiliateProducts"),
+);
+const MerchantsList = React.lazy(
+  () => import("./pages/merchants/MerchantsList"),
+);
+const MerchantRegister = React.lazy(
+  () => import("./pages/merchants/MerchantRegister"),
+);
+const MerchantProfile = React.lazy(
+  () => import("./pages/merchants/MerchantProfile"),
+);
+const MerchantProfileDetails = React.lazy(
+  () => import("./pages/merchants/MerchantProfileDetails"),
+);
+const MerchantPortalDashboard = React.lazy(
+  () => import("./pages/merchant-portal/MerchantPortalDashboard"),
+);
+const CommissionsManagement = React.lazy(
+  () => import("./pages/platform/CommissionsManagement"),
+);
+const PublicAffiliateRegister = React.lazy(
+  () => import("./pages/public/PublicAffiliateRegister"),
+);
+const PublicMerchantRegister = React.lazy(
+  () => import("./pages/public/PublicMerchantRegister"),
+);
+const PublicCompanyLinks = React.lazy(
+  () => import("./pages/PublicCompanyLinks"),
+);
+const PublicApplicationForm = React.lazy(
+  () => import("./pages/public/PublicApplicationForm"),
+);
+const ProductStoreRedirect = React.lazy(
+  () => import("./pages/products/ProductStoreRedirect"),
+);
+const ProductReviewsSimple = React.lazy(
+  () => import("./pages/products/ProductReviewsSimple"),
+);
+const EasyOrdersImport = React.lazy(
+  () => import("./pages/products/EasyOrdersImport"),
+);
+const WooCommerceImport = React.lazy(
+  () => import("./pages/products/WooCommerceImport"),
+);
+const StoreAnalyticsDashboard = React.lazy(
+  () => import("./pages/Analytics/StoreAnalyticsDashboard"),
+);
+
+const Categories = React.lazy(() => import("./pages/categories/Categories"));
+const CompetitorList = React.lazy(() => import("./pages/competitors/CompetitorList"));
+const CompetitorDetail = React.lazy(() => import("./pages/competitors/CompetitorDetail"));
+const CompetitorGapAnalysis = React.lazy(() => import("./pages/competitors/gap-analysis"));
+const CompetitorPriceHistory = React.lazy(() => import("./pages/competitors/price-history"));
+const CompetitorComparison = React.lazy(() => import("./pages/competitors/comparison"));
+const CompetitorReportsPage = React.lazy(() => import("./pages/competitors/reports"));
+const CompetitorBattlecard = React.lazy(() => import("./pages/competitors/BattlecardViewer"));
+const CompetitorAutoDiscover = React.lazy(() => import("./pages/competitors/AutoDiscoverPage"));
+const CompetitorSettingsPage = React.lazy(() => import("./pages/competitors/settings"));
+const SocialOverview = React.lazy(() => import("./pages/competitors/social/SocialOverview"));
+const AdIntelligence = React.lazy(() => import("./pages/competitors/social/AdIntelligence"));
+const PlatformOverview = React.lazy(() => import("./pages/competitors/social/PlatformOverview"));
+const Reports = React.lazy(() => import("./pages/reports/Reports"));
+const ShippingReport = React.lazy(
+  () => import("./pages/reports/ShippingReport"),
+);
+const Settings = React.lazy(() => import("./pages/settings/Settings"));
+const OrderSettings = React.lazy(
+  () => import("./pages/settings/OrderSettings"),
+);
+const CustomerBlockSettings = React.lazy(
+  () => import("./pages/settings/CustomerBlockSettings"),
+);
+const FacebookSettings = React.lazy(
+  () => import("./pages/settings/FacebookSettings"),
+);
+
+const InstagramSettings = React.lazy(
+  () => import("./pages/settings/InstagramSettings"),
+);
+const AgentInboxKeyPage = React.lazy(
+  () => import("./pages/settings/AgentInboxKeyPage"),
+);
+
+const PageEngagementStats = React.lazy(
+  () => import("./pages/PageEngagementStats"),
+);
+const TelegramSettings = React.lazy(
+  () => import("./pages/settings/TelegramSettings"),
+);
+const TelegramConversationsPro = React.lazy(
+  () => import("./pages/conversations/TelegramConversationsPro"),
+);
+const TelegramUserbot = React.lazy(
+  () => import("./pages/telegram/TelegramUserbot"),
+); // System 2
+const TelegramAutoReply = React.lazy(
+  () => import("./pages/telegram/TelegramAutoReply"),
+);
+const TelegramBulkMessages = React.lazy(
+  () => import("./pages/telegram/TelegramBulkMessages"),
+);
+const TelegramScheduler = React.lazy(
+  () => import("./pages/telegram/TelegramScheduler"),
+);
+const TelegramCampaigns = React.lazy(
+  () => import("./pages/telegram/TelegramCampaigns"),
+);
+const TelegramGroups = React.lazy(
+  () => import("./pages/telegram/TelegramGroups"),
+);
+const StoreSettings = React.lazy(
+  () => import("./pages/settings/StoreSettings"),
+);
+const ProductPageConversionSettingsPage = React.lazy(
+  () => import("./pages/settings/ProductPageConversionSettingsPage"),
+);
+const StoreOffersBundlesSettingsPage = React.lazy(
+  () => import("./pages/settings/StoreOffersBundlesSettingsPage"),
+);
+const StoreGrowthWidgetsSettingsPage = React.lazy(
+  () => import("./pages/settings/StoreGrowthWidgetsSettingsPage"),
+);
+const StoreSellingModesSettingsPage = React.lazy(
+  () => import("./pages/settings/StoreSellingModesSettingsPage"),
+);
+const StoreReviewsSocialProofSettingsPage = React.lazy(
+  () => import("./pages/settings/StoreReviewsSocialProofSettingsPage"),
+);
+const StorefrontVisualEditorPage = React.lazy(
+  () => import("./pages/settings/StorefrontVisualEditorPage"),
+);
+const StorePages = React.lazy(() => import("./pages/settings/StorePages"));
+const StorefrontClaritySettings = React.lazy(
+  () => import("./pages/settings/StorefrontClaritySettings"),
+);
+const TurboSettings = React.lazy(
+  () => import("./pages/settings/TurboSettings"),
+);
+const TurboTicketDetails = React.lazy(
+  () => import("./pages/settings/TicketDetails"),
+);
+const TurboTickets = React.lazy(() => import("./pages/tickets/TurboTickets"));
+const ShippingCompanies = React.lazy(
+  () => import("./pages/shipping/ShippingCompanies"),
+);
+const ShippingCompanyDetail = React.lazy(
+  () => import("./pages/shipping/ShippingCompanyDetail"),
+);
+const DeliveryOptions = React.lazy(
+  () => import("./pages/settings/DeliveryOptions"),
+);
+const PromotionSettings = React.lazy(
+  () => import("./pages/settings/PromotionSettings"),
+);
+const RecommendationSettings = React.lazy(
+  () => import("./pages/settings/RecommendationSettings"),
+);
+const SmartRepliesSettings = React.lazy(
+  () => import("./pages/settings/SmartRepliesSettings"),
+);
+// Unused legacy components removed for deep cleanup.
+const OrderWorkflow = React.lazy(() => import("./pages/admin/OrderWorkflow"));
+const OrderInvoiceSettings = React.lazy(
+  () => import("./pages/settings/OrderInvoiceSettings"),
+);
+const OrderNumberingSettings = React.lazy(
+  () => import("./pages/settings/OrderNumberingSettings"),
+);
+const RatingSettingsManager = React.lazy(
+  () => import("./pages/settings/RatingSettingsManager"),
+);
+const ScheduledOrderSettings = React.lazy(
+  () => import("./pages/settings/ScheduledOrderSettings"),
+);
+
+// Procurement/Purchasing
+const Suppliers = React.lazy(
+  () => import("./components/procurement/Suppliers"),
+);
+const PurchaseOrders = React.lazy(
+  () => import("./components/procurement/PurchaseOrders"),
+);
+const PurchaseOrderForm = React.lazy(
+  () => import("./components/procurement/PurchaseOrderForm"),
+);
+const PurchaseInvoices = React.lazy(
+  () => import("./components/procurement/PurchaseInvoices"),
+);
+const SupplierPayments = React.lazy(
+  () => import("./components/procurement/SupplierPayments"),
+);
+const ProcurementDashboard = React.lazy(
+  () => import("./components/procurement/ProcurementDashboard"),
+);
+
+// Advertising
+const FacebookPixelSettings = React.lazy(
+  () => import("./pages/advertising/FacebookPixelSettings"),
+);
+const GoogleTagManagerSettings = React.lazy(
+  () => import("./pages/advertising/GoogleTagManagerSettings"),
+);
+const FacebookAdsDashboard = React.lazy(
+  () => import("./pages/advertising/FacebookAdsDashboard"),
+);
+const FacebookAdsDiagnosis = React.lazy(
+  () => import("./pages/advertising/FacebookAdsDiagnosis"),
+);
+const BudgetAlertsPage = React.lazy(
+  () => import("./pages/advertising/BudgetAlertsPage"),
+);
+const AdLibraryResearch = React.lazy(
+  () => import("./pages/advertising/AdLibraryResearch"),
+);
+
+const ProductLandingPages = React.lazy(
+  () => import("./pages/advertising/ProductLandingPages"),
+);
+const CreateCampaign = React.lazy(
+  () => import("./pages/advertising/CreateCampaign"),
+);
+const CreateAd = React.lazy(() => import("./pages/advertising/CreateAd"));
+const AdDetails = React.lazy(() => import("./pages/advertising/AdDetails"));
+const CampaignDetails = React.lazy(
+  () => import("./pages/advertising/CampaignDetails"),
+);
+const AudiencesManagement = React.lazy(
+  () => import("./pages/advertising/AudiencesManagement"),
+);
+const CreateCustomAudience = React.lazy(
+  () => import("./pages/advertising/CreateCustomAudience"),
+);
+const CreateLookalikeAudience = React.lazy(
+  () => import("./pages/advertising/CreateLookalikeAudience"),
+);
+const CustomAudienceDetails = React.lazy(
+  () => import("./pages/advertising/CustomAudienceDetails"),
+);
+const CreateAdSet = React.lazy(() => import("./pages/advertising/CreateAdSet"));
+const CatalogsManagement = React.lazy(
+  () => import("./pages/advertising/CatalogsManagement"),
+);
+const CatalogDetails = React.lazy(
+  () => import("./pages/advertising/CatalogDetails"),
+);
+const CreateDynamicAd = React.lazy(
+  () => import("./pages/advertising/CreateDynamicAd"),
+);
+const ABTestsManagement = React.lazy(
+  () => import("./pages/advertising/ABTestsManagement"),
+);
+const CreateABTest = React.lazy(
+  () => import("./pages/advertising/CreateABTest"),
+);
+const ABTestDetails = React.lazy(
+  () => import("./pages/advertising/ABTestDetails"),
+);
+const CreateAdWizard = React.lazy(
+  () => import("./pages/advertising/CreateAdWizard"),
+);
+const AutomationRules = React.lazy(
+  () => import("./pages/advertising/AutomationRules"),
+);
+const MediaBuyingReports = React.lazy(
+  () => import("./pages/advertising/MediaBuyingReports"),
+);
+
+const LeadFormsManagement = React.lazy(
+  () => import("./pages/advertising/LeadFormsManagement"),
+);
+const DynamicCreativeOptimization = React.lazy(
+  () => import("./pages/advertising/DynamicCreativeOptimization"),
+);
+const AdvantagePlusShopping = React.lazy(
+  () => import("./pages/advertising/AdvantagePlusShopping"),
+);
+const ConversionApiDashboard = React.lazy(
+  () => import("./pages/advertising/ConversionApiDashboard"),
+);
+const CreativeFormats = React.lazy(
+  () => import("./pages/advertising/CreativeFormats"),
+);
+const AdPreview = React.lazy(() => import("./pages/advertising/AdPreview"));
+const SavedAudiences = React.lazy(
+  () => import("./pages/advertising/SavedAudiences"),
+);
+const AttributionSettings = React.lazy(
+  () => import("./pages/advertising/AttributionSettings"),
+);
+const Profile = React.lazy(() => import("./pages/profile/Profile"));
+
+const Orders = React.lazy(() => import("./pages/orders/Orders"));
+const IncompleteOrders = React.lazy(
+  () => import("./pages/orders/IncompleteOrders"),
+);
+const IncompleteOrderDetails = React.lazy(
+  () => import("./pages/orders/IncompleteOrderDetails"),
+);
+const PreparationQueue = React.lazy(
+  () => import("./pages/orders/PreparationQueue"),
+);
+const AgentWorkspace = React.lazy(
+  () => import("./pages/orders/AgentWorkspace"),
+);
+const OrderInvoices = React.lazy(() => import("./pages/admin/OrderInvoices"));
+const OrderInvoice = React.lazy(
+  () => import("./components/orders/OrderInvoice"),
+);
+const PrintMultipleInvoices = React.lazy(
+  () => import("./pages/orders/PrintMultipleInvoices"),
+);
+const OrderDetails = React.lazy(() => import("./pages/orders/OrderDetails"));
+const OrderStats = React.lazy(() => import("./pages/orders/OrderStats"));
+const OrdersAnalytics = React.lazy(
+  () => import("./pages/orders/OrdersAnalytics"),
+);
+const WooCommerceSync = React.lazy(
+  () => import("./pages/woocommerce/WooCommerceSync"),
+);
+
+
+// Orders Analytics Pages - Basic
+const OrdersOverviewDashboard = React.lazy(
+  () => import("./pages/Analytics/orders/OverviewDashboard"),
+);
+const OrdersAnalyticsPage = React.lazy(
+  () => import("./pages/Analytics/orders/OrdersAnalytics"),
+);
+const RevenueAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/RevenueAnalytics"),
+);
+const ProductsAnalyticsPage = React.lazy(
+  () => import("./pages/Analytics/orders/ProductsAnalytics"),
+);
+const VariationsAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/VariationsAnalytics"),
+);
+const CategoriesAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/CategoriesAnalytics"),
+);
+const CouponsAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/CouponsAnalytics"),
+);
+const TaxesAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/TaxesAnalytics"),
+);
+const DownloadsAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/DownloadsAnalytics"),
+);
+const StockAnalyticsPage = React.lazy(
+  () => import("./pages/Analytics/orders/StockAnalytics"),
+);
+const CustomerAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/CustomerAnalytics"),
+);
+const PaymentMethodAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/PaymentMethodAnalytics"),
+);
+const CampaignAttributionAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/CampaignAttributionAnalytics"),
+);
+
+// Orders Analytics Pages - Advanced
+const ProfitAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/ProfitAnalytics"),
+);
+const CODPerformanceAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/CODPerformanceAnalytics"),
+);
+const CancellationAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/CancellationAnalytics"),
+);
+const DeliveryRateAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/DeliveryRateAnalytics"),
+);
+const RegionAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/RegionAnalytics"),
+);
+const ReturnsAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/ReturnsAnalytics"),
+);
+const FunnelAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/FunnelAnalytics"),
+);
+const ConversionRateAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/ConversionRateAnalytics"),
+);
+const TeamPerformanceAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/TeamPerformanceAnalytics"),
+);
+const AbandonedCartAnalytics = React.lazy(
+  () => import("./pages/Analytics/orders/AbandonedCartAnalytics"),
+);
+
+const FacebookOAuth = React.lazy(
+  () => import("./pages/settings/FacebookOAuth"),
+);
+const Inventory = React.lazy(() => import("./pages/inventory/Inventory"));
+const InventoryAudits = React.lazy(
+  () => import("./pages/inventory/InventoryAudits"),
+);
+const InventoryReports = React.lazy(
+  () => import("./pages/inventory/InventoryReports"),
+);
+const InventoryAnalytics = React.lazy(
+  () => import("./pages/inventory/InventoryAnalytics"),
+);
+const WarehouseManagement = React.lazy(
+  () => import("./pages/inventory/WarehouseManagement"),
+);
+const Coupons = React.lazy(() => import("./pages/coupons/Coupons"));
+const Appointments = React.lazy(
+  () => import("./pages/appointments/Appointments"),
+);
+
+const Tasks = React.lazy(() => import("./pages/tasks/Tasks"));
+const TasksDashboard = React.lazy(() => import("./pages/tasks/Dashboard"));
+const KanbanBoard = React.lazy(() => import("./pages/tasks/KanbanBoard"));
+const TurboRecords = React.lazy(() => import("./pages/orders/TurboRecords"));
+const TaskDetails = React.lazy(() => import("./pages/tasks/TaskDetails"));
+const TaskNotifications = React.lazy(
+  () => import("./pages/tasks/TaskNotifications"),
+);
+const CalendarView = React.lazy(() => import("./pages/tasks/CalendarView"));
+const TimeReports = React.lazy(() => import("./pages/tasks/TimeReports"));
+const TaskTemplates = React.lazy(() => import("./pages/tasks/TaskTemplates"));
+const AdvancedReports = React.lazy(
+  () => import("./pages/reports/AdvancedReports"),
+);
+const ProfitLossReport = React.lazy(
+  () => import("./pages/reports/ProfitLossReport"),
+);
+const PosPage = React.lazy(() => import("./pages/pos/PosPage"));
+const PlatformIntegrations = React.lazy(
+  () => import("./pages/platform-integrations/PlatformIntegrations"),
+);
+
+const TestPublic = React.lazy(() => import("./pages/TestPublic"));
+const TestMinimal = React.lazy(() => import("./pages/TestMinimal"));
+const CafeThemeDemo = React.lazy(() => import("./pages/CafeThemeDemo"));
+const PharmacyThemeDemo = React.lazy(
+  () => import("./pages/themes/PharmacyThemeDemo"),
+);
+const FurnitureThemeDemo = React.lazy(
+  () => import("./pages/themes/FurnitureThemeDemo"),
+);
+const ElectronicsThemeDemo = React.lazy(
+  () => import("./pages/themes/ElectronicsThemeDemo"),
+);
+const RestaurantThemeDemo = React.lazy(
+  () => import("./pages/themes/RestaurantThemeDemo"),
+);
+const ShadcnDemo = React.lazy(() => import("./pages/public/ShadcnDemo"));
+const PlatformLandingPage = React.lazy(
+  () => import("./pages/landing/PlatformLandingHost"),
+);
+const MaxPMerchantsLanding = React.lazy(
+  () => import("./pages/public/MaxPMerchantsLanding"),
+);
+const MgAgencyLeadLanding = React.lazy(
+  () => import("./pages/landing/MgAgencyLeadLanding"),
+);
+const PlatformLandingPreviewPage = React.lazy(
+  () => import("./pages/landing/PlatformLandingPreviewPage"),
+);
+const StorefrontShell = React.lazy(
+  () => import("./storefront/StorefrontShell"),
+);
+
+// Support System
+const SupportCenter = React.lazy(() => import("./pages/support/SupportCenter"));
+const CreateTicket = React.lazy(() => import("./pages/support/CreateTicket"));
+const MyTickets = React.lazy(() => import("./pages/support/MyTickets"));
+const SupportTicketDetails = React.lazy(
+  () => import("./pages/support/TicketDetails"),
+);
+const FAQPage = React.lazy(() => import("./pages/support/FAQ"));
+const SupportAdmin = React.lazy(() => import("./pages/admin/SupportAdmin"));
+const ManualOrderPage = React.lazy(
+  () => import("./pages/admin/ManualOrder/ManualOrderPage"),
+);
+
+// Activity Log System
+const MyActivity = React.lazy(() => import("./pages/MyActivity"));
+const CompanyActivity = React.lazy(() => import("./pages/CompanyActivity"));
+
+const BroadcastDashboard = React.lazy(() =>
+  import("./pages/broadcast").then((module) => ({
+    default: module.BroadcastDashboard,
+  })),
+);
+const Reminders = React.lazy(() => import("./pages/Reminders"));
+const NotificationSettings = React.lazy(
+  () => import("./pages/NotificationSettings"),
+);
+const Notifications = React.lazy(() => import("./pages/Notifications"));
+const MonitoringDashboard = React.lazy(
+  () => import("./pages/MonitoringDashboard"),
+);
+const AlertSettings = React.lazy(() => import("./pages/AlertSettings"));
+const ReportsPage = React.lazy(() => import("./pages/ReportsPage"));
+
+const CompaniesManagement = React.lazy(
+  () => import("./pages/CompaniesManagement"),
+);
+const UsersManagement = React.lazy(() => import("./pages/UsersManagement"));
+const EmployeeStatsReport = React.lazy(
+  () => import("./pages/EmployeeStatsReport"),
+);
+const RolesManagement = React.lazy(() => import("./pages/RolesManagement"));
+const CompanyDashboard = React.lazy(() => import("./pages/CompanyDashboard"));
+const CompanyLinks = React.lazy(() => import("./pages/CompanyLinks"));
+// PublicCompanyLinks already declared above
+
+// Super Admin
+const SuperAdminCompanies = React.lazy(
+  () => import("./pages/SuperAdminCompanies"),
+);
+const SuperAdminCompaniesV2 = React.lazy(
+  () => import("./pages/SuperAdminCompaniesV2"),
+);
+const SuperAdminCompaniesReports = React.lazy(
+  () => import("./pages/SuperAdminCompaniesReports"),
+);
+const SuperAdminCompanyDetails = React.lazy(
+  () => import("./pages/super-admin/SuperAdminCompanyDetails"),
+);
+
+const SuperAdminReports = React.lazy(() => import("./pages/SuperAdminReports"));
+const SuperAdminSubscriptions = React.lazy(
+  () => import("./pages/SuperAdminSubscriptions"),
+);
+const SuperAdminInvoices = React.lazy(
+  () => import("./pages/SuperAdminInvoices"),
+);
+const SuperAdminPayments = React.lazy(
+  () => import("./pages/SuperAdminPayments"),
+);
+const SuperAdminSystemManagement = React.lazy(
+  () => import("./pages/SuperAdminSystemManagement"),
+);
+const SuperAdminStaffCompanyAccess = React.lazy(
+  () => import("./pages/super-admin/StaffCompanyAccess"),
+);
+const Changelog = React.lazy(() => import("./pages/super-admin/Changelog"));
+const TeamPortal = React.lazy(() => import("./pages/super-admin/TeamPortal"));
+const SuperAdminWhatsAppOverview = React.lazy(
+  () => import("./pages/super-admin/SuperAdminWhatsAppOverview"),
+);
+const SuperAdminWhatsAppCompanies = React.lazy(
+  () => import("./pages/super-admin/SuperAdminWhatsAppCompanies"),
+);
+const SuperAdminWhatsAppCompanyWorkspace = React.lazy(
+  () => import("./pages/super-admin/SuperAdminWhatsAppCompanyWorkspace"),
+);
+const SuperAdminWhatsAppCompanySettings = React.lazy(
+  () => import("./pages/super-admin/SuperAdminWhatsAppCompanySettings"),
+);
+const SuperAdminWhatsAppCompanyNotifications = React.lazy(
+  () => import("./pages/super-admin/SuperAdminWhatsAppCompanyNotifications"),
+);
+const SuperAdminWhatsAppCompanyAnalytics = React.lazy(
+  () => import("./pages/super-admin/SuperAdminWhatsAppCompanyAnalytics"),
+);
+const SuperAdminWhatsAppLogs = React.lazy(
+  () => import("./pages/super-admin/SuperAdminWhatsAppLogs"),
+);
+const SuperAdminWhatsAppAutomations = React.lazy(
+  () => import("./pages/super-admin/SuperAdminWhatsAppAutomations"),
+);
+
+const SuperAdminServerUsage = React.lazy(
+  () => import("./pages/super-admin/SuperAdminServerUsage"),
+);
+const SalaryUpdates = React.lazy(() => import("./pages/hr/SalaryUpdates"));
+const SuperAdminAIProviders = React.lazy(
+  () => import("./pages/SuperAdminAIProviders"),
+); // New Page
+const SuperAdminAIProviderPriority = React.lazy(
+  () => import("./pages/SuperAdminAIProviderPriority"),
+);
+const SuperAdminAIProviderLogs = React.lazy(
+  () => import("./pages/SuperAdminAIProviderLogs"),
+);
+const SuperAdminAIKeyDetails = React.lazy(
+  () => import("./pages/SuperAdminAIKeyDetails"),
+);
+const SuperAdminAIPlayground = React.lazy(
+  () => import("./pages/SuperAdminAIPlayground"),
+);
+// Super Admin AI Agent Config
+const SuperAdminAgentConfig = React.lazy(
+  () => import("./pages/super-admin/SuperAdminAgentConfig"),
+);
+// Merchant AI Pages
+const AIChatPage = React.lazy(
+  () => import("./pages/admin/AIChatPage"),
+);
+const AgenticRAGLab = React.lazy(
+  () => import("./pages/admin/AgenticRAGLab"),
+);
+const AgentManagerPage = React.lazy(
+  () => import("./pages/admin/AgentManagerPage"),
+);
+const CompanyAIAgents = React.lazy(
+  () => import("./pages/admin/CompanyAIAgents"),
+);
+const AgentCatalogPage = React.lazy(
+  () => import("./pages/admin/AgentCatalogPage"),
+);
+const AgentTeamMapPage = React.lazy(
+  () => import("./pages/admin/AgentTeamMapPage"),
+);
+const AgentSkillsPage = React.lazy(
+  () => import("./pages/admin/AgentSkillsPage"),
+);
+const AgentToolsPage = React.lazy(
+  () => import("./pages/admin/AgentToolsPage"),
+);
+const SubAgentsPage = React.lazy(
+  () => import("./pages/admin/SubAgentsPage"),
+);
+const AIAgentSandboxPage = React.lazy(
+  () => import("./pages/admin/ai-agent-sandbox/AIAgentSandboxPage"),
+);
+const CompanyAIScheduler = React.lazy(
+  () => import("./pages/admin/CompanyAIScheduler"),
+);
+const SuperAdminFacebookOAuth = React.lazy(
+  () => import("./pages/SuperAdminFacebookOAuth"),
+);
+const PlatformSiteMetaPixel = React.lazy(
+  () => import("./pages/super-admin/PlatformSiteMetaPixel"),
+);
+const PlatformSiteHomepageTemplates = React.lazy(
+  () => import("./pages/super-admin/PlatformSiteHomepageTemplates"),
+);
+const PlatformSignupCoupons = React.lazy(
+  () => import("./pages/super-admin/PlatformSignupCoupons"),
+);
+const PlatformOnboardingSettings = React.lazy(
+  () => import("./pages/super-admin/PlatformOnboardingSettings"),
+);
+
+const SuperAdminUsersManagement = React.lazy(
+  () => import("./pages/SuperAdminUsersManagement"),
+); // Super Admin Users Management
+
+// Super Admin Platform Management
+const PlatformSubscriptions = React.lazy(
+  () => import("./pages/super-admin/PlatformSubscriptions"),
+);
+const BillingOverview = React.lazy(
+  () => import("./pages/super-admin/BillingOverview"),
+);
+const SubscriptionCenter = React.lazy(
+  () => import("./pages/super-admin/SubscriptionCenter"),
+);
+const StorefrontThemesManagement = React.lazy(
+  () => import("./pages/super-admin/StorefrontThemesManagement"),
+);
+
+// Dev Tasks System
+const SuperAdminDashboard = React.lazy(
+  () => import("./pages/SuperAdminDashboard"),
+);
+const DevDashboardUnified = React.lazy(
+  () => import("./pages/super-admin/DevDashboardUnified"),
+);
+const DevTasksList = React.lazy(
+  () => import("./pages/super-admin/DevTasksList"),
+);
+const DevKanbanBoard = React.lazy(
+  () => import("./pages/super-admin/DevKanbanBoard"),
+);
+const DevTaskForm = React.lazy(() => import("./pages/super-admin/DevTaskForm"));
+const DevTaskDetails = React.lazy(
+  () => import("./pages/super-admin/DevTaskDetails"),
+);
+const DevProjects = React.lazy(() => import("./pages/super-admin/DevProjects"));
+const DevReleases = React.lazy(() => import("./pages/super-admin/DevReleases"));
+const DevTeam = React.lazy(() => import("./pages/super-admin/DevTeam"));
+const DevEvaluation = React.lazy(
+  () => import("./pages/super-admin/DevEvaluation"),
+);
+const DevEvaluationMember = React.lazy(
+  () => import("./pages/super-admin/DevEvaluationMember"),
+);
+const DatabaseMigration = React.lazy(
+  () => import("./pages/super-admin/DatabaseMigration"),
+);
+const DevLeaderboard = React.lazy(
+  () => import("./pages/super-admin/DevLeaderboard"),
+);
+const DevTaskSettings = React.lazy(
+  () => import("./pages/super-admin/DevTaskSettings"),
+);
+const DevTaskIntegrations = React.lazy(
+  () => import("./pages/super-admin/DevTaskIntegrations"),
+);
+const DevGoalsList = React.lazy(
+  () => import("./pages/super-admin/DevGoalsList"),
+);
+const DevGoalDetails = React.lazy(
+  () => import("./pages/super-admin/DevGoalDetails"),
+);
+const DevGoalForm = React.lazy(
+  () => import("./pages/super-admin/DevGoalForm"),
+);
+const DevGoalAlignmentTree = React.lazy(
+  () => import("./pages/super-admin/DevGoalAlignmentTree"),
+);
+const ActiveTimers = React.lazy(
+  () => import("./pages/super-admin/ActiveTimers"),
+);
+const DevTimerDashboard = React.lazy(
+  () => import("./pages/super-admin/DevTimerDashboard"),
+);
+const ProjectMap = React.lazy(() => import("./pages/super-admin/ProjectMap"));
+const TimeTrackingDashboard = React.lazy(
+  () => import("./pages/super-admin/TimeTrackingDashboard"),
+);
+const SystemMonitoring = React.lazy(
+  () => import("./pages/super-admin/SystemMonitoring"),
+);
+const EscalationHistory = React.lazy(
+  () => import("./pages/super-admin/EscalationHistory"),
+);
+const QueueMonitor = React.lazy(
+  () => import("./pages/super-admin/QueueMonitor"),
+);
+// const SuperAdminMarketingLinks = React.lazy(() => import('./pages/super-admin/SuperAdminMarketingLinks'));
+const PlatformPartnerManagement = React.lazy(
+  () => import("./pages/super-admin/PlatformPartnerManagement"),
+);
+const PendingReceipts = React.lazy(
+  () => import("./pages/super-admin/PendingReceipts"),
+);
+const PayoutRequestsPage = React.lazy(
+  () => import("./pages/super-admin/PayoutRequestsPage"),
+);
+const PartnerDashboard = React.lazy(
+  () => import("./pages/platform-partner/PartnerDashboard"),
+);
+
+const PaymentPage = React.lazy(() => import("./pages/PaymentPage"));
+const WalletManagement = React.lazy(() => import("./pages/WalletManagement"));
+const CustomerInvoices = React.lazy(() => import("./pages/CustomerInvoices"));
+const CustomerPayments = React.lazy(() => import("./pages/CustomerPayments"));
+const SubscriptionRenewalPayment = React.lazy(
+  () => import("./pages/SubscriptionRenewalPayment"),
+);
+const PrivacyPolicy = React.lazy(() => import("./pages/legal/PrivacyPolicy"));
+const TermsOfService = React.lazy(() => import("./pages/legal/TermsOfService"));
+const UnifiedCommentsManagement = React.lazy(
+  () => import("./pages/comments/UnifiedCommentsManagement"),
+);
+const UnifiedCommentsSplit = React.lazy(
+  () => import("./pages/comments/UnifiedCommentsSplit"),
+);
+const ReturnManagementPage = React.lazy(
+  () => import("./pages/returns/ReturnManagementPage"),
+);
+const ReturnSettingsPage = React.lazy(
+  () => import("./pages/returns/ReturnSettingsPage"),
+);
+const BulkSearchPage = React.lazy(
+  () => import("./pages/bulk-search/BulkSearchPage"),
+);
+
+// Marketplace System
+const Marketplace = React.lazy(() => import("./pages/marketplace/Marketplace"));
+const StorefrontThemesMarketplace = React.lazy(
+  () => import("./pages/marketplace/StorefrontThemes"),
+);
+const AppDetails = React.lazy(() => import("./pages/marketplace/AppDetails"));
+const AppSettings = React.lazy(() => import("./pages/marketplace/AppSettings"));
+const MarketplaceFeatureAudit = React.lazy(
+  () => import("./pages/marketplace/FeatureAudit"),
+);
+const MyApps = React.lazy(() => import("./pages/marketplace/MyApps"));
+const CustomerWalletRouteEntry = React.lazy(
+  () => import("./pages/wallet/WalletRouteEntry"),
+);
+const BillingWalletRouteEntry = React.lazy(() =>
+  import("./pages/wallet/WalletRouteEntry").then((module) => ({
+    default: module.BillingWalletRouteEntry,
+  })),
+);
+const Bundles = React.lazy(() => import("./pages/marketplace/Bundles"));
+const BundleDetails = React.lazy(
+  () => import("./pages/marketplace/BundleDetails"),
+);
+
+// Platform Subscription
+const PlatformPlans = React.lazy(
+  () => import("./pages/subscription/PlatformPlans"),
+);
+const MySubscription = React.lazy(
+  () => import("./pages/subscription/MySubscription"),
+);
+const UsageStats = React.lazy(() => import("./pages/subscription/UsageStats"));
+
+// Knowledge base admin components
+const FAQManagement = React.lazy(
+  () => import("./components/Admin/FAQManagement"),
+);
+const PolicyManagement = React.lazy(
+  () => import("./components/Admin/PolicyManagement"),
+);
+
+// WhatsApp
+const WhatsAppSettings = React.lazy(() =>
+  import("./pages/whatsapp").then((m) => ({ default: m.WhatsAppSettings })),
+);
+const WhatsAppTemplates = React.lazy(() =>
+  import("./pages/whatsapp").then((m) => ({ default: m.WhatsAppTemplates })),
+);
+const WhatsAppChat = React.lazy(() =>
+  import("./pages/whatsapp").then((m) => ({ default: m.WhatsAppChat })),
+);
+const WhatsAppNotifications = React.lazy(
+  () => import("./pages/whatsapp/WhatsAppNotifications"),
+);
+const WhatsAppCustomerJourney = React.lazy(
+  () => import("./pages/whatsapp/WhatsAppCustomerJourney"),
+);
+const WhatsAppAnalytics = React.lazy(
+  () => import("./pages/whatsapp/WhatsAppAnalytics"),
+);
+
+// HR Module
+const HRDashboard = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.HRDashboard })),
+);
+const MyCompaniesDashboard = React.lazy(
+  () => import("./pages/hr/MyCompaniesDashboard"),
+);
+const OwnerReports = React.lazy(() => import("./pages/owner/OwnerReports"));
+const OwnerAttendanceReport = React.lazy(
+  () => import("./pages/owner/OwnerAttendanceReport"),
+);
+const OwnerUsersManagement = React.lazy(
+  () => import("./pages/owner/OwnerUsersManagement"),
+);
+const CompanyOrdersDetails = React.lazy(
+  () => import("./pages/owner/CompanyOrdersDetails"),
+);
+const Employees = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.Employees })),
+);
+const EmployeeDetails = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.EmployeeDetails })),
+);
+const EmployeeEdit = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.EmployeeEdit })),
+);
+const Departments = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.Departments })),
+);
+const PositionsManagement = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.PositionsManagement })),
+);
+const Attendance = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.Attendance })),
+);
+const ManualAttendanceEdit = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.ManualAttendanceEdit })),
+);
+const Leaves = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.Leaves })),
+);
+const Permissions = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.Permissions })),
+);
+const Payroll = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.Payroll })),
+);
+const Deductions = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.Deductions })),
+);
+const HRSettings = React.lazy(() => import("./pages/hr/HRSettings"));
+const HRReports = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.HRReports })),
+);
+const HRReportsHub = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.HRReportsHub })),
+);
+const Documents = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.Documents })),
+);
+const MyDeductions = React.lazy(() =>
+  import("./pages/employee").then((m) => ({ default: m.MyDeductions })),
+);
+const SalaryHistory = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.SalaryHistory })),
+);
+const PerformanceReviews = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.PerformanceReviews })),
+);
+const Training = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.Training })),
+);
+const CreateTraining = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.CreateTraining })),
+);
+const Warnings = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.Warnings })),
+);
+const EmployeesPromotion = React.lazy(
+  () => import("./pages/hr/EmployeesPromotion"),
+);
+const CreatePromotion = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.CreatePromotion })),
+);
+const EditPromotion = React.lazy(() => import("./pages/hr/EditPromotion"));
+const WarningDetails = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.WarningDetails })),
+);
+const EditWarning = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.EditWarning })),
+);
+const CreateWarning = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.CreateWarning })),
+);
+const Shifts = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.Shifts })),
+);
+const ShiftDetails = React.lazy(() => import("./pages/hr/ShiftDetails"));
+const Benefits = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.Benefits })),
+);
+const Goals = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.Goals })),
+);
+const CreateGoal = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.CreateGoal })),
+);
+const CreateFeedback = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.CreateFeedback })),
+);
+const Feedback = React.lazy(() => import("./pages/hr/Feedback"));
+const Resignations = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.Resignations })),
+);
+const CreateResignation = React.lazy(
+  () => import("./pages/hr/CreateResignation"),
+);
+const DecisionResignation = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.DecisionResignation })),
+);
+const CreatePerformanceReview = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.CreatePerformanceReview })),
+);
+const Advances = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.Advances })),
+);
+const CreateAdvance = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.CreateAdvance })),
+);
+const AuditLogs = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.AuditLogs })),
+);
+const CompanyPolicy = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.CompanyPolicy })),
+);
+const ClearanceChecklist = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.ClearanceChecklist })),
+);
+const AssetsDashboard = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.AssetsDashboard })),
+);
+const RewardsList = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.RewardsList })),
+);
+const RewardDetails = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.RewardDetails })),
+);
+const CreateEditReward = React.lazy(() =>
+  import("./pages/hr").then((m) => ({ default: m.CreateEditReward })),
+);
+// const CustomerLoyalty = React.lazy(() => import('./pages/hr/CustomerLoyalty'));
+const CashbackSettings = React.lazy(
+  () => import("./pages/customers/CashbackSettings"),
+);
+const LoyaltyPrograms = React.lazy(
+  () => import("./pages/customers/LoyaltyPrograms"),
+);
+const LoyaltyTiers = React.lazy(() => import("./pages/customers/LoyaltyTiers"));
+const LoyaltyMembers = React.lazy(
+  () => import("./pages/customers/LoyaltyMembers"),
+);
+const LoyaltyAnalytics = React.lazy(
+  () => import("./pages/customers/LoyaltyAnalytics"),
+);
+const CustomerPointsCenter = React.lazy(
+  () => import("./pages/customers/CustomerPointsCenter"),
+);
+const RecruitmentDashboard = React.lazy(
+  () => import("./pages/hr/recruitment/RecruitmentDashboard"),
+);
+const WorkReportFormsDashboard = React.lazy(
+  () => import("./pages/hr/work-reporting/WorkReportFormsDashboard"),
+);
+const WorkReportFormBuilder = React.lazy(
+  () => import("./pages/hr/work-reporting/WorkReportFormBuilder"),
+);
+const WorkReportFormPreview = React.lazy(
+  () => import("./pages/hr/work-reporting/WorkReportFormPreview"),
+);
+const WorkReportSubmissionPage = React.lazy(
+  () => import("./pages/hr/work-reporting/WorkReportSubmissionPage"),
+);
+const WorkReportRecordsPage = React.lazy(
+  () => import("./pages/hr/work-reporting/WorkReportRecordsPage"),
+);
+
+// Employee Self-Service
+const MyAttendance = React.lazy(() => import("./pages/employee/MyAttendance"));
+const MyDashboard = React.lazy(() => import("./pages/employee/MyDashboard"));
+const MyAdvances = React.lazy(() =>
+  import("./pages/employee").then((m) => ({ default: m.MyAdvances })),
+);
+const MyPayroll = React.lazy(() => import("./pages/hr/MyPayroll"));
+const MyCustody = React.lazy(() => import("./pages/my-custody/MyCustody"));
+const MyFeedback = React.lazy(() => import("./pages/hr/MyFeedback"));
+const MyWarnings = React.lazy(() =>
+  import("./pages/employee").then((m) => ({ default: m.MyWarnings })),
+);
+const MyPromotions = React.lazy(() =>
+  import("./pages/employee").then((m) => ({ default: m.MyPromotions })),
+);
+const MyRewards = React.lazy(() =>
+  import("./pages/employee").then((m) => ({ default: m.MyRewards })),
+);
+const MyResignation = React.lazy(() =>
+  import("./pages/employee").then((m) => ({ default: m.MyResignation })),
+);
+const MyTraining = React.lazy(() => import("./pages/employee/MyTraining"));
+
+const LoadingFallback = () => (
+  <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+    <div className="relative flex items-center justify-center w-24 h-24">
+      {/* Outer spinning ring */}
+      <div className="absolute inset-0 border-4 border-gray-100 rounded-full"></div>
+      <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+
+      {/* Inner pulsing core */}
+      <div className="w-12 h-12 bg-blue-600/10 rounded-full animate-pulse flex items-center justify-center">
+        <div className="w-6 h-6 bg-blue-600/20 rounded-full"></div>
+      </div>
+    </div>
+
+    <div className="mt-8 text-center">
+      <p className="text-sm font-medium text-gray-400 tracking-widest uppercase animate-pulse">
+        جاري التحميل...
+      </p>
+    </div>
+  </div>
+);
+
+// Create a separate component that uses auth
+const AppContent = () => {
+  // Use real authentication state
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const { pathname } = useLocation();
+  const isDev = import.meta.env.DEV || import.meta.env.MODE === "development";
+
+  // Subdomain Detection Logic
+  const hostname = window.location.hostname;
+  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+  let tenantSubdomain: string | null = null;
+
+  if (!isLocalhost) {
+    if (hostname.endsWith(".localhost")) {
+      tenantSubdomain = hostname.replace(".localhost", "");
+    } else {
+      const parts = hostname.split(".");
+      const firstPart = parts[0] ?? null;
+      if (parts.length >= 3 && firstPart && firstPart !== "www") {
+        tenantSubdomain = firstPart;
+      }
+    }
+  }
+
+  const shouldRenderTenantStorefront =
+    Boolean(tenantSubdomain) && shouldBootstrapStorefront(hostname, pathname);
+
+  // If a tenant subdomain is detected for a storefront route, we strictly render
+  // the Storefront. Public affiliate/merchant registration paths are handled by
+  // the regular public shell even when accessed from a subdomain.
+  if (shouldRenderTenantStorefront && tenantSubdomain) {
+    return (
+      <PerformanceOptimizer>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            <Route
+              path="/*"
+              element={<StorefrontShell subdomain={tenantSubdomain} />}
+            />
+          </Routes>
+        </Suspense>
+      </PerformanceOptimizer>
+    );
+  }
+
+  // Debug: Log current route and auth status
+  const currentPath = pathname;
+  if (isDev) {
+    console.debug(" [App] Current path:", currentPath);
+    console.debug(" [App] Is authenticated:", isAuthenticated);
+    console.debug(" [App] Is loading:", isLoading);
+  }
+
+  // Check if current path is a public route
+  const isPublicRoute =
+    currentPath.startsWith("/test-public") ||
+    currentPath.startsWith("/company-links/") ||
+    currentPath.startsWith("/auth/") ||
+    currentPath.startsWith("/register/") ||
+    currentPath.startsWith("/affiliate-register") ||
+    currentPath.startsWith("/payment/") ||
+    currentPath.startsWith("/apply/") ||
+    currentPath.startsWith("/for-merchants") ||
+    currentPath.startsWith("/theme-demo/") ||
+    currentPath.startsWith("/store") ||
+    currentPath.startsWith("/cafe-demo") ||
+    currentPath === "/faq" ||
+    currentPath === "/support/faq" ||
+    currentPath === "/";
+
+  const faqRouteElement = isAuthenticated ? (
+    <Layout>
+      <FAQPage />
+    </Layout>
+  ) : (
+    <FAQPage />
+  );
+
+  // Only show loading for non-public routes
+  if (isLoading && !isPublicRoute) {
+    return <LoadingFallback />;
+  }
+
+  if (
+    shouldRedirectMerchantToPortal({
+      isAuthenticated,
+      isLoading,
+      isPublicRoute,
+      pathname: currentPath,
+      role: user?.role,
+    })
+  ) {
+    return <Navigate to="/merchant-portal" replace />;
+  }
+
+  if (
+    shouldRedirectAffiliateToDashboard({
+      isAuthenticated,
+      isLoading,
+      isPublicRoute,
+      pathname: currentPath,
+      role: user?.role,
+    })
+  ) {
+    return <Navigate to="/affiliates/dashboard" replace />;
+  }
+
+  // Check if path is /products/reviews or /my-activity and log debug info
+  if (currentPath === "/products/reviews" || currentPath === "/my-activity") {
+    const hasAccessToken = tokenManager.hasAccessToken();
+
+    if (isDev) {
+      console.debug(` [App] Accessing ${currentPath} `);
+      console.debug(" [App] Is authenticated:", isAuthenticated);
+      console.debug(" [App] Is loading:", isLoading);
+      console.debug(" [App] Token exists:", hasAccessToken);
+      console.debug(
+        " [App] Will render:",
+        isAuthenticated ? "Component" : "Redirect to login",
+      );
+    }
+
+    // If not authenticated but token exists, log more details
+    if (!isAuthenticated && hasAccessToken) {
+      if (isDev) {
+        console.warn(
+          " [App] User has token but isAuthenticated is false! This might be a timing issue.",
+        );
+        console.warn(" [App] isLoading:", isLoading);
+      }
+    }
+  }
+
+  return (
+    <PerformanceOptimizer>
+      <div className="App w-full min-w-full">
+        {/* <EnvironmentIndicator position="bottom-right" /> */}
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            {/* Public Routes */}
+            <Route
+              path="/auth/login"
+              element={
+                <AuthLayout>
+                  <ModernLogin />
+                </AuthLayout>
+              }
+            />
+            <Route
+              path="/auth/register"
+              element={
+                <AuthLayout>
+                  <Register />
+                </AuthLayout>
+              }
+            />
+            <Route
+              path="/auth/customer-register"
+              element={
+                <AuthLayout>
+                  <CustomerRegister />
+                </AuthLayout>
+              }
+            />
+            <Route
+              path="/auth/customer-register/:companyId"
+              element={
+                <AuthLayout>
+                  <CustomerRegister />
+                </AuthLayout>
+              }
+            />
+            <Route
+              path="/auth/forgot-password"
+              element={
+                <AuthLayout>
+                  <ForgotPassword />
+                </AuthLayout>
+              }
+            />
+            <Route
+              path="/auth/reset-password"
+              element={
+                <AuthLayout>
+                  <ResetPassword />
+                </AuthLayout>
+              }
+            />
+            <Route
+              path="/auth/accept-invitation"
+              element={
+                <AuthLayout>
+                  <AcceptInvitation />
+                </AuthLayout>
+              }
+            />
+            <Route
+              path="/onboarding"
+              element={
+                <AuthLayout>
+                  <OnboardingWizard />
+                </AuthLayout>
+              }
+            />
+            <Route
+              path="/company-links/:token"
+              element={<PublicCompanyLinks />}
+            />
+            {/* Public Registration Routes - No Company Required */}
+            <Route
+              path="/register/affiliate"
+              element={
+                <AuthLayout>
+                  <PublicAffiliateRegister />
+                </AuthLayout>
+              }
+            />
+            <Route
+              path="/register/merchant"
+              element={
+                <AuthLayout>
+                  <PublicMerchantRegister />
+                </AuthLayout>
+              }
+            />
+            {/* Public Affiliate Registration - Support both with and without slug */}
+            <Route
+              path="/affiliate-register"
+              element={
+                <AuthLayout>
+                  <PublicAffiliateRegister />
+                </AuthLayout>
+              }
+            />
+            <Route
+              path="/affiliate-register/:slug"
+              element={
+                <AuthLayout>
+                  <PublicAffiliateRegister />
+                </AuthLayout>
+              }
+            />
+            {/* Public Application Form - For job applicants */}
+            <Route path="/apply/:formId" element={<PublicApplicationForm />} />
+            {/* Legal Pages - Public Access */}
+            {/* <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} /> */}
+            <Route path="/faq" element={faqRouteElement} />
+            <Route path="/support/faq" element={faqRouteElement} />
+            {/* Public Storefront Routes - No Authentication Required */}
+            <Route path="/test-minimal" element={<TestMinimal />} />
+            <Route path="/test-public" element={<TestPublic />} />
+            <Route
+              path="/cafe-demo"
+              element={
+                <Suspense fallback={<div>Loading Demo...</div>}>
+                  <CafeThemeDemo />
+                </Suspense>
+              }
+            />
+            {/* Theme Demos - Public Storefront Previews */}
+            <Route
+              path="/theme-demo/pharmacy"
+              element={
+                <Suspense fallback={<div>Loading...</div>}>
+                  <PharmacyThemeDemo />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/theme-demo/furniture"
+              element={
+                <Suspense fallback={<div>Loading...</div>}>
+                  <FurnitureThemeDemo />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/theme-demo/electronics"
+              element={
+                <Suspense fallback={<div>Loading...</div>}>
+                  <ElectronicsThemeDemo />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/theme-demo/restaurant"
+              element={
+                <Suspense fallback={<div>Loading...</div>}>
+                  <RestaurantThemeDemo />
+                </Suspense>
+              }
+            />
+            <Route path="/shadcn-demo" element={<ShadcnDemo />} />
+            <Route path="/for-merchants" element={<MaxPMerchantsLanding />} />
+            <Route path="/lp/mg" element={<MgAgencyLeadLanding />} />
+            <Route path="/lp/mg-agency" element={<MgAgencyLeadLanding />} />
+            <Route
+              path="/preview/platform-home/:variantId"
+              element={<PlatformLandingPreviewPage />}
+            />
+            {/* New Storefront Theme Engine - Fully Isolated */}
+            <Route path="/store/*" element={<StorefrontShell />} />
+            <Route
+              path="/super-admin"
+              element={<Navigate to="/super-admin/dev-dashboard" replace />}
+            />
+            <Route
+              path="/super-admin/login"
+              element={
+                <AuthLayout>
+                  <ModernLogin />
+                </AuthLayout>
+              }
+            />
+            <Route
+              path="/super-admin/dashboard"
+              element={
+                <Layout>
+                  <SuperAdminDashboard />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/team-portal"
+              element={
+                <Layout>
+                  <TeamPortal />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/whatsapp"
+              element={
+                <Layout>
+                  <SuperAdminWhatsAppOverview />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/whatsapp/companies"
+              element={
+                <Layout>
+                  <SuperAdminWhatsAppCompanies />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/whatsapp/companies/:companyId"
+              element={
+                <Layout>
+                  <SuperAdminWhatsAppCompanyWorkspace />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/whatsapp/companies/:companyId/settings"
+              element={
+                <Layout>
+                  <SuperAdminWhatsAppCompanySettings />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/whatsapp/companies/:companyId/notifications"
+              element={
+                <Layout>
+                  <SuperAdminWhatsAppCompanyNotifications />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/whatsapp/companies/:companyId/analytics"
+              element={
+                <Layout>
+                  <SuperAdminWhatsAppCompanyAnalytics />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/whatsapp/logs"
+              element={
+                <Layout>
+                  <SuperAdminWhatsAppLogs />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/whatsapp/automations"
+              element={
+                <Layout>
+                  <SuperAdminWhatsAppAutomations />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/companies"
+              element={
+                <Layout>
+                  <SuperAdminCompanies />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/companies-v2"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminCompaniesV2 />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/companies-reports"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminCompaniesReports />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/companies/:companyId"
+              element={
+                <Layout>
+                  <SuperAdminCompanyDetails />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/users"
+              element={
+                <Layout>
+                  <SuperAdminUsersManagement />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/staff-access"
+              element={
+                <Layout>
+                  <SuperAdminStaffCompanyAccess />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/reports"
+              element={
+                <Layout>
+                  <SuperAdminReports />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/plans"
+              element={
+                <Layout>
+                  <SubscriptionCenter />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/storefront-themes"
+              element={
+                <Layout>
+                  <StorefrontThemesManagement />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/subscriptions"
+              element={
+                <Layout>
+                  <SuperAdminSubscriptions />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/invoices"
+              element={
+                <Layout>
+                  <SuperAdminInvoices />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/payments"
+              element={
+                <Layout>
+                  <SuperAdminPayments />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/system-management"
+              element={
+                <Layout>
+                  <SuperAdminSystemManagement />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/pages"
+              element={<Navigate to="/super-admin/dashboard" replace />}
+            />
+            <Route
+              path="/super-admin/homepage-templates"
+              element={
+                <Layout>
+                  <PlatformSiteHomepageTemplates />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/homepage-templates/:templateId/pages"
+              element={<Navigate to="/super-admin/homepage-templates" replace />}
+            />
+            <Route
+              path="/super-admin/storefront-templates"
+              element={<Navigate to="/super-admin/dashboard" replace />}
+            />
+            <Route
+              path="/super-admin/theme-engine"
+              element={<Navigate to="/super-admin/dashboard" replace />}
+            />
+            <Route
+              path="/super-admin/theme-factory"
+              element={<Navigate to="/super-admin/dashboard" replace />}
+            />
+            <Route
+              path="/demo/theme-engine"
+              element={<Navigate to="/settings/store" replace />}
+            />
+            <Route
+              path="/preview/theme/:id"
+              element={<Navigate to="/settings/store" replace />}
+            />
+            <Route
+              path="/super-admin/agent-config"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminAgentConfig />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/ai-providers"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminAIProviders />
+                </Layout>
+              }
+            />{" "}
+            {/* New Route */}
+            <Route
+              path="/super-admin/ai-providers/provider-priority"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminAIProviderPriority />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/ai-providers/logs"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminAIProviderLogs />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/ai-providers/keys/:id"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminAIKeyDetails />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/ai-playground"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminAIPlayground />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/server-usage"
+              element={
+                <Layout>
+                  <SuperAdminServerUsage />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/platform-site-meta-pixel"
+              element={
+                <Layout>
+                  <PlatformSiteMetaPixel />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/platform-signup-coupons"
+              element={
+                <Layout>
+                  <PlatformSignupCoupons />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/platform-onboarding"
+              element={
+                <Layout>
+                  <PlatformOnboardingSettings />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/facebook-oauth"
+              element={
+                <Layout>
+                  <SuperAdminFacebookOAuth />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/wallet-management"
+              element={
+                <Layout>
+                  <WalletManagement />
+                </Layout>
+              }
+            />
+            {/* Dev Tasks System Routes */}
+            <Route
+              path="/super-admin/dev-dashboard"
+              element={
+                <Layout>
+                  <DevDashboardUnified />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev-tasks"
+              element={
+                <Layout>
+                  <DevTasksList />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev-tasks/new"
+              element={
+                <Layout>
+                  <DevTaskForm />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev-tasks/:id"
+              element={
+                <Layout>
+                  <DevTaskDetails />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev-tasks/:id/edit"
+              element={
+                <Layout>
+                  <DevTaskForm />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev-kanban"
+              element={
+                <Layout>
+                  <DevKanbanBoard />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/active-timers"
+              element={
+                <Layout>
+                  <ActiveTimers />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/time-tracking"
+              element={
+                <Layout>
+                  <TimeTrackingDashboard />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/timer-dashboard"
+              element={
+                <Layout>
+                  <DevTimerDashboard />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/system-monitoring"
+              element={
+                <Layout>
+                  <SystemMonitoring />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev/escalations"
+              element={
+                <Layout>
+                  <EscalationHistory />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/project-map"
+              element={
+                <Layout>
+                  <ProjectMap />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev-projects"
+              element={
+                <Layout>
+                  <DevProjects />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev-releases"
+              element={
+                <Layout>
+                  <DevReleases />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev/team"
+              element={
+                <Layout>
+                  <DevTeam />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/db-migration"
+              element={
+                <Layout>
+                  <DatabaseMigration />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev-settings"
+              element={
+                <Layout>
+                  <DevTaskSettings />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev-task-integrations"
+              element={
+                <Layout>
+                  <DevTaskIntegrations />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev-leaderboard"
+              element={
+                <Layout>
+                  <DevLeaderboard />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev-evaluations"
+              element={
+                <Layout>
+                  <DevEvaluation />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev-evaluations/member/:memberId"
+              element={
+                <Layout>
+                  <DevEvaluationMember />
+                </Layout>
+              }
+            />
+            {/* Dev Goals (OKRs) Routes */}
+            <Route
+              path="/super-admin/dev-goals"
+              element={
+                <Layout>
+                  <DevGoalsList />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev-goals/new"
+              element={
+                <Layout>
+                  <DevGoalForm />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev-goals/alignment"
+              element={
+                <Layout>
+                  <DevGoalAlignmentTree />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev-goals/:id"
+              element={
+                <Layout>
+                  <DevGoalDetails />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/dev-goals/:id/edit"
+              element={
+                <Layout>
+                  <DevGoalForm />
+                </Layout>
+              }
+            />
+            {/* Super Admin Platform Management Routes */}
+            <Route
+              path="/super-admin/platform-subscriptions"
+              element={
+                <Layout>
+                  <PlatformSubscriptions />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/billing-overview"
+              element={
+                <Layout>
+                  <BillingOverview />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/queue-monitor"
+              element={
+                <Layout>
+                  <QueueMonitor />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/marketplace-management"
+              element={
+                <Layout>
+                  <SubscriptionCenter />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/monitoring"
+              element={
+                <Layout>
+                  <SystemMonitoring />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/partner-management"
+              element={
+                <Layout>
+                  <PlatformPartnerManagement />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/pending-receipts"
+              element={
+                <Layout>
+                  <PendingReceipts />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/payout-requests"
+              element={
+                <Layout>
+                  <PayoutRequestsPage />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/storefront/tools"
+              element={<Navigate to="/super-admin/dashboard" replace />}
+            />
+            <Route
+              path="/super-admin/storefront/layout-studio"
+              element={<Navigate to="/super-admin/dashboard" replace />}
+            />
+            <Route
+              path="/super-admin/storefront/sf-library"
+              element={<Navigate to="/super-admin/dashboard" replace />}
+            />
+            <Route
+              path="/super-admin/storefront/structure-manager"
+              element={<Navigate to="/super-admin/dashboard" replace />}
+            />
+            {/* Public Payment Routes */}
+            <Route path="/payment/:invoiceId" element={<PaymentPage />} />
+            <Route
+              path="/payment/subscription-renewal"
+              element={<SubscriptionRenewalPayment />}
+            />
+            {/* Protected Routes with ProtectedRoute component (handles auth internally) */}
+            {/* Protected Routes - Only accessible when authenticated */}
+            {isLoading ? (
+              // While loading, don't render any routes to avoid race condition
+              <Route
+                path="*"
+                element={
+                  <div className="min-h-screen flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+                      <p className="mt-4 text-gray-600">...</p>
+                    </div>
+                  </div>
+                }
+              />
+            ) : isAuthenticated ? (
+              <>
+                <Route
+                  path="/dashboard"
+                  element={<Navigate to="/company-dashboard" replace />}
+                />
+                {/* App Dashboard Routes */}
+                <Route
+                  path="/apps"
+                  element={
+                    <Layout>
+                      <div />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/apps/:appId"
+                  element={
+                    <Layout>
+                      <div />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/partner-dashboard"
+                  element={
+                    <Layout>
+                      <PartnerDashboard />
+                    </Layout>
+                  }
+                />
+                {/* Marketplace Routes */}
+                <Route
+                  path="/marketplace"
+                  element={
+                    <Layout>
+                      <Marketplace />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/marketplace/themes"
+                  element={
+                    <Layout>
+                      <StorefrontThemesMarketplace />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/marketplace/feature-audit"
+                  element={
+                    <Layout>
+                      <MarketplaceFeatureAudit />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/templates"
+                  element={<Navigate to="/marketplace/themes" replace />}
+                />
+                <Route
+                  path="/marketplace/bundles"
+                  element={
+                    <Layout>
+                      <Bundles />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/marketplace/bundle/:slug"
+                  element={
+                    <Layout>
+                      <BundleDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/marketplace/:slug"
+                  element={
+                    <Layout>
+                      <AppDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-apps"
+                  element={
+                    <Layout>
+                      <MyApps />
+                    </Layout>
+                  }
+                />
+                {/* App Management Routes */}
+                <Route
+                  path="/my-apps/:slug/upgrade"
+                  element={
+                    <Layout>
+                      <AppDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-apps/:slug/usage"
+                  element={
+                    <Layout>
+                      <UsageStats />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-apps/:slug/settings"
+                  element={
+                    <Layout>
+                      <AppSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/marketplace/wallet"
+                  element={<Navigate to="/billing/wallet" replace />}
+                />
+                {/* Platform Subscription Routes */}
+                <Route
+                  path="/subscription/plans"
+                  element={
+                    <Layout>
+                      <PlatformPlans />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/subscription/usage"
+                  element={
+                    <Layout>
+                      <UsageStats />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/customers"
+                  element={
+                    <Layout>
+                      <CustomerList />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/customers/new"
+                  element={
+                    <Layout>
+                      <CustomerCreate />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/leads"
+                  element={
+                    <Layout>
+                      <LeadsList />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/customers/whatsapp-notify"
+                  element={
+                    <Layout>
+                      <CustomerWhatsAppNotify />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/customers/birthday-whatsapp-notify"
+                  element={
+                    <Layout>
+                      <CustomerBirthdayWhatsAppNotify />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/customers/occasions-notify"
+                  element={
+                    <Layout>
+                      <CustomerOccasionsWhatsAppNotify />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/customers/:id"
+                  element={
+                    <Layout>
+                      <CustomerDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/customers/:id/edit"
+                  element={
+                    <Layout>
+                      <CustomerEdit />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/wallet"
+                  element={
+                    <Layout>
+                      <CustomerWalletRouteEntry />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/billing/wallet"
+                  element={
+                    <Layout>
+                      <BillingWalletRouteEntry />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/conversations"
+                  element={<Navigate to="/facebook-inbox" replace />}
+                />
+                <Route
+                  path="/conversations-improved"
+                  element={<Navigate to="/facebook-inbox" replace />}
+                />
+                <Route
+                  path="/sent-messages-stats"
+                  element={
+                    <Layout>
+                      <SentMessagesStats />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/campaign-calculator"
+                  element={
+                    <Layout>
+                      <CampaignPredictionCalculator />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/facebook-inbox"
+                  element={
+                    <Layout>
+                      <FacebookInbox />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/instagram-inbox"
+                  element={
+                    <Layout>
+                      <InstagramInbox />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/agent-inbox"
+                  element={
+                    <Layout>
+                      <AgentInboxKeyPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/unified-inbox"
+                  element={
+                    <Layout fullWidth>
+                      <UnifiedInbox />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/whatsapp-inbox"
+                  element={
+                    <Layout fullWidth>
+                      <InboxPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/whatsapp-inbox/:sessionId"
+                  element={
+                    <Layout fullWidth>
+                      <InboxPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/whatsapp-chat/:conversationId"
+                  element={
+                    <Layout fullWidth>
+                      <InboxChat />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/moderator-dashboard"
+                  element={
+                    <Layout>
+                      <ModeratorDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/whatsapp-numbers"
+                  element={
+                    <Layout>
+                      <WhatsAppNumberSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/roles"
+                  element={<Navigate to="/roles" replace />}
+                />
+                <Route
+                  path="/settings/inbox"
+                  element={
+                    <Layout>
+                      <InboxSettingsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/notifications/inbox"
+                  element={
+                    <Layout>
+                      <InboxNotifications />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/appointments"
+                  element={
+                    <Layout>
+                      <Appointments />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/projects"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/categories"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/integrations"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/settings"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/dashboard"
+                  element={
+                    <Layout>
+                      <TasksDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/kanban"
+                  element={
+                    <Layout>
+                      <KanbanBoard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/notifications"
+                  element={
+                    <Layout>
+                      <TaskNotifications />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/calendar"
+                  element={
+                    <Layout>
+                      <CalendarView />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/time-reports"
+                  element={
+                    <Layout>
+                      <TimeReports />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/templates"
+                  element={
+                    <Layout>
+                      <TaskTemplates />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/:id"
+                  element={
+                    <Layout>
+                      <TaskDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/reports/shipping"
+                  element={
+                    <Layout>
+                      <ShippingReport />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics"
+                  element={
+                    <Layout>
+                      <AdvancedReports />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/pos"
+                  element={
+                    <Layout>
+                      <PosPage />
+                    </Layout>
+                  }
+                />
+                {/* Test Chat */}
+                <Route
+                  path="/invoices"
+                  element={
+                    <Layout>
+                      <CustomerInvoices />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/payments"
+                  element={
+                    <Layout>
+                      <CustomerPayments />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/subscription"
+                  element={
+                    <Layout>
+                      <MySubscription />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/broadcast"
+                  element={
+                    <Layout>
+                      <BroadcastDashboard />
+                    </Layout>
+                  }
+                />
+                {/* Advertising Routes */}
+                <Route
+                  path="/advertising/facebook-pixel"
+                  element={
+                    <Layout>
+                      <FacebookPixelSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/google-tag-manager"
+                  element={
+                    <Layout>
+                      <GoogleTagManagerSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads"
+                  element={
+                    <Layout>
+                      <FacebookAdsDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/campaigns"
+                  element={
+                    <Layout>
+                      <FacebookAdsDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/ad-library"
+                  element={
+                    <Layout>
+                      <AdLibraryResearch />
+                    </Layout>
+                  }
+                />
+
+                <Route
+                  path="/advertising/product-landing-pages"
+                  element={
+                    <Layout>
+                      <ProductLandingPages />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/campaigns/create"
+                  element={
+                    <Layout>
+                      <CreateCampaign />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/create-ad"
+                  element={
+                    <Layout>
+                      <CreateAdWizard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/create-full-ad"
+                  element={
+                    <Layout>
+                      <CreateAdWizard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/campaigns/:id"
+                  element={
+                    <Layout>
+                      <CampaignDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/ads/:adId"
+                  element={
+                    <Layout>
+                      <AdDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/campaigns/:campaignId/adsets/create"
+                  element={
+                    <Layout>
+                      <CreateAdSet />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/adsets/:adSetId/ads/create"
+                  element={
+                    <Layout>
+                      <CreateAd />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/catalogs"
+                  element={
+                    <Layout>
+                      <CatalogsManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/catalogs/:id"
+                  element={
+                    <Layout>
+                      <CatalogDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/adsets/:adSetId/dynamic-ads/create"
+                  element={
+                    <Layout>
+                      <CreateDynamicAd />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/tests"
+                  element={
+                    <Layout>
+                      <ABTestsManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/tests/create"
+                  element={
+                    <Layout>
+                      <CreateABTest />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/tests/:id"
+                  element={
+                    <Layout>
+                      <ABTestDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/audiences"
+                  element={
+                    <Layout>
+                      <AudiencesManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/audiences/custom/create"
+                  element={
+                    <Layout>
+                      <CreateCustomAudience />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/audiences/custom/:id"
+                  element={
+                    <Layout>
+                      <CustomAudienceDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/audiences/lookalike/create"
+                  element={
+                    <Layout>
+                      <CreateLookalikeAudience />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/automation-rules"
+                  element={
+                    <Layout>
+                      <AutomationRules />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/decision-reports"
+                  element={
+                    <Layout>
+                      <MediaBuyingReports />
+                    </Layout>
+                  }
+                />
+
+                <Route
+                  path="/advertising/facebook-ads/lead-forms"
+                  element={
+                    <Layout>
+                      <LeadFormsManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/dco"
+                  element={
+                    <Layout>
+                      <DynamicCreativeOptimization />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/advantage-plus"
+                  element={
+                    <Layout>
+                      <AdvantagePlusShopping />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/conversions"
+                  element={
+                    <Layout>
+                      <ConversionApiDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/creative-formats"
+                  element={
+                    <Layout>
+                      <CreativeFormats />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/ad-preview"
+                  element={
+                    <Layout>
+                      <AdPreview />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/saved-audiences"
+                  element={
+                    <Layout>
+                      <SavedAudiences />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/attribution"
+                  element={
+                    <Layout>
+                      <AttributionSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/diagnosis"
+                  element={
+                    <Layout>
+                      <FacebookAdsDiagnosis />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/budget-alerts"
+                  element={
+                    <Layout>
+                      <BudgetAlertsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/reminders"
+                  element={
+                    <Layout>
+                      <Reminders />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/notifications"
+                  element={
+                    <Layout>
+                      <Notifications />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/notification-settings"
+                  element={
+                    <Layout>
+                      <NotificationSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/monitoring"
+                  element={
+                    <Layout>
+                      <MonitoringDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/alert-settings"
+                  element={
+                    <Layout>
+                      <AlertSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/monitor-reports"
+                  element={
+                    <Layout>
+                      <ReportsPage />
+                    </Layout>
+                  }
+                />
+                {/* <Route path="/quality" element={<Layout><QualityDashboard /></Layout>} /> */}
+                <Route
+                  path="/companies"
+                  element={
+                    <Layout>
+                      <CompaniesManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/super-admin/changelog"
+                  element={
+                    <Layout>
+                      <Changelog />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/users"
+                  element={
+                    <Layout>
+                      <UsersManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/employee-stats"
+                  element={
+                    <Layout>
+                      <EmployeeStatsReport />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/roles"
+                  element={
+                    <Layout>
+                      <RolesManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/company-dashboard"
+                  element={
+                    <Layout>
+                      <CompanyDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/company-links"
+                  element={<Navigate to="/my-companies/links" replace />}
+                />
+                <Route
+                  path="/my-companies/links"
+                  element={
+                    <Layout>
+                      <CompanyLinks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <Layout fullWidth>
+                      <Profile />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <Layout>
+                      <Settings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/:tab"
+                  element={
+                    <Layout>
+                      <Settings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/facebook/create-post"
+                  element={
+                    <Layout>
+                      <FacebookPostCreator />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/companies"
+                  element={
+                    <Layout>
+                      <CompaniesManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/super-admin/changelog"
+                  element={
+                    <Layout>
+                      <Changelog />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/users"
+                  element={
+                    <Layout>
+                      <UsersManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/employee-stats"
+                  element={
+                    <Layout>
+                      <EmployeeStatsReport />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/roles"
+                  element={
+                    <Layout>
+                      <RolesManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/company-links"
+                  element={<Navigate to="/my-companies/links" replace />}
+                />
+                <Route
+                  path="/comments/:id"
+                  element={
+                    <Layout>
+                      <CommentDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/comments/settings"
+                  element={
+                    <Layout>
+                      <CommentSettings />
+                    </Layout>
+                  }
+                />
+                {/* Unified Comments Management Routes */}
+                <Route
+                  path="/unified-comments"
+                  element={
+                    <Layout>
+                      <PostsManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/unified-comments-split"
+                  element={
+                    <Layout>
+                      <UnifiedCommentsSplit />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/unified-comments/:postId"
+                  element={
+                    <Layout>
+                      <UnifiedCommentsManagement />
+                    </Layout>
+                  }
+                />
+                {/* Posts Management Routes */}
+                <Route
+                  path="/posts"
+                  element={
+                    <Layout>
+                      <PostsManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/posts/:postId/settings"
+                  element={
+                    <Layout>
+                      <PostSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/posts/:postId/comments"
+                  element={
+                    <Layout>
+                      <PostComments />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/messenger-chat"
+                  element={
+                    <Layout>
+                      <MessengerChat />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/products"
+                  element={
+                    <Layout>
+                      <Products />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/products/trash"
+                  element={
+                    <Layout>
+                      <ProductsTrash />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/products/new"
+                  element={
+                    <Layout>
+                      <ProductNewFinal />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/products/reviews"
+                  element={
+                    <Layout>
+                      <ProductReviewsSimple />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/products/import-easy-orders"
+                  element={
+                    <Layout>
+                      <EasyOrdersImport />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/products/import-woocommerce"
+                  element={
+                    <Layout>
+                      <WooCommerceImport />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/products/:id"
+                  element={
+                    <Layout>
+                      <ProductStoreRedirect />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/products/:id/edit"
+                  element={
+                    <Layout>
+                      <ProductNewFinal />
+                    </Layout>
+                  }
+                />
+                {/* Platform Integrations */}
+                <Route
+                  path="/platform-integrations"
+                  element={
+                    <Layout>
+                      <PlatformIntegrations />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/categories"
+                  element={
+                    <Layout>
+                      <Categories />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/competitors"
+                  element={
+                    <Layout>
+                      <CompetitorList />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/competitors/:id"
+                  element={
+                    <Layout>
+                      <CompetitorDetail />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/competitors/:competitorId/products/:productId/price-history"
+                  element={
+                    <Layout>
+                      <CompetitorPriceHistory />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/competitors/:id/price-compare"
+                  element={
+                    <Layout>
+                      <CompetitorComparison />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/competitors/gap-analysis"
+                  element={
+                    <Layout>
+                      <CompetitorGapAnalysis />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/competitors/reports"
+                  element={
+                    <Layout>
+                      <CompetitorReportsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/competitors/settings"
+                  element={
+                    <Layout>
+                      <CompetitorSettingsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/competitors/auto-discover"
+                  element={
+                    <Layout>
+                      <CompetitorAutoDiscover />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/competitors/:competitorId/battlecard"
+                  element={
+                    <Layout>
+                      <CompetitorBattlecard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/competitors/:competitorId/social"
+                  element={
+                    <Layout>
+                      <SocialOverview />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/competitors/:competitorId/ads"
+                  element={
+                    <Layout>
+                      <AdIntelligence />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/competitors/:competitorId/platforms"
+                  element={
+                    <Layout>
+                      <PlatformOverview />
+                    </Layout>
+                  }
+                />
+                {/* Affiliate Routes */}
+                <Route
+                  path="/affiliates/management/:id"
+                  element={
+                    <Layout>
+                      <AffiliateProfile />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/affiliates/management"
+                  element={
+                    <Layout>
+                      <AffiliatesManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/affiliates/quick-actions"
+                  element={
+                    <Layout>
+                      <AffiliateQuickActions />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/affiliates/settings"
+                  element={
+                    <Layout>
+                      <AffiliateSystemSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/affiliates/register"
+                  element={
+                    <Layout>
+                      <AffiliateRegister />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/affiliates/dashboard"
+                  element={
+                    <Layout>
+                      <AffiliateDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/affiliates/orders"
+                  element={
+                    <Layout>
+                      <AffiliateOrders />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/affiliates/orders/:orderId"
+                  element={
+                    <Layout>
+                      <AffiliateOrderDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/affiliates/orders/create"
+                  element={
+                    <Layout>
+                      <ManualOrderPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/affiliates/customers"
+                  element={
+                    <Layout>
+                      <AffiliateCustomers />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/affiliates/referrals"
+                  element={
+                    <Layout>
+                      <AffiliateReferrals />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/affiliates/marketplace"
+                  element={
+                    <Layout>
+                      <AffiliateMarketplace />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/affiliates/products"
+                  element={
+                    <Layout>
+                      <AffiliateProducts />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/affiliates/commission"
+                  element={
+                    <Layout>
+                      <AffiliateCommission />
+                    </Layout>
+                  }
+                />
+                {/* Merchant Portal */}
+                <Route
+                  path="/merchant-portal/products"
+                  element={<Navigate to="/products" replace />}
+                />
+                <Route
+                  path="/merchant-portal/orders"
+                  element={<Navigate to="/orders" replace />}
+                />
+                <Route
+                  path="/merchant-portal/*"
+                  element={
+                    <Layout>
+                      <MerchantPortalDashboard />
+                    </Layout>
+                  }
+                />
+                {/* Merchant Routes */}
+                <Route
+                  path="/merchants"
+                  element={
+                    <Layout>
+                      <MerchantsList />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/merchants/new"
+                  element={
+                    <Layout>
+                      <MerchantRegister />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/merchants/:id"
+                  element={
+                    <Layout>
+                      <MerchantProfileDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/merchants/:id/edit"
+                  element={
+                    <Layout>
+                      <MerchantProfile />
+                    </Layout>
+                  }
+                />
+                {/* Platform Management Routes */}
+                <Route
+                  path="/platform/commissions"
+                  element={
+                    <Layout>
+                      <CommissionsManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders"
+                  element={
+                    <Layout>
+                      <Orders />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/workspace"
+                  element={
+                    <Layout>
+                      <AgentWorkspace />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/confirmations"
+                  element={<Navigate to="/orders/workspace?tab=confirmation" replace />}
+                />
+                <Route
+                  path="/orders/preparation"
+                  element={
+                    <Layout>
+                      <PreparationQueue />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/incomplete"
+                  element={
+                    <Layout>
+                      <IncompleteOrders />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/incomplete/:cartId"
+                  element={
+                    <Layout>
+                      <IncompleteOrderDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/analytics"
+                  element={
+                    <Layout>
+                      <OrdersAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/woocommerce-sync"
+                  element={
+                    <Layout>
+                      <WooCommerceSync />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/turbo-records"
+                  element={
+                    <Layout>
+                      <TurboRecords />
+                    </Layout>
+                  }
+                />
+
+                <Route
+                  path="/orders/:id"
+                  element={
+                    <Layout>
+                      <OrderDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/invoices"
+                  element={
+                    <Layout>
+                      <OrderInvoices />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/invoice/:invoiceId"
+                  element={<OrderInvoice />}
+                />
+                <Route
+                  path="/orders/invoices/print-multiple"
+                  element={<PrintMultipleInvoices />}
+                />
+                <Route
+                  path="/returns"
+                  element={
+                    <Layout>
+                      <ReturnManagementPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/returns/settings"
+                  element={
+                    <Layout>
+                      <ReturnSettingsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/bulk-search"
+                  element={
+                    <Layout>
+                      <BulkSearchPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/manual"
+                  element={
+                    <Layout>
+                      <ManualOrderPage />
+                    </Layout>
+                  }
+                />
+                {/* Procurement/Purchasing Routes */}
+                <Route
+                  path="/procurement/dashboard"
+                  element={
+                    <Layout>
+                      <ProcurementDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/procurement/suppliers"
+                  element={
+                    <Layout>
+                      <Suppliers />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/procurement/suppliers/:id"
+                  element={
+                    <Layout>
+                      <Suppliers />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/procurement/purchase-orders"
+                  element={
+                    <Layout>
+                      <PurchaseOrders />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/procurement/purchase-orders/new"
+                  element={
+                    <Layout>
+                      <PurchaseOrderForm />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/procurement/purchase-orders/:id/edit"
+                  element={
+                    <Layout>
+                      <PurchaseOrderForm />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/procurement/purchase-orders/:id"
+                  element={
+                    <Layout>
+                      <PurchaseOrders />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/procurement/purchase-invoices"
+                  element={
+                    <Layout>
+                      <PurchaseInvoices />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/procurement/purchase-invoices/new"
+                  element={
+                    <Layout>
+                      <PurchaseInvoices />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/procurement/purchase-invoices/:id"
+                  element={
+                    <Layout>
+                      <PurchaseInvoices />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/procurement/supplier-payments"
+                  element={
+                    <Layout>
+                      <SupplierPayments />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/procurement/supplier-payments/new"
+                  element={
+                    <Layout>
+                      <SupplierPayments />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/procurement/supplier-payments/:id"
+                  element={
+                    <Layout>
+                      <SupplierPayments />
+                    </Layout>
+                  }
+                />
+                {/* Orders Analytics Routes */}
+                <Route
+                  path="/analytics/orders"
+                  element={
+                    <Layout>
+                      <OrdersOverviewDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/orders"
+                  element={
+                    <Layout>
+                      <OrdersAnalyticsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/revenue"
+                  element={
+                    <Layout>
+                      <RevenueAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/products"
+                  element={
+                    <Layout>
+                      <ProductsAnalyticsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/variations"
+                  element={
+                    <Layout>
+                      <VariationsAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/categories"
+                  element={
+                    <Layout>
+                      <CategoriesAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/coupons"
+                  element={
+                    <Layout>
+                      <CouponsAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/taxes"
+                  element={
+                    <Layout>
+                      <TaxesAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/downloads"
+                  element={
+                    <Layout>
+                      <DownloadsAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/stock"
+                  element={
+                    <Layout>
+                      <StockAnalyticsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/customers"
+                  element={
+                    <Layout>
+                      <CustomerAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/payments"
+                  element={
+                    <Layout>
+                      <PaymentMethodAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/campaign-attribution"
+                  element={
+                    <Layout>
+                      <CampaignAttributionAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/profit"
+                  element={
+                    <Layout>
+                      <ProfitAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/cod-performance"
+                  element={
+                    <Layout>
+                      <CODPerformanceAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/cancellations"
+                  element={
+                    <Layout>
+                      <CancellationAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/delivery-rate"
+                  element={
+                    <Layout>
+                      <DeliveryRateAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/regions"
+                  element={
+                    <Layout>
+                      <RegionAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/returns"
+                  element={
+                    <Layout>
+                      <ReturnsAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/funnel"
+                  element={
+                    <Layout>
+                      <FunnelAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/conversion"
+                  element={
+                    <Layout>
+                      <ConversionRateAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/team-performance"
+                  element={
+                    <Layout>
+                      <TeamPerformanceAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/orders/abandoned-cart"
+                  element={
+                    <Layout>
+                      <AbandonedCartAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/inventory/reports"
+                  element={
+                    <Layout>
+                      <InventoryReports />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/coupons"
+                  element={
+                    <Layout>
+                      <Coupons />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/appointments"
+                  element={
+                    <Layout>
+                      <Appointments />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/projects"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/categories"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/integrations"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/settings"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/dashboard"
+                  element={
+                    <Layout>
+                      <TasksDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/kanban"
+                  element={
+                    <Layout>
+                      <KanbanBoard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/notifications"
+                  element={
+                    <Layout>
+                      <TaskNotifications />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/calendar"
+                  element={
+                    <Layout>
+                      <CalendarView />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/time-reports"
+                  element={
+                    <Layout>
+                      <TimeReports />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/templates"
+                  element={
+                    <Layout>
+                      <TaskTemplates />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/:id"
+                  element={
+                    <Layout>
+                      <TaskDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/reports"
+                  element={
+                    <Layout>
+                      <Reports />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/reports/profit-loss"
+                  element={
+                    <Layout>
+                      <ProfitLossReport />
+                    </Layout>
+                  }
+                />
+                {/* <Route path="/reports/shipping" element={<Layout><ShippingReport /></Layout>} /> */}
+                <Route
+                  path="/analytics"
+                  element={
+                    <Layout>
+                      <AdvancedReports />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/analytics/store"
+                  element={
+                    <Layout>
+                      <StoreAnalyticsDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/pos"
+                  element={
+                    <Layout>
+                      <PosPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/facebook-oauth"
+                  element={
+                    <Layout>
+                      <FacebookOAuth />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/stats"
+                  element={
+                    <Layout>
+                      <OrderStats />
+                    </Layout>
+                  }
+                />
+                {/* <Route path="/opportunities" element={<Layout><Opportunities /></Layout>} /> */}
+                <Route
+                  path="/inventory"
+                  element={
+                    <Layout>
+                      <Inventory />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/inventory/analytics"
+                  element={
+                    <Layout>
+                      <InventoryAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/inventory/warehouses"
+                  element={
+                    <Layout>
+                      <WarehouseManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/inventory/audits"
+                  element={
+                    <Layout>
+                      <InventoryAudits />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/inventory/reports"
+                  element={
+                    <Layout>
+                      <InventoryReports />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/coupons"
+                  element={
+                    <Layout>
+                      <Coupons />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/appointments"
+                  element={
+                    <Layout>
+                      <Appointments />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/projects"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/categories"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/integrations"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/settings"
+                  element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/dashboard"
+                  element={
+                    <Layout>
+                      <TasksDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/kanban"
+                  element={
+                    <Layout>
+                      <KanbanBoard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/notifications"
+                  element={
+                    <Layout>
+                      <TaskNotifications />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/calendar"
+                  element={
+                    <Layout>
+                      <CalendarView />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/time-reports"
+                  element={
+                    <Layout>
+                      <TimeReports />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/templates"
+                  element={
+                    <Layout>
+                      <TaskTemplates />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tasks/:id"
+                  element={
+                    <Layout>
+                      <TaskDetails />
+                    </Layout>
+                  }
+                />
+                {/* <Route path="/reports/shipping" element={<Layout><ShippingReport /></Layout>} /> */}
+                <Route
+                  path="/analytics"
+                  element={
+                    <Layout>
+                      <AdvancedReports />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/pos"
+                  element={
+                    <Layout>
+                      <PosPage />
+                    </Layout>
+                  }
+                />
+                {/* Test Chat */}
+                <Route
+                  path="/invoices"
+                  element={
+                    <Layout>
+                      <CustomerInvoices />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/payments"
+                  element={
+                    <Layout>
+                      <CustomerPayments />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/subscription"
+                  element={
+                    <Layout>
+                      <MySubscription />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/broadcast"
+                  element={
+                    <Layout>
+                      <BroadcastDashboard />
+                    </Layout>
+                  }
+                />
+                {/* Advertising Routes */}
+                <Route
+                  path="/advertising/facebook-pixel"
+                  element={
+                    <Layout>
+                      <FacebookPixelSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/google-tag-manager"
+                  element={
+                    <Layout>
+                      <GoogleTagManagerSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads"
+                  element={
+                    <Layout>
+                      <FacebookAdsDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/campaigns"
+                  element={
+                    <Layout>
+                      <FacebookAdsDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/ad-library"
+                  element={
+                    <Layout>
+                      <AdLibraryResearch />
+                    </Layout>
+                  }
+                />
+
+                <Route
+                  path="/advertising/product-landing-pages"
+                  element={
+                    <Layout>
+                      <ProductLandingPages />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/campaigns/create"
+                  element={
+                    <Layout>
+                      <CreateCampaign />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/create-ad"
+                  element={
+                    <Layout>
+                      <CreateAdWizard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/create-full-ad"
+                  element={
+                    <Layout>
+                      <CreateAdWizard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/campaigns/:id"
+                  element={
+                    <Layout>
+                      <CampaignDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/ads/:adId"
+                  element={
+                    <Layout>
+                      <AdDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/campaigns/:campaignId/adsets/create"
+                  element={
+                    <Layout>
+                      <CreateAdSet />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/adsets/:adSetId/ads/create"
+                  element={
+                    <Layout>
+                      <CreateAd />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/catalogs"
+                  element={
+                    <Layout>
+                      <CatalogsManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/catalogs/:id"
+                  element={
+                    <Layout>
+                      <CatalogDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/adsets/:adSetId/dynamic-ads/create"
+                  element={
+                    <Layout>
+                      <CreateDynamicAd />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/tests"
+                  element={
+                    <Layout>
+                      <ABTestsManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/tests/create"
+                  element={
+                    <Layout>
+                      <CreateABTest />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/tests/:id"
+                  element={
+                    <Layout>
+                      <ABTestDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/audiences"
+                  element={
+                    <Layout>
+                      <AudiencesManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/audiences/custom/create"
+                  element={
+                    <Layout>
+                      <CreateCustomAudience />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/audiences/custom/:id"
+                  element={
+                    <Layout>
+                      <CustomAudienceDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/audiences/lookalike/create"
+                  element={
+                    <Layout>
+                      <CreateLookalikeAudience />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/automation-rules"
+                  element={
+                    <Layout>
+                      <AutomationRules />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/decision-reports"
+                  element={
+                    <Layout>
+                      <MediaBuyingReports />
+                    </Layout>
+                  }
+                />
+
+                <Route
+                  path="/advertising/facebook-ads/lead-forms"
+                  element={
+                    <Layout>
+                      <LeadFormsManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/dco"
+                  element={
+                    <Layout>
+                      <DynamicCreativeOptimization />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/advantage-plus"
+                  element={
+                    <Layout>
+                      <AdvantagePlusShopping />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/conversions"
+                  element={
+                    <Layout>
+                      <ConversionApiDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/creative-formats"
+                  element={
+                    <Layout>
+                      <CreativeFormats />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/ad-preview"
+                  element={
+                    <Layout>
+                      <AdPreview />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/saved-audiences"
+                  element={
+                    <Layout>
+                      <SavedAudiences />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/attribution"
+                  element={
+                    <Layout>
+                      <AttributionSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/reminders"
+                  element={
+                    <Layout>
+                      <Reminders />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/notifications"
+                  element={
+                    <Layout>
+                      <Notifications />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/notification-settings"
+                  element={
+                    <Layout>
+                      <NotificationSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/monitoring"
+                  element={
+                    <Layout>
+                      <MonitoringDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/alert-settings"
+                  element={
+                    <Layout>
+                      <AlertSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/monitor-reports"
+                  element={
+                    <Layout>
+                      <ReportsPage />
+                    </Layout>
+                  }
+                />
+                {/* <Route path="/quality" element={<Layout><QualityDashboard /></Layout>} /> */}
+                <Route
+                  path="/companies"
+                  element={
+                    <Layout>
+                      <CompaniesManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/super-admin/changelog"
+                  element={
+                    <Layout>
+                      <Changelog />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/users"
+                  element={
+                    <Layout>
+                      <UsersManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/employee-stats"
+                  element={
+                    <Layout>
+                      <EmployeeStatsReport />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/roles"
+                  element={
+                    <Layout>
+                      <RolesManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/company-dashboard"
+                  element={
+                    <Layout>
+                      <CompanyDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/company-links"
+                  element={<Navigate to="/my-companies/links" replace />}
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <Layout fullWidth>
+                      <Profile />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <Layout>
+                      <Settings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/customer-blocks"
+                  element={
+                    <Layout fullWidth>
+                      <CustomerBlockSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/orders"
+                  element={
+                    <Layout fullWidth>
+                      <OrderSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/order-invoice"
+                  element={
+                    <Layout>
+                      <OrderInvoiceSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/order-numbering"
+                  element={
+                    <Layout>
+                      <OrderNumberingSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/ratings"
+                  element={
+                    <Layout>
+                      <RatingSettingsManager />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/rule-responses"
+                  element={<Navigate to="/settings/smart-replies" replace />}
+                />
+                <Route
+                  path="/settings/scheduled-orders"
+                  element={
+                    <Layout>
+                      <ScheduledOrderSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/order-workflow"
+                  element={
+                    <Layout>
+                      <OrderWorkflow />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/store-settings"
+                  element={
+                    <Navigate to="/settings/store?tab=branches" replace />
+                  }
+                />
+                <Route
+                  path="/settings/store"
+                  element={
+                    <Layout>
+                      <StoreSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/store/product-conversion"
+                  element={
+                    <Layout>
+                      <ProductPageConversionSettingsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/store/offers-bundles"
+                  element={
+                    <Layout>
+                      <StoreOffersBundlesSettingsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/store/growth-widgets"
+                  element={
+                    <Layout>
+                      <StoreGrowthWidgetsSettingsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/store/selling-modes"
+                  element={
+                    <Layout>
+                      <StoreSellingModesSettingsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/store/reviews-social-proof"
+                  element={
+                    <Layout>
+                      <StoreReviewsSocialProofSettingsPage />
+                    </Layout>
+                  }
+                />
+                  <Route
+                    path="/settings/storefront/*"
+                    element={
+                      <Navigate to="/settings/storefront/editor" replace />
+                    }
+                  />
+                  <Route
+                    path="/settings/storefront-preview/*"
+                    element={
+                      <Navigate
+                        to="/settings/storefront/editor"
+                        replace
+                      />
+                    }
+                  />
+                  <Route
+                    path="/settings/storefront/sections-editor"
+                    element={
+                      <Navigate to="/settings/storefront/editor" replace />
+                    }
+                  />
+                  <Route
+                    path="/settings/storefront/editor"
+                    element={
+                      <Layout fullWidth>
+                        <StorefrontVisualEditorPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/home-builder"
+                  element={
+                    <Layout fullWidth>
+                      <StorefrontVisualEditorPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/store-pages"
+                  element={
+                    <Layout>
+                      <StorePages />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/product-images"
+                  element={
+                    <Navigate
+                      to="/settings/storefront/editor"
+                      replace
+                    />
+                  }
+                />
+                <Route
+                  path="/settings/checkout"
+                  element={<Navigate to="/settings/store?tab=checkout" replace />}
+                />
+                <Route
+                  path="/settings/clarity"
+                  element={
+                    <Layout>
+                      <StorefrontClaritySettings />
+                    </Layout>
+                  }
+                />
+                  <Route
+                    path="/settings/storefront/tools"
+                    element={<Navigate to="/settings/storefront/editor" replace />}
+                  />
+                <Route
+                  path="/settings/storefront/studio"
+                  element={
+                    <Navigate to="/settings/storefront/editor" replace />
+                  }
+                />
+                <Route
+                  path="/settings/storefront/studio/templates"
+                  element={
+                    <Navigate to="/marketplace/themes" replace />
+                  }
+                />
+                <Route
+                  path="/settings/storefront/studio/footers"
+                  element={<Navigate to="/settings/store?tab=footer" replace />}
+                />
+                  <Route
+                    path="/settings/storefront/shop-studio"
+                    element={<Navigate to="/settings/storefront/editor" replace />}
+                  />
+                <Route
+                  path="/settings/storefront/shop-studio/templates"
+                  element={<Navigate to="/marketplace/themes" replace />}
+                />
+                  <Route
+                    path="/settings/storefront/studio/shop"
+                    element={<Navigate to="/settings/storefront/editor" replace />}
+                  />
+                <Route
+                  path="/settings/storefront/studio/shop/templates"
+                  element={<Navigate to="/marketplace/themes" replace />}
+                />
+                  <Route
+                    path="/settings/storefront/tools-legacy"
+                    element={<Navigate to="/settings/storefront/editor" replace />}
+                  />
+                <Route
+                  path="/settings/storefront/layout-studio"
+                  element={
+                    <Navigate to="/settings/storefront/editor" replace />
+                  }
+                />
+                <Route
+                  path="/settings/storefront/structure-manager"
+                  element={
+                    <Navigate to="/settings/storefront/editor" replace />
+                  }
+                />
+                <Route
+                  path="/settings/conversion-tools"
+                  element={
+                    <Navigate to="/settings/store?tab=promotion" replace />
+                  }
+                />
+                <Route
+                  path="/settings/delivery-options"
+                  element={
+                    <Layout>
+                      <DeliveryOptions />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/turbo"
+                  element={
+                    <Layout>
+                      <TurboSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/turbo/ticket/:ticketId"
+                  element={
+                    <Layout>
+                      <TurboTicketDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/tickets"
+                  element={
+                    <Layout>
+                      <TurboTickets />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-companies"
+                  element={
+                    <Layout>
+                      <ShippingCompanies />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/shipping-companies/:id"
+                  element={
+                    <Layout>
+                      <ShippingCompanyDetail />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/smart-replies"
+                  element={
+                    <Layout>
+                      <SmartRepliesSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/promotion"
+                  element={
+                    <Layout>
+                      <PromotionSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/recommendations"
+                  element={
+                    <Layout>
+                      <RecommendationSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/upsell"
+                  element={
+                    <Layout>
+                      <RecommendationSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/homepage"
+                  element={
+                    <Navigate to="/settings/storefront/editor" replace />
+                  }
+                />
+                <Route
+                  path="/settings/homepage/create"
+                  element={
+                    <Navigate to="/settings/storefront/editor" replace />
+                  }
+                />
+                <Route
+                  path="/settings/homepage/edit/:id"
+                  element={
+                    <Navigate to="/settings/storefront/editor" replace />
+                  }
+                />
+                <Route
+                  path="/preview/homepage/:id"
+                  element={
+                    <Navigate to="/settings/storefront/editor" replace />
+                  }
+                />
+                <Route
+                  path="/preview/engine/*"
+                  element={
+                    <Navigate to="/settings/storefront/editor" replace />
+                  }
+                />
+                <Route
+                  path="/settings/facebook"
+                  element={
+                    <Layout>
+                      <FacebookSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/instagram"
+                  element={
+                    <Layout>
+                      <InstagramSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/facebook-oauth"
+                  element={
+                    <Layout>
+                      <FacebookOAuth />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/facebook/engagement-stats"
+                  element={
+                    <Layout>
+                      <PageEngagementStats />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/telegram"
+                  element={
+                    <Layout>
+                      <TelegramSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/telegram/pro"
+                  element={
+                    <Layout>
+                      <TelegramConversationsPro />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/telegram-userbot"
+                  element={
+                    <Layout>
+                      <TelegramUserbot />
+                    </Layout>
+                  }
+                />{" "}
+                {/* System 2 */}
+                <Route
+                  path="/telegram/auto-reply"
+                  element={
+                    <Layout>
+                      <TelegramAutoReply />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/telegram/bulk-messages"
+                  element={
+                    <Layout>
+                      <TelegramBulkMessages />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/telegram/scheduler"
+                  element={
+                    <Layout>
+                      <TelegramScheduler />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/telegram/campaigns"
+                  element={
+                    <Layout>
+                      <TelegramCampaigns />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/telegram/groups"
+                  element={
+                    <Layout>
+                      <TelegramGroups />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/terms"
+                  element={
+                    <Layout>
+                      <TermsOfService />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/privacy"
+                  element={
+                    <Layout>
+                      <PrivacyPolicy />
+                    </Layout>
+                  }
+                />
+                {/* WhatsApp Routes */}
+                <Route
+                  path="/whatsapp"
+                  element={
+                    <Layout>
+                      <WhatsAppChat />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/whatsapp/chat"
+                  element={
+                    <Layout>
+                      <WhatsAppChat />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/whatsapp/settings"
+                  element={
+                    <Layout>
+                      <WhatsAppSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/whatsapp/notifications"
+                  element={
+                    <Layout>
+                      <WhatsAppNotifications />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/whatsapp/templates"
+                  element={
+                    <Layout>
+                      <WhatsAppTemplates />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/whatsapp/customer-journey"
+                  element={
+                    <Layout>
+                      <WhatsAppCustomerJourney />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/whatsapp/analytics"
+                  element={
+                    <Layout>
+                      <WhatsAppAnalytics />
+                    </Layout>
+                  }
+                />
+                {/* HR Routes */}
+                <Route
+                  path="/hr"
+                  element={
+                    <Layout>
+                      <HRDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/dashboard"
+                  element={
+                    <Layout>
+                      <HRDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-companies/hr"
+                  element={
+                    <Layout>
+                      <MyCompaniesDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-companies/reports"
+                  element={
+                    <Layout>
+                      <OwnerReports />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-companies/company/:companyId/orders"
+                  element={
+                    <Layout>
+                      <CompanyOrdersDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-companies/attendance"
+                  element={
+                    <Layout>
+                      <OwnerAttendanceReport />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-companies/users"
+                  element={
+                    <Layout>
+                      <OwnerUsersManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/employees"
+                  element={
+                    <Layout>
+                      <Employees />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/employees/:id"
+                  element={
+                    <Layout>
+                      <EmployeeDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/employees/:id/edit"
+                  element={
+                    <Layout>
+                      <EmployeeEdit />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/salary-updates"
+                  element={
+                    <Layout>
+                      <SalaryUpdates />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/departments"
+                  element={
+                    <Layout>
+                      <Departments />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/positions"
+                  element={
+                    <Layout>
+                      <PositionsManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/attendance"
+                  element={
+                    <Layout>
+                      <Attendance />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/attendance/manual-edit"
+                  element={
+                    <Layout>
+                      <ManualAttendanceEdit />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/leaves"
+                  element={
+                    <Layout>
+                      <Leaves />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/permissions"
+                  element={
+                    <Layout>
+                      <Permissions />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/payroll"
+                  element={
+                    <Layout>
+                      <Payroll />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/payroll/testing"
+                  element={
+                    <Layout>
+                      <PayrollTesting />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/deductions"
+                  element={
+                    <Layout>
+                      <Deductions />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/settings"
+                  element={
+                    <Layout>
+                      <HRSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/reports"
+                  element={
+                    <Layout>
+                      <HRReports />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/reports-hub"
+                  element={
+                    <Layout>
+                      <HRReportsHub />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/documents/:employeeId"
+                  element={
+                    <Layout>
+                      <Documents />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/salary-history"
+                  element={
+                    <Layout>
+                      <SalaryHistory />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/salary-history/:employeeId"
+                  element={
+                    <Layout>
+                      <SalaryHistory />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/performance-reviews"
+                  element={
+                    <Layout>
+                      <PerformanceReviews />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/performance-reviews/new"
+                  element={
+                    <Layout>
+                      <CreatePerformanceReview />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/performance-reviews/:id"
+                  element={
+                    <Layout>
+                      <PerformanceReviews />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/performance-reviews/:id/edit"
+                  element={
+                    <Layout>
+                      <CreatePerformanceReview />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/training"
+                  element={
+                    <Layout>
+                      <Training />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/training/new"
+                  element={
+                    <Layout>
+                      <CreateTraining />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/training/:id"
+                  element={
+                    <Layout>
+                      <CreateTraining />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/rewards"
+                  element={
+                    <Layout>
+                      <RewardsList />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/rewards/create"
+                  element={
+                    <Layout>
+                      <CreateEditReward />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/rewards/edit/:id"
+                  element={
+                    <Layout>
+                      <CreateEditReward />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/rewards/:id"
+                  element={
+                    <Layout>
+                      <RewardDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/customers/cashback"
+                  element={
+                    <Layout>
+                      <CashbackSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/customers/loyalty-programs"
+                  element={
+                    <Layout>
+                      <LoyaltyPrograms />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/customers/loyalty-tiers"
+                  element={
+                    <Layout>
+                      <LoyaltyTiers />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/customers/loyalty-members"
+                  element={
+                    <Layout>
+                      <LoyaltyMembers />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/customers/loyalty-analytics"
+                  element={
+                    <Layout>
+                      <LoyaltyAnalytics />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/customers/points-center"
+                  element={
+                    <Layout>
+                      <CustomerPointsCenter />
+                    </Layout>
+                  }
+                />
+                {/* <Route path="/customers/loyalty" element={<Layout><CustomerLoyalty /></Layout>} /> */}
+                <Route
+                  path="/hr/warnings"
+                  element={
+                    <Layout>
+                      <Warnings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/warnings/new"
+                  element={
+                    <Layout>
+                      <CreateWarning />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/warnings/:id"
+                  element={
+                    <Layout>
+                      <WarningDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/warnings/:id/edit"
+                  element={
+                    <Layout>
+                      <EditWarning />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/promotions"
+                  element={
+                    <Layout>
+                      <EmployeesPromotion />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/promotions/new"
+                  element={
+                    <Layout>
+                      <CreatePromotion />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/promotions/edit/:id"
+                  element={
+                    <Layout>
+                      <EditPromotion />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/promotions/:id/edit"
+                  element={
+                    <Layout>
+                      <EditPromotion />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/shifts"
+                  element={
+                    <Layout>
+                      <Shifts />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/shifts/:id"
+                  element={
+                    <Layout>
+                      <ShiftDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/benefits"
+                  element={
+                    <Layout>
+                      <Benefits />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/benefits/:id"
+                  element={
+                    <Layout>
+                      <Benefits />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/goals"
+                  element={
+                    <Layout>
+                      <Goals />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/goals/new"
+                  element={
+                    <Layout>
+                      <CreateGoal />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/goals/:id"
+                  element={
+                    <Layout>
+                      <CreateGoal />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/goals"
+                  element={<Navigate to="/goals" replace />}
+                />
+                <Route
+                  path="/hr/goals/new"
+                  element={<Navigate to="/goals/new" replace />}
+                />
+                <Route
+                  path="/hr/goals/:id"
+                  element={
+                    <Layout>
+                      <CreateGoal />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/feedback"
+                  element={
+                    <Layout>
+                      <Feedback />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/feedback/new"
+                  element={
+                    <Layout>
+                      <CreateFeedback />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/feedback/edit/:id"
+                  element={
+                    <Layout>
+                      <CreateFeedback />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/resignations"
+                  element={
+                    <Layout>
+                      <Resignations />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/resignations/new"
+                  element={
+                    <Layout>
+                      <CreateResignation />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/resignations/:id/approve"
+                  element={
+                    <Layout>
+                      <DecisionResignation />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/resignations/:id/reject"
+                  element={
+                    <Layout>
+                      <DecisionResignation />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/resignations/:id/clearance"
+                  element={
+                    <Layout>
+                      <ClearanceChecklist />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/advances"
+                  element={
+                    <Layout>
+                      <Advances />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/advances/new"
+                  element={
+                    <Layout>
+                      <CreateAdvance />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/audit-logs"
+                  element={
+                    <Layout>
+                      <AuditLogs />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/assets"
+                  element={
+                    <Layout>
+                      <AssetsDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/recruitment"
+                  element={
+                    <Layout>
+                      <RecruitmentDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/reporting/forms"
+                  element={
+                    <Layout>
+                      <WorkReportFormsDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/reporting/forms/new"
+                  element={
+                    <Layout>
+                      <WorkReportFormBuilder />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/reporting/forms/:formId/edit"
+                  element={
+                    <Layout>
+                      <WorkReportFormBuilder />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/reporting/forms/:formId/preview"
+                  element={
+                    <Layout>
+                      <WorkReportFormPreview />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/reporting/forms/:formId/fill"
+                  element={
+                    <Layout>
+                      <WorkReportSubmissionPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/reporting/forms/:formId/records"
+                  element={
+                    <Layout>
+                      <WorkReportRecordsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/company-policy"
+                  element={
+                    <Layout>
+                      <CompanyPolicy />
+                    </Layout>
+                  }
+                />
+                {/* Employee Self-Service Routes */}
+                <Route
+                  path="/my-attendance"
+                  element={
+                    <Layout>
+                      <MyAttendance />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-dashboard"
+                  element={
+                    <Layout>
+                      <MyDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-leaves"
+                  element={
+                    <Layout>
+                      <Leaves />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-permissions"
+                  element={
+                    <Layout>
+                      <Permissions />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-payroll"
+                  element={
+                    <Layout>
+                      <MyPayroll />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-deductions"
+                  element={
+                    <Layout>
+                      <MyDeductions />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-warnings"
+                  element={
+                    <Layout>
+                      <MyWarnings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-promotions"
+                  element={
+                    <Layout>
+                      <MyPromotions />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-rewards"
+                  element={
+                    <Layout>
+                      <MyRewards />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-resignation"
+                  element={
+                    <Layout>
+                      <MyResignation />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-advances"
+                  element={
+                    <Layout>
+                      <MyAdvances />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-custody"
+                  element={
+                    <Layout>
+                      <MyCustody />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-feedback"
+                  element={
+                    <Layout>
+                      <MyFeedback />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-feedback/new"
+                  element={
+                    <Layout>
+                      <CreateFeedback />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/my-training"
+                  element={
+                    <Layout>
+                      <MyTraining />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/hr/resignations/:id"
+                  element={
+                    <Layout>
+                      <Resignations />
+                    </Layout>
+                  }
+                />
+                {/* Support System Routes */}
+                <Route
+                  path="/support"
+                  element={
+                    <Layout>
+                      <SupportCenter />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/support/tickets"
+                  element={
+                    <Layout>
+                      <MyTickets />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/support/tickets/new"
+                  element={
+                    <Layout>
+                      <CreateTicket />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/support/tickets/:ticketId"
+                  element={
+                    <Layout>
+                      <SupportTicketDetails />
+                    </Layout>
+                  }
+                />
+                {/* Activity Log Routes */}
+                <Route
+                  path="/my-activity"
+                  element={
+                    <Layout>
+                      <MyActivity />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/company/activity"
+                  element={
+                    <Layout>
+                      <CompanyActivity />
+                    </Layout>
+                  }
+                />
+                {/* Admin Support Routes */}
+                <Route
+                  path="/admin/support"
+                  element={
+                    <Layout>
+                      <SupportAdmin />
+                    </Layout>
+                  }
+                />
+                {/* Gamification Route */}
+                <Route
+                  path="/super-admin/dev-leaderboard"
+                  element={
+                    <Layout>
+                      <DevLeaderboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/super-admin/dev-evaluations"
+                  element={
+                    <Layout>
+                      <DevEvaluation />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/super-admin/dev-evaluations/member/:memberId"
+                  element={
+                    <Layout>
+                      <DevEvaluationMember />
+                    </Layout>
+                  }
+                />
+                {/* Knowledge base routes */}
+                <Route
+                  path="/admin/faqs"
+                  element={
+                    <Layout>
+                      <FAQManagement />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/policies"
+                  element={
+                    <Layout>
+                      <PolicyManagement />
+                    </Layout>
+                  }
+                />
+                {/* Merchant AI Pages */}
+                <Route
+                  path="/admin/agent-manager"
+                  element={
+                    <Layout fullWidth>
+                      <AgentManagerPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/agent-config"
+                  element={<Navigate to="/admin/ai-agents?agent=ceo" replace />}
+                />
+                <Route
+                  path="/admin/ai-chat"
+                  element={
+                    <Layout fullWidth>
+                      <AIChatPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/ai-rag-lab"
+                  element={
+                    <Layout fullWidth>
+                      <AgenticRAGLab />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/ai-agent-sandbox"
+                  element={
+                    <Layout fullWidth>
+                      <AIAgentSandboxPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/ai-agents"
+                  element={
+                    <Layout fullWidth>
+                      <CompanyAIAgents />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/ai-catalog"
+                  element={
+                    <Layout fullWidth>
+                      <AgentCatalogPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/ai-agent-map"
+                  element={
+                    <Layout fullWidth>
+                      <AgentTeamMapPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/ai-skills"
+                  element={
+                    <Layout fullWidth>
+                      <AgentSkillsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/ai-tools"
+                  element={
+                    <Layout fullWidth>
+                      <AgentToolsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/sub-agents"
+                  element={
+                    <Layout fullWidth>
+                      <SubAgentsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/ai-scheduler"
+                  element={
+                    <Layout fullWidth>
+                      <CompanyAIScheduler />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/"
+                  element={<Navigate to="/company-dashboard" replace />}
+                />
+                <Route
+                  path="*"
+                  element={<Navigate to="/company-dashboard" replace />}
+                />
+              </>
+            ) : (
+              // Redirect unauthenticated users trying to access protected routes
+              <>
+                <Route path="/" element={<PlatformLandingPage />} />
+                <Route
+                  path="/store-settings"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                  <Route
+                    path="/settings/storefront/*"
+                    element={<Navigate to="/auth/login" replace />}
+                  />
+                  <Route
+                    path="/settings/storefront-preview/*"
+                    element={<Navigate to="/auth/login" replace />}
+                  />
+                  <Route
+                    path="/settings/storefront/editor"
+                    element={<Navigate to="/auth/login" replace />}
+                  />
+                  <Route
+                    path="/home-builder"
+                    element={<Navigate to="/auth/login" replace />}
+                  />
+                <Route
+                  path="/settings/*"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/dashboard"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/products/*"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/orders/*"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/customers"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/invoices"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/payments"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/subscription"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/broadcast"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/reminders"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/notifications"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/notification-settings"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/monitoring"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/alert-settings"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/comments/*"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/unified-comments/*"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/posts/*"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/messenger-chat"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/conversations-improved"
+                  element={<Navigate to="/facebook-inbox" replace />}
+                />
+                {/* <Route path="/external-messages-stats" element={<Navigate to="/auth/login" replace />} /> */}
+                <Route
+                  path="/sent-messages-stats"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/facebook-inbox"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/settings/agent-inbox"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+<Route
+                    path="/home-builder"
+                    element={<Navigate to="/auth/login" replace />}
+                  />
+                <Route
+                  path="/facebook/create-post"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/facebook/engagement-stats"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/categories"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/competitors"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/competitors/:id"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/appointments"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/tasks/*"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/goals/*"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                {/* Gamification Public Route */}
+                <Route
+                  path="/super-admin/dev-leaderboard"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/whatsapp/*"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/hr/*"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/support/*"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/admin/support"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/super-admin/dev-reports"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+                <Route
+                  path="/super-admin/db-migration"
+                  element={
+                    <Layout>
+                      <DatabaseMigration />
+                    </Layout>
+                  }
+                />
+
+                <Route
+                  path="*"
+                  element={<Navigate to="/auth/login" replace />}
+                />
+              </>
+            )}
+          </Routes>
+        </Suspense>
+      </div>
+    </PerformanceOptimizer>
+  );
+};
+
+// Main App component with providers
+const App = () => {
+  return (
+    <AppProviders>
+      <AppContent />
+    </AppProviders>
+  );
+};
+
+export default App;

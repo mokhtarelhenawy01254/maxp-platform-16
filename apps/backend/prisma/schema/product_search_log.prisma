@@ -1,0 +1,24 @@
+model ProductSearchLog {
+  id                 String   @id @default(uuid())
+  companyId          String
+  conversationId     String?
+  queryText          String
+  expandedQuery      String?
+  extractedFilters   Json?
+  searchWeights      Json?
+  resolvedProductIds String[] @default([])
+  resultCount        Int      @default(0)
+  topScore           Float?   @default(0)
+  searchStrategy     String?  @default("hybrid")
+  recoveryUsed       Boolean  @default(false)
+  recoveryStrategy   String?
+  conversionType     String?
+  latencyMs          Int      @default(0)
+  createdAt          DateTime @default(now())
+
+  @@index([companyId])
+  @@index([createdAt])
+  @@index([conversionType])
+  @@index([companyId, createdAt(sort: Desc)])
+  @@map("product_search_logs")
+}

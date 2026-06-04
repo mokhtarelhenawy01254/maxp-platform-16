@@ -1,0 +1,616 @@
+{
+  "id": "restaurant-demo",
+  "name": "BiteRush",
+  "tokens": {
+    "colors": {
+      "primary": "7 86% 52%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "33 100% 95%",
+      "secondaryForeground": "222 42% 12%",
+      "accent": "27 100% 53%",
+      "accentForeground": "0 0% 100%",
+      "background": "36 100% 98%",
+      "foreground": "222 42% 11%",
+      "muted": "32 55% 90%",
+      "mutedForeground": "220 12% 38%",
+      "border": "28 31% 84%",
+      "card": "0 0% 100%",
+      "cardForeground": "222 42% 11%",
+      "ring": "27 100% 53%"
+    },
+    "typography": {
+      "headingFont": "\"Teko\", \"Cairo\", sans-serif",
+      "bodyFont": "\"Cairo\", \"Inter\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.5rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.25rem",
+      "boxShadow": "0 18px 40px -32px rgba(17, 24, 39, 0.35)",
+      "hoverShadow": "0 24px 48px -26px rgba(17, 24, 39, 0.42)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
+      "surfaceOpacity": "1"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | BiteRush",
+    "description": "برجر وكومبوهات وإضافات بطابع جريء وتوصيل سريع يخلّي قرار الأكل أسهل في أي وقت."
+  },
+  "header": {
+    "variant": "floating-dark",
+    "transparentOnHome": true,
+    "brandName": "BiteRush",
+    "showSearch": true,
+    "navigation": [
+      {
+        "label": "الرئيسية",
+        "to": "/"
+      },
+      {
+        "label": "المنيو",
+        "to": "/shop"
+      },
+      {
+        "label": "الكومبوهات",
+        "to": "/sale"
+      },
+      {
+        "label": "الفئات",
+        "to": "/collections"
+      }
+    ],
+    "actions": [
+      {
+        "label": "اطلب الآن",
+        "to": "/shop",
+        "style": "primary"
+      }
+    ]
+  },
+  "footer": {
+    "description": "وجبات مشبعة، كومبوهات جاهزة، وإضافات تكمّل الطلب من أول ضغطة لحد باب البيت.",
+    "copyrightText": "© 2026 BiteRush. جميع الحقوق محفوظة.",
+    "socialLinks": {
+      "facebook": "https://facebook.com",
+      "instagram": "https://instagram.com",
+      "twitter": "https://twitter.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
+    "navigation": [
+      {
+        "title": "الطلب",
+        "links": [
+          {
+            "label": "المنيو الكامل",
+            "to": "/shop"
+          },
+          {
+            "label": "عروض اليوم",
+            "to": "/sale"
+          },
+          {
+            "label": "تابع الطلب",
+            "to": "/thank-you"
+          }
+        ]
+      },
+      {
+        "title": "المساعدة",
+        "links": [
+          {
+            "label": "عن BiteRush",
+            "to": "/collections"
+          },
+          {
+            "label": "الدعم والاتصال",
+            "to": "/registration"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "سياسة الطلب",
+        "to": "/registration"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "عروض BiteRush",
+            "message": "وجبات مشبعة، كومبوهات جاهزة، وتوصيل سريع داخل القاهرة والجيزة طول اليوم.",
+            "saleLabel": "عرض اليوم",
+            "shippingLabel": "توصيل ساخن",
+            "returnLabel": "دفع آمن",
+            "ctaText": "افتح المنيو",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "split-panel",
+          "settings": {
+            "eyebrow": "BiteRush",
+            "title": "اطلب أسرع، وكلّك يبقى أهدى",
+            "subtitle": "برجر ساخن، كومبوهات موفّرة، وإضافات سريعة تخلي اختيارك أسهل من أول نظرة.",
+            "ctaText": "اطلب من المنيو",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شاهد عروض الليلة",
+            "secondaryCtaLink": "/sale",
+            "backgroundImage": "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=1600",
+            "panelImage": "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&q=80&w=1200",
+            "panelEyebrow": "عروض الليل",
+            "panelNote": "كومبوهات جاهزة ومشروبات باردة للطلبات السريعة بعد يوم طويل.",
+            "highlights": [
+              {
+                "label": "الأكثر طلبًا",
+                "value": "برجر + كومبو"
+              },
+              {
+                "label": "جاهز خلال",
+                "value": "دقائق قليلة"
+              },
+              {
+                "label": "توصيل BiteRush",
+                "value": "ساخن حتى الباب"
+              }
+            ],
+            "floatingCards": [
+              {
+                "eyebrow": "كومبو الليلة",
+                "title": "وجبات جاهزة للجوع السريع",
+                "description": "اختيارات مشبعة بمشروب وإضافة في طلب واحد.",
+                "tone": "accent",
+                "position": "top-left"
+              },
+              {
+                "eyebrow": "بعد الساعة 10",
+                "title": "عروض مسائية مشبعة",
+                "description": "أسعار أخف وكومبوهات أسرع لما تكون عايز وجبة تشبع فورًا.",
+                "tone": "primary",
+                "position": "bottom-left"
+              }
+            ],
+            "profileChip": {
+              "label": "الأكثر طلبًا",
+              "value": "كومبو + إضافة + مشروب"
+            }
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "menu-categories",
+          "settings": {
+            "title": "ابدأ من نوع الجوع",
+            "subtitle": "ابدأ من البرجر، الكومبوهات، الإضافات، أو المشروبات لحد ما توصل لطلبك بسرعة.",
+            "limit": 4,
+            "ctaText": "كل الفئات",
+            "ctaLink": "/collections",
+        "collections": "البرجر|برجرات مشبعة بطعم واضح وتوليفة محبوبة طول اليوم.|https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=900|/shop?category=burgers\nالكومبوهات|وجبة كاملة مع بطاطس ومشروب بقيمة أوفر من الطلب المنفصل.|https://images.unsplash.com/photo-1512152272829-e3139592d56f?auto=format&fit=crop&q=80&w=900|/sale?category=combos\nالإضافات|بطاطس، صوصات، وأصناف جانبية تكمل الوجبة على مزاجك.|https://images.unsplash.com/photo-1639024471283-03518883512d?auto=format&fit=crop&q=80&w=900|/shop?category=sides\nالمشروبات والحلو|مشروبات باردة وحلو خفيف يختم الطلب بشكل أظبط.|https://images.unsplash.com/photo-1499638673689-79a0b5115d87?auto=format&fit=crop&q=80&w=900|/shop?category=drinks"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "combo-deals",
+          "settings": {
+            "badge": "اختيارات سريعة",
+            "title": "اختر المسار اللي يناسب جوعك",
+            "subtitle": "من البرجر الأكثر طلبًا للكومبوهات والعروض الليلية، كل حاجة جاهزة في خطوة.",
+            "cards": [
+              {
+                "label": "الأكثر طلبًا",
+                "title": "ابدأ بالأصناف اللي عليها سحب",
+                "subtitle": "برجرات معروفة بطعمها وسهولة الاختيار أول مرة.",
+                "ctaText": "ابدأ بالأكثر طلبًا",
+                "link": "/shop?sortBy=popularity",
+                "tone": "primary",
+                "stat": "الأكثر طلبًا"
+              },
+              {
+                "label": "كومبوهات",
+                "title": "وجبة كاملة في ضغطة واحدة",
+                "subtitle": "برجر + بطاطس + مشروب بقيمة أوفر ومن غير حيرة.",
+                "ctaText": "شاهد الكومبوهات",
+                "link": "/sale?category=combos",
+                "tone": "accent",
+                "stat": "أوفر كومبو"
+              },
+              {
+                "label": "طلبات الليل",
+                "title": "اختيارات لطلبات آخر اليوم",
+                "subtitle": "وجبات مشبعة وسريعة مناسبة لساعات الليل.",
+                "ctaText": "افتح عروض الليلة",
+                "link": "/sale",
+                "tone": "slate",
+                "stat": "عروض الليل"
+              }
+            ]
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "delivery-clarity",
+          "settings": {
+            "title": "ليه الناس تحب BiteRush؟",
+            "subtitle": "لأن الطلب واضح، الوجبات مشبعة، والتوصيل أسرع من الحيرة.",
+            "items": [
+              {
+                "icon": "truck",
+                "title": "توصيل مفهوم",
+                "description": "زمن توصيل واضح ومناطق خدمة معروفة قبل إتمام الطلب."
+              },
+              {
+                "icon": "target",
+                "title": "قرار أسرع",
+                "description": "البرجر والكومبوهات والإضافات مرتبة عشان تختار بسرعة."
+              },
+              {
+                "icon": "shield",
+                "title": "ثقة أعلى",
+                "description": "الأسعار والمكونات والإضافات ظاهرة من البداية."
+              },
+              {
+                "icon": "refresh-cw",
+                "title": "رحلة مكملة",
+                "description": "من اختيار الوجبة لحد الدفع، الخطوات قصيرة وواضحة."
+              }
+            ]
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "playful-toybox",
+          "settings": {
+            "title": "الوجبات التي تحسم الطلب",
+            "subtitle": "صور واضحة، أسعار ظاهرة، وإضافات جاهزة لما تحب تكمل الطلب.",
+            "limit": 8,
+            "productsFoundLabel": "وجبات جاهزة للسحب"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "split-panel",
+          "settings": {
+            "title": "خليك أول من يعرف نزلة الجوع",
+            "subtitle": "كوبون ترحيب وتنبيهات بالعروض الجديدة قبل ساعات الذروة.",
+            "buttonText": "احصل على الكوبون",
+            "placeholder": "اكتب بريدك الإلكتروني"
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "variant": "menu-quick-order",
+          "settings": {
+            "title": "اختار طلبك بسرعة",
+            "subtitle": "ابحث، فلتر، ورتّب حسب السعر أو الأكثر طلبًا لحد ما تلاقي وجبتك.",
+            "searchPlaceholder": "ابحث عن برجر أو كومبو أو صوص",
+            "resultsLabel": "صنف جاهز للطلب",
+            "clearButtonText": "امسح الفلاتر",
+            "stickyLabel": "أدوات المنيو",
+            "chipLimit": 6
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "playful-toybox",
+          "settings": {
+            "title": "كل المنيو",
+            "subtitle": "الأسعار واضحة، الإضافات جاهزة، والاختيار أسهل من أول تمريرة.",
+            "limit": 12,
+            "productsFoundLabel": "طلبات جاهزة للسحب"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "تنبيهات العروض الحارة",
+            "subtitle": "خليك قريب من العروض اليومية والكومبوهات الجديدة."
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "pdp": {
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "grid"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion",
+          "settings": {
+            "addToCartText": "أضف إلى الطلب",
+            "descriptionTitle": "مكونات الوجبة",
+            "shippingTitle": "التوصيل والاستلام",
+            "shippingText": "مواعيد التوصيل والاستلام موضحة قبل تأكيد الطلب، مع توضيح أي رسوم إضافية لو وجدت.",
+            "guaranteesTitle": "ليه الناس بتحبه؟",
+            "guaranteesSubtitle": "طعم محبوب، إضافات واضحة، وتجهيز سريع وقت الطلب.",
+            "guaranteeItems": "تحضير سريع\nإضافات واضحة\nدفع آمن\nإمكانية الاتصال للتأكيد",
+            "guaranteeStyle": "grid",
+            "fitNote": "لو نفسك في وجبة أكبر، أضف بطاطس محمّلة أو مشروب كبير من الاقتراحات الجاهزة."
+          }
+        },
+        {
+          "type": "conversion-stack",
+          "variant": "balanced"
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact",
+          "settings": {
+            "title": "كمّل الطلب في خطوة",
+            "subtitle": "إضافات ومشروبات مناسبة للطبق الحالي وتخلي الوجبة أكمل.",
+            "limit": 3
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "compact",
+          "settings": {
+            "title": "بدائل مشابهة",
+            "subtitle": "لو حابب تشوف خيار قريب قبل ما تحسم طلبك.",
+            "limit": 4
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "compact",
+          "settings": {
+            "title": "آراء الطلبات السابقة",
+            "subtitle": "آراء سريعة من طلبات سابقة تساعدك تختار بثقة."
+          }
+        }
+      ],
+      "layoutHint": "product-detail",
+      "pageGoal": "trust",
+      "compositionPolicy": {
+        "pageGoal": "trust",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "cart": {
+      "sections": [
+        {
+          "type": "cart-items",
+          "settings": {
+            "title": "طلبك الحالي",
+            "emptyText": "لسه ما اخترتش وجبات. ارجع للمنيو وخد أول خطوة.",
+            "continueShoppingText": "ارجع للمنيو"
+          }
+        },
+        {
+          "type": "order-summary",
+          "settings": {
+            "title": "إجمالي الطلب"
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "checkout": {
+      "sections": [
+        "cart-items",
+        {
+          "type": "checkout-form",
+          "settings": {
+            "title": "بيانات الاستلام",
+            "subtitle": "سيب اسمك ورقمك الصح مرة واحدة عشان نثبت الطلب ونوصله من أول محاولة.",
+            "shippingDescription": "العنوان الدقيق يسرّع المندوب ويقلل أي مكالمة إضافية قبل الوصول.",
+            "notesDescription": "اكتب الدور أو علامة مميزة أو أي طلب خاص عشان الطلب يوصلك مضبوط.",
+            "autoDetectHint": "اكتب المدينة أو جزءًا من العنوان وسنقترح المحافظة تلقائيًا."
+          }
+        },
+        {
+          "type": "payment",
+          "settings": {
+            "title": "الدفع الأخير",
+            "subtitle": "اختَر وسيلة الدفع، راجع الإجمالي النهائي، ثم اقفل الطلب بخطوة واحدة.",
+            "summaryTitle": "آخر مراجعة قبل الإرسال",
+            "summaryDescription": "السعر، الشحن، والخصم ظاهرين بوضوح قبل ما تضغط تأكيد.",
+            "confirmOrderText": "أكّد الطلب الآن",
+            "payButtonPrefix": "ادفع الآن",
+            "processingText": "جارٍ تثبيت الطلب وإرساله للمطبخ...",
+            "shippingPromptText": "اختر المحافظة أولًا لنثبت رسوم التوصيل قبل الإرسال.",
+            "securityText": "تأكيد مشفّر وبياناتك محفوظة",
+            "codDesc": "اطلب الآن وادفع عند الاستلام من غير أي خطوة إضافية",
+            "cardDesc": "ادفع فورًا وخلي الطلب يدخل التحضير مباشرة",
+            "walletDesc": "أسرع تأكيد للطلبات المستعجلة من الموبايل"
+          }
+        },
+        {
+          "type": "order-summary",
+          "settings": {
+            "title": "مراجعة الطلب",
+            "subtitle": "راجع الإجمالي، فعّل الخصم، ثم كمّل الطلب قبل ما يبرد.",
+            "shippingHelpText": "رسوم التوصيل تتثبت حسب المحافظة في خطوة الدفع التالية.",
+            "couponPlaceholder": "عندك كود؟",
+            "couponButtonText": "فعّل",
+            "checkoutButtonText": "كمّل الطلب",
+            "totalLabel": "الإجمالي المتوقع الآن",
+            "secureCheckoutText": "إرسال آمن للطلب",
+            "returnsText": "دعم سريع لو احتجت تعديل"
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "settings": {
+            "title": "الطلب اتحجز بنجاح",
+            "description": "شكرًا لاختيار BiteRush. مطبخنا بدأ التنفيذ الآن وسنتواصل معك لتأكيد التوصيل أو الاستلام.",
+            "continueShoppingText": "ارجع للمنيو",
+            "orderNumberPrefix": "رقم الطلب:",
+            "supportText": "لو محتاج مساعدة سريعة تواصل معنا عبر",
+            "supportEmail": "rush@biterush.demo",
+            "statusLabel": "قيد التحضير",
+            "whatsappSupportLabel": "دعم واتساب",
+            "showTimeline": true,
+            "showRecommended": true,
+            "showTrackOrder": true,
+            "showReorder": true,
+            "trackOrderTitle": "تابع حالة الطلب",
+            "trackOrderDescription": "أدخل نفس رقم الهاتف المستخدم وقت إتمام الطلب لمتابعة حالته الحالية.",
+            "trackOrderButtonText": "تحقق من الحالة",
+            "trackOrderPhoneLabel": "رقم هاتف الطلب",
+            "trackOrderPhonePlaceholder": "01xxxxxxxxx",
+            "reorderTitle": "اطلب نفس السلة مرة ثانية",
+            "reorderDescription": "أعد إضافة نفس الأصناف إلى السلة في خطوة واحدة لو حبيت تكرر الطلب.",
+            "reorderButtonText": "أعد الطلب",
+            "reorderSuccessText": "تمت إضافة الأصناف مرة أخرى إلى السلة.",
+            "recommendedTitle": "كمّل الطلب بزيادة خفيفة",
+            "recommendedSubtitle": "إضافات ومشروبات خفيفة لو حبيت ترجع تطلب مرة ثانية.",
+            "recommendedBadge": "اختيارات سريعة",
+            "recommendedLimit": 4,
+            "recommendedCtaLabel": "أضف للسلة",
+            "recommendedChooseOptionsLabel": "اختر الإضافات"
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "registration": {
+      "sections": [
+        {
+          "type": "member-registration",
+          "settings": {
+            "title": "انضم إلى نادي BiteRush",
+            "subtitle": "سجل بياناتك علشان يصلك الجديد من الكومبوهات والعروض أول بأول."
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "collections": {
+      "sections": [
+        {
+          "type": "featured-collections",
+          "variant": "menu-categories",
+          "settings": {
+            "title": "كل فئات BiteRush",
+            "subtitle": "برجر، كومبوهات، إضافات، ومشروبات في مكان واحد.",
+            "limit": 6,
+            "ctaText": "ارجع للمنيو",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "playful-toybox",
+          "settings": {
+            "title": "اختيارات مناسبة لكل فئة",
+            "subtitle": "اختيارات مناسبة لكل مزاج، من الوجبات الثقيلة لحد الطلبات الخفيفة.",
+            "limit": 12
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "sale": {
+      "sections": [
+        {
+          "type": "offer-bento",
+          "variant": "combo-deals",
+          "settings": {
+            "badge": "عروض اليوم",
+            "title": "عروض BiteRush",
+            "subtitle": "عروض اليوم والكومبوهات الموفّرة جاهزة عشان تختار أسرع.",
+            "cards": [
+              {
+                "label": "كومبوهات",
+                "title": "وجبة كاملة بقيمة أوضح",
+                "subtitle": "البرجر مع البطاطس والمشروب في باقة واحدة تقفل القرار أسرع.",
+                "ctaText": "شاهد الكومبوهات",
+                "link": "/sale?category=combos",
+                "tone": "accent",
+                "stat": "أفضل قيمة"
+              },
+              {
+                "label": "الأكثر طلبًا",
+                "title": "اختيارات الناس في ساعات الذروة",
+                "subtitle": "اعتمد على الأصناف التي تثبت نفسها سريعًا مع العملاء الجدد.",
+                "ctaText": "شاهد الأكثر طلبًا",
+                "link": "/shop?sortBy=popularity",
+                "tone": "primary",
+                "stat": "الأكثر طلبًا"
+              },
+              {
+                "label": "طلبات الليل",
+                "title": "وجبات مناسبة لما بعد الدوام",
+                "subtitle": "عروض أخف ولكن أسرع في الحسم لطلبات الليل.",
+                "ctaText": "افتح العروض",
+                "link": "/sale",
+                "tone": "slate",
+                "stat": "بعد الدوام"
+              }
+            ]
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "playful-toybox",
+          "settings": {
+            "title": "كل العروض المتاحة الآن",
+            "subtitle": "العروض والكومبوهات المعروضة الآن في مكان واحد.",
+            "limit": 12,
+            "saleOnly": true
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    }
+  },
+  "direction": "rtl"
+}

@@ -1,0 +1,56 @@
+/**
+ * Central constants for the backend system.
+ * These match the original Prisma Enums and should be used
+ * for validation and normalization since the schema is now relaxed.
+ */
+
+const CONVERSATION_STATUS = {
+    ACTIVE: 'ACTIVE',
+    PENDING: 'PENDING',
+    RESOLVED: 'RESOLVED',
+    ARCHIVED: 'ARCHIVED',
+    SNOOZED: 'SNOOZED'
+};
+
+const CONVERSATION_CHANNEL = {
+    WHATSAPP: 'WHATSAPP',
+    FACEBOOK: 'FACEBOOK',
+    INSTAGRAM: 'INSTAGRAM',
+    TELEGRAM: 'TELEGRAM',
+    ZID: 'ZID',
+    SALLA: 'SALLA'
+};
+
+const MESSAGE_TYPE = {
+    TEXT: 'TEXT',
+    IMAGE: 'IMAGE',
+    VIDEO: 'VIDEO',
+    AUDIO: 'AUDIO',
+    DOCUMENT: 'DOCUMENT',
+    LOCATION: 'LOCATION',
+    STICKER: 'STICKER',
+    INTERACTIVE: 'INTERACTIVE',
+    TEMPLATE: 'TEMPLATE'
+};
+
+const WHATSAPP_SESSION_STATUS = {
+    CONNECTED: 'CONNECTED',
+    DISCONNECTED: 'DISCONNECTED',
+    CONNECTING: 'CONNECTING',
+    INITIALIZING: 'INITIALIZING',
+    AUTHENTICATING: 'AUTHENTICATING'
+};
+
+const WHATSAPP_STATUS_TYPE = {
+    TEXT: 'TEXT',
+    IMAGE: 'IMAGE',
+    VIDEO: 'VIDEO'
+};
+
+module.exports = {
+    CONVERSATION_STATUS,
+    CONVERSATION_CHANNEL,
+    MESSAGE_TYPE,
+    WHATSAPP_SESSION_STATUS,
+    WHATSAPP_STATUS_TYPE
+};

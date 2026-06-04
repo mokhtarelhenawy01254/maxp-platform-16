@@ -1,0 +1,9 @@
+{
+  "id": "discount-proposal",
+  "displayName": "Discount Proposal",
+  "version": "1.0.0",
+  "description": "Prepare a discount proposal that requires human approval.",
+  "allowedTools": ["product.search", "discount.create_draft"],
+  "requiresHumanApproval": true,
+  "maxToolCount": 2
+}

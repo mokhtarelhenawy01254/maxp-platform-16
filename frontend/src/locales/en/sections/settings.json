@@ -1,0 +1,12 @@
+{
+  "title": "Settings",
+  "generalSettings": "General Settings",
+  "companySettings": "Company Settings",
+  "facebookSettings": "Facebook Settings",
+  "storeSettings": "Store Settings",
+  "notificationSettings": "Notification Settings",
+  "language": "Language",
+  "timezone": "Timezone",
+  "currency": "Currency",
+  "saveChanges": "Save Changes"
+}

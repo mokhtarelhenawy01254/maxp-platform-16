@@ -1,0 +1,138 @@
+name: Deploy to Staging (maxp.online)
+
+on:
+  push:
+    branches:
+      - staging
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+  SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
+
+jobs:
+  deploy:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Get Runner IP
+        id: get-ip
+        run: curl -s https://ifconfig.me/ip
+        
+      - name: Debug DNS and Port
+        run: |
+          echo "Runner Public IP: $(curl -s https://ifconfig.me/ip)"
+          echo "Target SSH port: ${{ env.SERVER_SSH_PORT }}"
+          echo "Checking DNS resolution for host..."
+          # Try to resolve host - don't fail yet
+          nslookup ${{ secrets.SERVER_HOST }} || echo "DNS lookup failed for host"
+          echo "Testing port ${{ env.SERVER_SSH_PORT }} connectivity..."
+          # Use timeout to prevent hanging - don't fail here to see the ip log
+          nc -zv -w 5 ${{ secrets.SERVER_HOST }} ${{ env.SERVER_SSH_PORT }} || echo "❌ Port ${{ env.SERVER_SSH_PORT }} is NOT reachable"
+          
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ env.SERVER_SSH_PORT }}
+          debug: true
+          request_pty: true
+          timeout: 300s
+          command_timeout: 30m
+          use_insecure_cipher: false
+          sync: false
+          script: |
+            set -e
+            DEPLOY_STAGING="$HOME/deploy_staging_23976580484_1"
+            echo "✅ SSH connection successful"
+            echo "👤 User: $(whoami)"
+            echo "🏠 Home: $HOME"
+            echo "📁 Current dir: $(pwd)"
+            
+            echo "🧹 Running early cleanup to free space..."
+            sudo pm2 flush > /dev/null 2>&1 || true
+            sudo journalctl --vacuum-time=1d || echo "⚠️ Journalctl cleanup failed"
+            sudo npm cache clean --force || echo "⚠️ NPM cache cleanup failed"
+            
+            echo "🚀 Creating staging directory..."
+            rm -rf "$DEPLOY_STAGING"
+            mkdir -p "$DEPLOY_STAGING/backend"
+            mkdir -p "$DEPLOY_STAGING/frontend"
+            
+            echo "📊 Disk Space after cleanup:"
+            df -h $HOME
+            
+            echo "🔒 Permissions for $DEPLOY_STAGING:"
+            ls -ld "$DEPLOY_STAGING"
+
+            echo "🚀 Continuing with main deployment logic on Staging (maxp.online)..."
+            
+            # Navigate to path
+            cd /var/www/backend-stage
+            
+            # Pull latest changes
+            echo "📥 Pulling latest changes from staging branch..."
+            git fetch origin staging
+            git reset --hard origin/staging
+            
+            # NEW: Frontend Deployment Logic
+            echo "📦 Installing frontend dependencies..."
+            cd frontend
+            # Increase memory for build
+            export NODE_OPTIONS="--max-old-space-size=4096"
+            npm install
+            
+            echo "🔨 Building frontend for Staging..."
+            npm run build > /tmp/vite-build.log 2>&1 || (cat /tmp/vite-build.log && exit 1)
+            echo "✅ Build completed successfully"
+            
+            echo "🚀 Deploying Frontend to /var/www/frontend-stage/dist..."
+            # Ensure target directory exists
+            sudo mkdir -p /var/www/frontend-stage/dist
+            # Clean old files (optional but safer)
+            sudo rm -rf /var/www/frontend-stage/dist/*
+            # Copy new build files
+            sudo cp -r dist/* /var/www/frontend-stage/dist/
+            
+            echo "✅ Frontend Deployed Successfully"
+            
+            # Return to root for backend steps
+            cd ..
+
+            # Install Backend Dependencies
+            echo "📦 Installing backend dependencies..."
+            cd backend
+            npm install --production
+            
+            # Prisma Generate & DB Push
+            echo "🔄 Updating Database Schema..."
+            # Delete conflicting files if they exist (to prevent Prisma errors)
+            rm -f prisma/schema/base.prisma 
+            
+            npx prisma generate --schema=prisma/schema
+            npx prisma db push --schema=prisma/schema --skip-generate --accept-data-loss
+            
+            # Restart Application using PM2
+            echo "🔄 Restarting Node.js process using PM2..."
+            # Try to restart, if it doesn't exist (first time), start it
+            pm2 restart maxp-staging || pm2 start server.js --name maxp-staging
+            
+            # Save PM2 state to survive server restarts
+            pm2 save
+            
+            # Verify if process is running
+            sleep 2
+            if pm2 status maxp-staging | grep -q "online"; then
+              echo "✅ Server started successfully via PM2"
+            else
+              echo "⚠️ Warning: Server might not have started correctly. Check pm2 logs maxp-staging"
+              pm2 logs maxp-staging --lines 20 --no-daemon
+            fi
+            
+            echo "✅ Staging Deployment Successful!"

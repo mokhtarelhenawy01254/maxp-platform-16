@@ -1,0 +1,30 @@
+<svg width="1600" height="1000" viewBox="0 0 1600 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="1000" rx="64" fill="#FBF6EF"/>
+  <rect x="52" y="52" width="1496" height="896" rx="48" fill="url(#hayah-bg)" stroke="#E2D5C8" stroke-width="4"/>
+  <rect x="108" y="118" width="610" height="764" rx="38" fill="#FFFDF9" stroke="#E8DDD2" stroke-width="4"/>
+  <rect x="150" y="170" width="526" height="310" rx="28" fill="#EFE2D4"/>
+  <rect x="150" y="514" width="160" height="92" rx="24" fill="#FFF8F0" stroke="#E5D5C8" stroke-width="4"/>
+  <rect x="330" y="514" width="160" height="92" rx="24" fill="#FFF8F0" stroke="#E5D5C8" stroke-width="4"/>
+  <rect x="510" y="514" width="124" height="92" rx="24" fill="#FFF8F0" stroke="#E5D5C8" stroke-width="4"/>
+  <rect x="150" y="638" width="526" height="194" rx="30" fill="#F7EEE5"/>
+  <path d="M188 430C250 326 342 258 468 224C520 210 576 206 642 214V480H188V430Z" fill="#D5B7A0"/>
+  <path d="M252 418C308 336 390 286 494 266C540 258 590 258 642 264V480H252V418Z" fill="#C99A7E"/>
+  <path d="M320 412C372 356 436 322 516 306C556 298 598 298 642 304V480H320V412Z" fill="#A87358"/>
+  <circle cx="1110" cy="280" r="154" fill="#F2E6D9"/>
+  <rect x="850" y="126" width="626" height="754" rx="40" fill="#F7EEE5"/>
+  <rect x="914" y="190" width="498" height="220" rx="30" fill="#FFFDF9"/>
+  <rect x="914" y="446" width="230" height="148" rx="26" fill="#FFF9F2" stroke="#E0D0C3" stroke-width="4"/>
+  <rect x="1182" y="446" width="230" height="148" rx="26" fill="#FBF2E8" stroke="#E0D0C3" stroke-width="4"/>
+  <rect x="914" y="630" width="498" height="188" rx="30" fill="#EEDFCF"/>
+  <path d="M952 666H1278" stroke="#8B624E" stroke-width="14" stroke-linecap="round"/>
+  <path d="M952 714H1212" stroke="#8B624E" stroke-width="14" stroke-linecap="round" opacity="0.72"/>
+  <path d="M952 762H1328" stroke="#8B624E" stroke-width="14" stroke-linecap="round" opacity="0.4"/>
+  <circle cx="1298" cy="266" r="66" fill="#2E221D"/>
+  <circle cx="1298" cy="266" r="42" fill="#F5EADC"/>
+  <defs>
+    <linearGradient id="hayah-bg" x1="132" y1="112" x2="1458" y2="890" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFDF9"/>
+      <stop offset="1" stop-color="#F5ECE2"/>
+    </linearGradient>
+  </defs>
+</svg>

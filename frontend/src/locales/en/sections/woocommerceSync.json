@@ -1,0 +1,16 @@
+{
+  "title": "WooCommerce Sync",
+  "description": "Sync orders and products with WooCommerce",
+  "setupRequired": "Please setup connection credentials first",
+  "importStarted": "Import started in background - you can close the browser!",
+  "importPaused": "Import paused",
+  "importResumed": "Import resumed",
+  "importCancelled": "Import cancelled",
+  "importCompleted": "Completed! Imported: {{imported}} | Updated: {{updated}}",
+  "importFailed": "Import failed: {{error}}",
+  "confirmCancel": "Are you sure you want to cancel the import?",
+  "errorStart": "Error starting import",
+  "errorPause": "Error pausing import",
+  "errorResume": "Error resuming import",
+  "errorCancel": "Error cancelling import"
+}

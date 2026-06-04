@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1300" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="130" y1="104" x2="832" y2="1220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFDF9"/>
+      <stop offset="1" stop-color="#E4D4BF"/>
+    </linearGradient>
+    <linearGradient id="linen" x1="382" y1="278" x2="640" y2="1128" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D9C6A9"/>
+      <stop offset="1" stop-color="#B49A75"/>
+    </linearGradient>
+  </defs>
+  <rect width="1000" height="1300" rx="64" fill="url(#bg)"/>
+  <ellipse cx="240" cy="172" rx="170" ry="120" fill="#FFF6E8" opacity="0.75"/>
+  <path d="M210 1090C232 808 314 460 514 278C682 124 800 242 800 430V1170H238C218 1170 206 1112 210 1090Z" fill="#FFF8EE" opacity="0.58"/>
+  <circle cx="530" cy="302" r="88" fill="#6F6250"/>
+  <path d="M410 430C458 408 562 406 618 432C684 462 734 518 746 588C760 666 738 760 674 840C612 918 592 1002 598 1138H402C410 1002 392 912 332 842C274 776 244 696 258 610C272 524 328 468 410 430Z" fill="url(#linen)"/>
+  <path d="M392 560C466 604 542 606 624 560" stroke="#F8EFDF" stroke-width="22" stroke-linecap="round" opacity="0.82"/>
+  <path d="M346 926C452 892 564 892 670 926" stroke="#CAB18B" stroke-width="12" stroke-linecap="round" opacity="0.58"/>
+  <circle cx="792" cy="1014" r="42" fill="#D9C6A9" opacity="0.55"/>
+  <circle cx="850" cy="1076" r="18" fill="#C1A681" opacity="0.72"/>
+</svg>

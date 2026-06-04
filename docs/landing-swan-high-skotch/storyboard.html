@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Swan High Skotch Mobile Storyboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@500;600;700;800;900&family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: oklch(18% 0.018 255);
+      --muted: oklch(42% 0.026 252);
+      --paper: oklch(97% 0.012 86);
+      --cream: oklch(94% 0.042 82);
+      --acid: oklch(88% 0.19 100);
+      --coral: oklch(66% 0.18 34);
+      --mint: oklch(79% 0.15 158);
+      --blue: oklch(61% 0.17 242);
+      --line: oklch(21% 0.015 255);
+      --shadow: 8px 8px 0 oklch(18% 0.018 255);
+      --display: "Alexandria", "Readex Pro", Tahoma, sans-serif;
+      --body: "Readex Pro", Tahoma, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: oklch(90% 0.02 80);
+      color: var(--ink);
+      font-family: var(--body);
+      letter-spacing: 0;
+    }
+
+    body {
+      display: grid;
+      justify-content: center;
+      gap: 24px;
+      padding: 24px 0;
+    }
+
+    .slice {
+      position: relative;
+      width: 430px;
+      height: 900px;
+      overflow: hidden;
+      background: var(--paper);
+      isolation: isolate;
+    }
+
+    .slice::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      opacity: 0.55;
+      background-image:
+        linear-gradient(90deg, oklch(24% 0.018 255 / 0.08) 1px, transparent 1px),
+        linear-gradient(0deg, oklch(24% 0.018 255 / 0.08) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+
+    .slice::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      inset: auto -80px -72px -80px;
+      height: 230px;
+      background: var(--acid);
+      transform: rotate(-4deg);
+      border-top: 3px solid var(--line);
+    }
+
+    .badge,
+    .chip,
+    .stamp {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 32px;
+      border: 2px solid var(--line);
+      border-radius: 6px;
+      background: oklch(98% 0.011 86);
+      color: var(--ink);
+      font-family: var(--display);
+      font-weight: 800;
+      line-height: 1;
+      box-shadow: 4px 4px 0 var(--line);
+    }
+
+    .badge {
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+
+    .chip {
+      padding: 9px 11px;
+      font-size: 12px;
+    }
+
+    .stamp {
+      padding: 10px 14px;
+      background: var(--acid);
+      font-size: 13px;
+      transform: rotate(-2deg);
+    }
+
+    .headline {
+      margin: 0;
+      font-family: var(--display);
+      font-weight: 900;
+      letter-spacing: 0;
+      line-height: 0.96;
+    }
+
+    .copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.75;
+      font-weight: 500;
+    }
+
+    .product {
+      position: absolute;
+      display: block;
+      object-fit: contain;
+      filter: drop-shadow(16px 24px 14px oklch(18% 0.018 255 / 0.24));
+      user-select: none;
+    }
+
+    .hard-panel {
+      border: 3px solid var(--line);
+      border-radius: 8px;
+      background: oklch(98% 0.011 86);
+      box-shadow: var(--shadow);
+    }
+
+    .slice-hero {
+      background:
+        radial-gradient(circle at 18% 78%, oklch(77% 0.13 158 / 0.42), transparent 32%),
+        linear-gradient(152deg, oklch(98% 0.012 88) 0%, oklch(91% 0.056 83) 58%, oklch(84% 0.18 101) 58.3%, oklch(84% 0.18 101) 100%);
+    }
+
+    .slice-hero::after {
+      background: var(--mint);
+    }
+
+    .hero-top {
+      position: absolute;
+      top: 22px;
+      left: 22px;
+      right: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .hero-title {
+      position: absolute;
+      top: 86px;
+      right: 22px;
+      left: 18px;
+      z-index: 2;
+    }
+
+    .hero-title .headline {
+      max-width: 380px;
+      font-size: 50px;
+    }
+
+    .hero-title .copy {
+      max-width: 344px;
+      margin-top: 14px;
+      font-size: 16px;
+    }
+
+    .hero-price {
+      position: absolute;
+      z-index: 3;
+      top: 252px;
+      left: 22px;
+      width: 142px;
+      min-height: 98px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      transform: rotate(-4deg);
+    }
+
+    .hero-price strong {
+      display: block;
+      font-family: var(--display);
+      font-size: 32px;
+      line-height: 0.95;
+      font-weight: 900;
+    }
+
+    .hero-price span {
+      display: block;
+      margin-top: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .hero-shoe {
+      z-index: 1;
+      width: 516px;
+      height: auto;
+      right: -42px;
+      top: 348px;
+      transform: rotate(-9deg);
+    }
+
+    .hero-foot {
+      position: absolute;
+      right: 22px;
+      left: 22px;
+      bottom: 26px;
+      z-index: 3;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+    }
+
+    .hero-foot .chip {
+      min-height: 56px;
+      text-align: center;
+      line-height: 1.35;
+      background: oklch(22% 0.016 255);
+      color: oklch(97% 0.012 86);
+      box-shadow: 0 0 0 0 transparent;
+    }
+
+    .slice-comfort {
+      background:
+        linear-gradient(120deg, var(--acid) 0 34%, transparent 34.3%),
+        linear-gradient(180deg, oklch(98% 0.011 86), oklch(91% 0.03 74));
+    }
+
+    .comfort-title {
+      position: absolute;
+      top: 34px;
+      right: 24px;
+      left: 24px;
+      z-index: 2;
+    }
+
+    .comfort-title .headline {
+      font-size: 43px;
+    }
+
+    .comfort-title .copy {
+      margin-top: 12px;
+      max-width: 340px;
+    }
+
+    .comfort-shoe {
+      width: 486px;
+      right: -34px;
+      top: 286px;
+      transform: rotate(-5deg);
+    }
+
+    .callout {
+      position: absolute;
+      z-index: 3;
+      width: 166px;
+      padding: 12px 12px 14px;
+    }
+
+    .callout b {
+      display: block;
+      font-family: var(--display);
+      font-size: 15px;
+      line-height: 1.35;
+    }
+
+    .callout span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.55;
+      font-weight: 600;
+    }
+
+    .callout::before {
+      content: attr(data-number);
+      position: absolute;
+      top: -18px;
+      right: -14px;
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--line);
+      border-radius: 50%;
+      background: var(--coral);
+      color: oklch(98% 0.012 86);
+      font-family: var(--display);
+      font-weight: 900;
+    }
+
+    .callout-1 {
+      top: 232px;
+      right: 26px;
+    }
+
+    .callout-2 {
+      top: 530px;
+      left: 20px;
+      background: oklch(98% 0.012 86);
+    }
+
+    .callout-3 {
+      right: 18px;
+      bottom: 52px;
+      width: 214px;
+      background: var(--mint);
+    }
+
+    .slice-colors {
+      background:
+        linear-gradient(180deg, oklch(19% 0.015 255) 0 39%, transparent 39.2%),
+        oklch(95% 0.019 83);
+      color: oklch(97% 0.012 86);
+    }
+
+    .colors-title {
+      position: absolute;
+      top: 30px;
+      right: 22px;
+      left: 22px;
+      z-index: 2;
+    }
+
+    .colors-title .headline {
+      font-size: 45px;
+    }
+
+    .colors-title .copy {
+      margin-top: 10px;
+      color: oklch(86% 0.02 82);
+    }
+
+    .color-grid {
+      position: absolute;
+      inset: 244px 18px 26px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1.14fr 1fr 1fr;
+      gap: 12px;
+      color: var(--ink);
+    }
+
+    .color-tile {
+      position: relative;
+      overflow: hidden;
+      padding: 12px;
+      border: 3px solid var(--line);
+      border-radius: 8px;
+      background: oklch(98% 0.012 86);
+      box-shadow: 5px 5px 0 var(--line);
+    }
+
+    .color-tile:first-child {
+      grid-column: 1 / -1;
+      background: var(--acid);
+    }
+
+    .color-tile img {
+      position: absolute;
+      left: -18px;
+      bottom: 16px;
+      width: 260px;
+      height: 150px;
+      object-fit: contain;
+      filter: drop-shadow(10px 12px 8px oklch(18% 0.018 255 / 0.18));
+    }
+
+    .color-tile:first-child img {
+      left: 4px;
+      bottom: 8px;
+      width: 350px;
+      height: 196px;
+    }
+
+    .color-name {
+      position: relative;
+      z-index: 2;
+      display: inline-flex;
+      padding: 8px 10px;
+      border: 2px solid var(--line);
+      border-radius: 6px;
+      background: oklch(98% 0.012 86);
+      font-family: var(--display);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .slice-day {
+      background:
+        linear-gradient(145deg, oklch(96% 0.015 76) 0 48%, oklch(24% 0.018 255) 48.2% 100%);
+    }
+
+    .slice-day::after {
+      display: none;
+    }
+
+    .day-title {
+      position: absolute;
+      top: 34px;
+      right: 24px;
+      left: 24px;
+      z-index: 3;
+    }
+
+    .day-title .headline {
+      font-size: 47px;
+    }
+
+    .day-title .copy {
+      margin-top: 12px;
+      max-width: 340px;
+    }
+
+    .day-frame {
+      position: absolute;
+      top: 278px;
+      right: 20px;
+      left: 20px;
+      height: 350px;
+      overflow: hidden;
+      border: 3px solid var(--line);
+      border-radius: 8px;
+      background: oklch(98% 0.012 86);
+      box-shadow: var(--shadow);
+    }
+
+    .day-frame img {
+      position: absolute;
+      width: 560px;
+      max-width: none;
+      right: -62px;
+      bottom: -28px;
+      transform: rotate(-3deg);
+      filter: drop-shadow(12px 18px 10px oklch(18% 0.018 255 / 0.18));
+    }
+
+    .day-strip {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 28px;
+      display: grid;
+      gap: 12px;
+      padding: 16px 14px;
+      border: 3px solid oklch(97% 0.012 86);
+      border-radius: 8px;
+      background: oklch(18% 0.018 255);
+      color: oklch(97% 0.012 86);
+    }
+
+    .day-row {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .day-row strong {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border: 2px solid oklch(97% 0.012 86);
+      border-radius: 50%;
+      background: var(--coral);
+      color: oklch(97% 0.012 86);
+      font-family: var(--display);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .day-row span {
+      font-size: 14px;
+      line-height: 1.55;
+      font-weight: 700;
+    }
+
+    .slice-size {
+      background:
+        linear-gradient(90deg, oklch(98% 0.012 86) 0 52%, var(--mint) 52.3% 100%);
+    }
+
+    .size-title {
+      position: absolute;
+      top: 34px;
+      right: 24px;
+      left: 24px;
+      z-index: 3;
+    }
+
+    .size-title .headline {
+      max-width: 360px;
+      font-size: 38px;
+      line-height: 1.05;
+    }
+
+    .size-title .copy {
+      margin-top: 12px;
+    }
+
+    .size-shoe {
+      width: 476px;
+      top: 218px;
+      right: -38px;
+      transform: rotate(-7deg);
+    }
+
+    .size-ladder {
+      position: absolute;
+      right: 24px;
+      left: 24px;
+      bottom: 48px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .size-ladder span {
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1;
+      border: 3px solid var(--line);
+      border-radius: 8px;
+      background: oklch(98% 0.012 86);
+      box-shadow: 4px 4px 0 var(--line);
+      font-family: var(--display);
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .trust-stack {
+      position: absolute;
+      right: 24px;
+      left: 24px;
+      bottom: 152px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .trust-stack .hard-panel {
+      padding: 14px 12px;
+      min-height: 96px;
+      box-shadow: 5px 5px 0 var(--line);
+    }
+
+    .trust-stack b {
+      display: block;
+      font-family: var(--display);
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .trust-stack span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+      font-weight: 600;
+    }
+
+    .slice-close {
+      background:
+        linear-gradient(160deg, oklch(23% 0.018 255) 0 54%, var(--acid) 54.2% 100%);
+      color: oklch(97% 0.012 86);
+    }
+
+    .close-title {
+      position: absolute;
+      top: 34px;
+      right: 22px;
+      left: 22px;
+      z-index: 3;
+    }
+
+    .close-title .headline {
+      font-size: 48px;
+    }
+
+    .close-title .copy {
+      margin-top: 12px;
+      color: oklch(85% 0.02 83);
+    }
+
+    .close-shoe-main {
+      width: 512px;
+      top: 300px;
+      right: -48px;
+      transform: rotate(-8deg);
+      z-index: 2;
+    }
+
+    .close-price {
+      position: absolute;
+      right: 24px;
+      bottom: 196px;
+      z-index: 4;
+      width: 152px;
+      padding: 15px 10px;
+      text-align: center;
+      background: oklch(98% 0.012 86);
+      color: var(--ink);
+      transform: rotate(4deg);
+    }
+
+    .close-price strong {
+      display: block;
+      font-family: var(--display);
+      font-size: 36px;
+      font-weight: 900;
+      line-height: 0.95;
+    }
+
+    .close-price span {
+      display: block;
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .close-cta {
+      position: absolute;
+      right: 22px;
+      left: 22px;
+      bottom: 36px;
+      z-index: 4;
+      display: grid;
+      gap: 10px;
+      color: var(--ink);
+    }
+
+    .close-cta .cta-line {
+      min-height: 64px;
+      display: grid;
+      place-items: center;
+      padding: 0 16px;
+      border: 3px solid var(--line);
+      border-radius: 8px;
+      background: oklch(98% 0.012 86);
+      box-shadow: var(--shadow);
+      font-family: var(--display);
+      font-size: 21px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .close-cta .micro {
+      text-align: center;
+      color: oklch(21% 0.015 255);
+      font-size: 13px;
+      font-weight: 800;
+    }
+  </style>
+</head>
+<body>
+  <section class="slice slice-hero" aria-label="Hero">
+    <div class="hero-top">
+      <span class="badge">SWAN / S125</span>
+      <span class="stamp">طلب سريع</span>
+    </div>
+    <div class="hero-title">
+      <h1 class="headline">Swan High Skotch</h1>
+      <p class="copy">سنيكر منصة بفيلكرو، شكله قوي ومريح للمشاوير السريعة والطويلة.</p>
+    </div>
+    <div class="hero-price hard-panel">
+      <strong>499</strong>
+      <span>جنيه</span>
+    </div>
+    <img class="product hero-shoe" src="assets/swan-high-skotch-02.png" width="1184" height="864" alt="Swan High Skotch باللون الأسود والأبيض">
+    <div class="hero-foot" aria-hidden="true">
+      <span class="chip">5 ألوان</span>
+      <span class="chip">37 إلى 41</span>
+      <span class="chip">طلب سريع</span>
+    </div>
+  </section>
+
+  <section class="slice slice-comfort" aria-label="Comfort">
+    <div class="comfort-title">
+      <h2 class="headline">شكل شيك من غير تعب الرجل</h2>
+      <p class="copy">تفاصيل عملية معمولة لليوم كله، مش للصور بس.</p>
+    </div>
+    <div class="callout callout-1 hard-panel" data-number="1">
+      <b>نعل منصة ثابت</b>
+      <span>ارتفاع مريح وشكل أوضح مع ثبات أفضل في المشي.</span>
+    </div>
+    <img class="product comfort-shoe" src="assets/swan-high-skotch-10.jpg" width="1184" height="864" alt="Swan High Skotch بنعل منصة وفيلكرو">
+    <div class="callout callout-2 hard-panel" data-number="2">
+      <b>فيلكرو سريع</b>
+      <span>افتحي واقفلي بسهولة من غير رباط يتفك كل شوية.</span>
+    </div>
+    <div class="callout callout-3 hard-panel" data-number="3">
+      <b>جلد صناعي ناعم</b>
+      <span>خامة سهلة التنضيف ومناسبة للبس اليومي.</span>
+    </div>
+  </section>
+
+  <section class="slice slice-colors" aria-label="Colors">
+    <div class="colors-title">
+      <h2 class="headline">اختاري اللون اللي يمشي مع دولابك</h2>
+      <p class="copy">أبيض صريح، أسود عملي، بيج هادي، وتركيبات أقوى.</p>
+    </div>
+    <div class="color-grid">
+      <article class="color-tile">
+        <span class="color-name">أسود x أبيض</span>
+        <img src="assets/swan-high-skotch-02.png" width="1184" height="864" alt="لون أسود وأبيض">
+      </article>
+      <article class="color-tile">
+        <span class="color-name">أبيض</span>
+        <img src="assets/swan-high-skotch-05.jpg" width="1184" height="864" alt="لون أبيض">
+      </article>
+      <article class="color-tile">
+        <span class="color-name">بيج</span>
+        <img src="assets/swan-high-skotch-08.jpg" width="1184" height="864" alt="لون بيج">
+      </article>
+      <article class="color-tile">
+        <span class="color-name">أسود</span>
+        <img src="assets/swan-high-skotch-13.jpg" width="1184" height="864" alt="لون أسود">
+      </article>
+      <article class="color-tile">
+        <span class="color-name">أسود x رمادي</span>
+        <img src="assets/swan-high-skotch-10.jpg" width="1184" height="864" alt="لون أسود ورمادي">
+      </article>
+    </div>
+  </section>
+
+  <section class="slice slice-day" aria-label="Daily use">
+    <div class="day-title">
+      <h2 class="headline">للمشاوير، الشغل، والخروج</h2>
+      <p class="copy">ستايل واضح من أول نظرة، وتفاصيل مريحة لما اليوم يطول.</p>
+    </div>
+    <div class="day-frame">
+      <img src="assets/swan-high-skotch-09.jpg" width="1344" height="768" alt="زوج Swan High Skotch بتصميم أسود وأبيض">
+    </div>
+    <div class="day-strip">
+      <div class="day-row">
+        <strong>01</strong>
+        <span>تصميم كاجوال يطلع مع الجينز، الدريس، أو اللبس العملي.</span>
+      </div>
+      <div class="day-row">
+        <strong>02</strong>
+        <span>نعل سميك يساعد على امتصاص الصدمات في الحركة اليومية.</span>
+      </div>
+      <div class="day-row">
+        <strong>03</strong>
+        <span>فتحات تهوية صغيرة ولمسة فيلكرو تخلي الشكل رياضي وأنثوي في نفس الوقت.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="slice slice-size" aria-label="Sizes">
+    <div class="size-title">
+      <h2 class="headline">المقاسات جاهزة من 37 إلى 41</h2>
+      <p class="copy">اختاري اللون والمقاس المناسبين، وسيبي بيانات التواصل في الفورم.</p>
+    </div>
+    <img class="product size-shoe" src="assets/swan-high-skotch-04.jpg" width="1053" height="768" alt="Swan High Skotch باللون الأبيض">
+    <div class="trust-stack">
+      <div class="hard-panel">
+        <b>تأكيد قبل التجهيز</b>
+        <span>بياناتك تروح لفريق الطلبات للمراجعة والتأكيد.</span>
+      </div>
+      <div class="hard-panel">
+        <b>اختيار واضح</b>
+        <span>مقاس، لون، عنوان، ورقم هاتف في خطوة واحدة.</span>
+      </div>
+    </div>
+    <div class="size-ladder" aria-hidden="true">
+      <span>37</span>
+      <span>38</span>
+      <span>39</span>
+      <span>40</span>
+      <span>41</span>
+    </div>
+  </section>
+
+  <section class="slice slice-close" aria-label="Close">
+    <div class="close-title">
+      <h2 class="headline">جاهزة تختاري راحتك؟</h2>
+      <p class="copy">انزلي للفورم، اختاري المقاس واللون، وسيبي رقمك للتأكيد.</p>
+    </div>
+    <img class="product close-shoe-main" src="assets/swan-high-skotch-01.jpg" width="1077" height="786" alt="Swan High Skotch في لقطة أمامية">
+    <div class="close-price hard-panel">
+      <strong>499</strong>
+      <span>جنيه فقط</span>
+    </div>
+    <div class="close-cta">
+      <div class="cta-line">اطلبي Swan High Skotch الآن</div>
+      <div class="micro">الفورم تحت الصورة مباشرة</div>
+    </div>
+  </section>
+</body>
+</html>

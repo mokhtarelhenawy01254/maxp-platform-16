@@ -1,0 +1,9 @@
+{
+  "id": "catalog-search",
+  "displayName": "Catalog Search",
+  "version": "1.0.0",
+  "description": "Find products and validate product facts.",
+  "allowedTools": ["product.search", "inventory.check"],
+  "requiresHumanApproval": false,
+  "maxToolCount": 2
+}

@@ -1,0 +1,22 @@
+{
+  "title": "COD Performance Analytics",
+  "subtitle": "Reduce Rejection and Loss",
+  "fetchError": "Error fetching data",
+  "retry": "Retry",
+  "last7Days": "Last 7 Days",
+  "last30Days": "Last 30 Days",
+  "last90Days": "Last 90 Days",
+  "lastYear": "Last Year",
+  "totalCODOrders": "Total COD Orders",
+  "successRate": "Success Rate",
+  "orders": "Orders",
+  "cancellationRate": "Cancellation Rate",
+  "lostRevenue": "Lost Revenue",
+  "performanceSummary": "Performance Summary",
+  "pendingOrders": "Pending Orders",
+  "returnedOrders": "Returned Orders",
+  "totalRevenue": "Total Revenue",
+  "averageOrderValue": "Average Order Value",
+  "regionalPerformance": "Regional Performance",
+  "successRatePercentage": "Success Rate %"
+}

@@ -1,0 +1,2063 @@
+const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
+const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
+const path = require('path');
+const { marketplaceCatalogService } = require('../services/catalog/marketplaceCatalogService');
+const { buildInstalledMarketplaceAppSettings } = require('../utils/marketplaceAppSettings');
+const businessSpecialtyService = require('../services/businessSpecialtyService');
+
+// Legacy storefront template engine has been removed from runtime.
+const PLATFORM_ENGINE_VERSION = 'removed';
+const LEGACY_TEMPLATE_CATEGORIES = new Set(['TEMPLATE', 'THEME']);
+const LEGACY_TEMPLATE_CATEGORY_VALUES = Array.from(LEGACY_TEMPLATE_CATEGORIES);
+
+const LOG_FILE = path.join(__dirname, '../debug_marketplace.log');
+const ACTIVE_STATUSES = ['ACTIVE', 'TRIAL', 'active', 'trial'];
+const LEGACY_AUTOMATION_CATEGORY = ['A', 'I'].join('');
+
+function getMarketplaceCatalogSource() {
+  const defaultSource = process.env.NODE_ENV === 'production' ? 'db' : 'hybrid';
+  const source = String(process.env.CATALOG_SOURCE || defaultSource).trim().toLowerCase();
+  if (source === 'file' || source === 'hybrid' || source === 'db') {
+    return source;
+  }
+  return defaultSource;
+}
+
+function toSafeNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function isLegacyTemplateCategory(category) {
+  return LEGACY_TEMPLATE_CATEGORIES.has(String(category || '').trim().toUpperCase());
+}
+
+async function resolveMarketplaceSpecialtyFilter(user) {
+  if (!user || !user.companyId) {
+    return { applied: false, specialty: null, appSlugs: [] };
+  }
+
+  return businessSpecialtyService.getCompanySpecialtyAppSlugs(user.companyId);
+}
+
+function isAppRecommendedForSpecialty(slug, specialtyFilter) {
+  if (!specialtyFilter?.applied) return false;
+  return specialtyFilter.appSlugs.includes(String(slug || '').trim());
+}
+
+async function enrichAppsWithDbState(apps, user) {
+  if (!Array.isArray(apps) || apps.length === 0) {
+    return [];
+  }
+
+  const slugs = Array.from(new Set(
+    apps
+      .map((app) => app?.slug)
+      .filter((slug) => typeof slug === 'string' && slug.trim().length > 0)
+  ));
+
+  if (slugs.length === 0) {
+    return apps.map((app) => ({
+      ...app,
+      isInstalled: false,
+      activePricingModel: null
+    }));
+  }
+
+  const dbApps = await executeWithRetry(async () => {
+    return await getSharedPrismaClient().marketplaceApp.findMany({
+      where: { slug: { in: slugs } },
+      select: {
+        id: true,
+        slug: true,
+        installCount: true,
+        rating: true,
+        reviewCount: true
+      }
+    });
+  });
+
+  const dbBySlug = new Map(dbApps.map((app) => [app.slug, app]));
+  const installedByAppId = new Map();
+
+  if (user && user.companyId && dbApps.length > 0) {
+    const installedApps = await executeWithRetry(async () => {
+      return await getSharedPrismaClient().companyApp.findMany({
+        where: {
+          companyId: user.companyId,
+          appId: { in: dbApps.map((app) => app.id) }
+        },
+        select: {
+          appId: true,
+          status: true,
+          activePricingModel: true
+        }
+      });
+    });
+
+    installedApps.forEach((installation) => {
+      if (ACTIVE_STATUSES.includes(installation.status)) {
+        installedByAppId.set(installation.appId, installation.activePricingModel || null);
+      }
+    });
+  }
+
+  return apps.map((app) => {
+    const dbApp = dbBySlug.get(app.slug);
+    const installCount = dbApp ? toSafeNumber(dbApp.installCount, 0) : toSafeNumber(app.installCount, 0);
+    const rating = dbApp ? toSafeNumber(dbApp.rating, 0) : toSafeNumber(app.rating, 0);
+    const reviewCount = dbApp ? toSafeNumber(dbApp.reviewCount, 0) : toSafeNumber(app.reviewCount, 0);
+    const appId = dbApp ? dbApp.id : (app.id || `file-${app.slug}`);
+    const isInstalled = dbApp ? installedByAppId.has(dbApp.id) : false;
+    const activePricingModel = dbApp ? (installedByAppId.get(dbApp.id) || null) : null;
+
+    return {
+      ...app,
+      id: appId,
+      installCount,
+      rating,
+      reviewCount,
+      _count: {
+        installations: installCount,
+        reviews: reviewCount
+      },
+      isInstalled,
+      activePricingModel
+    };
+  });
+}
+
+const VALID_PRICING_MODELS = new Set(['FREE', 'SUBSCRIPTION', 'PAY_PER_USE']);
+
+function normalizePricingModel(value, fallback = 'SUBSCRIPTION') {
+  const normalized = String(value || '').trim().toUpperCase();
+  if (VALID_PRICING_MODELS.has(normalized)) {
+    return normalized;
+  }
+  return fallback;
+}
+
+function normalizeStringArray(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => String(item || '').trim())
+      .filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((item) => String(item || '').trim())
+          .filter(Boolean);
+      }
+    } catch (error) {
+      // Keep fallback below
+    }
+
+    return trimmed.split(',').map((item) => item.trim()).filter(Boolean);
+  }
+
+  return [];
+}
+
+function normalizeJsonPayload(value, fallback = null) {
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return fallback;
+    }
+
+    try {
+      return JSON.parse(trimmed);
+    } catch (error) {
+      return trimmed
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+  }
+
+  return value;
+}
+
+function normalizeMarketplaceAppForApi(app) {
+  if (!app || typeof app !== 'object') {
+    return app;
+  }
+
+  return {
+    ...app,
+    features: normalizeJsonPayload(app.features, {}),
+    requiredApps: normalizeStringArray(app.requiredApps),
+    ...(app.positioning !== undefined
+      ? { positioning: normalizeJsonPayload(app.positioning, null) }
+      : {}),
+    ...(app.limitations !== undefined
+      ? { limitations: normalizeJsonPayload(app.limitations, null) }
+      : {})
+  };
+}
+
+function createRequiredAppsError(requiredApps) {
+  const error = new Error('هذه الأداة تتطلب تفعيل أدوات أخرى أولاً');
+  error.code = 'REQUIRED_APPS_MISSING';
+  error.requiredApps = requiredApps;
+  return error;
+}
+
+function createAlreadyInstalledError(existing) {
+  const error = new Error('الأداة مفعلة بالفعل بنفس نظام الدفع');
+  error.code = 'APP_ALREADY_INSTALLED';
+  error.existing = existing;
+  return error;
+}
+
+async function ensureCompanyAppInstalled(tx, {
+  companyId,
+  app,
+  pricingModel,
+  visited = new Set(),
+  autoInstalledApps = [],
+  allowAlreadyInstalled = true,
+  recordAutoInstall = false
+}) {
+  const normalizedSlug = String(app?.slug || '').trim();
+  if (!normalizedSlug) {
+    throw new Error('App slug is required for installation');
+  }
+
+  if (visited.has(normalizedSlug)) {
+    return autoInstalledApps;
+  }
+  visited.add(normalizedSlug);
+
+  const requiredAppSlugs = normalizeStringArray(app.requiredApps);
+  if (requiredAppSlugs.length > 0) {
+    const requiredResolution = await ensureDbAppsBySlugs(requiredAppSlugs, {
+      onlyActive: true,
+      onlyPublic: true
+    });
+
+    if (requiredResolution.missingSlugs.length > 0) {
+      throw createRequiredAppsError(
+        requiredResolution.missingSlugs.map((requiredSlug) => ({
+          slug: requiredSlug,
+          name: requiredSlug
+        }))
+      );
+    }
+
+    for (const requiredApp of requiredResolution.apps) {
+      await ensureCompanyAppInstalled(tx, {
+        companyId,
+        app: requiredApp,
+        pricingModel: normalizePricingModel(requiredApp.pricingModel, 'SUBSCRIPTION'),
+        visited,
+        autoInstalledApps,
+        allowAlreadyInstalled: true,
+        recordAutoInstall: true
+      });
+    }
+  }
+
+  const existing = await tx.companyApp.findUnique({
+    where: {
+      companyId_appId: { companyId, appId: app.id }
+    }
+  });
+
+  const requestedPricingModel = normalizePricingModel(
+    pricingModel,
+    normalizePricingModel(app.pricingModel, 'SUBSCRIPTION')
+  );
+  const isExpired = existing && existing.validUntil && new Date(existing.validUntil) < new Date() && existing.status !== 'TRIAL';
+  const canTransition = existing && existing.activePricingModel === 'PAY_PER_USE' && requestedPricingModel === 'SUBSCRIPTION';
+
+  if (existing && existing.status !== 'CANCELLED' && !isExpired && !canTransition) {
+    if (!allowAlreadyInstalled) {
+      throw createAlreadyInstalledError(existing);
+    }
+    return autoInstalledApps;
+  }
+
+  const trialEndsAt = !existing ? new Date(Date.now() + app.trialDays * 24 * 60 * 60 * 1000) : existing.trialEndsAt;
+  const validUntil = requestedPricingModel === 'SUBSCRIPTION' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null;
+  const installedSettings = buildInstalledMarketplaceAppSettings(
+    app.slug,
+    existing?.settings,
+    {
+      general: {
+        enabled: true,
+      }
+    }
+  );
+
+  if (existing) {
+    await tx.companyApp.update({
+      where: { id: existing.id },
+      data: {
+        activePricingModel: requestedPricingModel,
+        status: 'ACTIVE',
+        validUntil,
+        settings: installedSettings,
+        updatedAt: new Date()
+      }
+    });
+  } else {
+    await tx.companyApp.create({
+      data: {
+        id: uuidv4(),
+        companyId,
+        appId: app.id,
+        activePricingModel: requestedPricingModel,
+        status: app.trialDays > 0 ? 'TRIAL' : 'ACTIVE',
+        trialEndsAt,
+        validUntil,
+        settings: installedSettings,
+        nextBillingAt: requestedPricingModel === 'SUBSCRIPTION' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null
+      }
+    });
+
+    await tx.marketplaceApp.update({
+      where: { id: app.id },
+      data: { installCount: { increment: 1 } }
+    });
+  }
+
+  if (recordAutoInstall) {
+    autoInstalledApps.push({
+      slug: app.slug,
+      name: app.name
+    });
+  }
+
+  return autoInstalledApps;
+}
+
+function normalizeJsonObject(value, fallback = {}) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string' && value.trim().length > 0) {
+    try {
+      const parsed = JSON.parse(value);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch (error) {
+      // Ignore parse errors and use fallback
+    }
+  }
+
+  return fallback;
+}
+
+function buildDbAppPayloadFromCatalog(catalogApp) {
+  const monthlyPrice = toSafeNumber(catalogApp?.monthlyPrice, 0);
+  const yearlyPrice = toSafeNumber(catalogApp?.yearlyPrice, 0);
+  const unitPriceRaw = catalogApp?.unitPrice;
+  const unitPrice = unitPriceRaw === null || unitPriceRaw === undefined
+    ? null
+    : toSafeNumber(unitPriceRaw, 0);
+
+  return {
+    slug: String(catalogApp?.slug || '').trim(),
+    name: String(catalogApp?.name || '').trim() || 'Untitled App',
+    description: String(catalogApp?.description || '').trim(),
+    logo: catalogApp?.logo || null,
+    images: null,
+    monthlyPrice,
+    yearlyPrice,
+    pricingModel: normalizePricingModel(catalogApp?.pricingModel, monthlyPrice === 0 ? 'FREE' : 'SUBSCRIPTION'),
+    unitPrice,
+    unitName: catalogApp?.unitName || null,
+    features: normalizeJsonObject(catalogApp?.features, {}),
+    isActive: catalogApp?.isActive !== false,
+    isPublic: catalogApp?.isPublic !== false,
+    isFeatured: catalogApp?.isFeatured === true,
+    requiredApps: normalizeStringArray(catalogApp?.requiredApps),
+    trialDays: Math.max(0, Math.floor(toSafeNumber(catalogApp?.trialDays, 0))),
+    mainRoute: null,
+    adminRoute: null,
+    category: String(catalogApp?.category || 'general').trim() || 'general',
+    rating: toSafeNumber(catalogApp?.rating, 0),
+    reviewCount: Math.max(0, Math.floor(toSafeNumber(catalogApp?.reviewCount, 0))),
+    installCount: Math.max(0, Math.floor(toSafeNumber(catalogApp?.installCount, 0))),
+    isPopular: catalogApp?.isPopular === true,
+    engineCompatibility: catalogApp?.engineCompatibility || null,
+    icon: catalogApp?.icon || null
+  };
+}
+
+async function ensureDbAppBySlug(slug, options = {}) {
+  const normalizedSlug = String(slug || '').trim();
+  if (!normalizedSlug) return null;
+
+  const onlyActive = options.onlyActive === true;
+  const onlyPublic = options.onlyPublic === true;
+
+  const dbApp = await executeWithRetry(async () => {
+    return await getSharedPrismaClient().marketplaceApp.findUnique({
+      where: { slug: normalizedSlug }
+    });
+  });
+
+  if (dbApp) {
+    if (isLegacyTemplateCategory(dbApp.category)) return null;
+    if (onlyActive && !dbApp.isActive) return null;
+    if (onlyPublic && !dbApp.isPublic) return null;
+    return dbApp;
+  }
+
+  if (getMarketplaceCatalogSource() === 'db') {
+    return null;
+  }
+
+  const catalogApp = await marketplaceCatalogService.getAppBySlug(normalizedSlug, {
+    onlyActive,
+    onlyPublic
+  });
+
+  if (!catalogApp) {
+    return null;
+  }
+
+  if (isLegacyTemplateCategory(catalogApp.category)) {
+    return null;
+  }
+
+  const createPayload = buildDbAppPayloadFromCatalog(catalogApp);
+  const updatePayload = {
+    name: createPayload.name,
+    description: createPayload.description,
+    logo: createPayload.logo,
+    monthlyPrice: createPayload.monthlyPrice,
+    yearlyPrice: createPayload.yearlyPrice,
+    pricingModel: createPayload.pricingModel,
+    unitPrice: createPayload.unitPrice,
+    unitName: createPayload.unitName,
+    features: createPayload.features,
+    isActive: createPayload.isActive,
+    isPublic: createPayload.isPublic,
+    isFeatured: createPayload.isFeatured,
+    requiredApps: createPayload.requiredApps,
+    trialDays: createPayload.trialDays,
+    category: createPayload.category,
+    isPopular: createPayload.isPopular,
+    engineCompatibility: createPayload.engineCompatibility,
+    icon: createPayload.icon,
+    updatedAt: new Date()
+  };
+
+  return executeWithRetry(async () => {
+    return await getSharedPrismaClient().marketplaceApp.upsert({
+      where: { slug: normalizedSlug },
+      update: updatePayload,
+      create: createPayload
+    });
+  });
+}
+
+async function ensureDbAppsBySlugs(slugs, options = {}) {
+  const uniqueSlugs = Array.from(new Set(
+    normalizeStringArray(slugs)
+  ));
+
+  if (uniqueSlugs.length === 0) {
+    return { apps: [], missingSlugs: [] };
+  }
+
+  const resolved = await Promise.all(
+    uniqueSlugs.map(async (slug) => {
+      const app = await ensureDbAppBySlug(slug, options);
+      return { slug, app };
+    })
+  );
+
+  return {
+    apps: resolved.filter((entry) => !!entry.app).map((entry) => entry.app),
+    missingSlugs: resolved.filter((entry) => !entry.app).map((entry) => entry.slug)
+  };
+}
+
+async function getCatalogAppMetadataMap() {
+  try {
+    const snapshot = await marketplaceCatalogService.getSnapshot();
+    return new Map(
+      (snapshot.apps || []).map((app) => [
+        app.slug,
+        {
+          features: app.features,
+          positioning: app.positioning
+        }
+      ])
+    );
+  } catch (error) {
+    return new Map();
+  }
+}
+
+function withCatalogAppMetadata(app, catalogAppMetadataMap) {
+  const catalogMetadata = catalogAppMetadataMap.get(app?.slug);
+  if (!catalogMetadata || typeof catalogMetadata !== 'object' || Array.isArray(catalogMetadata)) {
+    return normalizeMarketplaceAppForApi(app);
+  }
+
+  const catalogFeatures = normalizeJsonObject(catalogMetadata.features, null);
+  const catalogPositioning = normalizeJsonObject(catalogMetadata.positioning, null);
+
+  return normalizeMarketplaceAppForApi({
+    ...app,
+    ...(catalogFeatures ? { features: catalogFeatures } : {}),
+    ...(catalogPositioning ? { positioning: catalogPositioning } : {})
+  });
+}
+
+async function resolveBundleAppsForList(appTokens) {
+  const tokens = normalizeStringArray(appTokens);
+  if (tokens.length === 0) {
+    return [];
+  }
+
+  const uniqueTokens = Array.from(new Set(tokens));
+  const apps = await getSharedPrismaClient().marketplaceApp.findMany({
+    where: {
+      isActive: true,
+      isPublic: true,
+      category: { notIn: LEGACY_TEMPLATE_CATEGORY_VALUES },
+      OR: [
+        { id: { in: uniqueTokens } },
+        { slug: { in: uniqueTokens } }
+      ]
+    },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+      monthlyPrice: true,
+      logo: true
+    }
+  });
+
+  const appByToken = new Map();
+  apps.forEach((app) => {
+    appByToken.set(app.id, app);
+    appByToken.set(app.slug, app);
+  });
+
+  return tokens
+    .map((token) => appByToken.get(token))
+    .filter(Boolean)
+    .filter((app, index, collection) =>
+      collection.findIndex((candidate) => candidate.id === app.id) === index
+    );
+}
+
+async function resolveBundleForWrite(slug) {
+  const normalizedSlug = String(slug || '').trim();
+  if (!normalizedSlug) {
+    return { bundle: null, source: 'invalid', missingAppSlugs: [] };
+  }
+
+  const catalogSource = getMarketplaceCatalogSource();
+
+  // In file/hybrid mode, the page shows catalog bundles. Prefer that same
+  // source for writes so the subscribed apps always match the visible card.
+  if (catalogSource !== 'db') {
+    const catalogBundle = await marketplaceCatalogService.getBundleBySlug(normalizedSlug, {
+      onlyActive: true
+    });
+
+    if (catalogBundle) {
+      const bundleAppSlugs = normalizeStringArray(
+        catalogBundle.appSlugs || (catalogBundle.apps || []).map((app) => app.slug),
+      );
+      const { apps, missingSlugs } = await ensureDbAppsBySlugs(bundleAppSlugs, {
+        onlyActive: true,
+        onlyPublic: true
+      });
+
+      return {
+        bundle: {
+          id: catalogBundle.id || `catalog-${catalogBundle.slug}`,
+          slug: catalogBundle.slug,
+          name: catalogBundle.name,
+          description: catalogBundle.description || '',
+          monthlyPrice: toSafeNumber(catalogBundle.monthlyPrice, 0),
+          yearlyPrice: catalogBundle.yearlyPrice === null || catalogBundle.yearlyPrice === undefined
+            ? null
+            : toSafeNumber(catalogBundle.yearlyPrice, 0),
+          discount: toSafeNumber(catalogBundle.discount, 0),
+          isActive: catalogBundle.isActive !== false,
+          isFeatured: catalogBundle.isFeatured === true,
+          appIds: apps.map((app) => app.id),
+          appSlugs: bundleAppSlugs
+        },
+        source: 'catalog',
+        missingAppSlugs: missingSlugs
+      };
+    }
+  }
+
+  const dbBundle = await executeWithRetry(async () => {
+    return await getSharedPrismaClient().appBundle.findUnique({
+      where: { slug: normalizedSlug }
+    });
+  });
+
+  if (!dbBundle) {
+    return {
+      bundle: null,
+      source: catalogSource === 'db' ? 'db' : 'catalog',
+      missingAppSlugs: []
+    };
+  }
+
+  const rawTokens = normalizeStringArray(dbBundle.appIds);
+  if (rawTokens.length === 0) {
+    return { bundle: { ...dbBundle, appIds: [] }, source: 'db', missingAppSlugs: [] };
+  }
+
+  const dbApps = await executeWithRetry(async () => {
+    return await getSharedPrismaClient().marketplaceApp.findMany({
+      where: {
+        category: { notIn: LEGACY_TEMPLATE_CATEGORY_VALUES },
+        OR: [
+          { id: { in: rawTokens } },
+          { slug: { in: rawTokens } }
+        ]
+      },
+      select: {
+        id: true,
+        slug: true
+      }
+    });
+  });
+
+  const idByToken = new Map();
+  dbApps.forEach((app) => {
+    idByToken.set(app.id, app.id);
+    idByToken.set(app.slug, app.id);
+  });
+
+  const appIds = [];
+  const missingTokens = [];
+  rawTokens.forEach((token) => {
+    const mappedId = idByToken.get(token);
+    if (mappedId) {
+      appIds.push(mappedId);
+    } else {
+      missingTokens.push(token);
+    }
+  });
+
+  return {
+    bundle: { ...dbBundle, appIds: Array.from(new Set(appIds)) },
+    source: 'db',
+    missingAppSlugs: missingTokens
+  };
+}
+
+function logToFile(message, data = null) {
+  const timestamp = new Date().toISOString();
+  const logEntry = `[${timestamp}] ${message} ${data ? JSON.stringify(data, null, 2) : ''}\n\n`;
+  try {
+    fs.appendFileSync(LOG_FILE, logEntry);
+  } catch (err) {
+    console.error('Failed to write to log file:', err);
+  }
+}
+
+exports.seedTemplates = async (req, res) => {
+  return res.status(410).json({
+    success: false,
+    message: 'تم إيقاف نظام قوالب المتجر القديم، لذلك زرع القوالب في الـ marketplace لم يعد متاحًا.'
+  });
+};
+
+/**
+ * @route GET /api/v1/marketplace/apps
+ * @desc Get all marketplace apps with filtering
+ * @access Public
+ */
+exports.getAllApps = async (req, res) => {
+  try {
+    const { category, search, sort = 'featured', page = 1, limit = 20 } = req.query;
+    const catalogSource = getMarketplaceCatalogSource();
+    const specialtyFilter = await resolveMarketplaceSpecialtyFilter(req.user);
+
+    if (catalogSource !== 'db') {
+      const catalogResult = await marketplaceCatalogService.getAllApps({
+        category,
+        search,
+        sort,
+        page,
+        limit,
+        onlyActive: true,
+        onlyPublic: true
+      });
+
+      let apps = (catalogResult.data || []).map((app) => {
+        const installCount = toSafeNumber(app.installCount, 0);
+        const rating = toSafeNumber(app.rating, 0);
+        const reviewCount = toSafeNumber(app.reviewCount, 0);
+        return {
+          ...app,
+          installCount,
+          rating,
+          reviewCount,
+          _count: {
+            installations: installCount,
+            reviews: reviewCount
+          },
+          isInstalled: false,
+          activePricingModel: null
+        };
+      });
+      apps = apps.filter((app) => !isLegacyTemplateCategory(app.category));
+
+      if (catalogSource === 'hybrid') {
+        apps = await enrichAppsWithDbState(apps, req.user);
+      }
+      apps = apps.map((app) => normalizeMarketplaceAppForApi({
+        ...app,
+        isRecommendedForSpecialty: isAppRecommendedForSpecialty(app.slug, specialtyFilter)
+      }));
+
+
+      return res.json({
+        success: true,
+        data: apps,
+        platformEngineVersion: PLATFORM_ENGINE_VERSION,
+        pagination: catalogResult.pagination,
+        specialty: specialtyFilter.applied ? specialtyFilter.specialty : null,
+        catalog: {
+          source: catalogSource,
+          ...(catalogResult.meta || {})
+        }
+      });
+    }
+
+    const where = { isActive: true, isPublic: true };
+
+    if (category) {
+      if (isLegacyTemplateCategory(category)) {
+        return res.json({
+          success: true,
+          data: [],
+          platformEngineVersion: PLATFORM_ENGINE_VERSION,
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            pages: 0
+          }
+        });
+      }
+      where.category = category;
+    } else {
+      where.category = { notIn: LEGACY_TEMPLATE_CATEGORY_VALUES };
+    }
+
+    if (search) {
+      // DB-backed MarketplaceApp records do not persist catalog-only nameEn.
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    let orderBy = {};
+    switch (sort) {
+      case 'featured':
+        orderBy = [{ isFeatured: 'desc' }, { isPopular: 'desc' }];
+        break;
+      case 'popular':
+        orderBy = { installCount: 'desc' };
+        break;
+      case 'price_low':
+        orderBy = { monthlyPrice: 'asc' };
+        break;
+      case 'price_high':
+        orderBy = { monthlyPrice: 'desc' };
+        break;
+      case 'newest':
+        orderBy = { createdAt: 'desc' };
+        break;
+      default:
+        orderBy = { isFeatured: 'desc' };
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [rawApps, total] = await executeWithRetry(async () => {
+      return await Promise.all([
+        getSharedPrismaClient().marketplaceApp.findMany({
+          where,
+          orderBy,
+          skip,
+          take: parseInt(limit),
+          include: {
+            _count: {
+              select: { reviews: true, installations: true }
+            }
+          }
+        }),
+        getSharedPrismaClient().marketplaceApp.count({ where })
+      ]);
+    });
+    const catalogAppMetadataMap = await getCatalogAppMetadataMap();
+    const apps = rawApps.map((app) => ({
+      ...withCatalogAppMetadata(app, catalogAppMetadataMap),
+      isRecommendedForSpecialty: isAppRecommendedForSpecialty(app.slug, specialtyFilter)
+    }));
+    const effectiveTotal = total;
+
+    // Check for installed apps if user is authenticated
+    let installedApps = [];
+    if (req.user && req.user.companyId && apps.length > 0) {
+      logToFile('Checking installed check for user:', { userId: req.user.id, companyId: req.user.companyId });
+
+      installedApps = await executeWithRetry(async () => {
+        return await getSharedPrismaClient().companyApp.findMany({
+          where: {
+            companyId: req.user.companyId,
+            appId: { in: apps.map(app => app.id) }
+          },
+          select: { appId: true, status: true, activePricingModel: true }
+        });
+      });
+
+      logToFile('Installed apps query result:', installedApps);
+
+      const activeStatuses = ['ACTIVE', 'TRIAL', 'active', 'trial'];
+      const installedMap = new Map();
+      installedApps.forEach(ia => {
+        if (activeStatuses.includes(ia.status)) {
+          installedMap.set(ia.appId, ia.activePricingModel);
+        }
+      });
+
+      logToFile('Filtered installed map:', Array.from(installedMap.entries()));
+
+      apps.forEach(app => {
+        app.isInstalled = installedMap.has(app.id);
+        app.activePricingModel = installedMap.get(app.id) || null;
+      });
+    } else {
+      logToFile('Skipping install check:', {
+        hasUser: !!req.user,
+        companyId: req.user?.companyId,
+        appsCount: apps.length
+      });
+      apps.forEach(app => {
+        app.isInstalled = false;
+      });
+    }
+
+    const response = {
+      success: true,
+      data: apps,
+      platformEngineVersion: PLATFORM_ENGINE_VERSION,
+      specialty: specialtyFilter.applied ? specialtyFilter.specialty : null,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: effectiveTotal,
+        pages: Math.ceil(effectiveTotal / parseInt(limit))
+      }
+    };
+
+    if (process.env.NODE_ENV === 'development') {
+      response._debug = {
+        isAuthenticated: !!req.user,
+        userId: req.user?.id,
+        companyId: req.user?.companyId,
+        appsCount: apps.length,
+        foundInstallations: installedApps,
+        hasInstalledAppsToCheck: apps.length > 0
+      };
+    }
+
+    res.json(response);
+  } catch (error) {
+    console.error('Error fetching marketplace apps:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب الأدوات',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @route GET /api/v1/marketplace/apps/:slug
+ * @desc Get app details by slug
+ * @access Public
+ */
+exports.getAppDetails = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const catalogSource = getMarketplaceCatalogSource();
+
+    if (catalogSource !== 'db') {
+      const appFromCatalog = await marketplaceCatalogService.getAppBySlug(slug, {
+        onlyActive: true,
+        onlyPublic: true
+      });
+
+      if (!appFromCatalog) {
+        return res.status(404).json({
+          success: false,
+          message: 'App not found'
+        });
+      }
+
+      let app = {
+        ...appFromCatalog,
+        installCount: toSafeNumber(appFromCatalog.installCount, 0),
+        rating: toSafeNumber(appFromCatalog.rating, 0),
+        reviewCount: toSafeNumber(appFromCatalog.reviewCount, 0),
+        reviews: [],
+        pricingRules: [],
+        _count: {
+          installations: toSafeNumber(appFromCatalog.installCount, 0),
+          reviews: toSafeNumber(appFromCatalog.reviewCount, 0)
+        }
+      };
+
+      let isInstalled = false;
+      let activePricingModel = null;
+
+      if (catalogSource === 'hybrid') {
+        const dbApp = await executeWithRetry(async () => {
+          return await getSharedPrismaClient().marketplaceApp.findFirst({
+            where: {
+              slug,
+              isActive: true,
+              isPublic: true,
+              category: { notIn: LEGACY_TEMPLATE_CATEGORY_VALUES }
+            },
+            include: {
+              reviews: {
+                take: 10,
+                orderBy: { createdAt: 'desc' },
+                where: { isPublished: true }
+              },
+              pricingRules: {
+                where: { isActive: true }
+              },
+              _count: {
+                select: { installations: true, reviews: true }
+              }
+            }
+          });
+        });
+
+        if (dbApp) {
+          const installCount = toSafeNumber(dbApp.installCount, app.installCount);
+          const rating = toSafeNumber(dbApp.rating, app.rating);
+          const reviewCount = toSafeNumber(dbApp.reviewCount, app.reviewCount);
+
+          app = {
+            ...app,
+            id: dbApp.id,
+            installCount,
+            rating,
+            reviewCount,
+            reviews: dbApp.reviews || [],
+            pricingRules: dbApp.pricingRules || [],
+            _count: dbApp._count || {
+              installations: installCount,
+              reviews: reviewCount
+            }
+          };
+
+          if (req.user && req.user.companyId) {
+            const installation = await executeWithRetry(async () => {
+              return await getSharedPrismaClient().companyApp.findFirst({
+                where: {
+                  companyId: req.user.companyId,
+                  appId: dbApp.id,
+                  status: { in: ACTIVE_STATUSES }
+                },
+                select: {
+                  activePricingModel: true
+                }
+              });
+            });
+
+            if (installation) {
+              isInstalled = true;
+              activePricingModel = installation.activePricingModel || null;
+            }
+          }
+        }
+      }
+
+      if (isLegacyTemplateCategory(app.category)) {
+        return res.status(404).json({
+          success: false,
+          message: 'App not found'
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: normalizeMarketplaceAppForApi({
+          ...app,
+          isInstalled,
+          activePricingModel
+        })
+      });
+    }
+
+    const app = await executeWithRetry(async () => {
+      return await getSharedPrismaClient().marketplaceApp.findFirst({
+        where: {
+          slug,
+          isActive: true,
+          isPublic: true,
+          category: { notIn: LEGACY_TEMPLATE_CATEGORY_VALUES }
+        },
+        include: {
+          reviews: {
+            take: 10,
+            orderBy: { createdAt: 'desc' },
+            where: { isPublished: true }
+          },
+          pricingRules: {
+            where: { isActive: true }
+          },
+          _count: {
+            select: { installations: true, reviews: true }
+          }
+        }
+      });
+    });
+
+    if (!app) {
+      return res.status(404).json({
+        success: false,
+        message: 'App not found'
+      });
+    }
+
+    const catalogAppMetadataMap = await getCatalogAppMetadataMap();
+    const appWithCatalogFeatures = withCatalogAppMetadata(app, catalogAppMetadataMap);
+
+    // Check installation status if authenticated
+    let isInstalled = false;
+    let activePricingModel = null;
+
+    if (req.user && req.user.companyId) {
+      const installation = await executeWithRetry(async () => {
+        return await getSharedPrismaClient().companyApp.findFirst({
+          where: {
+            companyId: req.user.companyId,
+            appId: app.id,
+            status: { in: ACTIVE_STATUSES }
+          }
+        });
+      });
+
+      if (installation) {
+        isInstalled = true;
+        activePricingModel = installation.activePricingModel;
+      }
+    }
+
+    res.json({
+      success: true,
+      data: normalizeMarketplaceAppForApi({
+        ...appWithCatalogFeatures,
+        isInstalled,
+        activePricingModel
+      })
+    });
+  } catch (error) {
+    console.error('Error fetching app details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch app details',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @route GET /api/v1/marketplace/categories
+ * @desc Get all app categories with counts
+ * @access Public
+ */
+exports.getCategories = async (req, res) => {
+  try {
+    const catalogSource = getMarketplaceCatalogSource();
+    const specialtyFilter = await resolveMarketplaceSpecialtyFilter(req.user);
+
+    if (catalogSource !== 'db') {
+      const categoriesResult = await marketplaceCatalogService.getCategories({
+        onlyActive: true,
+        onlyPublic: true
+      });
+
+      let categories = (categoriesResult.data || []).map((category) => ({
+        category: category.category,
+        count: toSafeNumber(category.count, 0),
+        name: category.name || category.category,
+        nameEn: category.nameEn || category.category,
+        icon: category.icon || category.iconKey || 'Package',
+        iconKey: category.iconKey || null
+      }));
+
+      return res.json({
+        success: true,
+        data: categories.filter((category) => !isLegacyTemplateCategory(category.category)),
+        specialty: specialtyFilter.applied ? specialtyFilter.specialty : null,
+        catalog: {
+          source: catalogSource,
+          ...(categoriesResult.meta || {})
+        },
+        _v: 'catalog-v1'
+      });
+    }
+
+    const categories = await executeWithRetry(async () => {
+      const where = {
+        isActive: true,
+        isPublic: true,
+        category: { notIn: LEGACY_TEMPLATE_CATEGORY_VALUES }
+      };
+
+      return await getSharedPrismaClient().marketplaceApp.groupBy({
+        by: ['category'],
+        where,
+        _count: {
+          id: true
+        }
+      });
+    });
+
+    const categoryMap = {
+      ECOMMERCE: { name: 'التجارة الإلكترونية', nameEn: 'E-Commerce', icon: '🛒' },
+      HR: { name: 'الموارد البشرية', nameEn: 'HR', icon: '👥' },
+        [LEGACY_AUTOMATION_CATEGORY]: { name: 'الأتمتة', nameEn: 'Automation', icon: '⚙️' },
+      COMMUNICATION: { name: 'التواصل', nameEn: 'Communication', icon: '💬' },
+      CRM: { name: 'إدارة العملاء', nameEn: 'CRM', icon: '📊' },
+      ANALYTICS: { name: 'التحليلات', nameEn: 'Analytics', icon: '📈' },
+      INTEGRATION: { name: 'التكاملات', nameEn: 'Integrations', icon: '🔗' },
+      PRODUCTIVITY: { name: 'الإنتاجية', nameEn: 'Productivity', icon: '⚡' },
+      FINANCE: { name: 'المالية', nameEn: 'Finance', icon: '💰' },
+      MARKETING: { name: 'التسويق', nameEn: 'Marketing', icon: '📣' },
+      GAMIFICATION: { name: 'الألعاب والترفيه', nameEn: 'Gamification', icon: '🎮' }
+    };
+
+    console.log('🔍 [Marketplace] Fetching categories from DB...');
+    const result = categories.map(cat => {
+      if (!categoryMap[cat.category]) {
+        console.warn(`⚠️ [Marketplace] Unknown category found in DB: ${cat.category}`);
+      }
+      return {
+        category: cat.category,
+        count: cat._count.id,
+        ...(categoryMap[cat.category] || { name: cat.category, nameEn: cat.category, icon: '📦' })
+      };
+    });
+
+    console.log('✅ [Marketplace] Returning categories:', result.length);
+
+    res.json({
+      success: true,
+      data: result,
+      specialty: specialtyFilter.applied ? specialtyFilter.specialty : null,
+      _v: '2026-02-17-0530'
+    });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب الفئات',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @route GET /api/v1/marketplace/featured
+ * @desc Get featured apps
+ * @access Public
+ */
+exports.getFeaturedApps = async (req, res) => {
+  try {
+    const apps = await executeWithRetry(async () => {
+      return await getSharedPrismaClient().marketplaceApp.findMany({
+        where: {
+          isActive: true,
+          isPublic: true,
+          isFeatured: true,
+          category: { notIn: LEGACY_TEMPLATE_CATEGORY_VALUES }
+        },
+        take: 6,
+        orderBy: { installCount: 'desc' }
+      });
+    });
+
+    const catalogAppMetadataMap = await getCatalogAppMetadataMap();
+    const appsWithCatalogFeatures = apps.map((app) =>
+      withCatalogAppMetadata(app, catalogAppMetadataMap)
+    );
+
+    res.json({
+      success: true,
+      data: appsWithCatalogFeatures
+    });
+  } catch (error) {
+    console.error('Error fetching featured apps:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب الأدوات المميزة',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @route GET /api/v1/marketplace/bundles
+ * @desc Get all app bundles
+ * @access Public
+ */
+exports.getBundles = async (req, res) => {
+  try {
+    const catalogSource = getMarketplaceCatalogSource();
+    const specialtyFilter = await resolveMarketplaceSpecialtyFilter(req.user);
+
+    if (catalogSource !== 'db') {
+      const bundlesResult = await marketplaceCatalogService.getAllBundles({
+        onlyActive: true
+      });
+
+      let bundles = (bundlesResult.data || []).map((bundle) => ({
+        ...bundle,
+        monthlyPrice: toSafeNumber(bundle.monthlyPrice, 0),
+        yearlyPrice: bundle.yearlyPrice === null ? null : toSafeNumber(bundle.yearlyPrice, 0),
+        discount: toSafeNumber(bundle.discount, 0),
+        price: toSafeNumber(bundle.monthlyPrice, 0)
+      }));
+
+      if (catalogSource === 'hybrid' && bundles.length > 0) {
+        const allSlugs = Array.from(new Set(
+          bundles.flatMap((bundle) => (bundle.apps || []).map((app) => app.slug)).filter(Boolean)
+        ));
+
+        if (allSlugs.length > 0) {
+          const dbApps = await executeWithRetry(async () => {
+            return await getSharedPrismaClient().marketplaceApp.findMany({
+              where: {
+                slug: { in: allSlugs },
+                isActive: true,
+                isPublic: true,
+                category: { notIn: LEGACY_TEMPLATE_CATEGORY_VALUES }
+              },
+              select: {
+                id: true,
+                slug: true,
+                name: true,
+                description: true,
+                monthlyPrice: true,
+                logo: true
+              }
+            });
+          });
+
+          const dbBySlug = new Map(dbApps.map((app) => [app.slug, app]));
+
+          bundles = bundles.map((bundle) => {
+            const apps = (bundle.apps || [])
+              .filter((app) => !isLegacyTemplateCategory(app.category))
+              .map((app) => {
+              const dbApp = dbBySlug.get(app.slug);
+              if (!dbApp) return app;
+              return {
+                ...app,
+                id: dbApp.id,
+                name: dbApp.name || app.name,
+                description: dbApp.description || app.description,
+                monthlyPrice: toSafeNumber(dbApp.monthlyPrice, toSafeNumber(app.monthlyPrice, 0)),
+                logo: dbApp.logo || app.logo || null
+              };
+            });
+
+            return {
+              ...bundle,
+              appIds: apps.map((app) => app.id),
+              apps
+            };
+          });
+        }
+      }
+
+      return res.json({
+        success: true,
+        data: bundles,
+        specialty: specialtyFilter.applied ? specialtyFilter.specialty : null,
+        catalog: {
+          source: catalogSource,
+          ...(bundlesResult.meta || {})
+        }
+      });
+    }
+
+    let bundles = await executeWithRetry(async () => {
+      const allBundles = await getSharedPrismaClient().appBundle.findMany({
+        where: { isActive: true },
+        orderBy: { isFeatured: 'desc' }
+      });
+
+      return Promise.all(
+        allBundles.map(async (bundle) => {
+          const bundleApps = await resolveBundleAppsForList(bundle.appIds);
+
+          return {
+            ...bundle,
+            appIds: bundleApps.map((app) => app.id),
+            apps: bundleApps,
+            price: toSafeNumber(bundle.monthlyPrice, 0)
+          };
+        })
+      );
+    });
+
+    res.json({
+      success: true,
+      data: bundles,
+      specialty: specialtyFilter.applied ? specialtyFilter.specialty : null
+    });
+  } catch (error) {
+    console.error('Error fetching bundles:', error);
+    console.error('Full error stack:', error.stack);
+    console.error('Error message:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب الباقات',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @route POST /api/v1/marketplace/apps/:slug/install
+ * @desc Install an app for the company
+ * @access Protected
+ */
+exports.installApp = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { companyId } = req.user;
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        message: 'ÙŠØ¬Ø¨ ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ø´Ø±ÙƒØ© Ù„Ø¥ØªÙ…Ø§Ù… Ø§Ù„Ø¹Ù…Ù„ÙŠØ©'
+      });
+    }
+    const { pricingModel } = req.body;
+
+    const app = await ensureDbAppBySlug(slug);
+
+    if (!app) {
+      return res.status(404).json({
+        success: false,
+        message: 'App not found'
+      });
+    }
+
+    if (!app.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ù‡Ø°Ù‡ Ø§Ù„Ø£Ø¯Ø§Ø© ØºÙŠØ± Ù…ØªØ§Ø­Ø© Ø­Ø§Ù„ÙŠØ§Ù‹'
+      });
+    }
+
+    const requestedPricingModel = normalizePricingModel(
+      pricingModel,
+      normalizePricingModel(app.pricingModel, 'SUBSCRIPTION')
+    );
+    const installationResult = await executeWithRetry(async () => {
+      return await getSharedPrismaClient().$transaction(async (tx) => {
+        const autoInstalledApps = [];
+        await ensureCompanyAppInstalled(tx, {
+          companyId,
+          app,
+          pricingModel: requestedPricingModel,
+          autoInstalledApps,
+          allowAlreadyInstalled: false
+        });
+
+        const appInst = await tx.companyApp.findUnique({
+          where: {
+            companyId_appId: { companyId, appId: app.id }
+          }
+        });
+
+        await tx.companyWallet.upsert({
+          where: { companyId },
+          update: {},
+          create: {
+            id: uuidv4(),
+            companyId,
+            balance: 0,
+            currency: 'EGP'
+          }
+        });
+
+        return {
+          installation: appInst,
+          autoInstalledApps
+        };
+      });
+    });
+
+    res.json({
+      success: true,
+      message: `ØªÙ… ØªÙØ¹ÙŠÙ„ ${app.name} Ø¨Ù†Ø¬Ø§Ø­! ðŸŽ‰\nØªØ¬Ø±Ø¨Ø© Ù…Ø¬Ø§Ù†ÙŠØ© Ù„Ù…Ø¯Ø© ${app.trialDays} ÙŠÙˆÙ…`,
+      data: {
+        ...installationResult.installation,
+        app: {
+          name: app.name,
+          slug: app.slug,
+          icon: app.icon
+        },
+        autoInstalledRequiredApps: installationResult.autoInstalledApps
+      }
+    });
+  } catch (error) {
+    if (error.code === 'APP_ALREADY_INSTALLED') {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        data: error.existing
+      });
+    }
+
+    if (error.code === 'REQUIRED_APPS_MISSING') {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        requiredApps: error.requiredApps
+      });
+    }
+
+    console.error('Error installing app:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ø®Ø·Ø£ ÙÙŠ ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø£Ø¯Ø§Ø©',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @route POST /api/v1/marketplace/apps/:slug/uninstall
+ * @desc Uninstall an app
+ * @access Protected
+ */
+exports.uninstallApp = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { companyId } = req.user;
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        message: 'ÙŠØ¬Ø¨ ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ø´Ø±ÙƒØ© Ù„Ø¥ØªÙ…Ø§Ù… Ø§Ù„Ø¹Ù…Ù„ÙŠØ©'
+      });
+    }
+
+    const app = await ensureDbAppBySlug(slug);
+
+    if (!app) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ø§Ù„Ø£Ø¯Ø§Ø© ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯Ø©'
+      });
+    }
+
+    const installation = await executeWithRetry(async () => {
+      return await getSharedPrismaClient().companyApp.findUnique({
+        where: {
+          companyId_appId: { companyId, appId: app.id }
+        }
+      });
+    });
+
+    if (!installation) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ø§Ù„Ø£Ø¯Ø§Ø© ØºÙŠØ± Ù…ÙØ¹Ù„Ø©'
+      });
+    }
+
+    await executeWithRetry(async () => {
+      return await getSharedPrismaClient().companyApp.update({
+        where: { id: installation.id },
+        data: {
+          status: 'CANCELLED'
+        }
+      });
+    });
+
+    res.json({
+      success: true,
+      message: `ØªÙ… Ø¥Ù„ØºØ§Ø¡ ${app.name} Ø¨Ù†Ø¬Ø§Ø­`
+    });
+  } catch (error) {
+    console.error('Error uninstalling app:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ø®Ø·Ø£ ÙÙŠ Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø£Ø¯Ø§Ø©',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @route POST /api/v1/marketplace/apps/:appId/review
+ * @desc Add a review for an app
+ * @access Protected
+ */
+exports.addReview = async (req, res) => {
+  try {
+    const { appId } = req.params;
+    const { companyId, userId } = req.user;
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        message: 'ÙŠØ¬Ø¨ ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ø´Ø±ÙƒØ© Ù„Ø¥Ø¶Ø§ÙØ© ØªÙ‚ÙŠÙŠÙ…'
+      });
+    }
+    const { rating, title, comment } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ø§Ù„ØªÙ‚ÙŠÙŠÙ… ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø¨ÙŠÙ† 1 Ùˆ 5'
+      });
+    }
+
+    const installation = await executeWithRetry(async () => {
+      return await getSharedPrismaClient().companyApp.findUnique({
+        where: {
+          companyId_appId: { companyId, appId }
+        }
+      });
+    });
+
+    if (!installation) {
+      return res.status(400).json({
+        success: false,
+        message: 'ÙŠØ¬Ø¨ ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø£Ø¯Ø§Ø© Ø£ÙˆÙ„Ø§Ù‹ Ù„ØªÙ‚ÙŠÙŠÙ…Ù‡Ø§'
+      });
+    }
+
+    const review = await executeWithRetry(async () => {
+      return await getSharedPrismaClient().appReview.upsert({
+        where: {
+          appId_companyId: { appId, companyId }
+        },
+        update: {
+          rating,
+          title,
+          comment
+        },
+        create: {
+          appId,
+          companyId,
+          userId,
+          rating,
+          title,
+          comment,
+          isVerified: true
+        }
+      });
+    });
+
+    await executeWithRetry(async () => {
+      const result = await getSharedPrismaClient().appReview.aggregate({
+        where: { appId, isPublished: true },
+        _avg: { rating: true },
+        _count: { id: true }
+      });
+
+      await getSharedPrismaClient().marketplaceApp.update({
+        where: { id: appId },
+        data: {
+          rating: result._avg.rating,
+          reviewCount: result._count.id
+        }
+      });
+
+      return result._avg.rating;
+    });
+
+    res.json({
+      success: true,
+      message: 'Ø´ÙƒØ±Ø§Ù‹ Ù„ØªÙ‚ÙŠÙŠÙ…Ùƒ! ðŸŒŸ',
+      data: review
+    });
+  } catch (error) {
+    console.error('Error adding review:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Ø®Ø·Ø£ ÙÙŠ Ø¥Ø¶Ø§ÙØ© Ø§Ù„ØªÙ‚ÙŠÙŠÙ…',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @route GET /api/v1/marketplace/bundles/:slug
+ * @desc Get bundle details by slug
+ * @access Public
+ */
+exports.getBundleDetails = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const catalogSource = getMarketplaceCatalogSource();
+
+    if (catalogSource !== 'db') {
+      const bundleResult = await marketplaceCatalogService.getBundleBySlug(slug, {
+        onlyActive: true
+      });
+
+      if (!bundleResult) {
+        return res.status(404).json({
+          success: false,
+          message: 'Bundle not found'
+        });
+      }
+
+      let bundle = {
+        ...bundleResult,
+        monthlyPrice: toSafeNumber(bundleResult.monthlyPrice, 0),
+        yearlyPrice: bundleResult.yearlyPrice === null || bundleResult.yearlyPrice === undefined
+          ? null
+          : toSafeNumber(bundleResult.yearlyPrice, 0),
+        discount: toSafeNumber(bundleResult.discount, 0),
+        price: toSafeNumber(bundleResult.monthlyPrice, 0)
+      };
+
+      if (catalogSource === 'hybrid') {
+        const appSlugs = Array.from(new Set((bundle.apps || []).map((app) => app.slug).filter(Boolean)));
+
+        if (appSlugs.length > 0) {
+          const dbApps = await executeWithRetry(async () => {
+            return await getSharedPrismaClient().marketplaceApp.findMany({
+              where: {
+                slug: { in: appSlugs },
+                isActive: true,
+                isPublic: true,
+                category: { notIn: LEGACY_TEMPLATE_CATEGORY_VALUES }
+              },
+              select: {
+                id: true,
+                slug: true,
+                name: true,
+                description: true,
+                monthlyPrice: true,
+                logo: true
+              }
+            });
+          });
+
+          const dbBySlug = new Map(dbApps.map((app) => [app.slug, app]));
+          const mergedApps = (bundle.apps || [])
+            .filter((app) => !isLegacyTemplateCategory(app.category))
+            .map((app) => {
+            const dbApp = dbBySlug.get(app.slug);
+            if (!dbApp) return app;
+            return {
+              ...app,
+              id: dbApp.id,
+              name: dbApp.name || app.name,
+              description: dbApp.description || app.description,
+              monthlyPrice: toSafeNumber(dbApp.monthlyPrice, toSafeNumber(app.monthlyPrice, 0)),
+              logo: dbApp.logo || app.logo || null
+            };
+          });
+
+          bundle = {
+            ...bundle,
+            apps: mergedApps,
+            appIds: mergedApps.map((app) => app.id)
+          };
+        }
+      }
+
+      return res.json({
+        success: true,
+        data: bundle
+      });
+    }
+
+    const bundle = await executeWithRetry(async () => {
+      const dbBundle = await getSharedPrismaClient().appBundle.findFirst({
+        where: { slug, isActive: true }
+      });
+
+      if (!dbBundle) {
+        return null;
+      }
+
+      const rawTokens = normalizeStringArray(dbBundle.appIds);
+      const apps = rawTokens.length > 0
+        ? await getSharedPrismaClient().marketplaceApp.findMany({
+          where: {
+            isActive: true,
+            isPublic: true,
+            category: { notIn: LEGACY_TEMPLATE_CATEGORY_VALUES },
+            OR: [
+              { id: { in: rawTokens } },
+              { slug: { in: rawTokens } }
+            ]
+          },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            monthlyPrice: true,
+            logo: true
+          }
+        })
+        : [];
+
+      const appByToken = new Map();
+      apps.forEach((app) => {
+        appByToken.set(app.id, app);
+        appByToken.set(app.slug, app);
+      });
+
+      const bundleApps = rawTokens
+        .map((token) => appByToken.get(token))
+        .filter(Boolean);
+
+      return {
+        ...dbBundle,
+        appIds: bundleApps.map((app) => app.id),
+        apps: bundleApps,
+        price: toSafeNumber(dbBundle.monthlyPrice, 0)
+      };
+    });
+
+    if (!bundle) {
+      return res.status(404).json({
+        success: false,
+        message: 'Bundle not found'
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: bundle
+    });
+  } catch (error) {
+    console.error('Error fetching bundle details:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch bundle details',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @route POST /api/v1/marketplace/bundles/:slug/subscribe
+ * @desc Subscribe to an app bundle
+ * @access Protected
+ */
+exports.subscribeToBundle = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { companyId } = req.user;
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        message: 'يجب تحديد الشركة لإتمام العملية'
+      });
+    }
+
+    const bundleResolution = await resolveBundleForWrite(slug);
+    const bundle = bundleResolution.bundle;
+
+    if (!bundle) {
+      return res.status(404).json({
+        success: false,
+        message: 'Bundle not found'
+      });
+    }
+
+    if (bundleResolution.missingAppSlugs.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'This bundle includes apps that are not available for installation.',
+        missingApps: bundleResolution.missingAppSlugs
+      });
+    }
+
+    if (!bundle.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: 'هذه الباقة غير مفعلة حالياً'
+      });
+    }
+
+    const bundleAppIds = normalizeStringArray(bundle.appIds);
+    if (bundleAppIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'This bundle has no installable apps'
+      });
+    }
+
+    await executeWithRetry(async () => {
+      return await getSharedPrismaClient().$transaction(async (tx) => {
+        let wallet = await tx.companyWallet.findUnique({
+          where: { companyId }
+        });
+
+        if (!wallet) {
+          wallet = await tx.companyWallet.create({
+            data: {
+              id: uuidv4(),
+              companyId,
+              balance: 0,
+              currency: 'EGP'
+            }
+          });
+        }
+
+        if (Number(wallet.balance) < Number(bundle.monthlyPrice)) {
+          throw new Error(`رصيد المحفظة غير كافٍ. المطلوب: ${bundle.monthlyPrice} ${wallet.currency}، المتوفر: ${wallet.balance} ${wallet.currency}`);
+        }
+
+        await tx.companyWallet.update({
+          where: { companyId },
+          data: {
+            balance: { decrement: Number(bundle.monthlyPrice) }
+          }
+        });
+
+        await tx.transaction.create({
+          data: {
+            id: uuidv4(),
+            walletId: wallet.id,
+            type: 'PAYMENT',
+            amount: bundle.monthlyPrice,
+            description: `الاشتراك في باقة: ${bundle.name}`,
+            referenceId: `BUNDLE_SUB_${bundle.slug}_${Date.now()}`
+          }
+        });
+
+        const nextBillingAt = new Date();
+        nextBillingAt.setDate(nextBillingAt.getDate() + 30);
+        const bundleApps = await tx.marketplaceApp.findMany({
+          where: { id: { in: bundleAppIds } },
+          select: {
+            id: true,
+            slug: true,
+          }
+        });
+        const bundleAppById = new Map(bundleApps.map((bundleApp) => [bundleApp.id, bundleApp]));
+        const existingInstallations = await tx.companyApp.findMany({
+          where: {
+            companyId,
+            appId: { in: bundleAppIds }
+          },
+          select: {
+            id: true,
+            appId: true,
+            settings: true,
+          }
+        });
+        const installationByAppId = new Map(
+          existingInstallations.map((installation) => [installation.appId, installation]),
+        );
+
+        for (const appId of bundleAppIds) {
+          const bundleApp = bundleAppById.get(appId);
+          const existingInstallation = installationByAppId.get(appId);
+          const mergedSettings = buildInstalledMarketplaceAppSettings(
+            bundleApp?.slug || '',
+            existingInstallation?.settings,
+            {
+              general: {
+                enabled: true,
+              },
+              bundleInstallation: {
+                isBundle: true,
+                bundleSlug: bundle.slug,
+                activatedAt: new Date().toISOString(),
+              }
+            },
+          );
+
+          if (existingInstallation) {
+            await tx.companyApp.update({
+              where: { id: existingInstallation.id },
+              data: {
+                status: 'ACTIVE',
+                validUntil: nextBillingAt,
+                settings: mergedSettings,
+              }
+            });
+          } else {
+            await tx.companyApp.create({
+              data: {
+                id: uuidv4(),
+                companyId,
+                appId,
+                status: 'ACTIVE',
+                validUntil: nextBillingAt,
+                settings: mergedSettings,
+              }
+            });
+          }
+
+          await tx.marketplaceApp.update({
+            where: { id: appId },
+            data: { installCount: { increment: 1 } }
+          });
+        }
+      }, {
+        timeout: 20000
+      });
+    });
+
+    res.json({
+      success: true,
+      message: `تم الاشتراك في ${bundle.name} وتفعيل ${bundleAppIds.length} أداة بنجاح! 🎉`
+    });
+
+  } catch (error) {
+    console.error('Error subscribing to bundle:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message || 'خطأ في الاشتراك في الباقة'
+    });
+  }
+};
+
+/**
+ * @route POST /api/v1/marketplace/unlimited/subscribe
+ * @desc Subscribe to Unlimited Platform Access (Enterprise Plan)
+ * @access Protected
+ */
+exports.subscribeToUnlimited = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        message: 'يجب تحديد الشركة للاشتراك في الخطة الشاملة'
+      });
+    }
+    const UNLIMITED_PRICE = 999; // Could be moved to settings later
+
+    // 1. Check if already on Enterprise
+    const company = await executeWithRetry(async () => {
+      return await getSharedPrismaClient().company.findUnique({
+        where: { id: companyId },
+        select: { plan: true, name: true }
+      });
+    });
+
+    if (company && company.plan === 'ENTERPRISE') {
+      return res.status(400).json({
+        success: false,
+        message: 'شركتك تملك بالفعل وصولاً كاملاً وغير محدود للمنصة'
+      });
+    }
+
+    // 2. Process Transaction
+    await executeWithRetry(async () => {
+      return await getSharedPrismaClient().$transaction(async (tx) => {
+        // Wallet check
+        let wallet = await tx.companyWallet.findUnique({ where: { companyId } });
+        if (!wallet) {
+          wallet = await tx.companyWallet.create({
+            data: { id: uuidv4(), companyId, balance: 0 }
+          });
+        }
+
+        if (Number(wallet.balance) < UNLIMITED_PRICE) {
+          throw new Error(`رصيد المحفظة غير كافٍ للاشتراك الشامل. المطلوب: ${UNLIMITED_PRICE} ج، المتوفر: ${wallet.balance} ج`);
+        }
+
+        // Deduct
+        await tx.companyWallet.update({
+          where: { companyId },
+          data: { balance: { decrement: UNLIMITED_PRICE }, totalSpent: { increment: UNLIMITED_PRICE } }
+        });
+
+        // Record Transaction
+        await tx.transaction.create({
+          data: {
+            id: uuidv4(),
+            walletId: wallet.id,
+            type: 'PAYMENT',
+            amount: UNLIMITED_PRICE,
+            description: 'الاشتراك في "الوصول اللانهائي" لجميع أدوات المنصة',
+            referenceId: `PLATFORM_UNLIMITED_${Date.now()}`
+          }
+        });
+
+        // 3. Upgrade Company Plan
+        await tx.company.update({
+          where: { id: companyId },
+          data: { plan: 'ENTERPRISE' }
+        });
+
+        // 4. Record Billing History
+        await tx.billingHistory.create({
+          data: {
+            id: uuidv4(),
+            companyId,
+            type: 'MARKETPLACE_PURCHASE',
+            amount: UNLIMITED_PRICE,
+            description: 'ترقية الحساب إلى الاشتراك الشامل (Unlimited Access)',
+            status: 'SUCCESS'
+          }
+        });
+      });
+    });
+
+    res.json({
+      success: true,
+      message: 'مبروك! 🎉 تمت ترقية حسابك للوصول اللانهائي. جميع أدوات المتجر متاحة لك الآن مجاناً.'
+    });
+
+  } catch (error) {
+    console.error('Error subscribing to unlimited plan:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message || 'خطأ في معالجة الاشتراك الشامل'
+    });
+  }
+};
+
+

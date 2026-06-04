@@ -1,0 +1,36 @@
+{
+  "slug": "support-agent",
+  "name": "Support Agent",
+  "role": "SUPPORT",
+  "version": "1.0.0",
+  "modelPolicy": {
+    "default": "gemini-2.5-flash",
+    "fallback": "gemini-2.5-pro"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md"
+  },
+  "allowedTools": [
+    "order.lookup",
+    "customer.info",
+    "shipping.rates",
+    "shipping.update",
+    "order.confirm",
+    "order.cancel",
+    "order.refund",
+    "whatsapp.send",
+    "agent.handoff"
+  ],
+  "allowedSkills": [
+    "customer-context-summary",
+    "order-support",
+    "handoff-to-human"
+  ],
+  "channels": ["dashboard", "whatsapp", "messenger"],
+  "budget": {
+    "dailyUsd": 2,
+    "maxToolCallsPerRun": 5
+  }
+}

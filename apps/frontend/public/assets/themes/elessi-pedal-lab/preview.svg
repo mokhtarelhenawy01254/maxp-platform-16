@@ -1,0 +1,17 @@
+<svg width="1440" height="960" viewBox="0 0 1440 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="960" rx="48" fill="#F2F0E8"/>
+  <rect x="64" y="64" width="1312" height="832" rx="36" fill="url(#bg)"/>
+  <rect x="108" y="136" width="548" height="584" rx="32" fill="#F8F4EA"/>
+  <rect x="696" y="136" width="600" height="188" rx="32" fill="#FEFBF2"/>
+  <rect x="696" y="356" width="288" height="364" rx="32" fill="#C7D5D5"/>
+  <rect x="1008" y="356" width="288" height="364" rx="32" fill="#E7D7B5"/>
+  <text x="132" y="212" fill="#243638" font-size="28" font-family="Arial, sans-serif">Elessi Pack</text>
+  <text x="132" y="292" fill="#243638" font-size="72" font-family="Arial, sans-serif" font-weight="700">Pedal Lab</text>
+  <text x="132" y="360" fill="#556C70" font-size="28" font-family="Arial, sans-serif">Utility stage for bikes, specs, and add-ons.</text>
+  <defs>
+    <linearGradient id="bg" x1="64" y1="64" x2="1376" y2="896" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7F4EA"/>
+      <stop offset="1" stop-color="#E3DDD0"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -1,0 +1,366 @@
+{
+  "id": "cmn4qr1xp0001vprscph2vqjp",
+  "name": "Vanguard Premium - Composable Tech Store",
+  "content": {
+    "pages": {
+      "0": {
+        "slug": "home",
+        "title": "Vanguard Home",
+        "sections": [
+          {
+            "id": "v-hero",
+            "type": "shop-hero",
+            "settings": {
+              "title": "Future Frontiers",
+              "variant": "tech-overlay",
+              "subtitle": "Equip yourself for what's next.",
+              "buttonLink": "/shop",
+              "buttonText": "Shop Collection"
+            }
+          },
+          {
+            "id": "v-featured",
+            "type": "shop-featured-collection",
+            "settings": {
+              "limit": 4,
+              "title": "Elite Gear",
+              "productCardVariant": "minimal"
+            }
+          }
+        ]
+      },
+      "1": {
+        "slug": "shop",
+        "title": "Vanguard Catalog",
+        "sections": [
+          {
+            "id": "shop-hero",
+            "type": "shop-hero",
+            "settings": {
+              "style": "minimal",
+              "title": "The Armory",
+              "subtitle": "Advanced gear for advanced operators."
+            }
+          },
+          {
+            "id": "v-grid",
+            "type": "shop-product-grid",
+            "settings": {
+              "gap": "lg",
+              "columns": 3,
+              "variant": "editorial-masonry",
+              "productCardVariant": "default"
+            }
+          }
+        ]
+      },
+      "2": {
+        "slug": "product-details",
+        "title": "Product Specification",
+        "sections": [
+          {
+            "id": "v-pdp-core",
+            "type": "native-page",
+            "content": {
+              "mode": "functional",
+              "page": "product-details"
+            }
+          }
+        ]
+      },
+      "3": {
+        "slug": "cart",
+        "title": "Deployment Queue",
+        "sections": [
+          {
+            "id": "v-cart-core",
+            "type": "native-page",
+            "content": {
+              "mode": "functional",
+              "page": "cart"
+            }
+          }
+        ]
+      },
+      "4": {
+        "slug": "checkout",
+        "title": "Secure Checkout",
+        "sections": [
+          {
+            "id": "v-checkout-core",
+            "type": "native-page",
+            "content": {
+              "mode": "functional",
+              "page": "checkout"
+            }
+          }
+        ]
+      },
+      "pdp": {
+        "sections": [
+          {
+            "type": "product-gallery",
+            "variant": "standard"
+          },
+          {
+            "type": "product-info",
+            "variant": "standard"
+          },
+          "reviews"
+        ]
+      },
+      "cart": {
+        "sections": [
+          "cart-items",
+          "order-summary"
+        ]
+      },
+      "home": {
+        "sections": [
+          {
+            "type": "hero-banner",
+            "variant": "centered"
+          },
+          {
+            "type": "featured-products",
+            "variant": "standard"
+          },
+          {
+            "type": "newsletter",
+            "variant": "minimal"
+          }
+        ]
+      },
+      "shop": {
+        "sections": [
+          {
+            "type": "product-grid",
+            "variant": "standard"
+          },
+          "filters-sidebar"
+        ]
+      },
+      "checkout": {
+        "sections": [
+          "checkout-form",
+          "payment"
+        ]
+      }
+    },
+    "tokens": {
+      "shape": {
+        "borderRadius": "0.5rem",
+        "buttonRadius": "0.375rem"
+      },
+      "colors": {
+        "card": "0 0% 100%",
+        "ring": "0 0% 3.9%",
+        "muted": "0 0% 96.1%",
+        "accent": "0 0% 96.1%",
+        "border": "0 0% 89.8%",
+        "primary": "0 0% 9%",
+        "secondary": "0 0% 96.1%",
+        "background": "0 0% 100%",
+        "foreground": "0 0% 3.9%",
+        "cardForeground": "0 0% 3.9%",
+        "mutedForeground": "0 0% 45.1%",
+        "accentForeground": "0 0% 9%",
+        "primaryForeground": "0 0% 98%",
+        "secondaryForeground": "0 0% 9%"
+      },
+      "typography": {
+        "baseSize": "16px",
+        "bodyFont": "Cairo, sans-serif",
+        "direction": "rtl",
+        "headingFont": "Cairo, sans-serif"
+      }
+    },
+    "themeId": "modern-minimal",
+    "settings": {
+      "spacing": "comfortable",
+      "themeId": "vanguard-premium",
+      "containerWidth": "wide"
+    }
+  },
+  "publishedContent": {
+    "pages": {
+      "0": {
+        "slug": "home",
+        "title": "Vanguard Home",
+        "sections": [
+          {
+            "id": "v-hero",
+            "type": "shop-hero",
+            "settings": {
+              "title": "Future Frontiers",
+              "variant": "tech-overlay",
+              "subtitle": "Equip yourself for what's next.",
+              "buttonLink": "/shop",
+              "buttonText": "Shop Collection"
+            }
+          },
+          {
+            "id": "v-featured",
+            "type": "shop-featured-collection",
+            "settings": {
+              "limit": 4,
+              "title": "Elite Gear",
+              "productCardVariant": "minimal"
+            }
+          }
+        ]
+      },
+      "1": {
+        "slug": "shop",
+        "title": "Vanguard Catalog",
+        "sections": [
+          {
+            "id": "shop-hero",
+            "type": "shop-hero",
+            "settings": {
+              "style": "minimal",
+              "title": "The Armory",
+              "subtitle": "Advanced gear for advanced operators."
+            }
+          },
+          {
+            "id": "v-grid",
+            "type": "shop-product-grid",
+            "settings": {
+              "gap": "lg",
+              "columns": 3,
+              "variant": "editorial-masonry",
+              "productCardVariant": "default"
+            }
+          }
+        ]
+      },
+      "2": {
+        "slug": "product-details",
+        "title": "Product Specification",
+        "sections": [
+          {
+            "id": "v-pdp-core",
+            "type": "native-page",
+            "content": {
+              "mode": "functional",
+              "page": "product-details"
+            }
+          }
+        ]
+      },
+      "3": {
+        "slug": "cart",
+        "title": "Deployment Queue",
+        "sections": [
+          {
+            "id": "v-cart-core",
+            "type": "native-page",
+            "content": {
+              "mode": "functional",
+              "page": "cart"
+            }
+          }
+        ]
+      },
+      "4": {
+        "slug": "checkout",
+        "title": "Secure Checkout",
+        "sections": [
+          {
+            "id": "v-checkout-core",
+            "type": "native-page",
+            "content": {
+              "mode": "functional",
+              "page": "checkout"
+            }
+          }
+        ]
+      },
+      "pdp": {
+        "sections": [
+          {
+            "type": "product-gallery",
+            "variant": "standard"
+          },
+          {
+            "type": "product-info",
+            "variant": "standard"
+          },
+          "reviews"
+        ]
+      },
+      "cart": {
+        "sections": [
+          "cart-items",
+          "order-summary"
+        ]
+      },
+      "home": {
+        "sections": [
+          {
+            "type": "hero-banner",
+            "variant": "centered"
+          },
+          {
+            "type": "featured-products",
+            "variant": "standard"
+          },
+          {
+            "type": "newsletter",
+            "variant": "minimal"
+          }
+        ]
+      },
+      "shop": {
+        "sections": [
+          {
+            "type": "product-grid",
+            "variant": "standard"
+          },
+          "filters-sidebar"
+        ]
+      },
+      "checkout": {
+        "sections": [
+          "checkout-form",
+          "payment"
+        ]
+      }
+    },
+    "tokens": {
+      "shape": {
+        "borderRadius": "0.5rem",
+        "buttonRadius": "0.375rem"
+      },
+      "colors": {
+        "card": "0 0% 100%",
+        "ring": "0 0% 3.9%",
+        "muted": "0 0% 96.1%",
+        "accent": "0 0% 96.1%",
+        "border": "0 0% 89.8%",
+        "primary": "0 0% 9%",
+        "secondary": "0 0% 96.1%",
+        "background": "0 0% 100%",
+        "foreground": "0 0% 3.9%",
+        "cardForeground": "0 0% 3.9%",
+        "mutedForeground": "0 0% 45.1%",
+        "accentForeground": "0 0% 9%",
+        "primaryForeground": "0 0% 98%",
+        "secondaryForeground": "0 0% 9%"
+      },
+      "typography": {
+        "baseSize": "16px",
+        "bodyFont": "Cairo, sans-serif",
+        "direction": "rtl",
+        "headingFont": "Cairo, sans-serif"
+      }
+    },
+    "themeId": "modern-minimal",
+    "settings": {
+      "spacing": "comfortable",
+      "themeId": "vanguard-premium",
+      "containerWidth": "wide"
+    }
+  }
+}

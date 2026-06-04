@@ -1,0 +1,96 @@
+{
+  "id": "vanguard-premium",
+  "name": "Vanguard Premium",
+  "tokens": {
+    "colors": {
+      "primary": "220 20% 10%",
+      "primaryForeground": "210 20% 98%",
+      "secondary": "220 10% 96%",
+      "secondaryForeground": "220 20% 10%",
+      "accent": "220 10% 96%",
+      "accentForeground": "220 20% 10%",
+      "background": "0 0% 100%",
+      "foreground": "220 20% 10%",
+      "muted": "220 10% 96%",
+      "mutedForeground": "220 10% 45%",
+      "border": "220 10% 90%",
+      "card": "0 0% 100%",
+      "cardForeground": "220 20% 10%",
+      "ring": "220 20% 10%"
+    },
+    "typography": {
+      "headingFont": "Tajawal, sans-serif",
+      "bodyFont": "Tajawal, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "0",
+      "buttonRadius": "0"
+    }
+  },
+  "header": {
+    "showSearch": true,
+    "navigation": [
+      { "label": "Home", "to": "/" },
+      { "label": "Shop", "to": "/shop" }
+    ]
+  },
+  "footer": {
+    "description": "Next generation commerce.",
+    "copyrightText": "© 2026 Vanguard.",
+    "socialLinks": {},
+    "navigation": []
+  },
+  "seo": {
+    "titleTemplate": "%s | Vanguard",
+    "description": "Next generation commerce."
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        { "type": "hero-banner", "variant": "fullscreen" },
+        { "type": "featured-products", "variant": "luxury-card" },
+        { "type": "newsletter", "variant": "dark" }
+      ]
+    },
+    "shop": {
+      "sections": [
+        { "type": "product-grid", "variant": "luxury-card" },
+        "filters-sidebar"
+      ]
+    },
+    "pdp": {
+      "sections": [
+        { "type": "product-gallery", "variant": "masonry" },
+        { "type": "product-info", "variant": "standard" },
+        { "type": "conversion-stack", "variant": "balanced" },
+        { "type": "related-products", "variant": "luxury-card", "settings": { "title": "Premium Selection", "limit": 4 } },
+        "reviews"
+      ]
+    },
+    "cart": {
+      "sections": ["cart-items", "order-summary"]
+    },
+    "checkout": {
+      "sections": ["checkout-form", "payment"]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "settings": {
+            "title": "Purchase Complete",
+            "description": "Thank you for shopping at Vanguard Premium. Your items are being meticulously prepared.",
+            "continueShoppingText": "Return to Store",
+            "orderNumberPrefix": "Order ID:",
+            "supportText": "For concierge support, email"
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": ["member-registration"]
+    }
+  }
+}

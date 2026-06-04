@@ -1,0 +1,49 @@
+{
+  "title": "Unified Inbox",
+  "refresh": "Refresh",
+  "searchPlaceholder": "Search conversations...",
+  "tabs": {
+    "all": "All",
+    "messenger": "Messenger",
+    "whatsapp": "WhatsApp",
+    "telegram": "Telegram",
+    "unreplied": "Unreplied"
+  },
+  "loading": "Loading...",
+  "noConversations": "No conversations",
+  "unknown": "Unknown",
+  "yesterday": "Yesterday",
+  "noMessages": "No messages",
+  "you": "You: ",
+  "status": {
+    "active": "Active",
+    "read": "Read"
+  },
+  "profile": "Customer Profile",
+  "noMessagesYet": "No messages yet",
+  "quickReplies": "Quick Replies",
+  "attachFile": "Attach File",
+  "emoji": "Emoji",
+  "inputPlaceholder": "Type a message via {{platform}}...",
+  "empty": {
+    "header": "Unified Inbox",
+    "subheader": "Select a conversation from the list to view and reply to messages.",
+    "description": "Manage Messenger, WhatsApp, and Telegram conversations from one place."
+  },
+  "customer": {
+    "contactInfo": "Contact Information",
+    "customerSince": "Customer since {{date}}",
+    "stats": "Statistics",
+    "orders": "Orders",
+    "conversations": "Conversations",
+    "recentOrders": "Recent Orders",
+    "orderStatus": {
+      "completed": "Completed",
+      "pending": "Pending"
+    },
+    "tags": "Tags",
+    "notes": "Notes",
+    "history": "Conversation History",
+    "noData": "No customer data"
+  }
+}

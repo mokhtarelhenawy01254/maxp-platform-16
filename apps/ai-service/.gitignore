@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.env
+.env.*
+!.env.example
+
+# IDEs
+.vscode/
+.idea/
+
+# Logs
+*.log
+service.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Alembic/DB
+migrations/versions/*.py # Usually keep these, but sometimes people want to ignore them. I will keep them.
+# But I should ignore local db files if any.
+*.sqlite3

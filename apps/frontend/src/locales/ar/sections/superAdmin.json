@@ -1,0 +1,128 @@
+{
+  "title": "لوحة تحكم المدير العام",
+  "companies": "الشركات",
+  "users": "المستخدمين",
+  "reports": "التقارير",
+  "plans": "الخطط",
+  "subscriptions": "الاشتراكات",
+  "invoices": "الفواتير",
+  "payments": "المدفوعات",
+  "systemManagement": "إدارة النظام",
+  "promptLibrary": "مكتبة التوجيهات",
+  "aiProviders": {
+    "embedding": {
+      "title": "Embeddings",
+      "modelLabel": "موديل الـ Embedding",
+      "dimensionsLabel": "الأبعاد",
+      "save": "حفظ",
+      "models": {
+        "geminiEmbedding001": "Gemini Embedding 001 (نص فقط، قديم)",
+        "geminiEmbedding2": "Gemini Embedding 2 (متعدد الوسائط، مستقر)"
+      },
+      "errors": {
+        "chooseGoogleKey": "اختر مفتاح Google نشط للـ embeddings.",
+        "selectKeyToTest": "اختر مفتاح Google لاختبار الـ embeddings.",
+        "updateFailed": "فشل تحديث إعدادات الـ embedding.",
+        "testFailed": "فشل اختبار الـ embedding."
+      },
+      "messages": {
+        "updated": "تم تحديث إعدادات الـ embedding.",
+        "testPassed": "نجح اختبار الـ embedding: {{model}} ({{dimension}} بعد، {{latencyMs}}ms)"
+      },
+      "health": {
+        "title": "حالة Gemini Embedding 2",
+        "statusChip": "الحالة: {{status}}",
+        "fallbackChip": "Fallback: {{fallback}}",
+        "modelChip": "موديل التشغيل: {{model}}",
+        "dimensionChip": "{{dimension}} بعد",
+        "activeKeysChip": "{{count}} مفتاح Google نشط",
+        "warningsLabel": "تنبيهات الإعداد: {{warnings}}",
+        "runtimeFailure": "آخر خطأ أثناء التشغيل: {{reason}} بعد {{count}} محاولة في {{context}}.",
+        "statuses": {
+          "OK": "جاهز",
+          "DEGRADED": "يحتاج مراجعة",
+          "MISCONFIGURED": "إعداد غير صحيح",
+          "UNKNOWN": "غير معروف"
+        },
+        "reasons": {
+          "READY": "Gemini Embedding 2 مضبوط ويوجد مفتاح Google نشط.",
+          "NO_ACTIVE_GOOGLE_KEY": "لا يوجد مفتاح Google نشط متاح لـ Gemini embeddings.",
+          "SPECIFIC_KEY_REQUIRED": "مطلوب مفتاح محدد للـ embedding لكن لم يتم اختياره.",
+          "SPECIFIC_KEY_NOT_FOUND": "مفتاح الـ embedding المختار لم يعد موجوداً.",
+          "SPECIFIC_KEY_NOT_GOOGLE": "مفتاح الـ embedding المختار ليس من مزود Google.",
+          "SPECIFIC_KEY_INACTIVE": "مفتاح الـ embedding المختار غير نشط.",
+          "RUNTIME_EMBEDDING_FAILURE": "فشل Gemini Embedding 2 أثناء التشغيل؛ البحث بالمتجهات متدهور.",
+          "GEMINI_EMBEDDING_API_ERROR": "Gemini Embedding API رجّع خطأ.",
+          "GEMINI_MULTIMODAL_EMBEDDING_API_ERROR": "Gemini multimodal embedding API رجّع خطأ.",
+          "NO_GEMINI_EMBEDDING_KEY": "لا يوجد مفتاح Gemini embedding متاح.",
+          "GEMINI_EMBEDDING_REQUEST_FAILED": "فشل طلب Gemini embedding.",
+          "GEMINI_MULTIMODAL_EMBEDDING_REQUEST_FAILED": "فشل طلب Gemini multimodal embedding.",
+          "GEMINI_EMBEDDING_DIMENSION_MISMATCH": "Gemini رجّع عدد أبعاد غير متوقع.",
+          "GEMINI_EMBEDDING_2_REQUIRED_FOR_MULTIMODAL": "الـ multimodal embedding يحتاج Gemini Embedding 2.",
+          "EMPTY_EMBEDDING_CONTENT": "محتوى الـ embedding كان فارغاً.",
+          "UNKNOWN": "حالة الـ embedding غير متاحة حالياً."
+        },
+        "warnings": {
+          "MODEL_OVERRIDDEN_TO_GEMINI_EMBEDDING_2": "التشغيل يستخدم Gemini Embedding 2 بدلاً من الموديل المحفوظ.",
+          "DIMENSION_OVERRIDDEN_TO_768": "التشغيل يستخدم 768 بعداً بدلاً من الإعداد المحفوظ."
+        },
+        "fallbacks": {
+          "NONE": "لا يوجد",
+          "TEXT_ONLY_SEARCH": "بحث نصي فقط",
+          "UNKNOWN": "غير معروف"
+        }
+      }
+    }
+  },
+  "evaluation": {
+    "title": "تقييم أداء فريق التطوير",
+    "description": "تحليل أداء المطورين بناءً على المهام والوقت والأهداف",
+    "periodOptions": {
+      "WEEKLY": "أسبوعي",
+      "MONTHLY": "شهري",
+      "QUARTERLY": "ربع سنوي"
+    },
+    "bestTitle": "أفضل 10 مطورين - النقاط العامة",
+    "columns": {
+      "developer": "المطور",
+      "overallScore": "النقاط العامة",
+      "taskCompletion": "إنجاز المهام",
+      "onTimeDelivery": "الالتزام بالوقت",
+      "estimationAccuracy": "دقة التقدير",
+      "qualityScore": "الجودة",
+      "tasks": "المهام"
+    },
+    "empty": "لا توجد بيانات تقييم للفترة المحددة. قم بحساب التقييم أولاً.",
+    "member": {
+      "title": "تقييم المطور",
+      "back": "العودة للتقييمات",
+      "radarTitle": "تحليل المهارات",
+      "overallScoreLabel": "النقاط العامة",
+      "outOf": "من 100",
+      "trendTitle": "الاتجاه العام",
+      "metrics": {
+        "completedTasks": "المهام المنجزة",
+        "workHours": "ساعات العمل",
+        "hoursSuffix": "س",
+        "goalsAchieved": "الأهداف المحققة",
+        "reopenedTasks": "المهام المعادة"
+      },
+      "historyTitle": "سجل التقييمات",
+      "historyColumns": {
+        "period": "الفترة",
+        "overallScore": "النقاط العامة",
+        "taskCompletion": "إنجاز المهام",
+        "timeliness": "الالتزام",
+        "quality": "الجودة",
+        "tasks": "المهام"
+      },
+      "emptyDetail": "لا توجد بيانات تقييم لهذه الفترة.",
+      "emptyDetailHint": "قم بحساب التقييم من صفحة التقييمات الرئيسية."
+    },
+    "sidebar": "تقييم الأداء",
+    "aiModels": "الذكاء الصناعي",
+    "aiProviders": "مفاتيح ومزودي النماذج",
+    "ceoAgentSettings": "إعدادات CEO Agent",
+    "providerLogs": "لوج المزودين"
+  }
+}

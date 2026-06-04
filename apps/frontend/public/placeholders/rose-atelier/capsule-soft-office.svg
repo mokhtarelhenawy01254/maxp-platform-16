@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1300" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="128" y1="76" x2="886" y2="1196" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF9F7"/>
+      <stop offset="1" stop-color="#E2D6D0"/>
+    </linearGradient>
+    <linearGradient id="tailoring" x1="372" y1="266" x2="632" y2="1130" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D4C4BF"/>
+      <stop offset="1" stop-color="#9F8A84"/>
+    </linearGradient>
+  </defs>
+  <rect width="1000" height="1300" rx="64" fill="url(#bg)"/>
+  <circle cx="812" cy="214" r="160" fill="#F6ECE8"/>
+  <rect x="180" y="152" width="644" height="1036" rx="322" fill="#FFFCFB" opacity="0.62"/>
+  <circle cx="500" cy="300" r="88" fill="#66534F"/>
+  <path d="M382 422C444 396 556 396 618 422C704 458 760 544 760 646C760 722 728 794 668 856C620 906 596 994 600 1138H400C404 994 380 906 332 856C272 794 240 722 240 646C240 544 296 458 382 422Z" fill="url(#tailoring)"/>
+  <path d="M396 464L470 610H404L342 526L396 464Z" fill="#8D7771"/>
+  <path d="M606 464L532 610H598L660 526L606 464Z" fill="#8D7771"/>
+  <path d="M470 610L436 1138" stroke="#F5ECE8" stroke-width="10" stroke-linecap="round"/>
+  <path d="M530 610L564 1138" stroke="#F5ECE8" stroke-width="10" stroke-linecap="round"/>
+  <rect x="120" y="1024" width="196" height="16" rx="8" fill="#BFA39C" opacity="0.72"/>
+  <rect x="120" y="1062" width="140" height="10" rx="5" fill="#D9C5BF"/>
+</svg>

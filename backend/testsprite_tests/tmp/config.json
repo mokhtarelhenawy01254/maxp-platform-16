@@ -1,0 +1,8 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3007",
+  "loginUser": "admin@mokhtarelhenawy.com",
+  "loginPassword": "SuperAdmin@123"
+}

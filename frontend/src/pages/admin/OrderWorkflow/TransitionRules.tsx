@@ -1,0 +1,224 @@
+import React, { useState, useEffect } from 'react';
+import {
+    PlusIcon,
+    TrashIcon,
+    ArrowsRightLeftIcon,
+    UserGroupIcon,
+    ShieldCheckIcon,
+    ExclamationCircleIcon
+} from '@heroicons/react/24/outline';
+import orderWorkflowService, {
+    OrderStatusDefinition,
+    OrderWorkflowTransition
+} from '../../../services/orderWorkflowService';
+
+interface Props {
+    statuses: OrderStatusDefinition[];
+    onUpdate: () => void;
+}
+
+const TransitionRules: React.FC<Props> = ({ statuses, onUpdate }) => {
+    const [transitions, setTransitions] = useState<OrderWorkflowTransition[]>([]);
+    const [isAdding, setIsAdding] = useState(false);
+    const [newRule, setNewRule] = useState<Partial<OrderWorkflowTransition>>({
+        fromStatusId: '',
+        toStatusId: '',
+        allowedRoles: '["OWNER", "SUPER_ADMIN"]',
+        requiresApproval: false,
+        restrictBackward: false
+    });
+
+    const availableRoles = [
+        { value: 'OWNER', label: 'مالك الشركة' },
+        { value: 'SUPER_ADMIN', label: 'مدير النظام' },
+        { value: 'COMPANY_ADMIN', label: 'مدير شركة' },
+        { value: 'MANAGER', label: 'مدير' },
+        { value: 'AGENT', label: 'موظف / عميل' },
+    ];
+
+    useEffect(() => {
+        fetchTransitions();
+    }, []);
+
+    const fetchTransitions = async () => {
+        try {
+            const res = await orderWorkflowService.getTransitions();
+            setTransitions(res.data);
+        } catch (error) {
+            console.error('Failed to fetch transitions', error);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!newRule.toStatusId) return;
+        try {
+            await orderWorkflowService.upsertTransition(newRule);
+            setIsAdding(false);
+            fetchTransitions();
+            onUpdate();
+        } catch (error) {
+            console.error('Failed to save transition', error);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!window.confirm('هل أنت متأكد من حذف قاعدة الانتقال هذه؟')) return;
+        try {
+            await orderWorkflowService.deleteTransition(id);
+            fetchTransitions();
+            onUpdate();
+        } catch (error) {
+            console.error('Failed to delete', error);
+        }
+    };
+
+    const getStatusName = (id: string | null) => {
+        if (!id) return 'بداية (New Order)';
+        return statuses.find(s => s.id === id)?.name || 'غير معروف';
+    };
+
+    return (
+        <div className="animate-in fade-in duration-500">
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">مصفوفة قواعد الانتقال</h2>
+                    <p className="text-slate-500 text-sm">حدد التحولات المسموح بها بين الحالات والأدوار المخولة لكل تحول</p>
+                </div>
+                <button
+                    onClick={() => setIsAdding(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors"
+                >
+                    <PlusIcon className="w-5 h-5" />
+                    إضافة قاعدة انتقال
+                </button>
+            </div>
+
+            <div className="space-y-4">
+                {transitions.length === 0 && !isAdding && (
+                    <div className="p-20 text-center bg-slate-50 dark:bg-slate-900/40 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700">
+                        <ArrowsRightLeftIcon className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                        <p className="text-slate-400">لا يوجد قواعد انتقال معرفة حالياً</p>
+                    </div>
+                )}
+
+                {isAdding && (
+                    <div className="p-6 rounded-3xl border-2 border-indigo-200 dark:border-indigo-900 bg-indigo-50/30 dark:bg-indigo-900/10 animate-in slide-in-from-top-4 duration-300">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">من حالة:</label>
+                                <select
+                                    value={newRule.fromStatusId}
+                                    onChange={(e) => setNewRule({ ...newRule, fromStatusId: e.target.value })}
+                                    className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+                                >
+                                    <option value="">بداية (New Order)</option>
+                                    {statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">إلى حالة:</label>
+                                <select
+                                    value={newRule.toStatusId}
+                                    onChange={(e) => setNewRule({ ...newRule, toStatusId: e.target.value })}
+                                    className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+                                >
+                                    <option value="">اختر الحالة المستهدفة</option>
+                                    {statuses.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">الأدوار المسموح لها:</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {availableRoles.map(role => (
+                                        <label key={role.value} className="flex items-center gap-2 text-xs p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={JSON.parse(newRule.allowedRoles || '[]').includes(role.value)}
+                                                onChange={(e) => {
+                                                    const roles = JSON.parse(newRule.allowedRoles || '[]');
+                                                    const updated = e.target.checked
+                                                        ? [...roles, role.value]
+                                                        : roles.filter((r: string) => r !== role.value);
+                                                    setNewRule({ ...newRule, allowedRoles: JSON.stringify(updated) });
+                                                }}
+                                            />
+                                            {role.label}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={newRule.requiresApproval}
+                                        onChange={(e) => setNewRule({ ...newRule, requiresApproval: e.target.checked })}
+                                        className="w-5 h-5 rounded border-slate-300"
+                                    />
+                                    <div className="text-sm">
+                                        <p className="font-bold">يتطلب موافقة المدير</p>
+                                        <p className="text-slate-500 text-xs">سيتم تعليق الطلب حتى يوافق المسؤول.</p>
+                                    </div>
+                                </label>
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={newRule.restrictBackward}
+                                        onChange={(e) => setNewRule({ ...newRule, restrictBackward: e.target.checked })}
+                                        className="w-5 h-5 rounded border-slate-300"
+                                    />
+                                    <div className="text-sm">
+                                        <p className="font-bold">منع العودة للخلف (Restrict Backward)</p>
+                                        <p className="text-slate-500 text-xs">يمنع الرجوع من الحالة "المستهدفة" إلى "الحالية".</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button onClick={handleSave} className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold">حفظ القاعدة</button>
+                            <button onClick={() => setIsAdding(false)} className="px-6 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold">إلغاء</button>
+                        </div>
+                    </div>
+                )}
+
+                {transitions.map((t) => (
+                    <div
+                        key={t.id}
+                        className="flex flex-col md:flex-row items-center justify-between p-5 rounded-3xl bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow gap-4"
+                    >
+                        <div className="flex items-center gap-4 flex-1">
+                            <div className="flex items-center gap-3">
+                                <span className="font-bold text-slate-700 dark:text-slate-300">{getStatusName(t.fromStatusId)}</span>
+                                <ArrowsRightLeftIcon className="w-5 h-5 text-indigo-400" />
+                                <span className="font-bold text-indigo-600">{getStatusName(t.toStatusId)}</span>
+                            </div>
+
+                            <div className="hidden md:flex flex-wrap items-center gap-2 px-6 border-x border-slate-100 dark:border-slate-700">
+                                {JSON.parse(t.allowedRoles || '[]').map((role: string) => (
+                                    <span key={role} className="text-[10px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-800">
+                                        {availableRoles.find(r => r.value === role)?.label || role}
+                                    </span>
+                                ))}
+                                {t.requiresApproval && <ShieldCheckIcon className="w-5 h-5 text-amber-500" title="يتطلب موافقة" />}
+                                {t.restrictBackward && <ExclamationCircleIcon className="w-5 h-5 text-red-400" title="ممنوع العودة" />}
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => handleDelete(t.id)}
+                            className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                        >
+                            <TrashIcon className="w-5 h-5" />
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+export default TransitionRules;

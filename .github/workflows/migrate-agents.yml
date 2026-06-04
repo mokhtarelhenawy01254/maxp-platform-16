@@ -1,0 +1,61 @@
+name: Migrate Agent Roles
+on:
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.MAXP3_CHECKOUT_TOKEN || github.token }}
+
+      - name: Prepare SSH Key
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/maxp_deploy_key"
+          chmod 600 "$HOME/.ssh/maxp_deploy_key"
+          ssh-keyscan -p "${{ secrets.SERVER_PORT || '22' }}" -H "$SERVER_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
+
+      - name: Execute Migration Script
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
+        run: |
+          set -euo pipefail
+          SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
+          SSH_OPTS=(
+            -i "$SSH_KEY_PATH"
+            -p "$SERVER_SSH_PORT"
+            -o StrictHostKeyChecking=accept-new
+            -o ServerAliveInterval=30
+            -o ServerAliveCountMax=10
+            -o ConnectTimeout=300
+          )
+          
+          echo "🚀 Uploading latest migration script to server..."
+          scp -i "$SSH_KEY_PATH" -P "$SERVER_SSH_PORT" -o StrictHostKeyChecking=accept-new \
+            backend/scripts/migrateAgentRoles.js "$SERVER_USER@$SERVER_HOST:/var/www/backend2/scripts/migrateAgentRoles.js"
+
+          timeout 15m ssh "${SSH_OPTS[@]}" "$SERVER_USER@$SERVER_HOST" "bash -se" <<'REMOTE_SCRIPT'
+            set -euo pipefail
+            cd /var/www/backend2
+            export NODE_ENV=production
+            export PATH="/root/.nvm/versions/node/v20.19.5/bin:$PATH"
+            
+            echo "🔄 Generating Prisma Client..."
+            npx prisma generate --schema=prisma/schema
+            
+            echo "🚀 Running Migration Script: migrateAgentRoles.js..."
+            node scripts/migrateAgentRoles.js
+            
+            echo "✅ Migration completed successfully"
+          REMOTE_SCRIPT

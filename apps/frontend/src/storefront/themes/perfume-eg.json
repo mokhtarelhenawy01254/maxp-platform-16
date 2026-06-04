@@ -1,0 +1,496 @@
+{
+  "id": "perfume-eg",
+  "name": "أثر",
+  "description": "قالب برفنات مصري يوازن بين الإحساس الراقي ووضوح البيع: صور حقيقية، أحجام واضحة، ثقة في الأصالة، ومسارات هدايا وعائلات عطرية أسهل.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "313 28% 16%",
+      "primaryForeground": "38 60% 97%",
+      "secondary": "36 38% 92%",
+      "secondaryForeground": "313 28% 16%",
+      "accent": "41 66% 58%",
+      "accentForeground": "38 60% 97%",
+      "background": "36 30% 96%",
+      "foreground": "313 28% 16%",
+      "muted": "36 18% 88%",
+      "mutedForeground": "313 11% 33%",
+      "border": "34 20% 81%",
+      "card": "34 46% 98%",
+      "cardForeground": "313 28% 16%",
+      "ring": "41 66% 58%"
+    },
+    "typography": {
+      "headingFont": "\"Cormorant Garamond\", Cairo, serif",
+      "bodyFont": "\"IBM Plex Sans Arabic\", Cairo, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.8rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.45rem",
+      "boxShadow": "0 28px 76px -54px rgba(59, 28, 53, 0.2)",
+      "hoverShadow": "0 38px 90px -52px rgba(59, 28, 53, 0.26)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
+      "surfaceOpacity": "1"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | أثر",
+    "description": "متجر برفنات مصري بصور حقيقية، أحجام واضحة، عائلات عطرية، وهدايا أسهل من أول زيارة."
+  },
+  "preview": {
+    "imageUrl": "/assets/themes/perfume-eg/preview.svg",
+    "colors": ["313 28% 16%", "41 66% 58%", "36 30% 96%"]
+  },
+  "header": {
+    "variant": "floating-dark",
+    "transparentOnHome": true,
+    "brandName": "أثر",
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      { "label": "الرئيسية", "to": "/" },
+      { "label": "المتجر", "to": "/shop" },
+      { "label": "العائلات العطرية", "to": "/collections" },
+      { "label": "الهدايا", "to": "/shop?category=gift-sets" },
+      { "label": "الأكثر طلبًا", "to": "/sale" }
+    ]
+  },
+  "footer": {
+    "variant": "signature-panel",
+    "description": "متجر برفنات موجه للسوق المصري، يشرح الحجم والسعر والعائلة العطرية بوضوح، ويعطي الثقة في الأصالة والهدية بدون مبالغة.",
+    "copyrightText": "© 2026 أثر. جميع الحقوق محفوظة.",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
+    "navigation": [
+      {
+        "title": "التسوق",
+        "links": [
+          { "label": "كل العطور", "to": "/shop" },
+          { "label": "منعش وحمضي", "to": "/shop?category=fresh" },
+          { "label": "زهري ناعم", "to": "/shop?category=floral" },
+          { "label": "هدايا ومجموعات", "to": "/shop?category=gift-sets" }
+        ]
+      },
+      {
+        "title": "الثقة",
+        "links": [
+          { "label": "الأصالة والتغليف", "to": "/authenticity" },
+          { "label": "الشحن والتوصيل", "to": "/shipping" },
+          { "label": "الاستبدال والاسترجاع", "to": "/returns" }
+        ]
+      }
+    ],
+    "legalLinks": [
+      { "label": "سياسة الخصوصية", "to": "/privacy" },
+      { "label": "الشروط والأحكام", "to": "/terms" }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "scent-portrait",
+          "settings": {
+            "eyebrow": "برفنات أصلية",
+            "title": "اختاري أثرك من أول زيارة",
+            "subtitle": "عطور ومجموعات هدايا بصور حقيقية، أحجام واضحة، وطريق أسرع لاكتشاف الشخصية العطرية الأقرب لك.",
+            "ctaText": "اكتشفي العطور",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "شاهدي الهدايا",
+            "secondaryCtaLink": "/shop?category=gift-sets",
+            "backgroundImage": "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&q=80&w=1600",
+            "panelImage": "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&q=80&w=1200",
+            "highlights": [
+              { "label": "أصالة", "value": "موضحة" },
+              { "label": "الأحجام", "value": "50-100 مل" },
+              { "label": "الهدايا", "value": "جاهزة" }
+            ],
+            "panelEyebrow": "روائح أوضح",
+            "panelTitle": "ابدئي من العائلة العطرية أو الزجاجة أو الهدية",
+            "panelSubtitle": "اكتشاف مختصر يضع الاسم والحجم والسعر والثقة قريبين من القرار.",
+            "panelNote": "بدون صور مزيفة أو رغي طويل قبل المنتج."
+          }
+        },
+        {
+          "type": "promo-strip",
+          "variant": "benefit-ribbon",
+          "settings": {
+            "badge": "قبل الحسم",
+            "message": "الأصالة، الشحن، والتغليف الهدية ظاهرون بوضوح من أول زيارة.",
+            "saleLabel": "أحجام أوضح",
+            "shippingLabel": "شحن داخل مصر",
+            "returnLabel": "تغليف هدايا",
+            "ctaText": "الأصالة",
+            "ctaLink": "/authenticity"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "fragrance-ledger",
+          "settings": {
+            "title": "ابدئي من العائلة العطرية",
+            "subtitle": "اختاري الإحساس أولًا: منعش، زهري، عنبري، خشبي، أو مجموعة هدايا جاهزة.",
+            "limit": 5,
+            "ctaText": "كل الأقسام",
+            "ctaLink": "/collections",
+            "collections": [
+              {
+                "title": "منعش وحمضي",
+                "subtitle": "شخصيات أخف للصباح والعمل واليوم الطويل.",
+                "image": "https://images.unsplash.com/photo-1615634260167-c8cdede054de?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=fresh"
+              },
+              {
+                "title": "زهري ناعم",
+                "subtitle": "روائح أكثر أنوثة وهدوءًا للطلعات واليوميات.",
+                "image": "https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=floral"
+              },
+              {
+                "title": "عنبر ودفء",
+                "subtitle": "عمق أهدأ وثبات أوضح لمحبات الدفء.",
+                "image": "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=amber"
+              },
+              {
+                "title": "خشبي ومسك",
+                "subtitle": "روائح أغنى للمساء والهدايا والذوق الأثقل.",
+                "image": "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=woody"
+              },
+              {
+                "title": "هدايا ومجموعات",
+                "subtitle": "علب وتجارب مناسبة للإهداء أو قبل شراء الزجاجة الكاملة.",
+                "image": "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=gift-sets"
+              }
+            ]
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "perfume-cabinet",
+          "settings": {
+            "title": "الأقرب للطلب الآن",
+            "subtitle": "زجاجات واضحة، أحجام معروضة بوضوح، وصور حقيقية تساعد على الحسم.",
+            "limit": 6
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "variant": "fragrance-console",
+          "settings": {
+            "title": "متجر أثر",
+            "subtitle": "فلتر بالعائلة العطرية أو الحجم أو نوع الهدية، ثم ادخلي للمنتج بثقة أسرع.",
+            "searchPlaceholder": "ابحثي عن عنبر أو مجموعة هدايا أو 100 مل",
+            "resultsLabel": "منتج",
+            "clearButtonText": "مسح",
+            "stickyLabel": "فلتر سريع",
+            "chipLimit": 5
+          }
+        },
+        {
+          "type": "filters-sidebar",
+          "settings": {
+            "badge": "السعر",
+            "title": "حددي الميزانية",
+            "subtitle": "فلتر السعر فقط هنا، لأن العائلة والفرز موجودان بالفعل أعلى الصفحة.",
+            "showSort": false,
+            "showCategories": false,
+            "showPriceFilter": true,
+            "clearButtonText": "مسح فلتر السعر",
+            "showMobileLabel": "السعر",
+            "hideMobileLabel": "إخفاء السعر",
+            "mobileTitle": "فلتر السعر"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "perfume-shelf",
+          "settings": {
+            "title": "كل العطور والمجموعات",
+            "subtitle": "اسم، صورة، حجم، وسعر ظاهرون في أول نظرة.",
+            "limit": 12
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "sections": [
+        { "type": "product-gallery", "variant": "mirror-carousel" },
+        {
+          "type": "product-info",
+          "variant": "scent-brief",
+          "settings": {
+            "addToCartText": "أضيفي للسلة",
+            "descriptionTitle": "تفاصيل العطر",
+            "shippingTitle": "الشحن والاستبدال",
+            "shippingText": "الأصالة والتغليف موضحان، وتظهر رسوم الشحن قبل الدفع حسب المحافظة. إذا وصلك المنتج في حالة غير مناسبة يمكنك طلب الاستبدال أو الاسترجاع وفق السياسة المعلنة.",
+            "shippingInteraction": "modal",
+            "shippingTriggerText": "افتحي السياسة لمعرفة الشحن، الأصالة، والاستبدال.",
+            "shippingModalTitle": "الشحن والأصالة والاستبدال",
+            "showGuarantees": false,
+            "showSizeGuide": "never",
+            "sizeGuideText": "",
+            "fitNote": ""
+          }
+        },
+          {
+            "type": "trusted-badges",
+            "settings": {
+              "trustedBadgeTitle": "ثقة قبل الشراء",
+              "trustedBadgeSubtitle": "الأصالة والحجم والتغليف الهدية أوضح من أول قرار.",
+              "trustedBadgeItems": "أصالة موضحة,صور حقيقية للزجاجة,تغليف هدايا متاح",
+              "trustedBadgeStyle": "perfume-minimal"
+            }
+          },
+          {
+            "type": "reviews",
+            "variant": "scent-notes",
+            "settings": {
+              "title": "آراء المشترين",
+              "subtitle": "مراجعات مختصرة تساعدك تفهمي الثبات والإحساس قبل الشراء.",
+              "reviewLimit": 4,
+              "mobileReviewLimit": 2
+            }
+          },
+        {
+          "type": "bought-together",
+          "variant": "gift-pairings",
+          "settings": {
+            "title": "كمّلي الهدية أو التجربة",
+            "subtitle": "مجموعة اكتشاف أو تغليف هدية أو اقتراح قريب من نفس الشخصية العطرية.",
+            "limit": 3,
+            "quickAddText": "أضيفي الإضافة",
+            "bundleVariantHint": "اختاري الحجم لكل إضافة من نفس الكارت قبل إضافة الباقة."
+          }
+        },
+          {
+            "type": "related-products",
+            "variant": "scent-circle",
+            "settings": {
+              "title": "روائح قريبة",
+              "subtitle": "اختيارات قريبة من نفس المزاج العطري أو نفس منطق الحجم والسعر."
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "settings": {
+            "title": "سلة أثر",
+            "subtitle": "راجعي الأحجام والمجموعة أو التغليف قبل الدفع.",
+            "emptyText": "لسه ما أضفتِ أي عطر أو هدية.",
+            "continueShoppingText": "ارجعي للمتجر"
+          }
+        },
+        {
+          "type": "order-summary",
+          "settings": {
+            "title": "ملخص الطلب"
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "settings": {
+            "title": "مراجعة الطلب",
+            "subtitle": "راجعي الحجم والمجموعة والتغليف مرة أخيرة قبل التأكيد.",
+            "showUpsell": false
+          }
+        },
+        {
+          "type": "checkout-form",
+          "settings": {
+            "contactTitle": "بياناتك",
+            "shippingTitle": "عنوان التوصيل"
+          }
+        },
+        {
+          "type": "payment",
+          "settings": {
+            "showSummaryCard": false
+          }
+        },
+        {
+          "type": "order-summary",
+          "settings": {
+            "title": "ملخص الطلب",
+            "subtitle": "راجعي الإجمالي والشحن مرة واحدة قبل تأكيد الطلب.",
+            "hideCheckoutButton": true
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "sale": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "benefit-ribbon",
+          "settings": {
+            "badge": "الأكثر طلبًا",
+            "message": "عطور ومجموعات عليها فرق سعر واضح بدون ضوضاء خصومات مبالغ فيها.",
+            "saleLabel": "فرق سعر واضح",
+            "shippingLabel": "هدايا أسهل",
+            "returnLabel": "أصالة موضحة",
+            "ctaText": "ارجعي للمتجر",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "perfume-shelf",
+          "settings": {
+            "title": "العروض الحالية",
+            "subtitle": "منتجات مختارة بفرق سعر واضح من أول نظرة.",
+            "limit": 12,
+            "saleOnly": true
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "collections": {
+      "sections": [
+        {
+          "type": "featured-collections",
+          "variant": "fragrance-ledger",
+          "settings": {
+            "title": "العائلات العطرية",
+            "subtitle": "اكتشفي الروائح حسب الإحساس، لا حسب الزحام.",
+            "limit": 5,
+            "hideHeader": false
+          }
+        }
+      ]
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشحن",
+            "title": "الشحن والتوصيل",
+            "subtitle": "المهم فقط قبل الدفع.",
+            "body": "تظهر رسوم الشحن قبل تأكيد الطلب حسب المحافظة، ويجهز معظم الطلبات خلال 24 إلى 48 ساعة عمل.\n\nإذا أضفتِ تغليف هدية أو مجموعة تجريبية فسيظهر ذلك بوضوح داخل الطلب قبل التأكيد.",
+            "detailsTitle": "معلومات سريعة",
+            "details": "مدة التجهيز|من 24 إلى 48 ساعة عمل\nالتوصيل|حسب المحافظة وشركة الشحن\nالمتابعة|تحديثات الشحنة تظهر بعد التجهيز",
+            "ctaText": "ارجعي للمتجر",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "returns": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الاستبدال",
+            "title": "سياسة الاستبدال والاسترجاع",
+            "subtitle": "وضوح أكبر قبل الشراء.",
+            "body": "إذا وصلك المنتج في حالة غير مناسبة أو لم يناسبك الاختيار يمكنك طلب الاستبدال أو الاسترجاع وفق السياسة المعلنة، بشرط الحفاظ على المنتج وتغليفه.\n\nهدفنا أن تكون الزجاجة والحجم والتغليف واضحين من البداية لتقليل الحيرة قبل الطلب.",
+            "detailsTitle": "أهم البنود",
+            "details": "الحالة المقبولة|المنتج وتغليفه بحالة سليمة\nالمدة|حسب السياسة الحالية\nالمتابعة|التواصل مع الدعم برقم الطلب",
+            "ctaText": "الأصالة",
+            "ctaLink": "/authenticity"
+          }
+        }
+      ]
+    },
+    "authenticity": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الأصالة",
+            "title": "الأصالة والتغليف",
+            "subtitle": "نقطة الحسم الأهم في البرفنات.",
+            "body": "الصور المعروضة هي صور حقيقية للزجاجات أو مجموعات الهدية، ونوضح الحجم وفرق السعر بوضوح داخل صفحة المنتج.\n\nإذا اخترتِ تغليف هدية أو مجموعة تجريبية فسيظهر ذلك داخل السلة والطلب النهائي بوضوح.",
+            "detailsTitle": "لماذا يهم؟",
+            "details": "صور حقيقية|لتقليل الحيرة\nأحجام واضحة|50 مل أو 100 مل بشكل مباشر\nتغليف هدايا|يمكن إضافته كعنصر منفصل",
+            "ctaText": "اكتشفي الهدايا",
+            "ctaLink": "/shop?category=gift-sets"
+          }
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "settings": {
+            "title": "تم تأكيد طلبك",
+            "description": "شكرًا لطلبك من أثر. نجهز الآن العطور أو المجموعة ونوافيك بتحديثات الشحن.",
+            "continueShoppingText": "ارجعي للمتجر",
+            "orderNumberPrefix": "رقم الطلب:",
+            "supportText": "لو احتجتِ أي مساعدة تواصلي معنا عبر واتساب.",
+            "recommendedChooseOptionsLabel": "اختاري الحجم",
+            "recommendedVariantChoicesLabel": "أحجام متاحة"
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    }
+  }
+}

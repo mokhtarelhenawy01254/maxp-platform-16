@@ -1,0 +1,273 @@
+import React, { useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Lock, Mail, Phone, User, Eye, EyeOff, Globe2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "../../hooks/useAuthSimple";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
+import { trackPlatformSiteCompleteRegistration } from "../../utils/platformSiteMetaPixel";
+
+const NEW_ACCOUNT_DESTINATION = "/marketplace";
+
+const extractErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const response = (error as any).response;
+    if (response?.data?.message) return response.data.message;
+  }
+  return fallback;
+};
+
+const TRIAL_DAYS = 30;
+
+const copyByLanguage = {
+  ar: {
+    title: "أنشئ حسابك مجاناً",
+    description: "ابدأ تجربتك المجانية لمدة 30 يوم — بدون بطاقة ائتمان.",
+    eyebrow: "New Member Registration",
+    footerText: "لديك حساب بالفعل؟",
+    login: "تسجيل الدخول",
+    visualTitle: <>قُد أعمالك <br /> نحو <span style={{ color: "var(--auth-accent)" }}>المستقبل</span></>,
+    visualDescription: "ابدأ تجربتك المجانية لمدة 30 يوم. كل الأدوات التي تحتاجها لإدارة أعمالك — منصة واحدة.",
+    visualBadge: "ابدأ مجاناً",
+    stats: [
+      { label: "تجربة مجانية", value: "30 يوم" },
+      { label: "بدون بطاقة", value: "ائتمان" },
+    ],
+    labels: {
+      fullName: "الاسم بالكامل",
+      email: "البريد الإلكتروني",
+      phone: "رقم الهاتف (اختياري)",
+      password: "كلمة المرور",
+    },
+    placeholders: {
+      fullName: "أحمد محمد",
+      email: "name@company.com",
+      phone: "01xxxxxxxxx",
+    },
+    errors: {
+      fullName: "اكتب اسمك بالكامل",
+      email: "البريد الإلكتروني مطلوب",
+      password: "كلمة المرور مطلوبة",
+      phone: "رقم الهاتف غير صحيح (01xxxxxxxxx)",
+      register: "فشل في إنشاء الحساب",
+    },
+    submitLoading: "جاري الإنشاء...",
+    submit: "ابدأ تجربتك المجانية — 30 يوم",
+    errorTitle: "خطأ في التسجيل",
+    languageButton: "English",
+  },
+  en: {
+    title: "Create your free account",
+    description: "Start your 30-day free trial — no credit card required.",
+    eyebrow: "New Member Registration",
+    footerText: "Already have an account?",
+    login: "Log in",
+    visualTitle: <>Run your business <br /> with a <span style={{ color: "var(--auth-accent)" }}>focused toolkit</span></>,
+    visualDescription: "Start your 30-day free trial. All the tools you need to run your business — one platform.",
+    visualBadge: "Start free",
+    stats: [
+      { label: "Free trial", value: "30 days" },
+      { label: "No credit", value: "card needed" },
+    ],
+    labels: {
+      fullName: "Full name",
+      email: "Email",
+      phone: "Phone (optional)",
+      password: "Password",
+    },
+    placeholders: {
+      fullName: "Ahmed Mohamed",
+      email: "name@company.com",
+      phone: "01xxxxxxxxx",
+    },
+    errors: {
+      fullName: "Enter your full name",
+      email: "Email is required",
+      password: "Password is required",
+      phone: "Invalid Egyptian phone number (01xxxxxxxxx)",
+      register: "Failed to create account",
+    },
+    submitLoading: "Creating...",
+    submit: "Start your free trial — 30 days",
+    errorTitle: "Registration error",
+    languageButton: "العربية",
+  },
+};
+
+const Register: React.FC = () => {
+  const { i18n } = useTranslation();
+  const language = i18n.language?.startsWith("en") ? "en" : "ar";
+  const copy = copyByLanguage[language];
+  const isArabic = language === "ar";
+  const [searchParams] = useSearchParams();
+  const partnerCode = searchParams.get("partner") || undefined;
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    phone: "",
+  });
+
+  const { register: registerUser } = useAuth();
+  const navigate = useNavigate();
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (error) setError("");
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    try {
+      setIsLoading(true);
+      setError("");
+
+      if (!formData.fullName.trim()) throw new Error(copy.errors.fullName);
+      if (!formData.email.trim()) throw new Error(copy.errors.email);
+      if (!formData.password) throw new Error(copy.errors.password);
+
+      if (formData.phone) {
+        const phoneClean = formData.phone.replace(/\s+/g, "");
+        const egyptPhoneRegex = /^(\+20|0020|0)?1[0125][0-9]{8}$/;
+        if (!egyptPhoneRegex.test(phoneClean)) throw new Error(copy.errors.phone);
+      }
+
+      const nameParts = formData.fullName.trim().split(/\s+/);
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || firstName;
+
+      const userData = await registerUser({
+        firstName,
+        lastName,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone || undefined,
+        partnerCode,
+      });
+      const redirectPath = NEW_ACCOUNT_DESTINATION;
+
+      trackPlatformSiteCompleteRegistration("auth_register", { destination: redirectPath, role: userData?.role || "UNKNOWN" });
+      navigate(redirectPath);
+    } catch (err: any) {
+      setError(extractErrorMessage(err, copy.errors.register));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleLanguage = async () => {
+    const nextLanguage = isArabic ? "en" : "ar";
+    await i18n.changeLanguage(nextLanguage);
+    localStorage.setItem("language", nextLanguage);
+    document.documentElement.dir = nextLanguage === "ar" ? "rtl" : "ltr";
+    document.documentElement.lang = nextLanguage;
+  };
+
+  return (
+    <AuthSurface
+      title={copy.title}
+      description={copy.description}
+      eyebrow={copy.eyebrow}
+      wide
+      dir={isArabic ? "rtl" : "ltr"}
+      footer={
+        <div className="elite-form-link-row">
+          <span>{copy.footerText}</span>
+          <Link to="/auth/login" className="elite-form-link">{copy.login}</Link>
+        </div>
+      }
+      visualTitle={copy.visualTitle}
+      visualDescription={copy.visualDescription}
+      visualBadge={copy.visualBadge}
+      visualStats={[
+        {
+          label: copy.stats[0]?.label || "",
+          value: copy.stats[0]?.value || "",
+        },
+        {
+          label: copy.stats[1]?.label || "",
+          value: copy.stats[1]?.value || "",
+        },
+      ]}
+    >
+      <div className="mb-5 flex justify-end">
+        <button
+          type="button"
+          onClick={() => void toggleLanguage()}
+          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-slate-300 transition hover:border-[var(--auth-accent)] hover:text-[var(--auth-accent)]"
+        >
+          <Globe2 size={16} />
+          {copy.languageButton}
+        </button>
+      </div>
+
+      {error && <AuthNotice variant="error" title={copy.errorTitle}>{error}</AuthNotice>}
+
+      <form onSubmit={handleSubmit}>
+        <div className="elite-input-group">
+          <label className="elite-label">{copy.labels.fullName}</label>
+          <div className="elite-input-wrapper">
+            <input name="fullName" type="text" value={formData.fullName} onChange={handleChange} required className="elite-input" placeholder={copy.placeholders.fullName} disabled={isLoading} />
+            <User className="elite-input-icon" />
+          </div>
+        </div>
+
+        <div className="elite-input-group">
+          <label className="elite-label">{copy.labels.email}</label>
+          <div className="elite-input-wrapper">
+            <input name="email" type="email" value={formData.email} onChange={handleChange} required className="elite-input" placeholder={copy.placeholders.email} disabled={isLoading} />
+            <Mail className="elite-input-icon" />
+          </div>
+        </div>
+
+        <div className="elite-input-group">
+          <label className="elite-label">{copy.labels.phone}</label>
+          <div className="elite-input-wrapper">
+            <input name="phone" type="tel" value={formData.phone} onChange={handleChange} className="elite-input" placeholder={copy.placeholders.phone} disabled={isLoading} />
+            <Phone className="elite-input-icon" />
+          </div>
+        </div>
+
+        <div className="elite-input-group">
+          <label className="elite-label">{copy.labels.password}</label>
+          <div className="elite-input-wrapper">
+            <input
+              name="password"
+              type={showPassword ? "text" : "password"}
+              value={formData.password}
+              onChange={handleChange}
+              required
+              className="elite-input"
+              placeholder="••••••••"
+              disabled={isLoading}
+            />
+            <button type="button" className="elite-input-password-toggle" onClick={() => setShowPassword(!showPassword)}>
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+            <Lock className="elite-input-icon" />
+          </div>
+        </div>
+
+        <button type="submit" disabled={isLoading} className="elite-submit-button">
+          {isLoading ? (
+            <>
+              <LoadingSpinner size="sm" color="white" />
+              <span>{copy.submitLoading}</span>
+            </>
+          ) : (
+            copy.submit
+          )}
+        </button>
+      </form>
+    </AuthSurface>
+  );
+};
+
+export default Register;

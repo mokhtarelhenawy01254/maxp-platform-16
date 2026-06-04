@@ -1,0 +1,14 @@
+{
+  "tabs": {
+    "all": "الكل",
+    "unreplied": "غير مردود عليها",
+    "done": "منتهي",
+    "main": "رئيسي",
+    "general": "عام",
+    "requests": "طلبات",
+    "spam": "سبام"
+  },
+  "searchPlaceholder": "بحث في المحادثات...",
+  "advancedFilters": "فلاتر متقدمة",
+  "statistics": "الإحصائيات"
+}

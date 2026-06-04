@@ -1,0 +1,21 @@
+name: Mirror to maxp4
+
+on:
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout all branches and tags
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Configure destination remote with PAT
+        run: |
+          git remote add dest https://x-access-token:${{ secrets.DEST_PAT }}@github.com/mkhtrelhenawy/maxp4.git
+
+      - name: Push everything to destination
+        run: |
+          git push --force --prune --tags dest 'refs/remotes/origin/*:refs/heads/*'
