@@ -60,6 +60,7 @@ const SKIP_PATTERNS = [
   /\.min\./,
   /seed/i,             // seed data files
   /migration/i,        // database migrations
+  /scripts[/\\]scripts/, // utility/build scripts
   /\.uat\./,           // UAT test scripts
   /uat[/\\]/,          // UAT directories
 ];
