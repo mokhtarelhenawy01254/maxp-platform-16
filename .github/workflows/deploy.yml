@@ -60,6 +60,7 @@ jobs:
         env:
           PUPPETEER_SKIP_DOWNLOAD: '1'
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: '1'
+          HUSKY: '0'
         continue-on-error: false
 
       - name: Run Facebook Ads Regression Tests
@@ -79,6 +80,8 @@ jobs:
         working-directory: ./apps/frontend
         run: |
           npm ci || npm install
+        env:
+          HUSKY: '0'
         continue-on-error: false
 
       - name: Build Frontend
@@ -99,6 +102,8 @@ jobs:
         working-directory: ./apps/backend
         run: |
           npm ci --only=production || npm install --only=production
+        env:
+          HUSKY: '0'
         continue-on-error: false
 
       # Packaging for reliable transfer (Optimized to exclude large node_modules)
