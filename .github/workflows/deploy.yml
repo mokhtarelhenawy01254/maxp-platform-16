@@ -107,7 +107,7 @@ jobs:
           echo "📦 Packaging Frontend..."
           tar -czf frontend.tar.gz -C apps/frontend/dist .
           tar -czf theme-presets.tar.gz -C apps/frontend/src/storefront/themes .
-          tar -czf backend.tar.gz --exclude="apps/backend/node_modules" --exclude="apps/backend/prisma/generated" --exclude="apps/backend/legacy_mysql" --exclude="apps/backend/uploads" --exclude="apps/backend/*.tar.gz" apps/backend
+          tar -czf backend.tar.gz -C apps --exclude="backend/node_modules" --exclude="backend/prisma/generated" --exclude="backend/legacy_mysql" --exclude="backend/uploads" --exclude="backend/*.tar.gz" backend
           
           echo "📦 Packaging Shared..."
           tar -czf shared.tar.gz -C shared .
