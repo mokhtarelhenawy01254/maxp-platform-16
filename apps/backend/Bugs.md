@@ -1,3 +1,8 @@
+## [2026-06-05] StorefrontShell: Fix footerSettingsService import path (monorepo)
+- **Bug/Issue**: After monorepo restructuring, `StorefrontShell.tsx` used `../../services/footerSettingsService` which resolves above `src/`. Correct path is `../services/footerSettingsService`.
+- **Fix**: Changed import from `../../services/` to `../services/`.
+- **Affected Files**: `apps/frontend/src/storefront/StorefrontShell.tsx`
+
 ## [2026-06-05] Order Status Hydration, Payment Status Badging, and WhatsApp Health Tests
 - **Bug/Issue**: 
   1. The order status controller relied on `req.user?.companyId` in several routes (e.g. `getStatusById`, `createStatus`, etc.) instead of the `getRequestCompanyId(req)` helper, causing requests in contexts with `effectiveCompanyId` to fail to access the correct company settings.
