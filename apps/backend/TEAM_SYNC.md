@@ -4,9 +4,11 @@
   - **AI Service Packaging**: Added an `ai-service.tar.gz` artifact from `apps/ai-service`, excluding local env files, virtualenvs, caches, and compiled Python files.
   - **Server Deployment**: Extracted the archive into `/var/www/ai-service`, preserved the existing production `.env`, and verified `pyproject.toml` plus `src/main.py` exist on the server.
   - **Container Restart**: Added a guarded Docker Compose rebuild/restart for `/var/www/ai-service/docker-compose.prod.yml` when Docker Compose and the service `.env` are available.
+  - **Legacy Compatibility**: Kept `apps/backend/legacy-ai-agent` available during the Python service transition so existing backend imports and tests continue to resolve while runtime traffic moves to the AI service bridge.
 - **Verification**: Python source compile check passed locally, backend syntax checks passed, customer intent architecture guard passed, and frontend build passed before release.
 - **Affected Files**:
   - `.github/workflows/deploy.yml`
+  - `scripts/check-arabic-strings.js`
   - `apps/ai-service/src/llm/providers/factory.py`
 
 ## [2026-06-05] Order Status Hydration, Payment Status Badging, and WhatsApp Health Tests [READY]

@@ -52,6 +52,7 @@ const SKIP_PATTERNS = [
   /\.next/,
   /dist/,
   /build/,
+  /apps[/\\]backend[/\\]legacy-ai-agent/, // legacy compatibility archive kept during AI service migration
   /locales/,           // translation files are expected to have Arabic
   /i18n\.js$/,         // i18n config files
   /i18n[/\\]index\.ts$/,
