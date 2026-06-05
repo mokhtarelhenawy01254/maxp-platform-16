@@ -13,14 +13,14 @@
     "tools": "TOOLS.md"
   },
   "allowedTools": [
-    "competitor.search",
-    "competitor.getProducts",
-    "competitor.priceCompare",
-    "competitor.getAds",
-    "competitor.generateReport",
-    "product.search",
-    "inventory.check",
-    "audit.read"
+    "competitor_search",
+    "competitor_get_products",
+    "competitor_price_compare",
+    "competitor_get_ads",
+    "competitor_generate_report",
+    "product_search",
+    "inventory_check",
+    "audit_read"
   ],
   "allowedSkills": [
     "catalog-search"

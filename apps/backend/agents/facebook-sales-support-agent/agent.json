@@ -26,16 +26,16 @@
     "singleQuestionPerTurn": true
   },
   "allowedTools": [
-    "product.search",
-    "inventory.check",
-    "customer.info",
-    "order.lookup",
-    "shipping.rates",
-    "order.create_draft",
-    "order.create_confirmed",
+    "product_search",
+    "inventory_check",
+    "customer_info",
+    "order_lookup",
+    "shipping_rates",
+    "order_create_draft",
+    "order_create_confirmed",
     "agent.handoff",
-    "agent.handoff_to",
-    "facebook.reply"
+    "agent_handoff_to",
+    "facebook_reply"
   ],
   "allowedSkills": [
     "catalog-search",

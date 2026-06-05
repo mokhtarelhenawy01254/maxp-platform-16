@@ -25,14 +25,14 @@
     "singleQuestionPerTurn": false
   },
   "allowedTools": [
-    "product.search",
-    "inventory.check",
-    "customer.info",
-    "order.lookup",
-    "order.create_draft",
-    "order.create_confirmed",
-    "discount.create_draft",
-    "whatsapp.send",
+    "product_search",
+    "inventory_check",
+    "customer_info",
+    "order_lookup",
+    "order_create_draft",
+    "order_create_confirmed",
+    "discount_create_draft",
+    "whatsapp_send",
     "agent.handoff"
   ],
   "allowedSkills": [

@@ -25,11 +25,11 @@
     "singleQuestionPerTurn": false
   },
   "allowedTools": [
-    "order.lookup",
-    "order.create_draft",
-    "order.confirm",
-    "order.cancel",
-    "order.refund"
+    "order_lookup",
+    "order_create_draft",
+    "order_create_confirmed",
+    "order_cancel",
+    "order_refund"
   ],
   "allowedSkills": [],
   "channels": ["chat", "whatsapp", "messenger"],

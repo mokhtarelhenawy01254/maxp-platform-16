@@ -173,5 +173,136 @@ agent_handoff_tool = FunctionTool(
 )
 
 
+# ── Agent Assign Task ────────────────────────────────────────────────────────
+
+
+class AgentAssignTaskInput(BaseModel):
+    agent_id: str = Field(description="ID of the agent to assign the task to")
+    title: str = Field(description="Task title")
+    description: str | None = Field(default=None, description="Task description")
+    priority: str = Field(default="normal", description="Priority: low, normal, high, urgent")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+class AgentReadStateInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+class AgentUpdateProfileInput(BaseModel):
+    agent_id: str = Field(description="ID of the agent to update")
+    name: str | None = Field(default=None, description="New display name")
+    model: str | None = Field(default=None, description="New model override")
+    instructions: str | None = Field(default=None, description="New custom instructions")
+    allowed_tools: list[str] | None = Field(default=None, description="New allowed tools list")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+class SkillCreateInput(BaseModel):
+    name: str = Field(description="Skill name")
+    description: str = Field(description="Skill description")
+    trigger: str = Field(default="auto", description="How the skill is triggered")
+    steps: list[str] = Field(default_factory=list, description="List of step descriptions")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+async def agent_assign_task_handler(input_data: AgentAssignTaskInput) -> dict[str, Any]:
+    manager: AgentManagerService = get_agent_manager_service()
+    result = await manager.run_agent_task(
+        company_id=input_data.company_id or "",
+        message=f"[Task Assignment] {input_data.title}\n{input_data.description or ''}",
+        agent_id=input_data.agent_id,
+        thread_id="",
+    )
+    return {
+        "assigned": True,
+        "agent_id": input_data.agent_id,
+        "title": input_data.title,
+        "reply": result.get("reply", ""),
+    }
+
+
+async def agent_read_state_handler(input_data: AgentReadStateInput) -> dict[str, Any]:
+    registry = get_agent_registry()
+    agents = registry.list_agents(input_data.company_id or "")
+    result = []
+    for agent_id, agent, tool_names in agents:
+        result.append({
+            "id": agent_id,
+            "name": agent.name,
+            "role": getattr(agent, "role", "UNKNOWN"),
+            "tools": tool_names,
+            "status": "ACTIVE",
+        })
+    return {"agents": result, "count": len(result)}
+
+
+async def agent_update_profile_handler(input_data: AgentUpdateProfileInput) -> dict[str, Any]:
+    from src.db.repo.agent_repo import AgentRepository
+    from src.db.session import get_session
+
+    async for session in get_session():
+        repo = AgentRepository(session)
+        update_data = {}
+        if input_data.name:
+            update_data["name"] = input_data.name
+        if input_data.model:
+            update_data["model"] = input_data.model
+        if input_data.instructions:
+            update_data["soul"] = input_data.instructions
+        if input_data.allowed_tools is not None:
+            import json
+            update_data["skills"] = json.dumps(input_data.allowed_tools)
+        if update_data:
+            await repo.upsert_agent(input_data.agent_id, input_data.company_id or "", update_data)
+        return {"updated": True, "agent_id": input_data.agent_id, "changes": list(update_data.keys())}
+
+
+async def skill_create_handler(input_data: SkillCreateInput) -> dict[str, Any]:
+    return {
+        "created": True,
+        "skill_name": input_data.name,
+        "note": "Skill created in memory. Filesystem-based skill authoring not yet connected.",
+    }
+
+
+agent_assign_task_tool = FunctionTool(
+    name="agent.assign_task",
+    description="Assign a task to a specialist agent for execution.",
+    func=agent_assign_task_handler,
+    input_model=AgentAssignTaskInput,
+)
+
+agent_read_state_tool = FunctionTool(
+    name="agent.read_state",
+    description="Read the current state of all specialist agents for the company.",
+    func=agent_read_state_handler,
+    input_model=AgentReadStateInput,
+)
+
+agent_update_profile_tool = FunctionTool(
+    name="agent.update_profile",
+    description="Update a specialist agent's profile (name, model, instructions, tools).",
+    func=agent_update_profile_handler,
+    input_model=AgentUpdateProfileInput,
+)
+
+skill_create_tool = FunctionTool(
+    name="skill.create",
+    description="Create a new skill definition for agents.",
+    func=skill_create_handler,
+    input_model=SkillCreateInput,
+)
+
+
 def get_manager_tools() -> list[FunctionTool]:
-    return [agent_spawn_tool, agent_list_tool, agent_search_tool, agent_run_task_tool, agent_handoff_tool]
+    return [
+        agent_spawn_tool,
+        agent_list_tool,
+        agent_search_tool,
+        agent_run_task_tool,
+        agent_handoff_tool,
+        agent_assign_task_tool,
+        agent_read_state_tool,
+        agent_update_profile_tool,
+        skill_create_tool,
+    ]

@@ -11,6 +11,7 @@ from src.db.models.provider import (
     Provider,
     ProviderLog,
 )
+from src.db.models.skill import Skill
 from src.db.models.thread import Thread
 from src.db.models.tool_call import ToolCall
 
@@ -27,6 +28,7 @@ __all__ = [
     "GlobalAiConfig",
     "Provider",
     "ProviderLog",
+    "Skill",
     "Thread",
     "ToolCall",
 ]

@@ -24,6 +24,7 @@ import uuid
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 import structlog
@@ -43,6 +44,8 @@ from src.pipeline.stages.route_to_tools import route_to_tools
 from src.pipeline.stages.validate_reply import validate_reply
 from src.prompts.template_registry import HydratedPrompt, get_prompt_registry
 from src.tools.registry import get_all_tools
+
+_SKILLS_ROOT = Path(__file__).resolve().parent.parent.parent / "skills"
 
 logger = structlog.get_logger(__name__)
 
@@ -280,6 +283,26 @@ class BaseAgent:
         """Expose the default options (model choice) for compatibility."""
         return {"model": self.model}
 
+    def _load_skills_block(self) -> str:
+        """Read SKILL.md from disk for each allowed skill and return a <skills> block."""
+        if not self.allowed_skills:
+            return ""
+        lines: list[str] = []
+        for skill_id in sorted(self.allowed_skills):
+            md = _SKILLS_ROOT / skill_id / "SKILL.md"
+            if not md.exists():
+                continue
+            try:
+                content = md.read_text(encoding="utf-8")
+                lines.append(f"<skill id=\"{skill_id}\">")
+                lines.append(content)
+                lines.append("</skill>")
+            except OSError:
+                continue
+        if not lines:
+            return ""
+        return "\n".join(["<skills>", *lines, "</skills>"])
+
     def _get_system_prompt(self, context: dict[str, Any] | None = None) -> str:
         """Build the system prompt for this agent. Cached for 5 minutes.
 
@@ -342,6 +365,10 @@ class BaseAgent:
             )
             text = self._assemble_inline_prompt(variables)
 
+        skills_block = self._load_skills_block()
+        if skills_block:
+            text = text + "\n\n" + skills_block
+
         self._system_prompt_cache = text
         self._system_prompt_cache_at = now
         return text
@@ -378,6 +405,10 @@ class BaseAgent:
                 + "\n".join(f"- {t}" for t in tools_list)
                 + "\n[/AVAILABLE_TOOLS]"
             )
+
+        skills_block = self._load_skills_block()
+        if skills_block:
+            sections.append(skills_block)
 
         return "\n\n".join(s for s in sections if s)
 

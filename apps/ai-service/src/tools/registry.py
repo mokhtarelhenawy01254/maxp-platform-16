@@ -5,7 +5,7 @@ from typing import Any
 from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 
-from src.tools.maxp_client import get_maxp_client
+from src.tools.backend_client import get_backend_client
 from src.tools import product_tools
 from src.tools import order_tools
 from src.tools import customer_tools
@@ -14,11 +14,6 @@ from src.tools import competitor_tools
 from src.tools import governance_tools
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
-
-
-async def _call(name: str, company_id: str, input_data: dict[str, Any]) -> dict[str, Any]:
-    client = get_maxp_client()
-    return await client.call_tool(name, company_id, input_data)
 
 
 def _write_result(name: str, action_args: dict[str, Any], company_id: str) -> dict[str, Any]:
@@ -111,9 +106,12 @@ async def product_update_price(input_data: ProductUpdatePriceInput) -> dict[str,
 
 
 async def product_performance(input_data: ProductPerformanceInput) -> dict[str, Any]:
-    result = await _call("product.performance", input_data.company_id or "",
-                         {"productId": input_data.product_id, "period": input_data.period})
-    return result.get("result", {})
+    client = get_backend_client()
+    return await client.get_product_performance(
+        input_data.company_id or "",
+        input_data.product_id,
+        period=input_data.period,
+    )
 
 
 product_search_tool = FunctionTool(
@@ -320,6 +318,49 @@ order_refund_tool = FunctionTool(
     description="Process a refund for an order. REQUIRES MERCHANT APPROVAL.",
     func=order_refund,
     input_model=OrderRefundInput,
+)
+
+
+# ── Shipping Tools ────────────────────────────────────────────────────────────
+
+
+class ShippingRatesInput(BaseModel):
+    governorate: str = Field(description="Governorate to check shipping rates for")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+class ShippingUpdateInput(BaseModel):
+    order_id: str = Field(description="Order ID or number to update shipping for")
+    address: str | None = Field(default=None, description="New delivery address")
+    shipping_class: str | None = Field(default=None, description="New shipping class")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+async def shipping_rates(input_data: ShippingRatesInput) -> dict[str, Any]:
+    client = get_backend_client()
+    return await client.get_shipping_rates(input_data.company_id or "", input_data.governorate)
+
+
+async def shipping_update(input_data: ShippingUpdateInput) -> dict[str, Any]:
+    return _write_result("shipping.update", {
+        "orderId": input_data.order_id,
+        "address": input_data.address,
+        "shippingClass": input_data.shipping_class,
+    }, input_data.company_id or "")
+
+
+shipping_rates_tool = FunctionTool(
+    name="shipping_rates",
+    description="Get shipping rates and delivery info for a governorate.",
+    func=shipping_rates,
+    input_model=ShippingRatesInput,
+)
+
+shipping_update_tool = FunctionTool(
+    name="shipping_update",
+    description="Propose updating shipping address or class for an order. REQUIRES MERCHANT APPROVAL.",
+    func=shipping_update,
+    input_model=ShippingUpdateInput,
 )
 
 
@@ -790,12 +831,20 @@ async def agent_spawn(input_data: AgentSpawnInput) -> dict[str, Any]:
 
 
 async def agent_handoff_to(input_data: AgentHandoffToInput) -> dict[str, Any]:
-    result = await _call("agent.handoff_to", input_data.company_id or "", {
+    from src.services.agent_manager_service import AgentManagerService, get_agent_manager_service
+    manager: AgentManagerService = get_agent_manager_service()
+    result = await manager.run_agent_task(
+        company_id=input_data.company_id or "",
+        message=f"[Handoff] Reason: {input_data.reason}\nContext: {input_data.context or ''}",
+        role=input_data.target_role,
+        thread_id="",
+    )
+    return {
+        "status": "HANDOFF_INITIATED",
         "targetRole": input_data.target_role,
         "reason": input_data.reason,
-        "context": input_data.context or "",
-    })
-    return result.get("result", {})
+        "reply": result.get("reply", ""),
+    }
 
 
 agent_spawn_tool = FunctionTool(
@@ -810,6 +859,60 @@ agent_handoff_to_tool = FunctionTool(
     description="Transfer the conversation to a specialist agent. Use when the customer needs expertise outside your role.",
     func=agent_handoff_to,
     input_model=AgentHandoffToInput,
+)
+
+
+# ── Audit Tools ──────────────────────────────────────────────────────────────
+
+
+class AuditReadInput(BaseModel):
+    limit: int = Field(default=5, description="Maximum number of audit entries")
+    agent_id: str | None = Field(default=None, description="Optional agent ID to filter by")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+async def audit_read(input_data: AuditReadInput) -> dict[str, Any]:
+    client = get_backend_client()
+    return await client.get_audit_trail(
+        input_data.company_id or "",
+        limit=input_data.limit,
+        agent_id=input_data.agent_id,
+    )
+
+
+audit_read_tool = FunctionTool(
+    name="audit_read",
+    description="Read agent audit trail / decision log.",
+    func=audit_read,
+    input_model=AuditReadInput,
+)
+
+
+# ── HR Tools ────────────────────────────────────────────────────────────────
+
+
+class HrAttendanceTodayInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+async def hr_attendance_today(input_data: HrAttendanceTodayInput) -> dict[str, Any]:
+    return {
+        "date": "",
+        "totalEmployees": 0,
+        "present": 0,
+        "late": 0,
+        "absent": 0,
+        "absentEmployees": [],
+        "presentEmployees": [],
+        "note": "HR attendance service not yet connected. This is a placeholder.",
+    }
+
+
+hr_attendance_today_tool = FunctionTool(
+    name="hr_attendance_today",
+    description="Get today's attendance summary for the company.",
+    func=hr_attendance_today,
+    input_model=HrAttendanceTodayInput,
 )
 
 
@@ -833,6 +936,9 @@ READ_TOOLS: list[FunctionTool] = [
     competitor_get_products_tool,
     competitor_price_compare_tool,
     competitor_get_ads_tool,
+    shipping_rates_tool,
+    audit_read_tool,
+    hr_attendance_today_tool,
 ]
 
 # All write tools (require approval)
@@ -853,9 +959,10 @@ WRITE_TOOLS: list[FunctionTool] = [
     facebook_ad_create_draft_tool,
     message_broadcast_tool,
     agent_spawn_tool,
+    shipping_update_tool,
 ]
 
-# All tools
+# All tools (including manager tools for template resolution)
 ALL_TOOLS: dict[str, FunctionTool] = {t.name: t for t in READ_TOOLS + WRITE_TOOLS + [
     whatsapp_send_tool,
     facebook_reply_tool,
@@ -875,9 +982,11 @@ ROLE_TOOLS: dict[str, list[str]] = {
     "SUPPORT": [
         "product_search",
         "order_lookup",
-        "discount_create",
         "order_cancel",
-        "message_broadcast",
+        "customer_info",
+        "shipping_rates",
+        "shipping_update",
+        "whatsapp_send",
         "agent_handoff_to",
     ],
     "ORDER": [
@@ -893,32 +1002,61 @@ ROLE_TOOLS: dict[str, list[str]] = {
         "product_search",
         "product_top_selling",
         "product_performance",
-        "discount_create",
+        "customer_info",
+        "inventory_check",
         "order_create_draft",
         "order_create_confirmed",
+        "discount_create_draft",
+        "whatsapp_send",
+        "shipping_rates",
     ],
     "INVENTORY": [
         "product_search",
         "product_low_stock",
+        "product_create",
         "inventory_check",
         "inventory_adjust",
         "product_update_price",
+        "discount_create_draft",
+        "audit_read",
     ],
     "MARKETING": [
+        "product_search",
+        "inventory_check",
         "sales_revenue",
         "company_snapshot",
-        "discount_create",
         "facebook_ad_create_draft",
         "message_broadcast",
+        "audit_read",
     ],
     "FACEBOOK_SALES_SUPPORT": [
         "product_search",
+        "inventory_check",
+        "customer_info",
         "order_lookup",
         "order_create_draft",
         "order_create_confirmed",
-        "order_cancel",
+        "shipping_rates",
         "facebook_reply",
         "agent_handoff_to",
+    ],
+    "SAS_SALES": [
+        "product_search",
+        "inventory_check",
+        "order_create_draft",
+        "order_lookup",
+        "shipping_rates",
+        "facebook_reply",
+    ],
+    "COMPETITOR": [
+        "competitor_search",
+        "competitor_get_products",
+        "competitor_price_compare",
+        "competitor_get_ads",
+        "competitor_generate_report",
+        "product_search",
+        "inventory_check",
+        "audit_read",
     ],
     "CEO": [],
 }
@@ -960,7 +1098,9 @@ def get_write_tools() -> list[FunctionTool]:
 
 
 def get_all_tools() -> list[FunctionTool]:
-    return list(ALL_TOOLS.values())
+    """Return ALL_TOOLS, including manager tools (lazy import to avoid circular deps)."""
+    from src.tools.manager_tools import get_manager_tools
+    return list(ALL_TOOLS.values()) + get_manager_tools()
 
 
 def get_tool(name: str) -> FunctionTool | None:

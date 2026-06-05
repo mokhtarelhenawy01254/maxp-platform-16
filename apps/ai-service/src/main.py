@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.agents.loader import seed_templates
+from src.skills import seed_skills
 from src.api.admin import router as admin_router
 from src.api.chat import router as chat_router
 from src.api.health import router as health_router
@@ -77,9 +78,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             log = structlog.get_logger()
             log.warning("MCP registration skipped", error=str(exc))
 
-        # Seed filesystem templates before rebuilding the runtime registry.
+        # Seed filesystem templates and skills before rebuilding the runtime registry.
         async for session in get_session():
             await seed_templates(session)
+            await seed_skills(session)
 
         if async_session:
             await init_registry_from_db(async_session)

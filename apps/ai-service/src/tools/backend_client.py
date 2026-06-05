@@ -92,7 +92,16 @@ class BackendClient:
             "period": period, "companyId": company_id,
         })
         return result.get("topProducts", result.get("data", []))
-    
+
+    async def get_product_performance(
+        self, company_id: str, product_id: str, period: str = "month"
+    ) -> dict[str, Any]:
+        """Get per-product conversion and sales metrics."""
+        return await self._request(
+            "GET", f"/api/v1/analytics/products/{product_id}/conversion",
+            params={"period": period, "companyId": company_id},
+        )
+
     # ── Order APIs ──
     
     async def get_order_by_number(
@@ -291,6 +300,39 @@ class BackendClient:
         return await self._request(
             "POST", f"/api/v1/competitors/{competitor_id}/reports/generate",
             json_body={"type": report_type, "companyId": company_id},
+        )
+
+    # ── Shipping APIs ──
+
+    async def get_shipping_rates(
+        self, company_id: str, governorate: str
+    ) -> dict[str, Any]:
+        return await self._request(
+            "GET", f"/api/v1/shipping-zones/public/{company_id}/calculate",
+            params={"governorate": governorate},
+        )
+
+    # ── Audit APIs ──
+
+    async def get_audit_trail(
+        self, company_id: str, limit: int = 5, agent_id: str | None = None
+    ) -> dict[str, Any]:
+        params: dict[str, Any] = {"limit": limit, "companyId": company_id}
+        if agent_id:
+            params["agentId"] = agent_id
+        return await self._request(
+            "GET", "/api/v1/agent/audit-trail",
+            params=params,
+        )
+
+    # ── Agent Profile APIs ──
+
+    async def update_agent_profile(
+        self, company_id: str, agent_id: str, data: dict[str, Any]
+    ) -> dict[str, Any]:
+        return await self._request(
+            "PUT", f"/api/v1/agent/agents/{agent_id}",
+            json_body={**data, "companyId": company_id},
         )
 
 
