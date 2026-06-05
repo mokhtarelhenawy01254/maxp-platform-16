@@ -62,7 +62,7 @@ import {
 import ProductImageLandingPage from "./pages/ProductImageLandingPage";
 import { useStorePage } from "../hooks/useStorePage";
 import i18n from "../i18n";
-import { footerSettingsService, type FooterSettings } from "../../services/footerSettingsService";
+import { footerSettingsService, type FooterSettings } from "../services/footerSettingsService";
 
 import "./styles/storefront-layout.css";
 
