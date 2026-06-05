@@ -1,4 +1,4 @@
-import { CompanyAgent } from '../../../backend/generated/postgresql_v2'
+import { CompanyAgent } from '@prisma/client'
 import { callWithFailover } from '../providers/provider-manager'
 
 const ROUTE_TOOL = {

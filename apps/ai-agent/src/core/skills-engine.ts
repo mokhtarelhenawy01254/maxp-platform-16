@@ -1,4 +1,4 @@
-import { CompanyAgent } from '../../../backend/generated/postgresql_v2'
+import { CompanyAgent } from '@prisma/client'
 import prisma from '../db/client'
 
 export interface ActiveSkill {

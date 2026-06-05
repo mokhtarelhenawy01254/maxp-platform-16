@@ -1,3 +1,27 @@
+## [2026-06-05] AI Agent Service — Known Issues & Setup Requirements
+
+- **Issue 1 — `agent_tool_definitions` table missing**: Added to `apps/backend/prisma/schema.prisma` but migration not run yet. Service will crash on `prisma.agentToolDefinition.*` calls until the table exists.
+  - **Fix**: `cd apps/backend && node ../../node_modules/prisma/build/index.js db push --schema=prisma/schema.prisma && npm run schema:generate && cd ../ai-agent && npm run seed`
+
+- **Issue 2 — Backend `schema:generate` must run first**: `apps/ai-agent` imports Prisma types from `apps/backend/generated/postgresql_v2`. If this folder doesn't exist (fresh clone or after schema change), TypeScript will fail to compile.
+  - **Fix**: `cd apps/backend && npm run schema:generate`
+
+- **Issue 3 — PostgreSQL ENUM casting in raw SQL**: Some `$queryRaw` queries in `apps/ai-agent/src/tools/implementations/` cast values with `::\"OrderStatus\"` and `::\"CustomersStatus\"`. If ENUM names differ from expected, queries will throw.
+  - **Affected files**: `orders.ts`, `customers.ts`, `write.ts`
+  - **Fix**: Verify exact ENUM names: `SELECT typname FROM pg_type WHERE typcategory = 'E';`
+
+- **Issue 4 — `createOrder` write tool is simplified**: The raw SQL INSERT only sets a subset of columns. The actual `orders` table has many required fields (e.g. `customerId`, `paymentStatus`, `paymentMethod`). Will fail with a DB constraint error in production.
+  - **Affected file**: `apps/ai-agent/src/tools/implementations/write.ts` → `createOrder()`
+  - **Fix**: Complete the INSERT with all required columns or use the backend's order creation API.
+
+- **Issue 5 — No authentication on the AI Agent API**: All endpoints (`/agent/run`, `/tools`, `/agents`) are open with no JWT or API key validation.
+  - **Affected files**: `apps/ai-agent/src/api/routes/`
+  - **Fix**: Add auth middleware before deploying to production.
+
+- **Issue 6 — Tool approval check not scoped by agent or input**: `requireApproval()` in `write.ts` looks for any existing `APPROVED` record for `toolName + companyId`. One approval grants all future calls for that tool regardless of input.
+  - **Affected file**: `apps/ai-agent/src/tools/implementations/write.ts`
+  - **Fix**: Add `idempotencyKey` or hash of input args to the lookup.
+
 ## [2026-06-05] StorefrontShell: Fix footerSettingsService import path (monorepo)
 - **Bug/Issue**: After monorepo restructuring, `StorefrontShell.tsx` used `../../services/footerSettingsService` which resolves above `src/`. Correct path is `../services/footerSettingsService`.
 - **Fix**: Changed import from `../../services/` to `../services/`.

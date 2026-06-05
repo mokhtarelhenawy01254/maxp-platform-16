@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { PrismaClient } from '../../../backend/generated/postgresql_v2'
+import { PrismaClient } from '@prisma/client'
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 

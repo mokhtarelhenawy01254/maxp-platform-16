@@ -1,4 +1,4 @@
-import { Prisma } from '../../../../backend/generated/postgresql_v2'
+import { Prisma } from '@prisma/client'
 import prisma from '../../db/client'
 
 export async function getDailyAnalytics(
