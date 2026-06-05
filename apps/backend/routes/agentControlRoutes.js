@@ -7,16 +7,16 @@
 const express = require('express');
 const verifyToken = require('../utils/verifyToken');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const agentProvisioningService = require('../services/aiAgent/agentProvisioningService');
-const agentManagerService = require('../services/aiAgent/agentManagerService');
-const agentProfileLoaderService = require('../services/aiAgent/agentProfileLoaderService');
-const toolRegistryService = require('../services/aiAgent/toolRegistryService');
-const skillRegistryService = require('../services/aiAgent/skillRegistryService');
-const { getModelCapabilities } = require('../services/aiAgent/agentModelCapabilityService');
-const naturalLanguageCronService = require('../services/aiAgent/naturalLanguageCronService');
-const routineExecutorService = require('../services/aiAgent/routineExecutorService');
-const agentAuditTrailService = require('../services/aiAgent/agentAuditTrailService');
-const aiRuntimeService = require('../services/aiAgent/aiRuntimeService');
+const agentProvisioningService = require('../legacy-ai-agent/aiAgent/agentProvisioningService');
+const agentManagerService = require('../legacy-ai-agent/aiAgent/agentManagerService');
+const agentProfileLoaderService = require('../legacy-ai-agent/aiAgent/agentProfileLoaderService');
+const toolRegistryService = require('../legacy-ai-agent/aiAgent/toolRegistryService');
+const skillRegistryService = require('../legacy-ai-agent/aiAgent/skillRegistryService');
+const { getModelCapabilities } = require('../legacy-ai-agent/aiAgent/agentModelCapabilityService');
+const naturalLanguageCronService = require('../legacy-ai-agent/aiAgent/naturalLanguageCronService');
+const routineExecutorService = require('../legacy-ai-agent/aiAgent/routineExecutorService');
+const agentAuditTrailService = require('../legacy-ai-agent/aiAgent/agentAuditTrailService');
+const aiRuntimeService = require('../legacy-ai-agent/aiAgent/aiRuntimeService');
 
 const router = express.Router();
 

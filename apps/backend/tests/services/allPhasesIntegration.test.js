@@ -7,7 +7,7 @@
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 
 // ── Phase 4: Model Router ──
-const modelRouterService = require('../../services/aiAgent/modelRouterService');
+const modelRouterService = require('../../legacy-ai-agent/aiAgent/modelRouterService');
 
 describe('Phase 4: Model Router Service', () => {
   test('routes greeting tasks to Flash model', () => {
@@ -46,7 +46,7 @@ describe('Phase 4: Model Router Service', () => {
 });
 
 // ── Phase 5: Working Memory ──
-const workingMemoryService = require('../../services/aiAgent/workingMemoryService');
+const workingMemoryService = require('../../legacy-ai-agent/aiAgent/workingMemoryService');
 
 describe('Phase 5: Working Memory Service', () => {
   const CID = 'wm_comp1', CONV = 'conv_1';
@@ -100,7 +100,7 @@ describe('Phase 5: Working Memory Service', () => {
 });
 
 // ── Phase 6: Episodic Memory ──
-const episodicMemoryService = require('../../services/aiAgent/episodicMemoryService');
+const episodicMemoryService = require('../../legacy-ai-agent/aiAgent/episodicMemoryService');
 
 describe('Phase 6: Episodic Memory Service', () => {
   beforeEach(async () => {
@@ -139,7 +139,7 @@ describe('Phase 6: Episodic Memory Service', () => {
 });
 
 // ── Phase 7: Truth Arbitration ──
-const truthArbitratorService = require('../../services/aiAgent/truthArbitratorService');
+const truthArbitratorService = require('../../legacy-ai-agent/aiAgent/truthArbitratorService');
 
 describe('Phase 7: Truth Arbitration Engine', () => {
   test('calculates correct arbitration scores', () => {
@@ -194,7 +194,7 @@ describe('Phase 9: Dreamer Worker Engine', () => {
     prisma = worker._getPrisma();
 
     // Mock AIProviderFactory to prevent real external network calls
-    const AIProviderFactory = require('../../services/aiAgent/providers/AIProviderFactory');
+    const AIProviderFactory = require('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory');
     originalGetProvider = AIProviderFactory.getProvider;
     AIProviderFactory.getProvider = jest.fn().mockReturnValue({
       generateResponse: jest.fn().mockResolvedValue({
@@ -235,7 +235,7 @@ describe('Phase 9: Dreamer Worker Engine', () => {
   });
 
   afterAll(async () => {
-    const AIProviderFactory = require('../../services/aiAgent/providers/AIProviderFactory');
+    const AIProviderFactory = require('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory');
     AIProviderFactory.getProvider = originalGetProvider;
   });
 
@@ -286,7 +286,7 @@ describe('Phase 9: Dreamer Worker Engine', () => {
 });
 
 // ── Phase 10: Audit Trail (DB-backed) ──
-const agentAuditTrailService = require('../../services/aiAgent/agentAuditTrailService');
+const agentAuditTrailService = require('../../legacy-ai-agent/aiAgent/agentAuditTrailService');
 
 describe('Phase 10: Agent Audit Trail Service', () => {
   beforeEach(async () => { await agentAuditTrailService._reset(); });
@@ -324,7 +324,7 @@ describe('Phase 10: Agent Audit Trail Service', () => {
 });
 
 // ── Phase 11: Draft Proposals (DB-backed) ──
-const draftProposalService = require('../../services/aiAgent/draftProposalService');
+const draftProposalService = require('../../legacy-ai-agent/aiAgent/draftProposalService');
 
 describe('Phase 11: Draft Proposal Service', () => {
   beforeEach(async () => { await draftProposalService._reset(); });
@@ -363,7 +363,7 @@ describe('Phase 11: Draft Proposal Service', () => {
 });
 
 // ── Phase 12: Human Approval (DB-backed) ──
-const humanApprovalService = require('../../services/aiAgent/humanApprovalService');
+const humanApprovalService = require('../../legacy-ai-agent/aiAgent/humanApprovalService');
 
 describe('Phase 12: Human Approval Service', () => {
   beforeEach(async () => { await draftProposalService._reset(); await humanApprovalService._reset(); });
@@ -392,7 +392,7 @@ describe('Phase 12: Human Approval Service', () => {
 });
 
 // ── Phase 13: Policy Engine ──
-const policyEnforcementEngine = require('../../services/aiAgent/policyEnforcementEngine');
+const policyEnforcementEngine = require('../../legacy-ai-agent/aiAgent/policyEnforcementEngine');
 
 describe('Phase 13: Policy Enforcement Engine', () => {
   beforeEach(() => policyEnforcementEngine._reset());
@@ -434,7 +434,7 @@ describe('Phase 13: Policy Enforcement Engine', () => {
 });
 
 // ── Phase 14: Agent Provisioning ──
-const agentProvisioningService = require('../../services/aiAgent/agentProvisioningService');
+const agentProvisioningService = require('../../legacy-ai-agent/aiAgent/agentProvisioningService');
 
 describe('Phase 14: Agent Provisioning Service', () => {
   beforeEach(() => agentProvisioningService._reset());
@@ -464,7 +464,7 @@ describe('Phase 14: Agent Provisioning Service', () => {
 });
 
 // ── Phase 15: CEO Agent ──
-const CEOAgent = require('../../services/aiAgent/CEOAgent');
+const CEOAgent = require('../../legacy-ai-agent/aiAgent/CEOAgent');
 
 describe('Phase 15: CEO Agent Orchestrator', () => {
   beforeEach(() => agentProvisioningService._reset());
@@ -494,7 +494,7 @@ describe('Phase 15: CEO Agent Orchestrator', () => {
 });
 
 // ── Phase 16: Agent Handoff ──
-const agentHandoffService = require('../../services/aiAgent/agentHandoffService');
+const agentHandoffService = require('../../legacy-ai-agent/aiAgent/agentHandoffService');
 
 describe('Phase 16: Agent Handoff Service', () => {
   beforeEach(() => agentHandoffService._reset());
@@ -527,7 +527,7 @@ describe('Phase 16: Agent Handoff Service', () => {
 });
 
 // ── Phase 17: NL Cron Parser ──
-const naturalLanguageCronService = require('../../services/aiAgent/naturalLanguageCronService');
+const naturalLanguageCronService = require('../../legacy-ai-agent/aiAgent/naturalLanguageCronService');
 
 describe('Phase 17: Natural Language Cron Service', () => {
   beforeEach(() => naturalLanguageCronService._reset());
@@ -562,7 +562,7 @@ describe('Phase 17: Natural Language Cron Service', () => {
 });
 
 // ── Phase 18: Routine Executor ──
-const routineExecutorService = require('../../services/aiAgent/routineExecutorService');
+const routineExecutorService = require('../../legacy-ai-agent/aiAgent/routineExecutorService');
 
 describe('Phase 18: Routine Executor Service', () => {
   beforeEach(() => routineExecutorService._reset());
@@ -620,7 +620,7 @@ describe('Phase 19: Corrective RAG Engine', () => {
 });
 
 // ── Phase 20: DAG Planner ──
-const dagPlannerExecutor = require('../../services/aiAgent/DAGPlannerExecutor');
+const dagPlannerExecutor = require('../../legacy-ai-agent/aiAgent/DAGPlannerExecutor');
 
 describe('Phase 20: DAG Planner & Executor', () => {
   beforeEach(() => dagPlannerExecutor._reset());

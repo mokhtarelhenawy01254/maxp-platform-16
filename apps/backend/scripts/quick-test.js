@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 
 async function test() {

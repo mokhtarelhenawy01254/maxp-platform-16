@@ -1971,7 +1971,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
         setImmediate(async () => {
           try {
             console.log(`🤖 [AI-AUTOREPLY] Triggered AI auto-reply check for customer: ${customer.id}`);
-            const aiMessageProcessor = require('../services/aiAgent/aiMessageProcessor');
+            const aiMessageProcessor = require('../legacy-ai-agent/aiAgent/aiMessageProcessor');
             
             // 1. Process the message through AI
             const replyText = await aiMessageProcessor.processMessage({

@@ -1,4 +1,4 @@
-﻿const { PrismaClient } = require('../prisma/generated/postgresql_v2');
+const { PrismaClient } = require('../prisma/generated/postgresql_v2');
 const prisma = new PrismaClient();
 
 async function main() {

@@ -1,4 +1,4 @@
-﻿
+
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 async function grantFullPermissions() {

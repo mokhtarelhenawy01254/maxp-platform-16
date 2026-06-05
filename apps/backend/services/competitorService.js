@@ -1,5 +1,5 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
-const { t } = require('./aiAgent/i18n');
+const { t } = require('../legacy-ai-agent/aiAgent/i18n');
 const getPrisma = () => getSharedPrismaClient();
 
 class CompetitorService {

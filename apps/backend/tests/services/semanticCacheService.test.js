@@ -1,12 +1,12 @@
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
-const semanticCacheService = require('../../services/aiAgent/semanticCacheService');
+const semanticCacheService = require('../../legacy-ai-agent/aiAgent/semanticCacheService');
 
 jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
 const mockEmbed = jest.fn();
-jest.mock('../../services/aiAgent/episodicMemoryService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/episodicMemoryService', () => ({
   generateEmbeddingWithProvider: (...args) => mockEmbed(...args),
   EMBEDDING_PROVIDER_GEMINI: 'gemini',
   EMBEDDING_PROVIDER_PSEUDO: 'pseudo',

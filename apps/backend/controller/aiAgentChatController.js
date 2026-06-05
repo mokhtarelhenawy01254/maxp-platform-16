@@ -4,7 +4,7 @@
  * Routes: POST /message, GET /history, DELETE /history, GET /sessions, POST /sessions, DELETE /sessions/:id, GET /status
  */
 
-const aiChatService = require('../services/aiAgent/aiChatService');
+const aiChatService = require('../legacy-ai-agent/aiAgent/aiChatService');
 const CorrectiveRAGEngine = require('../services/rag/CorrectiveRAGEngine');
 const RagKnowledgeProposalService = require('../services/rag/RagKnowledgeProposalService');
 const RagKnowledgeMaintenanceService = require('../services/rag/RagKnowledgeMaintenanceService');

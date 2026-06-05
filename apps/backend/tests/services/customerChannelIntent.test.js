@@ -6,7 +6,7 @@
  * 2. handleFallback skips all repair logic for customer channels
  */
 
-const { _private: { resolveAdminPolicyPlan, isCustomerChatChannel } } = require('../../services/aiAgent/agentIntentRelevanceService');
+const { _private: { resolveAdminPolicyPlan, isCustomerChatChannel } } = require('../../legacy-ai-agent/aiAgent/agentIntentRelevanceService');
 
 describe('isCustomerChatChannel', () => {
   test('returns true for FACEBOOK', () => {
@@ -132,7 +132,7 @@ describe('resolveAdminPolicyPlan - Customer Channel Guard', () => {
 
 describe('Customer Channel Fallback Behavior', () => {
   test('handleFallback returns early for customer channel with no LLM result', async () => {
-    const handleFallback = require('../../services/aiAgent/pipeline/stages/handleFallback');
+    const handleFallback = require('../../legacy-ai-agent/aiAgent/pipeline/stages/handleFallback');
     
     const context = {
       agent: {
@@ -156,7 +156,7 @@ describe('Customer Channel Fallback Behavior', () => {
   });
 
   test('handleFallback returns LLM result as-is for customer channel without repair', async () => {
-    const handleFallback = require('../../services/aiAgent/pipeline/stages/handleFallback');
+    const handleFallback = require('../../legacy-ai-agent/aiAgent/pipeline/stages/handleFallback');
     
     const mockLlmResult = { text: 'مرحبا بك! كيف يمكنني مساعدتك؟' };
     

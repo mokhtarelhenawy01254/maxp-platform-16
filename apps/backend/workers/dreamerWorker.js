@@ -5,7 +5,7 @@
  */
 
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const aiRuntimeService = require('../services/aiRuntimeService');
+const aiRuntimeService = require('../legacy-ai-agent/aiAgent/aiRuntimeService');
 
 class DreamerWorker {
   constructor({ batchSize = 10 } = {}) {
@@ -166,7 +166,7 @@ class DreamerWorker {
         // Try utilizing AI Provider for memory consolidation
         if (keyInfo && !keyInfo.error) {
           try {
-            const AIProviderFactory = require('../services/aiAgent/providers/AIProviderFactory');
+            const AIProviderFactory = require('../legacy-ai-agent/aiAgent/providers/AIProviderFactory');
             const providerClient = AIProviderFactory.getProvider(
               keyInfo.provider,
               keyInfo.apiKey,

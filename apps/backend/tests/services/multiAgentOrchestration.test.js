@@ -4,11 +4,11 @@
  * agentConversationBroker, planSynthesisEngine, and CEOAgent multi-agent workflows.
  */
 
-const CEOAgent = require('../../services/aiAgent/CEOAgent');
-const agentConversationBroker = require('../../services/aiAgent/agentConversationBroker');
-const planSynthesisEngine = require('../../services/aiAgent/planSynthesisEngine');
-const agentProvisioningService = require('../../services/aiAgent/agentProvisioningService');
-const aiRuntimeService = require('../../services/aiAgent/aiRuntimeService');
+const CEOAgent = require('../../legacy-ai-agent/aiAgent/CEOAgent');
+const agentConversationBroker = require('../../legacy-ai-agent/aiAgent/agentConversationBroker');
+const planSynthesisEngine = require('../../legacy-ai-agent/aiAgent/planSynthesisEngine');
+const agentProvisioningService = require('../../legacy-ai-agent/aiAgent/agentProvisioningService');
+const aiRuntimeService = require('../../legacy-ai-agent/aiAgent/aiRuntimeService');
 jest.mock('../../services/redisCacheService', () => {
   const store = new Map();
   return {
@@ -29,7 +29,7 @@ jest.mock('../../services/redisCacheService', () => {
 
 // Mock AI provider for synthesis engine
 const mockGenerateResponse = jest.fn();
-jest.mock('../../services/aiAgent/providers/AIProviderFactory', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory', () => ({
   getProvider: jest.fn(() => ({
     generateResponse: mockGenerateResponse,
   })),
@@ -37,7 +37,7 @@ jest.mock('../../services/aiAgent/providers/AIProviderFactory', () => ({
 
 // Mock model manager
 const mockGetNextKeySimple = jest.fn();
-jest.mock('../../services/aiAgent/aiRuntimeService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/aiRuntimeService', () => ({
   getModelManager: jest.fn(() => ({
     getNextKeySimple: mockGetNextKeySimple,
     recordRoutingSuccess: jest.fn(),
@@ -45,7 +45,7 @@ jest.mock('../../services/aiAgent/aiRuntimeService', () => ({
 }));
 
 // Mock BaseAgent.prototype.processTask so specialist agents return predictable replies
-const originalProcessTask = require('../../services/aiAgent/BaseAgent').prototype.processTask;
+const originalProcessTask = require('../../legacy-ai-agent/aiAgent/BaseAgent').prototype.processTask;
 
 beforeEach(async () => {
   agentProvisioningService._reset();
@@ -260,7 +260,7 @@ describe('planSynthesisEngine', () => {
 describe('CEOAgent Multi-Agent Orchestration', () => {
   beforeEach(() => {
     // Override BaseAgent.processTask to return deterministic specialist replies
-    require('../../services/aiAgent/BaseAgent').prototype.processTask = jest.fn(async function (task) {
+    require('../../legacy-ai-agent/aiAgent/BaseAgent').prototype.processTask = jest.fn(async function (task) {
       const role = this.role || 'UNKNOWN';
       const desc = task.description || task.title || '';
 
@@ -299,7 +299,7 @@ describe('CEOAgent Multi-Agent Orchestration', () => {
   });
 
   afterEach(() => {
-    require('../../services/aiAgent/BaseAgent').prototype.processTask = originalProcessTask;
+    require('../../legacy-ai-agent/aiAgent/BaseAgent').prototype.processTask = originalProcessTask;
   });
 
   test('CEOAgent can discuss with a single specialist agent', async () => {
@@ -434,7 +434,7 @@ describe('CEOAgent Multi-Agent Orchestration', () => {
 
 describe('agent.orchestrate tool end-to-end', () => {
   test('CEOAgent tool registry includes agent.orchestrate', () => {
-    const TOOLS = require('../../services/aiAgent/tools/managerTools');
+    const TOOLS = require('../../legacy-ai-agent/aiAgent/tools/managerTools');
     expect(TOOLS['agent.orchestrate']).toBeDefined();
     expect(TOOLS['agent.orchestrate'].description).toContain('Coordinate multiple specialist agents');
     expect(TOOLS['agent.orchestrate'].requiresApproval).toBe(true);

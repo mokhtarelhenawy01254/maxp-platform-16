@@ -25,10 +25,10 @@ jest.mock('../../services/redisCacheService', () => ({
   del: jest.fn(async (key) => { delete redisStore[key]; }),
 }));
 
-const unifiedOrchestrator = require('../../services/aiAgent/utils/UnifiedProductSearchOrchestrator');
-const workingMemoryService = require('../../services/aiAgent/workingMemoryService');
-const dbVectorAdaptor = require('../../services/aiAgent/utils/DbVectorAdaptor');
-const episodicMemoryService = require('../../services/aiAgent/episodicMemoryService');
+const unifiedOrchestrator = require('../../legacy-ai-agent/aiAgent/utils/UnifiedProductSearchOrchestrator');
+const workingMemoryService = require('../../legacy-ai-agent/aiAgent/workingMemoryService');
+const dbVectorAdaptor = require('../../legacy-ai-agent/aiAgent/utils/DbVectorAdaptor');
+const episodicMemoryService = require('../../legacy-ai-agent/aiAgent/episodicMemoryService');
 
 const TEST_EMBEDDING = new Array(768).fill(0.01);
 

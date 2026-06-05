@@ -3645,7 +3645,7 @@ const getProductVariants = async (req, res) => {
   }
 };
 
-const episodicMemoryService = require('../services/aiAgent/episodicMemoryService');
+const episodicMemoryService = require('../legacy-ai-agent/aiAgent/episodicMemoryService');
 
 const visualSearchProduct = async (req, res) => {
   try {

@@ -131,3 +131,27 @@ async def list_templates(session: AsyncSession) -> list[AgentTemplate]:
         select(AgentTemplate).order_by(AgentTemplate.role, AgentTemplate.slug)
     )
     return list(result.scalars().all())
+
+
+async def get_skills_for_agent(company_id: str, session: AsyncSession) -> list[dict[str, Any]]:
+    """Fetch all enabled skills for the given company from the database."""
+    from src.db.models.skill import Skill
+    
+    stmt = (
+        select(Skill)
+        .where(Skill.company_id == company_id, Skill.enabled == True)
+        .order_by(Skill.priority.desc())
+    )
+    result = await session.execute(stmt)
+    skills = result.scalars().all()
+    
+    return [
+        {
+            "name": s.name,
+            "instructions": s.instructions,
+            "allowed_tools": s.allowed_tools,
+            "trigger_phrases": s.trigger_phrases,
+            "channels": s.channels,
+        }
+        for s in skills
+    ]

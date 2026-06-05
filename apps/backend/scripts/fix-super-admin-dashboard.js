@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient, initializeSharedDatabase } = require('../services/sharedDatabase');
+const { getSharedPrismaClient, initializeSharedDatabase } = require('../services/sharedDatabase');
 
 async function fixSuperAdminDashboard() {
   console.log('ðŸ”§ Ø¥ØµÙ„Ø§Ø­ Ù…Ø´Ø§ÙƒÙ„ Ø¯Ø§Ø´Ø¨ÙˆØ±Ø¯ Ø§Ù„Ø³ÙˆØ¨Ø± Ø£Ø¯Ù…Ù†...\n');

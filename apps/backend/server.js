@@ -44,7 +44,7 @@ const FRONTEND_STATIC_EXACT_PATHS = new Set([
   "/google4ca0156de75f91cd.html",
 ]);
 
-const { getAiServiceMode } = require('./services/aiAgent/aiServiceRouter');
+const { getAiServiceMode } = require('./legacy-ai-agent/aiAgent/aiServiceRouter');
 const isAiServicePrimary = getAiServiceMode() === 'primary';
 
 const createFrontendStaticFallback = () => {
@@ -889,7 +889,7 @@ try {
 // Start AI Provider Health Check Service (auto-disable dead keys)
 if (!isAiServicePrimary) {
   try {
-    const providerHealthCheckService = require("./services/aiAgent/providerHealthCheckService");
+    const providerHealthCheckService = require("./legacy-ai-agent/aiAgent/providerHealthCheckService");
     providerHealthCheckService.start();
     console.log("✅ [PROVIDER-HEALTH] AI Provider health check service started");
   } catch (error) {

@@ -32,8 +32,10 @@ dependencies = [
     "redis>=5.2",
     "rq>=2.1",
     "psycopg2-binary>=2.9",
-    "google-generativeai>=0.8",
-    "mcp>=1.2",
+"google-generativeai>=0.8",
+"mcp>=1.2",
+"telethon>=1.35",
+"aiogram>=3.0"
 ]
 
 [project.optional-dependencies]
@@ -54,6 +56,10 @@ agents = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[project.scripts]
+ai-worker = "src.workers.main:main"
+ai-agent-worker = "src.workers.agent_worker:run_worker_sync"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
@@ -117,7 +123,7 @@ disallow_untyped_defs = false
 disallow_incomplete_defs = false
 
 [[tool.mypy.overrides]]
-module = ["src.db.models.*", "src.api.admin.schemas", "src.observability.pii", "src.tools.registry", "src.tools.maxp_client"]
+module = ["src.db.models.*", "src.api.admin.schemas", "src.observability.pii", "src.tools.registry"]
 no_implicit_optional = false
 check_untyped_defs = false
 

@@ -14,7 +14,7 @@
  */
 
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const aiServiceKeyBridge = require('../services/aiAgent/aiServiceKeyBridge');
+const aiServiceKeyBridge = require('../legacy-ai-agent/aiAgent/aiServiceKeyBridge');
 
 function parseArgs() {
   const args = process.argv.slice(2);

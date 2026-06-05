@@ -7,7 +7,7 @@ jest.mock('../../services/redisCacheService', () => ({
 }));
 
 const redisCacheService = require('../../services/redisCacheService');
-const embeddingCache = require('../../services/aiAgent/embeddingCacheService');
+const embeddingCache = require('../../legacy-ai-agent/aiAgent/embeddingCacheService');
 
 describe('embeddingCacheService', () => {
   beforeEach(() => {

@@ -1,7 +1,7 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
 const { queueTaskWebhook } = require('./taskWebhookService');
-const { t } = require('./aiAgent/i18n');
+const { t } = require('../legacy-ai-agent/aiAgent/i18n');
 
 function getTaskStatusLabel(status) {
     const key = String(status || '').toUpperCase();

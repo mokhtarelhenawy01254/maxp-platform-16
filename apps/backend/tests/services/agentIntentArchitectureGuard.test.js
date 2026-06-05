@@ -1,11 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const { resolveToolPlan } = require('../../services/aiAgent/agentIntentRelevanceService');
-const agentIntentClassifierService = require('../../services/aiAgent/agentIntentClassifierService');
+const { resolveToolPlan } = require('../../legacy-ai-agent/aiAgent/agentIntentRelevanceService');
+const agentIntentClassifierService = require('../../legacy-ai-agent/aiAgent/agentIntentClassifierService');
 
 
-const SERVICE_PATH = path.join(__dirname, '../../services/aiAgent/agentIntentRelevanceService.js');
+const SERVICE_PATH = path.join(__dirname, '../../legacy-ai-agent/aiAgent/agentIntentRelevanceService.js');
 
 describe('agent intent architecture guard', () => {
   test('keeps the relevance service behind the typed intent planner contract', () => {

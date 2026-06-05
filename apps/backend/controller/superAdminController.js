@@ -17,7 +17,7 @@ const {
   normalizeRole,
 } = require("../middleware/superAdminMiddleware");
 const activityLogger = require("../services/activityLogger");
-const { t } = require("../services/aiAgent/i18n");
+const { t } = require("../legacy-ai-agent/aiAgent/i18n");
 const { processImage, isProcessableImage } = require("../utils/imageProcessor");
 const fileCleanupService = require("../services/fileCleanupService");
 const moment = require("moment-timezone");

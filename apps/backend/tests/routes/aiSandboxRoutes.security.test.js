@@ -60,7 +60,7 @@ jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(() => mockPrisma),
 }));
 
-jest.mock('../../services/aiAgent/providers/AIProviderFactory', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory', () => ({
   getProvider: jest.fn(() => mockProviderClient),
   getActiveProvider: jest.fn(() => mockProviderClient),
 }));
@@ -71,7 +71,7 @@ jest.mock('../../services/aiRuntimeService', () => ({
   })),
 }));
 
-jest.mock('../../services/aiAgent/workingMemoryService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/workingMemoryService', () => ({
   clearSession: jest.fn(async (companyId, conversationId) => {
     mockWorkingMemoryStore.delete(`${companyId}:${conversationId}`);
     return true;
@@ -103,7 +103,7 @@ jest.mock('../../services/aiAgent/workingMemoryService', () => ({
   }),
 }));
 
-jest.mock('../../services/aiAgent/CEOAgent', () => jest.fn().mockImplementation(() => {
+jest.mock('../../legacy-ai-agent/aiAgent/CEOAgent', () => jest.fn().mockImplementation(() => {
   const defaultResult = {
     status: 'SUCCESS',
     result: {
@@ -135,7 +135,7 @@ jest.mock('../../services/aiAgent/CEOAgent', () => jest.fn().mockImplementation(
   return mockCeoAgentInstance;
 }));
 
-jest.mock('../../services/aiAgent/agentProvisioningService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentProvisioningService', () => ({
   getAgent: jest.fn(() => ({
     id: 'agent_sales',
     name: 'Sales Agent',
@@ -147,11 +147,11 @@ jest.mock('../../services/aiAgent/agentProvisioningService', () => ({
   })),
 }));
 
-jest.mock('../../services/aiAgent/agentProfileLoaderService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentProfileLoaderService', () => ({
   loadProfile: jest.fn(() => null),
 }));
 
-jest.mock('../../services/aiAgent/agentManagerService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentManagerService', () => ({
   getManagerAgent: jest.fn().mockResolvedValue({ id: 'agent_ceo' }),
   ensureFacebookMessengerAgent: jest.fn().mockResolvedValue(null),
   getManagerContext: jest.fn().mockResolvedValue({
@@ -174,7 +174,7 @@ jest.mock('../../services/aiAgent/agentManagerService', () => ({
   }),
 }));
 
-const AIProviderFactory = require('../../services/aiAgent/providers/AIProviderFactory');
+const AIProviderFactory = require('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory');
 
 const createApp = () => {
   const app = express();
@@ -462,7 +462,7 @@ describe('AI sandbox route security', () => {
   });
 
   test('passes full agent operating context and selected central key into the sandbox agent runtime', async () => {
-    const agentProvisioningService = require('../../services/aiAgent/agentProvisioningService');
+    const agentProvisioningService = require('../../legacy-ai-agent/aiAgent/agentProvisioningService');
     agentProvisioningService.getAgent.mockReturnValueOnce({
       id: 'agent_sales',
       name: 'Sales Agent',
@@ -545,7 +545,7 @@ describe('AI sandbox route security', () => {
       channel: 'FACEBOOK',
       sandbox: true,
     }));
-    const ctorArgs = require('../../services/aiAgent/CEOAgent').mock.calls[0][1];
+    const ctorArgs = require('../../legacy-ai-agent/aiAgent/CEOAgent').mock.calls[0][1];
     expect(ctorArgs.persona.agentInstructions).toContain('Ask for required customer details before order actions.');
     expect(ctorArgs.persona.soulInstructions).toContain('Use dynamic customer-facing phrasing for every reply.');
     expect(ctorArgs.persona.modelPolicy).toEqual(expect.objectContaining({
@@ -608,7 +608,7 @@ describe('AI sandbox route security', () => {
       });
 
     expect(response.status).toBe(200);
-    const ctorArgs = require('../../services/aiAgent/CEOAgent').mock.calls[0][1];
+    const ctorArgs = require('../../legacy-ai-agent/aiAgent/CEOAgent').mock.calls[0][1];
     expect(ctorArgs.persona.modelPolicy).toEqual(expect.objectContaining({
       provider: 'GOOGLE',
       keyId: 'key_preferred',
@@ -675,7 +675,7 @@ describe('AI sandbox route security', () => {
       });
 
     expect(centralKeyResponse.status).toBe(200);
-    const ctorArgs = require('../../services/aiAgent/CEOAgent').mock.calls[0][1];
+    const ctorArgs = require('../../legacy-ai-agent/aiAgent/CEOAgent').mock.calls[0][1];
     expect(ctorArgs.persona.modelPolicy).toEqual(expect.objectContaining({
       provider: 'GOOGLE',
       keyId: 'central_key',
@@ -748,7 +748,7 @@ describe('AI sandbox route security', () => {
   });
 
   test('normalizes set-like agent tools and supports OpenAI-compatible provider clients', async () => {
-    const agentProvisioningService = require('../../services/aiAgent/agentProvisioningService');
+    const agentProvisioningService = require('../../legacy-ai-agent/aiAgent/agentProvisioningService');
     agentProvisioningService.getAgent.mockReturnValueOnce({
       id: 'agent_sales',
       name: 'Sales Agent',

@@ -6,11 +6,11 @@ process.env.AI_SERVICE_TOKEN = 'bridge-test-token';
 const mockExecute = jest.fn();
 const mockCreateDraft = jest.fn();
 
-jest.mock('../../services/aiAgent/toolOrchestratorService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/toolOrchestratorService', () => ({
   execute: (...args) => mockExecute(...args),
 }));
 
-jest.mock('../../services/aiAgent/draftProposalService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/draftProposalService', () => ({
   createDraft: (...args) => mockCreateDraft(...args),
 }));
 

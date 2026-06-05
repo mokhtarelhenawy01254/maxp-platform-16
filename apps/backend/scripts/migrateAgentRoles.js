@@ -5,7 +5,7 @@
  */
 
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const agentProfileLoaderService = require('../services/aiAgent/agentProfileLoaderService');
+const agentProfileLoaderService = require('../legacy-ai-agent/aiAgent/agentProfileLoaderService');
 
 async function migrate() {
   const prisma = getSharedPrismaClient();

@@ -1,6 +1,6 @@
 const {
   _validateCustomerToolCallParams,
-} = require('../../services/aiAgent/executors/toolExecutionEngine');
+} = require('../../legacy-ai-agent/aiAgent/executors/toolExecutionEngine');
 
 describe('toolExecutionEngine customer tool argument guard', () => {
   test('blocks customer product.search without product query args', () => {

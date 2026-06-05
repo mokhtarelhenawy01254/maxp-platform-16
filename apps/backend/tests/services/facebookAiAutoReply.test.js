@@ -18,7 +18,7 @@ describe('aiMessageProcessor - channel parameter', () => {
 
   beforeAll(() => {
     // We only need the class definition, not a running instance
-    const modulePath = path.resolve(__dirname, '../../services/aiAgent/aiMessageProcessor.js');
+    const modulePath = path.resolve(__dirname, '../../legacy-ai-agent/aiAgent/aiMessageProcessor.js');
     // Read the source to inspect the signature without requiring all dependencies
     const src = fs.readFileSync(modulePath, 'utf8');
     AIMessageProcessor = { src };

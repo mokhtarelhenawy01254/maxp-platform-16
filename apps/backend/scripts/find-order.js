@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const dotenv = require('dotenv');
 dotenv.config({ path: require('path').resolve(__dirname, '.env.production') });
 dotenv.config();

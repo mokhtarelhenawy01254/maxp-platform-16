@@ -1,5 +1,5 @@
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
-const telemetryTracerService = require('../../services/aiAgent/telemetryTracerService');
+const telemetryTracerService = require('../../legacy-ai-agent/aiAgent/telemetryTracerService');
 
 describe('TelemetryTracerService Integration Tests', () => {
   let prisma;

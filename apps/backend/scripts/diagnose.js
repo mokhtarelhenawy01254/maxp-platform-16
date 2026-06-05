@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Comprehensive diagnostic for PROCESSING notification
  */
 

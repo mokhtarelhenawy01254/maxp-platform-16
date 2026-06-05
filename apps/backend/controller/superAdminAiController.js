@@ -1,18 +1,18 @@
 const { getSharedPrismaClient, safeQuery } = require('../services/sharedDatabase');
-const aiRuntimeService = require('../services/aiRuntimeService');
-const AIProviderFactory = require('../services/aiAgent/providers/AIProviderFactory');
-const { getModelCapabilities, decorateModel } = require('../services/aiAgent/agentModelCapabilityService');
-const aiProviderLogService = require('../services/aiAgent/providerLogService');
-const providerBudgetLedgerService = require('../services/aiAgent/providerBudgetLedgerService');
-const providerCatalogService = require('../services/aiAgent/providerCatalogService');
-const aiServiceKeyBridge = require('../services/aiAgent/aiServiceKeyBridge');
+const aiRuntimeService = require('../legacy-ai-agent/aiAgent/aiRuntimeService');
+const AIProviderFactory = require('../legacy-ai-agent/aiAgent/providers/AIProviderFactory');
+const { getModelCapabilities, decorateModel } = require('../legacy-ai-agent/aiAgent/agentModelCapabilityService');
+const aiProviderLogService = require('../legacy-ai-agent/aiAgent/providerLogService');
+const providerBudgetLedgerService = require('../legacy-ai-agent/aiAgent/providerBudgetLedgerService');
+const providerCatalogService = require('../legacy-ai-agent/aiAgent/providerCatalogService');
+const aiServiceKeyBridge = require('../legacy-ai-agent/aiAgent/aiServiceKeyBridge');
 const {
     isRetiredGeminiModelName,
     isUnstableGeminiAliasModelName,
     GEMINI_EMBEDDING_MODELS,
     GEMINI_EMBEDDING_DIMENSIONS,
     DEFAULT_GEMINI_EMBEDDING_MODEL,
-} = require('../services/aiAgent/geminiModelPolicy');
+} = require('../legacy-ai-agent/aiAgent/geminiModelPolicy');
 
 const SUPPORTED_AI_PROVIDERS = new Set([
     'GOOGLE',
@@ -311,7 +311,7 @@ function buildEmbeddingHealth(rawEmbeddingSettings, keys = []) {
 
     let runtimeFailure = null;
     try {
-        const episodicMemoryService = require('../services/aiAgent/episodicMemoryService');
+        const episodicMemoryService = require('../legacy-ai-agent/aiAgent/episodicMemoryService');
         if (typeof episodicMemoryService.getEmbeddingFailureSnapshot === 'function') {
             runtimeFailure = episodicMemoryService.getEmbeddingFailureSnapshot({
                 model: DEFAULT_GEMINI_EMBEDDING_MODEL,
@@ -1145,7 +1145,7 @@ exports.updateGlobalAIConfig = async (req, res) => {
 
             // Invalidate episodic memory config cache
             try {
-                const episodicMemoryService = require('../services/aiAgent/episodicMemoryService');
+                const episodicMemoryService = require('../legacy-ai-agent/aiAgent/episodicMemoryService');
                 episodicMemoryService.invalidateConfigCache();
             } catch (_) {}
         }

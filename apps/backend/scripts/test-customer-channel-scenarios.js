@@ -9,11 +9,11 @@ const { t: i18n } = require('./i18n');
 
 const {
   _private: { resolveAdminPolicyPlan, isCustomerChatChannel }
-} = require('../services/aiAgent/agentIntentRelevanceService');
+} = require('../legacy-ai-agent/aiAgent/agentIntentRelevanceService');
 
-const { buildIntentContractAsync } = require('../services/aiAgent/agentIntentPlannerService');
+const { buildIntentContractAsync } = require('../legacy-ai-agent/aiAgent/agentIntentPlannerService');
 
-const handleFallback = require('../services/aiAgent/pipeline/stages/handleFallback');
+const handleFallback = require('../legacy-ai-agent/aiAgent/pipeline/stages/handleFallback');
 
 console.log('='.repeat(80));
 console.log('🧪 Comprehensive Customer Channel AI Scenarios');

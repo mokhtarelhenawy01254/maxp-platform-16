@@ -1,9 +1,9 @@
-jest.mock('../../services/aiAgent/providers/AIProviderFactory', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory', () => ({
   getProvider: jest.fn(),
 }));
 
-const BaseAgent = require('../../services/aiAgent/BaseAgent');
-const AIProviderFactory = require('../../services/aiAgent/providers/AIProviderFactory');
+const BaseAgent = require('../../legacy-ai-agent/aiAgent/BaseAgent');
+const AIProviderFactory = require('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory');
 
 describe('BaseAgent model fallback routing', () => {
   beforeEach(() => {

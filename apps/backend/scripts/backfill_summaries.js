@@ -1,4 +1,4 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 const { runAggregation } = require('../services/statisticsService');
 
 async function main() {

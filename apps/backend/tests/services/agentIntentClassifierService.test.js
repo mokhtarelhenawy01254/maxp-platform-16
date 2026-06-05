@@ -8,7 +8,7 @@ const {
     normalizeClassifierResult,
     parseJsonObject,
   },
-} = require('../../services/aiAgent/agentIntentClassifierService');
+} = require('../../legacy-ai-agent/aiAgent/agentIntentClassifierService');
 
 describe('Agent Intent Classifier Service', () => {
   describe('normalizeClassifierResult', () => {

@@ -1,4 +1,4 @@
-﻿const dotenv = require('dotenv');
+const dotenv = require('dotenv');
 // Try to load .env.production first, then fallback to .env
 dotenv.config({ path: require('path').resolve(__dirname, '.env.production') });
 dotenv.config();

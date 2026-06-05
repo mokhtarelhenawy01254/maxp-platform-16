@@ -1,5 +1,5 @@
-const agentProvisioningService = require('../services/aiAgent/agentProvisioningService');
-const agentManagerService = require('../services/aiAgent/agentManagerService');
+const agentProvisioningService = require('../legacy-ai-agent/aiAgent/agentProvisioningService');
+const agentManagerService = require('../legacy-ai-agent/aiAgent/agentManagerService');
 
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 

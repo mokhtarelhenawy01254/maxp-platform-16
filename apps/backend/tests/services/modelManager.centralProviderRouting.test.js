@@ -12,13 +12,13 @@ const mockRotator = {
   clearAll: jest.fn(),
 };
 
-jest.mock('../../services/aiAgent/SimpleKeyRotator', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/SimpleKeyRotator', () => ({
   getSimpleKeyRotator: jest.fn(() => mockRotator),
 }));
 
 jest.mock('../../services/systemManager', () => ({}));
-jest.mock('../../services/aiAgent/stateManager', () => ({}));
-jest.mock('../../services/aiAgent/providers/AIProviderFactory', () => ({}));
+jest.mock('../../legacy-ai-agent/aiAgent/stateManager', () => ({}));
+jest.mock('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory', () => ({}));
 
 const mockCanRoute = jest.fn(async () => ({
   allowed: true,
@@ -28,7 +28,7 @@ const mockCanRoute = jest.fn(async () => ({
 }));
 const mockParseProviderLimits = jest.fn(() => ({}));
 
-jest.mock('../../services/aiAgent/providerBudgetLedgerService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/providerBudgetLedgerService', () => ({
   canRoute: mockCanRoute,
   parseProviderLimits: mockParseProviderLimits,
   recordAttempt: jest.fn(async () => ({ recorded: false })),
@@ -37,7 +37,7 @@ jest.mock('../../services/aiAgent/providerBudgetLedgerService', () => ({
 }));
 
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
-const ModelManager = require('../../services/aiAgent/modelManager');
+const ModelManager = require('../../legacy-ai-agent/aiAgent/modelManager');
 
 function createKey({
   id,

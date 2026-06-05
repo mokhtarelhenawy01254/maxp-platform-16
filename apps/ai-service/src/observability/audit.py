@@ -8,7 +8,7 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models.tool_call import ToolCall
-from src.tools.maxp_client import redact_pii
+from src.observability.pii import redact_pii_deep as redact_pii
 
 logger = structlog.get_logger(__name__)
 

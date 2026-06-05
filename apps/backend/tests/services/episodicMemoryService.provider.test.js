@@ -25,15 +25,15 @@ jest.mock('../../services/sharedDatabase', () => ({
   })),
 }));
 
-jest.mock('../../services/aiAgent/agentAiServiceClient', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentAiServiceClient', () => ({
   isAiServicePrimary: () => false,
   generateEmbedding: jest.fn(),
   generateMultimodalEmbedding: jest.fn(),
 }));
 
 const redisCacheService = require('../../services/redisCacheService');
-const episodicMemoryService = require('../../services/aiAgent/episodicMemoryService');
-const embeddingCache = require('../../services/aiAgent/embeddingCacheService');
+const episodicMemoryService = require('../../legacy-ai-agent/aiAgent/episodicMemoryService');
+const embeddingCache = require('../../legacy-ai-agent/aiAgent/embeddingCacheService');
 
 describe('episodicMemoryService - provider metadata & cache', () => {
   beforeEach(() => {
@@ -104,7 +104,7 @@ describe('episodicMemoryService - provider metadata & cache', () => {
 
   describe('storeEpisode', () => {
     test('writes _embeddingMeta inside metadata JSON', async () => {
-      const client = require('../../services/aiAgent/agentAiServiceClient');
+      const client = require('../../legacy-ai-agent/aiAgent/agentAiServiceClient');
       client.isEnabled = () => false;
 
       const created = {
@@ -130,7 +130,7 @@ describe('episodicMemoryService - provider metadata & cache', () => {
     });
 
     test('writes embeddingProvider column when available, falls back when missing', async () => {
-      const client = require('../../services/aiAgent/agentAiServiceClient');
+      const client = require('../../legacy-ai-agent/aiAgent/agentAiServiceClient');
       client.isEnabled = () => false;
 
       const created = {

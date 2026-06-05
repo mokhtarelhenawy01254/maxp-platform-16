@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const dotenv = require('dotenv');
 const path = require('path');
 const axios = require('axios');

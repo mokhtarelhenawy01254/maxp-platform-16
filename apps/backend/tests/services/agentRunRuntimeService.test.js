@@ -14,7 +14,7 @@ jest.mock('../../services/redisCacheService', () => ({
 
 const {
   AgentRunRuntimeService,
-} = require('../../services/aiAgent/agentRunRuntimeService');
+} = require('../../legacy-ai-agent/aiAgent/agentRunRuntimeService');
 
 describe('agentRunRuntimeService', () => {
   beforeEach(() => {

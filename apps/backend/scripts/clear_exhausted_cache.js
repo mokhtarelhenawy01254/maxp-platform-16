@@ -1,9 +1,9 @@
-﻿/**
+/**
  * Script to clear all exhausted keys cache
  * Run this to reset the quota exhaustion state
  */
 
-const { getModelManager } = require('../services/aiAgent/modelManager');
+const { getModelManager } = require('../legacy-ai-agent/aiAgent/modelManager');
 
 async function clearExhaustedCache() {
     try {

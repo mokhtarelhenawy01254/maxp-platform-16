@@ -1,5 +1,5 @@
-const { matchIntent, getSimilarity, normalizeText } = require('../../services/aiAgent/agentSemanticRouterService');
-const { resolveToolPlan } = require('../../services/aiAgent/agentIntentRelevanceService');
+const { matchIntent, getSimilarity, normalizeText } = require('../../legacy-ai-agent/aiAgent/agentSemanticRouterService');
+const { resolveToolPlan } = require('../../legacy-ai-agent/aiAgent/agentIntentRelevanceService');
 
 describe('agentSemanticRouterService', () => {
   test('normalizes Arabic characters and removes diacritics', () => {

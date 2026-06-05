@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -33,17 +33,12 @@ async def test_approval_draft_creation():
     mock_result.scalar_one_or_none.return_value = None
     mock_session.execute.return_value = mock_result
 
-    with patch("src.workflows.approval.get_maxp_client") as mock_get_client:
-        mock_client = AsyncMock()
-        mock_client.create_draft = AsyncMock(return_value={"draftId": "draft_123", "status": "pending"})
-        mock_get_client.return_value = mock_client
-
-        with pytest.raises(ValueError, match="Thread not found"):
-            await create_approval_draft(
-                action_type="discount.create",
-                action_args={"productId": "prod_1", "discountPercent": 15},
-                company_id="comp1",
-                customer_id="cust1",
-                thread_id="comp1:cust1:chat",
-                session=mock_session,
-            )
+    with pytest.raises(ValueError, match="Thread not found"):
+        await create_approval_draft(
+            action_type="discount.create",
+            action_args={"productId": "prod_1", "discountPercent": 15},
+            company_id="comp1",
+            customer_id="cust1",
+            thread_id="comp1:cust1:chat",
+            session=mock_session,
+        )

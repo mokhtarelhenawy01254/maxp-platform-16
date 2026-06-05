@@ -3,9 +3,9 @@
  * @description Integration tests for role-based agent instantiation via spawn().
  */
 
-const agentProvisioningService = require('../../../services/aiAgent/agentProvisioningService');
-const CEOAgent = require('../../../services/aiAgent/CEOAgent');
-const BaseAgent = require('../../../services/aiAgent/BaseAgent');
+const agentProvisioningService = require('../../../legacy-ai-agent/aiAgent/agentProvisioningService');
+const CEOAgent = require('../../../legacy-ai-agent/aiAgent/CEOAgent');
+const BaseAgent = require('../../../legacy-ai-agent/aiAgent/BaseAgent');
 
 describe('agentProvisioningService.spawn role-based instantiation', () => {
   const companyId = 'test_spawn_company';

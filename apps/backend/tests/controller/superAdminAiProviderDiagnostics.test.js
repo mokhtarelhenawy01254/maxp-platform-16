@@ -16,17 +16,17 @@ jest.mock('../../services/aiRuntimeService', () => ({
   })),
 }));
 
-jest.mock('../../services/aiAgent/providerLogService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/providerLogService', () => ({
   listProviderLogs: mockListProviderLogs,
   getProviderLogSummary: mockGetProviderLogSummary,
   recordProviderEvent: mockRecordProviderEvent,
 }));
 
-jest.mock('../../services/aiAgent/providers/AIProviderFactory', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory', () => ({
   getProvider: mockGetProvider,
 }));
 
-jest.mock('../../services/aiAgent/providerBudgetLedgerService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/providerBudgetLedgerService', () => ({
   getBudgetSnapshot: mockGetBudgetSnapshot,
 }));
 

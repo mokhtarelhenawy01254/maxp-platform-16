@@ -9,7 +9,7 @@ const {
   getTopMissingSlots,
   getCostEstimation,
   metricsStore,
-} = require('../../services/aiAgent/intentMonitoringService');
+} = require('../../legacy-ai-agent/aiAgent/intentMonitoringService');
 
 describe('Intent Monitoring Service', () => {
   const originalMaxBufferSize = metricsStore.maxBufferSize;

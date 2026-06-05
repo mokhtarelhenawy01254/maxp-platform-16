@@ -5,8 +5,8 @@
 
 const express = require('express');
 
-const toolOrchestratorService = require('../services/aiAgent/toolOrchestratorService');
-const draftProposalService = require('../services/aiAgent/draftProposalService');
+const toolOrchestratorService = require('../legacy-ai-agent/aiAgent/toolOrchestratorService');
+const draftProposalService = require('../legacy-ai-agent/aiAgent/draftProposalService');
 
 const router = express.Router();
 

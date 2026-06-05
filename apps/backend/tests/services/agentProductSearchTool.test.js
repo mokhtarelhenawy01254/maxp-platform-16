@@ -17,8 +17,8 @@ jest.mock('../../services/sharedDatabase', () => ({
   })),
 }));
 
-const { executeTool } = require('../../services/aiAgent/agentToolRegistry');
-const episodicMemoryService = require('../../services/aiAgent/episodicMemoryService');
+const { executeTool } = require('../../legacy-ai-agent/aiAgent/agentToolRegistry');
+const episodicMemoryService = require('../../legacy-ai-agent/aiAgent/episodicMemoryService');
 
 const TEST_EMBEDDING = new Array(768).fill(0.01);
 
@@ -35,7 +35,7 @@ describe('agent product.search tool', () => {
     episodicMemoryService.generateMultimodalEmbeddingAsync = jest.fn().mockResolvedValue(TEST_EMBEDDING);
 
     // Reset DbVectorAdaptor detection cache
-    require('../../services/aiAgent/utils/DbVectorAdaptor').resetDetection();
+    require('../../legacy-ai-agent/aiAgent/utils/DbVectorAdaptor').resetDetection();
   });
 
   test('returns public image URLs for Messenger-visible catalog replies', async () => {
@@ -100,7 +100,7 @@ describe('agent product.search tool', () => {
   });
 
   test('passes previous-product references to the unified orchestrator', async () => {
-    const workingMemoryService = require('../../services/aiAgent/workingMemoryService');
+    const workingMemoryService = require('../../legacy-ai-agent/aiAgent/workingMemoryService');
     await workingMemoryService.initSession('company_123456', 'conv_123');
     await workingMemoryService.updateSearchContext('company_123456', 'conv_123', {
       productIds: ['prod_123'],

@@ -1,6 +1,6 @@
 jest.useFakeTimers();
 
-const agentAiServiceClient = require('../../services/aiAgent/agentAiServiceClient');
+const agentAiServiceClient = require('../../legacy-ai-agent/aiAgent/agentAiServiceClient');
 
 const ORIGINAL_URL = process.env.AI_SERVICE_URL;
 const ORIGINAL_MODE = process.env.AI_SERVICE_MODE;

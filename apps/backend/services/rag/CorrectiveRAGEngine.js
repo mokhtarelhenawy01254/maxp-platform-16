@@ -282,7 +282,7 @@ class CorrectiveRAGEngine {
     if (source === 'VECTOR_STORE') {
       try {
         const customerId = options.customerId || 'global';
-        const episodicMemoryService = require('../aiAgent/episodicMemoryService');
+        const episodicMemoryService = require('../../legacy-ai-agent/aiAgent/episodicMemoryService');
         const vectorDocs = await episodicMemoryService.searchSimilar(companyId, customerId, query, 5);
         if (vectorDocs && vectorDocs.length > 0) {
           return vectorDocs.map(doc => ({
@@ -297,7 +297,7 @@ class CorrectiveRAGEngine {
     // 3. PRODUCT_DB: try real database products using semantic search orchestrator
     if (source === 'PRODUCT_DB') {
       try {
-        const unifiedOrchestrator = require('../aiAgent/utils/UnifiedProductSearchOrchestrator');
+        const unifiedOrchestrator = require('../../legacy-ai-agent/aiAgent/utils/UnifiedProductSearchOrchestrator');
         const orchestratorResult = await unifiedOrchestrator.search(companyId, query, {
           limit: 10,
           conversationId: options.conversationId || undefined,

@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient, initializeSharedDatabase } = require('../services/sharedDatabase');
+const { getSharedPrismaClient, initializeSharedDatabase } = require('../services/sharedDatabase');
 
 async function updateRole() {
     await initializeSharedDatabase();

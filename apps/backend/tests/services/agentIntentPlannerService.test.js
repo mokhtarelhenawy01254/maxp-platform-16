@@ -8,7 +8,7 @@ const {
   buildIntentContractAsync,
   toToolPlan,
   INTENT_POLICIES,
-} = require('../../services/aiAgent/agentIntentPlannerService');
+} = require('../../legacy-ai-agent/aiAgent/agentIntentPlannerService');
 
 describe('Agent Intent Planner Service - Missing Slots', () => {
   describe('buildIntentContract', () => {

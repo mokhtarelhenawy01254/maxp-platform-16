@@ -1,6 +1,6 @@
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 const RagKnowledgeMaintenanceService = require('../../services/rag/RagKnowledgeMaintenanceService');
-const episodicMemoryService = require('../../services/aiAgent/episodicMemoryService');
+const episodicMemoryService = require('../../legacy-ai-agent/aiAgent/episodicMemoryService');
 const aiAgentChatController = require('../../controller/aiAgentChatController');
 
 jest.mock('../../services/sharedDatabase', () => ({
@@ -14,7 +14,7 @@ jest.mock('../../services/rag/RagKnowledgeMaintenanceService', () => ({
   }
 }));
 
-jest.mock('../../services/aiAgent/episodicMemoryService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/episodicMemoryService', () => ({
   generateEmbeddingAsync: jest.fn()
 }));
 

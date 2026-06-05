@@ -1,4 +1,4 @@
-const createConfirmedOrderExecutionService = require('../../services/aiAgent/confirmedOrderExecutionService');
+const createConfirmedOrderExecutionService = require('../../legacy-ai-agent/aiAgent/confirmedOrderExecutionService');
 
 function normalizeSummaryText(value) {
   if (value === null || value === undefined) {

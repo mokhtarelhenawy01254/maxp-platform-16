@@ -2,7 +2,7 @@ jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
-jest.mock('../../services/aiAgent/episodicMemoryService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/episodicMemoryService', () => ({
   generateEmbeddingAsync: jest.fn(),
 }));
 
@@ -12,7 +12,7 @@ jest.mock('../../services/rag/CorrectiveRAGEngine', () => ({
 }));
 
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
-const episodicMemoryService = require('../../services/aiAgent/episodicMemoryService');
+const episodicMemoryService = require('../../legacy-ai-agent/aiAgent/episodicMemoryService');
 const correctiveRAGEngine = require('../../services/rag/CorrectiveRAGEngine');
 const ragKnowledgeMaintenanceService = require('../../services/rag/RagKnowledgeMaintenanceService');
 

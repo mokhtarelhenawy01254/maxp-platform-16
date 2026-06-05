@@ -1,3 +1,14 @@
+## [2026-06-06] Production AI Service Source Deployment [READY]
+- **Objective**: Ensure the production GitHub Actions deployment publishes the Python AI service source alongside frontend, backend, shared files, and Nginx configuration.
+- **Accomplishments**:
+  - **AI Service Packaging**: Added an `ai-service.tar.gz` artifact from `apps/ai-service`, excluding local env files, virtualenvs, caches, and compiled Python files.
+  - **Server Deployment**: Extracted the archive into `/var/www/ai-service`, preserved the existing production `.env`, and verified `pyproject.toml` plus `src/main.py` exist on the server.
+  - **Container Restart**: Added a guarded Docker Compose rebuild/restart for `/var/www/ai-service/docker-compose.prod.yml` when Docker Compose and the service `.env` are available.
+- **Verification**: Python source compile check passed locally, backend syntax checks passed, customer intent architecture guard passed, and frontend build passed before release.
+- **Affected Files**:
+  - `.github/workflows/deploy.yml`
+  - `apps/ai-service/src/llm/providers/factory.py`
+
 ## [2026-06-05] Order Status Hydration, Payment Status Badging, and WhatsApp Health Tests [READY]
 - **Objective**: Fix tenant scoping in the order status controller, dynamically hydrate order and payment statuses in the orders list, implement dynamic styling for payment status badges, and add unit tests for WhatsApp socket health verification.
 - **Accomplishments**:

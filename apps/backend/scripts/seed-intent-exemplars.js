@@ -6,7 +6,7 @@ const { t: i18n } = require('./i18n');
  */
 
 const { getSharedPrismaClient, safeQuery } = require('../services/sharedDatabase');
-const intentExemplarService = require('../services/aiAgent/intentExemplarService');
+const intentExemplarService = require('../legacy-ai-agent/aiAgent/intentExemplarService');
 
 function getPrisma() {
   return getSharedPrismaClient();

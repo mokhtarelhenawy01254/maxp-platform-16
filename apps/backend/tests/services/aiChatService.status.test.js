@@ -27,22 +27,22 @@ describe('aiChatService.getAgentStatus', () => {
     jest.resetModules();
     managerProfile = makeProfile('openai/gpt-oss-120b');
 
-    jest.doMock('../../services/aiAgent/agentManagerService', () => ({
+    jest.doMock('../../legacy-ai-agent/aiAgent/agentManagerService', () => ({
       getManagerAgent: jest.fn(async () => managerProfile),
     }));
-    jest.doMock('../../services/aiAgent/workingMemoryService', () => ({}));
+    jest.doMock('../../legacy-ai-agent/aiAgent/workingMemoryService', () => ({}));
     jest.doMock('../../services/rag/CorrectiveRAGEngine', () => ({}));
-    jest.doMock('../../services/aiAgent/telemetryTracerService', () => ({}));
+    jest.doMock('../../legacy-ai-agent/aiAgent/telemetryTracerService', () => ({}));
     jest.doMock('../../services/aiRuntimeService', () => ({}));
     jest.doMock('../../services/redisCacheService', () => ({}));
-    jest.doMock('../../services/aiAgent/agentReplyNormalizer', () => ({
+    jest.doMock('../../legacy-ai-agent/aiAgent/agentReplyNormalizer', () => ({
       normalizeAgentReply: (value) => value,
     }));
-    jest.doMock('../../services/aiAgent/agentToolCallParser', () => ({
+    jest.doMock('../../legacy-ai-agent/aiAgent/agentToolCallParser', () => ({
       containsInternalToolSyntax: () => false,
     }));
-    jest.doMock('../../services/aiAgent/agentChatTranscriptService', () => ({}));
-    jest.doMock('../../services/aiAgent/CEOAgent', () => class MockCEOAgent {
+    jest.doMock('../../legacy-ai-agent/aiAgent/agentChatTranscriptService', () => ({}));
+    jest.doMock('../../legacy-ai-agent/aiAgent/CEOAgent', () => class MockCEOAgent {
       constructor(companyId, config = {}) {
         this.companyId = companyId;
         this.id = config.id || 'agent_status_1';
@@ -74,7 +74,7 @@ describe('aiChatService.getAgentStatus', () => {
   });
 
   test('refreshes cached CEO profile metadata before reporting status', async () => {
-    const aiChatService = require('../../services/aiAgent/aiChatService');
+    const aiChatService = require('../../legacy-ai-agent/aiAgent/aiChatService');
     const staleStatus = await aiChatService.getAgentStatus('company_status');
 
     expect(staleStatus.model).toBe('openai/gpt-oss-120b');

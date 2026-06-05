@@ -10,7 +10,7 @@ describe('webhook worker production log filter wiring', () => {
 
     const installCallIndex = source.indexOf('installWorkerProductionLogFilter();');
     const webhookServiceImportIndex = source.indexOf("require('../services/webhookService')");
-    const aiRuntimeImportIndex = source.indexOf("require('../services/aiAgent/aiRuntimeRunQueueService')");
+    const aiRuntimeImportIndex = source.indexOf("require('../legacy-ai-agent/aiAgent/aiRuntimeRunQueueService')");
 
     expect(installCallIndex).toBeGreaterThan(-1);
     expect(webhookServiceImportIndex).toBeGreaterThan(-1);

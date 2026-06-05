@@ -1,4 +1,4 @@
-jest.mock('../../services/aiAgent/agentSoulConfig', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentSoulConfig', () => ({
   loadSoul: jest.fn(async () => ({
     soul: 'You are the manager agent for {companyName}.',
     rules: 'Use tools for current system state.',
@@ -91,24 +91,24 @@ const mockRagQuery = jest.fn(async () => ({
   grading: { avgRelevance: 0, sufficient: false },
 }));
 
-jest.mock('../../services/aiAgent/providers/AIProviderFactory', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory', () => ({
   getProvider: jest.fn(() => ({
     generateResponse: mockProviderGenerateResponse,
   })),
 }));
 
-jest.mock('../../services/aiAgent/agentManagerService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentManagerService', () => ({
   readState: mockReadState,
   hireAgent: mockHireAgent,
   runAgentTask: mockRunAgentTask,
   assignTask: mockAssignTask,
 }));
 
-jest.mock('../../services/aiAgent/agentSkillAuthoringService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentSkillAuthoringService', () => ({
   createSkill: mockCreateSkill,
 }));
 
-jest.mock('../../services/aiAgent/draftProposalService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/draftProposalService', () => ({
   createDraft: mockCreateDraft,
 }));
 
@@ -157,27 +157,27 @@ const {
   getNativeToolDefinitions,
   fromNativeToolName,
   executeTool,
-} = require('../../services/aiAgent/agentToolRegistry');
-const { resolveToolPlan, isToolRelevant } = require('../../services/aiAgent/agentIntentRelevanceService');
+} = require('../../legacy-ai-agent/aiAgent/agentToolRegistry');
+const { resolveToolPlan, isToolRelevant } = require('../../legacy-ai-agent/aiAgent/agentIntentRelevanceService');
 const {
   CONTRACT_SCHEMA_VERSION,
   INTENT_CONTRACT_SCHEMA,
   INTENT_POLICIES,
   buildIntentContract,
   validateContract,
-} = require('../../services/aiAgent/agentIntentPlannerService');
-const { getModelCapabilities } = require('../../services/aiAgent/agentModelCapabilityService');
-const { normalizeAgentReply } = require('../../services/aiAgent/agentReplyNormalizer');
+} = require('../../legacy-ai-agent/aiAgent/agentIntentPlannerService');
+const { getModelCapabilities } = require('../../legacy-ai-agent/aiAgent/agentModelCapabilityService');
+const { normalizeAgentReply } = require('../../legacy-ai-agent/aiAgent/agentReplyNormalizer');
 const {
   parseTextToolCalls,
   stripInternalToolSyntax,
-} = require('../../services/aiAgent/agentToolCallParser');
-const CEOAgent = require('../../services/aiAgent/CEOAgent');
-const agentProvisioningService = require('../../services/aiAgent/agentProvisioningService');
-const agentToolGatewayService = require('../../services/aiAgent/agentToolGatewayService');
-const agentAuditTrailService = require('../../services/aiAgent/agentAuditTrailService');
-const agentGoalRunService = require('../../services/aiAgent/agentGoalRunService');
-const agentIntentClassifierService = require('../../services/aiAgent/agentIntentClassifierService');
+} = require('../../legacy-ai-agent/aiAgent/agentToolCallParser');
+const CEOAgent = require('../../legacy-ai-agent/aiAgent/CEOAgent');
+const agentProvisioningService = require('../../legacy-ai-agent/aiAgent/agentProvisioningService');
+const agentToolGatewayService = require('../../legacy-ai-agent/aiAgent/agentToolGatewayService');
+const agentAuditTrailService = require('../../legacy-ai-agent/aiAgent/agentAuditTrailService');
+const agentGoalRunService = require('../../legacy-ai-agent/aiAgent/agentGoalRunService');
+const agentIntentClassifierService = require('../../legacy-ai-agent/aiAgent/agentIntentClassifierService');
 
 describe('Native agent tooling', () => {
   beforeEach(() => {
@@ -1149,7 +1149,7 @@ describe('Native agent tooling', () => {
   });
 
   test('runtime intent gateway disables keyword tool execution when classifier is unavailable', async () => {
-    const agentIntentClassifierService = require('../../services/aiAgent/agentIntentClassifierService');
+    const agentIntentClassifierService = require('../../legacy-ai-agent/aiAgent/agentIntentClassifierService');
     const classifySpy = jest.spyOn(agentIntentClassifierService, 'classifyIntentFromLLM')
       .mockResolvedValueOnce(null);
 
@@ -1344,7 +1344,7 @@ describe('Native agent tooling', () => {
       message: 'اقرا حالة الوكلاء',
       availableTools: ['agent.read_state'],
     }).allowedTools).toContain('agent.read_state');
-    const { isToolRelevant } = require('../../services/aiAgent/agentIntentRelevanceService');
+    const { isToolRelevant } = require('../../legacy-ai-agent/aiAgent/agentIntentRelevanceService');
     expect(isToolRelevant(plan, 'agent.read_state')).toBe(false);
   });
 

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Create PostgreSQL enum types directly
  */
 

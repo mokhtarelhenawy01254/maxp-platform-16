@@ -21,13 +21,13 @@ jest.mock('../../services/sharedDatabase', () => ({
   })),
 }));
 
-jest.mock('../../services/aiAgent/agentAiServiceClient', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentAiServiceClient', () => ({
   isAiServicePrimary: () => mockIsAiServicePrimary(),
   generateEmbedding: (text, dimension, imageBytes, mimeType) => 
     mockGenerateEmbedding(text, dimension, imageBytes, mimeType),
 }));
 
-const episodicMemoryService = require('../../services/aiAgent/episodicMemoryService');
+const episodicMemoryService = require('../../legacy-ai-agent/aiAgent/episodicMemoryService');
 
 const buildVector = (seed) => Array.from({ length: 768 }, (_, index) => seed + (index / 1000));
 

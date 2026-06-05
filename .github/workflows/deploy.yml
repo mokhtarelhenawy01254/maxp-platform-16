@@ -117,6 +117,16 @@ jobs:
           echo "📦 Packaging Shared..."
           tar -czf shared.tar.gz -C shared .
 
+          echo "📦 Packaging AI service..."
+          tar -czf ai-service.tar.gz \
+            --exclude=".env" \
+            --exclude=".venv" \
+            --exclude="__pycache__" \
+            --exclude=".pytest_cache" \
+            --exclude=".ruff_cache" \
+            --exclude="*.pyc" \
+            -C apps ai-service
+
           echo "📦 Packaging Nginx configs..."
           rm -rf deploy_nginx
           mkdir -p deploy_nginx
@@ -395,6 +405,45 @@ jobs:
               echo "✅ Shared files extracted successfully"
             else
               echo "⚠️ Shared files not found, skipping..."
+            fi
+
+            # Move Python AI service files from staging
+            if [ -f "$DEPLOY_STAGING/ai-service.tar.gz" ]; then
+              echo "🐍 Extracting Python AI service files from tarball..."
+
+              if [ -f "/var/www/ai-service/.env" ]; then
+                sudo cp /var/www/ai-service/.env /tmp/ai_service_env_backup.env
+              fi
+
+              sudo mkdir -p /var/www/ai-service
+              rm -rf "$DEPLOY_STAGING/ai_service_extract"
+              mkdir -p "$DEPLOY_STAGING/ai_service_extract"
+              tar -xzf "$DEPLOY_STAGING/ai-service.tar.gz" -C "$DEPLOY_STAGING/ai_service_extract"
+              sudo rsync -a --delete \
+                --exclude .env \
+                --exclude .venv \
+                "$DEPLOY_STAGING/ai_service_extract/ai-service/" /var/www/ai-service/
+
+              if [ -f "/tmp/ai_service_env_backup.env" ]; then
+                sudo cp /tmp/ai_service_env_backup.env /var/www/ai-service/.env
+              fi
+
+              sudo chown -R $USER:$USER /var/www/ai-service
+              test -f /var/www/ai-service/pyproject.toml
+              test -f /var/www/ai-service/src/main.py
+              echo "✅ Python AI service source is present at /var/www/ai-service"
+
+              if command -v docker >/dev/null 2>&1 && sudo -n docker compose version >/dev/null 2>&1 && [ -f /var/www/ai-service/.env ]; then
+                echo "🐳 Building/restarting Python AI service containers..."
+                cd /var/www/ai-service
+                sudo -n docker compose -f docker-compose.prod.yml up -d --build
+                sleep 5
+                sudo -n docker compose -f docker-compose.prod.yml ps
+              else
+                echo "⚠️ Docker Compose or /var/www/ai-service/.env not available; source deployed but container restart skipped"
+              fi
+            else
+              echo "⚠️ AI service archive not found, skipping Python AI service deploy"
             fi
             
             # Move backend files from staging

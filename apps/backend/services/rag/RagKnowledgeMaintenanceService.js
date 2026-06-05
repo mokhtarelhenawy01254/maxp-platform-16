@@ -9,8 +9,8 @@
 const fs = require('fs');
 const path = require('path');
 const { getSharedPrismaClient } = require('../sharedDatabase');
-const { listProviderLogs } = require('../aiAgent/providerLogService');
-const episodicMemoryService = require('../aiAgent/episodicMemoryService');
+const { listProviderLogs } = require('../../legacy-ai-agent/aiAgent/providerLogService');
+const episodicMemoryService = require('../../legacy-ai-agent/aiAgent/episodicMemoryService');
 const CorrectiveRAGEngine = require('./CorrectiveRAGEngine');
 
 const KNOWLEDGE_PROPOSAL_TOOLS = ['knowledge.create_faq', 'knowledge.create_policy'];

@@ -2,8 +2,8 @@
  * Tests for the pipeline executor and resolveIntent stage.
  */
 
-const { execute } = require('../../services/aiAgent/pipeline');
-const { extractMessages, extractContext, detectCustomerChannel } = require('../../services/aiAgent/pipeline/stages/resolveIntent');
+const { execute } = require('../../legacy-ai-agent/aiAgent/pipeline');
+const { extractMessages, extractContext, detectCustomerChannel } = require('../../legacy-ai-agent/aiAgent/pipeline/stages/resolveIntent');
 
 describe('pipeline.execute', () => {
   test('executes stages sequentially and passes context', async () => {

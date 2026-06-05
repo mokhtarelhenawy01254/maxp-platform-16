@@ -1,4 +1,4 @@
-﻿
+
 require('dotenv').config();
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const prisma = getSharedPrismaClient();

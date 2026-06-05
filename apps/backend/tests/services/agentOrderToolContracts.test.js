@@ -1,8 +1,8 @@
-const { executeTool, getNativeToolDefinitions } = require('../../services/aiAgent/agentToolRegistry');
-const toolExecutionEngine = require('../../services/aiAgent/executors/toolExecutionEngine');
-const customerReplyEngine = require('../../services/aiAgent/executors/customerReplyEngine');
-const agentToolGatewayService = require('../../services/aiAgent/agentToolGatewayService');
-const CEOAgent = require('../../services/aiAgent/CEOAgent');
+const { executeTool, getNativeToolDefinitions } = require('../../legacy-ai-agent/aiAgent/agentToolRegistry');
+const toolExecutionEngine = require('../../legacy-ai-agent/aiAgent/executors/toolExecutionEngine');
+const customerReplyEngine = require('../../legacy-ai-agent/aiAgent/executors/customerReplyEngine');
+const agentToolGatewayService = require('../../legacy-ai-agent/aiAgent/agentToolGatewayService');
+const CEOAgent = require('../../legacy-ai-agent/aiAgent/CEOAgent');
 
 describe('agent order tool structured contracts', () => {
   test('order.create_draft returns structured missing-slot data', async () => {

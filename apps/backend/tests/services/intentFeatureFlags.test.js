@@ -8,7 +8,7 @@ const {
   getFeatureFlag,
   getAllFeatureFlags,
   getEnvironment,
-} = require('../../services/aiAgent/intentFeatureFlags');
+} = require('../../legacy-ai-agent/aiAgent/intentFeatureFlags');
 
 describe('Intent Feature Flags', () => {
   describe('FEATURE_FLAGS', () => {

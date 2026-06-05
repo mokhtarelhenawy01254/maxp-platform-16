@@ -1,15 +1,15 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const AIProviderFactory = require('../services/aiAgent/providers/AIProviderFactory');
-const agentProvisioningService = require('../services/aiAgent/agentProvisioningService');
-const agentManagerService = require('../services/aiAgent/agentManagerService');
-const aiRuntimeService = require('../services/aiRuntimeService');
-const CEOAgent = require('../services/aiAgent/CEOAgent');
-const BaseAgent = require('../services/aiAgent/BaseAgent');
-const workingMemoryService = require('../services/aiAgent/workingMemoryService');
-const { normalizeAgentReply } = require('../services/aiAgent/agentReplyNormalizer');
+const AIProviderFactory = require('../legacy-ai-agent/aiAgent/providers/AIProviderFactory');
+const agentProvisioningService = require('../legacy-ai-agent/aiAgent/agentProvisioningService');
+const agentManagerService = require('../legacy-ai-agent/aiAgent/agentManagerService');
+const aiRuntimeService = require('../legacy-ai-agent/aiAgent/aiRuntimeService');
+const CEOAgent = require('../legacy-ai-agent/aiAgent/CEOAgent');
+const BaseAgent = require('../legacy-ai-agent/aiAgent/BaseAgent');
+const workingMemoryService = require('../legacy-ai-agent/aiAgent/workingMemoryService');
+const { normalizeAgentReply } = require('../legacy-ai-agent/aiAgent/agentReplyNormalizer');
 const aiSandboxService = require('../services/aiSandboxService');
 const { calculateCost, getModelCost } = require('../config/modelCosts');
-const agentProfileLoaderService = require('../services/aiAgent/agentProfileLoaderService');
+const agentProfileLoaderService = require('../legacy-ai-agent/aiAgent/agentProfileLoaderService');
 
 const MAX_SANDBOX_MESSAGE_CHARS = 12000;
 const MAX_SANDBOX_RESPONSE_CHARS = 12000;
@@ -1299,7 +1299,7 @@ async function exportSession(req, res) {
 
 async function listSandboxTools(req, res) {
   try {
-    const { TOOLS } = require('../services/aiAgent/agentToolRegistry');
+    const { TOOLS } = require('../legacy-ai-agent/aiAgent/agentToolRegistry');
     const tools = Object.entries(TOOLS).map(([name, tool]) => ({
       name,
       description: tool.description || '',
@@ -1317,7 +1317,7 @@ async function listRuns(req, res) {
     const companyId = req.user?.companyId || req.companyId;
     const { agentId, state } = req.query;
 
-    const { getRunStateManager } = require('../services/aiAgent/RunStateManager');
+    const { getRunStateManager } = require('../legacy-ai-agent/aiAgent/RunStateManager');
     const runManager = getRunStateManager();
     const runs = runManager.listRuns({ companyId, agentId, state });
 
@@ -1344,7 +1344,7 @@ async function getRun(req, res) {
     const companyId = req.user?.companyId || req.companyId;
     const { runId } = req.params;
 
-    const { getRunStateManager } = require('../services/aiAgent/RunStateManager');
+    const { getRunStateManager } = require('../legacy-ai-agent/aiAgent/RunStateManager');
     const runManager = getRunStateManager();
     const run = runManager.getRun(runId);
 
@@ -1385,7 +1385,7 @@ async function resumeRun(req, res) {
     const { runId, decision } = req.body;
     const companyId = req.user?.companyId || req.companyId;
 
-    const { getRunStateManager } = require('../services/aiAgent/RunStateManager');
+    const { getRunStateManager } = require('../legacy-ai-agent/aiAgent/RunStateManager');
     const runManager = getRunStateManager();
 
     const run = runManager.getRun(runId);
@@ -1406,8 +1406,8 @@ async function resumeRun(req, res) {
         pendingApproval.decision = decision;
 
         // Re-execute the approved tool
-        const agentToolGatewayService = require('../services/aiAgent/agentToolGatewayService');
-        const agentProvisioningService = require('../services/aiAgent/agentProvisioningService');
+        const agentToolGatewayService = require('../legacy-ai-agent/aiAgent/agentToolGatewayService');
+        const agentProvisioningService = require('../legacy-ai-agent/aiAgent/agentProvisioningService');
         const agent = agentProvisioningService.getAgent(run.companyId, run.agentId);
 
         if (agent && agent.canUseTool(pendingApproval.toolName)) {

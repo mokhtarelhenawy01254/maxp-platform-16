@@ -10,7 +10,7 @@ const {
   validateToolAllowlist,
   applyConfidencePolicy,
   handleValidationFailure,
-} = require('../../services/aiAgent/intentValidationService');
+} = require('../../legacy-ai-agent/aiAgent/intentValidationService');
 
 describe('Intent Validation Service', () => {
   describe('CONFIDENCE_THRESHOLDS', () => {

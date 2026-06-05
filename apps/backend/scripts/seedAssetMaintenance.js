@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 async function seedTestData() {
     const companyId = '71ab1ca7-271d-4e3a-b77c-72a51ddff454';
