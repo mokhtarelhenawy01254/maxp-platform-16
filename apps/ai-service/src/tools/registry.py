@@ -11,6 +11,7 @@ from src.tools import order_tools
 from src.tools import customer_tools
 from src.tools import sales_tools
 from src.tools import competitor_tools
+from src.tools import governance_tools
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -340,13 +341,28 @@ class InventoryAdjustInput(BaseModel):
 
 
 async def inventory_check(input_data: InventoryCheckInput) -> dict[str, Any]:
-    client = get_maxp_client()
-    result = await client.call_tool("inventory.check", input_data.company_id or "", {
-        "productNameOrSku": input_data.product_name_or_sku,
-        "productSize": input_data.product_size,
-        "productColor": input_data.product_color,
-    })
-    return result.get("result", {})
+    result = await product_tools.search_products(
+        input_data.company_id or "", input_data.product_name_or_sku, limit=1
+    )
+    products = result.get("products", [])
+    if not products:
+        return {
+            "found": False,
+            "code": "PRODUCT_NOT_FOUND",
+            "productNameOrSku": input_data.product_name_or_sku,
+        }
+    p = products[0]
+    return {
+        "found": True,
+        "productName": p.get("name"),
+        "sku": p.get("sku"),
+        "price": p.get("price"),
+        "stock": p.get("stock"),
+        "status": p.get("status"),
+        "images": p.get("images", []),
+        "availableSizes": p.get("availableSizes", []),
+        "availableColors": p.get("availableColors", []),
+    }
 
 
 async def inventory_adjust(input_data: InventoryAdjustInput) -> dict[str, Any]:
@@ -470,11 +486,9 @@ async def discount_create(input_data: DiscountCreateInput) -> dict[str, Any]:
 
 
 async def whatsapp_send(input_data: WhatsappSendInput) -> dict[str, Any]:
-    result = await _call("whatsapp.send", input_data.company_id or "", {
-        "phone": input_data.phone,
-        "message": input_data.message,
-    })
-    return result.get("result", {})
+    return await governance_tools.send_whatsapp(
+        input_data.company_id or "", input_data.phone, input_data.message
+    )
 
 
 sales_revenue_tool = FunctionTool(
@@ -627,12 +641,9 @@ class FacebookReplyInput(BaseModel):
 
 
 async def facebook_reply(input_data: FacebookReplyInput) -> dict[str, Any]:
-    result = await _call("facebook.reply", input_data.company_id or "", {
-        "recipientId": input_data.recipient_id,
-        "message": input_data.message,
-        "pageId": input_data.page_id,
-    })
-    return result.get("result", {})
+    return await governance_tools.send_facebook_reply(
+        input_data.company_id or "", input_data.recipient_id, input_data.message, input_data.page_id
+    )
 
 
 facebook_reply_tool = FunctionTool(

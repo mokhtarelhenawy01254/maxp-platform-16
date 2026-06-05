@@ -255,6 +255,36 @@ class BackendClient:
         )
         return result.get("data", result.get("ads", []))
 
+    # ── WhatsApp APIs ──
+
+    async def send_whatsapp_message(
+        self, company_id: str, phone: str, message: str
+    ) -> dict[str, Any]:
+        return await self._request(
+            "POST", "/api/v1/whatsapp/whatsapp",
+            json_body={
+                "phone": phone,
+                "message": message,
+                "companyId": company_id,
+            },
+        )
+
+    # ── Facebook/Messenger APIs ──
+
+    async def send_facebook_message(
+        self, company_id: str, recipient_id: str, message: str, page_id: str
+    ) -> dict[str, Any]:
+        result = await self._request(
+            "POST", "/api/v1/facebook/status/test-message",
+            json_body={
+                "recipientId": recipient_id,
+                "message": message,
+                "pageId": page_id,
+                "companyId": company_id,
+            },
+        )
+        return result.get("result", result)
+
     async def generate_competitor_report(
         self, company_id: str, competitor_id: str, report_type: str = "weekly"
     ) -> dict[str, Any]:
