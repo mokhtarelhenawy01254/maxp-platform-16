@@ -121,6 +121,7 @@ async def run_orchestration(
             customer_id=customer_id,
             agent=ceo_agent,
             session=agent_session,
+            channel="merchant" if is_merchant else "chat",
         )
 
         pipeline_stages = [

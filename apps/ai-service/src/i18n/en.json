@@ -1,0 +1,8 @@
+{
+  "approval.executed": "The request has been approved and executed successfully.",
+  "approval.execution_failed": "Sorry, an error occurred while executing the request after approval.",
+  "approval.rejected": "The request has been rejected. The customer will be notified.",
+  "error.chat.customer": "Sorry, an error occurred processing your request. Please try again.",
+  "error.chat.merchant": "Sorry, an error occurred processing your merchant request. Please try again.",
+  "fallback.default": "I'm sorry, I couldn't process your request at this time."
+}

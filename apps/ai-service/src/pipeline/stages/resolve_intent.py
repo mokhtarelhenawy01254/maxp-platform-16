@@ -22,8 +22,8 @@ async def resolve_intent(ctx: PipelineContext) -> PipelineContext:
             }
             return ctx
 
-    # 1. Detect channel
-    ctx.is_customer_channel = is_customer_channel(None)  # simplified for now, usually from request
+    # 1. Detect channel from context (set by API layer or orchestration flow)
+    ctx.is_customer_channel = is_customer_channel(ctx.channel)
 
     # 2. Resolve relevance plan
     plan = resolve_tool_plan(

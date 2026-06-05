@@ -12,13 +12,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.models.thread import Thread
 from src.db.session import get_session
 from src.deps import get_company_id, get_customer_id
+from src.i18n import t
 from src.workflows.approval import create_approval_draft
 from src.workflows.orchestration_flow import run_orchestration
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
 
-SAFE_FALLBACK_REPLY = "تم استلام رسالتك، وسأساعدك حالاً."
+SAFE_FALLBACK_REPLY = "Your message has been received. I will assist you shortly."
 THOUGHT_BLOCK_RE = re.compile(r"<thought\b[^>]*>.*?</thought>\s*", re.IGNORECASE | re.DOTALL)
 THOUGHT_TAG_RE = re.compile(r"</?thought\b[^>]*>", re.IGNORECASE)
 
@@ -143,7 +144,7 @@ async def chat(
         return ChatResponse(
             status="error",
             thread_id=thread_id,
-            reply="عذراً، حدث خطأ في معالجة طلبك. الرجاء المحاولة مرة أخرى.",
+            reply=t("error.chat.customer", locale="ar"),
         )
 
 
@@ -238,5 +239,5 @@ async def chat_merchant(
         return ChatResponse(
             status="error",
             thread_id=thread_id,
-            reply="عذراً، حدث خطأ في معالجة طلبك كتاجر. الرجاء المحاولة مرة أخرى.",
+            reply=t("error.chat.merchant", locale="ar"),
         )

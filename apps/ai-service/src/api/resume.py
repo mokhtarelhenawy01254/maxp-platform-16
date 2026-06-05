@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.repo.approval_repo import ApprovalRepository
 from src.db.session import get_session
 from src.deps import get_company_id
+from src.i18n import t
 from src.workflows.approval import execute_approved_action
 
 logger = structlog.get_logger(__name__)
@@ -62,14 +63,14 @@ async def resume(
             )
             return ResumeResponse(
                 status="ok",
-                reply="تمت الموافقة وتنفيذ الطلب بنجاح.",
+                reply=t("approval.executed", locale="ar"),
                 thread_id=body.thread_id,
             )
         except Exception as e:
             logger.error("approval execution failed", draft_id=body.draft_id, error=str(e))
             return ResumeResponse(
                 status="error",
-                reply="عذراً، حدث خطأ أثناء تنفيذ الطلب بعد الموافقة.",
+                reply=t("approval.execution_failed", locale="ar"),
                 thread_id=body.thread_id,
             )
     else:
@@ -80,6 +81,6 @@ async def resume(
         )
         return ResumeResponse(
             status="ok",
-            reply="تم رفض الطلب. سيتم إعلام العميل بذلك.",
+            reply=t("approval.rejected", locale="ar"),
             thread_id=body.thread_id,
         )

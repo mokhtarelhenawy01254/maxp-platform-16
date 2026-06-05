@@ -22,6 +22,7 @@ class PipelineContext:
     system_prompt: str | None = None
     relevance_plan: Any = None
     native_tools: list[dict[str, Any]] = field(default_factory=list)
+    channel: str = "chat"
     is_customer_channel: bool = False
 
     # Context Assembly (SOTA 2026)

@@ -6,6 +6,11 @@ from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 
 from src.tools.maxp_client import get_maxp_client
+from src.tools import product_tools
+from src.tools import order_tools
+from src.tools import customer_tools
+from src.tools import sales_tools
+from src.tools import competitor_tools
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -67,13 +72,10 @@ class ProductPerformanceInput(BaseModel):
 
 
 async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
-    result = await _call("product.search", input_data.company_id or "", {"query": input_data.query})
-    products = result.get("result", {})
-    if isinstance(products, dict):
-        products = products.get("products", [])
-    elif not isinstance(products, list):
-        products = []
-    return {"results": products}
+    result = await product_tools.search_products(
+        input_data.company_id or "", input_data.query
+    )
+    return {"results": result.get("products", [])}
 
 
 async def product_create(input_data: ProductCreateInput) -> dict[str, Any]:
@@ -87,15 +89,16 @@ async def product_create(input_data: ProductCreateInput) -> dict[str, Any]:
 
 
 async def product_low_stock(input_data: ProductLowStockInput) -> dict[str, Any]:
-    result = await _call("product.lowStock", input_data.company_id or "",
-                         {"threshold": input_data.threshold})
-    return {"products": result.get("result", {}).get("products", [])}
+    result = await product_tools.low_stock_products(
+        input_data.company_id or "", threshold=input_data.threshold
+    )
+    return {"products": result.get("products", [])}
 
 
 async def product_top_selling(input_data: ProductTopSellingInput) -> dict[str, Any]:
-    result = await _call("product.topSelling", input_data.company_id or "",
-                         {"limit": input_data.limit, "period": input_data.period})
-    return result.get("result", {})
+    return await product_tools.top_selling_products(
+        input_data.company_id or "", period=input_data.period, limit=input_data.limit
+    )
 
 
 async def product_update_price(input_data: ProductUpdatePriceInput) -> dict[str, Any]:
@@ -210,9 +213,10 @@ class OrderRefundInput(BaseModel):
 
 
 async def order_lookup(input_data: OrderLookupInput) -> dict[str, Any]:
-    result = await _call("order.lookup", input_data.company_id or "",
-                         {"orderNumber": input_data.order_number})
-    return {"order": result.get("result")}
+    result = await order_tools.order_lookup(
+        input_data.company_id or "", input_data.order_number
+    )
+    return {"order": result}
 
 
 async def order_create_draft(input_data: OrderCreateDraftInput) -> dict[str, Any]:
@@ -241,15 +245,16 @@ async def order_create_confirmed(input_data: OrderCreateConfirmedInput) -> dict[
 
 
 async def order_summary(input_data: OrderSummaryInput) -> dict[str, Any]:
-    result = await _call("order.summary", input_data.company_id or "",
-                         {"period": input_data.period})
-    return result.get("result", {})
+    return await order_tools.order_summary(
+        input_data.company_id or "", period=input_data.period
+    )
 
 
 async def order_recent_list(input_data: OrderRecentListInput) -> dict[str, Any]:
-    result = await _call("order.recentList", input_data.company_id or "",
-                         {"limit": input_data.limit})
-    return {"orders": result.get("result", {}).get("orders", [])}
+    orders = await order_tools.recent_orders(
+        input_data.company_id or "", limit=input_data.limit
+    )
+    return {"orders": orders}
 
 
 async def order_cancel(input_data: OrderCancelInput) -> dict[str, Any]:
@@ -335,7 +340,8 @@ class InventoryAdjustInput(BaseModel):
 
 
 async def inventory_check(input_data: InventoryCheckInput) -> dict[str, Any]:
-    result = await _call("inventory.check", input_data.company_id or "", {
+    client = get_maxp_client()
+    result = await client.call_tool("inventory.check", input_data.company_id or "", {
         "productNameOrSku": input_data.product_name_or_sku,
         "productSize": input_data.product_size,
         "productColor": input_data.product_color,
@@ -381,15 +387,16 @@ class CustomerTopBuyersInput(BaseModel):
 
 
 async def customer_info(input_data: CustomerInfoInput) -> dict[str, Any]:
-    result = await _call("customer.info", input_data.company_id or "",
-                         {"query": input_data.query})
-    return result.get("result", {})
+    return await customer_tools.customer_info(
+        input_data.company_id or "", input_data.query
+    )
 
 
 async def customer_top_buyers(input_data: CustomerTopBuyersInput) -> dict[str, Any]:
-    result = await _call("customer.topBuyers", input_data.company_id or "",
-                         {"limit": input_data.limit, "period": input_data.period})
-    return {"customers": result.get("result", [])}
+    customers = await customer_tools.top_buyers(
+        input_data.company_id or "", limit=input_data.limit, period=input_data.period
+    )
+    return {"customers": customers}
 
 
 customer_info_tool = FunctionTool(
@@ -437,14 +444,13 @@ class WhatsappSendInput(BaseModel):
 
 
 async def sales_revenue(input_data: SalesRevenueInput) -> dict[str, Any]:
-    result = await _call("sales.revenue", input_data.company_id or "",
-                         {"period": input_data.period})
-    return result.get("result", {})
+    return await sales_tools.sales_revenue(
+        input_data.company_id or "", period=input_data.period
+    )
 
 
 async def company_snapshot(input_data: CompanySnapshotInput) -> dict[str, Any]:
-    result = await _call("company.snapshot", input_data.company_id or "", {})
-    return result.get("result", {})
+    return await sales_tools.company_snapshot(input_data.company_id or "")
 
 
 async def discount_create_draft(input_data: DiscountCreateDraftInput) -> dict[str, Any]:
@@ -541,32 +547,30 @@ class CompetitorGenerateReportInput(BaseModel):
 
 
 async def competitor_search(input_data: CompetitorSearchInput) -> dict[str, Any]:
-    result = await _call("competitor.search", input_data.company_id or "",
-                         {"query": input_data.query, "limit": input_data.limit})
-    return {"competitors": result.get("result", [])}
+    competitors = await competitor_tools.search_competitors(
+        input_data.company_id or "", input_data.query, limit=input_data.limit
+    )
+    return {"competitors": competitors}
 
 
 async def competitor_get_products(input_data: CompetitorGetProductsInput) -> dict[str, Any]:
-    result = await _call("competitor.getProducts", input_data.company_id or "", {
-        "competitorId": input_data.competitor_id,
-        "isAvailable": str(input_data.is_available).lower() if input_data.is_available is not None else None,
-        "limit": input_data.limit,
-    })
-    return {"products": result.get("result", [])}
+    products = await competitor_tools.get_competitor_products(
+        input_data.company_id or "", input_data.competitor_id, limit=input_data.limit
+    )
+    return {"products": products}
 
 
 async def competitor_price_compare(input_data: CompetitorPriceCompareInput) -> dict[str, Any]:
-    result = await _call("competitor.priceCompare", input_data.company_id or "",
-                         {"competitorId": input_data.competitor_id})
-    return result.get("result", {})
+    return await competitor_tools.competitor_price_compare(
+        input_data.company_id or "", input_data.competitor_id
+    )
 
 
 async def competitor_get_ads(input_data: CompetitorGetAdsInput) -> dict[str, Any]:
-    result = await _call("competitor.getAds", input_data.company_id or "", {
-        "competitorId": input_data.competitor_id,
-        "limit": input_data.limit,
-    })
-    return {"ads": result.get("result", [])}
+    ads = await competitor_tools.get_competitor_ads(
+        input_data.company_id or "", input_data.competitor_id, limit=input_data.limit
+    )
+    return {"ads": ads}
 
 
 async def competitor_generate_report(input_data: CompetitorGenerateReportInput) -> dict[str, Any]:

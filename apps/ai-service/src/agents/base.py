@@ -37,6 +37,8 @@ from src.pipeline.runner import execute_pipeline
 from src.pipeline.stages.execute_tools import execute_tools
 from src.pipeline.stages.handle_fallback import handle_fallback
 from src.pipeline.stages.resolve_intent import resolve_intent
+from src.pipeline.stages.retrieve_episodic import retrieve_episodic_memory
+from src.pipeline.stages.retrieve_knowledge import retrieve_knowledge
 from src.pipeline.stages.route_to_tools import route_to_tools
 from src.pipeline.stages.validate_reply import validate_reply
 from src.prompts.template_registry import HydratedPrompt, get_prompt_registry
@@ -545,6 +547,8 @@ class BaseAgent:
             ctx,
             [
                 resolve_intent,
+                retrieve_knowledge,
+                retrieve_episodic_memory,
                 route_to_tools,
                 execute_tools,
                 handle_fallback,
@@ -584,6 +588,8 @@ class BaseAgent:
 
             for stage in (
                 resolve_intent,
+                retrieve_knowledge,
+                retrieve_episodic_memory,
                 route_to_tools,
                 execute_tools,
                 handle_fallback,

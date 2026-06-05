@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api.chat import SAFE_FALLBACK_REPLY
 from src.config import get_settings
 from src.db.session import get_session
 
@@ -189,7 +190,7 @@ def test_chat_uses_safe_reply_for_unclosed_thought_marker(client, mock_session):
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "ok"
-    assert data["reply"] == "تم استلام رسالتك، وسأساعدك حالاً."
+    assert data["reply"] == SAFE_FALLBACK_REPLY
     assert "thought" not in data["reply"].lower()
 
 

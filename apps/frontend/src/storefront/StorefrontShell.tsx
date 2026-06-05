@@ -4067,7 +4067,7 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
     settings?.storefront?.designTokens && typeof settings.storefront.designTokens === 'object'
       ? (settings.storefront.designTokens as Record<string, unknown>)
       : {};
-  const normalizeSocialLinks = (value: unknown): Record<string, string> => {
+  function normalizeSocialLinks(value: unknown): Record<string, string> {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       return {};
     }
@@ -4081,7 +4081,7 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
       },
       {},
     );
-  };
+  }
   const getRuntimeFooterValue = (...keys: string[]): string =>
     keys
       .map((key) => runtimeStorefrontSettings[key])

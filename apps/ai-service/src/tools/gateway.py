@@ -5,7 +5,6 @@ from typing import Any
 
 import structlog
 
-from src.tools.maxp_client import get_maxp_client
 from src.tools.registry import get_tool
 
 logger = structlog.get_logger(__name__)
@@ -103,8 +102,10 @@ class ToolGateway:
             input_data = {}
 
         try:
-            client = get_maxp_client()
-            result = await client.call_tool(tool_name, company_id, input_data)
+            model_data = {k.replace("-", "_"): v for k, v in input_data.items()}
+            model_data["company_id"] = company_id
+            tool_input = tool.input_model(**model_data)
+            result = await tool.func(tool_input)
 
             self._log.info(
                 "tool executed successfully",
@@ -113,7 +114,7 @@ class ToolGateway:
             )
             return {
                 "status": ToolResultStatus.SUCCESS,
-                "result": result.get("result", result),
+                "result": result,
             }
         except Exception as e:
             self._log.error(
