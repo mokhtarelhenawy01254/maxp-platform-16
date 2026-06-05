@@ -3962,14 +3962,7 @@
       "recentOrders": "آخر الطلبات",
       "orderStatus": {
         "completed": "مكتمل",
-        "pending": "معلق",
-        "paymentPending": "في انتظار الدفع",
-        "paymentCompleted": "مدفوع",
-        "paymentPartiallyPaid": "مدفوع جزئياً",
-        "paymentFailed": "فشل الدفع",
-        "paymentOnHold": "معلق",
-        "paymentRefunded": "مسترد",
-        "paymentPartiallyRefunded": "مسترد جزئياً"
+        "pending": "معلق"
       },
       "tags": "التصنيفات",
       "notes": "ملاحظات",

@@ -7,11 +7,8 @@ from typing import Any
 import structlog
 from agent_framework import Message
 
-from src.intent.schema import (
-    INTENT_ENUM,
-    ClassifierResult,
-    get_policy,
-)
+from src.intent.dynamic_registry import dynamic_intent_registry
+from src.intent.schema import ClassifierResult
 from src.observability.llm_fallback import LLMFallbackProvider
 
 logger = structlog.get_logger(__name__)
@@ -37,8 +34,14 @@ def _normalize_classifier_result(args: dict[str, Any]) -> ClassifierResult | Non
     if not args or not isinstance(args, dict):
         return None
     intent = args.get("intent", "general.chat")
-    if intent not in INTENT_ENUM and intent not in get_policy(intent):
-        return None
+    # Validate intent against dynamic registry (or fallback to static schema)
+    available_intents = dynamic_intent_registry.get_intent_enum()
+    policy = dynamic_intent_registry.get_policy(intent)
+    if intent not in available_intents and not policy:
+        # If dynamic registry is empty, accept anyway (static fallback)
+        from src.intent.schema import get_policy as _static_get_policy
+        if not _static_get_policy(intent):
+            return None
     slots = args.get("slots")
     if not isinstance(slots, dict):
         slots = {}
@@ -67,10 +70,12 @@ async def classify_intent(
     ctx = context or {}
     available_tools = ctx.get("availableTools", [])
 
+    # Use dynamic intent registry (with static fallback if not loaded)
+    intent_enum = dynamic_intent_registry.get_intent_enum()
     system_prompt = (
         "You are a schema-only intent classifier for customer and merchant operations.\n"
         "Return exactly one JSON object and no markdown, comments, or customer-facing answer.\n"
-        f"Allowed intents: {', '.join(INTENT_ENUM)}\n"
+        f"Allowed intents: {', '.join(intent_enum)}\n"
         "JSON shape: {\"intent\": string, \"confidence\": number, \"ambiguous\": boolean, "
         "\"clarificationQuestion\": string|null, \"slots\": object, \"missingSlots\": array, \"reasonCodes\": array}.\n"
         f"Available tools: {', '.join(available_tools) if available_tools else 'none'}.\n"

@@ -5,26 +5,25 @@ from agent_framework.anthropic import RawClaudeAgent  # type: ignore[attr-define
 from agent_framework.openai import OpenAIChatCompletionClient
 
 from src.config import get_settings
+from src.prompts.template_registry import get_prompt_registry
 from src.tools.registry import get_all_tools
 
 
 def create_support_agent() -> Agent | RawClaudeAgent:
-    """Create the support agent with read-only tools."""
+    """Create the support agent with read-only tools using the template registry."""
     settings = get_settings()
 
-    instructions = """أنت مساعد دعم عملاء لـ MaxP، منصة تجارة إلكترونية متكاملة. \
-مهمتك مساعدة العملاء في استفساراتهم عن المنتجات والطلبات.
-
-You are a customer support agent for MaxP, a complete e-commerce platform. \
-Your role is to help customers with product and order inquiries.
-
-القواعد:
-1. رد دايماً باللغة العربية الفصحى أو العامية المصرية حسب ما يناسب السياق
-2. Always be polite and professional
-3. استخدم الأدوات المتاحة لجلب معلومات المنتجات والطلبات
-4. إذا احتجت توضيح من العميل، اسأل بطريقة لطيفة
-5. لا تقم بأي إجراءات كتابية (خصومات، إلغاء طلبات) - هذه تحتاج موافقة المدير
-"""
+    # Build via template registry (SOTA 2026 — no more hardcoded Arabic instructions)
+    registry = get_prompt_registry()
+    hydrated = registry.build_prompt(
+        role="SUPPORT",
+        variables={
+            "company_name": "MaxP",
+            "agent_name": "maxp_support_agent",
+            "role": "customer support agent",
+        },
+    )
+    instructions = hydrated.text
 
     if settings.default_llm_provider == "anthropic":
         return RawClaudeAgent(

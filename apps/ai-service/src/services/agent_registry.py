@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.config import get_settings
 from src.db.models.agent import CompanyAgent
 from src.db.repo.agent_repo import AgentRepository
+from src.prompts.template_registry import get_prompt_registry
 from src.tools.registry import (
     get_tool_names_for_role,
     resolve_tools_from_names,
@@ -147,18 +148,34 @@ class AgentRegistry:
         return agent, agent_id
 
     def _default_instructions(self, role: str, company_name: str) -> str:
-        role_upper = role.upper()
-        tool_names = get_tool_names_for_role(role_upper)
+        """Build default instructions using the template registry instead of hardcoded strings."""
+        tool_names = get_tool_names_for_role(role.upper())
         tools_list = "\n".join(f"- {t}" for t in tool_names)
 
-        base = f"""أنت وكيل متخصص في {company_name or 'MaxP'}.
-دورك: {role}
+        # Use template registry (SOTA 2026 - no more hardcoded Arabic)
+        registry = get_prompt_registry()
+        try:
+            hydrated = registry.build_prompt(
+                role=role.upper(),
+                variables={
+                    "company_name": company_name,
+                    "tools_list": tools_list,
+                    "role": role,
+                },
+            )
+            return hydrated.text
+        except Exception:
+            # Fallback to inline assembly (no Arabic - uses English defaults)
+            return self._assemble_inline_fallback(role, company_name, tools_list)
 
-الأدوات المتاحة لك:
-{tools_list}
-
-رد دائماً باللغة العربية."""
-        return base
+    def _assemble_inline_fallback(self, role: str, company_name: str, tools_list: str) -> str:
+        """Language-neutral fallback instruction builder."""
+        return (
+            f"You are a specialized {role} agent for {company_name or 'MaxP'}.\n\n"
+            f"Available tools:\n{tools_list}\n\n"
+            "Use the available tools to obtain data before answering. "
+            "If you cannot fulfill a request, clearly inform the user."
+        )
 
 
 class _AgentRecord:

@@ -3942,14 +3942,7 @@
       "recentOrders": "Recent Orders",
       "orderStatus": {
         "completed": "Completed",
-        "pending": "Pending",
-        "paymentPending": "Pending Payment",
-        "paymentCompleted": "Paid",
-        "paymentPartiallyPaid": "Partially Paid",
-        "paymentFailed": "Payment Failed",
-        "paymentOnHold": "On Hold",
-        "paymentRefunded": "Refunded",
-        "paymentPartiallyRefunded": "Partially Refunded"
+        "pending": "Pending"
       },
       "tags": "Tags",
       "notes": "Notes",

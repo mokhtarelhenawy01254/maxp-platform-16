@@ -16,6 +16,9 @@ async def retrieve_knowledge(ctx: PipelineContext) -> PipelineContext:
         message=ctx.message,
     )
 
-    ctx.tool_context += f"[Internal Knowledge Evidence]\n{evidence}\n\n"
+    # SOTA 2026: store RAG evidence in ctx.rag_evidence (not ctx.tool_context)
+    # This keeps tool execution context separate from RAG context
+    if evidence:
+        ctx.rag_evidence = evidence if not ctx.rag_evidence else f"{ctx.rag_evidence}\n{evidence}"
 
     return ctx

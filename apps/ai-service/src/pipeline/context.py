@@ -2,6 +2,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
+# Default token budget for context window (calibrated for gemini-2.5-flash)
+TOKEN_BUDGET_DEFAULT = 12_000
+
+
 @dataclass
 class PipelineContext:
     # Inputs
@@ -20,10 +24,19 @@ class PipelineContext:
     native_tools: list[dict[str, Any]] = field(default_factory=list)
     is_customer_channel: bool = False
 
+    # Context Assembly (SOTA 2026)
+    rag_evidence: str = ""  # RAG evidence from company knowledge base
+    episodic_memories: list[dict[str, Any]] = field(default_factory=list)  # Retrieved episodic memories
+    token_budget: int = TOKEN_BUDGET_DEFAULT  # Max tokens for context window
+    original_history_tokens: int = 0  # Token count before compression
+    compressed_history_tokens: int = 0  # Token count after compression
+    context_metrics: Any = None  # Computed ContextMetrics after assembly
+    session_state: dict[str, Any] = field(default_factory=dict)  # Working memory session state
+
     # Execution
     execution_plan: dict[str, Any] | None = None
     messages: list[dict[str, Any]] = field(default_factory=list)
-    tool_context: str = ""
+    tool_context: str = ""  # Tool execution context for metrics
     executed_tools: list[dict[str, Any]] = field(default_factory=list)
     tool_evidence: list[dict[str, Any]] = field(default_factory=list)
 
@@ -31,6 +44,7 @@ class PipelineContext:
     llm_result: Any = None
     llm_response: str = ""
     final_reply: str | None = None
+    response_contract: Any = None  # AgentResponse Pydantic contract (SOTA 2026)
 
     # Metadata
     rounds: int = 0

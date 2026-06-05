@@ -25,8 +25,10 @@
     "singleQuestionPerTurn": false
   },
   "allowedTools": [
-    "support_specialist",
-    "order_specialist"
+    "agent.run_task",
+    "agent.list_agents",
+    "agent.read_state",
+    "agent.handoff"
   ],
   "allowedSkills": [],
   "channels": ["chat", "whatsapp", "messenger"],
