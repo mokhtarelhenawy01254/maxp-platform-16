@@ -37,6 +37,20 @@ const hasLegacyPrimaryCompanyAccess = async (prisma, userId, targetCompanyId, pr
 const runWithoutTenantContext = (operation) =>
   tenantContext.run(null, operation);
 
+function getAiServiceToken() {
+  return process.env.AI_SERVICE_TOKEN || process.env.MAXP_SERVICE_TOKEN || '';
+}
+
+function resolveRequestCompanyId(req) {
+  return (
+    req.headers['x-company-id'] ||
+    req.headers['X-Company-Id'] ||
+    req.query?.companyId ||
+    req.body?.companyId ||
+    null
+  );
+}
+
 // Authentication middleware
 const authenticateToken = async (req, res, next) => {
   console.log('🔐 [VERIFY-TOKEN] authenticateToken called for:', req.method, req.path);
@@ -52,6 +66,31 @@ const authenticateToken = async (req, res, next) => {
       message: 'رمز المصادقة مطلوب',
       code: 'TOKEN_REQUIRED'
     });
+  }
+
+  const serviceToken = getAiServiceToken();
+  if (serviceToken && token === serviceToken) {
+    const companyId = resolveRequestCompanyId(req);
+    if (!companyId || typeof companyId !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'companyId is required for service access',
+        code: 'SERVICE_COMPANY_ID_REQUIRED'
+      });
+    }
+
+    req.user = {
+      id: 'ai-service',
+      firstName: 'AI',
+      lastName: 'Service',
+      email: 'ai-service@maxp.local',
+      role: 'AI_SERVICE',
+      companyId,
+      effectiveCompanyId: companyId,
+      service: true
+    };
+
+    return tenantContext.run(companyId, () => next());
   }
 
   try {

@@ -239,7 +239,7 @@ async def test_key(key_id: str, session: SessionDep) -> AiKeyTestResult:
 
         test_url = provider.base_url or "https://api.openai.com/v1"
         headers = {"Authorization": f"Bearer {key.api_key}"}
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, trust_env=False) as client:
             resp = await client.get(test_url, headers=headers)
         latency = int((datetime.now() - started).total_seconds() * 1000)
         if resp.status_code < 500:

@@ -52,7 +52,10 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
         if not result.allowed:
             ctx.early_return = {
                 "status": "GUARDRAIL_BLOCKED",
-                "result": {"reply": f"Sorry, my response was blocked by a guardrail: {result.reason}"}
+                "result": {
+                    "reason": result.reason,
+                    "violations": result.violations,
+                },
             }
             return ctx
 
@@ -94,6 +97,6 @@ async def validate_reply(ctx: PipelineContext) -> PipelineContext:
     except Exception:
         # Validation failed — still return the reply but log it
         logger.warning("agent_response_validation_failed", reply=reply[:100])
-        ctx.final_reply = reply or "Sorry, an error occurred while generating the response. Please try again."
+        ctx.final_reply = reply
 
     return ctx

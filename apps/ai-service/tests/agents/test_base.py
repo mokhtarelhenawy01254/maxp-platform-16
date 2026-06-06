@@ -18,6 +18,7 @@ from src.agents.base import (
     _StreamEmitter,
     _TemplateAdapter,
 )
+from src.context.sdk_provider import MaxPContextProvider
 from src.guardrails.base import BaseGuardrail, GuardrailResult
 
 # ---------------------------------------------------------------------------
@@ -166,11 +167,9 @@ class TestHandoffs:
 class TestAsTool:
     def test_returns_tool_descriptor(self, agent: BaseAgent):
         tool = agent.as_tool()
-        assert "name" in tool
-        assert "description" in tool
-        assert "handler" in tool
-        assert tool["name"].startswith("agent_support_")
-        assert "SUPPORT" in tool["description"]
+        assert tool.name.startswith("agent_support_")
+        assert "SUPPORT" in tool.description
+        assert tool.approval_mode == "never_require"
 
     @pytest.mark.asyncio
     async def test_handler_delegates_to_process_task(self, agent: BaseAgent):
@@ -407,6 +406,14 @@ class TestBuild:
             assert fa1 is fa2
             mock_client.assert_called_once()
 
+    def test_build_attaches_sdk_context_provider(self, agent: BaseAgent):
+        with patch("src.agents.base.build_agent_client", return_value=MagicMock()), \
+             patch("src.agents.base.get_all_tools", return_value=[]):
+            framework_agent = agent.build()
+
+        providers = getattr(framework_agent, "context_providers", [])
+        assert any(isinstance(provider, MaxPContextProvider) for provider in providers)
+
     def test_resolve_tools_filters_by_allowed(self, agent: BaseAgent):
         tool_a = MagicMock()
         tool_a.name = "product.search"
@@ -432,6 +439,30 @@ class TestBuild:
         assert name.startswith("maxp_support_")
         assert name.endswith(agent.id[-8:])
 
+    @pytest.mark.asyncio
+    async def test_ensure_client_reuses_framework_agent_client(self, agent: BaseAgent):
+        framework_client = MagicMock()
+        with patch("src.agents.base.build_agent_client", return_value=framework_client) as build_sync, \
+             patch("src.agents.base.get_all_tools", return_value=[]):
+            client = await agent.ensure_client()
+
+        assert client is framework_client
+        assert agent.client is framework_client
+        assert agent._framework_agent is not None
+        build_sync.assert_called_once()
+
+    def test_create_session_delegates_to_framework_agent(self, agent: BaseAgent):
+        sdk_session = object()
+        framework_agent = MagicMock()
+        framework_agent.create_session.return_value = sdk_session
+
+        with patch.object(agent, "build", return_value=framework_agent) as build:
+            result = agent.create_session(session_id="thread-1")
+
+        assert result is sdk_session
+        build.assert_called_once()
+        framework_agent.create_session.assert_called_once_with(session_id="thread-1")
+
 
 # ---------------------------------------------------------------------------
 # process_task / process_task_streamed — high-level integration
@@ -439,6 +470,134 @@ class TestBuild:
 
 
 class TestProcessTask:
+    @pytest.mark.asyncio
+    async def test_process_task_uses_sdk_runtime_for_internal_tasks(self, agent: BaseAgent):
+        sdk_session = object()
+        sdk_response = MagicMock()
+        sdk_response.text = "sdk reply"
+        sdk_response.user_input_requests = []
+
+        framework_agent = MagicMock()
+        framework_agent.create_session.return_value = sdk_session
+        framework_agent.run = AsyncMock(return_value=sdk_response)
+
+        with patch.object(agent, "build", return_value=framework_agent), \
+             patch("src.agents.base.execute_pipeline", new=AsyncMock()) as pipeline:
+            result = await agent.process_task({
+                "description": "summarize yesterday's sales",
+                "job_id": "job_1",
+            })
+
+        assert result["status"] == "SUCCESS"
+        assert result["result"]["reply"] == "sdk reply"
+        assert result["result"]["runtime"] == "sdk_agent"
+        assert result["result"]["thread_id"] == "job_1"
+        framework_agent.create_session.assert_called_once_with(session_id="job_1")
+        framework_agent.run.assert_awaited_once_with(
+            "summarize yesterday's sales",
+            session=sdk_session,
+            options={"maxp_token_budget": 120_000},
+        )
+        pipeline.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_process_task_passes_task_token_budget_to_sdk_runtime(self, agent: BaseAgent):
+        sdk_response = MagicMock()
+        sdk_response.text = "sdk reply"
+        sdk_response.user_input_requests = []
+
+        framework_agent = MagicMock()
+        framework_agent.create_session.return_value = object()
+        framework_agent.run = AsyncMock(return_value=sdk_response)
+
+        with patch.object(agent, "build", return_value=framework_agent):
+            await agent.process_task({
+                "description": "run a short routine",
+                "job_id": "job_budget",
+                "token_budget": 2048,
+            })
+
+        framework_agent.run.assert_awaited_once_with(
+            "run a short routine",
+            session=framework_agent.create_session.return_value,
+            options={"maxp_token_budget": 2048},
+        )
+
+    @pytest.mark.asyncio
+    async def test_process_task_falls_back_to_pipeline_when_sdk_runtime_fails(self, agent: BaseAgent):
+        fake_ctx = MagicMock()
+        fake_ctx.early_return = None
+        fake_ctx.final_reply = "pipeline reply"
+        fake_ctx.executed_tools = []
+        fake_ctx.rounds = 0
+        fake_ctx.repaired = False
+        fake_ctx.thread_id = "job_2"
+
+        framework_agent = MagicMock()
+        framework_agent.create_session.return_value = object()
+        framework_agent.run = AsyncMock(side_effect=RuntimeError("sdk unavailable"))
+
+        with patch.object(agent, "build", return_value=framework_agent), \
+             patch("src.agents.base.execute_pipeline", new=AsyncMock(return_value=fake_ctx)) as pipeline:
+            result = await agent.process_task({
+                "description": "run routine",
+                "job_id": "job_2",
+            })
+
+        assert result["status"] == "SUCCESS"
+        assert result["result"]["reply"] == "pipeline reply"
+        pipeline.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_process_task_sdk_user_input_request_marks_paused(self, agent: BaseAgent):
+        sdk_session = object()
+        approval_request = MagicMock()
+        approval_request.id = "approval_1"
+        approval_request.name = "order.cancel"
+        approval_request.arguments = {"orderId": "o_1"}
+
+        sdk_response = MagicMock()
+        sdk_response.text = ""
+        sdk_response.user_input_requests = [approval_request]
+
+        framework_agent = MagicMock()
+        framework_agent.create_session.return_value = sdk_session
+        framework_agent.run = AsyncMock(return_value=sdk_response)
+
+        with patch.object(agent, "build", return_value=framework_agent):
+            result = await agent.process_task({
+                "description": "cancel a stuck order",
+                "job_id": "job_3",
+            })
+
+        assert result["status"] == "PAUSED"
+        assert result["result"]["status"] == "AWAITING_APPROVAL"
+        assert result["result"]["draft_id"] == "approval_1"
+
+    @pytest.mark.asyncio
+    async def test_process_task_uses_pipeline_for_customer_channels(self, agent: BaseAgent):
+        fake_ctx = MagicMock()
+        fake_ctx.early_return = None
+        fake_ctx.final_reply = "customer-safe reply"
+        fake_ctx.executed_tools = []
+        fake_ctx.rounds = 0
+        fake_ctx.repaired = False
+        fake_ctx.thread_id = "thread_1"
+
+        with patch.object(agent, "build") as build, \
+             patch("src.agents.base.execute_pipeline", new=AsyncMock(return_value=fake_ctx)) as pipeline:
+            result = await agent.process_task({
+                "description": "where is my order?",
+                "session_id": "thread_1",
+                "user_id": "cust_1",
+                "channel": "whatsapp",
+            })
+
+        assert result["status"] == "SUCCESS"
+        assert result["result"]["reply"] == "customer-safe reply"
+        build.assert_not_called()
+        pipeline.assert_awaited_once()
+
     @pytest.mark.asyncio
     async def test_process_task_returns_structured_result(self, agent: BaseAgent):
         fake_ctx = MagicMock()

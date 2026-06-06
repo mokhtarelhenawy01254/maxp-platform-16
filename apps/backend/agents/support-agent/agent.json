@@ -25,14 +25,14 @@
     "singleQuestionPerTurn": false
   },
   "allowedTools": [
-    "order_lookup",
-    "customer_info",
-    "shipping_rates",
-    "shipping_update",
-    "order_create_confirmed",
-    "order_cancel",
-    "order_refund",
-    "whatsapp_send",
+    "order.lookup",
+    "customer.info",
+    "shipping.rates",
+    "shipping.update",
+    "order.create_confirmed",
+    "order.cancel",
+    "order.refund",
+    "whatsapp.send",
     "agent.handoff"
   ],
   "allowedSkills": [
@@ -43,7 +43,7 @@
   "channels": ["dashboard", "whatsapp", "messenger"],
   "humanApproval": {
     "mode": "ON_WRITE",
-    "requiredTools": ["order.confirm", "order.cancel", "order.refund", "shipping_update"],
+    "requiredTools": ["order.confirm", "order.cancel", "order.refund", "shipping.update"],
     "approvalCode": true,
     "merchantChannels": ["DASHBOARD", "WHATSAPP"]
   },

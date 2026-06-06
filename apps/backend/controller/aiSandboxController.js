@@ -7,6 +7,7 @@ const CEOAgent = require('../legacy-ai-agent/aiAgent/CEOAgent');
 const BaseAgent = require('../legacy-ai-agent/aiAgent/BaseAgent');
 const workingMemoryService = require('../legacy-ai-agent/aiAgent/workingMemoryService');
 const { normalizeAgentReply } = require('../legacy-ai-agent/aiAgent/agentReplyNormalizer');
+const aiServiceKeyBridge = require('../legacy-ai-agent/aiAgent/aiServiceKeyBridge');
 const aiSandboxService = require('../services/aiSandboxService');
 const { calculateCost, getModelCost } = require('../config/modelCosts');
 const agentProfileLoaderService = require('../legacy-ai-agent/aiAgent/agentProfileLoaderService');
@@ -112,6 +113,99 @@ ${instructionSections ? `${instructionSections}\n\n` : ''}Rules:
 - Do not claim you checked availability, created an order, saved a draft, looked up records, or changed data unless a tool result is present in the conversation
 - If an action requires a tool, ask for missing required details or explain the intended next action naturally for review
 - If you cannot answer, say so clearly`;
+}
+
+function buildAiServiceAgentConfig(agent) {
+  return {
+    id: agent.id,
+    name: agent.name,
+    role: agent.role,
+    templateSlug: agent.templateSlug,
+    version: agent.version,
+    model: agent.model,
+    status: agent.status,
+    parentId: agent.parentId,
+    allowedTools: typeof agent.getTools === 'function'
+      ? agent.getTools()
+      : normalizeStringList(agent.allowedTools),
+    allowedSkills: typeof agent.getSkills === 'function'
+      ? agent.getSkills()
+      : normalizeStringList(agent.allowedSkills),
+    persona: agent.persona || {},
+    policies: agent.policies || {},
+  };
+}
+
+async function runSelectedAgentInPython({
+  companyId,
+  userId,
+  agentBundle,
+  agentId,
+  messageText,
+  threadId,
+  conversationId,
+  memoryContext,
+  modelSelection,
+  channel = 'FACEBOOK',
+}) {
+  const agentConfig = buildAiServiceAgentConfig(agentBundle.sandboxAgent);
+  if (modelSelection?.model) {
+    agentConfig.model = modelSelection.model;
+    agentConfig.provider = modelSelection.provider || agentConfig.provider;
+    agentConfig.keyId = modelSelection.key?.id || agentConfig.keyId;
+  }
+  const result = await aiServiceKeyBridge.chatWithAgent({
+    companyId,
+    agentId,
+    message: messageText,
+    threadId,
+    conversationId,
+    customerId: userId || null,
+    channel,
+    agentConfig,
+    memoryContext,
+  });
+
+  if (!result.ok) {
+    const error = createHttpError('AI_SERVICE_AGENT_CHAT_FAILED', result.status || 502);
+    error.reason = result.data?.error
+      || result.error
+      || result.reason
+      || JSON.stringify(result).slice(0, 500)
+      || 'ai-service unreachable';
+    throw error;
+  }
+
+  const data = result.data || {};
+  const tools = Array.isArray(data.tool_calls) ? data.tool_calls : [];
+  return {
+    agentId: data.agent_id || agentId,
+    role: data.agent_role || agentBundle.sandboxAgent.role,
+    status: data.status === 'awaiting_approval'
+      ? 'PAUSED'
+      : (data.status === 'ok' ? 'SUCCESS' : 'ERROR'),
+    result: {
+      reply: data.reply || '',
+      summary: data.reply || '',
+      toolsUsed: tools.length > 0,
+      toolRounds: tools.length > 0 ? 1 : 0,
+      tools,
+      repaired: false,
+      presentedFromToolResults: false,
+      goalRun: null,
+      status: data.status,
+      thread_id: data.thread_id || threadId,
+      draft_id: data.draft_id || null,
+      runtime: data.runtime || 'python-agent',
+    },
+    modelSelection: data.model_selection || null,
+    task: {
+      currentMessage: messageText,
+      sessionId: threadId,
+      conversationId,
+      channel,
+    },
+  };
 }
 
 function generateSandboxSessionId() {
@@ -343,20 +437,17 @@ async function runSandboxChatTurn({
   }
 
   const turnStartTime = Date.now();
-  const taskResult = await agentBundle.sandboxAgent.processTask({
-    description: messageText,
-    currentMessage: messageText,
-    intentMessage: messageText,
-    sessionId: resolvedSessionId,
+  const taskResult = await runSelectedAgentInPython({
+    companyId,
+    userId,
+    agentBundle,
+    agentId,
+    messageText,
+    threadId: resolvedSessionId,
     conversationId,
-    conversationHistory: promptCtx?.recentMessages || [],
-    intentContext: {
-      channel: 'FACEBOOK',
-      customerId: userId || null,
-      remoteJid: null,
-      sandbox: true,
-      sessionId: resolvedSessionId,
-    },
+    memoryContext: promptCtx,
+    modelSelection,
+    channel: 'FACEBOOK',
   });
 
   const reply = extractSandboxReply(taskResult);
@@ -1021,56 +1112,62 @@ async function streamChatMessage(req, res) {
       role: 'user',
       content: messageText,
     });
-    const promptCtx = await workingMemoryService.getContext(companyId, conversationId);
     const agentBundle = await createSandboxRuntimeAgent(companyId, agentId, modelSelection);
     if (!agentBundle) {
       throw createHttpError('AGENT_NOT_FOUND', 400);
     }
 
     const turnStartTime = Date.now();
+    res.write(`data: ${JSON.stringify({
+      type: 'agent_start',
+      agentId,
+      agentName: agentBundle.sandboxAgent.name,
+      message: 'Starting Python agent runtime...',
+    })}\n\n`);
 
-    // Real event-driven streaming
-    const eventStream = agentBundle.sandboxAgent.processTaskStreamed({
-      description: messageText,
-      currentMessage: messageText,
-      intentMessage: messageText,
-      sessionId: resolvedSessionId,
+    res.write(`data: ${JSON.stringify({
+      type: 'agent_thinking',
+      stage: 'python_agent_runtime',
+      message: 'Running selected agent in ai-service...',
+    })}\n\n`);
+
+    const taskResult = await runSelectedAgentInPython({
+      companyId,
+      userId,
+      agentBundle,
+      agentId,
+      messageText,
+      threadId: resolvedSessionId,
       conversationId,
-      conversationHistory: promptCtx?.recentMessages || [],
-      intentContext: {
-        channel: 'FACEBOOK',
-        customerId: userId || null,
-        remoteJid: null,
-        sandbox: true,
-        sessionId: resolvedSessionId,
-      },
+      memoryContext: await workingMemoryService.getContext(companyId, conversationId),
+      modelSelection,
+      channel: 'FACEBOOK',
     });
 
-    let finalReply = '';
-    let toolCalls = [];
-    let runError = null;
-
-    for await (const event of eventStream) {
-      res.write(`data: ${JSON.stringify(event)}\n\n`);
-
-      if (event.type === 'agent_reply') {
-        finalReply = event.reply;
-      }
-      if (event.type === 'run_complete') {
-        toolCalls = event.toolCalls || [];
-      }
-      if (event.type === 'run_error') {
-        runError = event.error;
-      }
-    }
+    const finalReply = extractSandboxReply(taskResult);
+    const toolCalls = mapSandboxToolsToToolCalls(taskResult?.result?.tools || []);
 
     const latencyMs = Date.now() - turnStartTime;
 
-    if (runError || !finalReply) {
-      res.write(`data: ${JSON.stringify({ done: true, error: runError || 'AI_SANDBOX_EMPTY_REPLY' })}\n\n`);
+    if (!finalReply) {
+      res.write(`data: ${JSON.stringify({ done: true, error: 'AI_SANDBOX_EMPTY_REPLY' })}\n\n`);
       res.end();
       return;
     }
+
+    res.write(`data: ${JSON.stringify({
+      type: 'agent_reply',
+      reply: finalReply,
+      isIncremental: false,
+      modelUsed: modelSelection.model,
+    })}\n\n`);
+
+    res.write(`data: ${JSON.stringify({
+      type: 'run_complete',
+      runId: resolvedSessionId,
+      reply: finalReply,
+      toolCalls,
+    })}\n\n`);
 
     // Persist session and messages
     if (!safeSessionId) {
@@ -1131,6 +1228,12 @@ async function streamChatMessage(req, res) {
     if (!res.headersSent) {
       return sendCodeError(res, error.statusCode || 500, error.code || 'AI_SANDBOX_STREAM_FAILED');
     }
+    res.write(`data: ${JSON.stringify({
+      type: 'run_error',
+      error: error.code || 'AI_SANDBOX_STREAM_FAILED',
+      reason: error.reason || error.message || 'Sandbox stream failed',
+      done: true,
+    })}\n\n`);
     res.end();
   }
 }
@@ -1467,4 +1570,3 @@ module.exports = {
   getRun,
   resumeRun,
 };
-

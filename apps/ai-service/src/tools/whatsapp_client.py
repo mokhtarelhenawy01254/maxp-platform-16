@@ -18,6 +18,7 @@ class WhatsAppClient:
             base_url=self.BASE_URL,
             headers={"Content-Type": "application/json"},
             timeout=30.0,
+            trust_env=False,
         )
 
     async def send_text(self, recipient_id: str, text: str) -> dict[str, Any]:

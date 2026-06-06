@@ -276,3 +276,12 @@ async def test_aclose_is_idempotent() -> None:
     await client._ensure_client()
     await client.aclose()
     await client.aclose()
+
+
+async def test_gemma_client_does_not_trust_proxy_environment() -> None:
+    client = GemmaClient(api_key="k", model="gemma-4-31b-it")
+    http_client = await client._ensure_client()
+
+    assert http_client._trust_env is False
+
+    await client.aclose()

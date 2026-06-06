@@ -222,19 +222,27 @@ class EpisodicMemoryService:
             LIMIT :top_k
         """)
 
-        result = await session.execute(
-            sql,
-            {
-                "query_vec": vec_literal,
-                "query_vec2": vec_literal,
-                "company_id": company_id,
-                "customer_id": customer_id,
-                "top_k": top_k,
-                "include_pseudo": include_pseudo,
-                "gemini_provider": EMBEDDING_PROVIDER_GEMINI,
-            },
-        )
-        rows = result.fetchall()
+        rows = []
+        try:
+            result = await session.execute(
+                sql,
+                {
+                    "query_vec": vec_literal,
+                    "query_vec2": vec_literal,
+                    "company_id": company_id,
+                    "customer_id": customer_id,
+                    "top_k": top_k,
+                    "include_pseudo": include_pseudo,
+                    "gemini_provider": EMBEDDING_PROVIDER_GEMINI,
+                },
+            )
+            rows = result.fetchall()
+        except Exception as exc:
+            logger.warning("pgvector_search_unavailable", error=str(exc))
+            try:
+                await session.rollback()
+            except Exception as rollback_exc:
+                logger.warning("pgvector_search_rollback_failed", error=str(rollback_exc))
 
         if rows:
             scored = []

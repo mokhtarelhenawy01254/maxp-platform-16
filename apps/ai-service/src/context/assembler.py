@@ -34,13 +34,9 @@ class ContextAssembler:
     }
 
     @staticmethod
-    def _is_valid_uuid(val: str) -> bool:
-        try:
-            import uuid
-            uuid.UUID(str(val))
-            return True
-        except ValueError:
-            return False
+    def _sanitize_content(content: str) -> str:
+        """Escapes XML special characters to prevent structure-breaking prompt injection."""
+        return content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
     # ─── Data Fetchers ────────────────────────────────────────────
 
@@ -71,6 +67,20 @@ class ContextAssembler:
 
     async def fetch_message_history(self, ctx: PipelineContext, limit: int = 15) -> list[dict[str, Any]]:
         """Fetch recent message history for the active conversation from public.messages."""
+        external_memory = getattr(ctx, "external_memory_context", None) or {}
+        memory_history = external_memory.get("recentMessages")
+        if isinstance(memory_history, list):
+            history_messages = []
+            for message in memory_history[-limit:]:
+                if not isinstance(message, dict):
+                    continue
+                role = str(message.get("role") or "user").lower()
+                content = str(message.get("content") or "").strip()
+                if role in {"user", "assistant"} and content:
+                    history_messages.append({"role": role, "content": content})
+            if history_messages:
+                return history_messages
+
         if not ctx.thread_id or not ctx.session:
             return []
 
@@ -109,13 +119,21 @@ class ContextAssembler:
 
     async def fetch_session_state(self, ctx: PipelineContext) -> dict[str, Any] | None:
         """Fetch current working memory session state (cart, search filters, etc.)."""
+        external_memory = getattr(ctx, "external_memory_context", None) or {}
+        if external_memory:
+            filtered = {k: v for k, v in external_memory.items() if v}
+            if filtered:
+                ctx.session_state = filtered
+                return filtered
+
         if not ctx.company_id or not ctx.thread_id:
             return None
 
         try:
+            lookup_id = ctx.conversation_id or ctx.thread_id
             state = await working_memory_service.get_context(
                 company_id=ctx.company_id,
-                conversation_id=ctx.thread_id,
+                conversation_id=lookup_id,
             )
             if state:
                 # Filter out empty values to reduce token waste
@@ -174,6 +192,17 @@ class ContextAssembler:
             if session_state.get("queriedProducts"):
                 recent = session_state["queriedProducts"][-5:]
                 state_lines.append(f"  Recently Queried: {recent}")
+            if session_state.get("recentMessages"):
+                recent_messages = []
+                for message in session_state["recentMessages"][-6:]:
+                    if not isinstance(message, dict):
+                        continue
+                    role = str(message.get("role") or "user")
+                    content = self._sanitize_content(str(message.get("content") or "").strip())
+                    if content:
+                        recent_messages.append(f"{role}: {content[:240]}")
+                if recent_messages:
+                    state_lines.append("  Recent Messages: " + " | ".join(recent_messages))
 
             if state_lines:
                 state_xml = "\n<session_state>\n" + "\n".join(state_lines) + "\n</session_state>"
@@ -181,7 +210,8 @@ class ContextAssembler:
 
         # 3. RAG evidence (Company Knowledge)
         if ctx.rag_evidence:
-            knowledge_xml = f"\n<company_knowledge>\n{ctx.rag_evidence}\n</company_knowledge>"
+            sanitized_knowledge = self._sanitize_content(ctx.rag_evidence)
+            knowledge_xml = f"\n<company_knowledge>\n{sanitized_knowledge}\n</company_knowledge>"
             sections.append(("company_knowledge", knowledge_xml))
 
         # 4. Episodic memories
@@ -190,7 +220,8 @@ class ContextAssembler:
             for mem in ctx.episodic_memories[:5]:
                 similarity = mem.get("similarity", 0)
                 content = mem.get("content", "")
-                memory_lines.append(f"  [{similarity:.2f}] {content}")
+                sanitized_content = self._sanitize_content(content)
+                memory_lines.append(f"  [{similarity:.2f}] {sanitized_content}")
 
             if memory_lines:
                 memories_xml = "\n<relevant_memories>\n" + "\n".join(memory_lines) + "\n</relevant_memories>"

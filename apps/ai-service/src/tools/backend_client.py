@@ -32,6 +32,7 @@ class BackendClient:
                     "Content-Type": "application/json",
                 },
                 timeout=30.0,
+                trust_env=False,
             )
         return self._client
     

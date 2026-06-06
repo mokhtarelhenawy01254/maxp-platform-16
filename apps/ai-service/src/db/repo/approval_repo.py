@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime
 from typing import Any
 
@@ -37,25 +38,33 @@ class ApprovalRepository:
         metadata: dict[str, Any] | None = None,
     ) -> Approval:
         """Create a new pending approval record."""
-        parts = thread_id.split(":", 2)
-        customer_id = parts[1] if len(parts) > 1 else ""
-        chan = parts[2] if len(parts) > 2 else "chat"
-
-        stmt = select(Thread.id).where(
-            Thread.company_id == company_id,
-            Thread.customer_id == customer_id,
-            Thread.channel == chan,
-        )
+        customer_id = ""
+        chan = channel
+        try:
+            thread_uuid = uuid.UUID(str(thread_id))
+            stmt = select(Thread.id).where(
+                Thread.id == thread_uuid,
+                Thread.company_id == company_id,
+            )
+        except ValueError:
+            parts = thread_id.split(":", 2)
+            customer_id = parts[1] if len(parts) > 1 else ""
+            chan = parts[2] if len(parts) > 2 else "chat"
+            stmt = select(Thread.id).where(
+                Thread.company_id == company_id,
+                Thread.customer_id == customer_id,
+                Thread.channel == chan,
+            )
         result = await self._session.execute(stmt)
-        thread_uuid = result.scalar_one_or_none()
+        resolved_thread_uuid = result.scalar_one_or_none()
 
-        if not thread_uuid:
+        if not resolved_thread_uuid:
             msg = f"Thread not found for company {company_id}, customer {customer_id}, channel {chan}"
             raise ValueError(msg)
 
         approval = Approval(
             company_id=company_id,
-            thread_id=thread_uuid,
+            thread_id=resolved_thread_uuid,
             draft_id=draft_id,
             request_key=request_key,
             action_type=action_type,
@@ -68,7 +77,7 @@ class ApprovalRepository:
             expires_at=expires_at,
             input_snapshot=input_snapshot,
             preview_snapshot=preview_snapshot,
-            metadata=metadata,
+            approval_metadata=metadata,
         )
         self._session.add(approval)
         await self._session.commit()
@@ -94,17 +103,46 @@ class ApprovalRepository:
         status: str,
         decided_by: str | None = None,
     ) -> Approval | None:
-        """Update approval status (approved/rejected)."""
-        now = datetime.now(UTC)
+        """Update an approval status by draft ID."""
+        values: dict[str, Any] = {"status": status}
+        if decided_by is not None:
+            values["decided_by"] = decided_by
+            values["decided_at"] = datetime.now(UTC)
+
         stmt = (
             update(Approval)
             .where(Approval.draft_id == draft_id)
-            .values(status=status, decided_by=decided_by, decided_at=now)
+            .values(**values)
             .returning(Approval)
         )
         result = await self._session.execute(stmt)
         await self._session.commit()
         approval = result.scalar_one_or_none()
         if approval:
-            logger.info("approval updated", draft_id=draft_id, status=status)
+            logger.info("approval status updated", draft_id=draft_id, status=status)
+        return approval
+
+    async def transition_status(
+        self,
+        draft_id: str,
+        current_status: str,
+        next_status: str,
+        decided_by: str | None = None,
+    ) -> Approval | None:
+        """Atomically transition approval status from current_status to next_status."""
+        now = datetime.now(UTC)
+        stmt = (
+            update(Approval)
+            .where(
+                Approval.draft_id == draft_id,
+                Approval.status == current_status
+            )
+            .values(status=next_status, decided_by=decided_by, decided_at=now)
+            .returning(Approval)
+        )
+        result = await self._session.execute(stmt)
+        await self._session.commit()
+        approval = result.scalar_one_or_none()
+        if approval:
+            logger.info("approval status transitioned", draft_id=draft_id, from_status=current_status, to_status=next_status)
         return approval

@@ -9,7 +9,7 @@ from src.intent.planner import (
     build_intent_contract,
     to_tool_plan,
 )
-from src.intent.schema import ToolPlan, is_customer_channel
+from src.intent.schema import ToolPlan, is_customer_channel, is_admin_channel
 
 logger = structlog.get_logger(__name__)
 
@@ -315,12 +315,18 @@ def resolve_tool_plan(message: str, available_tools: list[str], context: dict[st
     is_ambig = is_ambiguous_create_request(message)
 
     # Admin/Deterministic Route
-    if not is_cust:
+    if is_admin_channel(channel):
         admin_plan = resolve_admin_policy_plan(message, available_tools, ctx)
         if admin_plan:
             # Wrap in contract to ensure proper transformation
             contract = build_intent_contract(admin_plan, available_tools, ctx)
             return to_tool_plan(contract, available_tools)
+    elif not is_customer_channel(channel):
+        # If it's an unknown channel that is not customer, we might want to be careful.
+        # For now, let's assume it's not customer and use the fallback.
+        # But to be safer, we don't want to default to admin.
+        # We'll just let it go to the general chat (fallback) below.
+        pass
 
     # Fallback to general chat
     return ToolPlan(

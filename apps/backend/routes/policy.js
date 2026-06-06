@@ -1,9 +1,34 @@
 const express = require('express');
 const router = express.Router();
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const episodicMemoryService = require('../legacy-ai-agent/aiAgent/episodicMemoryService');
 const { requireAuth } = require('../middleware/auth');
 
 const getPrisma = () => getSharedPrismaClient();
+
+async function _autoEmbedPolicy(policy) {
+  try {
+    const categoryLabel = String(policy.category || 'general');
+    const tags = Array.isArray(policy.tags) ? policy.tags.join(', ') : '';
+    const text = [
+      `[Knowledge Type: Policy]`,
+      `Policy title: ${String(policy.title || '')}`,
+      `Policy content: ${String(policy.content || '')}`,
+      `Category: ${categoryLabel}`,
+      tags ? `Tags: ${tags}` : '',
+    ].filter(Boolean).join('\n');
+    const embedding = await episodicMemoryService.generateEmbeddingAsync(text);
+    await getPrisma().policy.update({
+      where: { id: policy.id },
+      data: {
+        embedding: JSON.stringify(embedding),
+        embeddingGeneratedAt: new Date(),
+      },
+    });
+  } catch (err) {
+    console.warn(`[POLICY] Auto-embedding failed for ${policy.id}:`, err.message);
+  }
+}
 
 const normalizeTagsForWrite = (tags) => {
   if (Array.isArray(tags)) return JSON.stringify(tags);
@@ -74,6 +99,7 @@ router.post('/', requireAuth, async (req, res) => {
       }
     });
 
+    _autoEmbedPolicy(policy).catch(() => {});
     res.status(201).json(serializePolicy(policy));
   } catch (error) {
     console.error('Error creating policy:', error);
@@ -101,6 +127,7 @@ router.put('/:id', requireAuth, async (req, res) => {
       data: updateData
     });
 
+    _autoEmbedPolicy(policy).catch(() => {});
     res.json(serializePolicy(policy));
   } catch (error) {
     console.error('Error updating policy:', error);

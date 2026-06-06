@@ -4,16 +4,25 @@ import pytest
 from agent_framework import FunctionTool
 
 from src.tools.registry import (
+    CompetitorGenerateReportInput,
     DiscountCreateInput,
+    InventoryAdjustInput,
     MessageBroadcastInput,
     OrderCancelInput,
+    OrderCreateConfirmedInput,
     OrderLookupInput,
     ProductSearchInput,
+    competitor_generate_report,
     discount_create,
+    get_all_tools,
     get_read_tools,
+    get_tool,
     get_write_tools,
+    inventory_adjust,
     message_broadcast,
     order_cancel,
+    order_create_confirmed,
+    resolve_tools_from_names,
 )
 
 
@@ -36,6 +45,42 @@ def test_get_write_tools():
     assert "order_cancel" in names
     assert "message_broadcast" in names
     assert "agent_spawn" in names
+    assert all(t.approval_mode == "always_require" for t in tools)
+
+
+def test_read_tools_do_not_require_approval():
+    assert all(t.approval_mode == "never_require" for t in get_read_tools())
+
+
+def test_get_all_tools_includes_discovered_mcp_tools(monkeypatch):
+    class _Registry:
+        def get_all_tools(self):
+            return [
+                {
+                    "name": "mcp_catalog_search",
+                    "description": "Search catalog through MCP",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {"query": {"type": "string"}},
+                    },
+                }
+            ]
+
+    monkeypatch.setattr("src.tools.registry.get_mcp_registry", lambda: _Registry())
+
+    tools = get_all_tools()
+
+    mcp_tool = next(tool for tool in tools if tool.name == "mcp_catalog_search")
+    assert isinstance(mcp_tool, FunctionTool)
+    assert mcp_tool.approval_mode == "never_require"
+
+
+def test_registry_resolves_dotted_tool_aliases():
+    tools = resolve_tools_from_names(["product.search", "inventory.check", "product_search"])
+
+    names = [tool.name for tool in tools]
+    assert names == ["product_search", "inventory_check"]
+    assert get_tool("product.search").name == "product_search"
 
 
 def test_product_search_input():
@@ -79,13 +124,96 @@ async def test_discount_create_returns_awaiting_approval():
 
 
 @pytest.mark.asyncio
-async def test_order_cancel_returns_awaiting_approval():
+async def test_order_create_confirmed_executes_backend_after_sdk_approval(monkeypatch):
+    class _Client:
+        async def create_order(self, company_id, order_data):
+            return {"id": "ord_1", "companyId": company_id, "payload": order_data}
+
+    monkeypatch.setattr("src.tools.registry.get_backend_client", lambda: _Client())
+
+    result = await order_create_confirmed(OrderCreateConfirmedInput(
+        customer_name="Ahmed",
+        customer_phone="+201000000000",
+        product_name="Shoes",
+        quantity=2,
+        total=500,
+        address="Cairo",
+        city="Cairo",
+        company_id="comp1",
+    ))
+
+    assert result["status"] == "EXECUTED"
+    assert result["action"] == "ORDER_CREATED"
+    assert result["result"]["companyId"] == "comp1"
+    assert result["result"]["payload"]["customerName"] == "Ahmed"
+
+
+@pytest.mark.asyncio
+async def test_order_cancel_executes_backend_after_sdk_approval(monkeypatch):
+    class _Client:
+        async def cancel_order(self, company_id, order_number, reason):
+            return {"orderNumber": order_number, "companyId": company_id, "reason": reason}
+
+    monkeypatch.setattr("src.tools.registry.get_backend_client", lambda: _Client())
+
     result = await order_cancel(OrderCancelInput(
         order_number="ORD-123",
         reason="customer request",
         company_id="comp1",
     ))
-    assert result["status"] == "awaiting_approval"
+
+    assert result["status"] == "EXECUTED"
+    assert result["action"] == "ORDER_CANCELLED"
+    assert result["result"]["orderNumber"] == "ORD-123"
+
+
+@pytest.mark.asyncio
+async def test_inventory_adjust_executes_backend_after_sdk_approval(monkeypatch):
+    class _Client:
+        async def adjust_inventory(self, company_id, product_id, quantity, reason):
+            return {
+                "productId": product_id,
+                "companyId": company_id,
+                "quantity": quantity,
+                "reason": reason,
+            }
+
+    monkeypatch.setattr("src.tools.registry.get_backend_client", lambda: _Client())
+
+    result = await inventory_adjust(InventoryAdjustInput(
+        product_id="prod_1",
+        quantity_delta=-3,
+        reason="damaged stock",
+        company_id="comp1",
+    ))
+
+    assert result["status"] == "EXECUTED"
+    assert result["action"] == "INVENTORY_ADJUSTED"
+    assert result["result"]["quantity"] == -3
+
+
+@pytest.mark.asyncio
+async def test_competitor_generate_report_executes_backend_after_sdk_approval(monkeypatch):
+    class _Client:
+        async def generate_competitor_report(self, company_id, competitor_id, report_type):
+            return {
+                "reportId": "rep_1",
+                "companyId": company_id,
+                "competitorId": competitor_id,
+                "type": report_type,
+            }
+
+    monkeypatch.setattr("src.tools.registry.get_backend_client", lambda: _Client())
+
+    result = await competitor_generate_report(CompetitorGenerateReportInput(
+        competitor_id="cmp_1",
+        report_type="weekly",
+        company_id="comp1",
+    ))
+
+    assert result["status"] == "EXECUTED"
+    assert result["action"] == "COMPETITOR_REPORT_GENERATED"
+    assert result["result"]["reportId"] == "rep_1"
 
 
 @pytest.mark.asyncio

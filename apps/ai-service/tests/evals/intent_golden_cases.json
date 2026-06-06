@@ -1,0 +1,37 @@
+[
+  {
+    "id": "catalog_price_read",
+    "channel": "chat",
+    "message": "How much is the black hoodie and is size L available?",
+    "expected_intent": "inventory",
+    "expected_primary_tool": "product_low_stock"
+  },
+  {
+    "id": "order_lookup",
+    "channel": "chat",
+    "message": "Where is order ORD-123?",
+    "expected_intent": "orders",
+    "expected_primary_tool": "order_lookup"
+  },
+  {
+    "id": "merchant_product_create",
+    "channel": "merchant",
+    "message": "Create a new product named Runner Pro for 1200.",
+    "expected_intent": "products.manage",
+    "expected_primary_tool": "product_create"
+  },
+  {
+    "id": "merchant_agent_read",
+    "channel": "merchant",
+    "message": "Show me the active support agents.",
+    "expected_intent": "agents.read",
+    "expected_primary_tool": "agent_list_agents"
+  },
+  {
+    "id": "support_refund",
+    "channel": "chat",
+    "message": "I want a refund for a damaged item.",
+    "expected_intent": "support.refund",
+    "expected_primary_tool": "agent_handoff_to"
+  }
+]

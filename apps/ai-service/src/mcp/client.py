@@ -48,6 +48,7 @@ class MCPClient:
                 base_url=self.server_url,
                 headers=headers,
                 timeout=30.0,
+                trust_env=False,
             )
         return self._client
 

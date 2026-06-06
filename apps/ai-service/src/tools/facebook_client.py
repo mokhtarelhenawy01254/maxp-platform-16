@@ -17,6 +17,7 @@ class FacebookGraphClient:
             base_url=self.BASE_URL,
             headers={"Content-Type": "application/json"},
             timeout=30.0,
+            trust_env=False,
         )
 
     async def fetch_user_profile(self, user_id: str) -> dict[str, Any]:

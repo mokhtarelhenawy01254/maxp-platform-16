@@ -10,6 +10,24 @@ from src.llm.providers.base import BaseProvider, ProviderResponse
 logger = structlog.get_logger(__name__)
 
 
+def _message_value(message: Any, key: str, default: Any = None) -> Any:
+    if isinstance(message, dict):
+        return message.get(key, default)
+    return getattr(message, key, default)
+
+
+def _message_content(message: Any) -> str:
+    content = _message_value(message, "content")
+    if content is not None:
+        return str(content)
+    contents = _message_value(message, "contents")
+    if isinstance(contents, list):
+        return "\n".join(str(item) for item in contents if item is not None)
+    if contents is not None:
+        return str(contents)
+    return ""
+
+
 class OllamaProvider(BaseProvider):
     def __init__(self, model: str, **kwargs: Any) -> None:
         super().__init__("", model, **kwargs)
@@ -24,7 +42,7 @@ class OllamaProvider(BaseProvider):
         body: dict[str, Any] = {
             "model": self.model,
             "messages": [
-                {"role": m.get("role", "user"), "content": m.get("content", "")}
+                {"role": _message_value(m, "role", "user") or "user", "content": _message_content(m)}
                 for m in messages
             ],
             "stream": False,
@@ -36,7 +54,7 @@ class OllamaProvider(BaseProvider):
         if options.get("max_tokens") is not None:
             body["options"] = {"num_predict": options["max_tokens"]}
 
-        async with httpx.AsyncClient(timeout=max(self.timeout_ms / 1000, 180)) as client:
+        async with httpx.AsyncClient(timeout=max(self.timeout_ms / 1000, 180), trust_env=False) as client:
             response = await client.post(
                 f"{self.base_url}/api/chat",
                 json=body,
@@ -61,7 +79,7 @@ class OllamaProvider(BaseProvider):
 
     async def test_connection(self) -> bool:
         try:
-            async with httpx.AsyncClient(timeout=10) as client:
+            async with httpx.AsyncClient(timeout=10, trust_env=False) as client:
                 response = await client.get(f"{self.base_url}/api/tags")
                 return response.is_success
         except Exception:

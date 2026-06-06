@@ -6,18 +6,88 @@
  */
 
 const { getSharedPrismaClient } = require('../sharedDatabase');
+const episodicMemoryService = require('../../legacy-ai-agent/aiAgent/episodicMemoryService');
 
 const DEFAULT_SOURCE_ORDER = ['HYBRID_KNOWLEDGE', 'FAQ_DB', 'POLICY_DB', 'VECTOR_STORE', 'PRODUCT_DB', 'WEB'];
 const HYBRID_SOURCE_TYPES = ['faq', 'policy'];
 const TRACE_FAILED_STATUS = 'failed';
 const TRACE_ANSWERED_STATUS = 'answered';
 
+const SKIPPABLE_PATTERNS = [
+  /^(hi|hello|hey|greetings|good\s*(morning|afternoon|evening)|thank|thanks|bye|goodbye|ok|okay)$/i,
+  /^(\u0645\u0631\u062d\u0628\u0627|\u0627\u0647\u0644\u064a\u0646|\u0627\u0644\u0633\u0644\u0627\u0645|\u062a\u062d\u064a\u0629|\u0635\u0628\u0627\u062d|\u0645\u0633\u0627\u0621|\u0634\u0643\u0631\u0627|\u0645\u0639\u0020\u0627\u0644\u0633\u0644\u0627\u0645\u0647|\u0645\u0639\u0020\u0627\u0644\u0633\u0644\u0627\u0645\u0629|\u062a\u0645\u0627\u0645|\u062d\u0633\u0646\u0627|\u0627\u064a\u0648\u0647|\u0623\u064a\u0648\u0647|\u062e\u0644\u0627\u0635|\u0645\u0627\u0634\u064a)$/u,
+];
+
 class CorrectiveRAGEngine {
   constructor() {
     this.maxIterations = DEFAULT_SOURCE_ORDER.length;
-    /** @type {Map<string, Array>} Simulated document stores keyed by source */
     this._sources = new Map();
     this._queryLog = [];
+    this.enableLLMReranker = true;
+    this.rerankTopK = 10;
+  }
+
+  _isQueryRagRelevant(query) {
+    const text = String(query || '').trim();
+    if (!text || text.length < 3) return false;
+    const normalized = text.toLowerCase().replace(/[.,!?;:]/g, '').trim();
+    return !SKIPPABLE_PATTERNS.some(pattern => pattern.test(normalized));
+  }
+
+  async _rerankWithGemini(companyId, query, documents) {
+    if (!Array.isArray(documents) || documents.length < 2) return documents;
+    try {
+      const apiKey = await episodicMemoryService.getGeminiApiKey();
+      if (!apiKey) return documents;
+      const candidates = documents.slice(0, this.rerankTopK);
+      const pairs = candidates.map((doc, i) =>
+        `[${i + 1}] Document: ${doc.content.substring(0, 500)}`.trim()
+      );
+      const prompt = `You are a relevance re-ranker. Rate how relevant each document is to the query on a scale of 0.00 to 1.00.
+
+Query: ${query}
+
+${pairs.join('\n\n')}
+
+Return a JSON object with keys being the document numbers (1-${candidates.length}) and values being the relevance scores. Only respond with valid JSON, no other text. Example: {"1": 0.95, "2": 0.32}`;
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 512 },
+        }),
+      });
+      if (!response.ok) return documents;
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) return documents;
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return documents;
+      const scores = JSON.parse(jsonMatch[0]);
+
+      const scored = candidates.map((doc, i) => ({
+        ...doc,
+        relevance: Number(scores[String(i + 1)]) || doc.relevance,
+        metadata: {
+          ...(doc.metadata || {}),
+          retrieval: {
+            ...((doc.metadata || {}).retrieval || {}),
+            llmRerankScore: Number(scores[String(i + 1)]) || 0,
+            pipeline: ((doc.metadata || {}).retrieval || {}).pipeline
+              ? `${(doc.metadata || {}).retrieval.pipeline}-llm-rerank`
+              : 'llm-rerank',
+          },
+        },
+      }));
+      scored.sort((a, b) => b.relevance - a.relevance);
+      return scored;
+    } catch (err) {
+      console.warn('[RAG] LLM reranker failed, using original scores:', err.message);
+      return documents;
+    }
   }
 
   /**
@@ -61,13 +131,37 @@ class CorrectiveRAGEngine {
       return response;
     }
 
+    if (!this._isQueryRagRelevant(query)) {
+      const response = {
+        answer: null,
+        sources: [],
+        iterations: 0,
+        grading: { avgRelevance: 0, sufficient: false, skippable: true },
+        finalSource: 'SKIP_RETRIEVAL',
+        attempts: [],
+        retrievalMode: 'skip-retrieval',
+      };
+      this._queryLog.push({ companyId, query, answer: null, source: 'SKIP_RETRIEVAL', iterations: 0, score: 0, timestamp: new Date() });
+      response.traceId = await this._persistTrace(companyId, query, response, {
+        ...options,
+        latencyMs: Date.now() - startedAt,
+        status: TRACE_FAILED_STATUS,
+      });
+      return response;
+    }
+
     for (const source of sourceOrder) {
       if (iterations >= maxIterations) break;
       iterations++;
       visitedSources.add(source);
 
       const attemptStartedAt = Date.now();
-      const documents = await this._retrieve(companyId, currentQuery, source, options);
+      let documents = await this._retrieve(companyId, currentQuery, source, options);
+
+      if (source === 'HYBRID_KNOWLEDGE' && this.enableLLMReranker && documents.length > 1) {
+        documents = await this._rerankWithGemini(companyId, currentQuery, documents);
+      }
+
       const grading = this._gradeDocuments(currentQuery, documents);
       attempts.push({
         source,
@@ -106,7 +200,6 @@ class CorrectiveRAGEngine {
         return response;
       }
 
-      // Reformulate query for next source
       if (grading.avgRelevance > bestScore) {
         bestDocuments = documents;
         bestScore = grading.avgRelevance;
@@ -163,7 +256,7 @@ class CorrectiveRAGEngine {
       return this._retrieveHybridKnowledge(companyId, query, options);
     }
 
-    // 2. FAQ_DB: tenant-scoped active FAQs for policy/customer support grounding
+    // 2. FAQ_DB: tenant-scoped active FAQs with hybrid vector + n-gram scoring
     if (source === 'FAQ_DB') {
       try {
         const prisma = getSharedPrismaClient();
@@ -183,11 +276,13 @@ class CorrectiveRAGEngine {
             tags: true,
             version: true,
             updatedAt: true,
+            embedding: true,
+            embeddingGeneratedAt: true,
           },
         });
 
         if (faqs.length > 0) {
-          return this._scoreDocuments(query, faqs.map(faq => {
+          const docs = faqs.map(faq => {
             const categoryLabel = faq.category || 'general';
             const tagsList = this._formatTags(faq.tags);
             const contextHeader = `This chunk is part of the merchant's official FAQ database, specifically answering a customer question under category "${categoryLabel}". Tags: [${tagsList}]. Question: ${faq.question}`;
@@ -199,6 +294,8 @@ class CorrectiveRAGEngine {
                 `Category: ${categoryLabel}`,
                 `Tags: ${tagsList}`,
               ].join('\n'),
+              embedding: faq.embedding,
+              embeddingGeneratedAt: faq.embeddingGeneratedAt,
               metadata: {
                 type: 'faq',
                 id: faq.id,
@@ -209,12 +306,13 @@ class CorrectiveRAGEngine {
                 updatedAt: faq.updatedAt,
               },
             };
-          }));
+          });
+          return this._hybridScoreDocuments(query, docs);
         }
       } catch (_) {}
     }
 
-    // 3. POLICY_DB: tenant-scoped active policies with effective-date controls
+    // 3. POLICY_DB: tenant-scoped active policies with hybrid vector + n-gram scoring
     if (source === 'POLICY_DB') {
       try {
         const prisma = getSharedPrismaClient();
@@ -245,11 +343,13 @@ class CorrectiveRAGEngine {
             effectiveAt: true,
             expiresAt: true,
             updatedAt: true,
+            embedding: true,
+            embeddingGeneratedAt: true,
           },
         });
 
         if (policies.length > 0) {
-          return this._scoreDocuments(query, policies.map(policy => {
+          const docs = policies.map(policy => {
             const categoryLabel = policy.category || 'general';
             const tagsList = this._formatTags(policy.tags);
             const contextHeader = `This chunk is part of the merchant's official policy document, titled "${policy.title}", under category "${categoryLabel}". This document governs operations and terms. Tags: [${tagsList}]`;
@@ -261,6 +361,8 @@ class CorrectiveRAGEngine {
                 `Category: ${categoryLabel}`,
                 `Tags: ${tagsList}`,
               ].join('\n'),
+              embedding: policy.embedding,
+              embeddingGeneratedAt: policy.embeddingGeneratedAt,
               metadata: {
                 type: 'policy',
                 id: policy.id,
@@ -273,7 +375,8 @@ class CorrectiveRAGEngine {
                 updatedAt: policy.updatedAt,
               },
             };
-          }));
+          });
+          return this._hybridScoreDocuments(query, docs);
         }
       } catch (_) {}
     }
@@ -790,6 +893,78 @@ class CorrectiveRAGEngine {
             intentConflict,
             rerankScore: Number(rerankScore.toFixed(4)),
             vectorProvider: doc.embedding ? 'stored' : 'local-fallback',
+          },
+        },
+      };
+    }).sort((a, b) => b.relevance - a.relevance).slice(0, 5);
+  }
+
+  /**
+   * Hybrid scoring for FAQ/Policy sources combining n-gram overlap with vector cosine similarity.
+   * Uses stored Gemini embeddings when available, falls back to local FNV hash.
+   */
+  _hybridScoreDocuments(query, docs) {
+    if (!Array.isArray(docs) || docs.length === 0) return [];
+    const ngramScores = new Map();
+    const normalizedQuery = this._arabicNormalize(query);
+    const queryWords = normalizedQuery.split(/\s+/).filter(w => w.length > 1);
+    const queryBigrams = this._getNgrams(normalizedQuery, 2).filter(b => b.trim().length === 2);
+    const queryTrigrams = this._getNgrams(normalizedQuery, 3).filter(t => t.trim().length === 3);
+    let maxNgramScore = 0;
+
+    docs.forEach((doc, index) => {
+      const normalizedContent = this._arabicNormalize(doc.content);
+      const contentWords = normalizedContent.split(/\s+/);
+      const contentBigrams = this._getNgrams(normalizedContent, 2);
+      const contentTrigrams = this._getNgrams(normalizedContent, 3);
+      const wordOverlap = queryWords.filter(w => contentWords.includes(w)).length;
+      const wordScore = queryWords.length > 0 ? wordOverlap / queryWords.length : 0;
+      const bigramOverlap = queryBigrams.filter(b => contentBigrams.includes(b)).length;
+      const bigramScore = queryBigrams.length > 0 ? bigramOverlap / queryBigrams.length : 0;
+      const trigramOverlap = queryTrigrams.filter(t => contentTrigrams.includes(t)).length;
+      const trigramScore = queryTrigrams.length > 0 ? trigramOverlap / queryTrigrams.length : 0;
+      let ngram = wordScore;
+      if (wordScore < 0.7 && (bigramScore > 0 || trigramScore > 0)) {
+        ngram = Math.max(wordScore, (bigramScore * 0.4 + trigramScore * 0.6));
+      }
+      ngramScores.set(index, Math.min(1, ngram));
+      maxNgramScore = Math.max(maxNgramScore, ngram);
+    });
+
+    const queryVector = this._localEmbedding(query);
+    const vectorScores = new Map();
+    let maxVectorScore = 0;
+    docs.forEach((doc, index) => {
+      const storedEmbedding = this._parseEmbedding(doc.embedding);
+      const docVector = storedEmbedding || this._localEmbedding(doc.content);
+      const similarity = Math.max(0, this._cosineSimilarity(queryVector, docVector));
+      const score = similarity >= 0.15 ? similarity : 0;
+      vectorScores.set(index, score);
+      maxVectorScore = Math.max(maxVectorScore, score);
+    });
+    if (maxVectorScore > 0) {
+      for (const [index, score] of vectorScores.entries()) {
+        vectorScores.set(index, score / maxVectorScore);
+      }
+    }
+
+    return docs.map((doc, index) => {
+      const ngramNorm = maxNgramScore > 0 ? (ngramScores.get(index) || 0) / maxNgramScore : 0;
+      const vectorNorm = vectorScores.get(index) || 0;
+      const hasVector = !!doc.embedding;
+      const vectorWeight = hasVector ? 0.4 : 0;
+      const ngramWeight = 1 - vectorWeight;
+      const relevance = Math.min(1, ngramNorm * ngramWeight + vectorNorm * vectorWeight);
+      return {
+        ...doc,
+        relevance,
+        metadata: {
+          ...(doc.metadata || {}),
+          retrieval: {
+            pipeline: hasVector ? 'hybrid-ngram-vector' : 'ngram-only',
+            ngramScore: Number(ngramNorm.toFixed(4)),
+            vectorScore: Number(vectorNorm.toFixed(4)),
+            vectorProvider: hasVector ? 'stored' : 'none',
           },
         },
       };

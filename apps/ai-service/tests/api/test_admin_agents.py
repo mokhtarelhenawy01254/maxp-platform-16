@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -10,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import get_settings
 from src.db.session import get_session
-from src.db.models.agent import CompanyAgent, AgentTemplate
+from src.db.models.agent import Agent, AgentTemplate
 
 
 def _create_test_app(mock_session: AsyncMock) -> FastAPI:
@@ -56,7 +55,7 @@ def valid_headers():
 
 
 def _make_mock_agent(agent_id="agent_123", company_id="comp_123", role="SUPPORT"):
-    agent = CompanyAgent(
+    agent = Agent(
         id=agent_id,
         company_id=company_id,
         name="Support Agent",
@@ -64,15 +63,14 @@ def _make_mock_agent(agent_id="agent_123", company_id="comp_123", role="SUPPORT"
         template_slug="support-agent",
         status="ACTIVE",
         model="gpt-4o",
-        soul="You help customers.",
-        rules="Be polite.",
-        skills=json.dumps(["get_product_details"]),
-        description="Helpdesk agent",
-        icon="🤖",
+        persona={"soulInstructions": "You help customers."},
+        allowed_tools=["get_product_details"],
+        allowed_skills=[],
+        guardrails={},
+        budget={},
         parent_id=None,
-        department_id=None,
-        manager_type="AGENT",
-        created_by="admin_api"
+        version="1.0.0",
+        config={},
     )
     return agent
 
@@ -106,7 +104,7 @@ def setup_execute_mock(mock_session, template_return=None, agent_return=None, li
         mock_res = MagicMock()
         if "agent_templates" in sql:
             mock_res.scalar_one_or_none.return_value = template_return
-        elif "company_agents" in sql:
+        elif "agents" in sql:
             # We check if this is a list query by checking if list_agents_return is provided
             # or if order_by / limit exists in the query.
             if list_agents_return is not None and ("LIMIT" in sql or "ORDER BY" in sql or "agents" in sql):
@@ -160,8 +158,8 @@ def test_spawn_agent_success(client, mock_session, valid_headers):
             "name": "New Support",
             "role": "SUPPORT",
             "model": "gpt-4o",
-            "soul": "Be nice",
-            "skills": ["search"],
+            "persona": {"soulInstructions": "Be nice"},
+            "allowed_tools": ["search"],
         },
         headers=valid_headers
     )
@@ -171,8 +169,8 @@ def test_spawn_agent_success(client, mock_session, valid_headers):
     assert data["name"] == "New Support"
     assert data["role"] == "SUPPORT"
     assert data["model"] == "gpt-4o"
-    assert data["soul"] == "Be nice"
-    assert data["skills"] == ["search"]
+    assert data["persona"]["soulInstructions"] == "Be nice"
+    assert data["allowed_tools"] == ["search"]
 
 
 def test_spawn_agent_with_template(client, mock_session, valid_headers):
@@ -192,7 +190,7 @@ def test_spawn_agent_with_template(client, mock_session, valid_headers):
     assert data["company_id"] == "comp_123"
     assert data["template_slug"] == "support-agent"
     assert data["model"] == "gpt-4o"
-    assert "Default soul" in data["soul"]
+    assert data["allowed_tools"] == ["get_product_details"]
 
 
 def test_spawn_agent_duplicate_conflict(client, mock_session, valid_headers):
@@ -222,8 +220,8 @@ def test_update_agent_success(client, mock_session, valid_headers):
         json={
             "name": "Updated Name",
             "model": "claude-3-5-sonnet",
-            "soul": "Brand new soul",
-            "skills": ["custom_tool"],
+            "persona": {"soulInstructions": "Brand new soul"},
+            "allowed_tools": ["custom_tool"],
         },
         headers=valid_headers
     )
@@ -231,8 +229,8 @@ def test_update_agent_success(client, mock_session, valid_headers):
     data = resp.json()
     assert data["name"] == "Updated Name"
     assert data["model"] == "claude-3-5-sonnet"
-    assert data["soul"] == "Brand new soul"
-    assert data["skills"] == ["custom_tool"]
+    assert data["persona"]["soulInstructions"] == "Brand new soul"
+    assert data["allowed_tools"] == ["custom_tool"]
 
 
 def test_archive_agent(client, mock_session, valid_headers):

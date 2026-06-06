@@ -141,6 +141,62 @@ async function listRagFailures(req, res) {
 }
 
 /**
+ * GET /api/v1/ai/chat/rag-knowledge-faqs
+ * Returns FAQ list with embedding status.
+ */
+async function getRagKnowledgeFaqs(req, res) {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    const items = await RagKnowledgeMaintenanceService.getFaqList(companyId, {
+      limit: req.query?.limit,
+    });
+
+    return res.json({
+      success: true,
+      data: { items },
+    });
+  } catch (error) {
+    console.error('[AI-CHAT-CTRL] getRagKnowledgeFaqs error:', error.message);
+    return res.status(500).json({
+      success: false,
+      error: `[INTERNAL_ERROR] ${error.message}`,
+    });
+  }
+}
+
+/**
+ * GET /api/v1/ai/chat/rag-knowledge-policies
+ * Returns Policy list with embedding status.
+ */
+async function getRagKnowledgePolicies(req, res) {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    const items = await RagKnowledgeMaintenanceService.getPolicyList(companyId, {
+      limit: req.query?.limit,
+    });
+
+    return res.json({
+      success: true,
+      data: { items },
+    });
+  } catch (error) {
+    console.error('[AI-CHAT-CTRL] getRagKnowledgePolicies error:', error.message);
+    return res.status(500).json({
+      success: false,
+      error: `[INTERNAL_ERROR] ${error.message}`,
+    });
+  }
+}
+
+/**
  * GET /api/v1/ai/chat/rag-knowledge-overview
  *
  * Returns tenant-scoped FAQ/Policy health, proposal counts, and recent RAG
@@ -195,6 +251,67 @@ async function backfillRagKnowledgeEmbeddings(req, res) {
     });
   } catch (error) {
     console.error('[AI-CHAT-CTRL] backfillRagKnowledgeEmbeddings error:', error.message);
+    return res.status(500).json({
+      success: false,
+      error: `[INTERNAL_ERROR] ${error.message}`,
+    });
+  }
+}
+
+/**
+ * GET /api/v1/ai/chat/rag-knowledge-products
+ * Query: { limit?: number, offset?: number }
+ */
+async function getRagKnowledgeProducts(req, res) {
+  try {
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    const result = await RagKnowledgeMaintenanceService.getProductEmbeddingOverview(companyId, {
+      limit: req.query?.limit,
+      offset: req.query?.offset,
+    });
+
+    return res.json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    console.error('[AI-CHAT-CTRL] getRagKnowledgeProducts error:', error.message);
+    return res.status(500).json({
+      success: false,
+      error: `[INTERNAL_ERROR] ${error.message}`,
+    });
+  }
+}
+
+/**
+ * POST /api/v1/ai/chat/rag-knowledge-products-backfill
+ * Body: { productId?: string, limit?: number, force?: boolean }
+ */
+async function backfillRagKnowledgeProducts(req, res) {
+  try {
+    const companyId = req.user?.companyId;
+
+    if (!companyId) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    const result = await RagKnowledgeMaintenanceService.backfillProductEmbeddings(companyId, {
+      productId: req.body?.productId,
+      limit: req.body?.limit,
+      force: req.body?.force,
+    });
+
+    return res.json({
+      success: true,
+      result,
+    });
+  } catch (error) {
+    console.error('[AI-CHAT-CTRL] backfillRagKnowledgeProducts error:', error.message);
     return res.status(500).json({
       success: false,
       error: `[INTERNAL_ERROR] ${error.message}`,
@@ -525,8 +642,12 @@ module.exports = {
   sendMessage,
   previewRag,
   listRagFailures,
+  getRagKnowledgeFaqs,
+  getRagKnowledgePolicies,
   getRagKnowledgeOverview,
   backfillRagKnowledgeEmbeddings,
+  getRagKnowledgeProducts,
+  backfillRagKnowledgeProducts,
   runRagKnowledgeEvaluation,
   runPersistedRagKnowledgeEvaluation,
   createRagKnowledgeProposal,

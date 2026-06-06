@@ -10,6 +10,25 @@ from src.llm.providers.base import BaseProvider, ProviderResponse
 logger = structlog.get_logger(__name__)
 
 
+def _message_value(message: Any, key: str, default: Any = None) -> Any:
+    if isinstance(message, dict):
+        return message.get(key, default)
+    return getattr(message, key, default)
+
+
+def _message_content(message: Any) -> str | None:
+    content = _message_value(message, "content")
+    if content is not None:
+        return str(content)
+
+    contents = _message_value(message, "contents")
+    if isinstance(contents, list):
+        return "\n".join(str(item) for item in contents if item is not None)
+    if contents is not None:
+        return str(contents)
+    return None
+
+
 class OpenAICompatProvider(BaseProvider):
     def __init__(self, api_key: str, model: str, **kwargs: Any) -> None:
         super().__init__(api_key, model, **kwargs)
@@ -42,13 +61,27 @@ class OpenAICompatProvider(BaseProvider):
         if options.get("top_p") is not None:
             body["top_p"] = options["top_p"]
 
-        async with httpx.AsyncClient(timeout=self.timeout_ms / 1000) as client:
+        async with httpx.AsyncClient(timeout=self.timeout_ms / 1000, trust_env=False) as client:
             response = await client.post(
                 f"{self.base_url}/chat/completions",
                 headers=headers,
                 json=body,
             )
-            response.raise_for_status()
+            if response.status_code >= 400:
+                body_preview = response.text[:1000]
+                logger.error(
+                    "openai_compat_request_failed",
+                    provider=self.provider_name,
+                    model=self.model,
+                    status_code=response.status_code,
+                    response=body_preview,
+                )
+                raise httpx.HTTPStatusError(
+                    f"{self.provider_name} chat completion failed "
+                    f"{response.status_code}: {body_preview}",
+                    request=response.request,
+                    response=response,
+                )
             data = response.json()
 
         choice = data["choices"][0]
@@ -80,14 +113,16 @@ class OpenAICompatProvider(BaseProvider):
     def _normalize_messages(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         normalized = []
         for msg in messages:
-            m: dict[str, Any] = {"role": msg.get("role", "user")}
-            content = msg.get("content")
+            m: dict[str, Any] = {"role": _message_value(msg, "role", "user") or "user"}
+            content = _message_content(msg)
             if content is not None:
                 m["content"] = content
-            if msg.get("tool_calls"):
-                m["tool_calls"] = msg["tool_calls"]
-            if msg.get("tool_call_id"):
-                m["tool_call_id"] = msg["tool_call_id"]
+            tool_calls = _message_value(msg, "tool_calls")
+            if tool_calls:
+                m["tool_calls"] = tool_calls
+            tool_call_id = _message_value(msg, "tool_call_id")
+            if tool_call_id:
+                m["tool_call_id"] = tool_call_id
             normalized.append(m)
         return normalized
 

@@ -1,4 +1,4 @@
-const { TOOLS, getToolMetadata } = require('./agentToolRegistry');
+const { TOOLS, getToolMetadata, fromNativeToolName } = require('./agentToolRegistry');
 
 function typeOfValue(value) {
   if (Array.isArray(value)) return 'array';
@@ -82,7 +82,10 @@ class ToolRegistryService {
   }
 
   hasTool(name) {
-    return this.loadRegistry().byName.has(name);
+    const cache = this.loadRegistry();
+    if (cache.byName.has(name)) return true;
+    const resolved = fromNativeToolName(name);
+    return resolved !== name && cache.byName.has(resolved);
   }
 
   isWriteAction(name) {

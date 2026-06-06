@@ -1,22 +1,28 @@
 from __future__ import annotations
 
 import secrets
-from typing import Annotated
+import uuid
+from datetime import UTC, datetime
+from typing import Annotated, Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.agents.base import BaseAgent, BaseAgentConfig
 from src.agents.loader import get_template, list_templates, seed_templates
 from src.api.admin.agents_schemas import (
+    AgentChatRequest,
+    AgentChatResponse,
     AgentCreate,
     AgentRead,
     AgentTemplateList,
     AgentTemplateRead,
     AgentUpdate,
 )
-from src.db.models.agent import Agent, AgentTemplate
+from src.db.models.agent import Agent as AgentModel
+from src.db.models.agent import AgentTemplate
 from src.db.session import get_session
 
 logger = structlog.get_logger(__name__)
@@ -29,7 +35,7 @@ def _generate_agent_id() -> str:
     return f"agent_{secrets.token_urlsafe(16)}"
 
 
-def _agent_to_read(agent: Agent) -> AgentRead:
+def _agent_to_read(agent: AgentModel) -> AgentRead:
     return AgentRead(
         id=agent.id,
         company_id=agent.company_id,
@@ -46,8 +52,152 @@ def _agent_to_read(agent: Agent) -> AgentRead:
         parent_id=agent.parent_id,
         version=agent.version,
         config=agent.config,
-        created_at=agent.created_at,
-        updated_at=agent.updated_at,
+        created_at=agent.created_at or datetime.now(UTC),
+        updated_at=agent.updated_at or datetime.now(UTC),
+    )
+
+
+def _first_present(data: dict[str, Any], *keys: str, default: Any = None) -> Any:
+    for key in keys:
+        if key in data and data[key] is not None:
+            return data[key]
+    return default
+
+
+def _instructions_from_persona(persona: dict[str, Any]) -> dict[str, str]:
+    return {
+        "soul": str(_first_present(persona, "soulInstructions", "soul_instructions", default="") or ""),
+        "agents": str(_first_present(persona, "agentInstructions", "agent_instructions", default="") or ""),
+        "tools": str(_first_present(persona, "toolsInstructions", "tools_instructions", default="") or ""),
+        "persona": str(_first_present(persona, "personaInstructions", "persona_instructions", default="") or ""),
+    }
+
+
+def _agent_config_from_record(agent: AgentModel) -> dict[str, Any]:
+    return {
+        "id": agent.id,
+        "name": agent.name,
+        "role": agent.role,
+        "company_id": agent.company_id,
+        "template_slug": agent.template_slug,
+        "model": agent.model,
+        "persona": agent.persona or {},
+        "policies": {
+            "guardrails": agent.guardrails or {},
+            "budget": agent.budget or {},
+        },
+        "allowed_tools": agent.allowed_tools or [],
+        "allowed_skills": agent.allowed_skills or [],
+        "status": agent.status,
+    }
+
+
+def _normalize_agent_config(
+    *,
+    company_id: str,
+    agent_id: str,
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    persona = dict(_first_present(config, "persona", default={}) or {})
+    policies = dict(_first_present(config, "policies", default={}) or {})
+    template_slug = _first_present(config, "template_slug", "templateSlug")
+    role = str(_first_present(config, "role", default="") or "").upper()
+    name = str(_first_present(config, "name", default=role or agent_id) or agent_id)
+
+    return {
+        "id": str(_first_present(config, "id", default=agent_id) or agent_id),
+        "name": name,
+        "role": role,
+        "company_id": company_id,
+        "template_slug": template_slug,
+        "model": _first_present(config, "model"),
+        "provider": _first_present(config, "provider"),
+        "keyId": _first_present(config, "key_id", "keyId"),
+        "persona": persona,
+        "policies": policies,
+        "allowed_tools": list(_first_present(config, "allowed_tools", "allowedTools", default=[]) or []),
+        "allowed_skills": list(_first_present(config, "allowed_skills", "allowedSkills", default=[]) or []),
+        "status": str(_first_present(config, "status", default="ACTIVE") or "ACTIVE"),
+        "instructions": _instructions_from_persona(persona),
+        "version": _first_present(config, "version"),
+        "parent_id": _first_present(config, "parent_id", "parentId"),
+    }
+
+
+async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> BaseAgent:
+    result = await session.execute(
+        select(AgentModel).where(
+            AgentModel.id == body.agent_id,
+            AgentModel.company_id == body.company_id,
+            AgentModel.status != "ARCHIVED",
+        )
+    )
+    db_agent = result.scalar_one_or_none()
+    request_config = dict(body.agent_config or {})
+    raw_config = _agent_config_from_record(db_agent) if db_agent else {}
+    if request_config:
+        raw_config = {
+            **raw_config,
+            **request_config,
+            "persona": {
+                **dict(raw_config.get("persona") or {}),
+                **dict(request_config.get("persona") or {}),
+            },
+            "policies": {
+                **dict(raw_config.get("policies") or {}),
+                **dict(request_config.get("policies") or {}),
+            },
+        }
+    if not raw_config:
+        raise HTTPException(status_code=404, detail=f"Agent not found: {body.agent_id}")
+
+    cfg = _normalize_agent_config(
+        company_id=body.company_id,
+        agent_id=body.agent_id,
+        config=raw_config,
+    )
+    template_slug = cfg.get("template_slug")
+    overrides = {
+        "id": cfg["id"],
+        "name": cfg["name"],
+        "role": cfg["role"],
+        "model": cfg.get("model"),
+        "provider": cfg.get("provider"),
+        "key_id": cfg.get("key_id") or cfg.get("keyId"),
+        "persona": cfg.get("persona") or {},
+        "policies": cfg.get("policies") or {},
+        "allowed_tools": cfg.get("allowed_tools") or [],
+        "allowed_skills": cfg.get("allowed_skills") or [],
+        "instructions": cfg.get("instructions") or {},
+        "status": cfg.get("status") or "ACTIVE",
+        "version": cfg.get("version"),
+        "parent_id": cfg.get("parent_id"),
+    }
+
+    if template_slug:
+        return await BaseAgent.from_template(
+            str(template_slug),
+            body.company_id,
+            overrides=overrides,
+            session=session,
+        )
+
+    return BaseAgent(
+        BaseAgentConfig(
+            id=cfg["id"],
+            name=cfg["name"],
+            role=cfg["role"] or "CUSTOM",
+            company_id=body.company_id,
+            allowed_tools=cfg.get("allowed_tools") or [],
+            allowed_skills=cfg.get("allowed_skills") or [],
+            model=cfg.get("model") or "gemini-2.5-flash",
+            provider=cfg.get("provider"),
+            key_id=cfg.get("key_id") or cfg.get("keyId"),
+            persona=cfg.get("persona") or {},
+            policies=cfg.get("policies") or {},
+            instructions=cfg.get("instructions") or {},
+            status=cfg.get("status") or "ACTIVE",
+        )
     )
 
 
@@ -114,10 +264,10 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         allowed_skills = body.allowed_skills or []
 
     existing = await session.execute(
-        select(Agent).where(
-            Agent.company_id == body.company_id,
-            Agent.name == name,
-            Agent.status != "ARCHIVED",
+        select(AgentModel).where(
+            AgentModel.company_id == body.company_id,
+            AgentModel.name == name,
+            AgentModel.status != "ARCHIVED",
         )
     )
     if existing.scalar_one_or_none():
@@ -128,7 +278,7 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
 
     agent_id = _generate_agent_id()
     model = body.model or (template.model_policy.get("default") if template else None)
-    agent = Agent(
+    agent = AgentModel(
         id=agent_id,
         company_id=body.company_id,
         name=name,
@@ -161,22 +311,74 @@ async def list_agents(
     limit: int = Query(default=100, ge=1, le=500),
 ) -> list[AgentRead]:
     """List agents, optionally filtered by company_id, status, or role."""
-    stmt = select(Agent).order_by(Agent.created_at.desc())
+    stmt = select(AgentModel).order_by(AgentModel.created_at.desc())
     if company_id:
-        stmt = stmt.where(Agent.company_id == company_id)
+        stmt = stmt.where(AgentModel.company_id == company_id)
     if status:
-        stmt = stmt.where(Agent.status == status.upper())
+        stmt = stmt.where(AgentModel.status == status.upper())
     if role:
-        stmt = stmt.where(Agent.role == role.upper())
+        stmt = stmt.where(AgentModel.role == role.upper())
     stmt = stmt.limit(limit)
     result = await session.execute(stmt)
     return [_agent_to_read(a) for a in result.scalars().all()]
 
 
+@router.post("/agents/chat", response_model=AgentChatResponse)
+async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentChatResponse:
+    """Run a message through the selected runtime agent, not the generic CEO chat."""
+    agent = await _load_chat_agent(body, session)
+    await agent.ensure_client()
+
+    thread_id = body.thread_id or f"agent-chat-{uuid.uuid4()}"
+    result = await agent.process_task(
+        {
+            "current_message": body.message,
+            "description": body.message,
+            "intent_message": body.message,
+            "session_id": thread_id,
+            "conversation_id": body.conversation_id or thread_id,
+            "user_id": body.customer_id or "sandbox-user",
+            "customer_id": body.customer_id or "sandbox-user",
+            "channel": body.channel or "facebook",
+            "source_channel": body.channel or "facebook",
+            "memory_context": body.memory_context or {},
+            "_db_session": session,
+            "force_pipeline": True,
+        }
+    )
+
+    result_data = result if isinstance(result, dict) else {}
+    payload = result_data.get("result", {}) if isinstance(result_data, dict) else {}
+    tools = payload.get("tools") or []
+    awaiting = next(
+        (
+            tool
+            for tool in tools
+            if isinstance(tool, dict)
+            and tool.get("status") in {"awaiting_approval", "AWAITING_APPROVAL"}
+        ),
+        None,
+    )
+    status = "awaiting_approval" if awaiting else "ok"
+    if result_data.get("status") == "ERROR":
+        status = "error"
+
+    return AgentChatResponse(
+        status=status,
+        thread_id=thread_id,
+        reply=payload.get("reply") or payload.get("summary") or "",
+        draft_id=(awaiting or {}).get("draft_id") or payload.get("draft_id"),
+        agent_id=agent.id,
+        agent_role=agent.role,
+        runtime=str(payload.get("runtime") or "agent"),
+        tool_calls=list(tools) if isinstance(tools, list) else [],
+    )
+
+
 @router.get("/agents/{agent_id}", response_model=AgentRead)
 async def get_agent(agent_id: str, session: SessionDep) -> AgentRead:
     """Get a specific agent by ID."""
-    result = await session.execute(select(Agent).where(Agent.id == agent_id))
+    result = await session.execute(select(AgentModel).where(AgentModel.id == agent_id))
     agent = result.scalar_one_or_none()
     if not agent:
         raise HTTPException(status_code=404, detail=f"Agent not found: {agent_id}")
@@ -188,7 +390,7 @@ async def update_agent(
     agent_id: str, body: AgentUpdate, session: SessionDep
 ) -> AgentRead:
     """Update an agent's configuration."""
-    result = await session.execute(select(Agent).where(Agent.id == agent_id))
+    result = await session.execute(select(AgentModel).where(AgentModel.id == agent_id))
     agent = result.scalar_one_or_none()
     if not agent:
         raise HTTPException(status_code=404, detail=f"Agent not found: {agent_id}")
@@ -219,7 +421,7 @@ async def update_agent(
 @router.delete("/agents/{agent_id}", response_model=AgentRead)
 async def archive_agent(agent_id: str, session: SessionDep) -> AgentRead:
     """Archive (soft-delete) an agent."""
-    result = await session.execute(select(Agent).where(Agent.id == agent_id))
+    result = await session.execute(select(AgentModel).where(AgentModel.id == agent_id))
     agent = result.scalar_one_or_none()
     if not agent:
         raise HTTPException(status_code=404, detail=f"Agent not found: {agent_id}")
@@ -237,7 +439,7 @@ async def archive_agent(agent_id: str, session: SessionDep) -> AgentRead:
 @router.post("/agents/{agent_id}/reconcile", response_model=AgentRead)
 async def reconcile_agent(agent_id: str, session: SessionDep) -> AgentRead:
     """Reconcile agent with its template defaults."""
-    result = await session.execute(select(Agent).where(Agent.id == agent_id))
+    result = await session.execute(select(AgentModel).where(AgentModel.id == agent_id))
     agent = result.scalar_one_or_none()
     if not agent:
         raise HTTPException(status_code=404, detail=f"Agent not found: {agent_id}")

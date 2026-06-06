@@ -69,6 +69,8 @@ async def classify_intent(
 ) -> ClassifierResult | None:
     ctx = context or {}
     available_tools = ctx.get("availableTools", [])
+    preferred_model = ctx.get("preferredModel") or ctx.get("model")
+    preferred_provider = ctx.get("preferredProvider") or ctx.get("provider")
 
     # Use dynamic intent registry (with static fallback if not loaded)
     intent_enum = dynamic_intent_registry.get_intent_enum()
@@ -91,7 +93,11 @@ async def classify_intent(
     )
 
     fallback = LLMFallbackProvider()
-    client = await fallback.get_client()
+    client = await fallback.get_client(
+        company_id=company_id,
+        model=str(preferred_model) if preferred_model else None,
+        provider=str(preferred_provider) if preferred_provider else None,
+    )
     if not client:
         logger.error("no LLM client available for intent classification")
         return None
@@ -100,7 +106,7 @@ async def classify_intent(
         response = await client.get_response(
             messages=[
                 Message(role="system", contents=[system_prompt]),
-                Message(role="user", contents=[f"Latest message to classify:\n{message}"]),
+                Message(role="user", contents=[f"[USER_INPUT_START]\n{message}\n[USER_INPUT_END]"]),
             ],
             options={"temperature": 0, "max_tokens": 500},
         )

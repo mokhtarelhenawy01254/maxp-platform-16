@@ -6,18 +6,20 @@ import uuid
 import structlog
 from agent_framework import Agent, FunctionTool
 from agent_framework.anthropic import RawClaudeAgent
-from agent_framework.openai import OpenAIChatCompletionClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.agents.middleware import build_maxp_function_middleware
 from src.config import get_settings
 from src.db.models.agent import CompanyAgent
 from src.db.repo.agent_repo import AgentRepository
+from src.llm.agent_client_factory import build_agent_client_async
 from src.prompts.template_registry import get_prompt_registry
 from src.tools.registry import (
     get_tool_names_for_role,
     resolve_tools_from_names,
 )
+from src.tools.sdk_gateway import wrap_tools_for_gateway
 
 logger = structlog.get_logger(__name__)
 
@@ -102,7 +104,13 @@ class AgentRegistry:
         resolved_model = model or settings.default_model
 
         tool_names = allowed_tools or get_tool_names_for_role(role)
-        agent_tools: list[FunctionTool] = resolve_tools_from_names(tool_names)
+        raw_tools: list[FunctionTool] = resolve_tools_from_names(tool_names)
+        agent_tools = wrap_tools_for_gateway(
+            raw_tools,
+            company_id=company_id,
+            agent_role=role,
+            allowed_tools=tool_names,
+        )
         agent_instructions = instructions or self._default_instructions(role, company_name or "")
 
         if settings.default_llm_provider == "anthropic":
@@ -113,20 +121,19 @@ class AgentRegistry:
                 default_options={"model": resolved_model},
             )
         else:
-            api_key = settings.openai_api_key or settings.google_api_key or ""
-            base_url = None
-            if settings.default_llm_provider == "google":
-                base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
-            client = OpenAIChatCompletionClient(
-                api_key=api_key,
-                base_url=base_url,
+            client = await build_agent_client_async(
+                settings,
                 model=resolved_model,
+                tools=agent_tools,
+                system_prompt=agent_instructions,
+                company_id=company_id,
             )
             agent = Agent(
                 client=client,
                 name=name or f"{role} Agent",
                 instructions=agent_instructions,
                 tools=agent_tools,
+                middleware=build_maxp_function_middleware(company_id, role),
                 default_options={"model": resolved_model},
             )
 
@@ -223,7 +230,13 @@ async def init_registry_from_db(session_factory) -> None:
                 if not tool_names:
                     tool_names = get_tool_names_for_role(db_agent.role)
 
-                agent_tools = resolve_tools_from_names(tool_names)
+                raw_tools = resolve_tools_from_names(tool_names)
+                agent_tools = wrap_tools_for_gateway(
+                    raw_tools,
+                    company_id=company_id,
+                    agent_role=db_agent.role,
+                    allowed_tools=tool_names,
+                )
 
                 if settings.default_llm_provider == "anthropic":
                     agent: Agent | RawClaudeAgent = RawClaudeAgent(
@@ -233,20 +246,19 @@ async def init_registry_from_db(session_factory) -> None:
                         default_options={"model": db_agent.model or settings.default_model},
                     )
                 else:
-                    api_key = settings.openai_api_key or settings.google_api_key or ""
-                    base_url = None
-                    if settings.default_llm_provider == "google":
-                        base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
-                    client = OpenAIChatCompletionClient(
-                        api_key=api_key,
-                        base_url=base_url,
+                    client = await build_agent_client_async(
+                        settings,
                         model=db_agent.model or settings.default_model,
+                        tools=agent_tools,
+                        system_prompt=db_agent.soul or "",
+                        company_id=company_id,
                     )
                     agent = Agent(
                         client=client,
                         name=db_agent.name,
                         instructions=db_agent.soul or "",
                         tools=agent_tools,
+                        middleware=build_maxp_function_middleware(company_id, db_agent.role),
                     )
 
                 registry.register(company_id, db_agent.id, agent, tool_names=tool_names)

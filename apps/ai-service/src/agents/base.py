@@ -24,15 +24,18 @@ import uuid
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from inspect import isawaitable
 from pathlib import Path
 from typing import Any
 
 import structlog
 from agent_framework import Agent, FunctionTool
 
+from src.agents.middleware import build_maxp_function_middleware
 from src.config import get_settings
+from src.context.sdk_provider import MaxPContextProvider
 from src.guardrails.base import BaseGuardrail
-from src.llm.agent_client_factory import build_agent_client
+from src.llm.agent_client_factory import build_agent_client, build_agent_client_async, build_provider_client_async
 from src.pipeline.context import PipelineContext
 from src.pipeline.runner import execute_pipeline
 from src.pipeline.stages.execute_tools import execute_tools
@@ -44,6 +47,7 @@ from src.pipeline.stages.route_to_tools import route_to_tools
 from src.pipeline.stages.validate_reply import validate_reply
 from src.prompts.template_registry import HydratedPrompt, get_prompt_registry
 from src.tools.registry import get_all_tools
+from src.tools.sdk_gateway import wrap_tools_for_gateway
 
 _SKILLS_ROOT = Path(__file__).resolve().parent.parent.parent / "skills"
 
@@ -78,6 +82,8 @@ class BaseAgentConfig:
 
     model: str = "gemini-2.5-flash"
     model_source: str = "runtime-default"
+    provider: str | None = None
+    key_id: str | None = None
 
     persona: dict[str, Any] = field(default_factory=dict)
     policies: dict[str, Any] = field(default_factory=dict)
@@ -145,6 +151,7 @@ class BaseAgent:
         self.created_at = _utcnow()
         self._children: list[BaseAgent] = []
         self._framework_agent: Agent | None = None
+        self.client: Any | None = None
         self._last_model_selection: dict[str, Any] | None = None
 
         # Pipeline / prompt cache state
@@ -199,6 +206,8 @@ class BaseAgent:
             version=profile.version,
             model=resolved_model,
             model_source="policy-default" if resolved_model == profile.model_policy.get("default") else "explicit",
+            provider=overrides.get("provider"),
+            key_id=overrides.get("key_id") or overrides.get("keyId"),
             persona={
                 "language": profile.persona_meta.get("language", "arabic"),
                 "dialect": profile.persona_meta.get("dialect"),
@@ -250,9 +259,42 @@ class BaseAgent:
             name=self._agent_name(),
             instructions=instructions,
             tools=tools,
+            context_providers=[
+                MaxPContextProvider(
+                    company_id=self.company_id,
+                    agent=self,
+                )
+            ],
+            middleware=build_maxp_function_middleware(self.company_id, self.role),
             default_options={"model": self.model},
         )
+        self.client = client
         return self._framework_agent
+
+    async def ensure_client(self) -> Any:
+        """Create the SDK-compatible client through the framework Agent lifecycle."""
+        if self.client is not None:
+            return self.client
+        settings = get_settings()
+        instructions = self._get_system_prompt()
+        tools = self._resolve_tools()
+        if self.config.provider:
+            self.client = await build_provider_client_async(
+                self.config.provider,
+                model=self.model,
+                tools=tools,
+                system_prompt=instructions,
+                company_id=self.company_id,
+            )
+        else:
+            self.client = await build_agent_client_async(
+                settings,
+                model=self.model,
+                tools=tools,
+                system_prompt=instructions,
+                company_id=self.company_id,
+            )
+        return self.client
 
     def _resolve_tools(self) -> list[FunctionTool]:
         """Resolve the list of tools this agent is allowed to use.
@@ -262,12 +304,30 @@ class BaseAgent:
         """
         all_tools = get_all_tools()
         if not self.allowed_tools:
-            return all_tools
+            return wrap_tools_for_gateway(
+                all_tools,
+                company_id=self.company_id,
+                agent_role=self.role,
+                allowed_tools=[_tool_name(tool) for tool in all_tools],
+            )
         allowed = {name.lower() for name in self.allowed_tools}
-        return [t for t in all_tools if _tool_name(t).lower() in allowed]
+        scoped = [
+            t for t in all_tools
+            if _tool_name(t).lower() in allowed or _tool_name(t).replace("_", ".").lower() in allowed
+        ]
+        return wrap_tools_for_gateway(
+            scoped,
+            company_id=self.company_id,
+            agent_role=self.role,
+            allowed_tools=[_tool_name(tool) for tool in scoped],
+        )
 
     def _agent_name(self) -> str:
         return f"maxp_{self.role.lower()}_{self.id[-8:]}"
+
+    def create_session(self, *, session_id: str | None = None) -> Any:
+        """Create an SDK AgentSession for this agent."""
+        return self.build().create_session(session_id=session_id)
 
     # ------------------------------------------------------------------
     # System prompt assembly (cached)
@@ -463,23 +523,18 @@ class BaseAgent:
             for h in self.handoffs
         )
 
-    def as_tool(self, name: str | None = None, description: str | None = None) -> dict[str, Any]:
-        """Convert this agent into a tool callable by another agent.
-
-        Mirrors the OpenAI SDK's ``agent.as_tool()`` pattern.
-        """
-        return {
-            "name": name or f"agent_{self.role.lower()}_{self.id[-8:]}",
-            "description": description or (
+    def as_tool(self, name: str | None = None, description: str | None = None) -> FunctionTool:
+        """Convert this agent into an SDK FunctionTool callable by another agent."""
+        return self.build().as_tool(
+            name=name or f"agent_{self.role.lower()}_{self.id[-8:]}",
+            description=description or (
                 f"Delegate tasks to {self.name} ({self.role}). "
                 f"Best for: {self.get_capabilities_description()}"
             ),
-            "handler": self._as_tool_handler,
-            "params": {
-                "task": "The task to delegate to this agent",
-                "handoff_context": "JSON context from the parent agent (optional)",
-            },
-        }
+            arg_name="task",
+            arg_description="The task to delegate to this agent",
+            propagate_session=True,
+        )
 
 
     async def _as_tool_handler(
@@ -563,8 +618,19 @@ class BaseAgent:
         """
         run_id = f"run_{uuid.uuid4()}"
         message = task.get("current_message") or task.get("description") or ""
-        thread_id = task.get("session_id") or task.get("conversation_id") or run_id
+        thread_id = task.get("session_id") or task.get("conversation_id") or task.get("job_id") or run_id
         customer_id = task.get("user_id") or "anonymous"
+
+        if self._should_use_sdk_runtime(task):
+            try:
+                return await self._run_with_sdk_agent(message, thread_id, task, run_id)
+            except Exception as exc:
+                logger.warning(
+                    "sdk_agent_runtime_failed_falling_back",
+                    agent_id=self.id,
+                    thread_id=thread_id,
+                    error=str(exc),
+                )
 
         ctx = PipelineContext(
             message=message,
@@ -572,6 +638,10 @@ class BaseAgent:
             company_id=self.company_id,
             customer_id=customer_id,
             agent=self,
+            session=task.get("_db_session"),
+            channel=str(task.get("channel") or task.get("source_channel") or "chat"),
+            conversation_id=str(task.get("conversation_id") or thread_id),
+            external_memory_context=dict(task.get("memory_context") or {}),
         )
 
         ctx = await execute_pipeline(
@@ -588,6 +658,115 @@ class BaseAgent:
         )
 
         return self._to_process_task_result(ctx, task, run_id)
+
+    def _should_use_sdk_runtime(self, task: dict[str, Any]) -> bool:
+        """Use SDK Agent.run for internal work without bypassing customer chat gates."""
+        if task.get("force_pipeline") or task.get("use_sdk_runtime") is False:
+            return False
+
+        channel = str(task.get("channel") or task.get("source_channel") or "").lower()
+        customer_channels = {
+            "chat",
+            "facebook",
+            "facebook_messenger",
+            "messenger",
+            "whatsapp",
+            "telegram",
+        }
+        if channel in customer_channels:
+            return False
+
+        customer_id = task.get("user_id") or task.get("customer_id")
+        if customer_id and str(customer_id) not in {"anonymous", "merchant_admin"}:
+            return False
+
+        if task.get("use_sdk_runtime") is True:
+            return True
+
+        return bool(task.get("job_id") or task.get("parent_run_id"))
+
+    async def _run_with_sdk_agent(
+        self,
+        message: str,
+        thread_id: str,
+        task: dict[str, Any],
+        run_id: str,
+    ) -> dict[str, Any]:
+        framework_agent = self.build()
+        session = framework_agent.create_session(session_id=thread_id)
+        session_state = getattr(session, "state", None)
+        if isinstance(session_state, dict):
+            session_state["maxp_context"] = {
+                **(session_state.get("maxp_context") or {}),
+                "company_id": self.company_id,
+                "customer_id": str(task.get("user_id") or task.get("customer_id") or "anonymous"),
+                "thread_id": thread_id,
+                "rag_evidence": task.get("rag_evidence") or "",
+                "episodic_memories": task.get("episodic_memories") or [],
+                "system_prompt": task.get("system_prompt") or "",
+            }
+        response = framework_agent.run(
+            message,
+            session=session,
+            options={"maxp_token_budget": int(task.get("token_budget") or 120_000)},
+        )
+        if isawaitable(response):
+            response = await response
+
+        user_input_requests = list(getattr(response, "user_input_requests", None) or [])
+        if user_input_requests:
+            first_request = user_input_requests[0]
+            request_id = _request_attr(first_request, "id") or _request_attr(first_request, "request_id")
+            return {
+                "agent_id": self.id,
+                "role": self.role,
+                "status": "PAUSED",
+                "result": {
+                    "reply": _sdk_response_text(response),
+                    "summary": _sdk_response_text(response),
+                    "tools_used": True,
+                    "tool_rounds": 1,
+                    "tools": [
+                        {
+                            "status": "awaiting_approval",
+                            "sdk_approval_id": request_id,
+                            "tool": _request_attr(first_request, "name")
+                            or _request_attr(first_request, "function_name"),
+                            "arguments": _request_attr(first_request, "arguments") or {},
+                        }
+                    ],
+                    "repaired": False,
+                    "status": "AWAITING_APPROVAL",
+                    "thread_id": thread_id,
+                    "draft_id": request_id,
+                    "runtime": "sdk_agent",
+                },
+                "model_selection": self._last_model_selection,
+                "task": task,
+                "run_id": run_id,
+            }
+
+        reply = _sdk_response_text(response)
+        return {
+            "agent_id": self.id,
+            "role": self.role,
+            "status": "SUCCESS",
+            "result": {
+                "reply": reply,
+                "summary": reply,
+                "tools_used": False,
+                "tool_rounds": 0,
+                "tools": [],
+                "repaired": False,
+                "status": "ok",
+                "thread_id": thread_id,
+                "draft_id": None,
+                "runtime": "sdk_agent",
+            },
+            "model_selection": self._last_model_selection,
+            "task": task,
+            "run_id": run_id,
+        }
 
     async def process_task_streamed(
         self,
@@ -612,6 +791,10 @@ class BaseAgent:
             company_id=self.company_id,
             customer_id=customer_id,
             agent=self,
+            session=task.get("_db_session"),
+            channel=str(task.get("channel") or task.get("source_channel") or "chat"),
+            conversation_id=str(task.get("conversation_id") or thread_id),
+            external_memory_context=dict(task.get("memory_context") or {}),
         )
 
         try:
@@ -770,6 +953,29 @@ def _tool_name(tool: Any) -> str:
     if isinstance(tool, FunctionTool):
         return tool.name
     return getattr(tool, "name", str(tool))
+
+
+def _sdk_response_text(response: Any) -> str:
+    text = getattr(response, "text", None)
+    if isinstance(text, str):
+        return text
+    value = getattr(response, "value", None)
+    if isinstance(value, str):
+        return value
+    if value is not None and not _is_mock_value(value):
+        return str(value)
+    return ""
+
+
+def _request_attr(request: Any, name: str) -> Any:
+    if isinstance(request, dict):
+        return request.get(name)
+    value = getattr(request, name, None)
+    return None if _is_mock_value(value) else value
+
+
+def _is_mock_value(value: Any) -> bool:
+    return type(value).__module__.startswith("unittest.mock")
 
 
 @dataclass

@@ -1,6 +1,7 @@
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 const { normalizeGeminiEmbeddingModel, DEFAULT_GEMINI_EMBEDDING_MODEL, GEMINI_EMBEDDING_DIMENSIONS } = require('./geminiModelPolicy');
 const aiServiceClient = require('./agentAiServiceClient');
+const embeddingCacheService = require('./embeddingCacheService');
 
 const EMBEDDING_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
@@ -246,6 +247,14 @@ class EpisodicMemoryService {
     const embeddingOptions = this._normalizeEmbeddingOptions(options);
     const requestConfig = this._resolveEmbeddingConfigForRequest(config, embeddingOptions);
     const dimension = requestConfig.dimension;
+    const model = requestConfig.model;
+
+    // Try embedding cache first
+    const cached = await embeddingCacheService.get({ text, model, dimension });
+    if (cached && Array.isArray(cached.vector) && cached.vector.length === dimension) {
+      this._recordEmbeddingSuccess(requestConfig, embeddingOptions);
+      return cached.vector;
+    }
 
     // Delegate to Python AI service if running in primary mode
     if (aiServiceClient.isAiServicePrimary()) {
@@ -253,11 +262,55 @@ class EpisodicMemoryService {
         const result = await aiServiceClient.generateEmbedding(text, dimension);
         if (result && Array.isArray(result) && result.length > 0) {
           this._recordEmbeddingSuccess(requestConfig, embeddingOptions);
+          await embeddingCacheService.set({ text, model, dimension, vector: result });
           return result;
         }
       } catch (e) {
-        console.warn('[EPISODIC-MEMORY] AI service embedding failed, falling back to local pseudo:', e.message);
+        console.warn('[EPISODIC-MEMORY] AI service embedding failed, trying Gemini API:', e.message);
       }
+    }
+
+    // Try Gemini REST API directly using configured API key
+    try {
+      const apiKey = await this.getGeminiApiKey();
+      if (apiKey) {
+        const fetchFn = typeof fetch === 'function' ? fetch : require('node-fetch');
+        const url = `${EMBEDDING_API_BASE}/${model}:embedContent`;
+        const response = await fetchFn(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey,
+          },
+          body: JSON.stringify({
+            model: `models/${model}`,
+            content: { parts: [{ text }] },
+            outputDimensionality: dimension,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const values = data?.embedding?.values;
+          const validated = this._validateEmbeddingValues(values, requestConfig, embeddingOptions);
+          if (validated) {
+            this._recordEmbeddingSuccess(requestConfig, embeddingOptions);
+            await embeddingCacheService.set({ text, model, dimension, vector: validated });
+            return validated;
+          }
+        } else {
+          const errorText = await response.text().catch(() => 'Unknown error');
+          throw new Error(`Gemini API error ${response.status}: ${errorText}`);
+        }
+      }
+    } catch (e) {
+      this._recordEmbeddingFailure(requestConfig, embeddingOptions, 'GEMINI_API_ERROR', { error: e.message });
+      console.warn('[EPISODIC-MEMORY] Gemini embedding API failed, falling back:', e.message);
+    }
+
+    if (!embeddingOptions.allowPseudoFallback) {
+      this._recordEmbeddingFailure(requestConfig, embeddingOptions, 'NO_FALLBACK_ALLOWED');
+      return null;
     }
 
     return this.generateEmbedding(text, dimension);
@@ -272,12 +325,26 @@ class EpisodicMemoryService {
     const embeddingOptions = this._normalizeEmbeddingOptions(options);
     const requestConfig = this._resolveEmbeddingConfigForRequest(config, embeddingOptions);
     const dimension = requestConfig.dimension;
+    const model = requestConfig.model;
 
     let base64Image = null;
     if (content.imageBytes) {
       base64Image = Buffer.isBuffer(content.imageBytes)
         ? content.imageBytes.toString('base64')
         : content.imageBytes;
+    }
+
+    // Try embedding cache first
+    const cached = await embeddingCacheService.get({
+      text: content.text || '',
+      model,
+      dimension,
+      imageBytes: base64Image,
+      mimeType: content.mimeType || null,
+    });
+    if (cached && Array.isArray(cached.vector) && cached.vector.length === dimension) {
+      this._recordEmbeddingSuccess(requestConfig, embeddingOptions);
+      return cached.vector;
     }
 
     // Delegate to Python AI service if running in primary mode
@@ -291,11 +358,81 @@ class EpisodicMemoryService {
         );
         if (result && Array.isArray(result) && result.length > 0) {
           this._recordEmbeddingSuccess(requestConfig, embeddingOptions);
+          await embeddingCacheService.set({
+            text: content.text || '',
+            model,
+            dimension,
+            imageBytes: base64Image,
+            mimeType: content.mimeType || null,
+            vector: result,
+          });
           return result;
         }
       } catch (e) {
-        console.warn('[EPISODIC-MEMORY] AI service multimodal embedding failed, falling back to local pseudo:', e.message);
+        console.warn('[EPISODIC-MEMORY] AI service multimodal embedding failed, trying Gemini API:', e.message);
       }
+    }
+
+    // Try Gemini REST API directly for multimodal embedding
+    try {
+      const apiKey = await this.getGeminiApiKey();
+      if (apiKey) {
+        const fetchFn = typeof fetch === 'function' ? fetch : require('node-fetch');
+        const url = `${EMBEDDING_API_BASE}/${model}:embedContent`;
+
+        const parts = [];
+        if (content.text) parts.push({ text: content.text });
+        if (base64Image) {
+          parts.push({
+            inline_data: {
+              mime_type: content.mimeType || 'image/jpeg',
+              data: base64Image,
+            },
+          });
+        }
+
+        const response = await fetchFn(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey,
+          },
+          body: JSON.stringify({
+            model: `models/${model}`,
+            content: { parts },
+            outputDimensionality: dimension,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const values = data?.embedding?.values;
+          const validated = this._validateEmbeddingValues(values, requestConfig, embeddingOptions);
+          if (validated) {
+            this._recordEmbeddingSuccess(requestConfig, embeddingOptions);
+            await embeddingCacheService.set({
+              text: content.text || '',
+              model,
+              dimension,
+              imageBytes: base64Image,
+              mimeType: content.mimeType || null,
+              vector: validated,
+            });
+            return validated;
+          }
+        } else {
+          const errorText = await response.text().catch(() => 'Unknown error');
+          throw new Error(`Gemini API error ${response.status}: ${errorText}`);
+        }
+      }
+    } catch (e) {
+      this._recordEmbeddingFailure(requestConfig, embeddingOptions, 'GEMINI_API_ERROR', { error: e.message });
+      console.warn('[EPISODIC-MEMORY] Gemini multimodal embedding API failed, falling back:', e.message);
+    }
+
+    if (!embeddingOptions.allowPseudoFallback) {
+      this._recordEmbeddingFailure(requestConfig, embeddingOptions, 'NO_FALLBACK_ALLOWED');
+      return null;
     }
 
     return this.generateEmbedding(content.text || '', dimension);
@@ -339,17 +476,21 @@ class EpisodicMemoryService {
   /**
    * Searches for similar episodes using cosine similarity.
    * HARD tenant isolation: filters by companyId AND customerId.
+   * Fetches a limited candidate pool (topK × 10) to avoid loading all records.
    */
   async searchSimilar(companyId, customerId, queryText, topK = 5) {
     const prisma = this._getPrisma();
     const queryVec = await this.generateEmbeddingAsync(queryText);
+    const fetchLimit = Math.max(topK * 10, 50);
 
     const facts = await prisma.agenticMemoryFact.findMany({
       where: {
         companyId,
         customerId,
         type: 'EPISODIC'
-      }
+      },
+      take: fetchLimit,
+      orderBy: { createdAt: 'desc' }
     });
 
     const scored = facts.map(fact => {

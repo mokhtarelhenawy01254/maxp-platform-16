@@ -12,6 +12,25 @@ logger = structlog.get_logger(__name__)
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
 
+def _message_value(message: Any, key: str, default: Any = None) -> Any:
+    if isinstance(message, dict):
+        return message.get(key, default)
+    return getattr(message, key, default)
+
+
+def _message_content(message: Any) -> str:
+    content = _message_value(message, "content")
+    if content is not None:
+        return str(content)
+
+    contents = _message_value(message, "contents")
+    if isinstance(contents, list):
+        return "\n".join(str(item) for item in contents if item is not None)
+    if contents is not None:
+        return str(contents)
+    return ""
+
+
 class GoogleProvider(BaseProvider):
     def __init__(self, api_key: str, model: str, **kwargs: Any) -> None:
         super().__init__(api_key, model, **kwargs)
@@ -37,7 +56,7 @@ class GoogleProvider(BaseProvider):
 
         url = f"{self.base_url}/models/{self.model}:generateContent"
 
-        async with httpx.AsyncClient(timeout=self.timeout_ms / 1000) as client:
+        async with httpx.AsyncClient(timeout=self.timeout_ms / 1000, trust_env=False) as client:
             response = await client.post(
                 url,
                 headers={"x-goog-api-key": self.api_key},
@@ -54,8 +73,8 @@ class GoogleProvider(BaseProvider):
         system_parts = []
         contents = []
         for msg in messages:
-            role = msg.get("role", "")
-            content = msg.get("content", "")
+            role = str(_message_value(msg, "role", "") or "")
+            content = _message_content(msg)
             if role == "system":
                 system_parts.append(content)
             elif role == "user":
@@ -64,13 +83,13 @@ class GoogleProvider(BaseProvider):
                 parts: list[dict[str, Any]] = []
                 if content:
                     parts.append({"text": content})
-                tool_calls = msg.get("tool_calls") or []
+                tool_calls = _message_value(msg, "tool_calls", []) or []
                 for tc in tool_calls:
-                    func = tc.get("function", {})
+                    func = _message_value(tc, "function", {}) or {}
                     parts.append({
                         "functionCall": {
-                            "name": func.get("name", ""),
-                            "args": func.get("arguments", {}),
+                            "name": _message_value(func, "name", "") or "",
+                            "args": _message_value(func, "arguments", {}) or {},
                         }
                     })
                 contents.append({"role": "model", "parts": parts})

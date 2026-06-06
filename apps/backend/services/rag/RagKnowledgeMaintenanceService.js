@@ -16,6 +16,7 @@ const CorrectiveRAGEngine = require('./CorrectiveRAGEngine');
 const KNOWLEDGE_PROPOSAL_TOOLS = ['knowledge.create_faq', 'knowledge.create_policy'];
 const DEFAULT_SOURCE_ORDER = ['HYBRID_KNOWLEDGE', 'FAQ_DB', 'POLICY_DB', 'VECTOR_STORE', 'PRODUCT_DB'];
 const MAX_BACKFILL_LIMIT = 250;
+const BACKFILL_CONCURRENCY = 5;
 const RAG_EVAL_SCOPE = 'rag_knowledge_eval';
 const RAG_EVAL_ACTION = 'scheduled_evaluation';
 
@@ -101,7 +102,7 @@ function buildFaqKnowledgeText(faq) {
   const tagsList = parseTags(faq.tags).join(', ');
   const contextHeader = `This chunk is part of the merchant's official FAQ database, specifically answering a customer question under category "${categoryLabel}". Tags: [${tagsList}]. Question: ${normalizeText(faq.question, 700)}`;
   return [
-    `[Context: ${contextHeader}]`,
+    `[Knowledge Type: FAQ] [Context: ${contextHeader}]`,
     `FAQ question: ${normalizeText(faq.question, 700)}`,
     `FAQ answer: ${normalizeText(faq.answer, 4000)}`,
     `Category: ${categoryLabel}`,
@@ -114,12 +115,25 @@ function buildPolicyKnowledgeText(policy) {
   const tagsList = parseTags(policy.tags).join(', ');
   const contextHeader = `This chunk is part of the merchant's official policy document, titled "${normalizeText(policy.title, 300)}", under category "${categoryLabel}". This document governs operations and terms. Tags: [${tagsList}]`;
   return [
-    `[Context: ${contextHeader}]`,
+    `[Knowledge Type: Policy] [Context: ${contextHeader}]`,
     `Policy title: ${normalizeText(policy.title, 300)}`,
     `Policy content: ${normalizeText(policy.content, 5000)}`,
     `Category: ${categoryLabel}`,
     `Tags: ${tagsList}`,
   ].join('\n');
+}
+
+async function generateAndStoreEmbedding(model, record, textBuilder) {
+  const text = textBuilder(record);
+  const embedding = await episodicMemoryService.generateEmbeddingAsync(text);
+  await model.update({
+    where: { id: record.id },
+    data: {
+      embedding: JSON.stringify(embedding),
+      embeddingGeneratedAt: new Date(),
+    },
+  });
+  return embedding;
 }
 
 function expectedTermsFrom(text, maxTerms = 3) {
@@ -179,6 +193,78 @@ function buildProductKnowledgeText(product) {
 }
 
 class RagKnowledgeMaintenanceService {
+  async getFaqList(companyId, options = {}) {
+    const prisma = getSharedPrismaClient();
+    const limit = Math.min(Math.max(Number(options.limit) || 100, 1), 500);
+    
+    const faqs = await prisma.faq.findMany({
+      where: { companyId },
+      take: limit,
+      orderBy: [{ updatedAt: 'desc' }],
+      select: {
+        id: true,
+        question: true,
+        answer: true,
+        category: true,
+        tags: true,
+        isActive: true,
+        helpful: true,
+        embedding: true,
+        embeddingGeneratedAt: true,
+      },
+    });
+    
+    return faqs.map(faq => ({
+      id: faq.id,
+      question: faq.question,
+      answer: faq.answer ? faq.answer.substring(0, 200) : null,
+      category: faq.category,
+      tags: faq.tags,
+      isActive: faq.isActive,
+      helpful: faq.helpful,
+      hasEmbedding: !!(faq.embedding && faq.embeddingGeneratedAt),
+      embeddingGeneratedAt: faq.embeddingGeneratedAt,
+    }));
+  }
+
+  async getPolicyList(companyId, options = {}) {
+    const prisma = getSharedPrismaClient();
+    const limit = Math.min(Math.max(Number(options.limit) || 100, 1), 500);
+    
+    const policies = await prisma.policy.findMany({
+      where: { companyId },
+      take: limit,
+      orderBy: [{ updatedAt: 'desc' }],
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        category: true,
+        tags: true,
+        isActive: true,
+        effectiveAt: true,
+        expiresAt: true,
+        version: true,
+        embedding: true,
+        embeddingGeneratedAt: true,
+      },
+    });
+    
+    return policies.map(policy => ({
+      id: policy.id,
+      title: policy.title,
+      contentPreview: policy.content ? policy.content.substring(0, 200) : null,
+      category: policy.category,
+      tags: policy.tags,
+      isActive: policy.isActive,
+      effectiveAt: policy.effectiveAt,
+      expiresAt: policy.expiresAt,
+      version: policy.version,
+      hasEmbedding: !!(policy.embedding && policy.embeddingGeneratedAt),
+      embeddingGeneratedAt: policy.embeddingGeneratedAt,
+    }));
+  }
+
   async getOverview(companyId, options = {}) {
     const prisma = getSharedPrismaClient();
     const now = new Date();
@@ -386,56 +472,148 @@ class RagKnowledgeMaintenanceService {
     return result;
   }
 
-  async _backfillItems(model, type, items, textBuilder, result) {
-    for (const item of items) {
-      result.scanned += 1;
-      result.byType[type].scanned += 1;
+  async getProductEmbeddingOverview(companyId, options = {}) {
+    const prisma = getSharedPrismaClient();
+    const limit = Math.min(Math.max(Number(options.limit) || 100, 1), 500);
+    const offset = Math.max(Number(options.offset) || 0, 0);
 
-      if (!hasMissingEmbedding(item) && !result.force) {
-        result.skipped += 1;
-        result.byType[type].skipped += 1;
-        continue;
-      }
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where: { companyId },
+        take: limit,
+        skip: offset,
+        orderBy: [{ updatedAt: 'desc' }],
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          mainImage: true,
+          isActive: true,
+          embedding: true,
+          embeddingGeneratedAt: true,
+          embeddingImage: true,
+          embeddingImageGeneratedAt: true,
+        },
+      }),
+      prisma.product.count({ where: { companyId } }),
+    ]);
 
-      try {
-        const text = textBuilder(item);
-        const embedding = await episodicMemoryService.generateEmbeddingAsync(text);
-        await model.update({
-          where: { id: item.id },
-          data: {
-            embedding: JSON.stringify(embedding),
-            embeddingGeneratedAt: new Date(),
-          },
-        });
-        result.updated += 1;
-        result.byType[type].updated += 1;
-      } catch (error) {
-        result.errors.push({
-          type,
-          id: item.id,
-          error: error.message || 'UNKNOWN_ERROR',
-        });
-        result.byType[type].errors += 1;
-      }
-    }
+    const items = products.map(p => ({
+      id: p.id,
+      name: p.name,
+      sku: p.sku,
+      mainImage: p.mainImage,
+      isActive: p.isActive,
+      hasTextEmbedding: !!(p.embedding && p.embeddingGeneratedAt),
+      hasImageEmbedding: !!(p.embeddingImage && p.embeddingImageGeneratedAt),
+      textEmbeddingGeneratedAt: p.embeddingGeneratedAt,
+      imageEmbeddingGeneratedAt: p.embeddingImageGeneratedAt,
+    }));
+
+    return {
+      total,
+      limit,
+      offset,
+      returned: items.length,
+      items,
+      stats: {
+        total,
+        withTextEmbedding: items.filter(i => i.hasTextEmbedding).length,
+        withImageEmbedding: items.filter(i => i.hasImageEmbedding).length,
+        missingTextEmbedding: items.filter(i => !i.hasTextEmbedding).length,
+        missingImageEmbedding: items.filter(i => !i.hasImageEmbedding).length,
+      },
+    };
   }
 
-  async _backfillProductImageEmbeddings(model, products, result) {
-    for (const product of products) {
-      result.scanned += 1;
-      result.byType.product.scanned += 1;
+  async backfillProductEmbeddings(companyId, options = {}) {
+    const prisma = getSharedPrismaClient();
+    const force = Boolean(options.force);
+    const limit = Math.min(Math.max(Number(options.limit) || 100, 1), MAX_BACKFILL_LIMIT);
+    const productId = options.productId || null;
 
-      if (!hasMissingImageEmbedding(product) && !result.force) {
-        result.skipped += 1;
-        result.byType.product.skipped += 1;
-        continue;
-      }
+    const result = {
+      productId,
+      force,
+      limit,
+      scanned: 0,
+      updated: 0,
+      skipped: 0,
+      errors: [],
+    };
 
-      try {
+    let products;
+    if (productId) {
+      const product = await prisma.product.findFirst({
+        where: { id: productId, companyId },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          price: true,
+          sku: true,
+          tags: true,
+          mainImage: true,
+          images: true,
+          embedding: true,
+          embeddingGeneratedAt: true,
+          embeddingImage: true,
+          embeddingImageGeneratedAt: true,
+          category: { select: { name: true } },
+        },
+      });
+      products = product ? [product] : [];
+    } else {
+      const where = force
+        ? { companyId, isActive: true }
+        : {
+            companyId,
+            isActive: true,
+            OR: [
+              { embedding: null },
+              { embedding: '' },
+              { embeddingGeneratedAt: null },
+              { embeddingImage: null },
+              { embeddingImage: '' },
+              { embeddingImageGeneratedAt: null },
+            ],
+          };
+      products = await prisma.product.findMany({
+        where,
+        take: limit,
+        orderBy: [{ updatedAt: 'desc' }],
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          price: true,
+          sku: true,
+          tags: true,
+          mainImage: true,
+          images: true,
+          embedding: true,
+          embeddingGeneratedAt: true,
+          embeddingImage: true,
+          embeddingImageGeneratedAt: true,
+          category: { select: { name: true } },
+        },
+      });
+    }
+
+    const chunks = [];
+    for (let i = 0; i < products.length; i += BACKFILL_CONCURRENCY) {
+      chunks.push(products.slice(i, i + BACKFILL_CONCURRENCY));
+    }
+    for (const chunk of chunks) {
+      const results = await Promise.allSettled(chunk.map(async (product) => {
+        const hasText = !!(product.embedding && product.embeddingGeneratedAt);
+        const hasImage = !!(product.embeddingImage && product.embeddingImageGeneratedAt);
+        if (hasText && hasImage && !force) {
+          return { skipped: true };
+        }
         const text = buildProductKnowledgeText(product);
-        const embedding = await episodicMemoryService.generateEmbeddingAsync(text);
-
-        let imageEmbedding = embedding;
+        const textEmbedding = await episodicMemoryService.generateEmbeddingAsync(text);
+        let imageEmbedding = textEmbedding;
         const mainImageUrl = product.mainImage;
         if (mainImageUrl) {
           try {
@@ -444,7 +622,7 @@ class RagKnowledgeMaintenanceService {
             if (imageResponse.ok) {
               const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
               imageEmbedding = await episodicMemoryService.generateMultimodalEmbeddingAsync({
-                text: text,
+                text,
                 imageBytes: imageBuffer,
                 mimeType: imageResponse.headers.get('content-type') || 'image/jpeg',
               });
@@ -453,25 +631,134 @@ class RagKnowledgeMaintenanceService {
             console.warn(`[BACKFILL] Image fetch failed for product ${product.id}, using text-only embedding:`, imgErr.message);
           }
         }
-
-        await model.update({
+        await prisma.product.update({
           where: { id: product.id },
           data: {
+            embedding: JSON.stringify(textEmbedding),
+            embeddingGeneratedAt: new Date(),
             embeddingImage: JSON.stringify(imageEmbedding),
             embeddingImageGeneratedAt: new Date(),
           },
         });
-        result.updated += 1;
-        result.byType.product.updated += 1;
-      } catch (error) {
-        result.errors.push({
-          type: 'product',
-          id: product.id,
-          error: error.message || 'UNKNOWN_ERROR',
-        });
-        result.byType.product.errors += 1;
+        return { updated: true };
+      }));
+      for (let j = 0; j < results.length; j++) {
+        const product = chunk[j];
+        result.scanned += 1;
+        const status = results[j];
+        if (status.status === 'fulfilled') {
+          if (status.value?.skipped) {
+            result.skipped += 1;
+          } else {
+            result.updated += 1;
+          }
+        } else {
+          result.errors.push({
+            type: 'product',
+            id: product.id,
+            error: status.reason?.message || 'UNKNOWN_ERROR',
+          });
+        }
       }
     }
+
+    return result;
+  }
+
+  async _processBackfillBatch(items, processor, result, type) {
+    const chunks = [];
+    for (let i = 0; i < items.length; i += BACKFILL_CONCURRENCY) {
+      chunks.push(items.slice(i, i + BACKFILL_CONCURRENCY));
+    }
+    for (const chunk of chunks) {
+      const outcomes = await Promise.allSettled(chunk.map(item => processor(item)));
+      for (let j = 0; j < outcomes.length; j++) {
+        const item = chunk[j];
+        result.scanned += 1;
+        if (type) {
+          result.byType[type].scanned += 1;
+        }
+        const status = outcomes[j];
+        if (status.status === 'fulfilled') {
+          if (status.value?.skipped) {
+            result.skipped += 1;
+            if (type) {
+              result.byType[type].skipped += 1;
+            }
+          } else {
+            result.updated += 1;
+            if (type) {
+              result.byType[type].updated += 1;
+            }
+          }
+        } else {
+          result.errors.push({
+            type: type || 'unknown',
+            id: item.id,
+            error: status.reason?.message || 'UNKNOWN_ERROR',
+          });
+          if (type) {
+            result.byType[type].errors += 1;
+          }
+        }
+      }
+    }
+  }
+
+  async _backfillItems(model, type, items, textBuilder, result) {
+    const processor = async (item) => {
+      if (!hasMissingEmbedding(item) && !result.force) {
+        return { skipped: true };
+      }
+      const text = textBuilder(item);
+      const embedding = await episodicMemoryService.generateEmbeddingAsync(text);
+      await model.update({
+        where: { id: item.id },
+        data: {
+          embedding: JSON.stringify(embedding),
+          embeddingGeneratedAt: new Date(),
+        },
+      });
+      return { updated: true };
+    };
+    await this._processBackfillBatch(items, processor, result, type);
+  }
+
+  async _backfillProductImageEmbeddings(model, products, result) {
+    const processor = async (product) => {
+      if (!hasMissingImageEmbedding(product) && !result.force) {
+        return { skipped: true };
+      }
+      const text = buildProductKnowledgeText(product);
+      const embedding = await episodicMemoryService.generateEmbeddingAsync(text);
+      let imageEmbedding = embedding;
+      const mainImageUrl = product.mainImage;
+      if (mainImageUrl) {
+        try {
+          const fetchFn = typeof fetch === 'function' ? fetch : require('node-fetch');
+          const imageResponse = await fetchFn(mainImageUrl);
+          if (imageResponse.ok) {
+            const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+            imageEmbedding = await episodicMemoryService.generateMultimodalEmbeddingAsync({
+              text: text,
+              imageBytes: imageBuffer,
+              mimeType: imageResponse.headers.get('content-type') || 'image/jpeg',
+            });
+          }
+        } catch (imgErr) {
+          console.warn(`[BACKFILL] Image fetch failed for product ${product.id}, using text-only embedding:`, imgErr.message);
+        }
+      }
+      await model.update({
+        where: { id: product.id },
+        data: {
+          embeddingImage: JSON.stringify(imageEmbedding),
+          embeddingImageGeneratedAt: new Date(),
+        },
+      });
+      return { updated: true };
+    };
+    await this._processBackfillBatch(products, processor, result, 'product');
   }
 
   async buildAutoEvaluationScenarios(companyId) {

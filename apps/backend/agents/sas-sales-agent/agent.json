@@ -28,12 +28,12 @@
     "output": ["tool_name_exposure", "arabic_language"]
   },
   "allowedTools": [
-    "product_search",
-    "inventory_check",
-    "order_create_draft",
-    "order_lookup",
-    "shipping_rates",
-    "facebook_reply",
+    "product.search",
+    "inventory.check",
+    "order.create_draft",
+    "order.lookup",
+    "shipping.rates",
+    "facebook.reply",
     "agent.handoff"
   ],
   "allowedSkills": [

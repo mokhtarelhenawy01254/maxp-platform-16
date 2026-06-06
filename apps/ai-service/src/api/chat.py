@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from contextlib import suppress
 from typing import Any, Literal
 
 import structlog
@@ -19,7 +20,7 @@ from src.workflows.orchestration_flow import run_orchestration
 logger = structlog.get_logger(__name__)
 router = APIRouter()
 
-SAFE_FALLBACK_REPLY = "Your message has been received. I will assist you shortly."
+SAFE_FALLBACK_REPLY = ""
 THOUGHT_BLOCK_RE = re.compile(r"<thought\b[^>]*>.*?</thought>\s*", re.IGNORECASE | re.DOTALL)
 THOUGHT_TAG_RE = re.compile(r"</?thought\b[^>]*>", re.IGNORECASE)
 
@@ -51,7 +52,7 @@ def sanitize_model_reply(reply: Any) -> str:
     if THOUGHT_TAG_RE.search(text):
         text = THOUGHT_TAG_RE.split(text, maxsplit=1)[0].strip()
 
-    return text or SAFE_FALLBACK_REPLY
+    return text
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -70,7 +71,12 @@ async def chat(
     if body.thread_id:
         try:
             thread_uuid = uuid.UUID(body.thread_id)
-            stmt = select(Thread).where(Thread.id == thread_uuid)
+            stmt = select(Thread).where(
+                Thread.id == thread_uuid,
+                Thread.company_id == company_id,
+                Thread.customer_id == customer_id,
+                Thread.channel == "chat",
+            )
             result = await session.execute(stmt)
             thread = result.scalar_one_or_none()
         except ValueError:
@@ -88,10 +94,8 @@ async def chat(
     if not thread:
         new_id = uuid.uuid4()
         if body.thread_id:
-            try:
+            with suppress(ValueError):
                 new_id = uuid.UUID(body.thread_id)
-            except ValueError:
-                pass
         thread = Thread(
             id=new_id,
             company_id=company_id,
@@ -126,6 +130,7 @@ async def chat(
                     customer_id=customer_id,
                     thread_id=thread_id,
                     session=session,
+                    sdk_approval_id=tr.get("sdk_approval_id"),
                 )
                 return ChatResponse(
                     status="awaiting_approval",
@@ -144,7 +149,7 @@ async def chat(
         return ChatResponse(
             status="error",
             thread_id=thread_id,
-            reply=t("error.chat.customer", locale="ar"),
+            reply=None,
         )
 
 
@@ -164,7 +169,12 @@ async def chat_merchant(
     if body.thread_id:
         try:
             thread_uuid = uuid.UUID(body.thread_id)
-            stmt = select(Thread).where(Thread.id == thread_uuid)
+            stmt = select(Thread).where(
+                Thread.id == thread_uuid,
+                Thread.company_id == company_id,
+                Thread.customer_id == customer_id,
+                Thread.channel == "merchant",
+            )
             result = await session.execute(stmt)
             thread = result.scalar_one_or_none()
         except ValueError:
@@ -182,10 +192,8 @@ async def chat_merchant(
     if not thread:
         new_id = uuid.uuid4()
         if body.thread_id:
-            try:
+            with suppress(ValueError):
                 new_id = uuid.UUID(body.thread_id)
-            except ValueError:
-                pass
         thread = Thread(
             id=new_id,
             company_id=company_id,
@@ -221,6 +229,7 @@ async def chat_merchant(
                     customer_id=customer_id,
                     thread_id=thread_id,
                     session=session,
+                    sdk_approval_id=tr.get("sdk_approval_id"),
                 )
                 return ChatResponse(
                     status="awaiting_approval",

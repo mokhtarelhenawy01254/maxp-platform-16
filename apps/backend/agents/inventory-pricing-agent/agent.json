@@ -25,13 +25,13 @@
     "singleQuestionPerTurn": false
   },
   "allowedTools": [
-    "product_search",
-    "product_create",
-    "inventory_check",
-    "inventory_adjust",
-    "product_update_price",
-    "discount_create_draft",
-    "audit_read"
+    "product.search",
+    "product.create",
+    "inventory.check",
+    "inventory.adjust",
+    "product.updatePrice",
+    "discount.create_draft",
+    "audit.read"
   ],
   "allowedSkills": [
     "catalog-search",

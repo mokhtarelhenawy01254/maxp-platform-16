@@ -50,9 +50,11 @@ REASON_CODES = [
     "INTENT_AMBIGUOUS", "INTENT_CLEAR",
     "SLOTS_COMPLETE", "SLOTS_INCOMPLETE",
     "CONVERSATION_CONTEXT_USED", "EXEMPLAR_MATCH_FOUND",
+    "CLASSIFIER_UNAVAILABLE",
 ]
 
-CUSTOMER_CHANNELS = {"FACEBOOK", "MESSENGER", "FB", "WHATSAPP", "WA"}
+CUSTOMER_CHANNELS = {"CHAT", "FACEBOOK", "MESSENGER", "FB", "WHATSAPP", "WA"}
+ADMIN_CHANNELS = {"ADMIN", "INTERNAL", "DEV", "TEST"}
 
 DEFAULT_GUARDRAILS = ["tenant_scope", "tool_allowlist", "schema_validation", "audit_trail"]
 
@@ -270,6 +272,7 @@ class IntentContract:
     route: dict[str, Any] = field(default_factory=lambda: {"primaryTool": None, "allowedTools": [], "blockedTools": []})
     requiredSlots: list[str] = field(default_factory=list)
     missingSlots: list[str] = field(default_factory=list)
+    slots: dict[str, Any] = field(default_factory=dict)
     guardrails: list[str] = field(default_factory=list)
     reason: str = ""
 
@@ -287,6 +290,7 @@ class ToolPlan:
     classification: dict[str, Any] | None = None
     alternatives: list[dict[str, Any]] = field(default_factory=list)
     missingSlots: list[str] = field(default_factory=list)
+    slots: dict[str, Any] = field(default_factory=dict)
     ambiguous: bool = False
     trustedLocalRoute: bool = False
     blockedReason: str | None = None
@@ -294,6 +298,10 @@ class ToolPlan:
 
 def get_policy(intent: str) -> dict[str, Any]:
     return INTENT_POLICIES.get(intent) or INTENT_POLICIES["general.chat"]
+
+
+def is_admin_channel(channel: str | None) -> bool:
+    return (channel or "").strip().upper() in ADMIN_CHANNELS
 
 
 def is_customer_channel(channel: str | None) -> bool:

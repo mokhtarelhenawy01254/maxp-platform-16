@@ -81,12 +81,17 @@ class ProviderFactory:
             return GoogleProvider(api_key, model, **config)
         if cls_name == "OllamaProvider":
             return OllamaProvider(model, base_url=config.get("base_url", ""), **config)
+        extra_config = {
+            key: value
+            for key, value in config.items()
+            if key not in {"base_url", "provider_name", "extra_headers"}
+        }
         return OpenAICompatProvider(
             api_key, model,
             base_url=config.get("base_url", ""),
             provider_name=config.get("provider_name", provider_type),
             extra_headers=config.get("extra_headers"),
-            **config,
+            **extra_config,
         )
 
     async def get_provider(
@@ -100,7 +105,11 @@ class ProviderFactory:
         
         # Use ModelManager to get the best key for this model and company
         try:
-            key_info = await model_manager.get_next_key(resolved_model, company_id or "default")
+            key_info = await model_manager.get_next_key(
+                resolved_model,
+                company_id or "default",
+                preferred_provider=provider_type,
+            )
             api_key = key_info["api_key"]
             base_url = key_info.get("base_url") or pdef.get("base_url", "")
         except ModelManagerError as e:
@@ -116,6 +125,8 @@ class ProviderFactory:
         # Override base_url if provided by key_info
         if base_url:
             provider.config["base_url"] = base_url
+            if hasattr(provider, "base_url"):
+                provider.base_url = base_url
             
         self._instances[cache_key] = provider
         return provider

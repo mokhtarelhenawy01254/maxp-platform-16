@@ -7,6 +7,8 @@ from typing import Any, Optional
 from datetime import datetime, timedelta
 
 import structlog
+from sqlalchemy import text
+
 from src.config import get_settings
 from src.services.redis_client import redis_client
 
@@ -45,33 +47,38 @@ class ModelManager:
         # Provider priority order for failover
         self.provider_priority = ["GOOGLE", "GROQ", "OPENROUTER", "NVIDIA", "OPENAI", "ANTHROPIC"]
 
-    def _get_key_state(self, key_id: str) -> ModelKey | None:
+    async def _get_key_state(self, key_id: str) -> ModelKey | None:
         """Fetch key state from Redis."""
-        state_json = redis_client.get(f"model_manager:key_state:{key_id}")
+        state_json = await redis_client.get(f"model_manager:key_state:{key_id}")
         if not state_json:
             return None
         
         data = json.loads(state_json)
         return ModelKey(**data)
 
-    def _set_key_state(self, key: ModelKey) -> None:
+    async def _set_key_state(self, key: ModelKey) -> None:
         """Persist key state to Redis."""
-        redis_client.set(
+        await redis_client.set(
             f"model_manager:key_state:{key.key_id}",
             json.dumps(asdict(key)),
-            ex=PERMANENT_COOLDOWN if key.status == "PERMANENTLY_DISABLED" else 3600,
+            ttl=PERMANENT_COOLDOWN if key.status == "PERMANENTLY_DISABLED" else 3600,
         )
 
-    def _get_round_robin_index(self, pool_name: str, pool_size: int) -> int:
+    async def _get_round_robin_index(self, pool_name: str, pool_size: int) -> int:
         """Atomic round-robin index increment in Redis."""
         if pool_size == 0:
             return 0
         
         key = f"model_manager:rr_idx:{pool_name}"
-        idx = redis_client.incr(key)
+        idx = await redis_client.incr(key)
         return (idx or 0) % pool_size
 
-    async def get_next_key(self, model_name: str, company_id: str) -> dict[str, Any]:
+    async def get_next_key(
+        self,
+        model_name: str,
+        company_id: str,
+        preferred_provider: str | None = None,
+    ) -> dict[str, Any]:
         """
         Select the next available API key for a model, with failover support.
         
@@ -84,14 +91,19 @@ class ModelManager:
         
         async with async_session() as session:
             # We iterate through providers in priority order
-            for provider_type in self.provider_priority:
+            providers = [preferred_provider.upper()] if preferred_provider else self.provider_priority
+            for provider_type in providers:
                 # Find all active keys for this model and provider
                 # Note: We assume a helper method or raw SQL to find keys
                 # In a real implementation, this would query the ai_keys table
                 keys_rows = await session.execute(
-                    "SELECT id, api_key, base_url, model_name FROM ai.ai_keys "
-                    "WHERE model_name = :model AND provider = :provider AND is_active = true",
-                    {"model": model_name, "provider": provider_type},
+                    text(
+                        'SELECT id, "apiKey", "baseUrl" FROM public.ai_keys '
+                        'WHERE provider = :provider AND "isActive" = true '
+                        'AND ("companyId" = :company_id OR "companyId" IS NULL OR "keyType" = \'CENTRAL\') '
+                        'ORDER BY priority ASC, "currentUsage" ASC, "createdAt" ASC'
+                    ),
+                    {"provider": provider_type, "company_id": company_id},
                 )
                 keys = keys_rows.fetchall()
                 if not keys:
@@ -101,15 +113,16 @@ class ModelManager:
                 available_keys = []
                 now = time.time()
                 
-                for k_id, k_api, k_url, k_model in keys:
-                    state = self._get_key_state(k_id)
+                for k_id, k_api, k_url in keys:
+                    state = await self._get_key_state(k_id)
                     if state and (state.status == "PERMANENTLY_DISABLED" or state.cooldown_until > now):
                         continue
                     available_keys.append({
                         "key_id": k_id,
                         "api_key": k_api,
                         "base_url": k_url,
-                        "model": k_model,
+                        "model": model_name,
+                        "provider": provider_type,
                     })
 
                 if not available_keys:
@@ -117,7 +130,7 @@ class ModelManager:
 
                 # 2. Perform Round-Robin selection
                 pool_name = f"{provider_type}:{model_name}"
-                idx = self._get_round_robin_index(pool_name, len(available_keys))
+                idx = await self._get_round_robin_index(pool_name, len(available_keys))
                 selected_key = available_keys[idx]
                 
                 # 3. Final check: Company-wide budget
@@ -147,15 +160,16 @@ class ModelManager:
         day_bucket = now.strftime("%Y%m%d")
         
         # Atomic increment of token usage
-        redis_client.incrby(f"model_manager:usage:{key_id}:min:{minute_bucket}", total_tokens)
-        redis_client.incrby(f"model_manager:usage:{key_id}:day:{day_bucket}", total_tokens)
+        if redis_client.available and redis_client._client:
+            await redis_client._client.incrby(f"model_manager:usage:{key_id}:min:{minute_bucket}", total_tokens)
+            await redis_client._client.incrby(f"model_manager:usage:{key_id}:day:{day_bucket}", total_tokens)
         
         # 2. Reset cooldown if it was in COOLDOWN state
-        state = self._get_key_state(key_id)
+        state = await self._get_key_state(key_id)
         if state and state.status == "COOLDOWN":
             state.status = "ACTIVE"
             state.cooldown_until = 0.0
-            self._set_key_state(state)
+            await self._set_key_state(state)
 
     async def record_failure(self, key_id: str, error_type: str, retry_after_ms: int | None = None) -> None:
         """
@@ -163,7 +177,7 @@ class ModelManager:
         
         error_type: '429', 'QUOTA', 'LEAKED', '403_INVALID', 'GENERAL', etc.
         """
-        state = self._get_key_state(key_id)
+        state = await self._get_key_state(key_id)
         if not state:
             # Create default state if not exists
             state = ModelKey(key_id=key_id, model="", provider="", status="ACTIVE")
@@ -183,7 +197,7 @@ class ModelManager:
             cooldown = self.DEFAULT_COOLDOWN
 
         state.cooldown_until = now + cooldown
-        self._set_key_state(state)
+        await self._set_key_state(state)
         logger.warning("key tripped circuit breaker", key_id=key_id, error=error_type, cooldown=cooldown)
 
 # Singleton instance

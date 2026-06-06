@@ -5,13 +5,16 @@ from typing import Any
 from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 
+from src.mcp.registry import get_mcp_registry
+from src.tools import (
+    competitor_tools,
+    customer_tools,
+    governance_tools,
+    order_tools,
+    product_tools,
+    sales_tools,
+)
 from src.tools.backend_client import get_backend_client
-from src.tools import product_tools
-from src.tools import order_tools
-from src.tools import customer_tools
-from src.tools import sales_tools
-from src.tools import competitor_tools
-from src.tools import governance_tools
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -23,6 +26,14 @@ def _write_result(name: str, action_args: dict[str, Any], company_id: str) -> di
         "action_type": name,
         "action_args": action_args,
         "company_id": company_id,
+    }
+
+
+def _executed_result(action: str, result: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "status": "EXECUTED",
+        "action": action,
+        "result": result,
     }
 
 
@@ -232,7 +243,8 @@ async def order_create_draft(input_data: OrderCreateDraftInput) -> dict[str, Any
 
 
 async def order_create_confirmed(input_data: OrderCreateConfirmedInput) -> dict[str, Any]:
-    return _write_result("order.create_confirmed", {
+    client = get_backend_client()
+    result = await client.create_order(input_data.company_id or "", {
         "customerName": input_data.customer_name,
         "customerPhone": input_data.customer_phone,
         "productName": input_data.product_name,
@@ -240,7 +252,8 @@ async def order_create_confirmed(input_data: OrderCreateConfirmedInput) -> dict[
         "total": input_data.total,
         "address": input_data.address,
         "city": input_data.city,
-    }, input_data.company_id or "")
+    })
+    return _executed_result("ORDER_CREATED", result)
 
 
 async def order_summary(input_data: OrderSummaryInput) -> dict[str, Any]:
@@ -257,10 +270,13 @@ async def order_recent_list(input_data: OrderRecentListInput) -> dict[str, Any]:
 
 
 async def order_cancel(input_data: OrderCancelInput) -> dict[str, Any]:
-    return _write_result("order.cancel", {
-        "orderNumber": input_data.order_number,
-        "reason": input_data.reason,
-    }, input_data.company_id or "")
+    client = get_backend_client()
+    result = await client.cancel_order(
+        input_data.company_id or "",
+        input_data.order_number,
+        input_data.reason,
+    )
+    return _executed_result("ORDER_CANCELLED", result)
 
 
 async def order_refund(input_data: OrderRefundInput) -> dict[str, Any]:
@@ -407,11 +423,14 @@ async def inventory_check(input_data: InventoryCheckInput) -> dict[str, Any]:
 
 
 async def inventory_adjust(input_data: InventoryAdjustInput) -> dict[str, Any]:
-    return _write_result("inventory.adjust", {
-        "productId": input_data.product_id,
-        "quantityDelta": input_data.quantity_delta,
-        "reason": input_data.reason,
-    }, input_data.company_id or "")
+    client = get_backend_client()
+    result = await client.adjust_inventory(
+        input_data.company_id or "",
+        input_data.product_id,
+        input_data.quantity_delta,
+        input_data.reason,
+    )
+    return _executed_result("INVENTORY_ADJUSTED", result)
 
 
 inventory_check_tool = FunctionTool(
@@ -629,10 +648,13 @@ async def competitor_get_ads(input_data: CompetitorGetAdsInput) -> dict[str, Any
 
 
 async def competitor_generate_report(input_data: CompetitorGenerateReportInput) -> dict[str, Any]:
-    return _write_result("competitor.generateReport", {
-        "competitorId": input_data.competitor_id,
-        "reportType": input_data.report_type,
-    }, input_data.company_id or "")
+    client = get_backend_client()
+    result = await client.generate_competitor_report(
+        input_data.company_id or "",
+        input_data.competitor_id,
+        input_data.report_type,
+    )
+    return _executed_result("COMPETITOR_REPORT_GENERATED", result)
 
 
 competitor_search_tool = FunctionTool(
@@ -962,6 +984,9 @@ WRITE_TOOLS: list[FunctionTool] = [
     shipping_update_tool,
 ]
 
+for _write_tool in WRITE_TOOLS:
+    _write_tool.approval_mode = "always_require"
+
 # All tools (including manager tools for template resolution)
 ALL_TOOLS: dict[str, FunctionTool] = {t.name: t for t in READ_TOOLS + WRITE_TOOLS + [
     whatsapp_send_tool,
@@ -1088,9 +1113,21 @@ def get_tool_name_list(tools: list[FunctionTool]) -> list[str]:
     return [tool.name for tool in tools]
 
 
+def _canonical_tool_name(name: str) -> str:
+    return str(name or "").replace(".", "_")
+
+
 def resolve_tools_from_names(names: list[str]) -> list[FunctionTool]:
     """Resolve stored tool names back to FunctionTool objects."""
-    return [_ALL_TOOLS[name] for name in names if name in _ALL_TOOLS]
+    resolved: list[FunctionTool] = []
+    seen: set[str] = set()
+    for name in names:
+        canonical = _canonical_tool_name(name)
+        tool = _ALL_TOOLS.get(canonical)
+        if tool and tool.name not in seen:
+            resolved.append(tool)
+            seen.add(tool.name)
+    return resolved
 
 
 def get_write_tools() -> list[FunctionTool]:
@@ -1100,8 +1137,34 @@ def get_write_tools() -> list[FunctionTool]:
 def get_all_tools() -> list[FunctionTool]:
     """Return ALL_TOOLS, including manager tools (lazy import to avoid circular deps)."""
     from src.tools.manager_tools import get_manager_tools
-    return list(ALL_TOOLS.values()) + get_manager_tools()
+    return list(ALL_TOOLS.values()) + get_manager_tools() + get_mcp_tools()
 
 
 def get_tool(name: str) -> FunctionTool | None:
-    return ALL_TOOLS.get(name)
+    return ALL_TOOLS.get(_canonical_tool_name(name))
+
+
+async def _mcp_gateway_placeholder(input_data: dict[str, Any]) -> dict[str, Any]:
+    return dict(input_data)
+
+
+def get_mcp_tools() -> list[FunctionTool]:
+    """Return discovered MCP tools as SDK FunctionTool descriptors.
+
+    Execution is still routed through ToolGateway by sdk_gateway.wrap_tool_for_gateway.
+    """
+    tools: list[FunctionTool] = []
+    for tool in get_mcp_registry().get_all_tools():
+        name = str(tool.get("name") or "")
+        if not name.startswith("mcp_"):
+            continue
+        tools.append(
+            FunctionTool(
+                name=name,
+                description=str(tool.get("description") or ""),
+                func=_mcp_gateway_placeholder,
+                input_model=tool.get("input_schema") or {"type": "object"},
+                approval_mode="never_require",
+            )
+        )
+    return tools

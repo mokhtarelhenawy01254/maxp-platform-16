@@ -24,6 +24,7 @@ class PipelineContext:
     native_tools: list[dict[str, Any]] = field(default_factory=list)
     channel: str = "chat"
     is_customer_channel: bool = False
+    conversation_id: str | None = None
 
     # Context Assembly (SOTA 2026)
     rag_evidence: str = ""  # RAG evidence from company knowledge base
@@ -33,6 +34,7 @@ class PipelineContext:
     compressed_history_tokens: int = 0  # Token count after compression
     context_metrics: Any = None  # Computed ContextMetrics after assembly
     session_state: dict[str, Any] = field(default_factory=dict)  # Working memory session state
+    external_memory_context: dict[str, Any] = field(default_factory=dict)
 
     # Execution
     execution_plan: dict[str, Any] | None = None

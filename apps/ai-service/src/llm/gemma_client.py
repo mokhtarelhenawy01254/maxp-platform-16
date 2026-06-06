@@ -175,7 +175,7 @@ class GemmaClient:
 
     async def _ensure_client(self) -> httpx.AsyncClient:
         if self._http is None:
-            self._http = httpx.AsyncClient(timeout=self._timeout)
+            self._http = httpx.AsyncClient(timeout=self._timeout, trust_env=False)
         return self._http
 
     async def aclose(self) -> None:

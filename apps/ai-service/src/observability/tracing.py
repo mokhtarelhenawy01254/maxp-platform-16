@@ -11,6 +11,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 from src.config import get_settings
+from src.observability.agent_runtime import setup_agent_runtime_observability
 
 logger = structlog.get_logger(__name__)
 
@@ -18,6 +19,7 @@ logger = structlog.get_logger(__name__)
 def setup_tracing(app, engine=None) -> None:
     settings = get_settings()
     otlp_endpoint = getattr(settings, "otlp_endpoint", None)
+    setup_agent_runtime_observability()
 
     if not otlp_endpoint:
         logger.info("OpenTelemetry disabled (no OTLP_ENDPOINT configured)")

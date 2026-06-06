@@ -3684,6 +3684,7 @@ const visualSearchProduct = async (req, res) => {
       mimeType,
     });
 
+    const fetchLimit = Math.min(Math.max(topK * 20, 100), 1000);
     const prisma = getSharedPrismaClient();
     const products = await prisma.product.findMany({
       where: { companyId, isActive: true, embeddingImage: { not: null } },
@@ -3698,7 +3699,7 @@ const visualSearchProduct = async (req, res) => {
         embeddingImage: true,
         category: { select: { name: true } },
       },
-      take: 500,
+      take: fetchLimit,
     });
 
     const scored = products.map(product => {

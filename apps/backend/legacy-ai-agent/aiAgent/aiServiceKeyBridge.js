@@ -30,7 +30,7 @@ function disabledResponse(reason) {
   return { skipped: true, reason };
 }
 
-async function request(method, path, body) {
+async function request(method, path, body, options = {}) {
   const cfg = getConfig();
   if (!cfg.enabled) return disabledResponse('AI_SERVICE_ENABLED=false');
   if (!cfg.baseUrl) return disabledResponse('AI_SERVICE_URL not set');
@@ -42,7 +42,7 @@ async function request(method, path, body) {
       method,
       url,
       data: body,
-      timeout: cfg.timeout,
+      timeout: options.timeout || cfg.timeout,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${cfg.token}`,
@@ -155,6 +155,31 @@ exports.listAgents = async function listAgents(companyId) {
   return request('GET', `/admin/agents?company_id=${encodeURIComponent(companyId)}`);
 };
 
-exports.chatWithAgent = async function chatWithAgent({ companyId, agentId, message, threadId }) {
-  return request('POST', '/admin/agents/chat', { company_id: companyId, agent_id: agentId, message, thread_id: threadId });
+exports.chatWithAgent = async function chatWithAgent({
+  companyId,
+  agentId,
+  message,
+  threadId,
+  conversationId,
+  customerId,
+  channel,
+  agentConfig,
+  memoryContext,
+}) {
+  return request(
+    'POST',
+    '/admin/agents/chat',
+    {
+      company_id: companyId,
+      agent_id: agentId,
+      message,
+      thread_id: threadId,
+      conversation_id: conversationId,
+      customer_id: customerId,
+      channel,
+      agent_config: agentConfig,
+      memory_context: memoryContext,
+    },
+    { timeout: 60000 }
+  );
 };

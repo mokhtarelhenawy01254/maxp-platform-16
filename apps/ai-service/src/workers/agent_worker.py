@@ -395,6 +395,7 @@ async def handle_facebook_message(job: dict[str, Any]) -> None:
             "session_id": thread_id,
             "user_id": customer_id,
             "company_id": company_id,
+            "channel": "facebook",
         })
         latency = int((datetime.utcnow() - start_time).total_seconds() * 1000)
         
@@ -479,7 +480,11 @@ async def handle_facebook_comment(job: dict[str, Any]) -> None:
         company_id=company_id,
         allowed_tools=[],
     ))
-    task_result = await agent.process_task({"description": comment_text, "company_id": company_id})
+    task_result = await agent.process_task({
+        "description": comment_text,
+        "company_id": company_id,
+        "channel": "facebook",
+    })
     reply = task_result.get("result", {}).get("reply")
     if reply:
         from src.tools.facebook_client import FacebookGraphClient
@@ -592,6 +597,7 @@ async def handle_whatsapp_message(job: dict[str, Any]) -> None:
             "session_id": thread_id,
             "user_id": customer_id,
             "company_id": company_id,
+            "channel": "whatsapp",
         })
         
         reply = task_result.get("result", {}).get("reply")
@@ -671,6 +677,7 @@ async def handle_telegram_message(job: dict[str, Any]) -> None:
             "session_id": thread_id,
             "user_id": customer_id,
             "company_id": company_id,
+            "channel": "telegram",
         })
         latency = int((datetime.utcnow() - start_time).total_seconds() * 1000)
         
@@ -801,6 +808,7 @@ async def handle_whatsapp_message(job: dict[str, Any]) -> None:
             "session_id": thread_id,
             "user_id": customer_id,
             "company_id": company_id,
+            "channel": "whatsapp",
         })
         
         reply = task_result.get("result", {}).get("reply")

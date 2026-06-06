@@ -11,10 +11,12 @@ logger = structlog.get_logger(__name__)
 
 
 class LLMFallbackProvider:
-    """Provides LLM client fallback if primary provider is rate-limited.
+    """Provides the routed Python LLM client used by orchestration/classifiers.
 
-    Supports prompt caching via Google Gemini cachedContent API
-    to reduce costs by 75-90% on repeated system prompts.
+    The historical class name is kept for compatibility, but this no longer
+    builds a separate direct SDK client path. It delegates to the same provider
+    adapter/model-manager stack used by runtime agents so options like
+    ``tools_enabled=False`` and HTTP proxy isolation behave consistently.
     """
 
     def __init__(self) -> None:
@@ -25,56 +27,41 @@ class LLMFallbackProvider:
         self,
         company_id: str | None = None,
         system_prompt: str | None = None,
+        model: str | None = None,
+        provider: str | None = None,
     ) -> Any | None:
         settings = self._settings
 
-        if settings.anthropic_api_key:
-            from agent_framework.anthropic import AnthropicClient
-
-            self._log.info("using primary LLM", provider="anthropic", model=settings.default_model)
-            client = AnthropicClient(
-                api_key=settings.anthropic_api_key,
-                model=settings.default_model,
+        if system_prompt and company_id:
+            cached = await prompt_cache_service.get_or_create_cached_prompt(
+                company_id=company_id,
+                prompt_type="system",
+                instructions=system_prompt,
+                ttl=settings.prompt_cache_ttl,
             )
-            if system_prompt and company_id:
-                cached = await prompt_cache_service.get_or_create_cached_prompt(
+            if cached.cached_content_name:
+                self._log.info("prompt cache active", name=cached.cached_content_name)
+
+        try:
+            from src.llm.agent_client_factory import build_agent_client_async, build_provider_client_async
+
+            resolved_model = model or settings.google_gemini_model or settings.default_model
+            if provider:
+                client = await build_provider_client_async(
+                    provider,
+                    model=resolved_model,
+                    system_prompt=system_prompt,
                     company_id=company_id,
-                    prompt_type="system",
-                    instructions=system_prompt,
-                    ttl=settings.prompt_cache_ttl,
                 )
-                if cached.cached_content_name:
-                    self._log.info("prompt cache active", name=cached.cached_content_name)
+            else:
+                client = await build_agent_client_async(
+                    settings,
+                    model=resolved_model,
+                    system_prompt=system_prompt,
+                    company_id=company_id,
+                )
+            self._log.info("using routed LLM client", provider=provider, model=resolved_model)
             return client
-
-        if settings.google_api_key:
-            from agent_framework.openai import OpenAIChatCompletionClient
-
-            model = settings.google_gemini_model
-            self._log.info("using Google Gemini", provider="google", model=model)
-
-            if system_prompt and company_id:
-                cached = await prompt_cache_service.get_or_create_cached_prompt(
-                    company_id=company_id,
-                    prompt_type="system",
-                    instructions=system_prompt,
-                    ttl=settings.prompt_cache_ttl,
-                )
-
-            return OpenAIChatCompletionClient(
-                api_key=settings.google_api_key,
-                base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-                model=model,
-            )
-
-        if settings.openai_api_key:
-            from agent_framework.openai import OpenAIChatCompletionClient
-
-            self._log.info("falling back to OpenAI", model=settings.default_model)
-            return OpenAIChatCompletionClient(
-                api_key=settings.openai_api_key,
-                model=settings.default_model,
-            )
-
-        self._log.error("no LLM provider configured")
-        return None
+        except Exception as exc:
+            self._log.error("routed LLM client unavailable", error=str(exc))
+            return None

@@ -109,6 +109,56 @@ async def test_context_assembler_fetch_message_history():
 
 
 @pytest.mark.asyncio
+async def test_context_assembler_uses_external_memory_history_before_db():
+    ctx = PipelineContext(
+        message="continue",
+        thread_id="thread_123",
+        company_id="company_abc",
+        customer_id="cust_123",
+        external_memory_context={
+            "recentMessages": [
+                {"role": "user", "content": "I prefer black shoes"},
+                {"role": "assistant", "content": "I will remember that"},
+            ],
+        },
+    )
+    ctx.session = AsyncMock(spec=AsyncSession)
+
+    history = await ContextAssembler().fetch_message_history(ctx)
+
+    assert history == [
+        {"role": "user", "content": "I prefer black shoes"},
+        {"role": "assistant", "content": "I will remember that"},
+    ]
+    ctx.session.execute.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_context_assembler_injects_external_session_state():
+    ctx = PipelineContext(
+        message="what did I ask for?",
+        thread_id="thread_123",
+        company_id="company_abc",
+        customer_id="cust_123",
+        system_prompt="base",
+        external_memory_context={
+            "recentMessages": [{"role": "user", "content": "show black shoes"}],
+            "activeSearchFilters": {"color": "black"},
+            "lastShownProductIds": ["prod_1"],
+        },
+    )
+
+    messages = await ContextAssembler().assemble_messages(ctx)
+
+    assert messages[0]["role"] == "system"
+    assert "<session_state>" in messages[0]["content"]
+    assert "prod_1" in messages[0]["content"]
+    assert "black" in messages[0]["content"]
+    assert "Recent Messages" in messages[0]["content"]
+    assert any(message["content"] == "show black shoes" for message in messages)
+
+
+@pytest.mark.asyncio
 async def test_assemble_messages_integration():
     ctx = MagicMock(spec=PipelineContext)
     ctx.message = "yes, that color is fine"
@@ -147,5 +197,3 @@ async def test_assemble_messages_integration():
     assert "Ahmed Ali" in messages[0]["content"]
     assert messages[1]["role"] == "user"
     assert messages[1]["content"] == "yes, that color is fine"
-
-

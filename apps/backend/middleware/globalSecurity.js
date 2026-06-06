@@ -5,8 +5,10 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { getJwtSecret, isMissingAuthSecretError } = require('../utils/jwtSecret');
+const tenantContext = require('../services/tenantContext');
 
 const LOG_FILE = 'e:/max_p_new/max_p_new/backend/debug_auth.log';
 
@@ -203,6 +205,34 @@ if (typeof securityCleanupInterval.unref === 'function') {
 // ============================================================================
 const userCompanyCache = new Map();
 const USER_CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
+function getAiServiceToken() {
+  return process.env.AI_SERVICE_TOKEN || process.env.MAXP_SERVICE_TOKEN || '';
+}
+
+function getHeaderValue(req, name) {
+  const value = req.headers?.[name];
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+  return value;
+}
+
+function resolveServiceCompanyId(req) {
+  const headerCompanyId = getHeaderValue(req, 'x-company-id');
+  const companyId = headerCompanyId || req.query?.companyId || req.body?.companyId || null;
+  return typeof companyId === 'string' && companyId.trim() ? companyId.trim() : null;
+}
+
+function tokenMatchesServiceToken(token, serviceToken) {
+  if (!token || !serviceToken) return false;
+
+  const tokenBuffer = Buffer.from(String(token));
+  const serviceTokenBuffer = Buffer.from(String(serviceToken));
+  if (tokenBuffer.length !== serviceTokenBuffer.length) return false;
+
+  return crypto.timingSafeEqual(tokenBuffer, serviceTokenBuffer);
+}
 
 function getCachedUserCompany(userId) {
   const entry = userCompanyCache.get(userId);
@@ -771,6 +801,33 @@ const globalAuthentication = async (req, res, next) => {
         message: 'مطلوب تسجيل الدخول للوصول لهذا المورد',
         code: 'AUTHENTICATION_REQUIRED'
       });
+    }
+
+    const serviceToken = getAiServiceToken();
+    if (tokenMatchesServiceToken(token, serviceToken)) {
+      const companyId = resolveServiceCompanyId(req);
+      if (!companyId) {
+        return res.status(400).json({
+          success: false,
+          message: 'companyId is required for service access',
+          code: 'SERVICE_COMPANY_ID_REQUIRED'
+        });
+      }
+
+      req.user = {
+        id: 'ai-service',
+        firstName: 'AI',
+        lastName: 'Service',
+        email: 'ai-service@maxp.local',
+        role: 'AI_SERVICE',
+        companyId,
+        effectiveCompanyId: companyId,
+        service: true
+      };
+      req.companyId = companyId;
+
+      console.log(`✅ [SECURITY] AI Service Auth Success on ${path}`);
+      return tenantContext.run(companyId, () => next());
     }
 
     // 3. Verify Token

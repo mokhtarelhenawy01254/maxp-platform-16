@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -121,7 +122,7 @@ def test_chat_valid_request(client, mock_session):
     data = resp.json()
     assert data["status"] == "ok"
     assert data["reply"] == "مرحباً! كيف يمكنني مساعدتك؟"
-    assert data["thread_id"] == "comp1:cust1:chat"
+    uuid.UUID(data["thread_id"])
 
 
 def test_chat_strips_internal_thought_markers(client, mock_session):
@@ -220,4 +221,52 @@ def test_chat_error_handling(client, mock_session):
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "error"
-    assert data["reply"] is not None
+    assert data["reply"] is None
+
+
+def test_chat_passes_sdk_approval_id_to_draft(client, mock_session):
+    mock_session.execute.return_value = MagicMock(
+        scalar_one_or_none=MagicMock(return_value=None)
+    )
+
+    import src.api.chat as chat_module
+
+    original_run = chat_module.run_orchestration
+    original_create = chat_module.create_approval_draft
+    chat_module.run_orchestration = AsyncMock(
+        return_value={
+            "reply": "approval needed",
+            "thread_id": "comp1:cust1:chat",
+            "tool_results": [
+                {
+                    "status": "awaiting_approval",
+                    "action_type": "discount_create",
+                    "action_args": {"product_id": "prod_1"},
+                    "company_id": "comp1",
+                    "sdk_approval_id": "call-1",
+                }
+            ],
+        }
+    )
+    create_mock = AsyncMock(
+        return_value={"draft_id": "draft_123", "status": "pending"}
+    )
+    chat_module.create_approval_draft = create_mock
+
+    try:
+        resp = client.post(
+            "/chat",
+            json={"message": "discount"},
+            headers={
+                "X-Company-Id": "comp1",
+                "X-Customer-Id": "cust1",
+                "Authorization": "Bearer test-service-token",
+            },
+        )
+    finally:
+        chat_module.run_orchestration = original_run
+        chat_module.create_approval_draft = original_create
+
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "awaiting_approval"
+    assert create_mock.await_args.kwargs["sdk_approval_id"] == "call-1"

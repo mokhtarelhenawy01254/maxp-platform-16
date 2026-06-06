@@ -47,6 +47,23 @@ async def test_save_new_checkpoint(storage, mock_session):
 
 
 @pytest.mark.asyncio
+async def test_save_uses_workflow_state_thread_id(storage, mock_session):
+    mock_session.execute.return_value = _mock_result(None)
+
+    cp = WorkflowCheckpoint(
+        workflow_name="test_workflow",
+        graph_signature_hash="abc123",
+        checkpoint_id="cp-1",
+        state={"thread_id": "11111111-1111-1111-1111-111111111111"},
+    )
+
+    await storage.save(cp)
+
+    saved = mock_session.add.call_args.args[0]
+    assert str(saved.thread_id) == "11111111-1111-1111-1111-111111111111"
+
+
+@pytest.mark.asyncio
 async def test_save_existing_checkpoint(storage, mock_session):
     existing = MagicMock()
     mock_session.execute.return_value = _mock_result(existing)
