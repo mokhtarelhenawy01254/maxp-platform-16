@@ -47,6 +47,9 @@ function mapProductForSearch(product) {
   ]);
   const variantImages = variants.flatMap(getVariantImageList);
 
+  const sizeNames = sizeVariants.map(v => v.name);
+  const colorNames = colorVariants.map(v => v.name);
+
   return {
     name: product.name,
     sku: product.sku,
@@ -56,6 +59,11 @@ function mapProductForSearch(product) {
     status: productAvailabilityStatus(product),
     categoryName: product.category?.name || null,
     featured: Boolean(product.isFeatured),
+    // Plain-text summary so LLM uses exact values, not training priors
+    variantSummary: [
+      colorNames.length ? `الألوان المتاحة: ${colorNames.join('، ')}` : null,
+      sizeNames.length ? `المقاسات المتاحة: ${sizeNames.join('، ')}` : null,
+    ].filter(Boolean).join(' | ') || null,
     images: toPublicUrlList(parseImageList(product.mainImage, product.images, variantImages)).slice(0, 8),
     availableSizes: sizeVariants.map(variant => ({
       value: variant.name,
@@ -81,6 +89,7 @@ async function productSearchHandler(companyId, {
   productSize,
   productColor,
   referencesPreviousProduct,
+  listAll = false,
 }) {
   /** Search active catalog products by name or SKU.
    * @param {string} query - Search text to find products by name or SKU.
@@ -102,17 +111,7 @@ async function productSearchHandler(companyId, {
   const safeConversationId = normalizeOptionalString(conversationId);
   const usesPreviousProduct = isTrue(referencesPreviousProduct);
 
-  if (!resolvedQuery) {
-    if (!usesPreviousProduct) {
-      return {
-        found: false,
-        code: 'MISSING_PRODUCT_QUERY',
-        query: null,
-        products: [],
-        needsClarification: true,
-      };
-    }
-
+  if (usesPreviousProduct) {
     const memoryContext = safeConversationId
       ? await workingMemoryService.getContext(companyId, safeConversationId).catch(() => null)
       : null;
@@ -194,6 +193,15 @@ async function productSearchHandler(companyId, {
     const productMap = new Map(products.map(p => [p.id, p]));
     orderedProducts = ids.map(id => productMap.get(id)).filter(Boolean);
   }
+
+  // Deduplicate by normalized product name (keep first occurrence)
+  const seenNames = new Set();
+  orderedProducts = orderedProducts.filter(p => {
+    const key = String(p.name || '').toLowerCase().trim();
+    if (seenNames.has(key)) return false;
+    seenNames.add(key);
+    return true;
+  });
 
   return {
     found: true,
@@ -432,7 +440,7 @@ async function productUpdatePriceHandler(companyId, params = {}) {
 
 const TOOLS = {
   'product.search': createToolFromFunction('product.search', productSearchHandler, {
-    description: 'Search active catalog products by name or SKU.',
+    description: 'Search active catalog products by name or SKU. Call with empty query to list all available products.',
     readOnly: true,
     requiresApproval: false,
     companyScoped: true,

@@ -101,15 +101,14 @@ function _hasExplicitPreviousProductReference(params = {}) {
 
 function _validateCustomerToolCallParams(tool, params = {}) {
   if (tool === 'product.search') {
-    return String(params.query || params.productName || params.productNameOrSku || '').trim()
-      || _hasExplicitPreviousProductReference(params)
-      ? { valid: true }
-      : { valid: false, error: 'CUSTOMER_TOOL_ARGS_MISSING_PRODUCT_QUERY' };
+    // empty query is valid — lists all products
+    return { valid: true };
   }
 
   if (tool === 'inventory.check') {
     return String(params.productNameOrSku || params.productName || params.query || '').trim()
       || _hasExplicitPreviousProductReference(params)
+      || params.listAll === true
       ? { valid: true }
       : { valid: false, error: 'CUSTOMER_TOOL_ARGS_MISSING_PRODUCT_NAME' };
   }
@@ -560,7 +559,7 @@ async function executeToolLoop({
           relevancePlan,
           conversationHistory: formattedHistory,
           voiceProfile: customerVoiceProfile,
-          taskInstruction: 'Write one final natural customer-facing reply. Use only the structured tool evidence as trusted current data. If a tool failed, do not invent catalog, stock, price, order, refund, exchange, or shipping facts; briefly explain that the current data could not be confirmed and ask for the minimum next step.',
+          taskInstruction: 'Write one final natural customer-facing reply. Use ONLY the structured tool evidence as trusted current data — never use your training knowledge for product names, prices, colors, or sizes. If product.search succeeded: list each product by name and price. For colors and sizes, use ONLY the exact values from the variantSummary field in the tool result — do not rename, substitute, or invent any color or size. Do not redirect to any store URL or catalog link. If a tool failed, briefly explain the failure and ask for the minimum next step.',
         }),
         {
           temperature: 0.55,
