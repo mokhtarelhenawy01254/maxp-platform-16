@@ -136,8 +136,6 @@ const postWebhook = async (req, res) => {
         ? 500
         : 401;
 
-    console.warn(`⚠️ [WEBHOOK] Webhook signature verification failed: ${signatureCheck.reason}`);
-
     if (shouldStrictlyEnforceMetaWebhookSignature()) {
       console.warn(`🔒 [WEBHOOK] Strict mode enabled - rejecting unsigned webhook`);
       return res.status(statusCode).json({
@@ -146,8 +144,6 @@ const postWebhook = async (req, res) => {
         reason: signatureCheck.reason
       });
     }
-
-    console.warn('⚠️ [WEBHOOK] Continuing in warn-only mode. Set FACEBOOK_WEBHOOK_SIGNATURE_MODE=strict to enforce.');
   }
 
   const body = req.body;
