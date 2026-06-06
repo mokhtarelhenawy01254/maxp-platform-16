@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 from typing import Any
 from dataclasses import dataclass
@@ -94,9 +95,40 @@ class ProviderFactory:
             **extra_config,
         )
 
+    def _env_key_info(
+        self,
+        provider_type: str,
+        model: str,
+        company_id: str | None,
+        config: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        env_key = config.get("env_key")
+        if not env_key:
+            return None
+
+        settings = get_settings()
+        settings_attr = str(env_key).lower()
+        api_key = getattr(settings, settings_attr, None) or os.getenv(str(env_key))
+        if not api_key:
+            return None
+
+        return {
+            "key_id": f"env:{provider_type}",
+            "api_key": api_key,
+            "base_url": config.get("base_url", ""),
+            "model": model,
+            "provider": provider_type,
+            "company_id": company_id or "default",
+        }
+
     async def get_provider(
-        self, provider_type: str, model: str | None = None, company_id: str | None = None
+        self,
+        provider_type: str,
+        model: str | None = None,
+        company_id: str | None = None,
+        excluded_key_ids: set[str] | None = None,
     ) -> BaseProvider | None:
+        provider_type = provider_type.upper()
         pdef = PROVIDER_DEFS.get(provider_type)
         if not pdef:
             return None
@@ -109,19 +141,35 @@ class ProviderFactory:
                 resolved_model,
                 company_id or "default",
                 preferred_provider=provider_type,
+                excluded_key_ids=excluded_key_ids,
             )
-            api_key = key_info["api_key"]
-            base_url = key_info.get("base_url") or pdef.get("base_url", "")
         except ModelManagerError as e:
-            logger.error("could not find available key", error=e.message, code=e.code)
-            return None
+            key_info = self._env_key_info(provider_type, resolved_model, company_id, pdef)
+            if key_info is None:
+                logger.error("could not find available key", error=e.message, code=e.code)
+                return None
+            logger.warning(
+                "provider_factory_using_env_key",
+                provider=provider_type,
+                model=resolved_model,
+                reason=e.code,
+            )
+
+        api_key = key_info["api_key"]
+        base_url = key_info.get("base_url") or pdef.get("base_url", "")
 
         cache_key = f"{provider_type}:{resolved_model}:{key_info['key_id']}"
         cached = self._instances.get(cache_key)
         if cached:
             return cached
 
-        provider = self._build_provider(provider_type, api_key, resolved_model, pdef)
+        provider_config = {
+            **pdef,
+            "key_id": key_info["key_id"],
+            "provider_type": provider_type,
+            "company_id": company_id or "default",
+        }
+        provider = self._build_provider(provider_type, api_key, resolved_model, provider_config)
         # Override base_url if provided by key_info
         if base_url:
             provider.config["base_url"] = base_url
@@ -150,6 +198,46 @@ class ProviderFactory:
         except ModelManagerError:
             # Fallback to Google if all else fails
             return await self.get_provider("GOOGLE", model, company_id)
+
+    async def get_failover_provider(
+        self,
+        *,
+        current_provider_type: str | None,
+        model: str | None,
+        company_id: str | None,
+        attempted_key_ids: set[str],
+        skip_provider_types: set[str] | None = None,
+    ) -> BaseProvider | None:
+        """Return the next provider/key after a runtime provider failure.
+
+        Try another key from the same provider first. When switching provider,
+        use that provider's configured default model instead of sending a
+        provider-specific model name to an incompatible API.
+        """
+        skip_provider_types = {provider.upper() for provider in (skip_provider_types or set())}
+        priority = list(model_manager.provider_priority)
+        current = (current_provider_type or "").upper() or None
+        candidates: list[str] = []
+        if current:
+            candidates.append(current)
+        candidates.extend(provider for provider in priority if provider not in candidates)
+
+        for provider_type in candidates:
+            if provider_type in skip_provider_types:
+                continue
+            pdef = PROVIDER_DEFS.get(provider_type)
+            if pdef is None:
+                continue
+            candidate_model = model if current and provider_type == current else None
+            provider = await self.get_provider(
+                provider_type,
+                candidate_model,
+                company_id,
+                excluded_key_ids=attempted_key_ids,
+            )
+            if provider is not None:
+                return provider
+        return None
 
     def clear_cache(self) -> None:
         self._instances.clear()

@@ -4,9 +4,15 @@ from dataclasses import dataclass, field
 import re
 from typing import Any
 
+import httpx
+import structlog
+
+from src.llm.model_manager import model_manager
 from src.llm.providers.base import BaseProvider
+from src.llm.providers.factory import get_provider_factory
 
 _SAFE_TOOL_NAME_RE = re.compile(r"[^a-zA-Z0-9_-]")
+logger = structlog.get_logger(__name__)
 
 
 @dataclass
@@ -33,10 +39,18 @@ class ProviderAdapter:
         *,
         tools: list[Any] | None = None,
         system_prompt: str | None = None,
+        company_id: str | None = None,
+        provider_type: str | None = None,
+        key_id: str | None = None,
+        max_failover_attempts: int = 4,
     ) -> None:
         self._provider = provider
         self._tools = tools
         self._system_prompt = system_prompt
+        self._company_id = company_id or _provider_config(provider, "company_id")
+        self._provider_type = provider_type or _provider_config(provider, "provider_type")
+        self._key_id = key_id or _provider_config(provider, "key_id")
+        self._max_failover_attempts = max(1, max_failover_attempts)
         self._provider_tool_names: dict[str, str] = {}
         self._native_tool_names: dict[str, str] = {}
 
@@ -49,6 +63,10 @@ class ProviderAdapter:
             self._provider,
             tools=tools,
             system_prompt=self._system_prompt,
+            company_id=self._company_id,
+            provider_type=self._provider_type,
+            key_id=self._key_id,
+            max_failover_attempts=self._max_failover_attempts,
         )
 
     async def get_response(
@@ -71,7 +89,7 @@ class ProviderAdapter:
                 if provider_tool is not None:
                     tool_dicts.append(provider_tool)
 
-        provider_response = await self._provider.generate_response(
+        provider_response = await self._generate_response_with_failover(
             messages=messages,
             tools=tool_dicts,
             temperature=opts.get("temperature"),
@@ -108,6 +126,89 @@ class ProviderAdapter:
 
     async def aclose(self) -> None:
         pass
+
+    async def _generate_response_with_failover(
+        self,
+        *,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None,
+        temperature: Any,
+        max_tokens: Any,
+        top_p: Any,
+    ) -> Any:
+        provider = self._provider
+        attempted_key_ids: set[str] = set()
+        last_exc: Exception | None = None
+
+        for attempt in range(self._max_failover_attempts):
+            key_id = _provider_config(provider, "key_id") or self._key_id
+            provider_type = _provider_config(provider, "provider_type") or self._provider_type
+            company_id = _provider_config(provider, "company_id") or self._company_id
+            if key_id:
+                attempted_key_ids.add(key_id)
+
+            try:
+                response = await provider.generate_response(
+                    messages=messages,
+                    tools=tools,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    top_p=top_p,
+                )
+                await self._record_success(provider, response.usage)
+                self._provider = provider
+                self._company_id = company_id
+                self._provider_type = provider_type
+                self._key_id = key_id
+                return response
+            except Exception as exc:
+                last_exc = exc
+                await self._record_failure(provider, exc)
+                if not _is_failover_error(exc) or attempt >= self._max_failover_attempts - 1:
+                    raise
+
+                skip_provider_types = {provider_type} if _is_provider_quota_error(exc) and provider_type else set()
+                replacement = await get_provider_factory().get_failover_provider(
+                    current_provider_type=provider_type,
+                    model=provider.model,
+                    company_id=company_id,
+                    attempted_key_ids=attempted_key_ids,
+                    skip_provider_types=skip_provider_types,
+                )
+                if replacement is None:
+                    raise
+                replacement_key_id = _provider_config(replacement, "key_id")
+                if replacement_key_id and replacement_key_id in attempted_key_ids:
+                    raise
+                logger.warning(
+                    "llm_provider_failover",
+                    from_provider=provider_type,
+                    from_key_id=key_id,
+                    to_provider=_provider_config(replacement, "provider_type"),
+                    to_key_id=replacement_key_id,
+                    skipped_providers=sorted(skip_provider_types),
+                )
+                provider = replacement
+
+        if last_exc is not None:
+            raise last_exc
+        raise RuntimeError("LLM provider unavailable")
+
+    async def _record_success(self, provider: BaseProvider, usage: dict[str, Any] | None) -> None:
+        key_id = _provider_config(provider, "key_id")
+        if not key_id:
+            return
+        await model_manager.record_success(key_id, usage or {})
+
+    async def _record_failure(self, provider: BaseProvider, exc: Exception) -> None:
+        key_id = _provider_config(provider, "key_id")
+        if not key_id:
+            return
+        await model_manager.record_failure(
+            key_id,
+            _failure_type(exc),
+            retry_after_ms=_retry_after_ms(exc),
+        )
 
     def _to_provider_tool(self, tool: Any) -> dict[str, Any] | None:
         """Convert SDK FunctionTool/dict descriptors to provider-safe schema.
@@ -178,3 +279,72 @@ class ProviderAdapter:
                 self._native_tool_names[native_name] = candidate
                 return candidate
             suffix += 1
+
+
+def _provider_config(provider: BaseProvider, key: str) -> Any:
+    config = getattr(provider, "config", None)
+    if isinstance(config, dict):
+        value = config.get(key)
+        if value is not None:
+            return value
+    return getattr(provider, key, None)
+
+
+def _is_failover_error(exc: Exception) -> bool:
+    if not isinstance(exc, httpx.HTTPStatusError):
+        return False
+    status_code = exc.response.status_code
+    return status_code in {408, 409, 429, 500, 502, 503, 504}
+
+
+def _failure_type(exc: Exception) -> str:
+    if isinstance(exc, httpx.HTTPStatusError):
+        status_code = exc.response.status_code
+        text = exc.response.text.upper()
+        if _is_provider_quota_error(exc):
+            return "QUOTA"
+        if status_code == 429:
+            return "429"
+        if status_code in {401, 403}:
+            return "403_INVALID"
+        if "QUOTA" in text or "RATE_LIMIT" in text:
+            return "QUOTA"
+        return str(status_code)
+    return "GENERAL"
+
+
+def _is_provider_quota_error(exc: Exception) -> bool:
+    if not isinstance(exc, httpx.HTTPStatusError):
+        return False
+    if exc.response.status_code != 429:
+        return False
+
+    text = exc.response.text.lower()
+    if not text:
+        return False
+
+    provider_quota_markers = (
+        "tokens per day",
+        " tpd",
+        "(tpd",
+        "daily token",
+        "daily quota",
+        "insufficient_quota",
+        "service tier",
+        "organization limit",
+    )
+    if any(marker in text for marker in provider_quota_markers):
+        return True
+    return "rate limit reached" in text and "organization" in text and ("token" in text or "request" in text)
+
+
+def _retry_after_ms(exc: Exception) -> int | None:
+    if not isinstance(exc, httpx.HTTPStatusError):
+        return None
+    retry_after = exc.response.headers.get("retry-after")
+    if not retry_after:
+        return None
+    try:
+        return int(float(retry_after) * 1000)
+    except (TypeError, ValueError):
+        return None

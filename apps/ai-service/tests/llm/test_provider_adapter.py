@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from typing import Any
+from unittest.mock import AsyncMock
+
+import httpx
 
 from agent_framework import FunctionTool
 from pydantic import BaseModel
@@ -41,6 +44,124 @@ class RecordingProvider(BaseProvider):
         )
 
 
+class RateLimitedProvider(BaseProvider):
+    def __init__(self) -> None:
+        super().__init__(
+            "rate-limited-key",
+            "llama-3.3-70b-versatile",
+            key_id="groq-key",
+            provider_type="GROQ",
+            company_id="comp1",
+        )
+
+    async def generate_response(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        **options: Any,
+    ) -> ProviderResponse:
+        request = httpx.Request("POST", "https://api.groq.com/openai/v1/chat/completions")
+        response = httpx.Response(
+            429,
+            request=request,
+            headers={"retry-after": "2"},
+            json={"error": {"code": "rate_limit_exceeded"}},
+        )
+        raise httpx.HTTPStatusError("rate limited", request=request, response=response)
+
+
+class ProviderQuotaLimitedProvider(BaseProvider):
+    def __init__(self) -> None:
+        super().__init__(
+            "quota-limited-key",
+            "llama-3.3-70b-versatile",
+            key_id="groq-key",
+            provider_type="GROQ",
+            company_id="comp1",
+        )
+
+    async def generate_response(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        **options: Any,
+    ) -> ProviderResponse:
+        request = httpx.Request("POST", "https://api.groq.com/openai/v1/chat/completions")
+        response = httpx.Response(
+            429,
+            request=request,
+            json={
+                "error": {
+                    "message": (
+                        "Rate limit reached for model llama-3.3-70b-versatile "
+                        "in organization org_123 on tokens per day (TPD)."
+                    )
+                }
+            },
+        )
+        raise httpx.HTTPStatusError("provider quota exhausted", request=request, response=response)
+
+
+class BackupProvider(BaseProvider):
+    def __init__(self) -> None:
+        super().__init__(
+            "backup-key",
+            "gemini-2.5-flash",
+            key_id="google-key",
+            provider_type="GOOGLE",
+            company_id="comp1",
+        )
+        self.calls: list[dict[str, Any]] = []
+
+    async def generate_response(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        **options: Any,
+    ) -> ProviderResponse:
+        self.calls.append({"messages": messages, "tools": tools, "options": options})
+        return ProviderResponse(
+            text="model generated memory reply",
+            usage={"total_tokens": 7},
+            model=self.model,
+            provider="GOOGLE",
+        )
+
+
+class FakeProviderFactory:
+    def __init__(self, backup: BackupProvider) -> None:
+        self.backup = backup
+        self.failover_calls: list[dict[str, Any]] = []
+
+    async def get_provider(
+        self,
+        provider_type: str,
+        model: str | None = None,
+        company_id: str | None = None,
+    ) -> BaseProvider | None:
+        return None
+
+    async def get_failover_provider(
+        self,
+        *,
+        current_provider_type: str | None,
+        model: str | None,
+        company_id: str | None,
+        attempted_key_ids: set[str],
+        skip_provider_types: set[str] | None = None,
+    ) -> BaseProvider | None:
+        self.failover_calls.append(
+            {
+                "current_provider_type": current_provider_type,
+                "model": model,
+                "company_id": company_id,
+                "attempted_key_ids": attempted_key_ids,
+                "skip_provider_types": skip_provider_types,
+            }
+        )
+        return self.backup
+
+
 async def test_adapter_aliases_dotted_tool_names_and_maps_calls_back() -> None:
     provider = RecordingProvider()
     tool = FunctionTool(
@@ -75,3 +196,52 @@ async def test_adapter_can_disable_tools_for_final_reply_generation() -> None:
     )
 
     assert provider.calls[0]["tools"] is None
+
+
+async def test_adapter_records_rate_limit_and_fails_over_to_another_provider(monkeypatch) -> None:
+    backup = BackupProvider()
+    factory = FakeProviderFactory(backup)
+    record_failure = AsyncMock()
+    record_success = AsyncMock()
+
+    monkeypatch.setattr("src.llm.providers.adapter.get_provider_factory", lambda: factory)
+    monkeypatch.setattr("src.llm.providers.adapter.model_manager.record_failure", record_failure)
+    monkeypatch.setattr("src.llm.providers.adapter.model_manager.record_success", record_success)
+
+    response = await ProviderAdapter(
+        RateLimitedProvider(),
+        company_id="comp1",
+        provider_type="GROQ",
+        key_id="groq-key",
+        max_failover_attempts=2,
+    ).get_response([{"role": "user", "content": "فاكر سألتك عن ايه؟"}])
+
+    assert response.text == "model generated memory reply"
+    record_failure.assert_awaited_once_with("groq-key", "429", retry_after_ms=2000)
+    record_success.assert_awaited_once_with("google-key", {"total_tokens": 7})
+    assert backup.calls[0]["messages"][0]["content"] == "فاكر سألتك عن ايه؟"
+    assert factory.failover_calls[0]["company_id"] == "comp1"
+    assert factory.failover_calls[0]["skip_provider_types"] == set()
+
+
+async def test_adapter_skips_current_provider_when_provider_quota_is_exhausted(monkeypatch) -> None:
+    backup = BackupProvider()
+    factory = FakeProviderFactory(backup)
+    record_failure = AsyncMock()
+    record_success = AsyncMock()
+
+    monkeypatch.setattr("src.llm.providers.adapter.get_provider_factory", lambda: factory)
+    monkeypatch.setattr("src.llm.providers.adapter.model_manager.record_failure", record_failure)
+    monkeypatch.setattr("src.llm.providers.adapter.model_manager.record_success", record_success)
+
+    response = await ProviderAdapter(
+        ProviderQuotaLimitedProvider(),
+        company_id="comp1",
+        provider_type="GROQ",
+        key_id="groq-key",
+        max_failover_attempts=2,
+    ).get_response([{"role": "user", "content": "فاكر سألتك عن ايه؟"}])
+
+    assert response.text == "model generated memory reply"
+    record_failure.assert_awaited_once_with("groq-key", "QUOTA", retry_after_ms=None)
+    assert factory.failover_calls[0]["skip_provider_types"] == {"GROQ"}

@@ -1568,6 +1568,19 @@
     "highDiscount": "خصم عالي",
     "good": "جيد"
   },
+  "creativeFormats": {
+    "errors": {
+      "pageIdRequired": "يرجى إدخال معرف الصفحة",
+      "pageAndVideoRequired": "يرجى إدخال معرف الصفحة ومعرف الفيديو",
+      "instagramAccountRequired": "يرجى إدخال معرف حساب Instagram (مطلوب لـ Instagram Stories/Reels)",
+      "createFailed": "فشل في الإنشاء"
+    },
+    "success": {
+      "collectionCreated": "تم إنشاء Collection Creative بنجاح!",
+      "storiesCreated": "تم إنشاء Stories/Reels Creative بنجاح!",
+      "instantCreated": "تم إنشاء Instant Experience بنجاح!"
+    }
+  },
   "customerAnalytics": {
     "title": "تحليلات العملاء",
     "subtitle": "إحصائيات أساسية عن العملاء",
@@ -2116,6 +2129,23 @@
     "searchPlaceholder": "بحث في المحادثات...",
     "advancedFilters": "فلاتر متقدمة",
     "statistics": "الإحصائيات"
+  },
+  "instagramSettings": {
+    "title": "إعدادات Instagram",
+    "subtitle": "إدارة حسابات Instagram المرتبطة بصفحات Facebook",
+    "howToConnect": "كيفية ربط Instagram",
+    "connectInfo": "يتم ربط Instagram تلقائياً عند توصيل صفحة Facebook المرتبطة بحساب Instagram Business.",
+    "facebookSettings": "إعدادات Facebook",
+    "reauthInfo": "لإعادة المصادقة وتحديث الأذونات.",
+    "loading": "جاري التحميل...",
+    "loadError": "تعذر تحميل حسابات Instagram",
+    "noAccounts": "لا توجد حسابات Instagram مرتبطة",
+    "connectPrompt": "قم بتوصيل صفحة Facebook مرتبطة بحساب Instagram Business للبدء",
+    "connectFacebook": "توصيل صفحة Facebook",
+    "instagramAccount": "حساب Instagram",
+    "linkedTo": "مرتبط بصفحة",
+    "connected": "متصل",
+    "addAccount": "إضافة حساب آخر"
   },
   "inventory": {
     "title": "المخزون",

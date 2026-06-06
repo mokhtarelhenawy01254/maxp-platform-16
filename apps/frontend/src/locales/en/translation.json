@@ -1567,6 +1567,19 @@
     "highDiscount": "High Discount",
     "good": "Good"
   },
+  "creativeFormats": {
+    "errors": {
+      "pageIdRequired": "Please enter the page ID",
+      "pageAndVideoRequired": "Please enter the page ID and video ID",
+      "instagramAccountRequired": "Please enter the Instagram account ID (required for Instagram Stories/Reels)",
+      "createFailed": "Creation failed"
+    },
+    "success": {
+      "collectionCreated": "Collection Creative created successfully!",
+      "storiesCreated": "Stories/Reels Creative created successfully!",
+      "instantCreated": "Instant Experience created successfully!"
+    }
+  },
   "customerAnalytics": {
     "title": "Customer Analytics",
     "subtitle": "Key Customer Statistics",
@@ -2115,6 +2128,23 @@
     "searchPlaceholder": "Search conversations...",
     "advancedFilters": "Advanced Filters",
     "statistics": "Statistics"
+  },
+  "instagramSettings": {
+    "title": "Instagram Settings",
+    "subtitle": "Manage Instagram accounts linked to Facebook pages",
+    "howToConnect": "How to connect Instagram",
+    "connectInfo": "Instagram is linked automatically when you connect a Facebook page associated with an Instagram Business account.",
+    "facebookSettings": "Facebook Settings",
+    "reauthInfo": "to re-authenticate and refresh permissions.",
+    "loading": "Loading...",
+    "loadError": "Could not load Instagram accounts",
+    "noAccounts": "No linked Instagram accounts",
+    "connectPrompt": "Connect a Facebook page linked to an Instagram Business account to get started",
+    "connectFacebook": "Connect Facebook Page",
+    "instagramAccount": "Instagram Account",
+    "linkedTo": "Linked to page",
+    "connected": "Connected",
+    "addAccount": "Add another account"
   },
   "inventory": {
     "title": "Inventory",

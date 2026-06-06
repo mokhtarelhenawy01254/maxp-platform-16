@@ -2511,15 +2511,187 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
       console.error('⚠️ [IG-MSG] Socket emit error:', socketErr.message);
     }
 
+    // ── 6. AI Auto-Reply for Instagram─────────────────────────────────────
+    const hasCustomerTextForAi = messageText && messageText.trim().length > 0;
+    const hasCustomerAttachmentsForAi = attachments && attachments.length > 0;
+    const aiCustomerContent = [
+      messageText || '',
+      attachments && attachments.length > 0
+        ? `[${attachments.map(a => a.type || 'attachment').join(', ')}]`
+        : ''
+    ].filter(Boolean).join('\n\n').trim();
+
+    const shouldRunInstagramAiAutoReply = Boolean(
+      customer.companyId &&
+      (hasCustomerTextForAi || hasCustomerAttachmentsForAi) &&
+      aiCustomerContent
+    );
+
+    if (shouldRunInstagramAiAutoReply) {
+      setImmediate(async () => {
+        try {
+          console.log(`🤖 [IG-AI-AUTOREPLY] Triggered AI auto-reply for Instagram user: ${senderId}`);
+          const { getSharedPrismaClient } = require('../services/sharedDatabase');
+          const prisma = getSharedPrismaClient();
+          const aiMessageProcessor = require('../services/aiAgent/aiMessageProcessor');
+
+          const replyText = await aiMessageProcessor.processMessage({
+            companyId: customer.companyId,
+            sessionId: facebookPage.instagramAccountId || facebookPage.pageId,
+            conversationId: conversation.id,
+            customerId: customer.id,
+            remoteJid: senderId,
+            content: aiCustomerContent,
+            channel: 'INSTAGRAM'
+          });
+
+          if (replyText) {
+            console.log(`🤖 [IG-AI-AUTOREPLY] AI generated Instagram response: "${replyText.substring(0, 50)}..."`);
+
+            const replyId = require('crypto').randomUUID();
+            const savedReply = await safeQuery(async () => {
+              return await prisma.message.create({
+                data: {
+                  id: replyId,
+                  content: replyText,
+                  type: 'TEXT',
+                  conversationId: conversation.id,
+                  isFromCustomer: false,
+                  senderId: null,
+                  metadata: JSON.stringify({
+                    platform: 'instagram',
+                    source: 'ai_reply',
+                    isInstagramReply: true,
+                    timestamp: new Date(),
+                    instantSave: true
+                  }),
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                }
+              });
+            }, 3);
+
+            console.log(`💾 [IG-AI-AUTOREPLY] AI reply saved to DB: ${savedReply.id}`);
+
+            const socketService2 = require('../services/socketService');
+            const io2 = socketService2.getIO();
+            if (io2) {
+              const socketData = {
+                id: savedReply.id,
+                conversationId: savedReply.conversationId,
+                content: savedReply.content,
+                type: savedReply.type.toLowerCase(),
+                isFromCustomer: savedReply.isFromCustomer,
+                timestamp: savedReply.createdAt,
+                metadata: JSON.parse(savedReply.metadata),
+                senderId: null,
+                senderName: 'AI Agent',
+                lastMessageIsFromCustomer: false,
+                lastCustomerMessageIsUnread: false,
+                companyId: customer.companyId,
+                platform: 'instagram',
+                channel: 'INSTAGRAM'
+              };
+              io2.to(`company_${customer.companyId}`).emit('new_message', socketData);
+            }
+
+            await safeQuery(async () => {
+              return await prisma.conversation.update({
+                where: { id: conversation.id },
+                data: {
+                  lastMessageAt: new Date(),
+                  lastMessagePreview: replyText.length > 100 ? replyText.substring(0, 100) + '...' : replyText,
+                  lastMessageIsFromCustomer: false,
+                  unreadCount: 0,
+                  updatedAt: new Date()
+                }
+              });
+            }, 3);
+
+            if (facebookPage?.instagramAccountId && facebookPage?.pageAccessToken) {
+              try {
+                const axios = require('axios');
+                const IG_GRAPH_API = `https://graph.facebook.com/v22.0/${facebookPage.instagramAccountId}/messages`;
+                const igRes = await axios.post(IG_GRAPH_API, {
+                  recipient: { id: senderId },
+                  message: { text: replyText },
+                  access_token: facebookPage.pageAccessToken
+                }, {
+                  timeout: 15000,
+                  headers: { 'Content-Type': 'application/json' }
+                });
+
+                console.log(`✅ [IG-AI-AUTOREPLY] AI reply sent to Instagram user ${senderId}`);
+
+                if (igRes.data?.message_id) {
+                  await safeQuery(async () => {
+                    return await prisma.message.update({
+                      where: { id: savedReply.id },
+                      data: {
+                        metadata: JSON.stringify({
+                          ...JSON.parse(savedReply.metadata),
+                          instagramMessageId: igRes.data.message_id,
+                          sentToInstagram: true
+                        })
+                      }
+                    });
+                  }, 2);
+                }
+              } catch (sendErr) {
+                console.error('❌ [IG-AI-AUTOREPLY] Failed sending to Instagram:', sendErr.response?.data || sendErr.message);
+              }
+            }
+          }
+        } catch (aiErr) {
+          console.error('❌ [IG-AI-AUTOREPLY] AI processing error:', aiErr.message);
+        }
+      });
+    }
+
     console.log(`✅ [IG-MSG] Saved Instagram message ${messageId} for company ${companyId}`);
   } catch (error) {
     console.error('❌ [IG-MSG] Error handling Instagram message:', error.message);
   }
 }
 
+async function sendInstagramMessage({ recipientId, messageText, igAccountId, pageAccessToken, companyId }) {
+  try {
+    if (!recipientId || !igAccountId || !pageAccessToken) {
+      return { success: false, error: 'MISSING_PARAMS', reason: 'MISSING_INSTAGRAM_SEND_PARAMS' };
+    }
+
+    const axios = require('axios');
+    const IG_GRAPH_API = `https://graph.facebook.com/v22.0/${igAccountId}/messages`;
+
+    const response = await axios.post(IG_GRAPH_API, {
+      recipient: { id: recipientId },
+      message: { text: messageText },
+      access_token: pageAccessToken
+    }, {
+      timeout: 15000,
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const messageId = response.data?.message_id;
+    console.log(`✅ [IG-SEND] Message sent to Instagram user ${recipientId} | ID: ${messageId?.slice(-8) || 'N/A'}`);
+
+    return { success: true, messageId, data: response.data };
+  } catch (error) {
+    const errorData = error.response?.data || {};
+    console.error(`❌ [IG-SEND] Failed: ${errorData?.error?.message || error.message}`);
+    return {
+      success: false,
+      error: errorData?.error?.type || 'IG_SEND_ERROR',
+      message: errorData?.error?.message || error.message,
+      code: errorData?.error?.code
+    };
+  }
+}
+
 module.exports = {
   sendFacebookMessage,
   sendFacebookMessageViaDeliveryOutbox,
+  sendInstagramMessage,
   handleMessageDirectly,
   handleFacebookMessage,
   handleInstagramMessage,
@@ -2535,4 +2707,3 @@ module.exports = {
   updateConversationLastMessageStatus,
   resetConversationUnreadCount
 };
-

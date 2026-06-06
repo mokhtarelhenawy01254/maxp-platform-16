@@ -95,6 +95,24 @@ class TestConstruction:
         assert isinstance(agent.created_at, datetime)
         assert agent.created_at.tzinfo is not None
 
+    @pytest.mark.asyncio
+    async def test_from_template_honors_runtime_role_override_when_template_is_missing(self):
+        agent = await BaseAgent.from_template(
+            "facebook-sales-support-agent",
+            "comp_001",
+            overrides={
+                "id": "agent_fb",
+                "name": "شيرين",
+                "role": "FACEBOOK_SALES_SUPPORT",
+                "model": "llama-3.3-70b-versatile",
+            },
+            session=None,
+        )
+
+        assert agent.id == "agent_fb"
+        assert agent.name == "شيرين"
+        assert agent.role == "FACEBOOK_SALES_SUPPORT"
+
 
 # ---------------------------------------------------------------------------
 # Tool / skill permissions
@@ -442,14 +460,13 @@ class TestBuild:
     @pytest.mark.asyncio
     async def test_ensure_client_reuses_framework_agent_client(self, agent: BaseAgent):
         framework_client = MagicMock()
-        with patch("src.agents.base.build_agent_client", return_value=framework_client) as build_sync, \
+        with patch("src.agents.base.build_agent_client_async", new=AsyncMock(return_value=framework_client)) as build_async, \
              patch("src.agents.base.get_all_tools", return_value=[]):
             client = await agent.ensure_client()
 
         assert client is framework_client
         assert agent.client is framework_client
-        assert agent._framework_agent is not None
-        build_sync.assert_called_once()
+        build_async.assert_awaited_once()
 
     def test_create_session_delegates_to_framework_agent(self, agent: BaseAgent):
         sdk_session = object()

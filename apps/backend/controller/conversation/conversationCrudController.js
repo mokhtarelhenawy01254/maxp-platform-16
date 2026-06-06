@@ -701,6 +701,46 @@ const markConversationAsRead = async (req, res) => {
             });
         }, 3);
 
+        // 📸 Send read receipt to Instagram if this is an Instagram conversation
+        if (conversation.channel === 'INSTAGRAM' && unreadMessagesBefore.length > 0) {
+          setImmediate(async () => {
+            try {
+              const prismaClient = getSharedPrismaClient();
+              const igPage = await prismaClient.facebookPage.findFirst({
+                where: {
+                  companyId,
+                  status: 'connected',
+                  instagramAccountId: { not: null }
+                },
+                orderBy: { connectedAt: 'desc' }
+              });
+
+              if (igPage?.pageAccessToken && igPage?.instagramAccountId) {
+                const customer = await prismaClient.customer.findUnique({
+                  where: { id: conversation.customerId },
+                  select: { instagramId: true }
+                });
+
+                if (customer?.instagramId) {
+                  const axios = require('axios');
+                  await axios.post(
+                    `https://graph.facebook.com/v22.0/${igPage.instagramAccountId}/messages`,
+                    {
+                      recipient: { id: customer.instagramId },
+                      sender_action: 'mark_seen',
+                      access_token: igPage.pageAccessToken
+                    },
+                    { timeout: 10000 }
+                  );
+                  console.log(`📸 [IG-READ-RECEIPT] Read receipt sent to Instagram user ${customer.instagramId}`);
+                }
+              }
+            } catch (igErr) {
+              console.error('⚠️ [IG-READ-RECEIPT] Failed:', igErr.message);
+            }
+          });
+        }
+
         res.json({
             success: true,
             message: `تم تحديد ${result.count} رسالة كمقروءة`,
@@ -1052,6 +1092,74 @@ const snoozeConversation = async (req, res) => {
     }
 };
 
+// 📸 Instagram typing indicator
+const sendInstagramTypingIndicator = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { action } = req.body; // 'typing_on' | 'typing_off'
+        const companyId = req.user?.companyId;
+
+        if (!companyId) {
+            return res.status(403).json({ success: false, error: 'COMPANY_ID_REQUIRED' });
+        }
+
+        if (!['typing_on', 'typing_off'].includes(action)) {
+            return res.status(400).json({ success: false, message: 'action must be typing_on or typing_off' });
+        }
+
+        const prisma = getSharedPrismaClient();
+        const conversation = await executeWithRetry(async () => {
+            return await prisma.conversation.findFirst({
+                where: { id, companyId },
+                select: { channel: true, customerId: true }
+            });
+        }, 3);
+
+        if (!conversation || conversation.channel !== 'INSTAGRAM') {
+            return res.status(404).json({ success: false, error: 'INSTAGRAM_CONVERSATION_NOT_FOUND' });
+        }
+
+        const igPage = await executeWithRetry(async () => {
+            return await prisma.facebookPage.findFirst({
+                where: { companyId, status: 'connected', instagramAccountId: { not: null } },
+                orderBy: { connectedAt: 'desc' }
+            });
+        }, 3);
+
+        if (!igPage?.pageAccessToken || !igPage?.instagramAccountId) {
+            return res.status(400).json({ success: false, error: 'INSTAGRAM_ACCOUNT_NOT_CONNECTED' });
+        }
+
+        const customer = await executeWithRetry(async () => {
+            return await prisma.customer.findUnique({
+                where: { id: conversation.customerId },
+                select: { instagramId: true }
+            });
+        }, 3);
+
+        if (!customer?.instagramId) {
+            return res.status(400).json({ success: false, error: 'CUSTOMER_INSTAGRAM_ID_MISSING' });
+        }
+
+        const axios = require('axios');
+        await axios.post(
+            `https://graph.facebook.com/v22.0/${igPage.instagramAccountId}/messages`,
+            {
+                recipient: { id: customer.instagramId },
+                sender_action: action,
+                access_token: igPage.pageAccessToken
+            },
+            { timeout: 10000 }
+        );
+
+        console.log(`📸 [IG-TYPING] Sent ${action} to Instagram user ${customer.instagramId}`);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('❌ [IG-TYPING] Error:', error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
     deleteConverstation,
     getConversations,
@@ -1061,5 +1169,6 @@ module.exports = {
     markConversationAsUnread,
     checkHealth,
     bulkUpdateConversations,
-    snoozeConversation
+    snoozeConversation,
+    sendInstagramTypingIndicator
 };

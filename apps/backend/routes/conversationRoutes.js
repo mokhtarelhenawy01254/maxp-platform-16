@@ -86,6 +86,9 @@ router.post('/:id/snooze', verifyToken.authenticateToken, conversationController
 router.delete('/:id/messages/:messageId', verifyToken.authenticateToken, conversationController.deleteMessage);
 router.post('/:id/messages/location', verifyToken.authenticateToken, conversationController.sendLocationMessage);
 
+// 🆕 Instagram typing indicator
+router.post('/:id/instagram-typing', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, conversationController.sendInstagramTypingIndicator);
+
 // 🆕 Sync Facebook Messages Route
 router.post('/:id/sync-messages', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, conversationController.syncFacebookMessages);
 

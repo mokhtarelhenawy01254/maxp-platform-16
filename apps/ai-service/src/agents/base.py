@@ -198,7 +198,7 @@ class BaseAgent:
             id=overrides.get("id")
             or f"{profile.role}_{company_id[-6:]}_{int(_utcnow().timestamp() * 1000)}",
             name=overrides.get("name") or profile.name,
-            role=profile.role,
+            role=overrides.get("role") or profile.role,
             company_id=company_id,
             allowed_tools=overrides.get("allowed_tools") or profile.allowed_tools,
             allowed_skills=overrides.get("allowed_skills") or profile.allowed_skills,

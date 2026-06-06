@@ -17,7 +17,11 @@ const { t } = require('./i18n');
 
 const FACEBOOK_MESSENGER_AGENT_ROLE = 'FACEBOOK_SALES_SUPPORT';
 const FACEBOOK_MESSENGER_AGENT_TEMPLATE = 'facebook-sales-support-agent';
-const FACEBOOK_MESSENGER_AGENT_NAME = t('agent.facebook_messenger_name');
+const FACEBOOK_MESSENGER_AGENT_NAME = 'Facebook Messenger Agent';
+
+const INSTAGRAM_MESSENGER_AGENT_ROLE = 'INSTAGRAM_SALES_SUPPORT';
+const INSTAGRAM_MESSENGER_AGENT_TEMPLATE = 'instagram-sales-support-agent';
+const INSTAGRAM_MESSENGER_AGENT_NAME = 'Instagram DM Agent';
 
 const MANAGER_TYPES = {
   CEO: 'CEO',
@@ -42,8 +46,9 @@ const GLOBAL_TEMPLATE_AGENTS = [
   { slug: 'support-agent',                role: 'SUPPORT',                 name: 'Support Agent',           icon: '🎧', description: 'Specialized agent for customer service, order and shipping follow-up.' },
   { slug: 'inventory-pricing-agent',      role: 'INVENTORY',               name: 'Inventory & Pricing Agent',      icon: '📦', description: 'Specialized agent for inventory management, pricing and products.' },
   { slug: 'marketing-agent',              role: 'MARKETING',               name: 'Marketing Agent',               icon: '📣', description: 'Specialized agent for marketing campaigns and advertisements.' },
-  { slug: 'facebook-sales-support-agent', role: 'FACEBOOK_SALES_SUPPORT',  name: FACEBOOK_MESSENGER_AGENT_NAME,         icon: '💬', description: 'Specialized agent for Facebook Messenger customer replies and social channel sales.' },
+  { slug: 'facebook-sales-support-agent', role: 'FACEBOOK_SALES_SUPPORT',  name: 'Facebook & Messenger Agent',         icon: '💬', description: 'Specialized agent for Facebook Messenger customer replies and social channel sales.' },
   { slug: 'sas-sales-agent',              role: 'SAS_SALES',               name: 'Facebook & Google Sheets Agent', icon: '📊', description: 'Specialized sales agent integrated with Google Sheets for Facebook Messenger customer replies.' },
+  { slug: 'instagram-sales-support-agent', role: 'INSTAGRAM_SALES_SUPPORT', name: 'Instagram DM Agent',             icon: '📸', description: 'Specialized agent for Instagram DM customer replies and social channel sales.' },
 ];
 
 function safeJsonParse(val, fallback) {
@@ -59,6 +64,7 @@ function departmentKeyForRole(role = '') {
   if (normalized === 'INVENTORY' || normalized === 'PRICING') return 'inventory';
   if (normalized === 'MARKETING') return 'marketing';
   if (normalized === 'FACEBOOK' || normalized === 'MESSENGER' || normalized === FACEBOOK_MESSENGER_AGENT_ROLE) return 'messenger';
+  if (normalized === 'INSTAGRAM' || normalized === INSTAGRAM_MESSENGER_AGENT_ROLE) return 'messenger';
   if (normalized === 'SHIPPING') return 'operations';
   return 'operations';
 }
@@ -140,26 +146,29 @@ async function ensureDefaultAgentDepartments(companyId) {
   if (!companyId) return [];
   const prisma = getSharedPrismaClient();
 
-  // Verify the company exists to avoid foreign key violations
-  const company = await prisma.company.findUnique({ where: { id: companyId } });
-  if (!company) {
-    console.warn('[AGENT-MANAGER] Company not found for ensureDefaultAgentDepartments:', companyId);
-    return [];
+  // Upsert all default departments via Prisma API
+  for (const dept of DEFAULT_AGENT_DEPARTMENTS) {
+    const id = `agent_dept_${companyId.slice(-6)}_${dept.key}`;
+    await prisma.agentDepartment.upsert({
+      where: { id },
+      create: {
+        id,
+        companyId,
+        key: dept.key,
+        name: dept.name,
+        description: dept.description || null,
+        icon: dept.icon || '🤖',
+        sortOrder: Number(dept.sortOrder) || 100,
+      },
+      update: {
+        name: dept.name,
+        description: dept.description || null,
+        icon: dept.icon || '🤖',
+        sortOrder: Number(dept.sortOrder) || 100,
+        updatedAt: new Date(),
+      },
+    });
   }
-
-  // Bulk create default departments, skipping duplicates if they already exist
-  await prisma.agentDepartment.createMany({
-    data: DEFAULT_AGENT_DEPARTMENTS.map(dept => ({
-      id: `agent_dept_${companyId.slice(-6)}_${dept.key}`,
-      companyId,
-      key: dept.key,
-      name: dept.name,
-      description: dept.description || null,
-      icon: dept.icon || '🤖',
-      sortOrder: Number(dept.sortOrder) || 100,
-    })),
-    skipDuplicates: true,
-  });
 
   // Fetch departments for this company
   const departments = await prisma.agentDepartment.findMany({
@@ -268,7 +277,7 @@ async function ensureGlobalTemplateAgents(companyId) {
         const profile = agentProfileLoaderService.loadProfile(template.slug);
 
         // Spawn in memory
-        const agent = await agentProvisioningService.spawn(companyId, {
+        const agent = agentProvisioningService.spawn(companyId, {
           name: template.name,
           role: template.role,
           templateSlug: template.slug,
@@ -366,6 +375,24 @@ async function companyHasConnectedFacebookPage(companyId) {
       where: {
         companyId,
         status: { not: 'disconnected' },
+      },
+      select: { id: true },
+    });
+    return Boolean(page);
+  } catch {
+    return false;
+  }
+}
+
+async function companyHasConnectedInstagramAccount(companyId) {
+  try {
+    const prisma = getSharedPrismaClient();
+    if (!prisma.facebookPage?.findFirst) return false;
+    const page = await prisma.facebookPage.findFirst({
+      where: {
+        companyId,
+        status: { not: 'disconnected' },
+        instagramAccountId: { not: null },
       },
       select: { id: true },
     });
@@ -622,7 +649,7 @@ class AgentManagerService {
     if (existing) {
       return agentProvisioningService.reconcileTemplateDefaults(companyId, existing);
     }
-    return await agentProvisioningService.spawn(companyId, { role: 'CEO', name: 'CEO Agent' });
+    return agentProvisioningService.spawn(companyId, { role: 'CEO', name: 'CEO Agent' });
   }
 
   async ensureFacebookMessengerAgent(companyId) {
@@ -686,7 +713,7 @@ class AgentManagerService {
 
     const manager = await this.getManagerAgent(companyId);
     const profile = agentProfileLoaderService.loadProfile(FACEBOOK_MESSENGER_AGENT_TEMPLATE);
-    const agent = await agentProvisioningService.spawn(companyId, {
+    const agent = agentProvisioningService.spawn(companyId, {
       name: FACEBOOK_MESSENGER_AGENT_NAME,
       role: FACEBOOK_MESSENGER_AGENT_ROLE,
       templateSlug: FACEBOOK_MESSENGER_AGENT_TEMPLATE,
@@ -720,6 +747,105 @@ class AgentManagerService {
       action: 'FACEBOOK_MESSENGER_AGENT_ENSURED',
       decision: `Ensured Facebook Messenger agent ${agent.id}`,
       metadata: { agent: serializeAgent(agent), createdBy: 'system_facebook_channel' },
+    });
+
+    return agent;
+  }
+
+  async ensureInstagramMessengerAgent(companyId) {
+    if (!companyId) throw new Error('companyId is required');
+    await hydrateCompanyAgentsFromDB(companyId);
+
+    const runtimeExisting = agentProvisioningService.listAgents(companyId)
+      .find(agent => (
+        agent.status === 'ACTIVE' &&
+        (
+          agent.role === INSTAGRAM_MESSENGER_AGENT_ROLE ||
+          agent.templateSlug === INSTAGRAM_MESSENGER_AGENT_TEMPLATE
+        )
+      ));
+    if (runtimeExisting) {
+      return agentProvisioningService.reconcileTemplateDefaults(companyId, runtimeExisting);
+    }
+
+    let dbExisting = null;
+    try {
+      const prisma = getSharedPrismaClient();
+      try {
+        dbExisting = await prisma.companyAgent.findFirst({
+          where: {
+            companyId,
+            OR: [
+              { role: INSTAGRAM_MESSENGER_AGENT_ROLE },
+              { templateSlug: INSTAGRAM_MESSENGER_AGENT_TEMPLATE },
+            ],
+          },
+          orderBy: { createdAt: 'asc' },
+        });
+      } catch (_) {}
+      if (dbExisting === undefined || dbExisting === null) {
+        const rows = await prisma.$queryRawUnsafe(
+          `SELECT id, name, role, model, "templateSlug", "parentId", skills, soul, status FROM "company_agents" WHERE "companyId" = $1 AND (role = $2 OR "templateSlug" = $3) ORDER BY "createdAt" ASC LIMIT 1`,
+          companyId, INSTAGRAM_MESSENGER_AGENT_ROLE, INSTAGRAM_MESSENGER_AGENT_TEMPLATE
+        ).catch(() => []);
+        dbExisting = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+      }
+    } catch (_) {}
+
+    if (dbExisting?.status === 'ARCHIVED') return null;
+    if (dbExisting) {
+      const restored = agentProvisioningService._restoreAgent(companyId, {
+        id: dbExisting.id,
+        name: dbExisting.name,
+        role: dbExisting.role,
+        model: dbExisting.model,
+        templateSlug: dbExisting.templateSlug,
+        parentId: dbExisting.parentId,
+        allowedSkills: safeJsonParse(dbExisting.skills, null),
+        soul: dbExisting.soul,
+        status: dbExisting.status,
+      });
+      return restored ? agentProvisioningService.reconcileTemplateDefaults(companyId, restored) : null;
+    }
+
+    if (!(await companyHasConnectedInstagramAccount(companyId))) return null;
+
+    const manager = await this.getManagerAgent(companyId);
+    const profile = agentProfileLoaderService.loadProfile(FACEBOOK_MESSENGER_AGENT_TEMPLATE);
+    const agent = agentProvisioningService.spawn(companyId, {
+      name: INSTAGRAM_MESSENGER_AGENT_NAME,
+      role: INSTAGRAM_MESSENGER_AGENT_ROLE,
+      templateSlug: INSTAGRAM_MESSENGER_AGENT_TEMPLATE,
+      parentId: manager.id,
+    });
+
+    try {
+      await persistCompanyAgent(companyId, agent, {
+        soul: profile.instructions?.soul || '',
+        rules: [
+          'Only responds to Instagram DM customers as a sales and support agent.',
+          'Does not execute any final write operations without human approval when required.',
+          'Hands off the conversation to a human team for complaints, returns, or unclear cases.',
+        ],
+        skills: agent.getSkills ? agent.getSkills() : profile.allowedSkills,
+        createdBy: 'system_instagram_channel',
+        description: 'Specialized agent for Instagram DM customer replies using company catalog and conversation context.',
+        icon: '📸',
+        departmentId: await getDepartmentIdForRole(companyId, INSTAGRAM_MESSENGER_AGENT_ROLE),
+        managerType: MANAGER_TYPES.AGENT,
+      });
+    } catch (error) {
+      agentProvisioningService.removeRuntimeAgent(companyId, agent.id);
+      const persistError = new Error(`INSTAGRAM_AGENT_PERSIST_FAILED:${error.message}`);
+      persistError.code = 'INSTAGRAM_AGENT_PERSIST_FAILED';
+      throw persistError;
+    }
+
+    await this._audit(companyId, {
+      agentId: manager.id,
+      action: 'INSTAGRAM_MESSENGER_AGENT_ENSURED',
+      decision: `Ensured Instagram DM agent ${agent.id}`,
+      metadata: { agent: serializeAgent(agent), createdBy: 'system_instagram_channel' },
     });
 
     return agent;
@@ -800,7 +926,7 @@ class AgentManagerService {
     const skills = request.skills || template.skills || null;
 
     // ── Spawn in memory ──────────────────────────────────────────────────────
-    const agent = await agentProvisioningService.spawn(companyId, {
+    const agent = agentProvisioningService.spawn(companyId, {
       name: request.name,
       role: request.role,
       model: request.model,
@@ -1063,7 +1189,7 @@ class AgentManagerService {
         .find(item => item.role === task.assignTo && item.status === 'ACTIVE');
 
       if (!agent && request.autoHire !== false) {
-        agent = await agentProvisioningService.spawn(companyId, {
+        agent = agentProvisioningService.spawn(companyId, {
           role: task.assignTo,
           parentId: manager.id,
         });

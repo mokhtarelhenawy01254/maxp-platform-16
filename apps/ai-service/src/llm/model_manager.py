@@ -78,6 +78,7 @@ class ModelManager:
         model_name: str,
         company_id: str,
         preferred_provider: str | None = None,
+        excluded_key_ids: set[str] | None = None,
     ) -> dict[str, Any]:
         """
         Select the next available API key for a model, with failover support.
@@ -85,6 +86,8 @@ class ModelManager:
         Returns:
             Dict containing key_id, api_key, baseUrl, and model.
         """
+        excluded_key_ids = excluded_key_ids or set()
+
         # 1. Determine the best provider based on priority
         from src.db.models.provider import AiKey
         from src.db.session import async_session
@@ -114,6 +117,8 @@ class ModelManager:
                 now = time.time()
                 
                 for k_id, k_api, k_url in keys:
+                    if k_id in excluded_key_ids:
+                        continue
                     state = await self._get_key_state(k_id)
                     if state and (state.status == "PERMANENTLY_DISABLED" or state.cooldown_until > now):
                         continue
