@@ -1,3 +1,10 @@
+## [2026-06-06] Payroll Test & Simulation Route
+- **Details**: Added a dedicated `/hr/payroll/calculate/:employeeId` route so the frontend Payroll Simulator and Payroll Testing pages can call the backend for real payroll projections instead of relying on hardcoded mock values.
+- **Controller**: `calculatePayrollSimulation` in `controller/hrController.js`
+- **Service**: Calls `calculatePayrollSimulation` in `services/hr/payrollService.js`
+- **Purpose**: Runs a full payroll projection (salary, attendance, absences, overtime, lateness, deductions, insurance) for a given employee. Accepts `{ month, year }` in the request body. Returns detailed breakdown including base salary, daily rate, working days, present/absent/late/overtime counts, gross earnings, total deductions, net before insurance, social insurance deduction, and final net.
+- **Files**: `controller/hrController.js`, `routes/hrRoutes.js`, `services/hr/payrollService.js`, `frontend/src/pages/hr/PayrollTesting.tsx`, `frontend/src/pages/hr/components/PayrollSimulator.tsx`
+
 ## [2026-06-04] Payroll Lateness Sync and Deduction Approval Architecture
 - **Details**: Rebuilt the payroll deduction pipeline to ensure correct salary calculations with grace period enforcement, deduction approval workflow, and real-time attendance sync.
 - **Architecture**:

@@ -1,3 +1,18 @@
+## [2026-06-06] Payroll Testing & Calculate Route Fix [READY]
+- **Objective**: Fix incorrect payroll calculation results in the frontend test/simulation tools and add the missing backend route for payroll projection.
+- **Accomplishments**:
+  - **Backend Route**: Added `POST /hr/payroll/calculate/:employeeId` in `hrRoutes.js` and `calculatePayrollSimulation` controller in `hrController.js`.
+  - **Service Fix**: Fixed `getPayrollCalculationLog` in `payrollService.js` to use `prisma.hrPermissionRequest` instead of the non-existent `prisma.permissionRequest`.
+  - **Frontend Payroll Testing**: Rewired `PayrollTesting.tsx` to call the real backend API with dynamic `companyDBConfig` settings instead of hardcoded mock values (26 days, 15% tax, 9% insurance).
+  - **Frontend Payroll Simulator**: Fixed `PayrollSimulator.tsx` to use current dynamic `month`/`year` (instead of hardcoded February 2026) and call the correct endpoint.
+- **Verification**: Backend starts without route errors; new endpoint returns `AUTHENTICATION_REQUIRED` (expected, requires auth middleware); calculation log no longer throws on permissions fetch.
+- **Affected Files**:
+  - `backend/controller/hrController.js`
+  - `backend/routes/hrRoutes.js`
+  - `backend/services/hr/payrollService.js`
+  - `frontend/src/pages/hr/PayrollTesting.tsx`
+  - `frontend/src/pages/hr/components/PayrollSimulator.tsx`
+
 ## [2026-06-04] Payroll Lateness Deduction Sync and Approval Workflow [READY]
 - **Objective**: Fix incorrect salary calculations caused by duplicate lateness penalties, missing grace period enforcement, and PENDING deductions being applied before manager approval.
 - **Accomplishments**:

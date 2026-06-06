@@ -1,3 +1,22 @@
+## [2026-06-06] Payroll Testing UI & Missing Calculate Route
+- **Bug/Issue**: HR payroll calculation showed completely wrong results. The test/simulation tools either used hardcoded mock values (26 working days, 15% tax, 9% insurance instead of actual settings) or called a non-existent backend API endpoint.
+- **Cause**:
+  1. `PayrollTesting.tsx` had a hardcoded mock calculation using 26 working days (real: 22), 15% tax (real: 0%), 9% insurance (real: 14%).
+  2. `PayrollSimulator.tsx` called `POST /hr/payroll/calculate/:id` which had no backend route (404).
+  3. `getPayrollCalculationLog` in `payrollService.js` used `prisma.permissionRequest` (non-existent model) instead of `prisma.hrPermissionRequest`.
+- **Fix**:
+  1. Added `POST /hr/payroll/calculate/:employeeId` backend route in `hrRoutes.js` and `calculatePayrollSimulation` controller in `hrController.js`.
+  2. Rewired `PayrollTesting.tsx` to call the real backend API instead of mock calculation.
+  3. Fixed `PayrollSimulator.tsx` to use dynamic current month/year and the new correct endpoint.
+  4. Fixed `payrollService.js` `getPayrollCalculationLog` to use `hrPermissionRequest` model with fallback.
+- **Affected Files**:
+  - `backend/controller/hrController.js`
+  - `backend/routes/hrRoutes.js`
+  - `backend/services/hr/payrollService.js`
+  - `frontend/src/pages/hr/PayrollTesting.tsx`
+  - `frontend/src/pages/hr/components/PayrollSimulator.tsx`
+- **Verification**: Backend starts without route errors; new endpoint returns `AUTHENTICATION_REQUIRED` (expected, requires auth middleware); calculation log no longer throws on permissions fetch.
+
 ## [2026-06-04] Payroll Salary Miscalculation and Duplicate Lateness Deductions
 - **Bug/Issue**: Payroll net salary was incorrect because (1) PENDING deductions were subtracted from net salary before manager approval, (2) lateness penalties ignored the 60-minute monthly grace period, (3) editing attendance (fingerprint) did not recalculate auto-deductions, and (4) the `latenessCalculationService` had a variable scope bug preventing correct deduction amounts.
 - **Cause**: `payrollService.calculatePayrollData` summed all deductions regardless of approval status and had its own duplicate lateness penalty logic bypassing the grace period. `latenessCalculationService` declared `remainingGrace` inside an `if` block making it inaccessible. `attendanceService.updateAttendance` only queried `APPROVED` auto-deductions, missing `PENDING` ones.
