@@ -1,3 +1,67 @@
+## [2026-06-06] AI Sandbox — Product Variants Showing Wrong Color (LLM Hallucination)
+- **Bug/Issue**: When a customer asks about product colors (e.g. "ايه الالوان لكوتشي لمسه؟"), the AI replies with incorrect colors like "أحمر" even though the actual colors in the database are "أبيض، أسود، بيج".
+- **Cause**: The LLM overrides the tool evidence with its training priors. When it sees a shoe product it "knows" common shoe colors and substitutes them instead of reading the exact values from `availableColors[].value` in the tool result. The nested JSON structure makes it easier for the LLM to hallucinate than to parse deeply.
+- **Fix**:
+  1. Added `variantSummary` plain-text field in `mapProductForSearch()` inside `productTools.js` — formats colors and sizes as a direct Arabic string: `"الألوان المتاحة: أبيض، أسود، بيج | المقاسات المتاحة: 37، 38، 39، 40، 41"`. This surfaces the exact values prominently and makes hallucination harder.
+  2. Updated `taskInstruction` in `toolExecutionEngine.js` to explicitly state: "use ONLY exact values from the variantSummary field — do not rename, substitute, or invent any color or size."
+- **Affected Files**:
+  - `backend/services/aiAgent/tools/productTools.js`
+  - `backend/services/aiAgent/executors/toolExecutionEngine.js`
+
+## [2026-06-06] AI Sandbox — Product Image URLs Appearing in Response Without Customer Requesting Them
+- **Bug/Issue**: When a customer asks about colors or prices, the AI response includes "يمكنك رؤية الصور من خلال الروابط التالية:" followed by empty bullet points, even though the customer never asked for product images.
+- **Cause**: `_buildCompactCustomerReplyMessages()` in `customerReplyEngine.js` always populated `imageUrls` in the evidence by calling `_extractImageUrlsFromEvidence(toolEvidence)` regardless of whether the customer requested images. The LLM then generated an image section based on this.
+- **Fix**: Made `imageUrls` conditional — only populated when `_relevancePlanRequestsProductImage(relevancePlan)` returns `true` (i.e. the customer explicitly asked for images). Otherwise set to `[]`.
+- **Affected Files**:
+  - `backend/services/aiAgent/executors/customerReplyEngine.js`
+
+## [2026-06-06] AI Sandbox — Same Product Appearing Multiple Times in Response
+- **Bug/Issue**: When searching for "كوتشي لمسه", the AI response listed the same product 3–7 times with identical name and price.
+- **Cause**: The merchant created 7 separate active product records with the exact same name "كوتشي لمسه" in the database. The search engine correctly returns multiple results for matching products, so all 7 (or up to the limit) are returned and passed to the LLM.
+- **Fix**: Added deduplication by normalized product name in `productSearchHandler()` inside `productTools.js`. After fetching and ordering products, a `Set` of seen names filters out subsequent duplicates, keeping only the first occurrence of each unique product name.
+- **Affected Files**:
+  - `backend/services/aiAgent/tools/productTools.js`
+
+## [2026-06-06] AI Sandbox — Product List Truncated at 2800 Characters Causing Incomplete Results
+- **Bug/Issue**: When asking "ايه المنتجات المتاحة عندكم؟", the AI would only list 1–2 products and sometimes repeat the same product (e.g. "كوتشي لمسه" × 2).
+- **Cause**: `_buildCompactCustomerReplyMessages()` in `customerReplyEngine.js` sliced `toolResultsText` to 2800 characters. The JSON for 5 products with variants and images is ~3800+ characters, so the evidence was cut mid-JSON and the LLM received malformed/incomplete data.
+- **Fix**: Increased `toolResultsText` slice limit from `2800` to `10000` characters.
+- **Affected Files**:
+  - `backend/services/aiAgent/executors/customerReplyEngine.js`
+
+## [2026-06-06] AI Sandbox — "List All Products" Returns Clarification Instead of Product List
+- **Bug/Issue**: When asking "ايه المنتجات المتاحة عندكم؟", the AI responded: "عذراً، لم أستطع استخراج قائمة المنتجات لأننا نحتاج معرفتك لنوع أو فئة المنتج".
+- **Cause (Root — Step 1)**: `productSearchHandler()` in `productTools.js` had an early-return guard: if `resolvedQuery` is empty AND `usesPreviousProduct` is false, it returned `{ found: false, code: 'MISSING_PRODUCT_QUERY', needsClarification: true }`. The LLM interpreted this and asked the customer for a category.
+- **Fix (Step 1)**: Removed the `MISSING_PRODUCT_QUERY` early-return block entirely. An empty query now falls through to `unifiedOrchestrator.search(companyId, '', {...})` which returns all products. The `usesPreviousProduct` memory check was preserved but scoped only to when `referencesPreviousProduct` is explicitly `true`.
+- **Cause (Root — Step 2)**: `_validateCustomerToolCallParams()` in `toolExecutionEngine.js` blocked the tool call when the LLM called `product.search` with `{}` (empty params). The validation required a non-empty query string, a previous-product reference, OR `listAll === true`. The LLM does not pass `listAll: true` natively.
+- **Fix (Step 2)**: Changed `product.search` validation to always return `{ valid: true }` — the handler itself manages all input cases including empty query.
+- **Cause (Root — Step 3)**: Even after the tool executed successfully, the LLM replied with "يمكنك رؤية تفاصيل المنتجات من خلال الرابط:" (empty store link) instead of listing the products.
+- **Fix (Step 3)**: Added explicit rule in `customerReplyEngine.js` system prompt: "If product.search succeeded and returned products, list each product's name and price directly — never redirect to a store URL or catalog link." Also updated `taskInstruction` in `toolExecutionEngine.js` with the same directive.
+- **Affected Files**:
+  - `backend/services/aiAgent/tools/productTools.js`
+  - `backend/services/aiAgent/executors/toolExecutionEngine.js`
+  - `backend/services/aiAgent/executors/customerReplyEngine.js`
+
+## [2026-06-06] AI Sandbox — product.search Missing from intentExecutionRouter
+- **Bug/Issue**: When the AI tried to deterministically route a product search intent, `_getDeterministicReadToolParams()` returned `null` for `product.search` because the tool was not listed in the switch-case.
+- **Cause**: `intentExecutionRouter.js` had no `case 'product.search'` in either `_getDeterministicReadToolParams` or `_getModelClassifiedReadToolParams`. Empty query resulted in `null` params which blocked execution.
+- **Fix**: Added `case 'product.search'` to both functions. Empty query → `{ query: '', listAll: true, limit: 10 }`, non-empty query → `{ query: String(q), limit: 5 }`.
+- **Affected Files**:
+  - `backend/services/aiAgent/executors/intentExecutionRouter.js`
+
+## [2026-06-06] AI Sandbox — pg_trgm Extension Missing Caused Product Search Crash
+- **Bug/Issue**: Product search failed with `ERROR: function similarity(text, text) does not exist`.
+- **Cause**: The `pg_trgm` PostgreSQL extension was not installed in the production database. The `DbVectorAdaptor` uses `similarity()` for fuzzy text matching.
+- **Fix**: Installed extensions on the production PostgreSQL server: `CREATE EXTENSION IF NOT EXISTS pg_trgm; CREATE EXTENSION IF NOT EXISTS unaccent;`
+- **Affected Files**: Database only (no code changes).
+
+## [2026-06-06] Webhook Log Spam Flooding Backend Logs
+- **Bug/Issue**: Backend logs were flooded with `⚠️ [WEBHOOK] Webhook signature verification failed: invalid_signature` every second, making it impossible to read real logs.
+- **Cause**: Two `console.warn` calls in `webhookController.js` were logging every webhook request that had an invalid or missing signature (which happens constantly for health-check pings and unverified Facebook calls in warn-only mode).
+- **Fix**: Removed both `console.warn` lines for `invalid_signature` and `warn-only mode` from `webhookController.js`.
+- **Affected Files**:
+  - `backend/controller/webhookController.js`
+
 ## [2026-06-04] Payroll Salary Miscalculation and Duplicate Lateness Deductions
 - **Bug/Issue**: Payroll net salary was incorrect because (1) PENDING deductions were subtracted from net salary before manager approval, (2) lateness penalties ignored the 60-minute monthly grace period, (3) editing attendance (fingerprint) did not recalculate auto-deductions, and (4) the `latenessCalculationService` had a variable scope bug preventing correct deduction amounts.
 - **Cause**: `payrollService.calculatePayrollData` summed all deductions regardless of approval status and had its own duplicate lateness penalty logic bypassing the grace period. `latenessCalculationService` declared `remainingGrace` inside an `if` block making it inaccessible. `attendanceService.updateAttendance` only queried `APPROVED` auto-deductions, missing `PENDING` ones.
