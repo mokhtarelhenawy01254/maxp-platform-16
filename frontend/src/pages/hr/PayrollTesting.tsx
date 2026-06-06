@@ -338,147 +338,55 @@ const PayrollTesting: React.FC = () => {
     },
   ]);
 
-  // Calculate payroll function
+  // Calculate payroll function - calls backend API
   const calculatePayroll = async () => {
     if (!selectedEmployee) return;
 
     setCalculating(true);
 
     try {
-      // In a real implementation, this would call the API
-      // For now, we'll simulate a calculation with a timeout
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
 
-      // Calculate working days - using standard 26 working days per month
-      const standardWorkingDays = 26; // عدد أيام العمل القياسية في الشهر
-      const workingDays = attendance.length;
-      const absentDays = attendance.filter((a) => a.status === "ABSENT").length;
-      const actualWorkDays = workingDays - absentDays;
-
-      // حساب الراتب الأساسي بناءً على الحضور الفعلي
-      const dailyRate = baseSalary / standardWorkingDays; // معدل اليوم الواحد
-      const earnedBaseSalary = actualWorkDays * dailyRate; // الراتب المستحق بناءً على الحضور
-
-      // حساب خصم الغياب وتفاصيله
-      const attendanceDeduction = absentDays * dailyRate;
-      const attendanceDeductionDetails = {
-        amount: attendanceDeduction,
-        reason: `خصم غياب ${absentDays} يوم بمعدل ${dailyRate.toFixed(2)} جنيه لليوم`,
-        days: absentDays,
-      };
-
-      // Calculate overtime
-      const hourlyRate = dailyRate / 8; // Assuming 8 hours per day
-      const overtimeHours = attendance.reduce(
-        (sum, a) => sum + a.overtimeHours,
-        0,
-      );
-      const overtimeRate = 1.5; // Overtime pays 1.5x
-      const overtimeAmount = overtimeHours * hourlyRate * overtimeRate;
-
-      // Calculate late penalty with details
-      const totalLateMinutes = attendance.reduce(
-        (sum, a) => sum + a.lateMinutes,
-        0,
-      );
-      const minuteRate = hourlyRate / 60;
-      const latePenaltyRate = 2; // Late minutes cost 2x
-      const latePenalty = totalLateMinutes * minuteRate * latePenaltyRate;
-      const latePenaltyDetails = {
-        amount: latePenalty,
-        reason: `خصم تأخير ${totalLateMinutes} دقيقة بمعدل ${(minuteRate * latePenaltyRate).toFixed(2)} جنيه للدقيقة`,
-        minutes: totalLateMinutes,
-      };
-
-      // Calculate allowances based on earned salary
-      const totalAllowances = allowances.reduce((sum, a) => {
-        if (a.isPercentage) {
-          return sum + (earnedBaseSalary * a.amount) / 100;
-        }
-        return sum + a.amount;
-      }, 0);
-
-      // Calculate deductions with details
-      const deductionDetails = deductions.map((d) => {
-        const amount = d.isPercentage
-          ? (earnedBaseSalary * d.amount) / 100
-          : d.amount;
-        return {
-          name: d.name,
-          amount: amount,
-          reason: d.isPercentage
-            ? `${d.amount}% من الراتب الأساسي`
-            : `مبلغ ثابت`,
-          type: d.type,
-        };
-      });
-
-      const totalDeductions = deductionDetails.reduce(
-        (sum, d) => sum + d.amount,
-        0,
+      const response = await api.post(
+        `/hr/payroll/calculate/${selectedEmployee.id}`,
+        {
+          month,
+          year,
+          overrides: null,
+        },
       );
 
-      // Calculate gross salary based on earned salary
-      const grossSalary = earnedBaseSalary + totalAllowances + overtimeAmount;
+      const data = response.data.payroll;
 
-      // Calculate tax (simplified)
-      const taxRate = 0.15; // 15% tax rate
-      const taxableIncome = grossSalary;
-      const taxAmount = taxableIncome * taxRate;
-      const taxDetails = {
-        amount: taxAmount,
-        reason: `ضريبة دخل ${taxRate * 100}% من إجمالي الراتب (${grossSalary.toFixed(2)} جنيه)`,
-      };
-
-      // Calculate social insurance (simplified)
-      const socialInsuranceRate = 0.09; // 9% social insurance
-      const socialInsurance = earnedBaseSalary * socialInsuranceRate;
-      const socialInsuranceDetails = {
-        amount: socialInsurance,
-        reason: `تأمينات اجتماعية ${socialInsuranceRate * 100}% من الراتب الأساسي (${earnedBaseSalary.toFixed(2)} جنيه)`,
-      };
-
-      // Calculate net salary
-      const netSalary =
-        grossSalary -
-        totalDeductions -
-        taxAmount -
-        socialInsurance -
-        latePenalty;
-
-      // Set result
       setPayrollResult({
-        baseSalary,
-        earnedBaseSalary,
-        totalAllowances,
-        totalDeductions,
-        grossSalary,
-        netSalary,
-        taxAmount,
-        socialInsurance,
-        overtimeAmount,
-        overtimeHours,
-        attendanceDeduction,
-        absentDays,
-        latePenalty,
-        workingDays,
-        actualWorkDays,
-        dailyRate,
-        standardWorkingDays,
-        month: 2, // February
-        year: 2026,
-        periodStart: "2026-02-01",
-        periodEnd: "2026-02-28",
+        baseSalary: data.fullMonthBaseSalary || data.baseSalary,
+        earnedBaseSalary: data.baseSalary,
+        totalAllowances: data.totalAllowances,
+        totalDeductions: data.totalDeductions,
+        grossSalary: data.grossSalary,
+        netSalary: data.netSalary,
+        taxAmount: data.taxAmount,
+        socialInsurance: data.socialInsurance,
+        overtimeAmount: data.overtimeAmount,
+        overtimeHours: data.totalOvertimeHours,
+        attendanceDeduction: data.attendanceDeduction,
+        absentDays: data.absentDays,
+        latePenalty: data.latePenalty,
+        workingDays: data.totalWorkingDaysInMonth,
+        actualWorkDays: data.presentDays,
+        dailyRate: data.fullMonthBaseSalary / data.totalWorkingDaysInMonth,
+        standardWorkingDays: data.totalWorkingDaysInMonth,
+        month,
+        year,
+        periodStart: data.periodStart,
+        periodEnd: data.periodEnd,
         status: "PROJECTION",
-        deductionDetails,
-        attendanceDeductionDetails,
-        latePenaltyDetails,
-        taxDetails,
-        socialInsuranceDetails,
       });
     } catch (error) {
       console.error("Error calculating payroll:", error);
-      toast.error("فشل في حساب الراتب");
+      toast.error(error.response?.data?.error || "فشل في حساب الراتب");
     } finally {
       setCalculating(false);
     }

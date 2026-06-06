@@ -397,6 +397,7 @@ router.get('/my-payroll', hrController.getMyPayroll);
 router.get('/payroll/summary', requireAuth, requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.getPayrollSummary);
 router.get('/payroll/annual-report', requireAuth, requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.getAnnualPayrollReport);
 router.get('/payroll', requireAuth, requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.getPayrolls);
+router.post('/payroll/calculate/:employeeId', requireAuth, requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.calculatePayrollSimulation);
 router.get('/payroll/:id', requireAuth, requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.getPayrollById);
 router.post('/payroll', requireAuth, requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.createPayroll);
 router.post('/payroll/generate', requireAuth, requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']), hrController.generateMonthlyPayroll);

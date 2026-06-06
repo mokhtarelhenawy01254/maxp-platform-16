@@ -1825,14 +1825,31 @@ class PayrollService {
         }
       });
 
-      const permissions = await prisma.permissionRequest.findMany({
-        where: {
-          employeeRel: { userId: employeeId },
-          companyId,
-          status: 'APPROVED',
-          date: { gte: periodStart, lte: periodEnd }
+      let permissions = [];
+      try {
+        permissions = await prisma.hrPermissionRequest.findMany({
+          where: {
+            employee: { userId: employeeId },
+            companyId,
+            status: 'APPROVED',
+            date: { gte: periodStart, lte: periodEnd }
+          }
+        });
+      } catch (e) {
+        console.warn('⚠️ [PayrollCalculationLog] Failed to fetch permissions, trying fallback:', e.message);
+        try {
+          permissions = await prisma.permissionRequest.findMany({
+            where: {
+              employeeRel: { userId: employeeId },
+              companyId,
+              status: 'APPROVED',
+              date: { gte: periodStart, lte: periodEnd }
+            }
+          });
+        } catch (e2) {
+          console.warn('⚠️ [PayrollCalculationLog] Fallback also failed:', e2.message);
         }
-      });
+      }
 
       // 4. رسم خرائط البيانات باليوم
       const attMap = new Map();

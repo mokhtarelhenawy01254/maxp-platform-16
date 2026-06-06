@@ -268,11 +268,14 @@ export default function PayrollSimulator() {
     if (!selectedEmployee) return;
     try {
       setCalculating(true);
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
       const response = await api.post(
         `/hr/payroll/calculate/${selectedEmployee.id}`,
         {
-          month: 2,
-          year: 2026,
+          month,
+          year,
           overrides: simulation,
         },
       );

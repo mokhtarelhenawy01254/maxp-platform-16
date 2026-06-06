@@ -690,6 +690,37 @@ async function getMyPayrollProjection(req, res) {
   }
 }
 
+/**
+ * حساب راتب موظف (محاكاة/تقدير بدون حفظ)
+ * POST /api/hr/payroll/calculate/:employeeId
+ */
+async function calculatePayrollSimulation(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { employeeId } = req.params;
+    const { month, year, overrides } = req.body;
+
+    const calcMonth = month || new Date().getMonth() + 1;
+    const calcYear = year || new Date().getFullYear();
+
+    const payrollData = await payrollService.calculatePayrollData(
+      companyId,
+      employeeId,
+      calcMonth,
+      calcYear,
+      { overrides }
+    );
+
+    res.json({ success: true, payroll: payrollData });
+  } catch (error) {
+    console.error("❌ Error calculating payroll simulation:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "حدث خطأ أثناء حساب الراتب",
+    });
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🏢 الأقسام - Departments
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -6905,6 +6936,7 @@ module.exports = {
   getMyRecentAttendance,
   getMyRecentLeaves,
   getMyWarnings,
+  calculatePayrollSimulation,
   getMyLastPayroll,
   getMyPayrollHistory,
   getMyPayrollProjection,
