@@ -20,53 +20,26 @@ const { normalizeEnum, MESSAGE_TYPE } = require('../../utils/validator');
 const { recordSentMessageStat } = require('../../utils/statsRecorder');
 const { proxySocketMessageData } = require('../../utils/facebookMediaProxy');
 const { isValidMessageContent, getPageToken, processedMessages, getLastWebhookPageId } = require('./conversationShared');
-const aiServiceRouter = require('../../services/aiAgent/aiServiceRouter');
 
 
 const postMessageConverstation = async (req, res) => {
   const startTime = Date.now(); // ⚡ Track performance
   try {
+    //console.log(`🔥 POST /api/v1/conversations/${req.params.id}/messages received`);
+    //console.log(`📦 Request body:`, req.body);
+
     const { id } = req.params;
     const { message, replyTo } = req.body;
 
     if (!message) {
+      //console.log(`❌ No message content provided`);
       return res.status(400).json({
         success: false,
         error: 'Message content is required'
       });
     }
 
-    // 🤖 AI SERVICE ROUTING
-    // Check if this company is enabled for the new AI service
-    const companyId = req.user?.companyId || req.user?.companyId; // Ensure we have companyId
-    if (companyId && aiServiceRouter.isAiServiceEnabled(companyId)) {
-      try {
-        const customerId = req.user?.customerId || req.user?.id; // Fallback to userId
-        const aiResult = await aiServiceRouter.routeToAiService({
-          companyId,
-          customerId,
-          message,
-          threadId: id,
-          logger: console,
-        });
-
-        if (aiResult && (aiResult.status === 'ok' || aiResult.status === 'awaiting_approval')) {
-          return res.json({
-            success: true,
-            status: aiResult.status,
-            threadId: aiResult.threadId,
-            reply: aiResult.reply,
-            draftId: aiResult.draftId,
-            message: 'Handled by AI service'
-          });
-        }
-      } catch (aiError) {
-        console.error(`⚠️ [AI-ROUTING] Fallback to legacy logic due to error: ${aiError.message}`);
-        // Fall through to legacy logic
-      }
-    }
-
-    // Legacy logic continues...
+    // التحقق من صحة محتوى الرسالة
     if (!isValidMessageContent(message)) {
       //console.log(`⚠️ [VALIDATION] رسالة فارغة أو غير صالحة تم رفضها: "${message}"`);
       return res.status(400).json({
@@ -209,11 +182,12 @@ const postMessageConverstation = async (req, res) => {
               source: 'manual_reply',
               employeeId: senderId,
               employeeName: senderName,
-              isFacebookReply: conversation.channel !== 'TELEGRAM',
+              isFacebookReply: conversation.channel === 'FACEBOOK',
+              isInstagramReply: conversation.channel === 'INSTAGRAM',
               isTelegramReply: conversation.channel === 'TELEGRAM',
               timestamp: new Date(),
-              instantSave: true, // علامة لتحديد أن هذه الرسالة تم حفظها فوراً
-              ...(replyTo ? { replyTo } : {}) // Add replyTo logic
+              instantSave: true,
+              ...(replyTo ? { replyTo } : {})
             }),
             createdAt: new Date(),
             updatedAt: new Date()
@@ -478,8 +452,69 @@ const postMessageConverstation = async (req, res) => {
       }
     }
 
-    //console.log(`✅ Manual reply sent to Facebook - waiting for echo to save`);
+    // 📸 INSTAGRAM SENDING LOGIC
+    let instagramSent = false;
+    if (conversation && conversation.channel === 'INSTAGRAM') {
+      try {
+        const recipientInstagramId = conversation.customer?.instagramId;
+        if (!recipientInstagramId) {
+          console.error('❌ [INSTAGRAM-SEND] No Instagram ID found for customer');
+        } else {
+          // Get the Facebook page associated with this conversation
+          const igPage = await executeWithRetry(async () => {
+            const prismaClient = getSharedPrismaClient();
+            return await prismaClient.facebookPage.findFirst({
+              where: {
+                companyId: conversation.companyId,
+                status: 'connected',
+                instagramAccountId: { not: null }
+              },
+              orderBy: { connectedAt: 'desc' }
+            });
+          }, 3);
 
+          if (igPage?.pageAccessToken && igPage?.instagramAccountId) {
+            const axios = require('axios');
+            const IG_GRAPH_API = `https://graph.facebook.com/v22.0/${igPage.instagramAccountId}/messages`;
+            const igResponse = await axios.post(IG_GRAPH_API, {
+              recipient: { id: recipientInstagramId },
+              message: { text: message },
+              access_token: igPage.pageAccessToken
+            }, {
+              timeout: 15000,
+              headers: { 'Content-Type': 'application/json' }
+            });
+
+            instagramSent = true;
+            console.log(`✅ [INSTAGRAM-SEND] Message sent to Instagram user ${recipientInstagramId}`);
+
+            if (savedMessage) {
+              try {
+                await executeWithRetry(async () => {
+                  const prismaClient = getSharedPrismaClient();
+                  return await prismaClient.message.update({
+                    where: { id: savedMessage.id },
+                    data: {
+                      metadata: JSON.stringify({
+                        ...JSON.parse(savedMessage.metadata || '{}'),
+                        instagramMessageId: igResponse.data?.message_id,
+                        sentToInstagram: true
+                      })
+                    }
+                  });
+                }, 2);
+              } catch (updateError) {
+                console.error('⚠️ [INSTAGRAM-SEND] Failed updating message metadata:', updateError.message);
+              }
+            }
+          } else {
+            console.error('❌ [INSTAGRAM-SEND] No connected Instagram Business account found for company');
+          }
+        }
+      } catch (igError) {
+        console.error('❌ [INSTAGRAM-SEND] Error sending Instagram message:', igError.response?.data || igError.message);
+      }
+    }
 
     // ⚡ Track total execution time
     const totalTime = Date.now() - startTime;
@@ -496,18 +531,23 @@ const postMessageConverstation = async (req, res) => {
         content: message,
         type: 'TEXT',
         isFromCustomer: false,
-        isFacebookReply: true,
+        isFacebookReply: conversation.channel === 'FACEBOOK',
+        isInstagramReply: conversation.channel === 'INSTAGRAM',
         facebookMessageId: facebookMessageId,
         sentAt: new Date()
       },
-      message: facebookSent ? 'Reply sent successfully - message will appear when echo is received' : 'Failed to send to Facebook',
+      message: facebookSent ? 'Reply sent successfully' : (instagramSent ? 'Reply sent to Instagram' : 'Failed to send'),
       facebookSent: facebookSent,
       facebookError: facebookErrorDetails,
+      instagramSent: instagramSent,
       debug: {
         hasCustomer: !!conversation?.customer,
         hasFacebookId: !!conversation?.customer?.facebookId,
+        hasInstagramId: !!conversation?.customer?.instagramId,
         facebookSent: facebookSent,
-        executionTime: `${totalTime}ms` // ⚡ Add performance metric
+        instagramSent: instagramSent,
+        channel: conversation.channel,
+        executionTime: `${totalTime}ms`
       }
     });
 

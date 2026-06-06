@@ -24,7 +24,7 @@ import {
   Play,
   Zap,
 } from "lucide-react";
-import { facebookAdsService } from "../../services/facebookAdsService";
+import { facebookAdsService, StoriesReelsCreativeData } from "../../services/facebookAdsService";
 
 type CreativeType = "collection" | "stories" | "instant";
 
@@ -171,31 +171,32 @@ const CreativeFormats: React.FC = () => {
       toast.error("يرجى إدخال معرف الصفحة ومعرف الفيديو");
       return;
     }
+    if (!storiesData.instagramAccountId) {
+      toast.error("يرجى إدخال معرف حساب Instagram (مطلوب لـ Instagram Stories/Reels)");
+      return;
+    }
 
     try {
       setLoading(true);
 
-      const payload: any = {
+      const payload: StoriesReelsCreativeData = {
         pageId: storiesData.pageId,
         videoId: storiesData.videoId,
         format: storiesData.format,
+        instagramAccountId: storiesData.instagramAccountId,
+        ...(storiesData.name && { name: storiesData.name }),
+        ...(storiesData.primaryText && { primaryText: storiesData.primaryText }),
+        ...(storiesData.linkUrl && { linkUrl: storiesData.linkUrl }),
+        ...(storiesData.callToAction && { callToAction: storiesData.callToAction }),
       };
-
-      if (storiesData.instagramAccountId)
-        payload.instagramAccountId = storiesData.instagramAccountId;
-      if (storiesData.name) payload.name = storiesData.name;
-      if (storiesData.primaryText)
-        payload.primaryText = storiesData.primaryText;
-      if (storiesData.linkUrl) payload.linkUrl = storiesData.linkUrl;
-      if (storiesData.callToAction)
-        payload.callToAction = storiesData.callToAction;
 
       await facebookAdsService.createStoriesReelsCreative(payload);
       toast.success("تم إنشاء Stories/Reels Creative بنجاح! 🎉");
       navigate("/advertising/facebook-ads");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error:", error);
-      toast.error(error?.response?.data?.error || "فشل في الإنشاء");
+      const err = error as { response?: { data?: { error?: string } } };
+      toast.error(err?.response?.data?.error || "فشل في الإنشاء");
     } finally {
       setLoading(false);
     }

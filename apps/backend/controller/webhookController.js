@@ -129,16 +129,17 @@ const postWebhook = async (req, res) => {
     String(process.env.FACEBOOK_APP_SECRET || '').trim()
   );
 
-  if (!signatureCheck.ok) {
+    if (!signatureCheck.ok) {
     const statusCode = signatureCheck.reason === 'missing_secret'
       ? 503
       : signatureCheck.reason === 'missing_raw_body'
         ? 500
         : 401;
 
-    // console.warn(`⚠️ [WEBHOOK] Rejected unsigned Facebook webhook: ${signatureCheck.reason}`);
+    console.warn(`⚠️ [WEBHOOK] Webhook signature verification failed: ${signatureCheck.reason}`);
 
     if (shouldStrictlyEnforceMetaWebhookSignature()) {
+      console.warn(`🔒 [WEBHOOK] Strict mode enabled - rejecting unsigned webhook`);
       return res.status(statusCode).json({
         success: false,
         error: 'Invalid webhook signature',
@@ -146,7 +147,7 @@ const postWebhook = async (req, res) => {
       });
     }
 
-    // console.warn('⚠️ [WEBHOOK] Continuing Facebook webhook in signature warn-only mode');
+    console.warn('⚠️ [WEBHOOK] Continuing in warn-only mode. Set FACEBOOK_WEBHOOK_SIGNATURE_MODE=strict to enforce.');
   }
 
   const body = req.body;

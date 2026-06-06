@@ -1,194 +1,41 @@
-## [2026-03-09] Embeddings Generation and Vector Search Python Migration [READY]
-- **Objective**: Migrate embedding generation and corrective RAG vector search from the Node.js backend to the Python AI service.
+## [2026-06-04] Payroll Lateness Deduction Sync and Approval Workflow [READY]
+- **Objective**: Fix incorrect salary calculations caused by duplicate lateness penalties, missing grace period enforcement, and PENDING deductions being applied before manager approval.
 - **Accomplishments**:
-  - **FastAPI Endpoints**: Created `/admin/embeddings/generate` endpoint in the Python FastAPI AI service, registered it in the admin APIRouter, and protected it with token auth.
-  - **Corrective RAG Similarity search**: Modified the `VECTOR_STORE` retrieval logic in `corrective_rag.py` to use pgvector cosine distance semantic search (`episodic_memory_service.search_similar()`).
-  - **Node.js client delegation**: Added the `generateEmbedding` method to `agentAiServiceClient.js` and modified `generateEmbeddingAsync` in `episodicMemoryService.js` to route requests to Python when `AI_SERVICE_MODE=primary`.
-  - **Tests**: Created a new test file `test_embeddings.py` covering success, custom dimensions, error, and default dimensions, and added primary routing tests to `episodicMemoryService.embedding.test.js` in the backend.
-- **Verification**:
-  - All 4 embedding Python tests passed successfully.
-  - All 6 backend episodic memory unit tests passed successfully.
+  - **Grace Period Enforcement**: Fixed `remainingGrace` variable scope in `latenessCalculationService.js` and ensured the 60-minute monthly grace is strictly respected before any financial deduction.
+  - **Deduction Approval Workflow**: PENDING auto-deductions no longer reduce net salary. Only APPROVED deductions are subtracted. Pending amounts are tracked separately in the deductions JSON.
+  - **Attendance-to-Payroll Sync**: Editing attendance records now triggers automatic recalculation of related auto-deductions regardless of their approval status.
+  - **Summary Aggregation**: `getPayrollSummary` now includes `totalPendingDeductions` for dashboard visibility.
+  - **Frontend Enhancements**: Employee search filter, pending deductions amber badge on summary card, and tabbed details dialog with day-by-day calculation log showing grace consumption and deduction breakdown.
+  - **Integration Test**: Created `backend/tests/sync-lateness-payroll-test.js` covering PENDING exclusion, APPROVED application, and attendance edit propagation. All stages passed.
 - **Affected Files**:
-  - `apps/ai-service/src/api/admin/embeddings.py`
-  - `apps/ai-service/src/api/admin/__init__.py`
-  - `apps/ai-service/src/rag/corrective_rag.py`
-  - `apps/ai-service/tests/api/test_embeddings.py`
-  - `apps/backend/services/aiAgent/agentAiServiceClient.js`
-  - `apps/backend/services/aiAgent/episodicMemoryService.js`
-  - `apps/backend/tests/services/episodicMemoryService.embedding.test.js`
-
-## [2026-06-03] AI Service Pipeline, RAG, Guardrails & Agent Provisioning Merge [READY]
-- **Objective**: Merge 27 pending files from the `codex/ai-service-bridge-safe-latest` worktree into `main` — full AI pipeline stages, corrective RAG, guardrails, intent modules, and agent provisioning.
+  - `backend/services/hr/latenessCalculationService.js`
+  - `backend/services/hr/payrollService.js`
+  - `backend/services/hr/attendanceService.js`
+  - `frontend/src/pages/hr/Payroll.tsx`
+  - `backend/tests/sync-lateness-payroll-test.js` (new)
+## [2026-06-03] Production Stability, Status Filters, and Storefront Preview Links [READY]
+- **Objective**: Ship the production stability hotfix and the merchant UX updates for order/payment status filters and product preview routing, with documentation, frontend build, script, and SSH verification gates.
 - **Accomplishments**:
-  - **Pipeline Stages**: Added 6 execution stages (`resolve_intent`, `route_to_tools`, `execute_tools`, `retrieve_knowledge`, `validate_reply`, `handle_fallback`) with context and runner.
-  - **RAG Module**: Implemented `corrective_rag.py` and `knowledge_evidence.py` for retrieval-augmented generation with evidence scoring.
-  - **Guardrails**: Added input/output guardrails (`base.py`, `input.py`, `output.py`) for safety validation.
-  - **Intent Module**: Extended with `planner.py`, `relevance.py`, `classifier.py`, and `schema.py`.
-  - **Agent Provisioning**: Added `agent_provisioning.py` service and `loader.py` for dynamic agent loading.
-  - **Admin API**: Added `agents.py` and `agents_schemas.py` for admin agent management endpoints.
-  - **Memory Model**: Added `memory.py` DB model for conversation memory persistence.
-  - **Tool Gateway**: Added `gateway.py` for unified tool execution routing.
-- **Verification**: All 123 AI service tests passed. Arabic strings check passed. Backend syntax check passed.
-- **Affected Files**: 27 files across `apps/ai-service/` and `apps/backend/services/aiAgent/`.
-
-## [2026-06-03] Deployment Hotfixes & Translation Compliance Integration [READY]
-- **Objective**: Fix deployment crash (`MODULE_NOT_FOUND`) and satisfy Arabic Strings compliance guard in GHA runner to allow production launch.
-- **Accomplishments**:
-  - **Translation Keys Mapping**: Extracted raw Arabic name string for the Facebook Messenger agent into the centralized `i18n.js` local translation bundle. Used key `agent.facebook_messenger_name` dynamically with helper `t()`.
-  - **GHA Fix & Dependency Tracking**: Added the missing `agentAiServiceClient.js` service gateway to git and successfully resolved all package tracking references.
-  - **Observability & Deployment**: Monitored the runner to completion. Verified server PM2 ecosystem restart, active database migration, and storefront title SEO smoke checks.
-- **Verification**: Verified using the local compliance checks and verified remote PM2 backend health checks (all succeeded).
+  - **Backend Crash Loop Guard**: Added `recoverableUnhandledRejection` helpers and wired both global `unhandledRejection` handlers to suppress only recoverable Baileys `Connection Closed` socket closures.
+  - **WhatsApp Health Resilience**: Updated session health classification to avoid killing connected/authenticating sessions when Baileys hides websocket `readyState`, and removed the transient `AUTHENTICATING` value from DB restore filters.
+  - **Production Port Alignment**: Updated `backend/ecosystem.config.js` so PM2 starts `maxp-backend` on `3007`, matching the production Nginx upstream.
+  - **Dynamic Merchant Statuses**: Updated orders filters and bulk actions to hydrate order and payment statuses from the backend status registry while preserving safe defaults.
+  - **Storefront Product Preview**: Updated product preview links to use public storefront product routes, store slugs, and custom domains when available.
+  - **Regression Coverage**: Added focused tests for recoverable rejection classification, WhatsApp socket health classification, and product preview URL routing.
+- **Verification Plan**:
+  - Backend: `npm run check:syntax`, focused Jest suites for WhatsApp manager and recoverable unhandled rejection helpers, and `npm run check:customer-intent`.
+  - Frontend: `npm run type-check`, focused product preview URL test, and `npm run build`.
+  - Scripts: `node scripts/check-arabic-strings.js --staged ...`, `node scripts/verify-docs.js`, and deploy workflow script review.
+  - SSH: production PM2 status/logs, backend health endpoint, Nginx config test, and storefront smoke checks after the GitHub deployment finishes.
 - **Affected Files**:
-  - `apps/backend/services/aiAgent/agentManagerService.js`
-  - `apps/backend/services/aiAgent/i18n.js`
-  - `apps/backend/services/aiAgent/agentAiServiceClient.js`
-
-## [2026-06-03] Intent Classification, Planning & Agent Templates Integration [READY]
-- **Objective**: Standardize intent classification and task planning in the AI service, and deploy database-backed agent templates for provisioning.
-- **Accomplishments**:
-  - **Intent Classification Module**: Coded semantic classifier, planner, and schema definitions supporting structured classification enums, slots extraction, and LLM-driven flow planning.
-  - **Merchant Support**: Added instructions and `is_merchant` flag adaptation in CEO agent setup for handling store owner queries professionally.
-  - **Agent Templates Migration**: Configured migrations and SQLAlchemy models mapping roles to defaults for model, soul, and allowed tools.
-  - **Git Resolution & Code Integrity**: Resolved git merge conflicts in `agentProvisioningService.js`, `ceo.py`, and `orchestration_flow.py` cleanly, verifying syntax and intent guard rules.
-- **Verification**: Verified using the local intent architecture guard and syntax checks.
-- **Affected Files**:
-  - `apps/ai-service/migrations/versions/0005_agent_templates.py`
-  - `apps/ai-service/src/agents/ceo.py`
-  - `apps/ai-service/src/agents/order.py`
-  - `apps/ai-service/src/agents/support.py`
-  - `apps/ai-service/src/api/chat.py`
-  - `apps/ai-service/src/config.py`
-  - `apps/ai-service/src/db/models/__init__.py`
-  - `apps/ai-service/src/db/models/agent.py`
-  - `apps/ai-service/src/intent/classifier.py`
-  - `apps/ai-service/src/intent/planner.py`
-  - `apps/ai-service/src/intent/schema.py`
-  - `apps/ai-service/src/tools/registry.py`
-  - `apps/ai-service/tests/tools/test_registry.py`
-  - `apps/backend/services/aiAgent/agentManagerService.js`
-  - `apps/backend/services/aiAgent/agentProvisioningService.js`
-
-## [2026-06-03] Agent Execution State Checkpointing DB Integration [READY]
-- **Objective**: Persist and resume agent execution states in the FastAPI Python service agent orchestration flow using the Checkpoint model database model.
-- **Accomplishments**:
-  - **RunStateManager Service**: Coded a robust SQLAlchemy-based state manager `run_state_manager.py` that queries, merges, and retrieves agent execution checkpoints from the database.
-  - **Defensive Type Safety**: Integrated string-to-UUID type normalization safeguards to prevent malformed or string-formatted thread IDs from causing database select failures.
-  - **Orchestration Execution Checkpoint**: Configured `run_orchestration` in `orchestration_flow.py` to auto-restore the last saved checkpoint state for active threads, and persist finalized execution statuses and responses at the end of each conversation turn.
-- **Verification**: Verified via backend syntax checks and Fast API AI service test executions.
-- **Affected Files**:
-  - `apps/ai-service/src/services/run_state_manager.py`
-  - `apps/ai-service/src/workflows/orchestration_flow.py`
-
-## [2026-06-03] Storefront Custom Pages Wildcard Auth & Hook Race Condition Fix [READY]
-- **Objective**: Fix the `401 Unauthorized` and 404 blank/error issues on custom storefront page visits (e.g. `/shipping-policy`) in production.
-- **Accomplishments**:
-  - **Wildcard Auth Resolution**: Fixed the route matching algorithm in `globalSecurity.js` to correctly route double-wildcard routes (containing wildcards in the middle and end, such as `/api/v1/store-pages/*/slug/*`) through regex matching. This resolves the public endpoint authorization block.
-  - **Hook State Optimization**: Added state resets (`setLoading(true)`, `setError(null)`, `setPage(null)`) at the start of `useStorePage` hook's fetch lifecycle, ensuring smooth loading transitions when `companyId` finishes loading.
-- **Verification**: Verified using a custom node script matching regex routes and querying production endpoints.
-- **Affected Files**:
-  - `apps/backend/middleware/globalSecurity.js`
-  - `apps/frontend/src/hooks/useStorePage.ts`
-
-## [2026-06-03] Storefront Custom Pages Fix & Admin Preview Links [READY]
-- **Objective**: Fix storefront custom pages (e.g., `/return-policy`, `/shipping-policy`) that were returning 404 on root and public storefront subdomains, and add storefront preview links to the Admin Settings → Store Pages management panel.
-- **Accomplishments**:
-  - **Storefront Routing**: Added route definitions for `shop/page/:pageSlug/*`, `pages/:pageSlug/*`, and `/:pageSlug/*` in `StorefrontShell.tsx` to handle dynamic custom pages.
-  - **Database-Backed Rendering**: Enhanced `DynamicStorefrontPage` to use the `useStorePage` hook for fetching page content from the database when the slug is not a predefined theme page. Passing the resolved `companyId` directly from `useStorefrontSettings()` to ensure correct loading on public domains/subdomains.
-  - **Subdomain Company Resolution**: Updated `useStorePage` hook to accept `companyId` and fall back to `storefront_companyId` from localStorage. Added `companyId` to the dependency array to reactively re-fetch once storefront settings resolve the tenant company.
-  - **Admin Preview Links**: Updated `StorePages.tsx` with `buildStorefrontPreviewPath` integration. Page slugs are now clickable links (with external-link icon) and a Globe icon button was added to the hover toolbar for quick preview access.
-- **Verification**:
-  - TypeScript compilation verified successfully.
-  - Frontend production build ran and completed successfully (0 errors, minified correctly).
-  - Storefront route and subdomain resolution tested for custom page slugs.
-- **Affected Files**:
-  - `apps/frontend/src/storefront/StorefrontShell.tsx`
-  - `apps/frontend/src/pages/settings/StorePages.tsx`
-  - `apps/frontend/src/hooks/useStorePage.ts`
-
-## [2026-06-03] Monorepo Transition and Remote Configuration [READY]
-- **Objective**: Consolidate the backend, React frontend (`max_p_new`), and Python AI service (`maxp-ai-service`) into a single monorepo (`maxp-platform`) and link it to the main repository `https://github.com/mokhtar-elhenawy/maxp3.git`.
-- **Accomplishments**:
-  - **Verification Checks**: Executed complete local test and build pipelines to ensure zero conflicts, dependency compile errors, or path breaks:
-    - Checked backend syntax successfully.
-    - Verified all 123 python AI service unit tests passed.
-    - Successfully compiled and optimized frontend production build (1m 25s build time).
-  - **Git Remote Setup**: Added remote target pointing to `https://github.com/mokhtar-elhenawy/maxp3.git`.
-  - **Consolidated Workspace Configurations**: Documented monorepo config modifications across all three applications.
-- **Verification**:
-  - All test suites, syntax checkers, and builders executed successfully and passed.
-- **Affected Files**: None (Git configuration and documentation updates).
-
-## [2026-03-09] Specialist Agent Execution & Mocking Hardening [READY]
-- **Objective**: Fix the circular dependency path error, scheduled routine executor LLM failure, and test mock inconsistencies introduced by database updates in the AI agents module.
-- **Accomplishments**:
-  - **Dynamic Model Manager Injection**: Resolved scheduled follow-up routine processing failures by requiring `aiRuntimeService` and calling `agent.setModelManager(...)` in `routineExecutorService.js` before executing any task.
-  - **Pipeline Stage Refactoring Fix**: Resolved fatal `_formatRelevancePrompt is not a function` exceptions by updating `routeToTools.js` to require prompt formatting utilities from `utils/agentPromptUtils.js` instead of the circular legacy path of `CEOAgent.js`.
-  - **Prisma Client Mock Upgrades**: Overhauled the mock prisma database handler inside `agentManagerRuntimeService.test.js` to support new Prisma APIs (including `prisma.company`, bulk department creation `createMany`, dynamic agent profile `update`, and multi-field `orderBy` sorting arrays) to restore clean test runs.
-  - **Facebook Agent Template Alignment**: Standardized the auto-provisioned Facebook Messenger template agent name in the `GLOBAL_TEMPLATE_AGENTS` manifest to use the defined Arabic `FACEBOOK_MESSENGER_AGENT_NAME` constant, satisfying strict test assertions.
-- **Verification**:
-  - Successfully ran `npm test tests/services/agentManagerRuntimeService.test.js` with 21/21 passes.
-  - Successfully ran `npm test tests/services/allPhasesIntegration.test.js` with 62/62 passes (including Phase 18 Routine Executor).
-  - Successfully ran `npm test tests/services/facebookAiAutoReply.test.js` with 15/15 passes.
-  - Verified specialist agent test suite under `tests/services/agents/` with 100% passes.
-- **Affected Files**:
-  - `backend/services/aiAgent/routineExecutorService.js`
-  - `backend/services/aiAgent/pipeline/stages/routeToTools.js`
-  - `backend/services/aiAgent/agentManagerService.js`
-  - `backend/tests/services/agentManagerRuntimeService.test.js`
-
-## [2026-03-09] AI Agent template tool allowance error resolved [READY]
-- **Objective**: Fix the agent provisioning/hydration failure where the `order-support` skill was disallowed due to missing allowed tools on the `sas-sales-agent` template.
-- **Accomplishments**:
-  - **Tool Alignment**: Updated `backend/agents/sas-sales-agent/agent.json` to include `"order.lookup"` and `"shipping.rates"` in its `allowedTools` array, aligning the agent's permissions with the tools required by its active `order-support` skill.
-  - **Resolved Startup & Hydration 500 Errors**: Fixed the fatal `/profiles` and `/agents` endpoint 500 errors that were caused by DB hydration validation failures.
-- **Verification**: Backend server starts completely clean without any recovery or template validation errors. Health check returns `200 OK` with database connected and uptime running.
-- **Affected Files**:
-  - `backend/agents/sas-sales-agent/agent.json`
-
-## [2026-03-09] AI Agent Startup Module Crash Fix [READY]
-- **Objective**: Fix the fatal module load exception during backend startup caused by a missing `aiRuntimeService` import in agent control routes.
-- **Accomplishments**:
-  - **Created Runtime Wrapper Stub**: Created `aiRuntimeService.js` to serve as a lazy-loading facade for the `ModelManager` class.
-  - **Decoupled Boot dependencies**: Configured the model manager resolver to lazy-load its circular dependencies (e.g. `aiAgentService`) only when requested, ensuring the server boots safely without import crashes.
-- **Verification**: Verified that the backend dev server starts up and binds to port 3007 without errors.
-- **Affected Files**:
-  - `backend/services/aiAgent/aiRuntimeService.js`
-
-## [2026-03-09] Simplified AI Product Catalog Page (AI Catalog) [READY]
-- **Objective**: Create a streamlined, user-friendly AI product catalog page as an alternative to external spreadsheets, enabling merchants to easily add/edit products, track stock, upload images, and set up color variants.
-- **Accomplishments**:
-  - **TypeScript Compilation Fix**: Resolved type checker warnings by declaring the optional `name` field within the `variants` element structure of `ProductRecord` in `AgentCatalogPage.tsx`.
-  - **Modular Page Component**: Implemented `AgentCatalogPage.tsx` under admin pages using polished Material-UI styles with dynamic hover scales, stat cards, pagination, search, and a slide-out drawer form.
-  - **Robust Variants Support**: Added clean, inline color-variant creation with custom image uploads and deletion logic in the product form.
-  - **Unified i18n Dictionary**: Registered full English and Arabic translations for the title, stats, drawer form labels, variants, confirm popups, and notification alerts. Refactored dynamic fields to use `aiCatalog.productName` securely.
-  - **Optimized Lazy Import**: Mounted the page at `/admin/ai-catalog` via lazy imports in `App.tsx` and registered the link in the `ai-operator` sidebar configuration.
-  - **Prisma & API Reuse**: Relies on system `/products` endpoints, maintaining database schema integrity and instantly syncing added products into RAG-search vector memory.
-- **Verification**:
-  - Validated build and verified that Arabic/English locale fields render correctly.
-- **Affected Files**:
-  - `frontend/src/App.tsx`
-  - `frontend/src/config/sidebar.ts`
-  - `frontend/src/pages/admin/AgentCatalogPage.tsx`
-  - `frontend/src/locales/en/translation.json`
-  - `frontend/src/locales/ar/translation.json`
-
-## [2026-06-01] Legacy WhatsApp Chat Task Button [READY]
-- **Objective**: Add a Task button in the legacy WhatsApp chat (`/whatsapp`) next to the existing Orders button that opens the full Tasks page in a modal popup — without any changes to the Tasks page itself.
-- **Accomplishments**:
-  - **Task Button in ChatWindow**: Added `ClipboardList` icon button right after the ShoppingCart order button using the same `variant="ghost" size="icon-sm" rounded-full` pattern.
-  - **TasksModal Integration**: Added `showTasksModal` state, `TasksModal` import, and rendering in `WhatsAppChat.tsx`. Reuses the existing `TasksModal` → `<Tasks embeddedInModal />` with no new logic or components.
-  - **i18n Compliance**: Added `whatsapp.tooltips.task` key in English (`"Tasks"`) and Arabic (`"المهام"`) translation files, used via `t()`.
-  - **Conditional Prop**: `onOpenTasks` is optional — fully backward compatible.
-- **Verification**:
-  - ESLint passed with no errors.
-  - i18n merge completed, keys verified in both EN and AR.
-  - Arabic strings check: no new violations.
-  - All existing tasks functionality, permissions, and UI preserved.
-- **Affected Files**:
-  - `frontend/src/pages/whatsapp/WhatsAppChat.tsx`
-  - `frontend/src/pages/whatsapp/components/ChatWindow.tsx`
-  - `frontend/src/locales/en/sections/whatsapp.json`
-  - `frontend/src/locales/ar/sections/whatsapp.json`
+  - `backend/server.js`
+  - `backend/utils/recoverableUnhandledRejection.js`
+  - `backend/services/whatsapp/WhatsAppManager.js`
+  - `backend/controller/orderStatusController.js`
+  - `backend/ecosystem.config.js`
+  - `frontend/src/pages/orders/Orders.tsx`
+  - `frontend/src/pages/products/ProductNewFinal.tsx`
+  - `frontend/src/pages/products/utils/productPreviewUrl.ts`
 
 ## [2026-06-01] Prisma ProductVariant Select Query Alignment [READY]
 - **Objective**: Fix the critical API 500 runtime error when fetching simple order details under `/api/v1/orders-new/simple/:orderNumber` due to querying invalid ProductVariant fields.
@@ -12940,4 +12787,38 @@ ishlist and debounced search engine wiring)
     - Preserved the existing full-file scan behavior for default backend scans and `--all`.
 - **Verification**:
     - `node scripts/check-arabic-strings.js --staged frontend/src/storefront/preview/marketplacePreviewCart.ts frontend/src/storefront/preview/marketplaceSampleData.ts frontend/src/storefront/sections/CheckoutForm.tsx frontend/src/storefront/sections/OrderSummary.tsx frontend/src/storefront/sections/manifest.ts frontend/src/storefront/themes/catalog.ts frontend/src/storefront/themes/index.ts frontend/src/storefront/variants/registry.ts` passed.
+
+## [2026-06-06] Instagram Reply Sending, AI Agent, Read Receipts & Typing Indicators [IN PROGRESS]
+- **Objective**: Fix the critical Instagram reply sending bug, add AI auto-reply support, and implement read receipts and typing indicators for the Instagram channel.
+- **Accomplishments**:
+  - **Instagram Reply Sending**: Added `INSTAGRAM` channel handling in `messagingController.js` using `POST /{ig-account-id}/messages` Graph API.
+  - **AI Agent for Instagram**: Extended `aiMessageProcessor.js` with INSTAGRAM channel support. Created `ensureInstagramMessengerAgent` in `agentManagerService.js` with dedicated role `INSTAGRAM_SALES_SUPPORT` and template `instagram-sales-support-agent`.
+  - **Instagram AI Auto-Reply**: Added AI processing block in `handleInstagramMessage` with DB save, Socket.IO emit, conversation update, and physical Instagram API send.
+  - **Read Receipts**: `markConversationAsRead` now sends `sender_action: 'mark_seen'` for Instagram conversations.
+  - **Typing Indicators**: New `POST /:id/instagram-typing` endpoint for `typing_on`/`typing_off` actions.
+  - **Reusable Function**: Added `sendInstagramMessage` to `allFunctions.js`.
+  - **Improved Attribution**: Added `igshid` and `utm_source=instagram` detection in `orderAttribution.ts`.
+  - **TypeScript & i18n Cleanup**: Removed `any` types, added interfaces, and migrated to `useTranslation()` in `InstagramSettings.tsx`.
+  - **CreativeFormats Validation**: Made `instagramAccountId` required for Stories/Reels.
+- **Verification Plan**:
+  - Backend: Syntax check (`node --check`) on all modified files.
+  - Frontend: `npm run type-check` for TypeScript compilation.
+  - Test Instagram DM conversation: send reply from inbox, verify it reaches the Instagram user.
+  - Test AI auto-reply: send DM to Instagram Business account, verify AI responds within seconds.
+  - Test read receipts: view Instagram conversation, verify sender_action mark_seen sent.
+  - Test typing indicators: POST to `/conversations/:id/instagram-typing` with `typing_on`.
+- **Affected Files**:
+  - `backend/controller/conversation/messagingController.js`
+  - `backend/controller/conversation/conversationCrudController.js`
+  - `backend/controller/conversationController.js`
+  - `backend/controller/webhookController.js`
+  - `backend/routes/conversationRoutes.js`
+  - `backend/utils/allFunctions.js`
+  - `backend/utils/webhookSignature.js`
+  - `backend/services/aiAgent/aiMessageProcessor.js`
+  - `backend/services/aiAgent/agentManagerService.js`
+  - `frontend/src/pages/settings/InstagramSettings.tsx`
+  - `frontend/src/pages/advertising/CreativeFormats.tsx`
+  - `frontend/src/storefront/utils/orderAttribution.ts`
+
 

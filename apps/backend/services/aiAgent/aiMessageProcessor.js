@@ -21,12 +21,12 @@ const CorrectiveRAGEngine = require('../rag/CorrectiveRAGEngine');
 const policyEnforcementEngine = require('./policyEnforcementEngine');
 const telemetryTracerService = require('./telemetryTracerService');
 const CEOAgent = require('./CEOAgent');
-const agentProvisioningService = require('./agentProvisioningService');
 const aiRuntimeService = require('../aiRuntimeService');
 const { normalizeAgentReply } = require('./agentReplyNormalizer');
 const semanticCacheService = require('./semanticCacheService');
 
 const FACEBOOK_AGENT_ROLE = 'FACEBOOK_SALES_SUPPORT';
+const INSTAGRAM_AGENT_ROLE = 'INSTAGRAM_SALES_SUPPORT';
 
 class AIMessageProcessor {
   constructor() {
@@ -45,7 +45,7 @@ class AIMessageProcessor {
    * @param {string} params.customerId     - CRM customer ID (may be null)
    * @param {string} params.remoteJid      - sender phone/Facebook JID
    * @param {string} params.content        - message text
-   * @param {string} [params.channel='WHATSAPP'] - channel: 'WHATSAPP' | 'FACEBOOK'
+   * @param {string} [params.channel='WHATSAPP'] - channel: 'WHATSAPP' | 'FACEBOOK' | 'INSTAGRAM'
    */
   async processMessage({ companyId, sessionId, conversationId, customerId, remoteJid, content, channel = 'WHATSAPP' }) {
     if (!content || !companyId) return null;
@@ -261,72 +261,49 @@ class AIMessageProcessor {
     const normalizedChannel = String(channel || 'WHATSAPP').trim().toUpperCase();
     const key = `${companyId}:${normalizedChannel}`;
 
-    if (normalizedChannel === 'FACEBOOK') {
+    if (normalizedChannel === 'FACEBOOK' || normalizedChannel === 'INSTAGRAM') {
       // Only load from DB on first use; subsequent messages reuse the cached agent
       if (!this._agents.has(key)) {
+        const agentRole = normalizedChannel === 'INSTAGRAM' ? INSTAGRAM_AGENT_ROLE : FACEBOOK_AGENT_ROLE;
         try {
           const agentManagerService = require('./agentManagerService');
-          const savedAgent = await agentManagerService.ensureFacebookMessengerAgent(companyId);
+          const savedAgent = normalizedChannel === 'FACEBOOK'
+            ? await agentManagerService.ensureFacebookMessengerAgent(companyId)
+            : await agentManagerService.ensureInstagramMessengerAgent(companyId);
           if (savedAgent) {
-            // Reconcile and use the actual specialized agent instance directly from registry
-            const activeAgent = agentProvisioningService.getAgent(companyId, savedAgent.id) || savedAgent;
-            this._agents.set(key, activeAgent);
+            this._agents.set(key, new CEOAgent(companyId, {
+              id: savedAgent.id,
+              name: savedAgent.name,
+              role: savedAgent.role || agentRole,
+              includeAllCeoTools: false,
+              persona: savedAgent.persona || {},
+            }));
           }
         } catch (err) {
-          console.warn('[AI-PROCESSOR] Facebook sub-agent load failed, using fallback:', err.message);
+          console.warn(`[AI-PROCESSOR] ${normalizedChannel} sub-agent load failed, using fallback:`, err.message);
         }
         if (!this._agents.has(key)) {
-          // Fallback facebook agent using proper BaseAgent/specialist spawn:
-          // includeAllCeoTools: false (comply with regression tests)
-          // Uses facebook-sales-support-agent template
-          const fallbackAgent = await agentProvisioningService.spawn(companyId, {
-            id: `facebook_sales_support_${companyId.slice(-6)}`,
-            role: FACEBOOK_AGENT_ROLE,
-            templateSlug: 'facebook-sales-support-agent',
-          });
-          this._agents.set(key, fallbackAgent);
+          this._agents.set(key, new CEOAgent(companyId, {
+            id: `${normalizedChannel.toLowerCase()}_sales_support_${companyId.slice(-6)}`,
+            role: agentRole,
+            includeAllCeoTools: false,
+          }));
         }
       }
       return this._agents.get(key);
     }
 
     if (!this._agents.has(key)) {
-      // Locate active SALES or SUPPORT specialized agent for WHATSAPP
-      const activeSalesAgent = agentProvisioningService.listAgents(companyId)
-        .find(a => a.role === 'SALES' && a.status === 'ACTIVE');
-      if (activeSalesAgent) {
-        this._agents.set(key, activeSalesAgent);
-      } else {
-        const activeSupportAgent = agentProvisioningService.listAgents(companyId)
-          .find(a => a.role === 'SUPPORT' && a.status === 'ACTIVE');
-        if (activeSupportAgent) {
-          this._agents.set(key, activeSupportAgent);
-        } else {
-          // Fall back to spawning a new SALES specialized agent
-          try {
-            const defaultSales = await agentProvisioningService.spawn(companyId, {
-              role: 'SALES',
-              name: 'Sales Agent',
-            });
-            this._agents.set(key, defaultSales);
-          } catch (err) {
-            // Absolute fallback to a BaseAgent
-            const fallbackBase = await agentProvisioningService.spawn(companyId, {
-              role: 'AGENT',
-              name: 'Agent',
-            });
-            this._agents.set(key, fallbackBase);
-          }
-        }
-      }
+      this._agents.set(key, new CEOAgent(companyId, {}));
     }
     return this._agents.get(key);
   }
 
   _getTraceProvider(channel = 'WHATSAPP') {
-    return String(channel || '').toUpperCase() === 'FACEBOOK'
-      ? 'facebook-sales-support-agent'
-      : 'ceo-agent';
+    const normalized = String(channel || '').toUpperCase();
+    if (normalized === 'FACEBOOK') return 'facebook-sales-support-agent';
+    if (normalized === 'INSTAGRAM') return 'instagram-sales-support-agent';
+    return 'ceo-agent';
   }
 
   async _getAiSettings(companyId) {
@@ -383,9 +360,21 @@ class AIMessageProcessor {
         'Facebook/Messenger customer reply constraints:',
         '- Reply as a customer-facing sales/support agent, not as the CEO.',
         '- Do not invent prices, stock, order status, discounts, or delivery promises.',
-        '- Create confirmed orders using order.create_confirmed only after explicit customer confirmation.',
+        '- Create only approval-required order drafts after required details are confirmed.',
         '- Hand off complaints, refunds, angry customers, payment disputes, abuse, or low-confidence cases.',
         '- Keep the reply concise and natural for Messenger.',
+      ].join('\n'));
+    }
+
+    if (String(channel || '').toUpperCase() === 'INSTAGRAM') {
+      parts.push([
+        'Instagram DM customer reply constraints:',
+        '- Reply as a customer-facing sales/support agent, not as the CEO.',
+        '- Do not invent prices, stock, order status, discounts, or delivery promises.',
+        '- Create only approval-required order drafts after required details are confirmed.',
+        '- Hand off complaints, refunds, angry customers, payment disputes, abuse, or low-confidence cases.',
+        '- Keep replies concise and natural for Instagram DM.',
+        '- Instagram users expect a more visual and casual tone.',
       ].join('\n'));
     }
 

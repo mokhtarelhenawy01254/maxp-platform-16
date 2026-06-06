@@ -27,6 +27,7 @@ module.exports = {
   checkHealth: conversationCrudController.checkHealth,
   bulkUpdateConversations: conversationCrudController.bulkUpdateConversations,
   snoozeConversation: conversationCrudController.snoozeConversation,
+  sendInstagramTypingIndicator: conversationCrudController.sendInstagramTypingIndicator,
 
   // From conversationStatsController
   getConversationStats: conversationStatsController.getConversationStats,

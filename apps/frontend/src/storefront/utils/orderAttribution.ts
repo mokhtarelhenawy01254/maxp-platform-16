@@ -84,6 +84,7 @@ const inferPlatform = (input: {
   ttclid?: string;
   fbc?: string;
   fbp?: string;
+  igshid?: string;
 }): string | undefined => {
   const haystack = [
     input.source,
@@ -98,7 +99,13 @@ const inferPlatform = (input: {
     .join(' ')
     .toLowerCase();
 
-  if (haystack.includes('instagram')) {
+  // Instagram-specific signals take priority
+  if (
+    haystack.includes('instagram') ||
+    haystack.includes('igshid') ||
+    input.igshid ||
+    input.source?.toLowerCase() === 'instagram'
+  ) {
     return 'instagram';
   }
 

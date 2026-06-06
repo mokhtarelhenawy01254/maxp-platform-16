@@ -1,140 +1,32 @@
-## [2026-06-04] Embeddings Generation and Vector Search Architecture Migration
-- **Details**: Migrated embedding generation and corrective RAG vector search from the Node.js backend to the Python AI service. The Node.js backend delegates to Python when running in `primary` service mode, and the corrective RAG engine utilizes semantic similarity search using pgvector cosine distance.
+## [2026-06-04] Payroll Lateness Sync and Deduction Approval Architecture
+- **Details**: Rebuilt the payroll deduction pipeline to ensure correct salary calculations with grace period enforcement, deduction approval workflow, and real-time attendance sync.
 - **Architecture**:
-  - **FastAPI Endpoint** (`apps/ai-service/src/api/admin/embeddings.py`):
-    - `POST /admin/embeddings/generate`: Accepts text and dimensions, generating vector embeddings using the `episodic_memory_service`.
-  - **Corrective RAG Similarity Search** (`apps/ai-service/src/rag/corrective_rag.py`):
-    - Replaced basic SQL query and word-overlap scoring for `VECTOR_STORE` with `episodic_memory_service.search_similar()`, executing true semantic cosine similarity on pgvector.
-  - **Node.js Client Delegation** (`apps/backend/services/aiAgent/`):
-    - `agentAiServiceClient.js`: Added `generateEmbedding()` client implementation targeting the Python admin API.
-    - `episodicMemoryService.js`: Routes embedding generation dynamically to the Python service when `AI_SERVICE_MODE=primary`, falling back to Google Embedding API or pseudo-embeddings on failure.
+  - **Lateness Sync Engine** (`backend/services/hr/latenessCalculationService.js`): `syncLatenessAndDeductionsForMonth` resets and recalculates the monthly lateness balance chronologically, enforcing the 60-minute grace period. Creates/updates/deletes `ManualDeduction` records (category `AUTO_DEDUCTION`) while preserving manager approval/cancellation status.
+  - **Payroll Calculation** (`backend/services/hr/payrollService.js`): `calculatePayrollData` triggers lateness sync before computation, separates APPROVED (applied to net) from PENDING (display-only) deductions, and stores `pendingAmount` in the deductions JSON. `getPayrollById` builds a day-by-day `calculationDetailsLog`. `getPayrollSummary` aggregates `totalPendingDeductions`.
+  - **Attendance Sync** (`backend/services/hr/attendanceService.js`): `updateAttendance` queries both PENDING and APPROVED auto-deductions for recalculation after fingerprint edits.
+  - **Frontend Dashboard** (`frontend/src/pages/hr/Payroll.tsx`): Employee search filter, summary cards showing approved vs pending deductions, tabbed details dialog with salary breakdown and daily calculation log.
 - **Files**:
-  - `apps/ai-service/src/api/admin/embeddings.py`
-  - `apps/ai-service/src/api/admin/__init__.py`
-  - `apps/ai-service/src/rag/corrective_rag.py`
-  - `apps/backend/services/aiAgent/agentAiServiceClient.js`
-  - `apps/backend/services/aiAgent/episodicMemoryService.js`
-
-## [2026-06-03] AI Service Pipeline, RAG, Guardrails & Agent Provisioning Architecture
-- **Details**: Full execution pipeline with 6 stages, corrective RAG, input/output guardrails, intent classification, agent provisioning, admin API, memory model, and tool gateway.
+  - `backend/services/hr/latenessCalculationService.js`
+  - `backend/services/hr/payrollService.js`
+  - `backend/services/hr/attendanceService.js`
+  - `frontend/src/pages/hr/Payroll.tsx`
+## [2026-06-03] Production Runtime Stability and Merchant Status Routing
+- **Details**: Stabilized the production backend after recoverable WhatsApp Baileys socket closures, aligned the PM2 backend port with Nginx production routing, and made merchant order/payment status UX driven by backend status definitions.
 - **Architecture**:
-  - **Pipeline** (`apps/ai-service/src/pipeline/`):
-    - `runner.py`: Orchestrates stage execution in sequence.
-    - `context.py`: Carries shared state across stages.
-    - `stages/`: `resolve_intent` → `route_to_tools` → `execute_tools` → `retrieve_knowledge` → `validate_reply` → `handle_fallback`.
-  - **RAG** (`apps/ai-service/src/rag/`):
-    - `corrective_rag.py`: Evidence-scored retrieval with correction loop.
-    - `knowledge_evidence.py`: Knowledge base evidence extraction.
-  - **Guardrails** (`apps/ai-service/src/guardrails/`):
-    - `base.py`, `input.py`, `output.py`: Input validation and output safety checks.
-  - **Agent Provisioning** (`apps/ai-service/src/services/agent_provisioning.py`): Dynamic agent creation from templates.
-  - **Agent Loader** (`apps/ai-service/src/agents/loader.py`): Runtime agent class resolution.
-  - **Admin API** (`apps/ai-service/src/api/admin/agents.py`): CRUD endpoints for agent management.
-  - **Memory** (`apps/ai-service/src/db/models/memory.py`): Conversation memory persistence model.
-  - **Tool Gateway** (`apps/ai-service/src/tools/gateway.py`): Unified tool execution routing.
-
-## [2026-06-03] AI Service Agent Client Integration
-- **Details**: Restored and integrated `agentAiServiceClient.js` to manage remote agent lifecycle requests (spawn, list, update, reconcile, archive) against the Python `maxp-ai-service` in primary mode.
+  - **Recoverable Rejection Boundary** (`backend/utils/recoverableUnhandledRejection.js`, `backend/server.js`): Centralizes detection of Baileys `Connection Closed` Boom 428 errors so recoverable socket closures do not terminate the API process, while unrelated unhandled rejections remain fatal and alertable.
+  - **WhatsApp Session Health Classification** (`backend/services/whatsapp/WhatsAppManager.js`): Splits socket ready-state lookup into testable helpers and treats connected/authenticating sessions as alive when Baileys does not expose a numeric websocket readyState.
+  - **Production Port Contract** (`backend/ecosystem.config.js`): Sets the backend PM2 app to port `3007`, matching the production Nginx upstream used by the deploy workflow.
+  - **Company-Scoped Status Registry** (`backend/controller/orderStatusController.js`, `frontend/src/pages/orders/Orders.tsx`): Uses the effective company id for status reads and hydrates both order and payment status filters/actions from `/order-status`.
+  - **Public Product Preview Routing** (`frontend/src/pages/products/utils/productPreviewUrl.ts`): Builds preview links from storefront slug/custom-domain data when available and falls back to path-scoped `companyId` URLs.
 - **Files**:
-  - `apps/backend/services/aiAgent/agentAiServiceClient.js`
-
-## [2026-06-03] Intent Classification, Planning, and Agent Templates Architecture
-- **Details**: Added structured intent classification and LLM-driven planning services in the AI service, along with database-backed agent templates and migrations.
-- **Architecture**:
-  - **Intent Classification Module** (`apps/ai-service/src/intent/`):
-    - `classifier.py`: Runs semantic intent classification on incoming messages, maps them to allowed intent enums, and parses/normalizes slots/missingSlots from LLM structured JSON response.
-    - `planner.py`: Standardizes task planning steps for routing customer requests.
-    - `schema.py`: Defines type schemas and slot constraints for all intent configurations.
-  - **Agent Templates & Models** (`apps/ai-service/src/db/models/agent.py`):
-    - Defines agent template schemas mapping roles to default models, templates, tools, and souls.
-    - Added database migration `0005_agent_templates.py` to persist system-defined agent templates.
-  - **CEO Agent Merchant Adaptation** (`apps/ai-service/src/agents/ceo.py`):
-    - Added `is_merchant` flag and instructions to adapt CEO orchestration flow for store owners vs general store customers.
-- **Files**:
-  - `apps/ai-service/migrations/versions/0005_agent_templates.py`
-  - `apps/ai-service/src/db/models/agent.py`
-  - `apps/ai-service/src/intent/classifier.py`
-  - `apps/ai-service/src/intent/planner.py`
-  - `apps/ai-service/src/intent/schema.py`
-  - `apps/ai-service/src/agents/ceo.py`
-
-## [2026-06-03] Agent Execution State Checkpointing Architecture
-- **Details**: Integrated SQLAlchemy-based checkpointing/state manager into the AI service agent orchestration flow to persist and load agent state checkpoints between execution turns.
-- **Architecture**:
-  - **Run State Manager** (`apps/ai-service/src/services/run_state_manager.py`): Created `RunStateManager` service wrapping SQLAlchemy async operations (`merge`, `select`, `get_latest_state`) on the `Checkpoint` database model. Uses defensive UUID normalization to ensure robust lookup query execution.
-  - **Orchestration Lifecycle Integration** (`apps/ai-service/src/workflows/orchestration_flow.py`): Integrates `RunStateManager` inside the core `run_orchestration` workflow. Proactively loads the most recent checkpoint state before executing the agent loop, and saves the final status/response checkpoint at the end of the turn.
-- **Files**:
-  - `apps/ai-service/src/services/run_state_manager.py`
-  - `apps/ai-service/src/workflows/orchestration_flow.py`
-
-## [2026-06-03] Monorepo Consolidation Architecture
-- **Details**: Established the unified project structure, bringing `apps/backend`, `apps/frontend` (React), and `apps/ai-service` (Python) together under one monorepo.
-- **Architecture**:
-  - **Monorepo Workspaces**: Configured root-level `package.json` to manage JavaScript/Node workspaces for frontend and backend while coordinating the python service using custom scripts (`uv run`).
-  - **Dynamic Dependency Resolution**: Configured the frontend bundler (`vite.config.ts`) to dynamically check and resolve `node_modules` between the local directory and the root workspace folder, preventing package collision.
-  - **Shared Service Gateways**: Configured inter-service communication over port 8000 via a secure SDK client on Node.js backend.
-- **Files**:
-  - `package.json`
-  - `apps/frontend/vite.config.ts`
-  - `apps/frontend/package.json`
-  - `apps/backend/services/aiSdkClient.js`
-
-## [2026-03-09] Specialist Agent Model Injection in Scheduled Routine Execution
-- **Details**: Updated `routineExecutorService.js` to dynamically inject the standard system `ModelManager` instance into active or newly spawned specialist agents prior to scheduled task processing.
-- **Architecture**:
-  - **Runtime Injection**: Integrates `aiRuntimeService` inside `executeRoutine()` to lazily retrieve and assign the global `ModelManager` context to dynamic specialist instances via `agent.setModelManager(...)`. This closes the execution gap where modular specialists lacked model resolution bindings during scheduled tasks.
-- **Files**:
-  - `backend/services/aiAgent/routineExecutorService.js`
-
-## [2026-03-09] Modularized Prompt Generation Pipeline Integration
-- **Details**: Resolved path referencing errors within the modularized stages of the AI message processing pipeline.
-- **Architecture**:
-  - **Shared Prompts Utility Integration**: Updated the `routeToTools` stage prompt builder (`buildSystemPromptForTurn`) to draw the `_formatRelevancePrompt` function from the centralized `utils/agentPromptUtils.js` helper instead of relying on legacy circular paths.
-- **Files**:
-  - `backend/services/aiAgent/pipeline/stages/routeToTools.js`
-
-## [2026-03-09] Agent Manager Runtime Mock Repository Extension
-- **Details**: Upgraded the mock database client infrastructure in `agentManagerRuntimeService.test.js` to match the latest modular Prisma Client API.
-- **Architecture**:
-  - **Advanced Mocks**: Added support for mock `company` queries, multi-field upserts, non-blocking default department bulk inserts via `createMany`, and array-based `orderBy` sort mapping to verify that active database queries perform accurately without native database adapters.
-- **Files**:
-  - `backend/tests/services/agentManagerRuntimeService.test.js`
-
-## [2026-03-09] Lazy AI Agent Model Manager Wrapper
-- **Details**: Deployed `aiRuntimeService.js` under the AI Agent service module to provide a lazy-loaded runtime facade for `ModelManager`.
-- **Architecture**:
-  - **Lazy Loader**: Wraps `ModelManager` instantiation to decouple it from circular-dependency startups.
-  - **Graceful Degradation**: Instantiates `ModelManager` with a `null` stub if the full `aiAgentService` has not booted yet, ensuring the orchestration API routes remain active without module-loading crashes.
-- **Files**:
-  - `backend/services/aiAgent/aiRuntimeService.js`
-
-## [2026-03-09] Simplified AI Product Catalog Page (AI Catalog)
-- **Details**: Built a dedicated, simplified product catalog page (`/admin/ai-catalog`) under the AI Operator section for merchants who don't use full e-commerce but need to easily add products for bot training and RAG search.
-- **Architecture**:
-  - **Lazy Routing** (`frontend/src/App.tsx`): Registered `/admin/ai-catalog` mapping to `AgentCatalogPage.tsx` using React lazy imports for optimized load performance.
-  - **Sidebar Ingestion** (`frontend/src/config/sidebar.ts`): Integrated the page link into the sidebar config under the `ai-operator` namespace.
-  - **Catalog Page Component** (`frontend/src/pages/admin/AgentCatalogPage.tsx`): Built a clean, modern dashboard with search, debounced paging, product summary stats, a multi-stage edit/add Drawer form, main image upload, and modular color variants with custom images.
-  - **i18n Translation Bundles**: Added full translation support inside Arabic and English `translation.json` files for standard elements, alerts, error strings, and form controls under the `aiCatalog` key.
-  - **Database Integration**: Reuses existing product API endpoints (`/products` CRUD and `/products/:id/variants`) to maintain database integrity and eliminate duplicate database structures.
-- **Files**:
-  - `frontend/src/App.tsx`
-  - `frontend/src/config/sidebar.ts`
-  - `frontend/src/pages/admin/AgentCatalogPage.tsx`
-  - `frontend/src/locales/en/translation.json`
-  - `frontend/src/locales/ar/translation.json`
-
-## [2026-06-01] Legacy WhatsApp Chat Task Button
-- **Details**: Added a Task button to the legacy WhatsApp chat (`/whatsapp`) action toolbar, right after the existing ShoppingCart order button. Opens `TasksModal` with `<Tasks embeddedInModal />`.
-- **Architecture**:
-  - **ChatWindow** (`frontend/src/pages/whatsapp/components/ChatWindow.tsx`): Added optional `onOpenTasks` prop and conditional Task button (`ClipboardList` icon) with same `variant="ghost" size="icon-sm" rounded-full` pattern as the order button.
-  - **WhatsAppChat** (`frontend/src/pages/whatsapp/WhatsAppChat.tsx`): Added `showTasksModal` state, `TasksModal` import, and rendering after `QuickOrderModal`.
-  - **Reuse**: Uses existing `TasksModal` → `<Tasks embeddedInModal />` — no new logic or components.
-  - **i18n**: Added `whatsapp.tooltips.task` key in both EN (`"Tasks"`) and AR (`"المهام"`).
-- **Files**:
-  - `frontend/src/pages/whatsapp/WhatsAppChat.tsx`
-  - `frontend/src/pages/whatsapp/components/ChatWindow.tsx`
-  - `frontend/src/locales/en/sections/whatsapp.json`
-  - `frontend/src/locales/ar/sections/whatsapp.json`
+  - `backend/server.js`
+  - `backend/utils/recoverableUnhandledRejection.js`
+  - `backend/services/whatsapp/WhatsAppManager.js`
+  - `backend/controller/orderStatusController.js`
+  - `backend/ecosystem.config.js`
+  - `frontend/src/pages/orders/Orders.tsx`
+  - `frontend/src/pages/products/ProductNewFinal.tsx`
+  - `frontend/src/pages/products/utils/productPreviewUrl.ts`
 
 ## [2026-06-01] Prisma ProductVariant Select Query Alignment
 - **Details**: Resolved a critical API 500 error when fetching simple order details under `/api/v1/orders-new/simple/:orderNumber` on the backend.
@@ -2401,6 +2293,37 @@ Added a new marketplace-ready fashion storefront preset focused on mobile app-st
 
 
 
+
+## [2026-06-06] Instagram Channel Reply Architecture
+- **Details**: Added full Instagram DM reply support to the messaging system, enabling merchants to send replies to Instagram conversations.
+- **Architecture**:
+  - **Instagram Reply Sender** (`messagingController.js`): For `INSTAGRAM` channel conversations, sends replies via `POST https://graph.facebook.com/v22.0/{igAccountId}/messages` with recipient/message/access_token payload. Saves `instagramMessageId` to message metadata.
+  - **Instagram Message Sender** (`allFunctions.js`): Added reusable `sendInstagramMessage({ recipientId, messageText, igAccountId, pageAccessToken, companyId })` function returning `{ success, messageId, error }`.
+- **Files**: `backend/controller/conversation/messagingController.js`, `backend/utils/allFunctions.js`
+
+## [2026-06-06] Instagram AI Agent Integration
+- **Details**: Extended the AI agent pipeline to support the `INSTAGRAM` channel, enabling automated AI replies for Instagram DM conversations.
+- **Architecture**:
+  - **Channel Recognition** (`aiMessageProcessor.js`): `processMessage` now accepts `INSTAGRAM` channel. `_getOrCreateAgent` creates/serves channel-specific CEOAgent instances.
+  - **Instagram Agent Template** (`agentManagerService.js`): New `INSTAGRAM_SALES_SUPPORT` role, `instagram-sales-support-agent` template slug, and `ensureInstagramMessengerAgent` method that spawns/caches an Instagram-specific sub-agent with proper role, department, and tools.
+  - **Prompt Constraints** (`aiMessageProcessor.js`): Instagram-specific reply constraints added (concise, casual tone, visual-first).
+  - **Trace Provider**: Instagram channel routes to `instagram-sales-support-agent` telemetry provider.
+- **Files**: `backend/services/aiAgent/aiMessageProcessor.js`, `backend/services/aiAgent/agentManagerService.js`
+
+## [2026-06-06] Instagram Read Receipts & Typing Indicators
+- **Details**: Added Instagram-specific real-time conversation features: read receipts and typing indicators.
+- **Architecture**:
+  - **Read Receipts** (`conversationCrudController.js`): When `markConversationAsRead` is called for `INSTAGRAM` channel conversations, sends `sender_action: 'mark_seen'` to `/{igAccountId}/messages` endpoint.
+  - **Typing Indicators** (`conversationCrudController.js`): New `sendInstagramTypingIndicator` controller. Accepts `action: 'typing_on' | 'typing_off'`. Sends `sender_action` to Instagram Graph API.
+  - **Route** (`conversationRoutes.js`): `POST /:id/instagram-typing` endpoint.
+- **Files**: `backend/controller/conversation/conversationCrudController.js`, `backend/routes/conversationRoutes.js`
+
+## [2026-06-06] Order Attribution Instagram Detection Enhancement
+- **Details**: Improved Instagram platform detection in order attribution logic.
+- **Architecture**:
+  - Added `igshid` parameter support as Instagram-specific signal.
+  - Instagram detection now checks for `igshid`, `utm_source=instagram`, and `source===instagram` before falling through to other platforms.
+- **Files**: `frontend/src/storefront/utils/orderAttribution.ts`
 
 ## [2026-05-31] replaceâ€‘arabicâ€‘withâ€‘i18n Script Handles Backâ€‘ticked Template Literals Correctly
 - Updated documentation to reflect backtick handling fix in the i18n replacement script.

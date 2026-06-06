@@ -4,7 +4,7 @@
 - **Fix**:
   1. Fixed `remainingGrace` scope in `latenessCalculationService.js`.
   2. Integrated `syncLatenessAndDeductionsForMonth` into `payrollService.calculatePayrollData` to enforce correct grace period.
-  3. Separated APPROVED vs PENDING deductions in payroll calculation — only APPROVED reduce net salary.
+  3. Separated APPROVED vs PENDING deductions in payroll calculation ï¿½ only APPROVED reduce net salary.
   4. Updated `attendanceService.updateAttendance` to query both PENDING and APPROVED auto-deductions.
   5. Added `totalPendingDeductions` aggregation to `getPayrollSummary`.
   6. Enhanced `Payroll.tsx` with employee search, pending deductions badge on summary card, and tabbed details dialog with daily calculation log.
@@ -3042,4 +3042,28 @@
 - **Verification**:
   - `node scripts/check-arabic-strings.js --staged frontend/src/storefront/preview/marketplacePreviewCart.ts frontend/src/storefront/preview/marketplaceSampleData.ts frontend/src/storefront/sections/CheckoutForm.tsx frontend/src/storefront/sections/OrderSummary.tsx frontend/src/storefront/sections/manifest.ts frontend/src/storefront/themes/catalog.ts frontend/src/storefront/themes/index.ts frontend/src/storefront/variants/registry.ts` passed.
 - **Affected Files**: `scripts/check-arabic-strings.js`.
+
+## [2026-06-06] Instagram Reply Sending Broken â€” INSTAGRAM Channel Not Handled
+- **Bug/Issue**: When a merchant tried to reply to an Instagram DM conversation, the message was saved to DB but never delivered to the Instagram user.
+- **Cause**: `messagingController.js` only handled `FACEBOOK`, `TELEGRAM`, and `WHATSAPP` channels. No `INSTAGRAM` case existed.
+- **Fix**: Added Instagram sending block using `POST /{ig-account-id}/messages` Graph API. Updated response with `instagramSent` field.
+- **Affected Files**: `backend/controller/conversation/messagingController.js`
+
+## [2026-06-06] Instagram AI Auto-Reply Not Triggered
+- **Bug/Issue**: Incoming Instagram DMs received and saved, but AI agent never auto-replied.
+- **Cause**: `handleInstagramMessage` in `allFunctions.js` only parsed/saved messages without triggering `aiMessageProcessor.processMessage`.
+- **Fix**: Added AI auto-reply block with channel `INSTAGRAM`, DB save, Socket.IO emit, conversation update, and physical reply via Instagram API.
+- **Affected Files**: `backend/utils/allFunctions.js`
+
+## [2026-06-06] aiMessageProcessor Missing INSTAGRAM Channel Support
+- **Bug/Issue**: AI message processor only recognized `WHATSAPP` and `FACEBOOK`, causing Instagram messages to default handler without proper agent config.
+- **Cause**: `_getOrCreateAgent`, `_getTraceProvider`, `_buildPrompt` had no INSTAGRAM handling.
+- **Fix**: Added `INSTAGRAM_AGENT_ROLE`, extended `_getOrCreateAgent`, added `ensureInstagramMessengerAgent`, Instagram template agent, and prompt constraints.
+- **Affected Files**: `backend/services/aiAgent/aiMessageProcessor.js`, `backend/services/aiAgent/agentManagerService.js`
+
+## [2026-06-06] InstagramSettings.tsx Uses `any` Types and Hardcoded Arabic Strings
+- **Bug/Issue**: TypeScript `any` types used throughout, and Arabic strings were hardcoded without i18n.
+- **Fix**: Added proper `FacebookPage` and `InstagramAccount` interfaces. Used `useTranslation()` for all strings.
+- **Affected Files**: `frontend/src/pages/settings/InstagramSettings.tsx`
+
 

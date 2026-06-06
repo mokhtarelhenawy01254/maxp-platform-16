@@ -1,160 +1,53 @@
-## [2026-06-04] Embeddings Generation and Vector Search Test Client Auth Failure
-- **Bug/Issue**: Executing pytest tests in `tests/api/test_embeddings.py` returned `401 Unauthorized` responses.
-- **Cause**: FastAPI admin endpoints are protected by the `ServiceAuthMiddleware` which expects an `Authorization: Bearer test-service-token` header. The embedding test client requests did not provide this header.
-- **Fix**: Added a pytest autouse fixture `add_auth_header` in `tests/api/test_embeddings.py` to automatically update the test client's default headers with the authorization token, fixing the 401 errors.
-- **Affected Files**:
-  - `apps/ai-service/tests/api/test_embeddings.py`
-- **Verification**: Run `uv run pytest tests/api/test_embeddings.py -v` successfully, with all 4 tests passing.
-
-## [2026-06-03] Missing agentAiServiceClient.js file in repository causing MODULE_NOT_FOUND
-- **Bug/Issue**: The backend failed to start up on deployment, showing a crash with `Error: Cannot find module './agentAiServiceClient'`.
-- **Cause**: The `agentAiServiceClient.js` file, which was newly created and required in `agentProvisioningService.js`, was not tracked or pushed to the remote git repository.
-- **Fix**: Committed the missing `agentAiServiceClient.js` file and pushed it to git to ensure the module is resolved correctly on deployment.
-- **Affected Files**:
-  - `apps/backend/services/aiAgent/agentAiServiceClient.js`
-- **Verification**: GHA deployment succeeded and server health check passed.
-
-## [2026-06-03] Arabic String Compliance Violation in agentManagerService.js
-- **Bug/Issue**: The Arabic Strings Compliance Check in GitHub Actions failed on push, blocking the deployment pipeline.
-- **Cause**: The constant `FACEBOOK_MESSENGER_AGENT_NAME` was declared with a hardcoded Arabic string `'وكيل فيسبوك وماسنجر'`.
-- **Fix**: Extracted the Arabic string into the backend i18n translation system under key `agent.facebook_messenger_name` and used `t('agent.facebook_messenger_name')` dynamically.
-- **Affected Files**:
-  - `apps/backend/services/aiAgent/agentManagerService.js`
-  - `apps/backend/services/aiAgent/i18n.js`
-- **Verification**: Run `node scripts/check-arabic-strings.js` locally and in GHA, both passed with 0 violations.
-
-## [2026-06-03] Resolving agentProvisioningService.js git merge conflict and imports
-- **Bug/Issue**: Merging branches introduced conflicting imports and missing/duplicated declarations (`const const`) in the agent provisioning service, which would fail syntax check and server startup.
-- **Cause**: Simultaneous updates to local routing/modes (`getAiServiceMode`) and service-bridge client (`agentAiServiceClient`) led to overlapping imports at the top of the file.
-- **Fix**: Resolved conflict in `apps/backend/services/aiAgent/agentProvisioningService.js` by merging imports, keeping both `getAiServiceMode` and `agentAiServiceClient`, and restoring `agentProfileLoaderService` and `crypto` imports.
-- **Affected Files**:
-  - `apps/backend/services/aiAgent/agentProvisioningService.js`
-- **Verification**: Verified syntax check and intent architecture guard.
-
-## [2026-06-03] Agent Execution State Checkpointing DB Integration
-- **Bug/Issue**: When complex agent orchestration turns fail midway or require resuming across multiple asynchronous loops/threads, execution history could get lost or not properly persist, preventing the model from picking up exactly where it left off.
-- **Cause**: The execution state was only held in-memory or session-based variables without persistent checkpoints database mapping, making it impossible to restore specific execution state IDs across distinct API turns.
+## [2026-06-04] Payroll Salary Miscalculation and Duplicate Lateness Deductions
+- **Bug/Issue**: Payroll net salary was incorrect because (1) PENDING deductions were subtracted from net salary before manager approval, (2) lateness penalties ignored the 60-minute monthly grace period, (3) editing attendance (fingerprint) did not recalculate auto-deductions, and (4) the `latenessCalculationService` had a variable scope bug preventing correct deduction amounts.
+- **Cause**: `payrollService.calculatePayrollData` summed all deductions regardless of approval status and had its own duplicate lateness penalty logic bypassing the grace period. `latenessCalculationService` declared `remainingGrace` inside an `if` block making it inaccessible. `attendanceService.updateAttendance` only queried `APPROVED` auto-deductions, missing `PENDING` ones.
 - **Fix**:
-  1. Implemented `RunStateManager` class in `apps/ai-service/src/services/run_state_manager.py` that utilizes SQLAlchemy to select, merge, and persist checkpoints against the `Checkpoint` database model.
-  2. Integrated UUID normalization defensively (`uuid.UUID(str(thread_id))`) to prevent thread ID type discrepancies (string vs UUID) from crashing SQL queries.
-  3. Integrated `RunStateManager` into `apps/ai-service/src/workflows/orchestration_flow.py` to restore previous checkpoints at the start of a turn and save execution checkpoints with response status and payloads at the end of each turn.
+  1. Fixed `remainingGrace` scope in `latenessCalculationService.js`.
+  2. Integrated `syncLatenessAndDeductionsForMonth` into `payrollService.calculatePayrollData` to enforce correct grace period.
+  3. Separated APPROVED vs PENDING deductions in payroll calculation � only APPROVED reduce net salary.
+  4. Updated `attendanceService.updateAttendance` to query both PENDING and APPROVED auto-deductions.
+  5. Added `totalPendingDeductions` aggregation to `getPayrollSummary`.
+  6. Enhanced `Payroll.tsx` with employee search, pending deductions badge on summary card, and tabbed details dialog with daily calculation log.
 - **Affected Files**:
-  - `apps/ai-service/src/services/run_state_manager.py`
-  - `apps/ai-service/src/workflows/orchestration_flow.py`
-- **Verification**: Python AI service tests passed, and syntax check verified.
-
-## [2026-06-03] Storefront Custom Pages Wildcard Auth and Hook Race Condition
-- **Bug/Issue**: Even after resolving `companyId` in the storefront settings, visits to custom pages (e.g. `/shipping-policy` or `/return-policy`) on public subdomains (like `https://swan.maxp.online/shipping-policy`) returned a `401 Unauthorized` status on the backend API, and resulted in a 404/blank page in the storefront.
-- **Cause**:
-  1. **Global Security Wildcard Matching Bug**: The route `GET /api/v1/store-pages/*/slug/*` is registered as public in `globalSecurity.js`. However, the route authorization validator checked if `cleanRoutePath.endsWith('*')` *before* checking `cleanRoutePath.includes('*')`. Since the path ends with `*`, it matched `endsWith('*')`. The validator then extracted the prefix `/api/v1/store-pages/*/slug/` and performed a literal `startsWith` check on the request path. Because the prefix contains the literal wildcard character `*` in the middle, the check always failed, bypassing public authorization and returning a `401 Unauthorized`.
-  2. **useStorePage React Hook Race Condition**: When `useStorePage` ran initially, `companyId` was `undefined` (because settings were still loading). The hook ran, found no company ID, and set `loading = false` and `error = "معرف الشركة مفقود"`. When `companyId` resolved a moment later, the effect ran again to fetch the page, but `loading` remained `false` and the error remained set. This caused `DynamicStorefrontPage` to immediately fall through and render a 404 page before the fetch resolved.
+  - `backend/services/hr/latenessCalculationService.js`
+  - `backend/services/hr/payrollService.js`
+  - `backend/services/hr/attendanceService.js`
+  - `frontend/src/pages/hr/Payroll.tsx`
+  - `backend/tests/sync-lateness-payroll-test.js` (new)
+## [2026-06-03] Merchant Order Status Filters and Product Preview Routing Drift
+- **Bug/Issue**: The orders workspace could not reliably expose merchant-defined order/payment statuses in filters and bulk actions, and the product editor preview link still used admin-preview query parameters instead of the public storefront route.
+- **Cause**: The orders page used fixed frontend status arrays for filter and bulk dropdowns, while payment statuses were not hydrated from `/order-status`. Product preview URL generation did not use storefront slug/custom-domain routing data when it was available.
 - **Fix**:
-  1. Updated the route validation logic in `apps/backend/middleware/globalSecurity.js` to only apply simple wildcard prefix matching (`endsWith('*')`) if there are no other wildcards in the middle of the route (`!cleanRoutePath.slice(0, -1).includes('*')`). This allows routes containing wildcards in the middle (like `/store-pages/*/slug/*`) to fall through to the robust regular expression matching block.
-  2. Updated the `useStorePage` hook in `apps/frontend/src/hooks/useStorePage.ts` to call `setLoading(true)`, `setError(null)`, and `setPage(null)` at the start of its `useEffect` fetch cycle, ensuring that loading and error states are reset when inputs transition.
+  1. Hydrated both order and payment status definitions from the backend status registry and merged them with safe defaults.
+  2. Preserved selected status options even when a custom status is not part of the default list.
+  3. Kept trash statuses out of normal status options while preserving the existing trash filters/actions.
+  4. Updated product preview URL generation to prefer public storefront product paths, store slugs, and custom domains.
+  5. Added focused frontend coverage for product preview URL routing.
 - **Affected Files**:
-  - `apps/backend/middleware/globalSecurity.js`
-  - `apps/frontend/src/hooks/useStorePage.ts`
-- **Verification**: Verified using a custom node script matching regex routes and querying production endpoints.
+  - `frontend/src/pages/orders/Orders.tsx`
+  - `frontend/src/pages/products/ProductNewFinal.tsx`
+  - `frontend/src/pages/products/utils/productPreviewUrl.ts`
+  - `frontend/src/pages/products/utils/__tests__/productPreviewUrl.test.ts`
+  - `frontend/src/locales/ar/sections/orders.json`
+  - `frontend/src/locales/en/sections/orders.json`
 
-## [2026-06-03] Storefront Custom Pages (e.g. /return-policy) Not Accessible
-- **Bug/Issue**: Custom store pages created in Admin Settings → Store Pages (e.g., `return-policy`, `shipping-policy`) returned a 404 on the storefront (e.g., `maxp.online/return-policy` or `swan.maxp.online/shipping-policy`). Additionally, the Admin page list did not provide any clickable preview link to open these pages in the storefront.
-- **Cause**: 
-  1. The storefront routing in `StorefrontShell.tsx` had no route definitions to match dynamic page slugs. The `DynamicStorefrontPage` component existed but did not fetch page content from the database API (`/store-pages/:companyId/slug/:slug`).
-  2. The `useStorePage` hook failed to fetch page content on public subdomains (like `swan.maxp.online`) because it expected `companyId` in URL search parameters or admin dashboard localStorage. On public storefront paths, these were missing, causing the API call to fail with a "missing company ID" error.
+## [2026-06-03] Production Backend Crash Loop After WhatsApp Baileys Connection Closed
+- **Bug/Issue**: Production returned Cloudflare 502 responses for backend-backed routes after deployment, including storefront/shop routes.
+- **Cause**: `maxp-backend` was repeatedly restarted by PM2 because a recoverable Baileys WhatsApp socket rejection (`Connection Closed`, Boom 428) reached the global `unhandledRejection` handler, which exited the whole Node process. The WhatsApp health check also treated sessions as dead when Baileys did not expose a numeric websocket `readyState`, creating reconnect churn.
 - **Fix**:
-  1. Added three new route entries in `renderScopedRoutes` inside `StorefrontShell.tsx`: `shop/page/:pageSlug/*`, `pages/:pageSlug/*`, and a catch-all `/:pageSlug/*` — all rendering `<DynamicStorefrontPage />`.
-  2. Updated `DynamicStorefrontPage` to call `useStorePage` hook for database-backed page fetching, and updated it to destructure `isLoading: settingsLoading` from `useStorefrontSettings()` and pass `settings?.company?.id` directly to `useStorePage`.
-  3. Modified `useStorePage` hook to accept an optional `companyId` parameter, fall back to checking `storefront_companyId` in localStorage, use `resolvedCompanyId` in the fetch request, and added `companyId` to the dependency array of its `useEffect`.
-  4. Updated `StorePages.tsx` to import `buildStorefrontPreviewPath` and added a `getPageUrl` helper that builds the full storefront URL. Made the slug text a clickable link with an external-link icon, and added a Globe icon button in the hover toolbar for quick page previewing.
+  1. Added a recoverable unhandled rejection classifier for Baileys `Connection Closed` errors so the API process stays alive while unrelated unhandled rejections remain fatal.
+  2. Updated WhatsApp session health classification to avoid marking connected sessions dead solely because Baileys hides websocket `readyState`.
+  3. Removed the in-memory-only `AUTHENTICATING` value from the Prisma restore query so WhatsApp sessions can restore with the generated production enum.
+  4. Aligned `backend/ecosystem.config.js` with the production Nginx configs by running the backend on port `3007`.
+  5. Added focused regression tests for the rejection classifier and health classification.
 - **Affected Files**:
-  - `apps/frontend/src/storefront/StorefrontShell.tsx`
-  - `apps/frontend/src/pages/settings/StorePages.tsx`
-  - `apps/frontend/src/hooks/useStorePage.ts`
-- **Verification**: TypeScript compilation verified. Frontend production build compiled successfully. Storefront routes and hook tested for slug and subdomain-based companyId resolution.
-
-## [2026-06-03] Monorepo Integration and Conflict Verification
-- **Bug/Issue**: Verification of potential conflicts, build issues, or test failures arising from the merge of `max_p_new` (frontend) and `maxp-ai-service` (Python AI service) into `maxp-platform`.
-- **Cause**: Consolidation of standalone repositories into a unified monorepo structure.
-- **Fix**: Executed a comprehensive verification workflow:
-  1. Verified backend syntax checks (`npm run test:backend:syntax`) - all files passed cleanly.
-  2. Executed FastAPI Python service unit tests (`npm run test:ai`) - all 123 tests passed successfully.
-  3. Performed frontend production build (`npm run test:frontend:build`) - built and optimized successfully in 1m 25s with esbuild minification.
-  No functional conflicts, type errors, or dependency resolution issues were found.
-- **Affected Files**: None (Validation only)
-- **Verification**: All local test runs and builds completed successfully.
-
-## [2026-03-09] Specialist Agent Routine Executor ModelManager Injection Failure
-- **Bug/Issue**: Scheduled follow-up routines executed via `routineExecutorService.executeRoutine` returned status `'FAILED'` due to LLM errors, causing the `Phase 18` integration tests to fail.
-- **Cause**: When `routineExecutorService` fetched or spawned a specialist agent, it failed to inject the dynamic `ModelManager` instance into the agent. This resulted in the agent lacking a model manager during `processTask`, throwing internal execution errors like `_formatRelevancePrompt is not a function` or model call failures when calling LLM methods.
-- **Fix**:
-  1. Updated `backend/services/aiAgent/routineExecutorService.js` to require `backend/services/aiRuntimeService.js`.
-  2. Injected the model manager by calling `agent.setModelManager(aiRuntimeService.getModelManager())` prior to `agent.processTask(taskObj)`.
-- **Affected Files**:
-  - `backend/services/aiAgent/routineExecutorService.js`
-- **Verification**: Verified that all `Phase 18` tests in `tests/services/allPhasesIntegration.test.js` pass successfully.
-
-## [2026-03-09] RouteToTools Pipeline Stage Circular/Legacy Require Failure
-- **Bug/Issue**: Executing any agent task failed with `TypeError: _formatRelevancePrompt is not a function`.
-- **Cause**: During previous specialist agent refactoring, `_formatRelevancePrompt` was migrated from `CEOAgent.js` to the shared `utils/agentPromptUtils.js` utility helper. However, `pipeline/stages/routeToTools.js` was still requiring it from `../../CEOAgent`, leading to undefined function calls under the new decoupling architecture.
-- **Fix**:
-  1. Updated `backend/services/aiAgent/pipeline/stages/routeToTools.js` to require `_formatRelevancePrompt` from `../../utils/agentPromptUtils` instead of `../../CEOAgent`.
-- **Affected Files**:
-  - `backend/services/aiAgent/pipeline/stages/routeToTools.js`
-- **Verification**: All 62/62 tests in `tests/services/allPhasesIntegration.test.js` passed.
-
-## [2026-03-09] Agent Manager Runtime Mocking Gaps in Refactored Departments Flow
-- **Bug/Issue**: Running `npm test tests/services/agentManagerRuntimeService.test.js` failed with 16 test failures due to `Cannot read properties of undefined (reading 'findUnique')` and similar database client missing function exceptions.
-- **Cause**: The default department provisioning logic in `agentManagerService.js` was recently updated to use standard Prisma Client operations (`prisma.company.findUnique`, `prisma.agentDepartment.createMany`, `prisma.companyAgent.update`, and `orderBy` sorting) instead of raw SQL queries. However, the test mock client in `agentManagerRuntimeService.test.js` did not contain these new Prisma models or helper behaviors, leading to fatal mock rejections.
-- **Fix**:
-  1. Added mock implementation of `prisma.company.findUnique` returning valid mock company info for any given company ID.
-  2. Implemented `prisma.companyAgent.update` in the mock repository framework.
-  3. Added mock implementation of `prisma.agentDepartment.createMany` with duplicate-skipping logic to prevent unique key violations.
-  4. Expanded the `prisma.agentDepartment.findMany` mock to support standard Prisma-style `orderBy` sorting arrays.
-- **Affected Files**:
-  - `backend/tests/services/agentManagerRuntimeService.test.js`
-- **Verification**: All 21/21 tests in `tests/services/agentManagerRuntimeService.test.js` passed successfully.
-
-## [2026-03-09] Global Template Auto-Provisioning Facebook Agent Name Mismatch
-- **Bug/Issue**: The Facebook Messenger agent test suite assertion failed because the template agent name resolved to `"Facebook & Messenger Agent"` instead of the expected dynamic Arabic name `"وكيل فيسبوك وماسنجر"`.
-- **Cause**: In `agentManagerService.js`, the newer `GLOBAL_TEMPLATE_AGENTS` definition declared the Facebook template name as the literal string `'Facebook & Messenger Agent'`, while the older single-channel auto-provisioning route and existing assertions expected `FACEBOOK_MESSENGER_AGENT_NAME` (`'وكيل فيسبوك وماسنجر'`).
-- **Fix**:
-  1. Refactored `GLOBAL_TEMPLATE_AGENTS` in `backend/services/aiAgent/agentManagerService.js` to map the name attribute directly to the unified `FACEBOOK_MESSENGER_AGENT_NAME` constant.
-- **Affected Files**:
-  - `backend/services/aiAgent/agentManagerService.js`
-- **Verification**: Auto-registration test assertions pass successfully without name mismatch failures.
-
-## [2026-03-09] AI Agent Provisioning Failure - Skill order-support tool not allowed by template
-- **Bug/Issue**: During server boot, database hydration failed with `[AGENT-MANAGER] DB hydration failed for company ... : Skill order-support tool not allowed by template: order.lookup, shipping.rates`, resulting in 500 Internal Server Errors on the `/agents` and `/profiles` endpoints.
-- **Cause**: The sales agent (`sas-sales-agent`) template included the `"order-support"` skill in `allowedSkills`, which requires `"order.lookup"` and `"shipping.rates"`. However, these tools were not explicitly listed in the agent's `"allowedTools"` array in `agent.json`.
-- **Fix**:
-  1. Updated `backend/agents/sas-sales-agent/agent.json` to add `"order.lookup"` and `"shipping.rates"` to the `"allowedTools"` array.
-  2. Verified that the agent profile loaded successfully and DB hydration finished without errors.
-- **Affected Files**:
-  - `backend/agents/sas-sales-agent/agent.json`
-- **Verification**: Restarted the backend server successfully. Ran health checks (`STATUS: 200`) and validated that no hydration or template validation errors exist in the logs.
-
-## [2026-03-09] Fatal Crash on Backend Startup due to Missing aiRuntimeService
-- **Bug/Issue**: The backend server crashed on startup with `Error: Cannot find module '../services/aiAgent/aiRuntimeService'` thrown from `backend/routes/agentControlRoutes.js`.
-- **Cause**: The route file `backend/routes/agentControlRoutes.js` expected a modular `aiRuntimeService` to handle orchestration tasks, but the service module did not exist.
-- **Fix**:
-  1. Created `backend/services/aiAgent/aiRuntimeService.js` to serve as a lazy-loading wrapper for `ModelManager`.
-  2. Implemented `getModelManager` returning a cached singleton instance of `ModelManager` while gracefully falling back to a null service stub if `aiAgentService` is unavailable, preventing circular imports.
-- **Affected Files**:
-  - `backend/services/aiAgent/aiRuntimeService.js`
-- **Verification**: Backend server successfully starts up on port 3007 without any routing errors.
-
-## [2026-03-09] Hacky i18n Product Name Field Label in AgentCatalogPage
-- **Bug/Issue**: The dynamic Product Name form field in the simplified `AgentCatalogPage` utilized a fragile and hacky string replace helper on the `aiCatalog.addProduct` translation string (`t("aiCatalog.addProduct").replace(/\s*(Add|New)\s*/gi, '')`). This was unstable and failed when translation keys changed or when languages like Arabic were active.
-- **Cause**: Absence of a dedicated, modular `productName` i18n key in translation bundles.
-- **Fix**:
-  1. Added explicit `"productName": "Product Name"` to `frontend/src/locales/en/translation.json`.
-  2. Added explicit `"productName": "اسم المنتج"` to `frontend/src/locales/ar/translation.json`.
-  3. Refactored the form field label in `AgentCatalogPage.tsx` to use the standardized `t("aiCatalog.productName")`.
-- **Affected Files**:
-  - `frontend/src/locales/en/translation.json`
-  - `frontend/src/locales/ar/translation.json`
-  - `frontend/src/pages/admin/AgentCatalogPage.tsx`
-- **Verification**: Built and validated that the labels show up correctly in Arabic and English layouts.
+  - `backend/server.js`
+  - `backend/utils/recoverableUnhandledRejection.js`
+  - `backend/services/whatsapp/WhatsAppManager.js`
+  - `backend/ecosystem.config.js`
+  - `backend/tests/utils/recoverableUnhandledRejection.test.js`
+  - `backend/tests/services/WhatsAppManager.messageCapture.test.js`
+- **Verification**: Ran focused backend tests and syntax checks, applied the hotfix on production, verified `maxp.online/api/v1/health` and `swan.maxp.online/shop` return HTTP 200, and confirmed PM2 stayed online.
 
 ## [2026-06-01] Fixing Invalid Prisma ProductVariant select in Simple Order Detail Route
 - **Bug/Issue**: Fetching simple order details under `/api/v1/orders-new/simple/:orderNumber` failed with a 500 error on the frontend.
@@ -3149,4 +3042,28 @@
 - **Verification**:
   - `node scripts/check-arabic-strings.js --staged frontend/src/storefront/preview/marketplacePreviewCart.ts frontend/src/storefront/preview/marketplaceSampleData.ts frontend/src/storefront/sections/CheckoutForm.tsx frontend/src/storefront/sections/OrderSummary.tsx frontend/src/storefront/sections/manifest.ts frontend/src/storefront/themes/catalog.ts frontend/src/storefront/themes/index.ts frontend/src/storefront/variants/registry.ts` passed.
 - **Affected Files**: `scripts/check-arabic-strings.js`.
+
+## [2026-06-06] Instagram Reply Sending Broken — INSTAGRAM Channel Not Handled
+- **Bug/Issue**: When a merchant tried to reply to an Instagram DM conversation, the message was saved to DB but never delivered to the Instagram user.
+- **Cause**: `messagingController.js` only handled `FACEBOOK`, `TELEGRAM`, and `WHATSAPP` channels. No `INSTAGRAM` case existed.
+- **Fix**: Added Instagram sending block using `POST /{ig-account-id}/messages` Graph API. Updated response with `instagramSent` field.
+- **Affected Files**: `backend/controller/conversation/messagingController.js`
+
+## [2026-06-06] Instagram AI Auto-Reply Not Triggered
+- **Bug/Issue**: Incoming Instagram DMs received and saved, but AI agent never auto-replied.
+- **Cause**: `handleInstagramMessage` in `allFunctions.js` only parsed/saved messages without triggering `aiMessageProcessor.processMessage`.
+- **Fix**: Added AI auto-reply block with channel `INSTAGRAM`, DB save, Socket.IO emit, conversation update, and physical reply via Instagram API.
+- **Affected Files**: `backend/utils/allFunctions.js`
+
+## [2026-06-06] aiMessageProcessor Missing INSTAGRAM Channel Support
+- **Bug/Issue**: AI message processor only recognized `WHATSAPP` and `FACEBOOK`, causing Instagram messages to default handler without proper agent config.
+- **Cause**: `_getOrCreateAgent`, `_getTraceProvider`, `_buildPrompt` had no INSTAGRAM handling.
+- **Fix**: Added `INSTAGRAM_AGENT_ROLE`, extended `_getOrCreateAgent`, added `ensureInstagramMessengerAgent`, Instagram template agent, and prompt constraints.
+- **Affected Files**: `backend/services/aiAgent/aiMessageProcessor.js`, `backend/services/aiAgent/agentManagerService.js`
+
+## [2026-06-06] InstagramSettings.tsx Uses `any` Types and Hardcoded Arabic Strings
+- **Bug/Issue**: TypeScript `any` types used throughout, and Arabic strings were hardcoded without i18n.
+- **Fix**: Added proper `FacebookPage` and `InstagramAccount` interfaces. Used `useTranslation()` for all strings.
+- **Affected Files**: `frontend/src/pages/settings/InstagramSettings.tsx`
+
 

@@ -12788,3 +12788,37 @@ ishlist and debounced search engine wiring)
 - **Verification**:
     - `node scripts/check-arabic-strings.js --staged frontend/src/storefront/preview/marketplacePreviewCart.ts frontend/src/storefront/preview/marketplaceSampleData.ts frontend/src/storefront/sections/CheckoutForm.tsx frontend/src/storefront/sections/OrderSummary.tsx frontend/src/storefront/sections/manifest.ts frontend/src/storefront/themes/catalog.ts frontend/src/storefront/themes/index.ts frontend/src/storefront/variants/registry.ts` passed.
 
+## [2026-06-06] Instagram Reply Sending, AI Agent, Read Receipts & Typing Indicators [IN PROGRESS]
+- **Objective**: Fix the critical Instagram reply sending bug, add AI auto-reply support, and implement read receipts and typing indicators for the Instagram channel.
+- **Accomplishments**:
+  - **Instagram Reply Sending**: Added `INSTAGRAM` channel handling in `messagingController.js` using `POST /{ig-account-id}/messages` Graph API.
+  - **AI Agent for Instagram**: Extended `aiMessageProcessor.js` with INSTAGRAM channel support. Created `ensureInstagramMessengerAgent` in `agentManagerService.js` with dedicated role `INSTAGRAM_SALES_SUPPORT` and template `instagram-sales-support-agent`.
+  - **Instagram AI Auto-Reply**: Added AI processing block in `handleInstagramMessage` with DB save, Socket.IO emit, conversation update, and physical Instagram API send.
+  - **Read Receipts**: `markConversationAsRead` now sends `sender_action: 'mark_seen'` for Instagram conversations.
+  - **Typing Indicators**: New `POST /:id/instagram-typing` endpoint for `typing_on`/`typing_off` actions.
+  - **Reusable Function**: Added `sendInstagramMessage` to `allFunctions.js`.
+  - **Improved Attribution**: Added `igshid` and `utm_source=instagram` detection in `orderAttribution.ts`.
+  - **TypeScript & i18n Cleanup**: Removed `any` types, added interfaces, and migrated to `useTranslation()` in `InstagramSettings.tsx`.
+  - **CreativeFormats Validation**: Made `instagramAccountId` required for Stories/Reels.
+- **Verification Plan**:
+  - Backend: Syntax check (`node --check`) on all modified files.
+  - Frontend: `npm run type-check` for TypeScript compilation.
+  - Test Instagram DM conversation: send reply from inbox, verify it reaches the Instagram user.
+  - Test AI auto-reply: send DM to Instagram Business account, verify AI responds within seconds.
+  - Test read receipts: view Instagram conversation, verify sender_action mark_seen sent.
+  - Test typing indicators: POST to `/conversations/:id/instagram-typing` with `typing_on`.
+- **Affected Files**:
+  - `backend/controller/conversation/messagingController.js`
+  - `backend/controller/conversation/conversationCrudController.js`
+  - `backend/controller/conversationController.js`
+  - `backend/controller/webhookController.js`
+  - `backend/routes/conversationRoutes.js`
+  - `backend/utils/allFunctions.js`
+  - `backend/utils/webhookSignature.js`
+  - `backend/services/aiAgent/aiMessageProcessor.js`
+  - `backend/services/aiAgent/agentManagerService.js`
+  - `frontend/src/pages/settings/InstagramSettings.tsx`
+  - `frontend/src/pages/advertising/CreativeFormats.tsx`
+  - `frontend/src/storefront/utils/orderAttribution.ts`
+
+

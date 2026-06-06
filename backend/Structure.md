@@ -2294,6 +2294,37 @@ Added a new marketplace-ready fashion storefront preset focused on mobile app-st
 
 
 
+## [2026-06-06] Instagram Channel Reply Architecture
+- **Details**: Added full Instagram DM reply support to the messaging system, enabling merchants to send replies to Instagram conversations.
+- **Architecture**:
+  - **Instagram Reply Sender** (`messagingController.js`): For `INSTAGRAM` channel conversations, sends replies via `POST https://graph.facebook.com/v22.0/{igAccountId}/messages` with recipient/message/access_token payload. Saves `instagramMessageId` to message metadata.
+  - **Instagram Message Sender** (`allFunctions.js`): Added reusable `sendInstagramMessage({ recipientId, messageText, igAccountId, pageAccessToken, companyId })` function returning `{ success, messageId, error }`.
+- **Files**: `backend/controller/conversation/messagingController.js`, `backend/utils/allFunctions.js`
+
+## [2026-06-06] Instagram AI Agent Integration
+- **Details**: Extended the AI agent pipeline to support the `INSTAGRAM` channel, enabling automated AI replies for Instagram DM conversations.
+- **Architecture**:
+  - **Channel Recognition** (`aiMessageProcessor.js`): `processMessage` now accepts `INSTAGRAM` channel. `_getOrCreateAgent` creates/serves channel-specific CEOAgent instances.
+  - **Instagram Agent Template** (`agentManagerService.js`): New `INSTAGRAM_SALES_SUPPORT` role, `instagram-sales-support-agent` template slug, and `ensureInstagramMessengerAgent` method that spawns/caches an Instagram-specific sub-agent with proper role, department, and tools.
+  - **Prompt Constraints** (`aiMessageProcessor.js`): Instagram-specific reply constraints added (concise, casual tone, visual-first).
+  - **Trace Provider**: Instagram channel routes to `instagram-sales-support-agent` telemetry provider.
+- **Files**: `backend/services/aiAgent/aiMessageProcessor.js`, `backend/services/aiAgent/agentManagerService.js`
+
+## [2026-06-06] Instagram Read Receipts & Typing Indicators
+- **Details**: Added Instagram-specific real-time conversation features: read receipts and typing indicators.
+- **Architecture**:
+  - **Read Receipts** (`conversationCrudController.js`): When `markConversationAsRead` is called for `INSTAGRAM` channel conversations, sends `sender_action: 'mark_seen'` to `/{igAccountId}/messages` endpoint.
+  - **Typing Indicators** (`conversationCrudController.js`): New `sendInstagramTypingIndicator` controller. Accepts `action: 'typing_on' | 'typing_off'`. Sends `sender_action` to Instagram Graph API.
+  - **Route** (`conversationRoutes.js`): `POST /:id/instagram-typing` endpoint.
+- **Files**: `backend/controller/conversation/conversationCrudController.js`, `backend/routes/conversationRoutes.js`
+
+## [2026-06-06] Order Attribution Instagram Detection Enhancement
+- **Details**: Improved Instagram platform detection in order attribution logic.
+- **Architecture**:
+  - Added `igshid` parameter support as Instagram-specific signal.
+  - Instagram detection now checks for `igshid`, `utm_source=instagram`, and `source===instagram` before falling through to other platforms.
+- **Files**: `frontend/src/storefront/utils/orderAttribution.ts`
+
 ## [2026-05-31] replaceâ€‘arabicâ€‘withâ€‘i18n Script Handles Backâ€‘ticked Template Literals Correctly
 - Updated documentation to reflect backtick handling fix in the i18n replacement script.
 - Ensured architectural documentation includes this script improvement.

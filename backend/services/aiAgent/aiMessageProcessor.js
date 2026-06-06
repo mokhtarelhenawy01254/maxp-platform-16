@@ -26,6 +26,7 @@ const { normalizeAgentReply } = require('./agentReplyNormalizer');
 const semanticCacheService = require('./semanticCacheService');
 
 const FACEBOOK_AGENT_ROLE = 'FACEBOOK_SALES_SUPPORT';
+const INSTAGRAM_AGENT_ROLE = 'INSTAGRAM_SALES_SUPPORT';
 
 class AIMessageProcessor {
   constructor() {
@@ -44,7 +45,7 @@ class AIMessageProcessor {
    * @param {string} params.customerId     - CRM customer ID (may be null)
    * @param {string} params.remoteJid      - sender phone/Facebook JID
    * @param {string} params.content        - message text
-   * @param {string} [params.channel='WHATSAPP'] - channel: 'WHATSAPP' | 'FACEBOOK'
+   * @param {string} [params.channel='WHATSAPP'] - channel: 'WHATSAPP' | 'FACEBOOK' | 'INSTAGRAM'
    */
   async processMessage({ companyId, sessionId, conversationId, customerId, remoteJid, content, channel = 'WHATSAPP' }) {
     if (!content || !companyId) return null;
@@ -260,28 +261,31 @@ class AIMessageProcessor {
     const normalizedChannel = String(channel || 'WHATSAPP').trim().toUpperCase();
     const key = `${companyId}:${normalizedChannel}`;
 
-    if (normalizedChannel === 'FACEBOOK') {
+    if (normalizedChannel === 'FACEBOOK' || normalizedChannel === 'INSTAGRAM') {
       // Only load from DB on first use; subsequent messages reuse the cached agent
       if (!this._agents.has(key)) {
+        const agentRole = normalizedChannel === 'INSTAGRAM' ? INSTAGRAM_AGENT_ROLE : FACEBOOK_AGENT_ROLE;
         try {
           const agentManagerService = require('./agentManagerService');
-          const savedAgent = await agentManagerService.ensureFacebookMessengerAgent(companyId);
+          const savedAgent = normalizedChannel === 'FACEBOOK'
+            ? await agentManagerService.ensureFacebookMessengerAgent(companyId)
+            : await agentManagerService.ensureInstagramMessengerAgent(companyId);
           if (savedAgent) {
             this._agents.set(key, new CEOAgent(companyId, {
               id: savedAgent.id,
               name: savedAgent.name,
-              role: savedAgent.role || FACEBOOK_AGENT_ROLE,
+              role: savedAgent.role || agentRole,
               includeAllCeoTools: false,
               persona: savedAgent.persona || {},
             }));
           }
         } catch (err) {
-          console.warn('[AI-PROCESSOR] Facebook sub-agent load failed, using fallback:', err.message);
+          console.warn(`[AI-PROCESSOR] ${normalizedChannel} sub-agent load failed, using fallback:`, err.message);
         }
         if (!this._agents.has(key)) {
           this._agents.set(key, new CEOAgent(companyId, {
-            id: `facebook_sales_support_${companyId.slice(-6)}`,
-            role: FACEBOOK_AGENT_ROLE,
+            id: `${normalizedChannel.toLowerCase()}_sales_support_${companyId.slice(-6)}`,
+            role: agentRole,
             includeAllCeoTools: false,
           }));
         }
@@ -296,9 +300,10 @@ class AIMessageProcessor {
   }
 
   _getTraceProvider(channel = 'WHATSAPP') {
-    return String(channel || '').toUpperCase() === 'FACEBOOK'
-      ? 'facebook-sales-support-agent'
-      : 'ceo-agent';
+    const normalized = String(channel || '').toUpperCase();
+    if (normalized === 'FACEBOOK') return 'facebook-sales-support-agent';
+    if (normalized === 'INSTAGRAM') return 'instagram-sales-support-agent';
+    return 'ceo-agent';
   }
 
   async _getAiSettings(companyId) {
@@ -358,6 +363,18 @@ class AIMessageProcessor {
         '- Create only approval-required order drafts after required details are confirmed.',
         '- Hand off complaints, refunds, angry customers, payment disputes, abuse, or low-confidence cases.',
         '- Keep the reply concise and natural for Messenger.',
+      ].join('\n'));
+    }
+
+    if (String(channel || '').toUpperCase() === 'INSTAGRAM') {
+      parts.push([
+        'Instagram DM customer reply constraints:',
+        '- Reply as a customer-facing sales/support agent, not as the CEO.',
+        '- Do not invent prices, stock, order status, discounts, or delivery promises.',
+        '- Create only approval-required order drafts after required details are confirmed.',
+        '- Hand off complaints, refunds, angry customers, payment disputes, abuse, or low-confidence cases.',
+        '- Keep replies concise and natural for Instagram DM.',
+        '- Instagram users expect a more visual and casual tone.',
       ].join('\n'));
     }
 
