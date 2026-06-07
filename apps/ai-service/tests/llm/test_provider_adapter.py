@@ -198,6 +198,48 @@ async def test_adapter_can_disable_tools_for_final_reply_generation() -> None:
     assert provider.calls[0]["tools"] is None
 
 
+async def test_adapter_preserves_multimodal_user_content() -> None:
+    provider = RecordingProvider()
+
+    await ProviderAdapter(provider).get_response([
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "what is in this image?"},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "data:image/png;base64,iVBORw0KGgo=",
+                        "detail": "low",
+                    },
+                },
+            ],
+        }
+    ])
+
+    sent_content = provider.calls[0]["messages"][0]["content"]
+    assert isinstance(sent_content, list)
+    assert sent_content[0]["type"] == "text"
+    assert sent_content[1]["type"] == "image_url"
+    assert sent_content[1]["image_url"]["detail"] == "low"
+
+
+async def test_adapter_forwards_output_schema_to_provider() -> None:
+    provider = RecordingProvider()
+    schema = {
+        "type": "object",
+        "properties": {"status": {"type": "string"}},
+        "required": ["status"],
+    }
+
+    await ProviderAdapter(provider).get_response(
+        [{"role": "user", "content": "return status"}],
+        options={"output_schema": schema},
+    )
+
+    assert provider.calls[0]["options"]["output_schema"] == schema
+
+
 async def test_adapter_records_rate_limit_and_fails_over_to_another_provider(monkeypatch) -> None:
     backup = BackupProvider()
     factory = FakeProviderFactory(backup)

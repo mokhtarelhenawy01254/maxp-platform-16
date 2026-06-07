@@ -11,7 +11,10 @@ from src.pipeline.stages.resolve_intent import resolve_intent
 
 @pytest.mark.asyncio
 async def test_merchant_intent_uses_llm_classifier_not_policy_parser(monkeypatch):
+    captured = {}
+
     async def fake_contract(**kwargs):
+        captured.update(kwargs)
         return IntentContract(
             intent="products",
             requiresTool=False,
@@ -28,6 +31,7 @@ async def test_merchant_intent_uses_llm_classifier_not_policy_parser(monkeypatch
         company_id="comp1",
         customer_id="merchant_admin",
         channel="merchant",
+        attachments=[{"type": "image", "url": "https://example.com/product.png"}],
     )
     ctx.agent = AsyncMock()
     ctx.native_tools = [{"name": "product_search"}]
@@ -35,3 +39,4 @@ async def test_merchant_intent_uses_llm_classifier_not_policy_parser(monkeypatch
     result = await resolve_intent(ctx)
 
     assert result.relevance_plan.intent == "products"
+    assert captured["context"]["attachments"] == [{"type": "image", "url": "https://example.com/product.png"}]

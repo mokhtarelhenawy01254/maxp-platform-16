@@ -56,6 +56,7 @@ async def resolve_intent(ctx: PipelineContext) -> PipelineContext:
         "availableTools": available_tools,
         "preferredModel": getattr(ctx.agent, "model", None),
         "preferredProvider": getattr(getattr(ctx.agent, "config", None), "provider", None),
+        "attachments": list(getattr(ctx, "attachments", []) or []),
     }
     contract = await build_intent_contract_async(
         message=ctx.message,

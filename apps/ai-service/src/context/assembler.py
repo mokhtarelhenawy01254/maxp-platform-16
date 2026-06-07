@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy import text
 
 from src.context.compressor import compress_history, count_tokens
+from src.context.multimodal import build_user_content
 from src.memory.working_memory import working_memory_service
 from src.pipeline.context import PipelineContext
 
@@ -311,7 +312,9 @@ class ContextAssembler:
         ctx.original_history_tokens = sum(count_tokens(m.get("content", "")) for m in history)
 
         # Compress history if needed
-        llm_client = ctx.agent.client if (ctx.agent and hasattr(ctx.agent, "client")) else None
+        llm_client = getattr(ctx, "llm_client", None) or (
+            ctx.agent.client if (ctx.agent and hasattr(ctx.agent, "client")) else None
+        )
         retained_history, summary_text = await compress_history(
             messages=history,
             max_tokens=1000,
@@ -348,7 +351,11 @@ class ContextAssembler:
         for msg in retained_history:
             compiled.append({"role": msg["role"], "content": msg["content"]})
 
-        # Append current user message
-        compiled.append({"role": "user", "content": ctx.message})
+        # Append current user message, preserving image attachments as
+        # provider-native multimodal content parts.
+        compiled.append({
+            "role": "user",
+            "content": build_user_content(ctx.message, getattr(ctx, "attachments", []) or []),
+        })
 
         return compiled

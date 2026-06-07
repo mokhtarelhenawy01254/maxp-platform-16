@@ -17,6 +17,7 @@ from src.context.compressor import count_tokens
 logger = structlog.get_logger(__name__)
 
 
+
 class MaxPAgentRuntimeMiddleware(AgentMiddleware):
     """SDK agent middleware for prompt hygiene and lightweight budget enforcement."""
 
@@ -31,9 +32,12 @@ class MaxPAgentRuntimeMiddleware(AgentMiddleware):
     ) -> None:
         context.metadata["company_id"] = self.company_id
         context.metadata["agent_role"] = self.agent_role
+        # Store agent instance for tool-based modifications (e.g. progressive exposure)
+        context.metadata["agent"] = getattr(context, "agent", None)
 
         sanitized = self._sanitize_messages(context)
         dropped = self._enforce_message_budget(context)
+
 
         context.metadata["sanitized_messages"] = sanitized
         context.metadata["dropped_history_messages"] = dropped
@@ -122,11 +126,13 @@ class MaxPFunctionAuditMiddleware(FunctionMiddleware):
         )
 
 
+
 def build_maxp_function_middleware(company_id: str, agent_role: str) -> list[Any]:
     return [
         MaxPAgentRuntimeMiddleware(company_id=company_id, agent_role=agent_role),
         MaxPFunctionAuditMiddleware(company_id=company_id, agent_role=agent_role),
     ]
+
 
 
 def _sanitize_content(content: str) -> str:

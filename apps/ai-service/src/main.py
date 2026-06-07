@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.agents.loader import seed_templates
 from src.skills import seed_skills
 from src.api.admin import router as admin_router
+from src.api.billing import router as billing_router
 from src.api.chat import router as chat_router
 from src.api.health import router as health_router
 from src.api.channels.whatsapp import router as whatsapp_router
@@ -123,6 +124,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(ThreadConcurrencyMiddleware)
 
     app.include_router(health_router)
+    app.include_router(billing_router)
     app.include_router(chat_router)
     app.include_router(resume_router)
     app.include_router(whatsapp_router)

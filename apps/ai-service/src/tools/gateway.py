@@ -4,6 +4,7 @@ from enum import StrEnum
 from typing import Any
 
 import structlog
+from agent_framework import FunctionInvocationContext
 
 from src.mcp.registry import get_mcp_registry
 from src.tools.registry import get_tool
@@ -101,6 +102,7 @@ class ToolGateway:
         allowed_tools: list[str] | None = None,
         input_data: dict[str, Any] | None = None,
         approval_granted: bool = False,
+        ctx: FunctionInvocationContext | None = None,
     ) -> dict[str, Any]:
         """Execute a tool with permission checks.
 
@@ -110,6 +112,7 @@ class ToolGateway:
             agent_role: The agent's role for permission check
             allowed_tools: List of tools the agent is allowed to use
             input_data: Input parameters for the tool
+            ctx: Optional SDK FunctionInvocationContext for tools that need it (e.g. unlock_advanced_tools)
 
         Returns:
             Execution result with status
@@ -166,7 +169,13 @@ class ToolGateway:
             model_data = {k.replace("-", "_"): v for k, v in input_data.items()}
             model_data["company_id"] = company_id
             tool_input = tool.input_model(**model_data)
-            result = await tool.func(tool_input)
+
+            import inspect
+            has_ctx = "ctx" in inspect.signature(tool.func).parameters
+            if has_ctx:
+                result = await tool.func(tool_input, ctx=ctx)
+            else:
+                result = await tool.func(tool_input)
 
             self._log.info(
                 "tool executed successfully",

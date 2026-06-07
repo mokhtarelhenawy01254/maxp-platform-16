@@ -5,7 +5,9 @@ import json
 
 from agent_framework import Message
 
+from src.pipeline.llm_messages import to_client_messages
 from src.pipeline.context import PipelineContext
+from src.pipeline.provider_errors import provider_error_result
 from src.tools.gateway import ToolGateway
 
 
@@ -142,9 +144,9 @@ async def execute_tools(ctx: PipelineContext) -> PipelineContext:
         return ctx
 
     # Call LLM to generate response using tool results
-    client = getattr(ctx.agent, "client", None) if ctx.agent else None
+    client = getattr(ctx, "llm_client", None) or (getattr(ctx.agent, "client", None) if ctx.agent else None)
     if client:
-        messages = [Message(role=m["role"], contents=[m["content"]]) for m in ctx.messages]
+        messages = to_client_messages(ctx.messages)
         if ctx.tool_context:
             messages.append(Message(
                 role="user",
@@ -165,10 +167,7 @@ async def execute_tools(ctx: PipelineContext) -> PipelineContext:
         except Exception as exc:
             ctx.early_return = {
                 "status": "PROVIDER_ERROR",
-                "result": {
-                    "reply": "",
-                    "error": str(exc),
-                },
+                "result": provider_error_result(exc),
             }
 
     return ctx

@@ -4,6 +4,10 @@ import uuid
 
 import structlog
 from agent_framework import CheckpointStorage, WorkflowCheckpoint
+from agent_framework._workflows._checkpoint_encoding import (  # type: ignore[import-not-found]
+    decode_checkpoint_value,
+    encode_checkpoint_value,
+)
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,15 +36,16 @@ class PostgresCheckpointStorage(CheckpointStorage):
             thread_uuid = uuid.UUID(str(thread_id))
         except ValueError:
             thread_uuid = uuid.UUID(int=0)
+        encoded_state = encode_checkpoint_value(state_dict)
 
         if existing:
-            existing.state = state_dict
+            existing.state = encoded_state
         else:
             self._session.add(
                 CheckpointModel(
                     checkpoint_id=checkpoint.checkpoint_id,
                     thread_id=thread_uuid,
-                    state=state_dict,
+                    state=encoded_state,
                 )
             )
         await self._session.commit()
@@ -57,7 +62,7 @@ class PostgresCheckpointStorage(CheckpointStorage):
             from agent_framework import WorkflowCheckpointException
 
             raise WorkflowCheckpointException(f"Checkpoint {checkpoint_id} not found")
-        return WorkflowCheckpoint.from_dict(cp.state)
+        return WorkflowCheckpoint.from_dict(decode_checkpoint_value(cp.state))
 
     async def get_latest(
         self,
@@ -73,7 +78,7 @@ class PostgresCheckpointStorage(CheckpointStorage):
                 return None
         result = await self._session.execute(stmt)
         for cp in result.scalars().all():
-            checkpoint = WorkflowCheckpoint.from_dict(cp.state)
+            checkpoint = WorkflowCheckpoint.from_dict(decode_checkpoint_value(cp.state))
             if checkpoint.workflow_name == workflow_name:
                 return checkpoint
         return None
@@ -87,7 +92,8 @@ class PostgresCheckpointStorage(CheckpointStorage):
         stmt = select(CheckpointModel).order_by(CheckpointModel.created_at)
         result = await self._session.execute(stmt)
         return [
-            WorkflowCheckpoint.from_dict(cp.state) for cp in result.scalars().all()
+            WorkflowCheckpoint.from_dict(decode_checkpoint_value(cp.state))
+            for cp in result.scalars().all()
         ]
 
     async def delete(self, checkpoint_id: str) -> bool:

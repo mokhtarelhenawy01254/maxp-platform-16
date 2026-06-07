@@ -5,11 +5,13 @@ import re
 from typing import Any
 
 import structlog
-from agent_framework import Message
 
+from src.context.multimodal import build_user_content
 from src.intent.dynamic_registry import dynamic_intent_registry
 from src.intent.schema import ClassifierResult
+from src.llm.model_capabilities import route_for_modalities
 from src.observability.llm_fallback import LLMFallbackProvider
+from src.pipeline.llm_messages import to_client_messages
 
 logger = structlog.get_logger(__name__)
 
@@ -69,8 +71,14 @@ async def classify_intent(
 ) -> ClassifierResult | None:
     ctx = context or {}
     available_tools = ctx.get("availableTools", [])
+    attachments = list(ctx.get("attachments") or [])
     preferred_model = ctx.get("preferredModel") or ctx.get("model")
     preferred_provider = ctx.get("preferredProvider") or ctx.get("provider")
+    model_route = route_for_modalities(
+        model=str(preferred_model) if preferred_model else None,
+        provider=str(preferred_provider) if preferred_provider else None,
+        has_image_input=bool(attachments),
+    )
 
     # Use dynamic intent registry (with static fallback if not loaded)
     intent_enum = dynamic_intent_registry.get_intent_enum()
@@ -95,8 +103,8 @@ async def classify_intent(
     fallback = LLMFallbackProvider()
     client = await fallback.get_client(
         company_id=company_id,
-        model=str(preferred_model) if preferred_model else None,
-        provider=str(preferred_provider) if preferred_provider else None,
+        model=model_route.model,
+        provider=model_route.provider,
     )
     if not client:
         logger.error("no LLM client available for intent classification")
@@ -104,10 +112,16 @@ async def classify_intent(
 
     try:
         response = await client.get_response(
-            messages=[
-                Message(role="system", contents=[system_prompt]),
-                Message(role="user", contents=[f"[USER_INPUT_START]\n{message}\n[USER_INPUT_END]"]),
-            ],
+            messages=to_client_messages([
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": build_user_content(
+                        f"[USER_INPUT_START]\n{message}\n[USER_INPUT_END]",
+                        attachments,
+                    ),
+                },
+            ]),
             options={"temperature": 0, "max_tokens": 500},
         )
         raw_text = response.text if hasattr(response, "text") else str(response)

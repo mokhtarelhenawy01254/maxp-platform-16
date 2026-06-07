@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from agent_framework import WorkflowCheckpoint
 
+from src.pipeline.sdk_workflow import PipelineWorkflowSnapshot
 from src.workflows.postgres_checkpoint import PostgresCheckpointStorage
 
 
@@ -80,6 +81,39 @@ async def test_save_existing_checkpoint(storage, mock_session):
     mock_session.add.assert_not_called()
     mock_session.commit.assert_awaited_once()
     assert existing.state is not None
+
+
+@pytest.mark.asyncio
+async def test_save_encodes_and_load_decodes_sdk_snapshot(storage, mock_session):
+    mock_session.execute.return_value = _mock_result(None)
+
+    snapshot = PipelineWorkflowSnapshot(
+        message="hello",
+        thread_id="11111111-1111-1111-1111-111111111111",
+        company_id="comp1",
+        customer_id="cust1",
+        final_reply="done",
+    )
+    cp = WorkflowCheckpoint(
+        workflow_name="test_workflow",
+        graph_signature_hash="abc123",
+        checkpoint_id="cp-1",
+        state={"thread_id": "11111111-1111-1111-1111-111111111111"},
+        metadata={"snapshot": snapshot},
+    )
+
+    await storage.save(cp)
+
+    saved = mock_session.add.call_args.args[0]
+    assert saved.state["metadata"]["snapshot"]["__pickled__"]
+
+    stored_row = MagicMock()
+    stored_row.state = saved.state
+    mock_session.execute.return_value = _mock_result(stored_row)
+
+    loaded = await storage.load("cp-1")
+
+    assert loaded.metadata["snapshot"].final_reply == "done"
 
 
 @pytest.mark.asyncio

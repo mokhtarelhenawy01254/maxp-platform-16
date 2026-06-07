@@ -165,6 +165,7 @@ exports.chatWithAgent = async function chatWithAgent({
   channel,
   agentConfig,
   memoryContext,
+  attachments,
 }) {
   return request(
     'POST',
@@ -179,6 +180,7 @@ exports.chatWithAgent = async function chatWithAgent({
       channel,
       agent_config: agentConfig,
       memory_context: memoryContext,
+      attachments: Array.isArray(attachments) ? attachments : [],
     },
     { timeout: 60000 }
   );

@@ -22,6 +22,7 @@ EMBEDDING_PROVIDER_PSEUDO = "pseudo"
 class EpisodicMemoryService:
     def __init__(self) -> None:
         self._embedding_failure_state: dict[str, int] = {}
+        self._pgvector_search_available: bool | None = None
 
     def _generate_pseudo_embedding(self, text: str, dims: int = 768) -> list[float]:
         vec = [0.0] * dims
@@ -155,6 +156,40 @@ class EpisodicMemoryService:
         denom = mag_a * mag_b
         return dot / denom if denom != 0 else 0.0
 
+    async def _is_pgvector_search_available(self, session: AsyncSession) -> bool:
+        if self._pgvector_search_available is not None:
+            return self._pgvector_search_available
+
+        if not get_settings().enable_pgvector:
+            self._pgvector_search_available = False
+            return False
+
+        try:
+            result = await session.execute(text("""
+                SELECT
+                    EXISTS (
+                        SELECT 1 FROM pg_extension WHERE extname = 'vector'
+                    )
+                    AND EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = 'ai'
+                          AND table_name = 'agentic_memory_fact'
+                          AND column_name = 'embedding'
+                          AND udt_name = 'vector'
+                    ) AS available
+            """))
+            self._pgvector_search_available = bool(result.scalar())
+        except Exception as exc:
+            logger.warning("pgvector_capability_check_failed", error=str(exc))
+            try:
+                await session.rollback()
+            except Exception as rollback_exc:
+                logger.warning("pgvector_capability_rollback_failed", error=str(rollback_exc))
+            self._pgvector_search_available = False
+
+        return self._pgvector_search_available
+
     async def store_episode(
         self,
         session: AsyncSession,
@@ -209,40 +244,41 @@ class EpisodicMemoryService:
         query_vec = query_result["vector"]
         vec_literal = "[" + ",".join(str(v) for v in query_vec) + "]"
 
-        sql = text("""
-            SELECT id, content, metadata_json, embedding_provider,
-                   1 - (embedding <=> CAST(:query_vec AS vector)) AS similarity
-            FROM ai.agentic_memory_fact
-            WHERE company_id = :company_id
-              AND customer_id = :customer_id
-              AND type = 'EPISODIC'
-              AND embedding IS NOT NULL
-              AND (:include_pseudo = TRUE OR embedding_provider = :gemini_provider)
-            ORDER BY embedding <=> CAST(:query_vec2 AS vector)
-            LIMIT :top_k
-        """)
-
         rows = []
-        try:
-            result = await session.execute(
-                sql,
-                {
-                    "query_vec": vec_literal,
-                    "query_vec2": vec_literal,
-                    "company_id": company_id,
-                    "customer_id": customer_id,
-                    "top_k": top_k,
-                    "include_pseudo": include_pseudo,
-                    "gemini_provider": EMBEDDING_PROVIDER_GEMINI,
-                },
-            )
-            rows = result.fetchall()
-        except Exception as exc:
-            logger.warning("pgvector_search_unavailable", error=str(exc))
+        if await self._is_pgvector_search_available(session):
+            sql = text("""
+                SELECT id, content, metadata_json, embedding_provider,
+                       1 - (embedding <=> CAST(:query_vec AS vector)) AS similarity
+                FROM ai.agentic_memory_fact
+                WHERE company_id = :company_id
+                  AND customer_id = :customer_id
+                  AND type = 'EPISODIC'
+                  AND embedding IS NOT NULL
+                  AND (:include_pseudo = TRUE OR embedding_provider = :gemini_provider)
+                ORDER BY embedding <=> CAST(:query_vec2 AS vector)
+                LIMIT :top_k
+            """)
             try:
-                await session.rollback()
-            except Exception as rollback_exc:
-                logger.warning("pgvector_search_rollback_failed", error=str(rollback_exc))
+                result = await session.execute(
+                    sql,
+                    {
+                        "query_vec": vec_literal,
+                        "query_vec2": vec_literal,
+                        "company_id": company_id,
+                        "customer_id": customer_id,
+                        "top_k": top_k,
+                        "include_pseudo": include_pseudo,
+                        "gemini_provider": EMBEDDING_PROVIDER_GEMINI,
+                    },
+                )
+                rows = result.fetchall()
+            except Exception as exc:
+                self._pgvector_search_available = False
+                logger.warning("pgvector_search_unavailable", error=str(exc))
+                try:
+                    await session.rollback()
+                except Exception as rollback_exc:
+                    logger.warning("pgvector_search_rollback_failed", error=str(rollback_exc))
 
         if rows:
             scored = []

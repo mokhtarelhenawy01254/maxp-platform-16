@@ -10,20 +10,94 @@ from src.llm.providers.base import BaseProvider, ProviderResponse
 logger = structlog.get_logger(__name__)
 
 
+def _schema_dict(output_schema: Any) -> dict[str, Any] | None:
+    if output_schema is None:
+        return None
+    if hasattr(output_schema, "model_json_schema"):
+        return output_schema.model_json_schema()
+    if isinstance(output_schema, dict):
+        return output_schema
+    return None
+
+
+def _safe_schema_name(name: str | None) -> str:
+    raw = str(name or "structured_response")
+    safe = "".join(ch if ch.isalnum() or ch in {"_", "-"} else "_" for ch in raw).strip("_")
+    return (safe or "structured_response")[:64]
+
+
+def _response_format(output_schema: Any) -> dict[str, Any] | None:
+    schema = _schema_dict(output_schema)
+    if not schema:
+        return None
+    if schema.get("type") == "json_schema" and isinstance(schema.get("json_schema"), dict):
+        return schema
+    if isinstance(schema.get("json_schema"), dict):
+        return {"type": "json_schema", "json_schema": schema["json_schema"]}
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": _safe_schema_name(schema.get("title")),
+            "strict": True,
+            "schema": schema,
+        },
+    }
+
+
 def _message_value(message: Any, key: str, default: Any = None) -> Any:
     if isinstance(message, dict):
         return message.get(key, default)
     return getattr(message, key, default)
 
 
-def _message_content(message: Any) -> str | None:
+def _content_part(item: Any) -> dict[str, Any]:
+    if isinstance(item, str):
+        return {"type": "text", "text": item}
+    if isinstance(item, dict):
+        item_type = item.get("type")
+        if item_type in {"text", "image_url"}:
+            return dict(item)
+        if item_type == "uri" and item.get("uri"):
+            image_url: dict[str, Any] = {"url": item["uri"]}
+            detail = item.get("detail") or (item.get("additional_properties") or {}).get("detail")
+            if detail:
+                image_url["detail"] = detail
+            return {"type": "image_url", "image_url": image_url}
+        if item.get("text") is not None:
+            return {"type": "text", "text": str(item["text"])}
+        return {"type": "text", "text": str(item)}
+
+    item_type = getattr(item, "type", None)
+    if item_type == "text" and getattr(item, "text", None) is not None:
+        return {"type": "text", "text": str(item.text)}
+    if item_type == "uri" and getattr(item, "uri", None):
+        image_url = {"url": str(item.uri)}
+        detail = (getattr(item, "additional_properties", None) or {}).get("detail")
+        if detail:
+            image_url["detail"] = detail
+        return {"type": "image_url", "image_url": image_url}
+    if getattr(item, "text", None) is not None:
+        return {"type": "text", "text": str(item.text)}
+    return {"type": "text", "text": str(item)}
+
+
+def _parts_or_text(items: list[Any]) -> str | list[dict[str, Any]]:
+    parts = [_content_part(item) for item in items if item is not None]
+    if any(part.get("type") == "image_url" for part in parts):
+        return parts
+    return "\n".join(str(part.get("text") or "") for part in parts if part.get("text") is not None)
+
+
+def _message_content(message: Any) -> str | list[dict[str, Any]] | None:
     content = _message_value(message, "content")
+    if isinstance(content, list):
+        return _parts_or_text(content)
     if content is not None:
         return str(content)
 
     contents = _message_value(message, "contents")
     if isinstance(contents, list):
-        return "\n".join(str(item) for item in contents if item is not None)
+        return _parts_or_text(contents)
     if contents is not None:
         return str(contents)
     return None
@@ -60,6 +134,9 @@ class OpenAICompatProvider(BaseProvider):
             body["max_tokens"] = options["max_tokens"]
         if options.get("top_p") is not None:
             body["top_p"] = options["top_p"]
+        response_format = _response_format(options.get("output_schema"))
+        if response_format:
+            body["response_format"] = response_format
 
         async with httpx.AsyncClient(timeout=self.timeout_ms / 1000, trust_env=False) as client:
             response = await client.post(

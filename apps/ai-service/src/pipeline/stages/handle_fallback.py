@@ -5,6 +5,8 @@ import re
 from agent_framework import Message
 
 from src.pipeline.context import PipelineContext
+from src.pipeline.llm_messages import to_client_messages
+from src.pipeline.provider_errors import provider_error_result
 
 
 def _strip_tool_sections(prompt: str) -> str:
@@ -29,10 +31,7 @@ def _strip_tool_sections(prompt: str) -> str:
 def _provider_error(ctx: PipelineContext, exc: Exception) -> None:
     ctx.early_return = {
         "status": "PROVIDER_ERROR",
-        "result": {
-            "reply": "",
-            "error": str(exc),
-        },
+        "result": provider_error_result(exc),
     }
 
 
@@ -57,7 +56,7 @@ def _is_classifier_unavailable(ctx: PipelineContext) -> bool:
 
 async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
     if not ctx.llm_response:
-        client = getattr(ctx.agent, "client", None) if ctx.agent else None
+        client = getattr(ctx, "llm_client", None) or (getattr(ctx.agent, "client", None) if ctx.agent else None)
         if client:
             messages = ctx.messages or [
                 {"role": "system", "content": ctx.system_prompt or ""},
@@ -107,7 +106,7 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
                 })
             try:
                 response = await client.get_response(
-                    [Message(role=m["role"], contents=[m["content"]]) for m in messages],
+                    to_client_messages(messages),
                     options={"tools_enabled": False, "temperature": 0.2},
                 )
                 ctx.llm_response = response.text if hasattr(response, "text") else str(response)

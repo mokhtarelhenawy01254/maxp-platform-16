@@ -32,10 +32,11 @@ dependencies = [
     "redis>=5.2",
     "rq>=2.1",
     "psycopg2-binary>=2.9",
-"google-generativeai>=0.8",
-"mcp>=1.2",
-"telethon>=1.35",
-"aiogram>=3.0"
+    "google-generativeai>=0.8",
+    "mcp>=1.2",
+    "telethon>=1.35",
+    "aiogram>=3.0",
+    "agent-framework==1.8.0",
 ]
 
 [project.optional-dependencies]
@@ -50,7 +51,7 @@ dev = [
     "testcontainers>=4.8",
 ]
 agents = [
-    "agent-framework>=1.0",
+    "agent-framework>=1.8.0",
 ]
 
 [build-system]

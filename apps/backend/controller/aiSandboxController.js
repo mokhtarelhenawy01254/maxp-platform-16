@@ -17,6 +17,8 @@ const MAX_SANDBOX_RESPONSE_CHARS = 12000;
 const MAX_SANDBOX_SESSION_ID_CHARS = 120;
 const MAX_SANDBOX_TOOL_CALLS = 20;
 const MAX_SANDBOX_AGENT_INSTRUCTION_CHARS = 5000;
+const MAX_SANDBOX_ATTACHMENTS = 5;
+const MAX_SANDBOX_ATTACHMENT_DATA_CHARS = 12 * 1024 * 1024;
 
 function createHttpError(code, statusCode = 400) {
   const error = new Error(code);
@@ -27,6 +29,10 @@ function createHttpError(code, statusCode = 400) {
 
 function sendCodeError(res, statusCode, code) {
   return res.status(statusCode).json({ success: false, error: code, code });
+}
+
+function getAiRuntimeErrorStatus(code) {
+  return code === 'llm_rate_limited' ? 429 : 502;
 }
 
 function validateRequiredText(value, code, maxChars) {
@@ -46,6 +52,47 @@ function validateOptionalSessionId(value) {
     throw createHttpError('INVALID_SESSION_ID', 400);
   }
   return value;
+}
+
+function normalizeSandboxAttachments(value) {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) {
+    throw createHttpError('INVALID_ATTACHMENTS', 400);
+  }
+  if (value.length > MAX_SANDBOX_ATTACHMENTS) {
+    throw createHttpError('ATTACHMENTS_TOO_LONG', 413);
+  }
+
+  return value.map((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      throw createHttpError('INVALID_ATTACHMENT', 400);
+    }
+    const type = String(item.type || item.kind || '').trim().toLowerCase() || 'image';
+    const mimeType = String(item.mimeType || item.mime_type || item.contentType || item.content_type || '').trim();
+    const url = String(item.url || item.imageUrl || item.image_url || item.fileUrl || item.file_url || '').trim();
+    const dataUrl = String(item.dataUrl || item.data_url || '').trim();
+    const base64Data = String(item.base64Data || item.base64_data || item.imageBytes || item.image_bytes || '').trim();
+    if (dataUrl.length > MAX_SANDBOX_ATTACHMENT_DATA_CHARS || base64Data.length > MAX_SANDBOX_ATTACHMENT_DATA_CHARS) {
+      throw createHttpError('ATTACHMENT_TOO_LARGE', 413);
+    }
+    if (!url && !dataUrl && !base64Data) {
+      throw createHttpError('ATTACHMENT_SOURCE_REQUIRED', 400);
+    }
+    return {
+      type,
+      mime_type: mimeType || undefined,
+      url: url || undefined,
+      data_url: dataUrl || undefined,
+      base64_data: base64Data || undefined,
+      name: typeof item.name === 'string' ? item.name.slice(0, 255) : undefined,
+      detail: ['low', 'high', 'auto', 'original'].includes(String(item.detail || '').toLowerCase())
+        ? String(item.detail).toLowerCase()
+        : undefined,
+      metadata: item.metadata && typeof item.metadata === 'object' && !Array.isArray(item.metadata)
+        ? item.metadata
+        : undefined,
+    };
+  });
 }
 
 function parseJsonArray(value, fallback = []) {
@@ -145,6 +192,7 @@ async function runSelectedAgentInPython({
   threadId,
   conversationId,
   memoryContext,
+  attachments = [],
   modelSelection,
   channel = 'FACEBOOK',
 }) {
@@ -164,6 +212,7 @@ async function runSelectedAgentInPython({
     channel,
     agentConfig,
     memoryContext,
+    attachments,
   });
 
   if (!result.ok) {
@@ -184,9 +233,13 @@ async function runSelectedAgentInPython({
     status: data.status === 'awaiting_approval'
       ? 'PAUSED'
       : (data.status === 'ok' ? 'SUCCESS' : 'ERROR'),
+    error: data.error || null,
+    errorCode: data.error_code || null,
     result: {
       reply: data.reply || '',
       summary: data.reply || '',
+      error: data.error || null,
+      errorCode: data.error_code || null,
       toolsUsed: tools.length > 0,
       toolRounds: tools.length > 0 ? 1 : 0,
       tools,
@@ -414,6 +467,7 @@ async function runSandboxChatTurn({
   messageText,
   agentId,
   modelSelection,
+  attachments = [],
 }) {
   const existingSession = sessionId
     ? await aiSandboxService.getSession(sessionId, companyId)
@@ -446,13 +500,18 @@ async function runSandboxChatTurn({
     threadId: resolvedSessionId,
     conversationId,
     memoryContext: promptCtx,
+    attachments,
     modelSelection,
     channel: 'FACEBOOK',
   });
 
   const reply = extractSandboxReply(taskResult);
   if (!reply) {
-    const error = createHttpError(taskResult?.errorCode || 'AI_SANDBOX_EMPTY_REPLY', 502);
+    const errorCode = taskResult?.errorCode || taskResult?.result?.errorCode || 'AI_SANDBOX_EMPTY_REPLY';
+    const error = createHttpError(
+      errorCode,
+      getAiRuntimeErrorStatus(errorCode)
+    );
     error.reason = taskResult?.error || taskResult?.result?.error || '';
     error.taskResult = taskResult;
     throw error;
@@ -490,6 +549,7 @@ async function runSandboxChatTurn({
     keyName: modelSelection.key.name,
     latencyMs: 0,
     cost: 0,
+    metadata: attachments.length ? { attachments } : null,
   });
 
   await aiSandboxService.addMessage(resolvedSessionId, companyId, {
@@ -524,6 +584,7 @@ async function runSandboxChatTurn({
     modelSelection: modelSelectionFromTask,
     taskResult,
     agentInfo,
+    usedFallbackKey: modelSelection.usedFallbackKey ?? false,
   };
 }
 
@@ -653,9 +714,10 @@ async function resolveSandboxModelSelection(companyId, { provider, model, keyId 
   }
 
   const preferredKeyId = await getPreferredAiKeyIdForProvider(requestedProvider);
-  const selectedConfig = modelConfigs.find(config => (
+  const preferredConfig = modelConfigs.find(config => (
     preferredKeyId && config.keyId === preferredKeyId && config.modelName === requestedModel
-  )) || modelConfigs.find(config => config.modelName === requestedModel);
+  ));
+  const selectedConfig = preferredConfig || modelConfigs.find(config => config.modelName === requestedModel);
   const selectedKey = selectedConfig
     ? providerKeys.find(key => key.id === selectedConfig.keyId)
     : null;
@@ -664,10 +726,13 @@ async function resolveSandboxModelSelection(companyId, { provider, model, keyId 
     throw createHttpError('MODEL_NOT_ALLOWED', 400);
   }
 
+  const usedFallbackKey = !preferredConfig && !!preferredKeyId;
+
   return {
     provider: requestedProvider,
     model: requestedModel,
     key: selectedKey,
+    usedFallbackKey,
   };
 }
 
@@ -1043,12 +1108,13 @@ async function deleteSession(req, res) {
 
 async function sendChatMessage(req, res) {
   try {
-    const { sessionId, message, agentId, model, provider, keyId } = req.body;
+    const { sessionId, message, agentId, model, provider, keyId, attachments } = req.body;
     const companyId = req.user?.companyId || req.companyId;
     const userId = req.user?.id;
 
     const messageText = validateRequiredText(message, 'MESSAGE_REQUIRED', MAX_SANDBOX_MESSAGE_CHARS);
     const safeSessionId = validateOptionalSessionId(sessionId);
+    const safeAttachments = normalizeSandboxAttachments(attachments);
     const modelSelection = await resolveSandboxModelSelection(companyId, { provider, model, keyId });
     const startTime = Date.now();
     const turnResult = await runSandboxChatTurn({
@@ -1057,6 +1123,7 @@ async function sendChatMessage(req, res) {
       sessionId: safeSessionId,
       messageText,
       agentId,
+      attachments: safeAttachments,
       modelSelection,
     });
     const latencyMs = Date.now() - startTime;
@@ -1077,6 +1144,7 @@ async function sendChatMessage(req, res) {
       cost,
       agentId,
       sessionId: turnResult.sessionId,
+      usedFallbackKey: turnResult.usedFallbackKey ?? false,
     });
   } catch (error) {
     return sendCodeError(res, error.statusCode || 500, error.code || 'AI_SANDBOX_CHAT_FAILED');
@@ -1085,12 +1153,13 @@ async function sendChatMessage(req, res) {
 
 async function streamChatMessage(req, res) {
   try {
-    const { sessionId, message, agentId, model, provider, keyId } = req.body;
+    const { sessionId, message, agentId, model, provider, keyId, attachments } = req.body;
     const companyId = req.user?.companyId || req.companyId;
     const userId = req.user?.id;
 
     const messageText = validateRequiredText(message, 'MESSAGE_REQUIRED', MAX_SANDBOX_MESSAGE_CHARS);
     const safeSessionId = validateOptionalSessionId(sessionId);
+    const safeAttachments = normalizeSandboxAttachments(attachments);
     const modelSelection = await resolveSandboxModelSelection(companyId, { provider, model, keyId });
 
     const existingSession = safeSessionId
@@ -1140,6 +1209,7 @@ async function streamChatMessage(req, res) {
       threadId: resolvedSessionId,
       conversationId,
       memoryContext: await workingMemoryService.getContext(companyId, conversationId),
+      attachments: safeAttachments,
       modelSelection,
       channel: 'FACEBOOK',
     });
@@ -1150,7 +1220,12 @@ async function streamChatMessage(req, res) {
     const latencyMs = Date.now() - turnStartTime;
 
     if (!finalReply) {
-      res.write(`data: ${JSON.stringify({ done: true, error: 'AI_SANDBOX_EMPTY_REPLY' })}\n\n`);
+      const errorCode = taskResult?.errorCode || taskResult?.result?.errorCode || 'AI_SANDBOX_EMPTY_REPLY';
+      res.write(`data: ${JSON.stringify({
+        done: true,
+        error: errorCode,
+        reason: taskResult?.error || taskResult?.result?.error || '',
+      })}\n\n`);
       res.end();
       return;
     }
@@ -1160,6 +1235,7 @@ async function streamChatMessage(req, res) {
       reply: finalReply,
       isIncremental: false,
       modelUsed: modelSelection.model,
+      usedFallbackKey: modelSelection.usedFallbackKey ?? false,
     })}\n\n`);
 
     res.write(`data: ${JSON.stringify({
@@ -1194,6 +1270,7 @@ async function streamChatMessage(req, res) {
       keyName: modelSelection.key.name,
       latencyMs: 0,
       cost: 0,
+      metadata: safeAttachments.length ? { attachments: safeAttachments } : null,
     });
 
     await aiSandboxService.addMessage(resolvedSessionId, companyId, {

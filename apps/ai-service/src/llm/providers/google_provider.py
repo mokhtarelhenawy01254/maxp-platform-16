@@ -5,11 +5,28 @@ from typing import Any
 import httpx
 import structlog
 
+from src.context.multimodal import data_url_to_inline_data
 from src.llm.providers.base import BaseProvider, ProviderResponse
 
 logger = structlog.get_logger(__name__)
 
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
+
+
+def _schema_dict(output_schema: Any) -> dict[str, Any] | None:
+    if output_schema is None:
+        return None
+    if hasattr(output_schema, "model_json_schema"):
+        return output_schema.model_json_schema()
+    if not isinstance(output_schema, dict):
+        return None
+    if output_schema.get("type") == "json_schema" and isinstance(output_schema.get("json_schema"), dict):
+        return output_schema["json_schema"].get("schema")
+    if isinstance(output_schema.get("json_schema"), dict):
+        return output_schema["json_schema"].get("schema")
+    if output_schema.get("responseSchema"):
+        return output_schema.get("responseSchema")
+    return output_schema
 
 
 def _message_value(message: Any, key: str, default: Any = None) -> Any:
@@ -20,6 +37,12 @@ def _message_value(message: Any, key: str, default: Any = None) -> Any:
 
 def _message_content(message: Any) -> str:
     content = _message_value(message, "content")
+    if isinstance(content, list):
+        return "\n".join(
+            str(part.get("text") or "")
+            for part in content
+            if isinstance(part, dict) and part.get("type") == "text"
+        ).strip()
     if content is not None:
         return str(content)
 
@@ -29,6 +52,59 @@ def _message_content(message: Any) -> str:
     if contents is not None:
         return str(contents)
     return ""
+
+
+def _image_mime_from_url(url: str) -> str:
+    lower = url.lower().split("?", 1)[0]
+    if lower.endswith(".png"):
+        return "image/png"
+    if lower.endswith(".webp"):
+        return "image/webp"
+    if lower.endswith(".gif"):
+        return "image/gif"
+    return "image/jpeg"
+
+
+def _message_parts(message: Any) -> list[dict[str, Any]]:
+    content = _message_value(message, "content")
+    if not isinstance(content, list):
+        text = _message_content(message)
+        return [{"text": text}] if text else []
+
+    parts: list[dict[str, Any]] = []
+    for item in content:
+        if not isinstance(item, dict):
+            parts.append({"text": str(item)})
+            continue
+        item_type = item.get("type")
+        if item_type == "text":
+            text = str(item.get("text") or "")
+            if text:
+                parts.append({"text": text})
+            continue
+        if item_type != "image_url":
+            continue
+        image = item.get("image_url") or {}
+        if isinstance(image, str):
+            url = image
+        elif isinstance(image, dict):
+            url = str(image.get("url") or "")
+        else:
+            url = ""
+        if not url:
+            continue
+        inline = data_url_to_inline_data(url)
+        if inline:
+            mime_type, data = inline
+            parts.append({"inlineData": {"mimeType": mime_type, "data": data}})
+        elif url.startswith(("http://", "https://")):
+            parts.append({
+                "fileData": {
+                    "mimeType": _image_mime_from_url(url),
+                    "fileUri": url,
+                }
+            })
+    return parts
 
 
 class GoogleProvider(BaseProvider):
@@ -78,7 +154,7 @@ class GoogleProvider(BaseProvider):
             if role == "system":
                 system_parts.append(content)
             elif role == "user":
-                contents.append({"role": "user", "parts": [{"text": content}]})
+                contents.append({"role": "user", "parts": _message_parts(msg)})
             elif role in ("assistant", "model"):
                 parts: list[dict[str, Any]] = []
                 if content:
@@ -111,6 +187,10 @@ class GoogleProvider(BaseProvider):
             config["topP"] = options["top_p"]
         if options.get("top_k") is not None:
             config["topK"] = options["top_k"]
+        schema = _schema_dict(options.get("output_schema"))
+        if schema:
+            config["responseMimeType"] = "application/json"
+            config["responseSchema"] = schema
         return config
 
     def _normalize_tools(self, tools: list[dict[str, Any]]) -> list[dict[str, Any]]:

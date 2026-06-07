@@ -17,6 +17,7 @@ class PipelineContext:
     # Agent/Session
     agent: Any = None
     session: Any = None
+    llm_client: Any = None
 
     # State
     system_prompt: str | None = None
@@ -25,6 +26,7 @@ class PipelineContext:
     channel: str = "chat"
     is_customer_channel: bool = False
     conversation_id: str | None = None
+    attachments: list[dict[str, Any]] = field(default_factory=list)
 
     # Context Assembly (SOTA 2026)
     rag_evidence: str = ""  # RAG evidence from company knowledge base

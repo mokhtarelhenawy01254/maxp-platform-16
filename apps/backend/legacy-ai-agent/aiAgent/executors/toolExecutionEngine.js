@@ -468,11 +468,20 @@ async function executeToolLoop({
         const mcpRegistry = getMcpRegistry();
         const mcpTools = mcpRegistry.getAllAgentTools();
         const mcpTool = mcpTools.find(t => t.name === tool);
-        if (mcpTool) {
-          result = await mcpTool.handler(agent.companyId, params);
-        } else {
-          result = { success: false, readOnly: true, error: `MCP_TOOL_NOT_FOUND:${tool}` };
-        }
+        result = await agentToolGatewayService.execute({
+          companyId: agent.companyId,
+          agent,
+          tool,
+          nativeName,
+          params,
+          traceId,
+          source: legacy ? 'text-tool-call' : 'native-tool-call',
+          relevancePlan,
+          userMessage: intentMessage,
+          runId,
+          mcpToolHandler: mcpTool ? mcpTool.handler : null,
+          mcpToolReadOnly: mcpTool ? mcpTool.readOnly !== false : true,
+        });
       } else {
         result = await agentToolGatewayService.execute({
           companyId: agent.companyId,

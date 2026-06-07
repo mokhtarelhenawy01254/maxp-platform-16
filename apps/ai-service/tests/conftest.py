@@ -13,7 +13,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.config import Settings, get_settings
-from src.main import app
 
 
 @pytest.fixture
@@ -24,5 +23,6 @@ def settings() -> Settings:
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
+    from src.main import app
     with TestClient(app) as test_client:
         yield test_client

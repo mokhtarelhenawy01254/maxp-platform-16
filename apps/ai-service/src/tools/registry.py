@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from agent_framework import FunctionTool
+from agent_framework import FunctionInvocationContext, FunctionTool
 from pydantic import BaseModel, Field
 
 from src.mcp.registry import get_mcp_registry
@@ -940,28 +940,59 @@ hr_attendance_today_tool = FunctionTool(
 
 # ── Tool Accessors ───────────────────────────────────────────────────────────
 
-# All read-only tools
-READ_TOOLS: list[FunctionTool] = [
+# ── Tool Groups (Progressive Exposure) ─────────────────────────────────────────
+# Core tools are available from the start. Advanced tools are unlocked via gateway.
+
+class UnlockAdvancedToolsInput(BaseModel):
+    reason: str = Field(description="Reason why advanced tools are needed for the current task")
+
+async def unlock_advanced_tools(
+    input_data: UnlockAdvancedToolsInput,
+    ctx: FunctionInvocationContext | None = None,
+) -> dict[str, Any]:
+    if ctx is not None:
+        ctx.add_tools(ADVANCED_TOOLS)
+    return {
+        "status": "SUCCESS",
+        "message": "Advanced tools have been unlocked. You can now use tools for deep analysis, reporting, and competitor research.",
+        "unlocked_tools": [t.name for t in ADVANCED_TOOLS],
+    }
+
+unlock_advanced_tools_tool = FunctionTool(
+    name="unlock_advanced_tools",
+    description="Unlock advanced analysis and reporting tools when the user request requires deep data mining or competitor research.",
+    func=unlock_advanced_tools,
+    input_model=UnlockAdvancedToolsInput,
+)
+
+CORE_TOOLS: list[FunctionTool] = [
     product_search_tool,
+    order_lookup_tool,
+    inventory_check_tool,
+    customer_info_tool,
+    shipping_rates_tool,
+    agent_handoff_to_tool,
+    unlock_advanced_tools_tool,
+]
+
+ADVANCED_TOOLS: list[FunctionTool] = [
     product_low_stock_tool,
     product_top_selling_tool,
     product_performance_tool,
-    order_lookup_tool,
     order_summary_tool,
     order_recent_list_tool,
-    inventory_check_tool,
-    customer_info_tool,
-    customer_top_buyers_tool,
     sales_revenue_tool,
     company_snapshot_tool,
     competitor_search_tool,
     competitor_get_products_tool,
     competitor_price_compare_tool,
     competitor_get_ads_tool,
-    shipping_rates_tool,
     audit_read_tool,
     hr_attendance_today_tool,
 ]
+
+# All read-only tools
+READ_TOOLS: list[FunctionTool] = CORE_TOOLS + ADVANCED_TOOLS
 
 # All write tools (require approval)
 WRITE_TOOLS: list[FunctionTool] = [

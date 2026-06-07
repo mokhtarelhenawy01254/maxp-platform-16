@@ -144,6 +144,46 @@ async def test_handle_fallback_returns_provider_error_when_retry_fails():
 
     assert result.early_return["status"] == "PROVIDER_ERROR"
     assert "dns failed" in result.early_return["result"]["error"]
+    assert result.early_return["result"]["error_code"] == "llm_provider_error"
+
+
+@pytest.mark.asyncio
+async def test_handle_fallback_marks_rate_limited_provider_errors():
+    client = MagicMock()
+    request = httpx.Request("POST", "https://provider.test/chat")
+    response = httpx.Response(
+        429,
+        request=request,
+        headers={"retry-after": "60"},
+    )
+    client.get_response = AsyncMock(
+        side_effect=[
+            httpx.HTTPStatusError("rate limit reached", request=request, response=response),
+            httpx.HTTPStatusError("rate limit reached", request=request, response=response),
+        ]
+    )
+    agent = MagicMock(client=client, persona={})
+
+    ctx = PipelineContext(
+        message="do you have this item?",
+        thread_id="thread-1",
+        company_id="comp1",
+        customer_id="cust1",
+        agent=agent,
+    )
+    ctx.relevance_plan = ToolPlan(
+        intent="catalog.search",
+        requiresTool=True,
+        primaryTool="product_search",
+        allowedTools=["product_search"],
+    )
+
+    result = await handle_fallback(ctx)
+
+    assert result.early_return["status"] == "PROVIDER_ERROR"
+    assert result.early_return["result"]["error_code"] == "llm_rate_limited"
+    assert result.early_return["result"]["provider_status_code"] == 429
+    assert result.early_return["result"]["retry_after"] == "60"
 
 
 @pytest.mark.asyncio

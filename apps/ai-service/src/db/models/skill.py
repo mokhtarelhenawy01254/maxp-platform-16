@@ -21,6 +21,7 @@ class Skill(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     trigger_phrases: Mapped[str] = mapped_column(String, nullable=False, default="")
     instructions: Mapped[str] = mapped_column(Text, nullable=False)
+    content: Mapped[str | None] = mapped_column(Text, nullable=True)
     allowed_tools: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     channels: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

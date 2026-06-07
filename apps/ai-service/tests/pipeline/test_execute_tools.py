@@ -149,3 +149,4 @@ async def test_execute_tools_returns_provider_error_without_static_reply(monkeyp
     assert result.llm_response == ""
     assert result.early_return["status"] == "PROVIDER_ERROR"
     assert result.early_return["result"]["reply"] == ""
+    assert result.early_return["result"]["error_code"] == "llm_provider_error"

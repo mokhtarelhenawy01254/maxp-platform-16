@@ -24,8 +24,9 @@ function isAiServiceEnabled(companyId) {
   if (mode === 'off' || mode === 'shadow') return false;
 
   const enabled = getEnabledCompanies();
-  if (enabled === '*') return mode === 'primary';
+  if (enabled === '*') return mode === 'primary' || mode === 'pilot';
   if (mode === 'primary' && enabled.length === 0) return true;
+  if (mode === 'pilot') return enabled.includes(companyId);
   return enabled.includes(companyId);
 }
 

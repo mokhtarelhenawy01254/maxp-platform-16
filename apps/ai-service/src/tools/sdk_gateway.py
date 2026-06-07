@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
-from agent_framework import FunctionTool
+from agent_framework import FunctionTool, FunctionInvocationContext
 from pydantic import BaseModel
 
 from src.tools.gateway import ToolGateway
@@ -49,7 +49,7 @@ def wrap_tool_for_gateway(
 
     allowed = list(allowed_tools or [])
 
-    async def _gateway_func(input_data: Any) -> dict[str, Any]:
+    async def _gateway_func(input_data: Any, ctx: FunctionInvocationContext | None = None) -> dict[str, Any]:
         payload = _dump_input(input_data)
         tenant_id = str(payload.get("company_id") or company_id or "")
         approval_granted = requires_sdk_approval(tool)
@@ -60,6 +60,7 @@ def wrap_tool_for_gateway(
             allowed_tools=allowed,
             input_data=payload,
             approval_granted=approval_granted,
+            ctx=ctx,
         )
 
     return FunctionTool(

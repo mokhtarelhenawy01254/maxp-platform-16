@@ -435,17 +435,24 @@ class PromptTemplateRegistry:
     ) -> str:
         """Build the identity section from template metadata."""
         company = variables.get("company_name", "MaxP")
+        runtime_name = str(variables.get("agent_name") or template.name)
+        runtime_role = str(variables.get("agent_role") or template.role)
         language = template.persona_meta.get("language", "arabic")
         dialect = template.persona_meta.get("dialect")
         tone = template.persona_meta.get("tone", "professional")
         formality = template.persona_meta.get("formality", "formal")
 
         parts = [
-            f"Name: {template.name}",
-            f"Role: {template.role}",
+            f"Name: {runtime_name}",
+            f"Role: {runtime_role}",
             f"Company: {company}",
             f"Language: {language}",
         ]
+        if runtime_name != template.name or runtime_role != template.role:
+            parts.append(
+                "Identity precedence: use this runtime Name and Role instead of template metadata; "
+                "if SOUL/profile explicitly sets a customer-facing name, use that name with customers."
+            )
         if dialect:
             parts.append(f"Dialect: {dialect}")
         parts.append(f"Tone: {tone}")
@@ -573,4 +580,3 @@ def reset_prompt_registry() -> None:
     _registry = None
 
 # Trigger reload: 2026-06-04 11:42
-

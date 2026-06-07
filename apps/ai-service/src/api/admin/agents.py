@@ -342,6 +342,7 @@ async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentC
             "channel": body.channel or "facebook",
             "source_channel": body.channel or "facebook",
             "memory_context": body.memory_context or {},
+            "attachments": [item.model_dump(exclude_none=True) for item in body.attachments],
             "_db_session": session,
             "force_pipeline": True,
         }
@@ -362,11 +363,15 @@ async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentC
     status = "awaiting_approval" if awaiting else "ok"
     if result_data.get("status") == "ERROR":
         status = "error"
+    error_code = payload.get("errorCode") or payload.get("error_code") or result_data.get("errorCode")
+    error_message = payload.get("error") or result_data.get("error")
 
     return AgentChatResponse(
         status=status,
         thread_id=thread_id,
         reply=payload.get("reply") or payload.get("summary") or "",
+        error=error_message if status == "error" else None,
+        error_code=error_code if status == "error" else None,
         draft_id=(awaiting or {}).get("draft_id") or payload.get("draft_id"),
         agent_id=agent.id,
         agent_role=agent.role,

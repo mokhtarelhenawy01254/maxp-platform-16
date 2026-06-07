@@ -70,6 +70,25 @@ def test_registry_build_prompt(temp_agents_dir):
     assert "test-agent" == hydrated.template_slug
 
 
+def test_registry_identity_uses_runtime_agent_name_and_role(temp_agents_dir):
+    registry = PromptTemplateRegistry(agents_root=temp_agents_dir)
+    registry.load_templates()
+
+    hydrated = registry.build_prompt(
+        role="TESTER",
+        variables={
+            "agent_name": "شرين",
+            "agent_role": "FACEBOOK_SALES_SUPPORT",
+            "company_name": "Test Co",
+        },
+    )
+
+    assert "Name: شرين" in hydrated.text
+    assert "Role: FACEBOOK_SALES_SUPPORT" in hydrated.text
+    assert "Name: Test Agent" not in hydrated.text
+    assert "Identity precedence" in hydrated.text
+
+
 def test_registry_fallback_chain(temp_agents_dir):
     registry = PromptTemplateRegistry(agents_root=temp_agents_dir)
     registry.load_templates()

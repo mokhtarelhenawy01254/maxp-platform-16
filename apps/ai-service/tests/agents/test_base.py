@@ -113,6 +113,29 @@ class TestConstruction:
         assert agent.name == "شيرين"
         assert agent.role == "FACEBOOK_SALES_SUPPORT"
 
+    @pytest.mark.asyncio
+    async def test_from_template_prompt_uses_runtime_identity(self):
+        agent = await BaseAgent.from_template(
+            "facebook-sales-support-agent",
+            "comp_001",
+            overrides={
+                "id": "agent_fb",
+                "name": "شرين",
+                "role": "FACEBOOK_SALES_SUPPORT",
+                "model": "llama-3.3-70b-versatile",
+                "instructions": {
+                    "soul": "اسمك شرين\nاتكلمي بالعامية المصرية",
+                },
+            },
+            session=None,
+        )
+
+        prompt = agent.instructions
+
+        assert "Name: شرين" in prompt
+        assert "Role: FACEBOOK_SALES_SUPPORT" in prompt
+        assert "اسمك شرين" in prompt
+
 
 # ---------------------------------------------------------------------------
 # Tool / skill permissions
@@ -432,25 +455,50 @@ class TestBuild:
         providers = getattr(framework_agent, "context_providers", [])
         assert any(isinstance(provider, MaxPContextProvider) for provider in providers)
 
+    def test_build_attaches_sdk_mcp_skills_provider(self, agent: BaseAgent):
+        from agent_framework import SkillsProvider
+
+        fake_registry = MagicMock()
+        fake_registry.get_skill_clients.return_value = [MagicMock()]
+
+        with patch("src.agents.base.build_agent_client", return_value=MagicMock()), \
+             patch("src.agents.base.get_all_tools", return_value=[]), \
+             patch("src.agents.base.get_mcp_registry", return_value=fake_registry):
+            framework_agent = agent.build()
+
+        providers = getattr(framework_agent, "context_providers", [])
+        assert any(isinstance(provider, SkillsProvider) for provider in providers)
+
+    def test_build_passes_output_schema_to_sdk_default_options(self, cfg: BaseAgentConfig):
+        schema = {"type": "object", "properties": {"status": {"type": "string"}}}
+        cfg.output_schema = schema
+        agent = BaseAgent(cfg)
+
+        with patch("src.agents.base.build_agent_client", return_value=MagicMock()), \
+             patch("src.agents.base.get_all_tools", return_value=[]):
+            framework_agent = agent.build()
+
+        assert getattr(framework_agent, "default_options", {})["output_schema"] == schema
+
     def test_resolve_tools_filters_by_allowed(self, agent: BaseAgent):
-        tool_a = MagicMock()
-        tool_a.name = "product.search"
-        tool_b = MagicMock()
-        tool_b.name = "order.cancel"
-        with patch("src.agents.base.get_all_tools", return_value=[tool_a, tool_b]):
+        from src.tools.registry import CORE_TOOLS
+
+        agent.allowed_tools = {"product_search"}
+        with patch("src.tools.registry.CORE_TOOLS", CORE_TOOLS):
             tools = agent._resolve_tools()
         names = [t.name for t in tools]
-        assert "product.search" in names
-        assert "order.cancel" not in names
+        assert "product_search" in names
+        assert "unlock_advanced_tools" in names
+        assert "order_lookup" not in names
 
     def test_resolve_tools_returns_all_when_no_scope(self, cfg: BaseAgentConfig):
+        from src.tools.registry import CORE_TOOLS
+
         cfg.allowed_tools = []
         agent = BaseAgent(cfg)
-        tool_a = MagicMock()
-        tool_a.name = "any"
-        with patch("src.agents.base.get_all_tools", return_value=[tool_a]):
+        with patch("src.tools.registry.CORE_TOOLS", CORE_TOOLS):
             tools = agent._resolve_tools()
-        assert len(tools) == 1
+        assert [tool.name for tool in tools] == [tool.name for tool in CORE_TOOLS]
 
     def test_agent_name_format(self, agent: BaseAgent):
         name = agent._agent_name()
@@ -614,6 +662,36 @@ class TestProcessTask:
         assert result["result"]["reply"] == "customer-safe reply"
         build.assert_not_called()
         pipeline.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_process_task_requires_vision_client_for_image_inputs(self):
+        agent = BaseAgent(
+            BaseAgentConfig(
+                id="agent_vision_001",
+                name="Vision Gate",
+                role="SUPPORT",
+                company_id="comp_001",
+                model="openai/gpt-oss-120b",
+                provider="GROQ",
+            )
+        )
+
+        with patch.object(agent, "_resolve_tools", return_value=[]), \
+             patch.object(agent, "_get_system_prompt", return_value="system"), \
+             patch("src.agents.base.build_provider_client_async", new=AsyncMock(side_effect=RuntimeError("no vision key"))), \
+             patch("src.agents.base.execute_pipeline", new=AsyncMock()) as pipeline:
+            result = await agent.process_task({
+                "current_message": "what is in this image?",
+                "session_id": "thread_vision",
+                "user_id": "cust_1",
+                "channel": "facebook",
+                "attachments": [{"type": "image", "base64_data": "iVBORw0KGgo=", "mime_type": "image/png"}],
+                "force_pipeline": True,
+            })
+
+        assert result["status"] == "ERROR"
+        assert result["result"]["errorCode"] == "vision_model_unavailable"
+        pipeline.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_process_task_returns_structured_result(self, agent: BaseAgent):

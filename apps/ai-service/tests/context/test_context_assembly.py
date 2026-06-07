@@ -159,6 +159,35 @@ async def test_context_assembler_injects_external_session_state():
 
 
 @pytest.mark.asyncio
+async def test_context_assembler_preserves_image_attachments_as_content_parts():
+    ctx = PipelineContext(
+        message="what is in this image?",
+        thread_id="thread_vision",
+        company_id="company_abc",
+        customer_id="cust_123",
+        system_prompt="base",
+        attachments=[
+            {
+                "type": "image",
+                "mime_type": "image/png",
+                "base64_data": "iVBORw0KGgo=",
+                "detail": "low",
+            }
+        ],
+    )
+
+    messages = await ContextAssembler().assemble_messages(ctx)
+
+    user_message = messages[-1]
+    assert user_message["role"] == "user"
+    assert isinstance(user_message["content"], list)
+    assert user_message["content"][0] == {"type": "text", "text": "what is in this image?"}
+    assert user_message["content"][1]["type"] == "image_url"
+    assert user_message["content"][1]["image_url"]["url"].startswith("data:image/png;base64,")
+    assert user_message["content"][1]["image_url"]["detail"] == "low"
+
+
+@pytest.mark.asyncio
 async def test_assemble_messages_integration():
     ctx = MagicMock(spec=PipelineContext)
     ctx.message = "yes, that color is fine"

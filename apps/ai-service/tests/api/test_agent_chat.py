@@ -69,6 +69,14 @@ def test_agent_chat_uses_selected_agent_config_when_db_agent_is_missing(monkeypa
                 "thread_id": "thread_1",
                 "customer_id": "customer_1",
                 "channel": "facebook",
+                "attachments": [
+                    {
+                        "type": "image",
+                        "mime_type": "image/png",
+                        "base64_data": "iVBORw0KGgo=",
+                        "detail": "low",
+                    }
+                ],
                 "agent_config": {
                     "id": "agent_fb",
                     "name": "شيرين",
@@ -96,3 +104,5 @@ def test_agent_chat_uses_selected_agent_config_when_db_agent_is_missing(monkeypa
     assert overrides["role"] == "FACEBOOK_SALES_SUPPORT"
     assert overrides["instructions"]["soul"] == "اتكلمي بالعامية المصرية. اسمك شيرين."
     assert captured["task"]["channel"] == "facebook"
+    assert captured["task"]["attachments"][0]["mime_type"] == "image/png"
+    assert captured["task"]["attachments"][0]["detail"] == "low"

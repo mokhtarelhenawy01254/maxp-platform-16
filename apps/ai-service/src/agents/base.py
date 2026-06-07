@@ -29,13 +29,14 @@ from pathlib import Path
 from typing import Any
 
 import structlog
-from agent_framework import Agent, FunctionTool
+from agent_framework import Agent, FunctionTool, MCPSkillsSource, AggregatingSkillsSource, SkillsProvider
 
 from src.agents.middleware import build_maxp_function_middleware
 from src.config import get_settings
 from src.context.sdk_provider import MaxPContextProvider
 from src.guardrails.base import BaseGuardrail
 from src.llm.agent_client_factory import build_agent_client, build_agent_client_async, build_provider_client_async
+from src.llm.model_capabilities import route_for_modalities, supports_vision
 from src.pipeline.context import PipelineContext
 from src.pipeline.runner import execute_pipeline
 from src.pipeline.stages.execute_tools import execute_tools
@@ -48,6 +49,7 @@ from src.pipeline.stages.validate_reply import validate_reply
 from src.prompts.template_registry import HydratedPrompt, get_prompt_registry
 from src.tools.registry import get_all_tools
 from src.tools.sdk_gateway import wrap_tools_for_gateway
+from src.mcp.registry import get_mcp_registry
 
 _SKILLS_ROOT = Path(__file__).resolve().parent.parent.parent / "skills"
 
@@ -254,19 +256,37 @@ class BaseAgent:
             system_prompt=instructions,
         )
 
+        mcp_sources = [
+            MCPSkillsSource(client=client)
+            for client in get_mcp_registry().get_skill_clients()
+        ]
+        skills_provider = None
+        if mcp_sources:
+            skills_provider = SkillsProvider(
+                source=AggregatingSkillsSource(mcp_sources)
+            )
+
+        context_providers = [
+            MaxPContextProvider(
+                company_id=self.company_id,
+                agent=self,
+            )
+        ]
+        if skills_provider:
+            context_providers.append(skills_provider)
+
+        default_options: dict[str, Any] = {"model": self.model}
+        if self.output_schema:
+            default_options["output_schema"] = self.output_schema
+
         self._framework_agent = Agent(
             client=client,
             name=self._agent_name(),
             instructions=instructions,
             tools=tools,
-            context_providers=[
-                MaxPContextProvider(
-                    company_id=self.company_id,
-                    agent=self,
-                )
-            ],
+            context_providers=context_providers,
             middleware=build_maxp_function_middleware(self.company_id, self.role),
-            default_options={"model": self.model},
+            default_options=default_options,
         )
         self.client = client
         return self._framework_agent
@@ -298,29 +318,42 @@ class BaseAgent:
 
     def _resolve_tools(self) -> list[FunctionTool]:
         """Resolve the list of tools this agent is allowed to use.
-
-        Tool resolution is delegated to the tools registry. The agent's
-        ``allowed_tools`` config scopes the registry to a subset.
+        
+        By default, agents start with only CORE_TOOLS to implement Progressive Tool Exposure.
+        Advanced tools are unlocked dynamically via the unlock_advanced_tools tool.
         """
-        all_tools = get_all_tools()
+        from src.tools.registry import CORE_TOOLS, ALL_TOOLS
+        
+        # Base set is CORE_TOOLS for progressive exposure
+        base_set = CORE_TOOLS
+        
         if not self.allowed_tools:
             return wrap_tools_for_gateway(
-                all_tools,
+                base_set,
                 company_id=self.company_id,
                 agent_role=self.role,
-                allowed_tools=[_tool_name(tool) for tool in all_tools],
+                allowed_tools=[_tool_name(tool) for tool in base_set],
             )
+            
         allowed = {name.lower() for name in self.allowed_tools}
+        # Filter core tools by allowed list, but always ensure unlock_advanced_tools is present
         scoped = [
-            t for t in all_tools
+            t for t in base_set
             if _tool_name(t).lower() in allowed or _tool_name(t).replace("_", ".").lower() in allowed
         ]
+        
+        # Ensure unlock_advanced_tools is always available for agents that can unlock them
+        from src.tools.registry import unlock_advanced_tools_tool
+        if unlock_advanced_tools_tool not in scoped:
+            scoped.append(unlock_advanced_tools_tool)
+            
         return wrap_tools_for_gateway(
             scoped,
             company_id=self.company_id,
             agent_role=self.role,
             allowed_tools=[_tool_name(tool) for tool in scoped],
         )
+
 
     def _agent_name(self) -> str:
         return f"maxp_{self.role.lower()}_{self.id[-8:]}"
@@ -620,6 +653,10 @@ class BaseAgent:
         message = task.get("current_message") or task.get("description") or ""
         thread_id = task.get("session_id") or task.get("conversation_id") or task.get("job_id") or run_id
         customer_id = task.get("user_id") or "anonymous"
+        attachments = list(task.get("attachments") or [])
+        task_llm_client = await self._build_task_scoped_llm_client(task)
+        selected_supports_vision = supports_vision(self.model, self.config.provider)
+        vision_client_required = bool(attachments) and not selected_supports_vision
 
         if self._should_use_sdk_runtime(task):
             try:
@@ -639,10 +676,21 @@ class BaseAgent:
             customer_id=customer_id,
             agent=self,
             session=task.get("_db_session"),
+            llm_client=task_llm_client,
             channel=str(task.get("channel") or task.get("source_channel") or "chat"),
             conversation_id=str(task.get("conversation_id") or thread_id),
+            attachments=attachments,
             external_memory_context=dict(task.get("memory_context") or {}),
         )
+        if vision_client_required and task_llm_client is None:
+            ctx.early_return = {
+                "status": "PROVIDER_ERROR",
+                "result": {
+                    "error": "Vision-capable LLM provider unavailable",
+                    "error_code": "vision_model_unavailable",
+                },
+            }
+            return self._to_process_task_result(ctx, task, run_id)
 
         ctx = await execute_pipeline(
             ctx,
@@ -659,8 +707,49 @@ class BaseAgent:
 
         return self._to_process_task_result(ctx, task, run_id)
 
+    async def _build_task_scoped_llm_client(self, task: dict[str, Any]) -> Any | None:
+        attachments = list(task.get("attachments") or [])
+        if not attachments:
+            return None
+        route = route_for_modalities(
+            model=self.model,
+            provider=self.config.provider,
+            has_image_input=True,
+        )
+        if route.reason == "selected_model_supports_vision":
+            return None
+        try:
+            tools = self._resolve_tools()
+            system_prompt = self._get_system_prompt()
+            if route.provider:
+                return await build_provider_client_async(
+                    route.provider,
+                    model=route.model,
+                    tools=tools,
+                    system_prompt=system_prompt,
+                    company_id=self.company_id,
+                )
+            return await build_agent_client_async(
+                get_settings(),
+                model=route.model,
+                tools=tools,
+                system_prompt=system_prompt,
+                company_id=self.company_id,
+            )
+        except Exception as exc:
+            logger.warning(
+                "vision_llm_client_unavailable",
+                agent_id=self.id,
+                selected_model=self.model,
+                selected_provider=self.config.provider,
+                error=str(exc),
+            )
+            return None
+
     def _should_use_sdk_runtime(self, task: dict[str, Any]) -> bool:
         """Use SDK Agent.run for internal work without bypassing customer chat gates."""
+        if task.get("attachments"):
+            return False
         if task.get("force_pipeline") or task.get("use_sdk_runtime") is False:
             return False
 
@@ -784,6 +873,8 @@ class BaseAgent:
         message = task.get("current_message") or task.get("description") or ""
         thread_id = task.get("session_id") or task.get("conversation_id") or run_id
         customer_id = task.get("user_id") or "anonymous"
+        attachments = list(task.get("attachments") or [])
+        task_llm_client = await self._build_task_scoped_llm_client(task)
 
         ctx = PipelineContext(
             message=message,
@@ -792,10 +883,17 @@ class BaseAgent:
             customer_id=customer_id,
             agent=self,
             session=task.get("_db_session"),
+            llm_client=task_llm_client,
             channel=str(task.get("channel") or task.get("source_channel") or "chat"),
             conversation_id=str(task.get("conversation_id") or thread_id),
+            attachments=attachments,
             external_memory_context=dict(task.get("memory_context") or {}),
         )
+        if attachments and not supports_vision(self.model, self.config.provider) and task_llm_client is None:
+            emitter.emit("run_error", {"error": "vision_model_unavailable"})
+            for ev in emitter.events():
+                yield ev
+            return
 
         try:
             emitter.emit("agent_thinking", {"stage": "resolve_intent"})
@@ -913,19 +1011,23 @@ class BaseAgent:
                 "GUARDRAIL_BLOCKED": "BLOCKED",
             }.get(er_status, "ERROR")
 
-        reply = (
-            ctx.final_reply
-            or (ctx.early_return or {}).get("result", {}).get("reply", "")
-        )
+        early_result = (ctx.early_return or {}).get("result", {})
+        reply = ctx.final_reply or early_result.get("reply", "")
 
         executed = ctx.executed_tools or []
         return {
             "agent_id": self.id,
             "role": self.role,
             "status": status,
+            "error": early_result.get("error"),
+            "errorCode": early_result.get("error_code"),
             "result": {
                 "reply": reply,
                 "summary": reply,
+                "error": early_result.get("error"),
+                "errorCode": early_result.get("error_code"),
+                "providerStatusCode": early_result.get("provider_status_code"),
+                "retryAfter": early_result.get("retry_after"),
                 "tools_used": bool(executed),
                 "tool_rounds": ctx.rounds,
                 "tools": executed,

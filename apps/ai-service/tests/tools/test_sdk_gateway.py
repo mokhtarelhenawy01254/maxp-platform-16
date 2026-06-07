@@ -121,6 +121,7 @@ async def test_wrapped_mcp_tool_routes_through_gateway(monkeypatch):
         allowed_tools=["mcp_catalog_search"],
         input_data={"query": "shoes"},
         approval_granted=False,
+        ctx=None,
     )
 
 
@@ -157,4 +158,5 @@ async def test_wrapped_write_tool_marks_sdk_approval_granted(monkeypatch):
             "reason": "loyalty customer",
         },
         approval_granted=True,
+        ctx=None,
     )

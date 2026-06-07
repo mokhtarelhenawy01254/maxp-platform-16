@@ -79,6 +79,7 @@ class ProviderAdapter:
             messages.insert(0, {"role": "system", "content": self._system_prompt})
 
         opts = options or {}
+        output_schema = opts.get("output_schema")
         tool_dicts = None
         if self._tools and opts.get("tools_enabled") is not False:
             self._provider_tool_names = {}
@@ -95,6 +96,7 @@ class ProviderAdapter:
             temperature=opts.get("temperature"),
             max_tokens=opts.get("max_tokens"),
             top_p=opts.get("top_p"),
+            output_schema=output_schema,
         )
 
         raw_tool_calls = []
@@ -135,6 +137,7 @@ class ProviderAdapter:
         temperature: Any,
         max_tokens: Any,
         top_p: Any,
+        output_schema: Any = None,
     ) -> Any:
         provider = self._provider
         attempted_key_ids: set[str] = set()
@@ -154,6 +157,7 @@ class ProviderAdapter:
                     temperature=temperature,
                     max_tokens=max_tokens,
                     top_p=top_p,
+                    output_schema=output_schema,
                 )
                 await self._record_success(provider, response.usage)
                 self._provider = provider

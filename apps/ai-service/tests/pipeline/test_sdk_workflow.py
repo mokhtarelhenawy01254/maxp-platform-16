@@ -97,6 +97,62 @@ async def test_execute_pipeline_workflow_uses_sdk_checkpoint_storage():
 
 
 @pytest.mark.asyncio
+async def test_execute_pipeline_workflow_keeps_runtime_objects_out_of_messages():
+    class _RuntimeRef:
+        def __deepcopy__(self, memo):
+            raise TypeError("runtime object must not be deep-copied")
+
+    runtime_agent = _RuntimeRef()
+    runtime_session = _RuntimeRef()
+    ctx = _ctx()
+    ctx.agent = runtime_agent
+    ctx.session = runtime_session
+
+    async def stage(stage_ctx: PipelineContext) -> PipelineContext:
+        assert stage_ctx.agent is runtime_agent
+        assert stage_ctx.session is runtime_session
+        stage_ctx.final_reply = "snapshot ok"
+        return stage_ctx
+
+    result = await execute_pipeline_workflow(ctx, [stage])
+
+    assert result.agent is runtime_agent
+    assert result.session is runtime_session
+    assert result.final_reply == "snapshot ok"
+
+
+@pytest.mark.asyncio
+async def test_execute_pipeline_workflow_preserves_task_scoped_llm_client_across_stages():
+    default_client = object()
+    task_scoped_client = object()
+
+    class _Agent:
+        client = default_client
+
+    ctx = _ctx()
+    ctx.agent = _Agent()
+    ctx.llm_client = task_scoped_client
+
+    seen_clients: list[object] = []
+
+    async def first(stage_ctx: PipelineContext) -> PipelineContext:
+        seen_clients.append(stage_ctx.llm_client)
+        stage_ctx.rounds += 1
+        return stage_ctx
+
+    async def second(stage_ctx: PipelineContext) -> PipelineContext:
+        seen_clients.append(stage_ctx.llm_client)
+        stage_ctx.final_reply = "done"
+        return stage_ctx
+
+    result = await execute_pipeline_workflow(ctx, [first, second])
+
+    assert seen_clients == [task_scoped_client, task_scoped_client]
+    assert result.llm_client is task_scoped_client
+    assert result.final_reply == "done"
+
+
+@pytest.mark.asyncio
 async def test_execute_pipeline_workflow_passes_sdk_resume_responses(monkeypatch):
     captured: dict = {}
 
