@@ -1,5 +1,3 @@
-const aiSdkClient = require('../../services/aiSdkClient');
-
 const VALID_MODES = new Set(['off', 'shadow', 'pilot', 'primary']);
 
 function getAiServiceMode() {
@@ -44,6 +42,7 @@ async function routeToAiService({ companyId, customerId, message, threadId, logg
   log.info(`Routing message to AI service for company ${companyId}`);
 
   try {
+    const aiSdkClient = require('../../services/aiSdkClient');
     const result = await aiSdkClient.sendChatMessage({
       companyId,
       customerId,

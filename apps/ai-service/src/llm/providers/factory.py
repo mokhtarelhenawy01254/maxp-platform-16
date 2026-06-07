@@ -38,7 +38,7 @@ PROVIDER_DEFS: dict[str, dict[str, Any]] = {
         "base_url": "https://openrouter.ai/api/v1",
         "default_model": "openrouter/auto",
         "provider_name": "OPENROUTER",
-        "extra_headers": {"HTTP-Referer": None, "X-Title": "MaxP AI Service"},
+        "extra_headers": {"X-Title": "MaxP AI Service"},
         "priority": 2,
     },
     "DEEPSEEK": {
@@ -155,6 +155,10 @@ class ProviderFactory:
                 reason=e.code,
             )
 
+        # Normalize RoutingResult dataclass to dict if needed
+        if hasattr(key_info, "api_key") and not isinstance(key_info, dict):
+            from dataclasses import asdict as _asdict
+            key_info = _asdict(key_info)
         api_key = key_info["api_key"]
         base_url = key_info.get("base_url") or pdef.get("base_url", "")
 
@@ -192,7 +196,7 @@ class ProviderFactory:
         try:
             resolved_model = model or settings.default_model
             key_info = await model_manager.get_next_key(resolved_model, company_id or "default")
-            provider_type = key_info["provider"]
+            provider_type = key_info.provider if hasattr(key_info, "provider") else key_info["provider"]
             
             return await self.get_provider(provider_type, resolved_model, company_id)
         except ModelManagerError:

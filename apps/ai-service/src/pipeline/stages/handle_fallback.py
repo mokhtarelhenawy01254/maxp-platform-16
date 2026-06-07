@@ -195,4 +195,23 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
                 "result": {"reply": ""},
             }
 
+    # Conversational fallback: generate a direct reply when no tool call was needed
+    # and no LLM call was made yet (e.g. general.chat, greetings, policy questions).
+    if not ctx.llm_response.strip() and not ctx.early_return:
+        client = getattr(ctx, "llm_client", None) or (getattr(ctx.agent, "client", None) if ctx.agent else None)
+        if client:
+            fallback_messages = ctx.messages or [
+                {"role": "system", "content": ctx.system_prompt or "You are a helpful customer support assistant."},
+                {"role": "user", "content": ctx.message},
+            ]
+            try:
+                response = await client.get_response(
+                    to_client_messages(fallback_messages),
+                    options={"tools_enabled": False, "temperature": 0.7},
+                )
+                raw_text = response.text if hasattr(response, "text") else str(response)
+                ctx.llm_response = _strip_reasoning(raw_text)
+            except Exception as exc:
+                _provider_error(ctx, exc)
+
     return ctx
