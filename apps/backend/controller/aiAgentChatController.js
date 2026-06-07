@@ -4,7 +4,8 @@
  * Routes: POST /message, GET /history, DELETE /history, GET /sessions, POST /sessions, DELETE /sessions/:id, GET /status
  */
 
-const aiChatService = require('../legacy-ai-agent/aiAgent/aiChatService');
+const aiSdkClient = require('../services/aiSdkClient');
+const aiSessionService = require('../services/aiSessionService');
 const CorrectiveRAGEngine = require('../services/rag/CorrectiveRAGEngine');
 const RagKnowledgeProposalService = require('../services/rag/RagKnowledgeProposalService');
 const RagKnowledgeMaintenanceService = require('../services/rag/RagKnowledgeMaintenanceService');
@@ -28,18 +29,20 @@ async function sendMessage(req, res) {
       return res.status(400).json({ success: false, error: 'message is required' });
     }
 
-    const result = await aiChatService.sendMessage(companyId, userId, message, {
-      sessionId,
-      user: req.user,
+    const result = await aiSdkClient.sendChatMessage({
+      companyId,
+      customerId: userId,
+      message,
+      threadId: sessionId,
     });
 
     return res.json({
       success: true,
       reply: result.reply,
-      agentInfo: result.agentInfo,
-      modelSelection: result.modelSelection,
-      conversationId: result.conversationId,
-      session: result.session,
+      agentInfo: result.agentInfo || null,
+      modelSelection: result.modelSelection || null,
+      conversationId: result.conversationId || result.threadId,
+      session: result.session || { id: result.threadId },
     });
   } catch (error) {
     console.error('[AI-CHAT-CTRL] sendMessage error:', error.message);
@@ -534,7 +537,7 @@ async function getHistory(req, res) {
       return res.status(401).json({ success: false, error: 'Authentication required' });
     }
 
-    const history = await aiChatService.getHistory(companyId, userId, req.query?.sessionId, req.user);
+    const history = await aiSessionService.getHistory(companyId, userId, req.query?.sessionId, req.user);
     return res.json({ success: true, ...history });
   } catch (error) {
     console.error('[AI-CHAT-CTRL] getHistory error:', error.message);
@@ -554,7 +557,7 @@ async function clearHistory(req, res) {
       return res.status(401).json({ success: false, error: 'Authentication required' });
     }
 
-    const result = await aiChatService.clearHistory(companyId, userId, req.query?.sessionId || req.body?.sessionId);
+    const result = await aiSessionService.clearHistory(companyId, userId, req.query?.sessionId || req.body?.sessionId);
     return res.json({ success: true, ...result });
   } catch (error) {
     console.error('[AI-CHAT-CTRL] clearHistory error:', error.message);
@@ -571,9 +574,9 @@ async function listSessions(req, res) {
       return res.status(401).json({ success: false, error: 'Authentication required' });
     }
 
-    let sessions = await aiChatService.listSessions(companyId, userId);
+    let sessions = await aiSessionService.listSessions(companyId, userId);
     if (!sessions.length) {
-      const session = await aiChatService.createSession(companyId, userId, req.user);
+      const session = await aiSessionService.createSession(companyId, userId, req.user);
       sessions = [session];
     }
     return res.json({ success: true, sessions });
@@ -592,10 +595,10 @@ async function createSession(req, res) {
       return res.status(401).json({ success: false, error: 'Authentication required' });
     }
 
-    const session = await aiChatService.createSession(companyId, userId, req.user, {
+    const session = await aiSessionService.createSession(companyId, userId, req.user, {
       title: req.body?.title,
     });
-    const history = await aiChatService.getHistory(companyId, userId, session.id, req.user);
+    const history = await aiSessionService.getHistory(companyId, userId, session.id, req.user);
     return res.status(201).json({ success: true, session, messages: history.messages });
   } catch (error) {
     console.error('[AI-CHAT-CTRL] createSession error:', error.message);
@@ -612,7 +615,7 @@ async function deleteSession(req, res) {
       return res.status(401).json({ success: false, error: 'Authentication required' });
     }
 
-    const result = await aiChatService.clearHistory(companyId, userId, req.params.sessionId);
+    const result = await aiSessionService.clearHistory(companyId, userId, req.params.sessionId);
     return res.json({ success: true, ...result });
   } catch (error) {
     console.error('[AI-CHAT-CTRL] deleteSession error:', error.message);
@@ -630,7 +633,7 @@ async function getStatus(req, res) {
       return res.status(401).json({ success: false, error: 'Authentication required' });
     }
 
-    const status = await aiChatService.getAgentStatus(companyId);
+    const status = await aiSessionService.getAgentStatus(companyId);
     return res.json({ success: true, agent: status });
   } catch (error) {
     console.error('[AI-CHAT-CTRL] getStatus error:', error.message);

@@ -581,31 +581,14 @@ class BaseAgent {
     const AI_SERVICE_TOKEN = process.env.AI_SERVICE_TOKEN || 'test_token';
 
     try {
-      const message = task.currentMessage || task.description;
-      const response = await axios.post(`${AI_SERVICE_URL}/admin/agents/chat`, {
-        company_id: this.companyId,
-        agent_id: this.id,
-        message,
+      const response = await axios.post(`${AI_SERVICE_URL}/chat`, {
+        message: task.currentMessage || task.description,
         thread_id: task.sessionId || task.conversationId || null,
-        customer_id: task.userId || task.customerId || task.intentContext?.customerId || 'test-user-456',
-        channel: task.channel || task.sourceChannel || task.intentContext?.channel || 'facebook',
-        agent_config: {
-          id: this.id,
-          name: this.name,
-          role: this.role,
-          templateSlug: this.templateSlug,
-          version: this.version,
-          model: this.model,
-          status: this.status,
-          parentId: this.parentId,
-          allowedTools: this.getTools(),
-          allowedSkills: this.getSkills(),
-          persona: this.persona || {},
-          policies: this.policies || {},
-        },
       }, {
         headers: { 
           'Authorization': `Bearer ${AI_SERVICE_TOKEN}`,
+          'x-company-id': this.companyId,
+          'x-customer-id': task.userId || 'test-user-456',
         },
         timeout: DEFAULT_AGENT_LLM_TIMEOUT_MS,
       });

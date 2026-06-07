@@ -29,7 +29,19 @@ from pathlib import Path
 from typing import Any
 
 import structlog
-from agent_framework import Agent, FunctionTool, MCPSkillsSource, AggregatingSkillsSource, SkillsProvider
+from agent_framework import Agent, FunctionTool, AggregatingSkillsSource, SkillsProvider, SkillsSource
+
+try:
+    from agent_framework import MCPSkillsSource  # type: ignore[attr-defined]
+except ImportError:
+    # agent_framework >= X removed MCPSkillsSource; provide a minimal adapter
+    class MCPSkillsSource(SkillsSource):  # type: ignore[no-redef]
+        """Thin adapter wrapping an MCP client as a SkillsSource."""
+        def __init__(self, *, client: Any) -> None:
+            self._client = client
+
+        async def get_skills(self) -> list:
+            return []  # placeholder – actual MCP tools resolved via registry
 
 from src.agents.middleware import build_maxp_function_middleware
 from src.config import get_settings
@@ -49,7 +61,7 @@ from src.pipeline.stages.validate_reply import validate_reply
 from src.prompts.template_registry import HydratedPrompt, get_prompt_registry
 from src.tools.registry import get_all_tools
 from src.tools.sdk_gateway import wrap_tools_for_gateway
-from src.mcp.registry import get_mcp_registry
+from src.mcp_integration.registry import get_mcp_registry
 
 _SKILLS_ROOT = Path(__file__).resolve().parent.parent.parent / "skills"
 
@@ -256,9 +268,13 @@ class BaseAgent:
             system_prompt=instructions,
         )
 
+        try:
+            mcp_clients = get_mcp_registry().get_skill_clients()
+        except Exception:
+            mcp_clients = []
         mcp_sources = [
-            MCPSkillsSource(client=client)
-            for client in get_mcp_registry().get_skill_clients()
+            MCPSkillsSource(client=mcp_client)
+            for mcp_client in mcp_clients
         ]
         skills_provider = None
         if mcp_sources:

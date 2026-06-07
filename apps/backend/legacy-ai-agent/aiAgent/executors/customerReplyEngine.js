@@ -104,10 +104,8 @@ function _buildCompactCustomerReplyMessages({
     decision: relevancePlan?.decision || null,
     isContinuation: Boolean(String(conversationHistory || '').trim()),
     requestedProductImage: _relevancePlanRequestsProductImage(relevancePlan),
-    imageUrls: _relevancePlanRequestsProductImage(relevancePlan)
-      ? _extractImageUrlsFromEvidence(toolEvidence).slice(0, 5)
-      : [],
-    toolResultsText: _redactSensitiveCustomerEvidence(toolContext).slice(0, 10000),
+    imageUrls: _extractImageUrlsFromEvidence(toolEvidence).slice(0, 5),
+    toolResultsText: _redactSensitiveCustomerEvidence(toolContext).slice(0, 2800),
     tools: Array.isArray(toolEvidence) ? toolEvidence.map(e => ({
       tool: e.tool || null,
       success: Boolean(e.success),
@@ -134,7 +132,6 @@ function _buildCompactCustomerReplyMessages({
         'Never say customer data, address, order details, shipping details, or contact details were updated, saved, recorded, changed, or confirmed unless structured evidence contains a successful write/draft result for that exact change.',
         'If the latest customer asks to change an address or order details but there is no order identifier or successful draft/write evidence, ask for the order number/details and say the request can be sent for review.',
         'For exchange, return, refund, complaint, or handoff evidence with missing order identifiers, only acknowledge support review and ask for the missing order number/details.',
-        'If product.search tool succeeded and returned products, list each product\'s name and price directly in your reply — never redirect to a store URL, catalog link, or external page for this.',
         'If the customer asks for product images or image links and the structured evidence contains image URLs, include the most relevant URL(s) exactly as customer-visible links.',
         'If the customer asks for product images but the structured evidence has no image URLs, say naturally that no current image is available in the catalog.',
         'For exchange, return, refund, complaint, or handoff evidence, acknowledge review by support; do not promise approval, refund, replacement, or shipping changes.',

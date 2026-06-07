@@ -103,17 +103,11 @@ class AgentToolGatewayService {
     userMessage = '',
     idempotencyKey = null,
     runId = null,
-    mcpToolHandler = null,
-    mcpToolReadOnly = true,
   }) {
     const toolName = normalizeToolName({ tool, nativeName });
     const toolDef = TOOLS[toolName];
-    const isMcpTool = toolName.startsWith('mcp_');
-    const readOnly = isMcpTool
-      ? mcpToolReadOnly !== false
-      : (toolDef?.readOnly !== false);
+    const readOnly = toolDef?.readOnly !== false;
     const agentId = agent?.id || agent?.name || 'unknown-agent';
-    const toolOrigin = isMcpTool ? 'mcp' : 'js';
 
     // ── Security Layer 1: Adversarial prompt injection scan ────────────────
     if (userMessage) {
@@ -132,14 +126,14 @@ class AgentToolGatewayService {
     }
 
     // ── Security Layer 2: Role-to-tool scope enforcement ───────────────────
-    const roleCheck = this._enforceRoleScope(agent, toolName, isMcpTool);
+    const roleCheck = this._enforceRoleScope(agent, toolName);
     if (roleCheck.blocked) {
       await logDecision(companyId, {
         traceId, agentId,
         action: 'AGENT_TOOL_DENIED',
         decision: 'ROLE_SCOPE_VIOLATION',
         reasoning: roleCheck.reason,
-        metadata: { tool: toolName, agentRole: agent?.role, params, source, toolOrigin },
+        metadata: { tool: toolName, agentRole: agent?.role, params, source },
       });
       return { success: false, error: 'Insufficient role permissions for this tool', readOnly };
     }
@@ -160,7 +154,7 @@ class AgentToolGatewayService {
       params = paramCheck.sanitized;
     }
 
-    if (!toolDef && !isMcpTool) {
+    if (!toolDef) {
       const result = { success: false, error: `TOOL_NOT_FOUND:${toolName}`, readOnly };
       await logDecision(companyId, {
         traceId,
@@ -168,20 +162,7 @@ class AgentToolGatewayService {
         action: 'AGENT_TOOL_DENIED',
         decision: 'UNKNOWN_TOOL',
         reasoning: `Tool ${toolName} is not registered`,
-        metadata: { tool: toolName, nativeName, params, source, idempotencyKey, toolOrigin },
-      });
-      return result;
-    }
-
-    if (isMcpTool && !mcpToolHandler) {
-      const result = { success: false, error: `MCP_TOOL_HANDLER_MISSING:${toolName}`, readOnly };
-      await logDecision(companyId, {
-        traceId,
-        agentId,
-        action: 'AGENT_TOOL_DENIED',
-        decision: 'MCP_HANDLER_MISSING',
-        reasoning: `MCP tool ${toolName} was dispatched without a handler from the registry`,
-        metadata: { tool: toolName, params, source, toolOrigin },
+        metadata: { tool: toolName, nativeName, params, source, idempotencyKey },
       });
       return result;
     }
@@ -194,7 +175,7 @@ class AgentToolGatewayService {
         action: 'AGENT_TOOL_DENIED',
         decision: 'FORBIDDEN_TOOL',
         reasoning: `Agent is not allowed to use ${toolName}`,
-        metadata: { tool: toolName, nativeName, params, source, readOnly, idempotencyKey, toolOrigin },
+        metadata: { tool: toolName, nativeName, params, source, readOnly, idempotencyKey },
       });
       return result;
     }
@@ -229,7 +210,6 @@ class AgentToolGatewayService {
           contractErrors: relevancePlan.validation?.errors || [],
           userMessage: String(userMessage || '').slice(0, 500),
           idempotencyKey,
-          toolOrigin,
         },
       });
       return result;
@@ -311,12 +291,10 @@ class AgentToolGatewayService {
       action: 'AGENT_TOOL_REQUEST',
       decision: 'ALLOW',
       reasoning: readOnly ? 'Read-only tool' : 'Write/action tool passed permission and conflict checks',
-      metadata: { tool: toolName, nativeName, params, source, readOnly, idempotencyKey, toolOrigin },
+      metadata: { tool: toolName, nativeName, params, source, readOnly, idempotencyKey },
     });
 
-    const result = isMcpTool
-      ? await mcpToolHandler(companyId, params)
-      : await executeTool(companyId, toolName, params);
+    const result = await executeTool(companyId, toolName, params);
 
     await logDecision(companyId, {
       traceId,
@@ -331,7 +309,6 @@ class AgentToolGatewayService {
         readOnly: result.readOnly !== false,
         success: Boolean(result.success),
         idempotencyKey,
-        toolOrigin,
       },
     });
 
@@ -395,7 +372,7 @@ class AgentToolGatewayService {
    * Enforce role-to-tool scope: prevent lower-privilege agents from accessing
    * high-risk tools regardless of prompt content.
    */
-  _enforceRoleScope(agent, toolName, isMcpTool = false) {
+  _enforceRoleScope(agent, toolName) {
     const RESTRICTED_TOOLS = {
       'agent.spawn': ['SYSTEM_ADMIN', 'CEO'],
       'system.shutdown': ['SYSTEM_ADMIN'],
@@ -407,16 +384,7 @@ class AgentToolGatewayService {
       'customer.delete': ['SYSTEM_ADMIN'],
     };
 
-    let allowedRoles = RESTRICTED_TOOLS[toolName];
-
-    if (!allowedRoles && isMcpTool) {
-      const m = toolName.match(/^mcp_[^_]+_(.+)$/);
-      const unprefixed = m ? m[1] : null;
-      if (unprefixed) {
-        allowedRoles = RESTRICTED_TOOLS[unprefixed] || RESTRICTED_TOOLS[unprefixed.replace(/_/g, '.')];
-      }
-    }
-
+    const allowedRoles = RESTRICTED_TOOLS[toolName];
     if (!allowedRoles) return { blocked: false, reason: null };
 
     const agentRole = String(agent?.role || '').toUpperCase();

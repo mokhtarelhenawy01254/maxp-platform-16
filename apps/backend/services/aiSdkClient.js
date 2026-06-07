@@ -1,5 +1,7 @@
 const https = require('https');
 const http = require('http');
+const { isAiServiceEnabled } = require('../legacy-ai-agent/aiAgent/aiServiceRouter');
+const aiChatService = require('../legacy-ai-agent/aiAgent/aiChatService');
 
 function getAiServiceUrl() {
   return process.env.AI_SERVICE_URL || 'http://localhost:8000';
@@ -23,7 +25,7 @@ function normalizeAiServiceResponse(payload = {}) {
 }
 
 /**
- * Send a chat message to maxp-ai-service for AI-powered response.
+ * Send a chat message - uses external AI service if enabled, otherwise falls back to legacy AI agent.
  * @param {Object} params
  * @param {string} params.companyId
  * @param {string} params.customerId
@@ -32,27 +34,43 @@ function normalizeAiServiceResponse(payload = {}) {
  * @returns {Promise<{status: string, threadId: string, reply: string|null, draftId: string|null}>}
  */
 async function sendChatMessage({ companyId, customerId, message, threadId }) {
-  const url = new URL('/chat', getAiServiceUrl());
-  const body = JSON.stringify({ message, thread_id: threadId || null });
-  const token = getAiServiceToken();
+  if (isAiServiceEnabled(companyId)) {
+    const url = new URL('/chat', getAiServiceUrl());
+    const body = JSON.stringify({ message, thread_id: threadId || null });
+    const token = getAiServiceToken();
 
-  const response = await fetch(url.toString(), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Company-Id': companyId,
-      'X-Customer-Id': customerId,
-      'Authorization': `Bearer ${token}`,
-    },
-    body,
-  });
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Company-Id': companyId,
+        'X-Customer-Id': customerId,
+        'Authorization': `Bearer ${token}`,
+      },
+      body,
+    });
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`AI service error ${response.status}: ${text}`);
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`AI service error ${response.status}: ${text}`);
+    }
+
+    return normalizeAiServiceResponse(await response.json());
   }
 
-  return normalizeAiServiceResponse(await response.json());
+  // Fallback to legacy AI agent (CEOAgent)
+  const result = await aiChatService.sendMessage(companyId, customerId, message, {
+    sessionId: threadId,
+  });
+
+  return normalizeAiServiceResponse({
+    status: 'ok',
+    threadId: result.conversationId,
+    reply: result.reply,
+    draftId: null,
+    agentInfo: result.agentInfo,
+    modelSelection: result.modelSelection,
+  });
 }
 
 /**

@@ -5,7 +5,7 @@ from typing import Any
 import structlog
 
 from src.config import get_settings
-from src.mcp.client import MCPClient
+from src.mcp_integration.client import MCPClient
 
 logger = structlog.get_logger(__name__)
 
@@ -20,6 +20,7 @@ class MCPRegistry:
     def __init__(self) -> None:
         self._servers: dict[str, MCPClient] = {}
         self._tools: dict[str, dict[str, Any]] = {}
+        self._skill_servers: set[str] = set()
         self._log = logger
 
     async def register_server(
@@ -28,6 +29,7 @@ class MCPRegistry:
         url: str,
         api_key: str | None = None,
         transport: str = "streamable_http",
+        is_skills_server: bool = False,
     ) -> None:
         if name in self._servers:
             self._log.warning("server already registered", name=name)
@@ -40,6 +42,8 @@ class MCPRegistry:
             transport=transport,
         )
         self._servers[name] = client
+        if is_skills_server:
+            self._skill_servers.add(name)
 
         tools = await client.list_tools()
         for tool in tools:
@@ -52,18 +56,25 @@ class MCPRegistry:
                 "original_name": tool.name,
             }
 
-        self._log.info("server registered", name=name, tools=len(tools))
+        self._log.info("server registered", name=name, tools=len(tools), is_skills=is_skills_server)
 
     async def register_from_config(self) -> None:
-        """Register servers configured in Settings.mcp_servers JSON."""
+        """Register tool servers and skills server from Settings."""
         settings = get_settings()
-        servers = settings.mcp_servers or []
-        for server in servers:
+        for server in settings.mcp_servers or []:
             await self.register_server(
                 name=server["name"],
                 url=server["url"],
                 api_key=server.get("api_key"),
                 transport=server.get("transport", "streamable_http"),
+            )
+
+        if settings.skills_mcp_url:
+            await self.register_server(
+                name="skills",
+                url=settings.skills_mcp_url,
+                transport="streamable_http",
+                is_skills_server=True,
             )
 
     def get_tool(self, full_name: str) -> dict[str, Any] | None:
@@ -73,8 +84,8 @@ class MCPRegistry:
         return list(self._tools.values())
 
     def get_skill_clients(self) -> list[MCPClient]:
-        """Return MCP clients that can expose agent skills resources."""
-        return list(self._servers.values())
+        """Return MCP clients that expose agent skills as resources."""
+        return [self._servers[name] for name in self._skill_servers if name in self._servers]
 
     def get_server_tools(self, server_name: str) -> list[dict[str, Any]]:
         prefix = f"mcp_{server_name}_"

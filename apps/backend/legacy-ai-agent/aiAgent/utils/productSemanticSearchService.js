@@ -66,23 +66,19 @@ async function searchProducts(companyId, queryText = '', options = {}) {
     queryEmbedding = new Array(768).fill(0);
   }
 
-  // Normalize query embedding so dot_product equals cosine similarity
-  const magnitude = Math.sqrt(queryEmbedding.reduce((s, v) => s + v * v, 0));
-  const normalizedQuery = magnitude > 0 ? queryEmbedding.map(v => v / magnitude) : queryEmbedding;
-
   if (typeof prisma.$queryRaw !== 'function') {
     return fallBackSearch(companyId, cleanQuery, limit);
   }
 
   // 2. Perform the hybrid query on PostgreSQL.
   // We use:
-  // - cosine_similarity (via dot_product on normalized vectors): (0.6 weight)
+  // - dot_product: cosine similarity since embeddings are normalized (0.6 weight)
   // - similarity(name): pg_trgm trigram similarity (0.3 weight)
   // - exact/contains match: exact case-insensitive matches for name/sku (0.1 weight)
   try {
     const results = await prisma.$queryRaw`
       SELECT id, name, description, sku, price, "comparePrice", cost, images, "mainImage", stock, "trackInventory", tags, metadata, "companyId", "createdAt", "updatedAt",
-             COALESCE(dot_product(embedding_array, ${normalizedQuery}::double precision[]), 0) AS "vectorScore",
+             COALESCE(dot_product(embedding_array, ${queryEmbedding}::double precision[]), 0) AS "vectorScore",
              (
                0.6 * COALESCE(similarity(name, ${cleanQuery}), 0) +
                0.2 * COALESCE(similarity(COALESCE(tags, ''), ${cleanQuery}), 0) +
@@ -94,7 +90,7 @@ async function searchProducts(companyId, queryText = '', options = {}) {
         AND "isActive" = true
         AND "deletedAt" IS NULL
       ORDER BY (
-        0.6 * COALESCE(dot_product(embedding_array, ${normalizedQuery}::double precision[]), 0) + 
+        0.6 * COALESCE(dot_product(embedding_array, ${queryEmbedding}::double precision[]), 0) + 
         0.3 * (
           0.6 * COALESCE(similarity(name, ${cleanQuery}), 0) +
           0.2 * COALESCE(similarity(COALESCE(tags, ''), ${cleanQuery}), 0) +

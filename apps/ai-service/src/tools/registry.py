@@ -5,7 +5,7 @@ from typing import Any
 from agent_framework import FunctionInvocationContext, FunctionTool
 from pydantic import BaseModel, Field
 
-from src.mcp.registry import get_mcp_registry
+from src.mcp_integration.registry import get_mcp_registry
 from src.tools import (
     competitor_tools,
     customer_tools,

@@ -7,7 +7,7 @@ const CEOAgent = require('../legacy-ai-agent/aiAgent/CEOAgent');
 const BaseAgent = require('../legacy-ai-agent/aiAgent/BaseAgent');
 const workingMemoryService = require('../legacy-ai-agent/aiAgent/workingMemoryService');
 const { normalizeAgentReply } = require('../legacy-ai-agent/aiAgent/agentReplyNormalizer');
-const aiServiceKeyBridge = require('../legacy-ai-agent/aiAgent/aiServiceKeyBridge');
+const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const aiSandboxService = require('../services/aiSandboxService');
 const { calculateCost, getModelCost } = require('../config/modelCosts');
 const agentProfileLoaderService = require('../legacy-ai-agent/aiAgent/agentProfileLoaderService');
@@ -202,7 +202,7 @@ async function runSelectedAgentInPython({
     agentConfig.provider = modelSelection.provider || agentConfig.provider;
     agentConfig.keyId = modelSelection.key?.id || agentConfig.keyId;
   }
-  const result = await aiServiceKeyBridge.chatWithAgent({
+  const result = await aiServiceAdminClient.chatWithAgent({
     companyId,
     agentId,
     message: messageText,

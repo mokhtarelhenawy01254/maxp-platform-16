@@ -102,9 +102,7 @@ class GlobalAiConfig(Base):
     )
     default_provider: Mapped[str | None] = mapped_column(String(50), nullable=True)
     enable_failover: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    provider_priority: Mapped[list[str]] = mapped_column(
-        ARRAY(String(50)), nullable=False, default=list
-    )
+    provider_priority: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
     settings: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=datetime.now, onupdate=datetime.now

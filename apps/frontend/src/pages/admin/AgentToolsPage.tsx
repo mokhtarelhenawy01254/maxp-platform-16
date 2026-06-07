@@ -46,6 +46,7 @@ import {
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
 import { useNavigate } from "react-router-dom";
+import i18n from "../../i18n";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -54,6 +55,10 @@ interface ToolDefinition {
   description: string;
   sideEffects: "read" | "write";
   requiresApproval: boolean;
+  approvalMode?: string;
+  source?: "python_builtin" | "mcp" | "legacy_bridge" | string;
+  runtimeSource?: string;
+  aliases?: string[];
   companyScoped?: boolean;
 }
 
@@ -304,11 +309,20 @@ export default function AgentToolsPage() {
   const [assignTool, setAssignTool] = useState<string | null>(null);
 
   const toolToAgents = useMemo(() => {
+    const canonicalByAlias = new Map<string, string>();
+    for (const tool of tools) {
+      canonicalByAlias.set(tool.name, tool.name);
+      for (const alias of tool.aliases || []) {
+        canonicalByAlias.set(alias, tool.name);
+      }
+    }
+
     const map = new Map<string, AgentToolInfo[]>();
     for (const agent of agents) {
       for (const toolName of agent.allowedTools || []) {
-        if (!map.has(toolName)) map.set(toolName, []);
-        map.get(toolName)!.push({
+        const canonicalToolName = canonicalByAlias.get(toolName) || toolName;
+        if (!map.has(canonicalToolName)) map.set(canonicalToolName, []);
+        map.get(canonicalToolName)!.push({
           id: agent.id,
           name: agent.name,
           role: agent.role,
@@ -319,7 +333,7 @@ export default function AgentToolsPage() {
       }
     }
     return map;
-  }, [agents]);
+  }, [agents, tools]);
 
   const filteredTools = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -358,6 +372,9 @@ export default function AgentToolsPage() {
     const isExpanded = expandedTool === tool.name;
     const agentList = toolToAgents.get(tool.name) || [];
     const isWrite = tool.sideEffects === "write";
+    const sourceLabel = tool.source === "mcp"
+      ? i18n.t("agentTools.sources.mcp")
+      : i18n.t("agentTools.sources.python");
 
     return (
       <Paper
@@ -394,6 +411,7 @@ export default function AgentToolsPage() {
               {tool.requiresApproval && (
                 <Chip size="small" icon={<GuardIcon sx={{ fontSize: 12 }} />} label="تحتاج موافقة" color="warning" variant="outlined" sx={{ fontSize: "0.65rem", height: 20 }} />
               )}
+              <Chip size="small" label={sourceLabel} color={tool.source === "mcp" ? "secondary" : "default"} variant="outlined" sx={{ fontSize: "0.65rem", height: 20 }} />
               {agentList.length > 0 && (
                 <Chip size="small" label={`${agentList.length} وكيل`} color="success" variant="outlined" sx={{ fontSize: "0.65rem", height: 20 }} />
               )}

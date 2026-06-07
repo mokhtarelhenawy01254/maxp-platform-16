@@ -1,3 +1,14 @@
+## [2026-06-07] AI Service — Migration Hardening and Model Layer Index Alignment
+- **Details**: Hardened database schema migrations for compatibility with local development environments lacking pgvector extension support, and resolved SQLAlchemy index column matching issues.
+- **Architecture**:
+  - **Migration Isolation**: Upgraded migrations `0006`, `0007`, and `0009` to use robust database checks (checking for column existence, table existence, and catching postgres execution errors) before adding extensions, indexing columns, or upgrading tables.
+  - **SQLAlchemy Class Indices**: Aligned class attributes in `CompanyAgent` (`company_id` and `department_id`) to correctly match index definitions in the model file, removing string-based database column mappings (`"companyId"`, `"departmentId"`) that caused index construction crashes.
+- **Files**:
+  - `apps/ai-service/migrations/versions/0006_enable_pgvector.py`
+  - `apps/ai-service/migrations/versions/0007_embedding_provider.py`
+  - `apps/ai-service/migrations/versions/0009_skills_table.py`
+  - `apps/ai-service/src/db/models/agent.py`
+
 ## [2026-06-07] CI/CD Pipeline — Auto-Deploy ai-service via GitHub Actions (uv + PM2)
 - **Details**: Updated `.github/workflows/deploy.yml` to fully deploy the Python ai-service on every push to `main`, replacing the previous Docker Compose block that required Docker on the server.
 - **Architecture**:

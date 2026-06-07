@@ -5,7 +5,7 @@
 
 const express = require('express');
 const verifyToken = require('../utils/verifyToken');
-const aiServiceBridge = require('../legacy-ai-agent/aiAgent/aiServiceKeyBridge');
+const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 
 const router = express.Router();
 
@@ -19,7 +19,7 @@ router.get('/agents', async (req, res) => {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
 
-    const result = await aiServiceBridge.listAgents(companyId);
+    const result = await aiServiceAdminClient.listAgents(companyId);
     if (!result.ok) {
       return res.status(result.status || 502).json({ success: false, error: result.data?.error || result.error || 'ai-service unreachable' });
     }
@@ -40,7 +40,7 @@ router.post('/agents/chat', async (req, res) => {
     if (!message?.trim()) return res.status(400).json({ success: false, error: 'message is required' });
     if (!agentId) return res.status(400).json({ success: false, error: 'agentId is required' });
 
-    const result = await aiServiceBridge.chatWithAgent({ companyId, agentId, message, threadId });
+    const result = await aiServiceAdminClient.chatWithAgent({ companyId, agentId, message, threadId });
     if (!result.ok) {
       return res.status(result.status || 502).json({ success: false, error: result.data?.error || result.error || 'ai-service unreachable' });
     }

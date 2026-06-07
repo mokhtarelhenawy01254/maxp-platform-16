@@ -6,7 +6,7 @@ from typing import Any
 import structlog
 from agent_framework import FunctionInvocationContext
 
-from src.mcp.registry import get_mcp_registry
+from src.mcp_integration.registry import get_mcp_registry
 from src.tools.registry import get_tool
 
 logger = structlog.get_logger(__name__)

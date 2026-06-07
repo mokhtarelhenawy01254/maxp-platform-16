@@ -376,7 +376,7 @@ class BudgetLedgerService:
         if redis:
             try:
                 import json
-                await redis.set(key, json.dumps(value), ex=ttl)
+                await redis.set(key, json.dumps(value), ttl=ttl)
                 return True
             except Exception as exc:
                 self._log.warning("redis write failed", key=key, error=str(exc))

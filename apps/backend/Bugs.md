@@ -102,6 +102,27 @@
   - `apps/frontend/src/pages/products/utils/productPreviewUrl.ts`
 - **Related**: Product preview routing drift fix from [2026-06-03].
 
+## [2026-06-07] AI Service — SQLAlchemy and Migration Crashes in Windows Dev Environment
+- **Bug/Issue**: The AI service integration crashed in local Windows dev environments with several database errors: (1) `relation "ai.company_agents" does not exist`, (2) pgvector extension "vector" is not available, (3) `column "embedding" does not exist` during migration 0007, (4) `relation "skills" already exists` during migration 0009, (5) `Index on table 'company_agents': no column named 'companyId' is present` during model loading, and (6) `ForeignKeyViolationError` for checkpoints in `test_run.py`.
+- **Cause**: 
+  - The Alembic migrations were never fully applied because of a git merge conflict in `0006_enable_pgvector.py`.
+  - The database on Windows does not support pgvector, so pgvector creation was skipped. However, subsequent migrations assumed the `embedding` column existed and queried it.
+  - The `skills` table was already created in the DB, causing `0009_skills_table.py` to fail due to a duplicate table error.
+  - In `src/db/models/agent.py`, the `CompanyAgent` indices referenced database column names `"companyId"` and `"departmentId"` as strings, whereas SQLAlchemy expects the class attribute names (`"company_id"` and `"department_id"`).
+  - In `test_run.py`, the `thread_id` was not a valid UUID, and the thread record did not exist in the `threads` table, causing foreign key constraints to fail.
+- **Fix**:
+  - Re-resolved conflict markers in `0006_enable_pgvector.py` and wrapped all `op.execute` statements with conditional checks.
+  - Wrapped `0007_embedding_provider.py` updates in a safe PL/pgSQL block check to verify column existence before updating.
+  - Wrapped `0009_skills_table.py` table creation in an inspector check `if "skills" not in tables`.
+  - Updated index references in `CompanyAgent` model to use class attribute names.
+  - Updated `test_run.py` to use a valid UUID and pre-create the thread row in the database before running orchestration.
+- **Affected Files**:
+  - `apps/ai-service/migrations/versions/0006_enable_pgvector.py`
+  - `apps/ai-service/migrations/versions/0007_embedding_provider.py`
+  - `apps/ai-service/migrations/versions/0009_skills_table.py`
+  - `apps/ai-service/src/db/models/agent.py`
+  - `apps/ai-service/test_run.py`
+
 ## [2026-06-06] AI Sandbox — Product Variants Showing Wrong Color (LLM Hallucination)
 - **Bug/Issue**: When a customer asks about product colors (e.g. "ايه الالوان لكوتشي لمسه؟"), the AI replies with incorrect colors like "أحمر" even though the actual colors in the database are "أبيض، أسود، بيج".
 - **Cause**: The LLM overrides the tool evidence with its training priors. When it sees a shoe product it "knows" common shoe colors and substitutes them instead of reading the exact values from `availableColors[].value` in the tool result. The nested JSON structure makes it easier for the LLM to hallucinate than to parse deeply.

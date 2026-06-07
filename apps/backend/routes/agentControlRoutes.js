@@ -17,6 +17,7 @@ const naturalLanguageCronService = require('../legacy-ai-agent/aiAgent/naturalLa
 const routineExecutorService = require('../legacy-ai-agent/aiAgent/routineExecutorService');
 const agentAuditTrailService = require('../legacy-ai-agent/aiAgent/agentAuditTrailService');
 const aiRuntimeService = require('../legacy-ai-agent/aiAgent/aiRuntimeService');
+const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 
 const router = express.Router();
 
@@ -239,10 +240,17 @@ router.get('/profiles', (req, res) => {
   }
 });
 
-router.get('/tools', (req, res) => {
+router.get('/tools', async (req, res) => {
   try {
-    const tools = toolRegistryService.listTools();
-    return res.json({ success: true, tools, count: tools.length });
+    const result = await aiServiceAdminClient.listTools();
+    if (!result.ok) {
+      return res.status(result.status || 502).json({
+        success: false,
+        error: result.data?.error || result.error || result.reason || 'ai-service tools catalog unavailable',
+        catalogSource: 'python_ai_service',
+      });
+    }
+    return res.json(result.data);
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }

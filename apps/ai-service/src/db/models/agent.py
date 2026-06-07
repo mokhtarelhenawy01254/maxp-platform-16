@@ -12,7 +12,7 @@ from src.db.base import Base
 
 class AgentTemplate(Base):
     __tablename__ = "agent_templates"
-    __table_args__: ClassVar[dict[str, str]] = {"schema": "ai"}
+    __table_args__ = {"schema": "ai"}
 
     slug: Mapped[str] = mapped_column(String(100), primary_key=True)
     role: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
@@ -138,20 +138,12 @@ class CompanyAgent(Base):
     model: Mapped[str | None] = mapped_column(String, nullable=True)
     status: Mapped[str] = mapped_column(String, nullable=False, default="ACTIVE")
     parent_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    department_id: Mapped[str | None] = mapped_column(
-        String,
-        ForeignKey("ai.agent_departments.id", ondelete="SET NULL"),
-        nullable=True,
-    )
+    department_id: Mapped[str | None] = mapped_column(String, ForeignKey("ai.agent_departments.id", ondelete="SET NULL"), nullable=True)
     manager_type: Mapped[str | None] = mapped_column(String, nullable=True, default="AGENT")
     template_slug: Mapped[str | None] = mapped_column(String, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     department: Mapped[AgentDepartment | None] = relationship(
         "AgentDepartment", back_populates="agents", foreign_keys=[department_id]

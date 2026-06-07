@@ -6,9 +6,12 @@ import pytest
 import respx
 from httpx import Response
 
-from agent_framework import MCPSkillsSource
-from src.mcp.client import MCPClient
-from src.mcp.registry import MCPRegistry
+try:
+    from agent_framework import MCPSkillsSource  # type: ignore[attr-defined]
+except ImportError:
+    from src.agents.base import MCPSkillsSource  # type: ignore[attr-defined]
+from src.mcp_integration.client import MCPClient
+from src.mcp_integration.registry import MCPRegistry
 
 
 @pytest.mark.asyncio

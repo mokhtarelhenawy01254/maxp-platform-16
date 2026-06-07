@@ -6,7 +6,7 @@ const devTaskIntegrationController = require("../controller/devTaskIntegrationCo
 const storePagesController = require("../controller/storePagesController");
 const docsController = require("../controller/docsController");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
-const { TOOLS } = require("../legacy-ai-agent/aiAgent/agentToolRegistry");
+const { getTools } = require("../legacy-ai-agent/aiAgent/agentToolRegistry");
 const { t } = require("../legacy-ai-agent/aiAgent/i18n");
 const { clearCache, clearAgentCache } = require("../legacy-ai-agent/aiAgent/agentSoulConfig");
 const {
@@ -522,19 +522,17 @@ router.get(
 // Each AgentDefinition stores its own soul/rules/skills.
 // All companies without custom config inherit from the matching AgentDefinition.
 
-const ALL_TOOL_NAMES = Object.keys(TOOLS);
-
-function parseJson(val, fallback) {
-  if (!val) return fallback;
-  try { return JSON.parse(val); } catch { return fallback; }
+function getAllToolNames() {
+  return Object.keys(getTools());
 }
 
 function buildSkillsList(enabledSkillNames) {
-  return ALL_TOOL_NAMES.map(name => ({
+  const tools = getTools();
+  return getAllToolNames().map(name => ({
     name,
-    description: TOOLS[name].description,
-    params: TOOLS[name].params,
-    readOnly: TOOLS[name].readOnly,
+    description: tools[name]?.description || '',
+    params: tools[name]?.params || {},
+    readOnly: tools[name]?.readOnly !== false,
     enabled: enabledSkillNames.includes(name),
   }));
 }
