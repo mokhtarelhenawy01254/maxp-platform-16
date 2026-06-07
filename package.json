@@ -3,15 +3,29 @@
   "version": "1.0.0",
   "private": true,
   "description": "MaxP platform root development configuration",
+  "workspaces": [
+    "apps/backend",
+    "apps/frontend"
+  ],
   "scripts": {
+    "dev": "concurrently -n backend,frontend,ai-service -c blue,green,magenta \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:ai\"",
+    "dev:backend": "npm run dev -w apps/backend",
+    "dev:frontend": "npm run dev -w apps/frontend",
+    "dev:ai": "cd apps/ai-service && .venv\\Scripts\\uvicorn.exe src.main:app --reload --host 127.0.0.1 --port 8000",
+    "test:backend:syntax": "npm run check:syntax -w apps/backend",
+    "test:frontend:build": "npm run build -w apps/frontend",
     "prepare": "husky"
   },
+  "overrides": {
+    "date-fns": "4.1.0"
+  },
   "devDependencies": {
+    "concurrently": "^8.2.2",
     "husky": "^9.0.1",
     "lint-staged": "^15.2.2"
   },
   "lint-staged": {
-    "backend/**/*.js": [
+    "apps/backend/**/*.js": [
       "node scripts/check-arabic-strings.js --staged",
       "node --check"
     ]

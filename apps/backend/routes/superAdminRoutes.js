@@ -6,9 +6,9 @@ const devTaskIntegrationController = require("../controller/devTaskIntegrationCo
 const storePagesController = require("../controller/storePagesController");
 const docsController = require("../controller/docsController");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
-const { TOOLS } = require("../services/aiAgent/agentToolRegistry");
-const { t } = require("../services/aiAgent/i18n");
-const { clearCache, clearAgentCache } = require("../services/aiAgent/agentSoulConfig");
+const { TOOLS } = require("../legacy-ai-agent/aiAgent/agentToolRegistry");
+const { t } = require("../legacy-ai-agent/aiAgent/i18n");
+const { clearCache, clearAgentCache } = require("../legacy-ai-agent/aiAgent/agentSoulConfig");
 const {
   authenticateToken,
   requireSuperAdmin,

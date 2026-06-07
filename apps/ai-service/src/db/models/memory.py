@@ -23,6 +23,7 @@ class AgenticMemoryFact(Base):
     confidence = Column(Float, default=1.0)
     importance = Column(Integer, default=3)
     embedding = Column(JSON, nullable=True)
+    embedding_provider = Column(String(32), nullable=False, default="gemini")
     metadata_json = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

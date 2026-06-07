@@ -9,12 +9,12 @@ jest.mock('@google/generative-ai', () => ({
   })),
 }));
 
-jest.mock('../../services/aiAgent/geminiModelPolicy', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/geminiModelPolicy', () => ({
   normalizeGeminiTextModel: jest.fn((model) => model || 'gemini-2.5-flash'),
 }));
 
-const GoogleProvider = require('../../services/aiAgent/providers/GoogleProvider');
-const { normalizeGeminiTextModel } = require('../../services/aiAgent/geminiModelPolicy');
+const GoogleProvider = require('../../legacy-ai-agent/aiAgent/providers/GoogleProvider');
+const { normalizeGeminiTextModel } = require('../../legacy-ai-agent/aiAgent/geminiModelPolicy');
 
 describe('GoogleProvider', () => {
   beforeEach(() => {

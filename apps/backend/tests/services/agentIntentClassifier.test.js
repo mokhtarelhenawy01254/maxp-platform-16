@@ -1,10 +1,10 @@
-const { classifyIntentFromLLM } = require('../../services/aiAgent/agentIntentClassifierService');
-const { resolveToolPlan } = require('../../services/aiAgent/agentIntentRelevanceService');
+const { classifyIntentFromLLM } = require('../../legacy-ai-agent/aiAgent/agentIntentClassifierService');
+const { resolveToolPlan } = require('../../legacy-ai-agent/aiAgent/agentIntentRelevanceService');
 const aiRuntimeService = require('../../services/aiRuntimeService');
-const AIProviderFactory = require('../../services/aiAgent/providers/AIProviderFactory');
+const AIProviderFactory = require('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory');
 
 jest.mock('../../services/aiRuntimeService');
-jest.mock('../../services/aiAgent/providers/AIProviderFactory');
+jest.mock('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory');
 
 describe('agentIntentClassifierService', () => {
   let mockModelManager;

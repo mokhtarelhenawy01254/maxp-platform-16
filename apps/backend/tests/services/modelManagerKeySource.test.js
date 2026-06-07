@@ -5,26 +5,26 @@ jest.mock('../../services/sharedDatabase', () => ({
 const mockGetNextKey = jest.fn(async (keys) => keys[0] || null);
 const mockGetStatus = jest.fn(() => ({ totalFailed: 0, failures: [] }));
 
-jest.mock('../../services/aiAgent/SimpleKeyRotator', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/SimpleKeyRotator', () => ({
   getSimpleKeyRotator: jest.fn(() => ({
     getNextKey: mockGetNextKey,
     getStatus: mockGetStatus
   }))
 }));
 
-jest.mock('../../services/aiAgent/stateManager', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/stateManager', () => ({
   acquireLock: jest.fn(async () => true),
   releaseLock: jest.fn(async () => undefined),
   getLastUsedGlobalKeyId: jest.fn(async () => null),
   setLastUsedGlobalKeyId: jest.fn(async () => undefined)
 }));
 
-jest.mock('../../services/aiAgent/providers/AIProviderFactory', () => ({}));
+jest.mock('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory', () => ({}));
 
 jest.mock('../../services/systemManager', () => ({}));
 
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
-const ModelManager = require('../../services/aiAgent/modelManager');
+const ModelManager = require('../../legacy-ai-agent/aiAgent/modelManager');
 
 const createKey = (overrides = {}) => ({
   id: 'key-central',

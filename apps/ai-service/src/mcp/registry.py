@@ -27,12 +27,18 @@ class MCPRegistry:
         name: str,
         url: str,
         api_key: str | None = None,
+        transport: str = "streamable_http",
     ) -> None:
         if name in self._servers:
             self._log.warning("server already registered", name=name)
             return
 
-        client = MCPClient(server_url=url, server_name=name, api_key=api_key)
+        client = MCPClient(
+            server_url=url,
+            server_name=name,
+            api_key=api_key,
+            transport=transport,
+        )
         self._servers[name] = client
 
         tools = await client.list_tools()
@@ -57,6 +63,7 @@ class MCPRegistry:
                 name=server["name"],
                 url=server["url"],
                 api_key=server.get("api_key"),
+                transport=server.get("transport", "streamable_http"),
             )
 
     def get_tool(self, full_name: str) -> dict[str, Any] | None:
@@ -64,6 +71,10 @@ class MCPRegistry:
 
     def get_all_tools(self) -> list[dict[str, Any]]:
         return list(self._tools.values())
+
+    def get_skill_clients(self) -> list[MCPClient]:
+        """Return MCP clients that can expose agent skills resources."""
+        return list(self._servers.values())
 
     def get_server_tools(self, server_name: str) -> list[dict[str, Any]]:
         prefix = f"mcp_{server_name}_"

@@ -162,6 +162,36 @@ def test_resume_approve_flow(client, mock_session, valid_headers):
     mock_exec.assert_awaited_once_with(draft_id="draft_123", session=mock_session)
 
 
+def test_resume_approve_uses_sdk_workflow_before_manual_execution(client, mock_session, valid_headers):
+    approval = _make_mock_approval()
+    approval.approval_metadata = {"sdk_approval_id": "call-1"}
+    mock_session.execute.return_value = MagicMock(
+        scalar_one_or_none=MagicMock(return_value=approval)
+    )
+
+    with (
+        patch("src.api.resume.resume_sdk_approval_workflow", new_callable=AsyncMock) as sdk_resume,
+        patch("src.api.resume.execute_approved_action", new_callable=AsyncMock) as manual_exec,
+    ):
+        sdk_resume.return_value = MagicMock(final_reply="done")
+
+        resp = client.post(
+            "/resume",
+            json={
+                "thread_id": "t1",
+                "draft_id": "draft_123",
+                "approved": True,
+                "decided_by": "merchant",
+            },
+            headers=valid_headers,
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "ok"
+    sdk_resume.assert_awaited_once()
+    manual_exec.assert_not_awaited()
+
+
 def test_resume_approve_execution_failure(client, mock_session, valid_headers):
     approval = _make_mock_approval()
     mock_session.execute.return_value = MagicMock(

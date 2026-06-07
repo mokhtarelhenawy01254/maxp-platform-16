@@ -33,7 +33,7 @@ async def run_support(
     Returns:
         Dict with reply text, thread_id, and tool_results
     """
-    agent = agent_override or create_support_agent()
+    agent = agent_override or create_support_agent(company_id=company_id)
 
     # create_session is not always async in all agent implementations
     if asyncio.iscoroutinefunction(agent.create_session):

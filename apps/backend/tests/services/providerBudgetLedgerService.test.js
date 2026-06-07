@@ -1,5 +1,5 @@
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
-const providerBudgetLedgerService = require('../../services/aiAgent/providerBudgetLedgerService');
+const providerBudgetLedgerService = require('../../legacy-ai-agent/aiAgent/providerBudgetLedgerService');
 
 describe('ProviderBudgetLedgerService - Tenant Token Budgeting Tests', () => {
   let prisma;

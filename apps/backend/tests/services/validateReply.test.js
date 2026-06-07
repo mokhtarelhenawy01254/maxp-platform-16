@@ -2,28 +2,28 @@
  * Tests for validateReply stage.
  */
 
-jest.mock('../../services/aiAgent/agentReplyNormalizer', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentReplyNormalizer', () => ({
   normalizeAgentReply: jest.fn(text => text || ''),
 }));
 
-jest.mock('../../services/aiAgent/agentToolCallParser', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentToolCallParser', () => ({
   stripInternalToolSyntax: jest.fn(text => text || ''),
   containsInternalToolSyntax: jest.fn(() => false),
 }));
 
-jest.mock('../../services/aiAgent/agentToolGatewayService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentToolGatewayService', () => ({
   logReplyBlocked: jest.fn(async () => null),
 }));
 
-jest.mock('../../services/aiAgent/executors/toolExecutionEngine', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/executors/toolExecutionEngine', () => ({
   _validateGroundedReply: jest.fn(() => ({ valid: true })),
 }));
 
-jest.mock('../../services/aiAgent/executors/customerReplyEngine', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/executors/customerReplyEngine', () => ({
   _buildCompactCustomerReplyMessages: jest.fn(() => [{ role: 'user', content: 'test' }]),
 }));
 
-const validateReply = require('../../services/aiAgent/pipeline/stages/validateReply');
+const validateReply = require('../../legacy-ai-agent/aiAgent/pipeline/stages/validateReply');
 
 describe('validateReply', () => {
   const baseContext = {
@@ -61,7 +61,7 @@ describe('validateReply', () => {
   });
 
   test('returns earlyReturn for internal tool syntax on non-customer channel', async () => {
-    const { containsInternalToolSyntax } = require('../../services/aiAgent/agentToolCallParser');
+    const { containsInternalToolSyntax } = require('../../legacy-ai-agent/aiAgent/agentToolCallParser');
     containsInternalToolSyntax.mockReturnValueOnce(true);
 
     const result = await validateReply(baseContext);
@@ -70,7 +70,7 @@ describe('validateReply', () => {
   });
 
   test('handles empty reply by returning earlyReturn', async () => {
-    const { normalizeAgentReply } = require('../../services/aiAgent/agentReplyNormalizer');
+    const { normalizeAgentReply } = require('../../legacy-ai-agent/aiAgent/agentReplyNormalizer');
     normalizeAgentReply.mockReturnValueOnce('');
 
     const result = await validateReply({ ...baseContext, llmResponse: '' });
@@ -79,7 +79,7 @@ describe('validateReply', () => {
   });
 
   test('returns earlyReturn when grounding fails', async () => {
-    const { _validateGroundedReply } = require('../../services/aiAgent/executors/toolExecutionEngine');
+    const { _validateGroundedReply } = require('../../legacy-ai-agent/aiAgent/executors/toolExecutionEngine');
     _validateGroundedReply.mockReturnValueOnce({ valid: false, reason: 'ungrounded' });
 
     const result = await validateReply(baseContext);

@@ -212,6 +212,22 @@ function emitAllSessionStatuses() {
  */
 function verifySessionHealth(sessionId) {
     const session = activeSessions.get(sessionId);
+    return classifySessionSocketHealth(session);
+}
+
+function getSocketReadyState(sock) {
+    const candidates = [
+        sock?.ws?.readyState,
+        sock?.ws?.socket?.readyState,
+        sock?.ws?._socket?.readyState,
+        sock?.ws?.stream?.readyState,
+        sock?.ws?.stream?.socket?.readyState
+    ];
+
+    return candidates.find((readyState) => typeof readyState === 'number');
+}
+
+function classifySessionSocketHealth(session) {
     if (!session) {
         return { alive: false, reason: 'not_in_memory' };
     }
@@ -221,11 +237,15 @@ function verifySessionHealth(sessionId) {
     }
 
     try {
-        const ws = session.sock.ws;
-        if (!ws) {
-            return { alive: false, reason: 'no_websocket' };
+        const readyState = getSocketReadyState(session.sock);
+        if (typeof readyState !== 'number') {
+            if (session.status === 'connected' || session.status === 'authenticating') {
+                return { alive: true, stale: false, reason: 'websocket_state_unavailable' };
+            }
+
+            return { alive: false, reason: 'websocket_state_unavailable' };
         }
-        const readyState = ws.readyState;
+
         if (readyState === 1) {
             // WebSocket is OPEN - but also verify it's not stale by checking last message time
             const lastMsgRecv = session.sock.lastReceivedMessageTimestamp || 0;
@@ -4231,7 +4251,9 @@ module.exports = {
         resolveLinkedDeviceRemoteJid,
         shouldProcessMessageUpsertType,
         getMessageStatusFromBaileysStatus,
-        shouldApplyMessageStatus
+        shouldApplyMessageStatus,
+        classifySessionSocketHealth,
+        getSocketReadyState
     }
 };
 

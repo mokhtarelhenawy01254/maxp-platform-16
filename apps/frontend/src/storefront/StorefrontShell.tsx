@@ -62,6 +62,7 @@ import {
 import ProductImageLandingPage from "./pages/ProductImageLandingPage";
 import { useStorePage } from "../hooks/useStorePage";
 import i18n from "../i18n";
+import { footerSettingsService, type FooterSettings } from "../services/footerSettingsService";
 
 import "./styles/storefront-layout.css";
 
@@ -3930,6 +3931,24 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
   const { theme } = useStorefrontTheme();
   const { settings } = useStorefrontSettings();
   const location = useLocation();
+
+  // Fetch footerSettings from API (user's custom footer data from settings page)
+  const [footerSettings, setFooterSettings] = useState<FooterSettings | null>(null);
+
+  useEffect(() => {
+    const companyId = settings?.company?.id;
+    if (!companyId) return;
+
+    footerSettingsService.getPublicSettings(companyId)
+      .then((res) => {
+        if (res?.success && res?.data) {
+          setFooterSettings(res.data as FooterSettings);
+        }
+      })
+      .catch(() => {
+        // Ignore errors, theme.footer will be used as fallback
+      });
+  }, [settings?.company?.id]);
   const normalizedPath = location.pathname.replace(/\/+$/, '') || '/';
   const shouldForceDocumentNavigation =
     shouldStorefrontForceDocumentNavigation(
@@ -3992,6 +4011,54 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
       return text.replace(new RegExp(escapedBrandName, 'g'), displayStoreName);
     }, value);
   };
+
+  // Build merged footer: footerSettings (user's data from settings page) takes priority over theme.footer
+  const mergedFooterDescription = footerSettings?.aboutStore
+    ? replaceThemeBrandText(footerSettings.aboutStore)
+    : replaceThemeBrandText(theme.footer?.description);
+
+  const mergedFooterCopyright = footerSettings?.copyrightText
+    ? replaceThemeBrandText(footerSettings.copyrightText.replace('{year}', new Date().getFullYear().toString()))
+    : replaceThemeBrandText(theme.footer?.copyrightText);
+
+  // Build contact rows from footerSettings (user settings) or fall back to theme
+  const mergedFooterContactRows = (() => {
+    const rows: Array<{ label: string; value: string; href?: string }> = [];
+    if (footerSettings?.phone && footerSettings.showPhone) {
+      rows.push({
+        label: i18n.t('common.phone'),
+        value: footerSettings.phone,
+        href: `tel:${footerSettings.phone}`,
+      });
+    }
+    if (footerSettings?.email && footerSettings.showEmail) {
+      rows.push({
+        label: i18n.t('common.email'),
+        value: footerSettings.email,
+        href: `mailto:${footerSettings.email}`,
+      });
+    }
+    if (footerSettings?.address && footerSettings.showAddress) {
+      rows.push({
+        label: i18n.t('common.address'),
+        value: footerSettings.address,
+      });
+    }
+    // If no user settings, fall back to theme contact rows
+    if (rows.length === 0 && theme.footer?.contactRows) {
+      return theme.footer.contactRows.filter(
+        (row): row is { label: string; value: string; href?: string } => Boolean(row?.label && row?.value),
+      );
+    }
+    return rows;
+  })();
+
+  // Build social links: merge theme social links with footerSettings links (user settings override)
+  const mergedFooterSocialLinks = {
+    ...(theme.footer?.socialLinks || {}),
+    ...normalizeSocialLinks(footerSettings),
+  };
+
   const runtimeStorefrontSettings =
     settings?.storefront?.settings && typeof settings.storefront.settings === 'object'
       ? (settings.storefront.settings as Record<string, unknown>)
@@ -4000,7 +4067,7 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
     settings?.storefront?.designTokens && typeof settings.storefront.designTokens === 'object'
       ? (settings.storefront.designTokens as Record<string, unknown>)
       : {};
-  const normalizeSocialLinks = (value: unknown): Record<string, string> => {
+  function normalizeSocialLinks(value: unknown): Record<string, string> {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       return {};
     }
@@ -4014,7 +4081,7 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
       },
       {},
     );
-  };
+  }
   const getRuntimeFooterValue = (...keys: string[]): string =>
     keys
       .map((key) => runtimeStorefrontSettings[key])
@@ -4058,17 +4125,8 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
       href?: string;
     } => Boolean(row?.value),
   );
-  const footerCopyrightText =
-    replaceThemeBrandText(theme.footer?.copyrightText) ||
-    (theme.direction === 'rtl'
-      ? `© 2026 ${displayStoreName}. جميع الحقوق محفوظة.`
-      : `© 2026 ${displayStoreName}. All rights reserved.`);
-  const footerDescriptionText =
-    getRuntimeFooterValue('description', 'footerDescription', 'storeDescription') ||
-    replaceThemeBrandText(theme.footer?.description) ||
-    (theme.direction === "rtl"
-      ? "مجموعات مختارة مصممة للحياة العصرية. الجودة تلتقي بالجمال البسيط."
-      : "Curated collections designed for modern living. Quality meets minimal aesthetic.");
+  const footerCopyrightText = mergedFooterCopyright;
+  const footerDescriptionText = mergedFooterDescription;
 
   const footerLinksData = theme.footer?.navigation?.map((group) => ({
     title: group.title,
@@ -4109,6 +4167,7 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
     ...(isAppliedRuntimeStorefront ? {} : theme.footer?.socialLinks || {}),
     ...normalizeSocialLinks(runtimeStorefrontSettings.socialLinks),
     ...normalizeSocialLinks(runtimeDesignTokens.socialLinks),
+    ...mergedFooterSocialLinks, // User footer settings take priority
   };
   const legalLinks = theme.footer?.legalLinks?.map((link) => ({
     label: link.label,
@@ -4139,11 +4198,13 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
         } => Boolean(row?.label && row?.value),
       )
     : [];
-  const footerContactRows = runtimeFooterContactRows.length
-    ? runtimeFooterContactRows
-    : isAppliedRuntimeStorefront
-      ? []
-      : themeFooterContactRows;
+  const footerContactRows = mergedFooterContactRows.length
+    ? mergedFooterContactRows
+    : runtimeFooterContactRows.length
+      ? runtimeFooterContactRows
+      : isAppliedRuntimeStorefront
+        ? []
+        : themeFooterContactRows;
   const velaFooterContactRows = [
     {
       key: 'address',

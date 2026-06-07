@@ -17,7 +17,7 @@ jest.mock('../../services/aiRuntimeService', () => ({
   })),
 }));
 
-jest.mock('../../services/aiAgent/episodicMemoryService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/episodicMemoryService', () => ({
   getEmbeddingFailureSnapshot: mockGetEmbeddingFailureSnapshot,
   invalidateConfigCache: mockInvalidateEmbeddingConfigCache,
 }));

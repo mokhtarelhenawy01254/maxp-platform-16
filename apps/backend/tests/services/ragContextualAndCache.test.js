@@ -1,7 +1,7 @@
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 const CorrectiveRAGEngine = require('../../services/rag/CorrectiveRAGEngine');
-const semanticCacheService = require('../../services/aiAgent/semanticCacheService');
-const agentToolGatewayService = require('../../services/aiAgent/agentToolGatewayService');
+const semanticCacheService = require('../../legacy-ai-agent/aiAgent/semanticCacheService');
+const agentToolGatewayService = require('../../legacy-ai-agent/aiAgent/agentToolGatewayService');
 
 jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),

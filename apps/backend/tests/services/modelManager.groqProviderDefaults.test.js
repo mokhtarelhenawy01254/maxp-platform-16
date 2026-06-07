@@ -14,22 +14,22 @@ const mockRotator = {
   clearAll: jest.fn(),
 };
 
-jest.mock('../../services/aiAgent/SimpleKeyRotator', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/SimpleKeyRotator', () => ({
   getSimpleKeyRotator: jest.fn(() => mockRotator),
 }));
 
 jest.mock('../../services/systemManager', () => ({}));
-jest.mock('../../services/aiAgent/stateManager', () => ({}));
+jest.mock('../../legacy-ai-agent/aiAgent/stateManager', () => ({}));
 const mockGenerateResponse = jest.fn();
 const mockGetProvider = jest.fn(() => ({
   generateResponse: mockGenerateResponse,
 }));
-jest.mock('../../services/aiAgent/providers/AIProviderFactory', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory', () => ({
   getProvider: mockGetProvider,
 }));
 
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
-const ModelManager = require('../../services/aiAgent/modelManager');
+const ModelManager = require('../../legacy-ai-agent/aiAgent/modelManager');
 
 function createPrismaMock({ centralKeys = [], defaultProvider = 'GROQ', settings = null } = {}) {
   return {

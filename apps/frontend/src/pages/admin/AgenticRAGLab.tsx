@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Avatar,
   Box,
   Button,
   Checkbox,
@@ -12,6 +13,14 @@ import {
   MenuItem,
   Paper,
   Stack,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tabs,
   TextField,
   Tooltip,
   Typography,
@@ -198,6 +207,36 @@ type MessengerScenario = {
   category?: string;
 };
 
+type ProductEmbeddingItem = {
+  id: string;
+  name: string;
+  sku: string;
+  mainImage: string | null;
+  isActive: boolean;
+  hasTextEmbedding: boolean;
+  hasImageEmbedding: boolean;
+  textEmbeddingGeneratedAt: string | null;
+  imageEmbeddingGeneratedAt: string | null;
+};
+
+type RagFaqItem = {
+  id: string;
+  question: string;
+  category: string;
+  isActive: boolean;
+  hasEmbedding: boolean;
+};
+
+type RagPolicyItem = {
+  id: string;
+  title: string;
+  category: string;
+  isActive: boolean;
+  effectiveAt: string | null;
+  expiresAt: string | null;
+  hasEmbedding: boolean;
+};
+
 const SOURCE_PRESETS: Record<SourcePresetKey, { labelKey: string; order: string[] }> = {
   hybrid: {
     labelKey: "agenticRagLab.sourcePresets.hybrid",
@@ -295,6 +334,19 @@ const AgenticRAGLab: React.FC = () => {
   const [proposalBusy, setProposalBusy] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [tabIndex, setTabIndex] = useState(0);
+  const [products, setProducts] = useState<ProductEmbeddingItem[]>([]);
+  const [productsStats, setProductsStats] = useState<{ total: number; withTextEmbedding: number; withImageEmbedding: number; missingTextEmbedding: number; missingImageEmbedding: number } | null>(null);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productsOffset, setProductsOffset] = useState(0);
+  const [productsTotal, setProductsTotal] = useState(0);
+  const [productsBackfillBusy, setProductsBackfillBusy] = useState(false);
+  const [faqItems, setFaqItems] = useState<RagFaqItem[]>([]);
+  const [policyItems, setPolicyItems] = useState<RagPolicyItem[]>([]);
+  const [faqLoading, setFaqLoading] = useState(false);
+  const [policyLoading, setPolicyLoading] = useState(false);
+  const [faqBackfillBusy, setFaqBackfillBusy] = useState(false);
+  const [policyBackfillBusy, setPolicyBackfillBusy] = useState(false);
 
   const defaultQuestion = trAr("agenticRagLab.defaultQuestion");
   const sourceOrder = useMemo(() => SOURCE_PRESETS[sourcePreset]?.order || SOURCE_PRESETS.hybrid.order, [sourcePreset]);
@@ -511,6 +563,139 @@ const AgenticRAGLab: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (tabIndex === 1) loadProducts(0);
+    else if (tabIndex === 2) loadFaqItems();
+    else if (tabIndex === 3) loadPolicyItems();
+  }, [tabIndex]);
+
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+    setTabIndex(newValue);
+    setError("");
+    setNotice("");
+  };
+
+  const loadProducts = async (offset = 0) => {
+    setProductsLoading(true);
+    try {
+      const response = await fetch(buildApiUrl(`/ai/chat/rag-knowledge-products?limit=50&offset=${offset}`), {
+        headers: getHeaders(),
+      });
+      const data = await response.json();
+      if (response.ok && data.success && data.data) {
+        setProducts(data.data.items || []);
+        setProductsStats(data.data.stats || null);
+        setProductsOffset(data.data.offset || 0);
+        setProductsTotal(data.data.total || 0);
+      }
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
+  const loadFaqItems = async () => {
+    setFaqLoading(true);
+    try {
+      const response = await fetch(buildApiUrl("/ai/chat/rag-knowledge-faqs?limit=200"), {
+        headers: getHeaders(),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) setFaqItems(data.data?.items || []);
+    } finally {
+      setFaqLoading(false);
+    }
+  };
+
+  const loadPolicyItems = async () => {
+    setPolicyLoading(true);
+    try {
+      const response = await fetch(buildApiUrl("/ai/chat/rag-knowledge-policies?limit=200"), {
+        headers: getHeaders(),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) setPolicyItems(data.data?.items || []);
+    } finally {
+      setPolicyLoading(false);
+    }
+  };
+
+  const runProductBackfill = async (productId?: string) => {
+    if (productsBackfillBusy) return;
+    setProductsBackfillBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const body = productId ? { productId } : {};
+      const response = await fetch(buildApiUrl("/ai/chat/rag-knowledge-products-backfill"), {
+        method: "POST",
+        headers: getHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(body),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "Backfill failed");
+      setNotice("Product embeddings backfill completed");
+      await loadProducts(productsOffset);
+    } catch (err: any) {
+      setError(err.message || "Backfill error");
+    } finally {
+      setProductsBackfillBusy(false);
+    }
+  };
+
+  const runFaqBackfill = async () => {
+    if (faqBackfillBusy) return;
+    setFaqBackfillBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch(buildApiUrl("/ai/chat/rag-knowledge-backfill"), {
+        method: "POST",
+        headers: getHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ target: "faq", limit: 200 }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "FAQ backfill failed");
+      setNotice("FAQ embeddings backfill completed");
+      await Promise.all([loadFaqItems(), loadOverview()]);
+    } catch (err: any) {
+      setError(err.message || "FAQ backfill error");
+    } finally {
+      setFaqBackfillBusy(false);
+    }
+  };
+
+  const runPolicyBackfill = async () => {
+    if (policyBackfillBusy) return;
+    setPolicyBackfillBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch(buildApiUrl("/ai/chat/rag-knowledge-backfill"), {
+        method: "POST",
+        headers: getHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ target: "policy", limit: 200 }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "Policy backfill failed");
+      setNotice("Policy embeddings backfill completed");
+      await Promise.all([loadPolicyItems(), loadOverview()]);
+    } catch (err: any) {
+      setError(err.message || "Policy backfill error");
+    } finally {
+      setPolicyBackfillBusy(false);
+    }
+  };
+
+  const handleProductsPrevPage = () => {
+    const next = Math.max(0, productsOffset - 50);
+    loadProducts(next);
+  };
+
+  const handleProductsNextPage = () => {
+    const next = productsOffset + 50;
+    if (next < productsTotal) loadProducts(next);
+  };
+
   const createProposal = async (failure: RagFailure, targetType: "FAQ" | "POLICY") => {
     setProposalBusy(`${failure.id}:${targetType}`);
     setError("");
@@ -659,6 +844,17 @@ const AgenticRAGLab: React.FC = () => {
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError("")}>{error}</Alert>}
       {notice && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setNotice("")}>{notice}</Alert>}
 
+      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}>
+        <Tabs value={tabIndex} onChange={handleTabChange}>
+          <Tab label="RAG Lab" />
+          <Tab label="Products" />
+          <Tab label="FAQs" />
+          <Tab label="Policies" />
+        </Tabs>
+      </Box>
+
+      {tabIndex === 0 && (
+      <>
       <Paper variant="outlined" sx={{ p: 2.5, mb: 2 }}>
         <Stack spacing={2}>
           <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" spacing={1.5}>
@@ -1142,6 +1338,226 @@ const AgenticRAGLab: React.FC = () => {
           ))}
         </Stack>
       </Paper>
+      </>)}
+      {tabIndex === 1 && (
+        <Stack spacing={2} sx={{ mb: 2 }}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", xl: "repeat(5, minmax(0, 1fr))" },
+              gap: 1.25,
+            }}
+          >
+            {[
+              { label: "Total Products", value: productsStats?.total || 0 },
+              { label: "With Text Embedding", value: productsStats?.withTextEmbedding || 0 },
+              { label: "With Image Embedding", value: productsStats?.withImageEmbedding || 0 },
+              { label: "Missing Text", value: productsStats?.missingTextEmbedding || 0 },
+              { label: "Missing Image", value: productsStats?.missingImageEmbedding || 0 },
+            ].map((stat) => (
+              <Box
+                key={stat.label}
+                sx={{
+                  border: 1,
+                  borderColor: "divider",
+                  borderRadius: 1,
+                  p: 1.5,
+                  minHeight: 80,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Typography variant="caption" color="text.secondary">{stat.label}</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 800 }}>{productsLoading ? "..." : stat.value}</Typography>
+              </Box>
+            ))}
+          </Box>
+
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="contained"
+              startIcon={productsBackfillBusy ? <CircularProgress size={18} /> : <BackfillIcon />}
+              onClick={() => runProductBackfill()}
+              disabled={productsBackfillBusy}
+            >
+              Backfill All Products
+            </Button>
+          </Stack>
+
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Product</TableCell>
+                  <TableCell>SKU</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Text Embedding</TableCell>
+                  <TableCell>Image Embedding</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {products.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">{productsLoading ? "Loading..." : "No products found"}</TableCell>
+                  </TableRow>
+                ) : (
+                  products.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          {product.mainImage && <Avatar src={product.mainImage} alt={product.name} sx={{ width: 36, height: 36 }} />}
+                          <Typography variant="body2">{product.name}</Typography>
+                        </Stack>
+                      </TableCell>
+                      <TableCell><Typography variant="body2">{product.sku}</Typography></TableCell>
+                      <TableCell>
+                        <Chip size="small" color={product.isActive ? "success" : "default"} label={product.isActive ? "Active" : "Inactive"} />
+                      </TableCell>
+                      <TableCell>
+                        {product.hasTextEmbedding ? (
+                          <Chip size="small" color="success" label={product.textEmbeddingGeneratedAt ? new Date(product.textEmbeddingGeneratedAt).toLocaleDateString() : "\u2705 Done"} />
+                        ) : (
+                          <Chip size="small" color="default" label={"\u274C Missing"} />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {product.hasImageEmbedding ? (
+                          <Chip size="small" color="success" label={product.imageEmbeddingGeneratedAt ? new Date(product.imageEmbeddingGeneratedAt).toLocaleDateString() : "\u2705 Done"} />
+                        ) : (
+                          <Chip size="small" color="default" label={"\u274C Missing"} />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          disabled={productsBackfillBusy || (product.hasTextEmbedding && product.hasImageEmbedding)}
+                          onClick={() => runProductBackfill(product.id)}
+                        >
+                          Generate Embedding
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="body2" color="text.secondary">
+              Showing {productsOffset + 1}–{Math.min(productsOffset + 50, productsTotal)} of {productsTotal}
+            </Typography>
+            <Stack direction="row" spacing={1}>
+              <Button size="small" variant="outlined" disabled={productsOffset === 0 || productsLoading} onClick={handleProductsPrevPage}>Previous</Button>
+              <Button size="small" variant="outlined" disabled={productsOffset + 50 >= productsTotal || productsLoading} onClick={handleProductsNextPage}>Next</Button>
+            </Stack>
+          </Stack>
+        </Stack>
+      )}
+
+      {tabIndex === 2 && (
+        <Stack spacing={2} sx={{ mb: 2 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 1 }}>
+              <FaqIcon color="primary" />
+              FAQs
+            </Typography>
+            <Button
+              variant="outlined"
+              startIcon={faqBackfillBusy ? <CircularProgress size={18} /> : <BackfillIcon />}
+              onClick={runFaqBackfill}
+              disabled={faqBackfillBusy}
+            >
+              Backfill FAQs
+            </Button>
+          </Stack>
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Question</TableCell>
+                  <TableCell>Category</TableCell>
+                  <TableCell>Active</TableCell>
+                  <TableCell>Embedding</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {faqItems.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">{faqLoading ? "Loading..." : "No FAQs found"}</TableCell>
+                  </TableRow>
+                ) : (
+                  faqItems.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell><Typography variant="body2" sx={{ fontFamily: "monospace", fontSize: 12 }}>{item.id.slice(0, 8)}</Typography></TableCell>
+                      <TableCell><Typography variant="body2">{item.question}</Typography></TableCell>
+                      <TableCell><Chip size="small" label={item.category} variant="outlined" /></TableCell>
+                      <TableCell><Chip size="small" color={item.isActive ? "success" : "default"} label={item.isActive ? "Active" : "Inactive"} /></TableCell>
+                      <TableCell><Chip size="small" color={item.hasEmbedding ? "success" : "warning"} label={item.hasEmbedding ? "\u2705 Done" : "\u274C Missing"} /></TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Stack>
+      )}
+
+      {tabIndex === 3 && (
+        <Stack spacing={2} sx={{ mb: 2 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 1 }}>
+              <PolicyIcon color="primary" />
+              Policies
+            </Typography>
+            <Button
+              variant="outlined"
+              startIcon={policyBackfillBusy ? <CircularProgress size={18} /> : <BackfillIcon />}
+              onClick={runPolicyBackfill}
+              disabled={policyBackfillBusy}
+            >
+              Backfill Policies
+            </Button>
+          </Stack>
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Title</TableCell>
+                  <TableCell>Category</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Effective</TableCell>
+                  <TableCell>Expiry</TableCell>
+                  <TableCell>Embedding</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {policyItems.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">{policyLoading ? "Loading..." : "No policies found"}</TableCell>
+                  </TableRow>
+                ) : (
+                  policyItems.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell><Typography variant="body2">{item.title}</Typography></TableCell>
+                      <TableCell><Chip size="small" label={item.category} variant="outlined" /></TableCell>
+                      <TableCell><Chip size="small" color={item.isActive ? "success" : "default"} label={item.isActive ? "Active" : "Inactive"} /></TableCell>
+                      <TableCell><Typography variant="body2">{item.effectiveAt ? new Date(item.effectiveAt).toLocaleDateString() : "-"}</Typography></TableCell>
+                      <TableCell><Typography variant="body2">{item.expiresAt ? new Date(item.expiresAt).toLocaleDateString() : "-"}</Typography></TableCell>
+                      <TableCell><Chip size="small" color={item.hasEmbedding ? "success" : "warning"} label={item.hasEmbedding ? "\u2705 Done" : "\u274C Missing"} /></TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Stack>
+      )}
+
     </Box>
   );
 };

@@ -1,4 +1,4 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 async function cleanup() {

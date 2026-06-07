@@ -1,4 +1,4 @@
-﻿const companyAwareApi = require('../services/companyAwareApi');
+const companyAwareApi = require('../services/companyAwareApi');
 
 async function testScheduleInterview() {
     try {

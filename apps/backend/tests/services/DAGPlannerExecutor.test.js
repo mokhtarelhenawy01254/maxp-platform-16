@@ -4,7 +4,7 @@
  *   replanning, and multi-tenant safety.
  */
 
-const DAGPlannerExecutor = require('../../services/aiAgent/DAGPlannerExecutor');
+const DAGPlannerExecutor = require('../../legacy-ai-agent/aiAgent/DAGPlannerExecutor');
 
 jest.mock('../../services/sharedDatabase', () => {
   const aiAgentTasks = [];

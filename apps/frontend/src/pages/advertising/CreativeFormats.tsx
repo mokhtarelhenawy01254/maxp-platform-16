@@ -7,6 +7,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import {
   Layers,
   Film,
@@ -30,6 +31,7 @@ type CreativeType = "collection" | "stories" | "instant";
 
 const CreativeFormats: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [activeType, setActiveType] = useState<CreativeType>("collection");
 
@@ -127,7 +129,7 @@ const CreativeFormats: React.FC = () => {
 
   const handleCreateCollection = async () => {
     if (!collectionData.pageId) {
-      toast.error("يرجى إدخال معرف الصفحة");
+      toast.error(t("creativeFormats.errors.pageIdRequired"));
       return;
     }
 
@@ -156,11 +158,11 @@ const CreativeFormats: React.FC = () => {
       if (filledProducts.length > 0) payload.products = filledProducts;
 
       await facebookAdsService.createCollectionCreative(payload);
-      toast.success("تم إنشاء Collection Creative بنجاح! 🎉");
+      toast.success(t("creativeFormats.success.collectionCreated"));
       navigate("/advertising/facebook-ads");
     } catch (error: any) {
       console.error("Error:", error);
-      toast.error(error?.response?.data?.error || "فشل في الإنشاء");
+      toast.error(error?.response?.data?.error || t("creativeFormats.errors.createFailed"));
     } finally {
       setLoading(false);
     }
@@ -168,11 +170,11 @@ const CreativeFormats: React.FC = () => {
 
   const handleCreateStories = async () => {
     if (!storiesData.pageId || !storiesData.videoId) {
-      toast.error("يرجى إدخال معرف الصفحة ومعرف الفيديو");
+      toast.error(t("creativeFormats.errors.pageAndVideoRequired"));
       return;
     }
     if (!storiesData.instagramAccountId) {
-      toast.error("يرجى إدخال معرف حساب Instagram (مطلوب لـ Instagram Stories/Reels)");
+      toast.error(t("creativeFormats.errors.instagramAccountRequired"));
       return;
     }
 
@@ -191,12 +193,12 @@ const CreativeFormats: React.FC = () => {
       };
 
       await facebookAdsService.createStoriesReelsCreative(payload);
-      toast.success("تم إنشاء Stories/Reels Creative بنجاح! 🎉");
+      toast.success(t("creativeFormats.success.storiesCreated"));
       navigate("/advertising/facebook-ads");
     } catch (error: unknown) {
       console.error("Error:", error);
       const err = error as { response?: { data?: { error?: string } } };
-      toast.error(err?.response?.data?.error || "فشل في الإنشاء");
+      toast.error(err?.response?.data?.error || t("creativeFormats.errors.createFailed"));
     } finally {
       setLoading(false);
     }
@@ -204,7 +206,7 @@ const CreativeFormats: React.FC = () => {
 
   const handleCreateInstant = async () => {
     if (!instantData.pageId) {
-      toast.error("يرجى إدخال معرف الصفحة");
+      toast.error(t("creativeFormats.errors.pageIdRequired"));
       return;
     }
 
@@ -222,11 +224,11 @@ const CreativeFormats: React.FC = () => {
             : undefined,
       });
 
-      toast.success("تم إنشاء Instant Experience بنجاح! 🎉");
+      toast.success(t("creativeFormats.success.instantCreated"));
       navigate("/advertising/facebook-ads");
     } catch (error: any) {
       console.error("Error:", error);
-      toast.error(error?.response?.data?.error || "فشل في الإنشاء");
+      toast.error(error?.response?.data?.error || t("creativeFormats.errors.createFailed"));
     } finally {
       setLoading(false);
     }

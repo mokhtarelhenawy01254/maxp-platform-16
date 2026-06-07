@@ -2,7 +2,7 @@
  * Tests for routeToTools stage.
  */
 
-jest.mock('../../services/aiAgent/agentToolRegistry', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentToolRegistry', () => ({
   TOOLS: {
     'inventory.check': { readOnly: true },
     'product.search': { readOnly: true },
@@ -14,11 +14,11 @@ jest.mock('../../services/aiAgent/agentToolRegistry', () => ({
   fromNativeToolName: jest.fn(name => name),
 }));
 
-jest.mock('../../services/aiAgent/CEOAgent', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/CEOAgent', () => ({
   _formatRelevancePrompt: jest.fn((plan) => `[Intent: ${plan?.intent || 'none'}]`),
 }));
 
-const routeToTools = require('../../services/aiAgent/pipeline/stages/routeToTools');
+const routeToTools = require('../../legacy-ai-agent/aiAgent/pipeline/stages/routeToTools');
 const { buildSystemPromptForTurn, buildMessages } = routeToTools;
 
 describe('buildSystemPromptForTurn', () => {

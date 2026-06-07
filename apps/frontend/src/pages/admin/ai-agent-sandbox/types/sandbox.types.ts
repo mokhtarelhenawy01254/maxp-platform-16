@@ -107,6 +107,7 @@ export interface ChatMessage {
   latencyMs?: number;
   cost?: number;
   metadata?: PipelineTrace;
+  usedFallbackKey?: boolean;
 }
 
 export interface TokenUsage {
@@ -136,8 +137,8 @@ export interface Session {
 export interface ActivityLogEntry {
   id: string;
   timestamp: string;
-  type: "input" | "plan" | "tool_call" | "tool_result" | "reply" | "error" | "eval" | "cost";
-  icon: "🔵" | "🟡" | "⚙️" | "✅" | "🟢" | "🔴" | "📊" | "💰";
+  type: "input" | "plan" | "tool_call" | "tool_result" | "reply" | "error" | "eval" | "cost" | "warning";
+  icon: "🔵" | "🟡" | "⚙️" | "✅" | "🟢" | "🔴" | "📊" | "💰" | "⚠️";
   title: string;
   details: string;
   metadata?: Record<string, unknown>;

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Create missing enum in database
  */
 

@@ -7,10 +7,10 @@
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../utils/verifyToken');
-const draftProposalService = require('../services/aiAgent/draftProposalService');
-const humanApprovalService = require('../services/aiAgent/humanApprovalService');
+const draftProposalService = require('../legacy-ai-agent/aiAgent/draftProposalService');
+const humanApprovalService = require('../legacy-ai-agent/aiAgent/humanApprovalService');
 const aiSdkClient = require('../services/aiSdkClient');
-const { isAiServiceEnabled } = require('../services/aiAgent/aiServiceRouter');
+const { isAiServiceEnabled } = require('../legacy-ai-agent/aiAgent/aiServiceRouter');
 
 router.use(verifyToken.authenticateToken);
 

@@ -23,6 +23,7 @@ from src.services.agent_registry import get_agent_registry
 from src.services.run_state_manager import RunStateManager
 from src.tools.registry import get_tool_names_for_role
 from src.workflows.magentic_orchestration import MagenticOrchestrator
+from src.workflows.postgres_checkpoint import PostgresCheckpointStorage
 
 logger = structlog.get_logger(__name__)
 
@@ -46,8 +47,10 @@ async def run_orchestration(
     if not client:
         raise RuntimeError("No LLM provider available for orchestration")
 
-    # Try Magentic orchestration if enabled
-    if settings.enable_magentic_orchestration:
+    # Try Magentic orchestration only for merchant/internal requests until the
+    # Magentic path is wrapped with MaxP's customer intent, approval, and audit
+    # gates.
+    if settings.enable_magentic_orchestration and is_merchant:
         try:
             orchestrator = MagenticOrchestrator(llm_client=client)
             result = await orchestrator.run(
@@ -69,6 +72,7 @@ async def run_orchestration(
     registry = get_agent_registry()
     state_manager = RunStateManager(session) if session else None
     checkpointer = PipelineCheckpointer(session) if session else None
+    checkpoint_storage = PostgresCheckpointStorage(session) if session else None
 
     await _ensure_default_agents(company_id, manager, registry, session)
 
@@ -121,6 +125,7 @@ async def run_orchestration(
             customer_id=customer_id,
             agent=ceo_agent,
             session=agent_session,
+            channel="merchant" if is_merchant else "chat",
         )
 
         pipeline_stages = [
@@ -132,7 +137,12 @@ async def run_orchestration(
             validate_reply,
         ]
 
-        final_ctx = await execute_pipeline(ctx, pipeline_stages, checkpointer=checkpointer)
+        final_ctx = await execute_pipeline(
+            ctx,
+            pipeline_stages,
+            checkpointer=checkpointer,
+            checkpoint_storage=checkpoint_storage,
+        )
 
         if state_manager:
             state_id = f"state_{int(time.time())}"

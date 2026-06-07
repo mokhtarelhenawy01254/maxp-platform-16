@@ -9,7 +9,7 @@ function loadRouter() {
   jest.doMock('../../services/aiSdkClient', () => ({
     sendChatMessage: (...args) => mockSendChatMessage(...args),
   }));
-  return require('../../services/aiAgent/aiServiceRouter');
+  return require('../../legacy-ai-agent/aiAgent/aiServiceRouter');
 }
 
 describe('aiServiceRouter feature flags', () => {

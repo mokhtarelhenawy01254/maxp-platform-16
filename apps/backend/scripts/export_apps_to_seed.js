@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
+const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
 const fs = require('fs');
 const path = require('path');
 

@@ -95,10 +95,10 @@ const InstagramSettings: React.FC = () => {
         </div>
         <div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#1a1a2e" }}>
-            {t("instagramSettings.title", "إعدادات Instagram")}
+            {t("instagramSettings.title")}
           </h1>
           <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: 14 }}>
-            {t("instagramSettings.subtitle", "إدارة حسابات Instagram المرتبطة بصفحات Facebook")}
+            {t("instagramSettings.subtitle")}
           </p>
         </div>
       </div>
@@ -119,15 +119,15 @@ const InstagramSettings: React.FC = () => {
         <ExclamationTriangleIcon style={{ width: 20, height: 20, color: "#db2777", flexShrink: 0, marginTop: 1 }} />
         <div>
           <p style={{ margin: 0, fontSize: 13, color: "#9d174d", fontWeight: 600 }}>
-            {t("instagramSettings.howToConnect", "كيفية ربط Instagram")}
+            {t("instagramSettings.howToConnect")}
           </p>
           <p style={{ margin: "4px 0 0", fontSize: 13, color: "#be185d" }}>
-            {t("instagramSettings.connectInfo", "يتم ربط Instagram تلقائياً عند توصيل صفحة Facebook المرتبطة بحساب Instagram Business.")}
+            {t("instagramSettings.connectInfo")}
             {" "}
             <a href="/settings/facebook" style={{ color: "#db2777", fontWeight: 600 }}>
-              {t("instagramSettings.facebookSettings", "إعدادات Facebook")}
+              {t("instagramSettings.facebookSettings")}
             </a>{" "}
-            {t("instagramSettings.reauthInfo", "لإعادة المصادقة وتحديث الأذونات.")}
+            {t("instagramSettings.reauthInfo")}
           </p>
         </div>
       </div>
@@ -146,7 +146,7 @@ const InstagramSettings: React.FC = () => {
               margin: "0 auto 12px",
             }}
           />
-          {t("instagramSettings.loading", "جاري التحميل...")}
+          {t("instagramSettings.loading")}
         </div>
       ) : error ? (
         <div
@@ -187,10 +187,10 @@ const InstagramSettings: React.FC = () => {
             <LinkIcon style={{ width: 30, height: 30, color: "white" }} />
           </div>
           <h3 style={{ margin: "0 0 8px", color: "#374151", fontSize: 16 }}>
-            {t("instagramSettings.noAccounts", "لا توجد حسابات Instagram مرتبطة")}
+            {t("instagramSettings.noAccounts")}
           </h3>
           <p style={{ margin: "0 0 20px", color: "#6b7280", fontSize: 14 }}>
-            {t("instagramSettings.connectPrompt", "قم بتوصيل صفحة Facebook مرتبطة بحساب Instagram Business للبدء")}
+            {t("instagramSettings.connectPrompt")}
           </p>
           <button
             onClick={handleConnectFacebook}
@@ -205,7 +205,7 @@ const InstagramSettings: React.FC = () => {
               cursor: "pointer",
             }}
           >
-            {t("instagramSettings.connectFacebook", "توصيل صفحة Facebook")}
+            {t("instagramSettings.connectFacebook")}
           </button>
         </div>
       ) : (
@@ -243,10 +243,10 @@ const InstagramSettings: React.FC = () => {
                 </div>
                 <div>
                   <div style={{ fontWeight: 700, color: "#111827", fontSize: 15 }}>
-                    {account.instagramAccountName || `${t("instagramSettings.instagramAccount", "حساب Instagram")} (${account.instagramAccountId?.slice(-6)})`}
+                    {account.instagramAccountName || `${t("instagramSettings.instagramAccount")} (${account.instagramAccountId?.slice(-6)})`}
                   </div>
                   <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-                    {t("instagramSettings.linkedTo", "مرتبط بصفحة")}: <span style={{ color: "#374151" }}>{account.pageName}</span>
+                    {t("instagramSettings.linkedTo")}: <span style={{ color: "#374151" }}>{account.pageName}</span>
                   </div>
                   <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
                     ID: {account.instagramAccountId}
@@ -265,7 +265,7 @@ const InstagramSettings: React.FC = () => {
                     fontWeight: 600,
                   }}
                 >
-                  {t("instagramSettings.connected", "متصل")}
+                  {t("instagramSettings.connected")}
                 </span>
               </div>
             </div>
@@ -284,7 +284,7 @@ const InstagramSettings: React.FC = () => {
                 cursor: "pointer",
               }}
             >
-              {t("instagramSettings.addAccount", "إضافة حساب آخر")}
+              {t("instagramSettings.addAccount")}
             </button>
           </div>
         </div>

@@ -1,4 +1,4 @@
-﻿// Test sendOrderCreatedNotification directly
+// Test sendOrderCreatedNotification directly
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 

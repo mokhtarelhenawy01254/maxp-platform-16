@@ -94,7 +94,7 @@ const RewardTypes: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching types:", error);
-      toast.error("فشل تحميل أنواع المكافآت");
+      toast.error(t("rewards.toast.loadError"));
     } finally {
       setLoading(false);
     }
@@ -102,7 +102,7 @@ const RewardTypes: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
-      if (!formData.name) return toast.error("يرجى إدخال اسم المكافأة");
+      if (!formData.name) return toast.error(t("rewards.toast.nameRequired"));
 
       let response;
       if (editingType) {
@@ -115,14 +115,14 @@ const RewardTypes: React.FC = () => {
       }
 
       if (response.data.success) {
-        toast.success(editingType ? "تم التعديل بنجاح" : "تم الإنشاء بنجاح");
+        toast.success(editingType ? t("rewards.toast.updated") : t("rewards.toast.created"));
         setIsDialogOpen(false);
         fetchTypes();
         resetForm();
       }
     } catch (error) {
       console.error("Error saving type:", error);
-      toast.error("حدث خطأ أثناء الحفظ");
+      toast.error(t("rewards.toast.saveError"));
     }
   };
 
@@ -136,14 +136,14 @@ const RewardTypes: React.FC = () => {
     try {
       setDeleting(true);
       await api.delete(`/hr/rewards/types/${deleteTarget.id}`);
-      toast.success("تم الحذف بنجاح");
+      toast.success(t("rewards.toast.deleted"));
       setDeleteDialogOpen(false);
       setDeleteTarget(null);
       fetchTypes();
     } catch (error: any) {
       const message =
         error?.response?.data?.message ||
-        "لا يمكن حذف هذا النوع لارتباطه بسجلات سابقة";
+        t("rewards.delete.errorLinked");
       toast.error(message);
       setDeleteDialogOpen(false);
     } finally {
@@ -156,10 +156,10 @@ const RewardTypes: React.FC = () => {
       await api.patch(`/hr/rewards/types/${id}/toggle`, {
         isActive: !currentStatus,
       });
-      toast.success("تم تغيير الحالة");
+      toast.success(t("rewards.toast.statusChanged"));
       fetchTypes();
     } catch (error) {
-      toast.error("فشل تغيير الحالة");
+      toast.error(t("rewards.toast.statusChangeFailed"));
     }
   };
 
@@ -210,8 +210,8 @@ const RewardTypes: React.FC = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>أنواع المكافآت</CardTitle>
-          <CardDescription>إدارة تعريفات المكافآت والحوافز</CardDescription>
+          <CardTitle>{t("rewards.types")}</CardTitle>
+          <CardDescription>{t("rewards.pageDescription")}</CardDescription>
         </div>
         <Button
           onClick={() => {
@@ -220,18 +220,18 @@ const RewardTypes: React.FC = () => {
           }}
         >
           <Plus className="h-4 w-4 ml-2" />
-          إضافة جديد
+          {t("rewards.form.addNew")}
         </Button>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>الاسم</TableHead>
-              <TableHead>التصنيف</TableHead>
-              <TableHead>القيمة</TableHead>
-              <TableHead>الحالة</TableHead>
-              <TableHead>الإجراءات</TableHead>
+              <TableHead>{t("rewards.table.name")}</TableHead>
+              <TableHead>{t("rewards.table.category")}</TableHead>
+              <TableHead>{t("rewards.table.value")}</TableHead>
+              <TableHead>{t("rewards.table.status")}</TableHead>
+              <TableHead>{t("rewards.table.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -243,7 +243,7 @@ const RewardTypes: React.FC = () => {
                 </TableCell>
                 <TableCell>
                   {type.calculationMethod === "FIXED_AMOUNT"
-                    ? `${type.value} جنية`
+                    ? `${type.value} ${t("rewards.form.currency")}`
                     : `${type.value}%`}
                 </TableCell>
                 <TableCell>
@@ -281,24 +281,24 @@ const RewardTypes: React.FC = () => {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editingType ? "تعديل مكافأة" : "إضافة مكافأة جديدة"}
+                {editingType ? t("rewards.form.editReward") : t("rewards.form.addReward")}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label>اسم المكافأة</Label>
+                <Label>{t("rewards.form.name")}</Label>
                 <Input
                   value={formData.name}
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  placeholder="مثال: مكافأة التميز"
+                  placeholder={t("rewards.form.namePlaceholder")}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>التصنيف</Label>
+                  <Label>{t("rewards.form.category")}</Label>
                   <Select
                     value={formData.category}
                     onValueChange={(v) =>
@@ -309,37 +309,25 @@ const RewardTypes: React.FC = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="PERFORMANCE">أداء عام</SelectItem>
-                      <SelectItem value="TARGET_ACHIEVEMENT">
-                        تحقيق التارجت
-                      </SelectItem>
-                      <SelectItem value="TARGET_EXCEED">
-                        تجاوز التارجت
-                      </SelectItem>
-                      <SelectItem value="PUNCTUALITY">
-                        التزام بالمواعيد
-                      </SelectItem>
-                      <SelectItem value="NO_ABSENCE">عدم غياب</SelectItem>
-                      <SelectItem value="QUALITY">جودة العمل</SelectItem>
-                      <SelectItem value="EMPLOYEE_OF_MONTH">
-                        موظف الشهر
-                      </SelectItem>
-                      <SelectItem value="INITIATIVE">مبادرة مميزة</SelectItem>
-                      <SelectItem value="PROJECT_SUCCESS">
-                        مشروع ناجح
-                      </SelectItem>
-                      <SelectItem value="SALES">مبيعات</SelectItem>
-                      <SelectItem value="ADMINISTRATIVE">
-                        مكافأة إدارية
-                      </SelectItem>
-                      <SelectItem value="SEASONAL">موسمي</SelectItem>
-                      <SelectItem value="ACHIEVEMENT">إنجاز آخر</SelectItem>
+                      <SelectItem value="PERFORMANCE">{t("rewards.category.PERFORMANCE")}</SelectItem>
+                      <SelectItem value="TARGET_ACHIEVEMENT">{t("rewards.category.TARGET_ACHIEVEMENT")}</SelectItem>
+                      <SelectItem value="TARGET_EXCEED">{t("rewards.category.TARGET_EXCEED")}</SelectItem>
+                      <SelectItem value="PUNCTUALITY">{t("rewards.category.PUNCTUALITY")}</SelectItem>
+                      <SelectItem value="NO_ABSENCE">{t("rewards.category.NO_ABSENCE")}</SelectItem>
+                      <SelectItem value="QUALITY">{t("rewards.category.QUALITY")}</SelectItem>
+                      <SelectItem value="EMPLOYEE_OF_MONTH">{t("rewards.category.EMPLOYEE_OF_MONTH")}</SelectItem>
+                      <SelectItem value="INITIATIVE">{t("rewards.category.INITIATIVE")}</SelectItem>
+                      <SelectItem value="PROJECT_SUCCESS">{t("rewards.category.PROJECT_SUCCESS")}</SelectItem>
+                      <SelectItem value="SALES">{t("rewards.category.SALES")}</SelectItem>
+                      <SelectItem value="ADMINISTRATIVE">{t("rewards.category.ADMINISTRATIVE")}</SelectItem>
+                      <SelectItem value="SEASONAL">{t("rewards.category.SEASONAL")}</SelectItem>
+                      <SelectItem value="ACHIEVEMENT">{t("rewards.category.ACHIEVEMENT")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>طريقة الحساب</Label>
+                  <Label>{t("rewards.form.calculationMethod")}</Label>
                   <Select
                     value={formData.calculationMethod}
                     onValueChange={(v) =>
@@ -350,17 +338,11 @@ const RewardTypes: React.FC = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="FIXED_AMOUNT">مبلغ ثابت</SelectItem>
-                      <SelectItem value="PERCENTAGE_SALARY">
-                        نسبة من الراتب
-                      </SelectItem>
-                      <SelectItem value="PERCENTAGE_SALES">
-                        نسبة من المبيعات
-                      </SelectItem>
-                      <SelectItem value="PERCENTAGE_PROJECT_PROFIT">
-                        نسبة من أرباح المشروع
-                      </SelectItem>
-                      <SelectItem value="POINTS">نقاط</SelectItem>
+                      <SelectItem value="FIXED_AMOUNT">{t("rewards.calculationMethod.FIXED_AMOUNT")}</SelectItem>
+                      <SelectItem value="PERCENTAGE_SALARY">{t("rewards.calculationMethod.PERCENTAGE_SALARY")}</SelectItem>
+                      <SelectItem value="PERCENTAGE_SALES">{t("rewards.calculationMethod.PERCENTAGE_SALES")}</SelectItem>
+                      <SelectItem value="PERCENTAGE_PROJECT_PROFIT">{t("rewards.calculationMethod.PERCENTAGE_PROJECT_PROFIT")}</SelectItem>
+                      <SelectItem value="POINTS">{t("rewards.calculationMethod.POINTS")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -368,7 +350,7 @@ const RewardTypes: React.FC = () => {
 
               <div className="space-y-2">
                 <Label>
-                  القيمة{" "}
+                  {t("rewards.form.value")}{" "}
                   {[
                     "PERCENTAGE_SALARY",
                     "PERCENTAGE_SALES",
@@ -389,14 +371,14 @@ const RewardTypes: React.FC = () => {
               {/* Eligibility Conditions Section */}
               <div className="p-4 bg-gray-50 rounded-lg space-y-4 border border-gray-200">
                 <Label className="text-blue-600 font-bold block mb-2 border-b pb-2">
-                  شروط الاستحقاق
+                  {t("rewards.form.eligibilityConditions")}
                 </Label>
 
                 {["TARGET_ACHIEVEMENT", "TARGET_EXCEED"].includes(
                   formData.category,
                 ) && (
                   <div className="space-y-2">
-                    <Label>الحد الأدنى لتحقيق التارجت (%)</Label>
+                    <Label>{t("rewards.form.minTargetProgress")}</Label>
                     <Input
                       type="number"
                       value={formData.eligibilityConditions.minTargetProgress}
@@ -415,7 +397,7 @@ const RewardTypes: React.FC = () => {
 
                 {formData.category === "PUNCTUALITY" && (
                   <div className="space-y-2">
-                    <Label>أقصى عدد مرات تأخير مسموح</Label>
+                    <Label>{t("rewards.form.maxLatenessCount")}</Label>
                     <Input
                       type="number"
                       value={formData.eligibilityConditions.maxLatenessCount}
@@ -434,7 +416,7 @@ const RewardTypes: React.FC = () => {
 
                 {formData.category === "NO_ABSENCE" && (
                   <div className="space-y-2">
-                    <Label>أقصى عدد أيام غياب مسموح</Label>
+                    <Label>{t("rewards.form.maxAbsenceCount")}</Label>
                     <Input
                       type="number"
                       value={formData.eligibilityConditions.maxAbsenceCount}
@@ -453,7 +435,7 @@ const RewardTypes: React.FC = () => {
 
                 {formData.category === "QUALITY" && (
                   <div className="space-y-2">
-                    <Label>أقصى نسبة أخطاء مسموحة (%)</Label>
+                    <Label>{t("rewards.form.maxErrorRate")}</Label>
                     <Input
                       type="number"
                       value={formData.eligibilityConditions.maxErrorRate}
@@ -472,7 +454,7 @@ const RewardTypes: React.FC = () => {
 
                 {formData.category === "PROJECT_SUCCESS" && (
                   <div className="space-y-2">
-                    <Label>الحد الأدنى لتقييم المشروع</Label>
+                    <Label>{t("rewards.form.minProjectScore")}</Label>
                     <Input
                       type="number"
                       value={formData.eligibilityConditions.minProjectScore}
@@ -491,7 +473,7 @@ const RewardTypes: React.FC = () => {
 
                 {formData.category === "SALES" && (
                   <div className="space-y-2">
-                    <Label>الحد الأدنى لقيمة المبيعات</Label>
+                    <Label>{t("rewards.form.minSalesAmount")}</Label>
                     <Input
                       type="number"
                       value={formData.eligibilityConditions.minSalesAmount}
@@ -524,7 +506,7 @@ const RewardTypes: React.FC = () => {
                         })
                       }
                     />
-                    <Label>ترشيح مدير</Label>
+                    <Label>{t("rewards.form.requiresManagerNomination")}</Label>
                   </div>
                   <div className="flex items-center space-x-2 space-x-reverse">
                     <Switch
@@ -541,13 +523,13 @@ const RewardTypes: React.FC = () => {
                         })
                       }
                     />
-                    <Label>موافقة HR</Label>
+                    <Label>{t("rewards.form.requiresHRApproval")}</Label>
                   </div>
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={handleSubmit}>حفظ</Button>
+              <Button onClick={handleSubmit}>{t("rewards.form.save")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -560,9 +542,9 @@ const RewardTypes: React.FC = () => {
             if (!open) setDeleteTarget(null);
           }}
           onConfirm={handleDeleteConfirm}
-          title="حذف نوع المكافأة"
-          description="هل تريد حذف هذا النوع من المكافآت؟"
-          confirmText="تأكيد الحذف"
+          title={t("rewards.delete.confirmTitle")}
+          description={t("rewards.delete.confirmDescription")}
+          confirmText={t("rewards.delete.confirmText")}
           type="danger"
           loading={deleting}
           itemName={deleteTarget?.name}
@@ -572,9 +554,9 @@ const RewardTypes: React.FC = () => {
               : undefined
           }
           consequences={[
-            "هذا الإجراء لا يمكن التراجع عنه",
-            "إذا كان النوع مرتبطاً بسجلات سابقة، سيمنع النظام الحذف",
-            "يمكنك تعطيل النوع بدلاً من حذفه للمحافظة على السجلات السابقة",
+            t("rewards.delete.irreversible"),
+            t("rewards.delete.linkedRecords"),
+            t("rewards.delete.disableInstead"),
           ]}
         />
       </CardContent>

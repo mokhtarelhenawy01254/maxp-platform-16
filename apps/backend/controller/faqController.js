@@ -1,12 +1,33 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const episodicMemoryService = require('../legacy-ai-agent/aiAgent/episodicMemoryService');
 const getPrisma = () => getSharedPrismaClient();
 
-const refreshFaqKnowledgeForCompany = async (companyId) => {
-  return undefined;
-};
+function _buildFaqEmbeddingText(faq) {
+  const categoryLabel = String(faq.category || 'general');
+  const tags = Array.isArray(faq.tags) ? faq.tags.join(', ') : '';
+  return [
+    `[Knowledge Type: FAQ]`,
+    `FAQ question: ${String(faq.question || '')}`,
+    `FAQ answer: ${String(faq.answer || '')}`,
+    `Category: ${categoryLabel}`,
+    tags ? `Tags: ${tags}` : '',
+  ].filter(Boolean).join('\n');
+}
 
 const refreshFaqVectorKnowledge = async (faq) => {
-  return undefined;
+  try {
+    const text = _buildFaqEmbeddingText(faq);
+    const embedding = await episodicMemoryService.generateEmbeddingAsync(text);
+    await getPrisma().faq.update({
+      where: { id: faq.id },
+      data: {
+        embedding: JSON.stringify(embedding),
+        embeddingGeneratedAt: new Date(),
+      },
+    });
+  } catch (err) {
+    console.warn(`[FAQ] Auto-embedding failed for ${faq.id}:`, err.message);
+  }
 };
 
 // Get all FAQs (Public)

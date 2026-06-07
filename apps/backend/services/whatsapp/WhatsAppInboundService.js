@@ -12,7 +12,7 @@ const {
   getConversationAudience
 } = require('../whatsappRealtimeAudienceService');
 const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
-const aiMessageProcessor = require('../aiAgent/aiMessageProcessor');
+const aiMessageProcessor = require('../../legacy-ai-agent/aiAgent/aiMessageProcessor');
 
 const getIO = () => socketService.getIO();
 

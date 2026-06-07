@@ -3,10 +3,10 @@
  * @description Tests multi-agent orchestration triggered from merchant chat (aiChatService).
  */
 
-const aiChatService = require('../../services/aiAgent/aiChatService');
-const agentProvisioningService = require('../../services/aiAgent/agentProvisioningService');
-const aiRuntimeService = require('../../services/aiAgent/aiRuntimeService');
-const CEOAgent = require('../../services/aiAgent/CEOAgent');
+const aiChatService = require('../../legacy-ai-agent/aiAgent/aiChatService');
+const agentProvisioningService = require('../../legacy-ai-agent/aiAgent/agentProvisioningService');
+const aiRuntimeService = require('../../legacy-ai-agent/aiAgent/aiRuntimeService');
+const CEOAgent = require('../../legacy-ai-agent/aiAgent/CEOAgent');
 
 // In-memory Redis mock
 jest.mock('../../services/redisCacheService', () => {
@@ -28,7 +28,7 @@ jest.mock('../../services/redisCacheService', () => {
 });
 
 // Mock model manager
-jest.mock('../../services/aiAgent/aiRuntimeService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/aiRuntimeService', () => ({
   getModelManager: jest.fn(() => ({
     getNextKeySimple: jest.fn(() => Promise.resolve({
       provider: 'google',
@@ -41,7 +41,7 @@ jest.mock('../../services/aiAgent/aiRuntimeService', () => ({
 }));
 
 // Mock AI provider
-jest.mock('../../services/aiAgent/providers/AIProviderFactory', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory', () => ({
   getProvider: jest.fn(() => ({
     generateResponse: jest.fn(() => Promise.resolve({
       text: `{"plan": "Launch Facebook ads for products A and B with a 15% discount.", "summary": "Focus on high-stock, high-selling items via Facebook.", "actionItems": [{"owner": "MARKETING", "task": "Create Facebook ad campaign", "priority": "high"}, {"owner": "SALES", "task": "Prepare discount codes", "priority": "high"}] }`,
@@ -50,7 +50,7 @@ jest.mock('../../services/aiAgent/providers/AIProviderFactory', () => ({
 }));
 
 // Mock agentChatTranscriptService
-jest.mock('../../services/aiAgent/agentChatTranscriptService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentChatTranscriptService', () => ({
   appendMessage: jest.fn(() => Promise.resolve()),
   loadMessages: jest.fn(() => Promise.resolve([])),
   listSessions: jest.fn(() => Promise.resolve([])),
@@ -60,7 +60,7 @@ jest.mock('../../services/aiAgent/agentChatTranscriptService', () => ({
 }));
 
 // Mock telemetry
-jest.mock('../../services/aiAgent/telemetryTracerService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/telemetryTracerService', () => ({
   startTrace: jest.fn(() => Promise.resolve({ id: 'trace_1' })),
   endTrace: jest.fn(() => Promise.resolve()),
   startSpan: jest.fn(() => Promise.resolve({ id: 'span_1' })),
@@ -73,12 +73,12 @@ jest.mock('../../services/rag/CorrectiveRAGEngine', () => ({
 }));
 
 // Mock intent classifier
-jest.mock('../../services/aiAgent/agentIntentClassifierService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentIntentClassifierService', () => ({
   classifyIntentFromLLM: jest.fn(() => Promise.resolve({})),
 }));
 
 // Mock goal run service
-jest.mock('../../services/aiAgent/agentGoalRunService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentGoalRunService', () => ({
   loadActiveRun: jest.fn(() => Promise.resolve(null)),
   processTurn: jest.fn(() => Promise.resolve({ activeGoal: null, promptBlock: '' })),
   applyTaskResult: jest.fn(() => Promise.resolve()),
@@ -86,7 +86,7 @@ jest.mock('../../services/aiAgent/agentGoalRunService', () => ({
 }));
 
 // Override BaseAgent.processTask for specialist agents
-const originalProcessTask = require('../../services/aiAgent/BaseAgent').prototype.processTask;
+const originalProcessTask = require('../../legacy-ai-agent/aiAgent/BaseAgent').prototype.processTask;
 
 beforeEach(async () => {
   agentProvisioningService._reset();
@@ -110,7 +110,7 @@ beforeEach(async () => {
     templateSlug: 'inventory-pricing-agent',
   });
 
-  require('../../services/aiAgent/BaseAgent').prototype.processTask = jest.fn(async function (task) {
+  require('../../legacy-ai-agent/aiAgent/BaseAgent').prototype.processTask = jest.fn(async function (task) {
     const role = this.role || 'UNKNOWN';
     if (role === 'SALES') {
       return { agentId: this.id, role: 'SALES', status: 'SUCCESS', result: { summary: 'Top products: A and B' } };
@@ -126,7 +126,7 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
-  require('../../services/aiAgent/BaseAgent').prototype.processTask = originalProcessTask;
+  require('../../legacy-ai-agent/aiAgent/BaseAgent').prototype.processTask = originalProcessTask;
 });
 
 describe('aiChatService orchestration integration', () => {
@@ -155,7 +155,7 @@ describe('aiChatService orchestration integration', () => {
 
   test('_isOrchestrationRequest detects only orchestration patterns', () => {
     // Access private helper through the service instance
-    const service = require('../../services/aiAgent/aiChatService');
+    const service = require('../../legacy-ai-agent/aiAgent/aiChatService');
 
     expect(service._isOrchestrationRequest('عايز خطة تسويقية')).toBeTruthy();
     expect(service._isOrchestrationRequest('I need a sales plan')).toBeTruthy();

@@ -91,3 +91,41 @@ class AgentRead(BaseModel):
     config: dict[str, Any]
     created_at: datetime
     updated_at: datetime
+
+
+class AgentChatAttachment(BaseModel):
+    type: str = Field(default="image", min_length=1)
+    mime_type: str | None = None
+    url: str | None = None
+    data_url: str | None = None
+    base64_data: str | None = None
+    file_id: str | None = None
+    name: str | None = None
+    detail: Literal["low", "high", "auto", "original"] | None = None
+    metadata: dict[str, Any] | None = None
+
+
+class AgentChatRequest(BaseModel):
+    company_id: str = Field(..., min_length=1)
+    agent_id: str = Field(..., min_length=1)
+    message: str = Field(..., min_length=1)
+    thread_id: str | None = None
+    conversation_id: str | None = None
+    customer_id: str | None = None
+    channel: str | None = None
+    agent_config: dict[str, Any] | None = None
+    memory_context: dict[str, Any] | None = None
+    attachments: list[AgentChatAttachment] = Field(default_factory=list)
+
+
+class AgentChatResponse(BaseModel):
+    status: Literal["ok", "awaiting_approval", "error"]
+    thread_id: str
+    reply: str | None = None
+    error: str | None = None
+    error_code: str | None = None
+    draft_id: str | None = None
+    agent_id: str
+    agent_role: str
+    runtime: str = "agent"
+    tool_calls: list[dict[str, Any]] = Field(default_factory=list)

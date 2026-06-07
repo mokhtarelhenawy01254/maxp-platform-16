@@ -16,14 +16,14 @@ const {
   getAnthropicSchema,
   validateClassificationResult,
   createFallbackResult,
-} = require('../../services/aiAgent/intentClassificationSchema');
+} = require('../../legacy-ai-agent/aiAgent/intentClassificationSchema');
 
 const {
   OpenAIStructuredOutputAdapter,
   GeminiStructuredOutputAdapter,
   AnthropicStructuredOutputAdapter,
   createStructuredOutputAdapter,
-} = require('../../services/aiAgent/structuredOutputProviderAdapter');
+} = require('../../legacy-ai-agent/aiAgent/structuredOutputProviderAdapter');
 
 describe('Intent Classification Schema', () => {
   describe('Schema Constants', () => {

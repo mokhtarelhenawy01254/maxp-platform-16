@@ -1,27 +1,54 @@
 from __future__ import annotations
 
+from agent_framework import Agent
 from agent_framework.anthropic import RawClaudeAgent  # type: ignore[attr-defined]
 
 from src.config import get_settings
-from src.tools.registry import get_all_tools
+from src.llm.agent_client_factory import build_agent_client
+from src.prompts.template_registry import get_prompt_registry
+from src.tools.registry import get_tools_for_role
+from src.tools.sdk_gateway import wrap_tools_for_gateway
 
 
-def create_order_agent() -> RawClaudeAgent:
-    """Create the Order specialized agent."""
+def create_order_agent(company_id: str | None = None) -> Agent | RawClaudeAgent:
+    """Create the Order specialized agent using the template registry."""
     settings = get_settings()
+    registry = get_prompt_registry()
+    hydrated = registry.build_prompt(
+        role="ORDER",
+        variables={
+            "company_name": "MaxP",
+            "agent_name": "maxp_order_agent",
+            "role": "order management agent",
+        },
+    )
+    instructions = hydrated.text
+    raw_tools = get_tools_for_role("ORDER")
+    tools = wrap_tools_for_gateway(
+        raw_tools,
+        company_id=company_id,
+        agent_role="ORDER",
+        allowed_tools=[tool.name for tool in raw_tools],
+    )
 
-    instructions = """أنت وكيل متخصص في إدارة الطلبات في MaxP.
-مهمتك هي مساعدة العملاء في تتبع طلباتهم، تعديل بيانات الطلب، أو إلغاء الطلبات.
+    if settings.default_llm_provider == "anthropic":
+        return RawClaudeAgent(
+            name="maxp_order_agent",
+            instructions=instructions,
+            tools=tools,
+            default_options={"model": settings.default_model},
+        )
 
-القواعد:
-1. استخدم أدوات البحث عن الطلبات للتأكد من صحة البيانات.
-2. أي عملية تعديل أو إلغاء يجب أن تمر عبر نظام الموافقات (ستقوم الأداة بإرجاع حالة 'awaiting_approval').
-3. رد بلغة عربية ودودة ومهنية.
-"""
-
-    return RawClaudeAgent(
+    client = build_agent_client(
+        settings,
+        model=settings.default_model,
+        tools=tools,
+        system_prompt=instructions,
+    )
+    return Agent(
+        client=client,
         name="maxp_order_agent",
         instructions=instructions,
-        tools=get_all_tools(),
-        default_options={"model": settings.default_model},
+        tools=tools,
+        default_options={"model": settings.default_model, "tools": tools},
     )

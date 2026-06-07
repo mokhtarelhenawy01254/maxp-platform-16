@@ -5,14 +5,13 @@ import re
 from typing import Any
 
 import structlog
-from agent_framework import Message
 
-from src.intent.schema import (
-    INTENT_ENUM,
-    ClassifierResult,
-    get_policy,
-)
+from src.context.multimodal import build_user_content
+from src.intent.dynamic_registry import dynamic_intent_registry
+from src.intent.schema import ClassifierResult
+from src.llm.model_capabilities import route_for_modalities
 from src.observability.llm_fallback import LLMFallbackProvider
+from src.pipeline.llm_messages import to_client_messages
 
 logger = structlog.get_logger(__name__)
 
@@ -37,8 +36,14 @@ def _normalize_classifier_result(args: dict[str, Any]) -> ClassifierResult | Non
     if not args or not isinstance(args, dict):
         return None
     intent = args.get("intent", "general.chat")
-    if intent not in INTENT_ENUM and intent not in get_policy(intent):
-        return None
+    # Validate intent against dynamic registry (or fallback to static schema)
+    available_intents = dynamic_intent_registry.get_intent_enum()
+    policy = dynamic_intent_registry.get_policy(intent)
+    if intent not in available_intents and not policy:
+        # If dynamic registry is empty, accept anyway (static fallback)
+        from src.intent.schema import get_policy as _static_get_policy
+        if not _static_get_policy(intent):
+            return None
     slots = args.get("slots")
     if not isinstance(slots, dict):
         slots = {}
@@ -66,11 +71,21 @@ async def classify_intent(
 ) -> ClassifierResult | None:
     ctx = context or {}
     available_tools = ctx.get("availableTools", [])
+    attachments = list(ctx.get("attachments") or [])
+    preferred_model = ctx.get("preferredModel") or ctx.get("model")
+    preferred_provider = ctx.get("preferredProvider") or ctx.get("provider")
+    model_route = route_for_modalities(
+        model=str(preferred_model) if preferred_model else None,
+        provider=str(preferred_provider) if preferred_provider else None,
+        has_image_input=bool(attachments),
+    )
 
+    # Use dynamic intent registry (with static fallback if not loaded)
+    intent_enum = dynamic_intent_registry.get_intent_enum()
     system_prompt = (
         "You are a schema-only intent classifier for customer and merchant operations.\n"
         "Return exactly one JSON object and no markdown, comments, or customer-facing answer.\n"
-        f"Allowed intents: {', '.join(INTENT_ENUM)}\n"
+        f"Allowed intents: {', '.join(intent_enum)}\n"
         "JSON shape: {\"intent\": string, \"confidence\": number, \"ambiguous\": boolean, "
         "\"clarificationQuestion\": string|null, \"slots\": object, \"missingSlots\": array, \"reasonCodes\": array}.\n"
         f"Available tools: {', '.join(available_tools) if available_tools else 'none'}.\n"
@@ -86,17 +101,27 @@ async def classify_intent(
     )
 
     fallback = LLMFallbackProvider()
-    client = await fallback.get_client()
+    client = await fallback.get_client(
+        company_id=company_id,
+        model=model_route.model,
+        provider=model_route.provider,
+    )
     if not client:
         logger.error("no LLM client available for intent classification")
         return None
 
     try:
         response = await client.get_response(
-            messages=[
-                Message(role="system", contents=[system_prompt]),
-                Message(role="user", contents=[f"Latest message to classify:\n{message}"]),
-            ],
+            messages=to_client_messages([
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": build_user_content(
+                        f"[USER_INPUT_START]\n{message}\n[USER_INPUT_END]",
+                        attachments,
+                    ),
+                },
+            ]),
             options={"temperature": 0, "max_tokens": 500},
         )
         raw_text = response.text if hasattr(response, "text") else str(response)

@@ -1,0 +1,361 @@
+from __future__ import annotations
+
+import structlog
+from typing import Any
+from sqlalchemy import text
+
+from src.context.compressor import compress_history, count_tokens
+from src.context.multimodal import build_user_content
+from src.memory.working_memory import working_memory_service
+from src.pipeline.context import PipelineContext
+
+logger = structlog.get_logger(__name__)
+
+
+class ContextAssembler:
+    """SOTA 2026 Context Assembler.
+
+    Dynamically compiles the system prompt and chat history list:
+    1. Queries database for customer profiles and recent messages.
+    2. Fetches working memory session state (cart, filters, etc.).
+    3. Injects RAG evidence as structured <company_knowledge> block.
+    4. Injects episodic memories as <relevant_memories> block.
+    5. Compresses older conversation turns into a summary block.
+    6. Enforces a hard token budget, truncating/dropping sections as needed.
+    """
+
+    # ─── Section priority (lower = more important, dropped last) ───
+    SECTION_PRIORITY = {
+        "base_prompt": 0,
+        "customer_profile": 1,
+        "session_state": 2,
+        "company_knowledge": 3,
+        "relevant_memories": 4,
+        "conversation_summary": 5,
+    }
+
+    @staticmethod
+    def _sanitize_content(content: str) -> str:
+        """Escapes XML special characters to prevent structure-breaking prompt injection."""
+        return content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    # ─── Data Fetchers ────────────────────────────────────────────
+
+    async def fetch_customer_profile(self, ctx: PipelineContext) -> dict[str, Any] | None:
+        """Fetch customer profile from public.customers."""
+        if not ctx.customer_id or not ctx.session:
+            return None
+
+        try:
+            query = text(
+                'SELECT "firstName", "lastName", phone, email, metadata '
+                'FROM public.customers WHERE id = :id'
+            )
+            result = await ctx.session.execute(query, {"id": ctx.customer_id})
+            row = result.fetchone()
+            if row:
+                return {
+                    "first_name": row[0] or "",
+                    "last_name": row[1] or "",
+                    "phone": row[2] or "",
+                    "email": row[3] or "",
+                    "metadata": row[4] or ""
+                }
+        except Exception as e:
+            logger.warning("failed to fetch customer profile from DB", error=str(e))
+
+        return None
+
+    async def fetch_message_history(self, ctx: PipelineContext, limit: int = 15) -> list[dict[str, Any]]:
+        """Fetch recent message history for the active conversation from public.messages."""
+        external_memory = getattr(ctx, "external_memory_context", None) or {}
+        memory_history = external_memory.get("recentMessages")
+        if isinstance(memory_history, list):
+            history_messages = []
+            for message in memory_history[-limit:]:
+                if not isinstance(message, dict):
+                    continue
+                role = str(message.get("role") or "user").lower()
+                content = str(message.get("content") or "").strip()
+                if role in {"user", "assistant"} and content:
+                    history_messages.append({"role": role, "content": content})
+            if history_messages:
+                return history_messages
+
+        if not ctx.thread_id or not ctx.session:
+            return []
+
+        history_messages = []
+        try:
+            query = text(
+                'SELECT content, "isFromCustomer", type FROM public.messages '
+                'WHERE "conversationId" = :conversation_id '
+                'ORDER BY "createdAt" DESC LIMIT :limit'
+            )
+            result = await ctx.session.execute(
+                query,
+                {"conversation_id": ctx.thread_id, "limit": limit}
+            )
+            rows = result.fetchall()
+
+            for row in reversed(rows):
+                content = row[0] or ""
+                is_from_customer = bool(row[1])
+                msg_type = row[2] or "TEXT"
+
+                role = "user" if is_from_customer else "assistant"
+
+                if not content and msg_type != "TEXT":
+                    content = f"[{msg_type} Attachment]"
+
+                if content:
+                    history_messages.append({
+                        "role": role,
+                        "content": content
+                    })
+        except Exception as e:
+            logger.warning("failed to fetch message history from DB", error=str(e))
+
+        return history_messages
+
+    async def fetch_session_state(self, ctx: PipelineContext) -> dict[str, Any] | None:
+        """Fetch current working memory session state (cart, search filters, etc.)."""
+        external_memory = getattr(ctx, "external_memory_context", None) or {}
+        if external_memory:
+            filtered = {k: v for k, v in external_memory.items() if v}
+            if filtered:
+                ctx.session_state = filtered
+                return filtered
+
+        if not ctx.company_id or not ctx.thread_id:
+            return None
+
+        try:
+            lookup_id = ctx.conversation_id or ctx.thread_id
+            state = await working_memory_service.get_context(
+                company_id=ctx.company_id,
+                conversation_id=lookup_id,
+            )
+            if state:
+                # Filter out empty values to reduce token waste
+                filtered = {k: v for k, v in state.items() if v}
+                if filtered:
+                    ctx.session_state = filtered
+                    logger.debug(
+                        "session_state_fetched",
+                        keys=list(filtered.keys()),
+                    )
+                    return filtered
+        except Exception as e:
+            logger.warning("failed to fetch session state", error=str(e))
+
+        return None
+
+    # ─── System Prompt Builder ────────────────────────────────────
+
+    async def build_system_prompt(self, ctx: PipelineContext) -> str:
+        """Assemble the system prompt by injecting structured XML sections.
+
+        Sections injected (in order):
+        1. Base agent instructions
+        2. <customer_profile> — customer details
+        3. <session_state> — cart, filters, last shown products
+        4. <company_knowledge> — RAG evidence from knowledge base
+        5. <relevant_memories> — episodic memories for this customer
+        """
+        base_prompt = ctx.system_prompt or (ctx.agent.instructions if ctx.agent else "") or ""
+
+        sections: list[tuple[str, str]] = []  # (section_name, xml_content)
+
+        # 1. Customer profile
+        customer = await self.fetch_customer_profile(ctx)
+        if customer:
+            full_name = f"{customer['first_name']} {customer['last_name']}".strip()
+            profile_xml = (
+                "\n<customer_profile>\n"
+                f"  Name: {full_name or 'Unknown'}\n"
+                f"  Phone: {customer['phone'] or 'N/A'}\n"
+                f"  Email: {customer['email'] or 'N/A'}\n"
+                "</customer_profile>"
+            )
+            sections.append(("customer_profile", profile_xml))
+
+        # 2. Session state (Working Memory)
+        session_state = await self.fetch_session_state(ctx)
+        if session_state:
+            state_lines = []
+            if session_state.get("cart"):
+                state_lines.append(f"  Cart: {session_state['cart']}")
+            if session_state.get("lastShownProductIds"):
+                state_lines.append(f"  Last Shown Products: {', '.join(session_state['lastShownProductIds'][:10])}")
+            if session_state.get("activeSearchFilters"):
+                state_lines.append(f"  Active Filters: {session_state['activeSearchFilters']}")
+            if session_state.get("queriedProducts"):
+                recent = session_state["queriedProducts"][-5:]
+                state_lines.append(f"  Recently Queried: {recent}")
+            if session_state.get("recentMessages"):
+                recent_messages = []
+                for message in session_state["recentMessages"][-6:]:
+                    if not isinstance(message, dict):
+                        continue
+                    role = str(message.get("role") or "user")
+                    content = self._sanitize_content(str(message.get("content") or "").strip())
+                    if content:
+                        recent_messages.append(f"{role}: {content[:240]}")
+                if recent_messages:
+                    state_lines.append("  Recent Messages: " + " | ".join(recent_messages))
+
+            if state_lines:
+                state_xml = "\n<session_state>\n" + "\n".join(state_lines) + "\n</session_state>"
+                sections.append(("session_state", state_xml))
+
+        # 3. RAG evidence (Company Knowledge)
+        if ctx.rag_evidence:
+            sanitized_knowledge = self._sanitize_content(ctx.rag_evidence)
+            knowledge_xml = f"\n<company_knowledge>\n{sanitized_knowledge}\n</company_knowledge>"
+            sections.append(("company_knowledge", knowledge_xml))
+
+        # 4. Episodic memories
+        if ctx.episodic_memories:
+            memory_lines = []
+            for mem in ctx.episodic_memories[:5]:
+                similarity = mem.get("similarity", 0)
+                content = mem.get("content", "")
+                sanitized_content = self._sanitize_content(content)
+                memory_lines.append(f"  [{similarity:.2f}] {sanitized_content}")
+
+            if memory_lines:
+                memories_xml = "\n<relevant_memories>\n" + "\n".join(memory_lines) + "\n</relevant_memories>"
+                sections.append(("relevant_memories", memories_xml))
+
+        # Combine base + sections
+        full_prompt = base_prompt
+        for _name, xml_content in sections:
+            full_prompt += xml_content
+
+        return full_prompt
+
+    # ─── Token Budget Enforcement ─────────────────────────────────
+
+    def _enforce_token_budget(
+        self,
+        system_prompt: str,
+        history: list[dict[str, Any]],
+        current_message: str,
+        budget: int,
+    ) -> tuple[str, list[dict[str, Any]]]:
+        """Hard-enforce token budget by truncating/dropping sections.
+
+        Priority: base prompt > history > droppable prompt sections.
+        Returns (possibly truncated system_prompt, possibly trimmed history).
+        """
+        system_tokens = count_tokens(system_prompt)
+        message_tokens = count_tokens(current_message)
+        history_tokens = sum(count_tokens(m.get("content", "")) for m in history)
+
+        total = system_tokens + history_tokens + message_tokens
+        if total <= budget:
+            return system_prompt, history
+
+        overshoot = total - budget
+        logger.warning(
+            "token_budget_exceeded",
+            total=total,
+            budget=budget,
+            overshoot=overshoot,
+        )
+
+        # Strategy 1: Trim oldest history messages first
+        while overshoot > 0 and len(history) > 1:
+            removed = history.pop(0)
+            freed = count_tokens(removed.get("content", ""))
+            overshoot -= freed
+            logger.debug("dropped_history_message", freed=freed, remaining_overshoot=overshoot)
+
+        if overshoot <= 0:
+            return system_prompt, history
+
+        # Strategy 2: Drop low-priority sections from system prompt
+        droppable_tags = [
+            ("relevant_memories", "<relevant_memories>", "</relevant_memories>"),
+            ("conversation_summary", "<conversation_summary>", "</conversation_summary>"),
+            ("company_knowledge", "<company_knowledge>", "</company_knowledge>"),
+            ("session_state", "<session_state>", "</session_state>"),
+        ]
+
+        for tag_name, open_tag, close_tag in droppable_tags:
+            if overshoot <= 0:
+                break
+            start_idx = system_prompt.find(open_tag)
+            if start_idx == -1:
+                continue
+            end_idx = system_prompt.find(close_tag)
+            if end_idx == -1:
+                continue
+            end_idx += len(close_tag)
+            section = system_prompt[start_idx:end_idx]
+            freed = count_tokens(section)
+            system_prompt = system_prompt[:start_idx] + system_prompt[end_idx:]
+            overshoot -= freed
+            logger.info("dropped_section", section=tag_name, freed=freed, remaining_overshoot=overshoot)
+
+        return system_prompt, history
+
+    # ─── Main Assembly ────────────────────────────────────────────
+
+    async def assemble_messages(self, ctx: PipelineContext) -> list[dict[str, Any]]:
+        """Fetch history, compress it, and compile the full list of messages for LLM processing."""
+        # Retrieve recent history messages from DB
+        history = await self.fetch_message_history(ctx, limit=15)
+
+        # Calculate original tokens in history
+        ctx.original_history_tokens = sum(count_tokens(m.get("content", "")) for m in history)
+
+        # Compress history if needed
+        llm_client = getattr(ctx, "llm_client", None) or (
+            ctx.agent.client if (ctx.agent and hasattr(ctx.agent, "client")) else None
+        )
+        retained_history, summary_text = await compress_history(
+            messages=history,
+            max_tokens=1000,
+            keep_recent=4,
+            llm_client=llm_client
+        )
+
+        # Calculate compressed tokens
+        comp_tokens = sum(count_tokens(m.get("content", "")) for m in retained_history)
+        if summary_text:
+            comp_tokens += count_tokens(summary_text)
+        ctx.compressed_history_tokens = comp_tokens
+
+        # Build system prompt (incorporating all context sources)
+        system_prompt = await self.build_system_prompt(ctx)
+        if summary_text:
+            system_prompt += f"\n\n<conversation_summary>\n{summary_text}\n</conversation_summary>"
+
+        # Enforce hard token budget
+        system_prompt, retained_history = self._enforce_token_budget(
+            system_prompt=system_prompt,
+            history=retained_history,
+            current_message=ctx.message,
+            budget=ctx.token_budget,
+        )
+
+        # Update context prompt
+        ctx.system_prompt = system_prompt
+
+        # Assemble message list
+        compiled = [{"role": "system", "content": system_prompt}]
+
+        # Append history messages (recent turns)
+        for msg in retained_history:
+            compiled.append({"role": msg["role"], "content": msg["content"]})
+
+        # Append current user message, preserving image attachments as
+        # provider-native multimodal content parts.
+        compiled.append({
+            "role": "user",
+            "content": build_user_content(ctx.message, getattr(ctx, "attachments", []) or []),
+        })
+
+        return compiled

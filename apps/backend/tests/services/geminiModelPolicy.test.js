@@ -8,7 +8,7 @@ const {
   isUnstableGeminiAliasModelName,
   DEFAULT_GEMINI_EMBEDDING_MODEL,
   GEMINI_EMBEDDING_DIMENSIONS,
-} = require('../../services/aiAgent/geminiModelPolicy');
+} = require('../../legacy-ai-agent/aiAgent/geminiModelPolicy');
 
 describe('geminiModelPolicy', () => {
   test('normalizes retired text model names to the stable text default', () => {

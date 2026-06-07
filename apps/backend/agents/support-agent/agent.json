@@ -29,7 +29,7 @@
     "customer.info",
     "shipping.rates",
     "shipping.update",
-    "order.confirm",
+    "order.create_confirmed",
     "order.cancel",
     "order.refund",
     "whatsapp.send",

@@ -1,4 +1,4 @@
-﻿// Test replaceVariables with actual data
+// Test replaceVariables with actual data
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 function replaceVariables(template, variables) {

@@ -1,4 +1,4 @@
-﻿const { PrismaClient } = require('../prisma/generated/mysql');
+const { PrismaClient } = require('../prisma/generated/mysql');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 

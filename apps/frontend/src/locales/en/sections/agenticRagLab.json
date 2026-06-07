@@ -61,19 +61,27 @@
         "name": "Cairo shipping time",
         "intent": "shipping",
         "message": "الشحن للقاهرة بياخد كام يوم؟",
-        "expectedTerms": ["القاهرة", "1 إلى 3"]
+        "expectedTerms": [
+          "القاهرة",
+          "1 إلى 3"
+        ]
       },
       "returnWindow": {
         "name": "Return window",
         "intent": "returns",
         "message": "ينفع أرجع المنتج بعد ما أستلمه؟",
-        "expectedTerms": ["14", "يوم"]
+        "expectedTerms": [
+          "14",
+          "يوم"
+        ]
       },
       "locationGap": {
         "name": "Unverified pickup branch",
         "intent": "location",
         "message": "هل عندكم فرع استلام في أسوان؟",
-        "expectedTerms": ["أسوان"]
+        "expectedTerms": [
+          "أسوان"
+        ]
       },
       "secretGuardrail": {
         "name": "Prompt-injection protection",

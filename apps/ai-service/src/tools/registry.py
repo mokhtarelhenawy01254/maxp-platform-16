@@ -2,17 +2,21 @@ from __future__ import annotations
 
 from typing import Any
 
-from agent_framework import FunctionTool
+from agent_framework import FunctionInvocationContext, FunctionTool
 from pydantic import BaseModel, Field
 
-from src.tools.maxp_client import get_maxp_client
+from src.mcp.registry import get_mcp_registry
+from src.tools import (
+    competitor_tools,
+    customer_tools,
+    governance_tools,
+    order_tools,
+    product_tools,
+    sales_tools,
+)
+from src.tools.backend_client import get_backend_client
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
-
-
-async def _call(name: str, company_id: str, input_data: dict[str, Any]) -> dict[str, Any]:
-    client = get_maxp_client()
-    return await client.call_tool(name, company_id, input_data)
 
 
 def _write_result(name: str, action_args: dict[str, Any], company_id: str) -> dict[str, Any]:
@@ -22,6 +26,14 @@ def _write_result(name: str, action_args: dict[str, Any], company_id: str) -> di
         "action_type": name,
         "action_args": action_args,
         "company_id": company_id,
+    }
+
+
+def _executed_result(action: str, result: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "status": "EXECUTED",
+        "action": action,
+        "result": result,
     }
 
 
@@ -67,13 +79,10 @@ class ProductPerformanceInput(BaseModel):
 
 
 async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
-    result = await _call("product.search", input_data.company_id or "", {"query": input_data.query})
-    products = result.get("result", {})
-    if isinstance(products, dict):
-        products = products.get("products", [])
-    elif not isinstance(products, list):
-        products = []
-    return {"results": products}
+    result = await product_tools.search_products(
+        input_data.company_id or "", input_data.query
+    )
+    return {"results": result.get("products", [])}
 
 
 async def product_create(input_data: ProductCreateInput) -> dict[str, Any]:
@@ -87,15 +96,16 @@ async def product_create(input_data: ProductCreateInput) -> dict[str, Any]:
 
 
 async def product_low_stock(input_data: ProductLowStockInput) -> dict[str, Any]:
-    result = await _call("product.lowStock", input_data.company_id or "",
-                         {"threshold": input_data.threshold})
-    return {"products": result.get("result", {}).get("products", [])}
+    result = await product_tools.low_stock_products(
+        input_data.company_id or "", threshold=input_data.threshold
+    )
+    return {"products": result.get("products", [])}
 
 
 async def product_top_selling(input_data: ProductTopSellingInput) -> dict[str, Any]:
-    result = await _call("product.topSelling", input_data.company_id or "",
-                         {"limit": input_data.limit, "period": input_data.period})
-    return result.get("result", {})
+    return await product_tools.top_selling_products(
+        input_data.company_id or "", period=input_data.period, limit=input_data.limit
+    )
 
 
 async def product_update_price(input_data: ProductUpdatePriceInput) -> dict[str, Any]:
@@ -107,9 +117,12 @@ async def product_update_price(input_data: ProductUpdatePriceInput) -> dict[str,
 
 
 async def product_performance(input_data: ProductPerformanceInput) -> dict[str, Any]:
-    result = await _call("product.performance", input_data.company_id or "",
-                         {"productId": input_data.product_id, "period": input_data.period})
-    return result.get("result", {})
+    client = get_backend_client()
+    return await client.get_product_performance(
+        input_data.company_id or "",
+        input_data.product_id,
+        period=input_data.period,
+    )
 
 
 product_search_tool = FunctionTool(
@@ -210,9 +223,10 @@ class OrderRefundInput(BaseModel):
 
 
 async def order_lookup(input_data: OrderLookupInput) -> dict[str, Any]:
-    result = await _call("order.lookup", input_data.company_id or "",
-                         {"orderNumber": input_data.order_number})
-    return {"order": result.get("result")}
+    result = await order_tools.order_lookup(
+        input_data.company_id or "", input_data.order_number
+    )
+    return {"order": result}
 
 
 async def order_create_draft(input_data: OrderCreateDraftInput) -> dict[str, Any]:
@@ -229,7 +243,8 @@ async def order_create_draft(input_data: OrderCreateDraftInput) -> dict[str, Any
 
 
 async def order_create_confirmed(input_data: OrderCreateConfirmedInput) -> dict[str, Any]:
-    return _write_result("order.create_confirmed", {
+    client = get_backend_client()
+    result = await client.create_order(input_data.company_id or "", {
         "customerName": input_data.customer_name,
         "customerPhone": input_data.customer_phone,
         "productName": input_data.product_name,
@@ -237,26 +252,31 @@ async def order_create_confirmed(input_data: OrderCreateConfirmedInput) -> dict[
         "total": input_data.total,
         "address": input_data.address,
         "city": input_data.city,
-    }, input_data.company_id or "")
+    })
+    return _executed_result("ORDER_CREATED", result)
 
 
 async def order_summary(input_data: OrderSummaryInput) -> dict[str, Any]:
-    result = await _call("order.summary", input_data.company_id or "",
-                         {"period": input_data.period})
-    return result.get("result", {})
+    return await order_tools.order_summary(
+        input_data.company_id or "", period=input_data.period
+    )
 
 
 async def order_recent_list(input_data: OrderRecentListInput) -> dict[str, Any]:
-    result = await _call("order.recentList", input_data.company_id or "",
-                         {"limit": input_data.limit})
-    return {"orders": result.get("result", {}).get("orders", [])}
+    orders = await order_tools.recent_orders(
+        input_data.company_id or "", limit=input_data.limit
+    )
+    return {"orders": orders}
 
 
 async def order_cancel(input_data: OrderCancelInput) -> dict[str, Any]:
-    return _write_result("order.cancel", {
-        "orderNumber": input_data.order_number,
-        "reason": input_data.reason,
-    }, input_data.company_id or "")
+    client = get_backend_client()
+    result = await client.cancel_order(
+        input_data.company_id or "",
+        input_data.order_number,
+        input_data.reason,
+    )
+    return _executed_result("ORDER_CANCELLED", result)
 
 
 async def order_refund(input_data: OrderRefundInput) -> dict[str, Any]:
@@ -317,6 +337,49 @@ order_refund_tool = FunctionTool(
 )
 
 
+# ── Shipping Tools ────────────────────────────────────────────────────────────
+
+
+class ShippingRatesInput(BaseModel):
+    governorate: str = Field(description="Governorate to check shipping rates for")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+class ShippingUpdateInput(BaseModel):
+    order_id: str = Field(description="Order ID or number to update shipping for")
+    address: str | None = Field(default=None, description="New delivery address")
+    shipping_class: str | None = Field(default=None, description="New shipping class")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+async def shipping_rates(input_data: ShippingRatesInput) -> dict[str, Any]:
+    client = get_backend_client()
+    return await client.get_shipping_rates(input_data.company_id or "", input_data.governorate)
+
+
+async def shipping_update(input_data: ShippingUpdateInput) -> dict[str, Any]:
+    return _write_result("shipping.update", {
+        "orderId": input_data.order_id,
+        "address": input_data.address,
+        "shippingClass": input_data.shipping_class,
+    }, input_data.company_id or "")
+
+
+shipping_rates_tool = FunctionTool(
+    name="shipping_rates",
+    description="Get shipping rates and delivery info for a governorate.",
+    func=shipping_rates,
+    input_model=ShippingRatesInput,
+)
+
+shipping_update_tool = FunctionTool(
+    name="shipping_update",
+    description="Propose updating shipping address or class for an order. REQUIRES MERCHANT APPROVAL.",
+    func=shipping_update,
+    input_model=ShippingUpdateInput,
+)
+
+
 # ── Inventory Tools ──────────────────────────────────────────────────────────
 
 
@@ -335,20 +398,39 @@ class InventoryAdjustInput(BaseModel):
 
 
 async def inventory_check(input_data: InventoryCheckInput) -> dict[str, Any]:
-    result = await _call("inventory.check", input_data.company_id or "", {
-        "productNameOrSku": input_data.product_name_or_sku,
-        "productSize": input_data.product_size,
-        "productColor": input_data.product_color,
-    })
-    return result.get("result", {})
+    result = await product_tools.search_products(
+        input_data.company_id or "", input_data.product_name_or_sku, limit=1
+    )
+    products = result.get("products", [])
+    if not products:
+        return {
+            "found": False,
+            "code": "PRODUCT_NOT_FOUND",
+            "productNameOrSku": input_data.product_name_or_sku,
+        }
+    p = products[0]
+    return {
+        "found": True,
+        "productName": p.get("name"),
+        "sku": p.get("sku"),
+        "price": p.get("price"),
+        "stock": p.get("stock"),
+        "status": p.get("status"),
+        "images": p.get("images", []),
+        "availableSizes": p.get("availableSizes", []),
+        "availableColors": p.get("availableColors", []),
+    }
 
 
 async def inventory_adjust(input_data: InventoryAdjustInput) -> dict[str, Any]:
-    return _write_result("inventory.adjust", {
-        "productId": input_data.product_id,
-        "quantityDelta": input_data.quantity_delta,
-        "reason": input_data.reason,
-    }, input_data.company_id or "")
+    client = get_backend_client()
+    result = await client.adjust_inventory(
+        input_data.company_id or "",
+        input_data.product_id,
+        input_data.quantity_delta,
+        input_data.reason,
+    )
+    return _executed_result("INVENTORY_ADJUSTED", result)
 
 
 inventory_check_tool = FunctionTool(
@@ -381,15 +463,16 @@ class CustomerTopBuyersInput(BaseModel):
 
 
 async def customer_info(input_data: CustomerInfoInput) -> dict[str, Any]:
-    result = await _call("customer.info", input_data.company_id or "",
-                         {"query": input_data.query})
-    return result.get("result", {})
+    return await customer_tools.customer_info(
+        input_data.company_id or "", input_data.query
+    )
 
 
 async def customer_top_buyers(input_data: CustomerTopBuyersInput) -> dict[str, Any]:
-    result = await _call("customer.topBuyers", input_data.company_id or "",
-                         {"limit": input_data.limit, "period": input_data.period})
-    return {"customers": result.get("result", [])}
+    customers = await customer_tools.top_buyers(
+        input_data.company_id or "", limit=input_data.limit, period=input_data.period
+    )
+    return {"customers": customers}
 
 
 customer_info_tool = FunctionTool(
@@ -437,14 +520,13 @@ class WhatsappSendInput(BaseModel):
 
 
 async def sales_revenue(input_data: SalesRevenueInput) -> dict[str, Any]:
-    result = await _call("sales.revenue", input_data.company_id or "",
-                         {"period": input_data.period})
-    return result.get("result", {})
+    return await sales_tools.sales_revenue(
+        input_data.company_id or "", period=input_data.period
+    )
 
 
 async def company_snapshot(input_data: CompanySnapshotInput) -> dict[str, Any]:
-    result = await _call("company.snapshot", input_data.company_id or "", {})
-    return result.get("result", {})
+    return await sales_tools.company_snapshot(input_data.company_id or "")
 
 
 async def discount_create_draft(input_data: DiscountCreateDraftInput) -> dict[str, Any]:
@@ -464,11 +546,9 @@ async def discount_create(input_data: DiscountCreateInput) -> dict[str, Any]:
 
 
 async def whatsapp_send(input_data: WhatsappSendInput) -> dict[str, Any]:
-    result = await _call("whatsapp.send", input_data.company_id or "", {
-        "phone": input_data.phone,
-        "message": input_data.message,
-    })
-    return result.get("result", {})
+    return await governance_tools.send_whatsapp(
+        input_data.company_id or "", input_data.phone, input_data.message
+    )
 
 
 sales_revenue_tool = FunctionTool(
@@ -541,39 +621,40 @@ class CompetitorGenerateReportInput(BaseModel):
 
 
 async def competitor_search(input_data: CompetitorSearchInput) -> dict[str, Any]:
-    result = await _call("competitor.search", input_data.company_id or "",
-                         {"query": input_data.query, "limit": input_data.limit})
-    return {"competitors": result.get("result", [])}
+    competitors = await competitor_tools.search_competitors(
+        input_data.company_id or "", input_data.query, limit=input_data.limit
+    )
+    return {"competitors": competitors}
 
 
 async def competitor_get_products(input_data: CompetitorGetProductsInput) -> dict[str, Any]:
-    result = await _call("competitor.getProducts", input_data.company_id or "", {
-        "competitorId": input_data.competitor_id,
-        "isAvailable": str(input_data.is_available).lower() if input_data.is_available is not None else None,
-        "limit": input_data.limit,
-    })
-    return {"products": result.get("result", [])}
+    products = await competitor_tools.get_competitor_products(
+        input_data.company_id or "", input_data.competitor_id, limit=input_data.limit
+    )
+    return {"products": products}
 
 
 async def competitor_price_compare(input_data: CompetitorPriceCompareInput) -> dict[str, Any]:
-    result = await _call("competitor.priceCompare", input_data.company_id or "",
-                         {"competitorId": input_data.competitor_id})
-    return result.get("result", {})
+    return await competitor_tools.competitor_price_compare(
+        input_data.company_id or "", input_data.competitor_id
+    )
 
 
 async def competitor_get_ads(input_data: CompetitorGetAdsInput) -> dict[str, Any]:
-    result = await _call("competitor.getAds", input_data.company_id or "", {
-        "competitorId": input_data.competitor_id,
-        "limit": input_data.limit,
-    })
-    return {"ads": result.get("result", [])}
+    ads = await competitor_tools.get_competitor_ads(
+        input_data.company_id or "", input_data.competitor_id, limit=input_data.limit
+    )
+    return {"ads": ads}
 
 
 async def competitor_generate_report(input_data: CompetitorGenerateReportInput) -> dict[str, Any]:
-    return _write_result("competitor.generateReport", {
-        "competitorId": input_data.competitor_id,
-        "reportType": input_data.report_type,
-    }, input_data.company_id or "")
+    client = get_backend_client()
+    result = await client.generate_competitor_report(
+        input_data.company_id or "",
+        input_data.competitor_id,
+        input_data.report_type,
+    )
+    return _executed_result("COMPETITOR_REPORT_GENERATED", result)
 
 
 competitor_search_tool = FunctionTool(
@@ -623,12 +704,9 @@ class FacebookReplyInput(BaseModel):
 
 
 async def facebook_reply(input_data: FacebookReplyInput) -> dict[str, Any]:
-    result = await _call("facebook.reply", input_data.company_id or "", {
-        "recipientId": input_data.recipient_id,
-        "message": input_data.message,
-        "pageId": input_data.page_id,
-    })
-    return result.get("result", {})
+    return await governance_tools.send_facebook_reply(
+        input_data.company_id or "", input_data.recipient_id, input_data.message, input_data.page_id
+    )
 
 
 facebook_reply_tool = FunctionTool(
@@ -775,12 +853,20 @@ async def agent_spawn(input_data: AgentSpawnInput) -> dict[str, Any]:
 
 
 async def agent_handoff_to(input_data: AgentHandoffToInput) -> dict[str, Any]:
-    result = await _call("agent.handoff_to", input_data.company_id or "", {
+    from src.services.agent_manager_service import AgentManagerService, get_agent_manager_service
+    manager: AgentManagerService = get_agent_manager_service()
+    result = await manager.run_agent_task(
+        company_id=input_data.company_id or "",
+        message=f"[Handoff] Reason: {input_data.reason}\nContext: {input_data.context or ''}",
+        role=input_data.target_role,
+        thread_id="",
+    )
+    return {
+        "status": "HANDOFF_INITIATED",
         "targetRole": input_data.target_role,
         "reason": input_data.reason,
-        "context": input_data.context or "",
-    })
-    return result.get("result", {})
+        "reply": result.get("reply", ""),
+    }
 
 
 agent_spawn_tool = FunctionTool(
@@ -798,27 +884,115 @@ agent_handoff_to_tool = FunctionTool(
 )
 
 
+# ── Audit Tools ──────────────────────────────────────────────────────────────
+
+
+class AuditReadInput(BaseModel):
+    limit: int = Field(default=5, description="Maximum number of audit entries")
+    agent_id: str | None = Field(default=None, description="Optional agent ID to filter by")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+async def audit_read(input_data: AuditReadInput) -> dict[str, Any]:
+    client = get_backend_client()
+    return await client.get_audit_trail(
+        input_data.company_id or "",
+        limit=input_data.limit,
+        agent_id=input_data.agent_id,
+    )
+
+
+audit_read_tool = FunctionTool(
+    name="audit_read",
+    description="Read agent audit trail / decision log.",
+    func=audit_read,
+    input_model=AuditReadInput,
+)
+
+
+# ── HR Tools ────────────────────────────────────────────────────────────────
+
+
+class HrAttendanceTodayInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+async def hr_attendance_today(input_data: HrAttendanceTodayInput) -> dict[str, Any]:
+    return {
+        "date": "",
+        "totalEmployees": 0,
+        "present": 0,
+        "late": 0,
+        "absent": 0,
+        "absentEmployees": [],
+        "presentEmployees": [],
+        "note": "HR attendance service not yet connected. This is a placeholder.",
+    }
+
+
+hr_attendance_today_tool = FunctionTool(
+    name="hr_attendance_today",
+    description="Get today's attendance summary for the company.",
+    func=hr_attendance_today,
+    input_model=HrAttendanceTodayInput,
+)
+
+
 # ── Tool Accessors ───────────────────────────────────────────────────────────
 
-# All read-only tools
-READ_TOOLS: list[FunctionTool] = [
+# ── Tool Groups (Progressive Exposure) ─────────────────────────────────────────
+# Core tools are available from the start. Advanced tools are unlocked via gateway.
+
+class UnlockAdvancedToolsInput(BaseModel):
+    reason: str = Field(description="Reason why advanced tools are needed for the current task")
+
+async def unlock_advanced_tools(
+    input_data: UnlockAdvancedToolsInput,
+    ctx: FunctionInvocationContext | None = None,
+) -> dict[str, Any]:
+    if ctx is not None:
+        ctx.add_tools(ADVANCED_TOOLS)
+    return {
+        "status": "SUCCESS",
+        "message": "Advanced tools have been unlocked. You can now use tools for deep analysis, reporting, and competitor research.",
+        "unlocked_tools": [t.name for t in ADVANCED_TOOLS],
+    }
+
+unlock_advanced_tools_tool = FunctionTool(
+    name="unlock_advanced_tools",
+    description="Unlock advanced analysis and reporting tools when the user request requires deep data mining or competitor research.",
+    func=unlock_advanced_tools,
+    input_model=UnlockAdvancedToolsInput,
+)
+
+CORE_TOOLS: list[FunctionTool] = [
     product_search_tool,
+    order_lookup_tool,
+    inventory_check_tool,
+    customer_info_tool,
+    shipping_rates_tool,
+    agent_handoff_to_tool,
+    unlock_advanced_tools_tool,
+]
+
+ADVANCED_TOOLS: list[FunctionTool] = [
     product_low_stock_tool,
     product_top_selling_tool,
     product_performance_tool,
-    order_lookup_tool,
     order_summary_tool,
     order_recent_list_tool,
-    inventory_check_tool,
-    customer_info_tool,
-    customer_top_buyers_tool,
     sales_revenue_tool,
     company_snapshot_tool,
     competitor_search_tool,
     competitor_get_products_tool,
     competitor_price_compare_tool,
     competitor_get_ads_tool,
+    audit_read_tool,
+    hr_attendance_today_tool,
 ]
+
+# All read-only tools
+READ_TOOLS: list[FunctionTool] = CORE_TOOLS + ADVANCED_TOOLS
 
 # All write tools (require approval)
 WRITE_TOOLS: list[FunctionTool] = [
@@ -838,9 +1012,13 @@ WRITE_TOOLS: list[FunctionTool] = [
     facebook_ad_create_draft_tool,
     message_broadcast_tool,
     agent_spawn_tool,
+    shipping_update_tool,
 ]
 
-# All tools
+for _write_tool in WRITE_TOOLS:
+    _write_tool.approval_mode = "always_require"
+
+# All tools (including manager tools for template resolution)
 ALL_TOOLS: dict[str, FunctionTool] = {t.name: t for t in READ_TOOLS + WRITE_TOOLS + [
     whatsapp_send_tool,
     facebook_reply_tool,
@@ -860,9 +1038,11 @@ ROLE_TOOLS: dict[str, list[str]] = {
     "SUPPORT": [
         "product_search",
         "order_lookup",
-        "discount_create",
         "order_cancel",
-        "message_broadcast",
+        "customer_info",
+        "shipping_rates",
+        "shipping_update",
+        "whatsapp_send",
         "agent_handoff_to",
     ],
     "ORDER": [
@@ -878,32 +1058,61 @@ ROLE_TOOLS: dict[str, list[str]] = {
         "product_search",
         "product_top_selling",
         "product_performance",
-        "discount_create",
+        "customer_info",
+        "inventory_check",
         "order_create_draft",
         "order_create_confirmed",
+        "discount_create_draft",
+        "whatsapp_send",
+        "shipping_rates",
     ],
     "INVENTORY": [
         "product_search",
         "product_low_stock",
+        "product_create",
         "inventory_check",
         "inventory_adjust",
         "product_update_price",
+        "discount_create_draft",
+        "audit_read",
     ],
     "MARKETING": [
+        "product_search",
+        "inventory_check",
         "sales_revenue",
         "company_snapshot",
-        "discount_create",
         "facebook_ad_create_draft",
         "message_broadcast",
+        "audit_read",
     ],
     "FACEBOOK_SALES_SUPPORT": [
         "product_search",
+        "inventory_check",
+        "customer_info",
         "order_lookup",
         "order_create_draft",
         "order_create_confirmed",
-        "order_cancel",
+        "shipping_rates",
         "facebook_reply",
         "agent_handoff_to",
+    ],
+    "SAS_SALES": [
+        "product_search",
+        "inventory_check",
+        "order_create_draft",
+        "order_lookup",
+        "shipping_rates",
+        "facebook_reply",
+    ],
+    "COMPETITOR": [
+        "competitor_search",
+        "competitor_get_products",
+        "competitor_price_compare",
+        "competitor_get_ads",
+        "competitor_generate_report",
+        "product_search",
+        "inventory_check",
+        "audit_read",
     ],
     "CEO": [],
 }
@@ -935,9 +1144,21 @@ def get_tool_name_list(tools: list[FunctionTool]) -> list[str]:
     return [tool.name for tool in tools]
 
 
+def _canonical_tool_name(name: str) -> str:
+    return str(name or "").replace(".", "_")
+
+
 def resolve_tools_from_names(names: list[str]) -> list[FunctionTool]:
     """Resolve stored tool names back to FunctionTool objects."""
-    return [_ALL_TOOLS[name] for name in names if name in _ALL_TOOLS]
+    resolved: list[FunctionTool] = []
+    seen: set[str] = set()
+    for name in names:
+        canonical = _canonical_tool_name(name)
+        tool = _ALL_TOOLS.get(canonical)
+        if tool and tool.name not in seen:
+            resolved.append(tool)
+            seen.add(tool.name)
+    return resolved
 
 
 def get_write_tools() -> list[FunctionTool]:
@@ -945,8 +1166,36 @@ def get_write_tools() -> list[FunctionTool]:
 
 
 def get_all_tools() -> list[FunctionTool]:
-    return list(ALL_TOOLS.values())
+    """Return ALL_TOOLS, including manager tools (lazy import to avoid circular deps)."""
+    from src.tools.manager_tools import get_manager_tools
+    return list(ALL_TOOLS.values()) + get_manager_tools() + get_mcp_tools()
 
 
 def get_tool(name: str) -> FunctionTool | None:
-    return ALL_TOOLS.get(name)
+    return ALL_TOOLS.get(_canonical_tool_name(name))
+
+
+async def _mcp_gateway_placeholder(input_data: dict[str, Any]) -> dict[str, Any]:
+    return dict(input_data)
+
+
+def get_mcp_tools() -> list[FunctionTool]:
+    """Return discovered MCP tools as SDK FunctionTool descriptors.
+
+    Execution is still routed through ToolGateway by sdk_gateway.wrap_tool_for_gateway.
+    """
+    tools: list[FunctionTool] = []
+    for tool in get_mcp_registry().get_all_tools():
+        name = str(tool.get("name") or "")
+        if not name.startswith("mcp_"):
+            continue
+        tools.append(
+            FunctionTool(
+                name=name,
+                description=str(tool.get("description") or ""),
+                func=_mcp_gateway_placeholder,
+                input_model=tool.get("input_schema") or {"type": "object"},
+                approval_mode="never_require",
+            )
+        )
+    return tools

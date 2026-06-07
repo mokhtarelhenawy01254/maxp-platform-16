@@ -553,6 +553,7 @@ export function useAgentSandbox() {
       let finalKeyName: string | undefined;
       let finalCost = 0;
       let updateSessionId = sessionId;
+      let finalUsedFallbackKey = false;
       let pipelineTrace: any = null;
 
       try {
@@ -689,13 +690,13 @@ export function useAgentSandbox() {
 
               case "agent_reply":
                 if (event.reply !== undefined) {
-                  // Accumulate streamed text chunk into the assistant message
                   const isIncremental = event.isIncremental !== false;
                   if (isIncremental) {
                     streamingReply = (streamingReply || "") + event.reply;
                   } else {
                     streamingReply = event.reply;
                   }
+                  if (event.usedFallbackKey) finalUsedFallbackKey = true;
                   setTypingStage(null);
                   addActivityLog({
                     id: generateId(),
@@ -759,6 +760,7 @@ export function useAgentSandbox() {
               if (event.cost !== undefined) finalCost = event.cost;
               if (event.sessionId) updateSessionId = event.sessionId;
               if (event.error) runError = event.error;
+              if (event.usedFallbackKey) finalUsedFallbackKey = true;
             }
           }
         );
@@ -779,6 +781,17 @@ export function useAgentSandbox() {
           latencyMs: finalLatencyMs,
         });
 
+        if (finalUsedFallbackKey) {
+          addActivityLog({
+            id: generateId(),
+            timestamp: new Date().toISOString(),
+            type: "warning",
+            icon: "⚠️",
+            title: "Key Fallback",
+            details: `Preferred key doesn't support this model. Using fallback key: ${finalKeyName || finalKeyId}`,
+          });
+        }
+
         setSessions((prev) =>
           prev.map((s) => {
             if (s.id !== updateSessionId) return s;
@@ -796,6 +809,7 @@ export function useAgentSandbox() {
                     latencyMs: finalLatencyMs,
                     cost: finalCost,
                     metadata: pipelineTrace,
+                    usedFallbackKey: finalUsedFallbackKey,
                   }
                 : m
             );

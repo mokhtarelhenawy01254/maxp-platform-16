@@ -1,8 +1,0 @@
-{
-  "schemaVersion": 1,
-  "catalogVersion": "2026-05-01-feature-gates",
-  "generatedAt": "2026-05-01T00:00:00.000Z",
-  "appsFile": "apps.json",
-  "bundlesFile": "bundles.json",
-  "categoriesFile": "categories.json"
-}

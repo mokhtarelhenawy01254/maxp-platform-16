@@ -19,8 +19,8 @@ jest.mock('../../services/sharedDatabase', () => ({
 const {
   executeTool,
   getNativeToolDefinitions,
-} = require('../../services/aiAgent/agentToolRegistry');
-const episodicMemoryService = require('../../services/aiAgent/episodicMemoryService');
+} = require('../../legacy-ai-agent/aiAgent/agentToolRegistry');
+const episodicMemoryService = require('../../legacy-ai-agent/aiAgent/episodicMemoryService');
 
 const TEST_EMBEDDING = new Array(768).fill(0.01);
 
@@ -36,7 +36,7 @@ describe('agent inventory.check tool', () => {
     episodicMemoryService.generateMultimodalEmbeddingAsync = jest.fn().mockResolvedValue(TEST_EMBEDDING);
     
     // Reset DbVectorAdaptor detection cache
-    require('../../services/aiAgent/utils/DbVectorAdaptor').resetDetection();
+    require('../../legacy-ai-agent/aiAgent/utils/DbVectorAdaptor').resetDetection();
   });
 
   test('exports a schema that matches the runtime handler inputs', () => {
@@ -71,7 +71,7 @@ describe('agent inventory.check tool', () => {
   });
 
   test('allows previous-product inventory checks when memory context is explicit', async () => {
-    const workingMemoryService = require('../../services/aiAgent/workingMemoryService');
+    const workingMemoryService = require('../../legacy-ai-agent/aiAgent/workingMemoryService');
     await workingMemoryService.initSession('company_123456', 'conv_123');
     await workingMemoryService.updateSearchContext('company_123456', 'conv_123', {
       productIds: ['prod_123'],

@@ -4,8 +4,8 @@
  * applied to the agent architecture (2026-06-02).
  */
 
-const agentProvisioningService = require('../../../services/aiAgent/agentProvisioningService');
-const BaseAgent = require('../../../services/aiAgent/BaseAgent');
+const agentProvisioningService = require('../../../legacy-ai-agent/aiAgent/agentProvisioningService');
+const BaseAgent = require('../../../legacy-ai-agent/aiAgent/BaseAgent');
 
 describe('CRITICAL FIX: _enforceRoleToolScope respects UI tool config', () => {
   const companyId = 'test_tool_scope';

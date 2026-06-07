@@ -20,6 +20,7 @@ const { normalizeEnum, MESSAGE_TYPE } = require('../../utils/validator');
 const { recordSentMessageStat } = require('../../utils/statsRecorder');
 const { proxySocketMessageData } = require('../../utils/facebookMediaProxy');
 const { isValidMessageContent, getPageToken, processedMessages, getLastWebhookPageId } = require('./conversationShared');
+const aiServiceRouter = require('../../legacy-ai-agent/aiAgent/aiServiceRouter');
 
 
 const postMessageConverstation = async (req, res) => {

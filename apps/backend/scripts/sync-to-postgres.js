@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const postgresVectorService = require('../services/postgresVectorService');
 const path = require('path');
 const dotenv = require('dotenv');

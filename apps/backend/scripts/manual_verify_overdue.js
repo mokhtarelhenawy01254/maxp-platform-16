@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const automationService = require('../services/overdueTaskAutomationService');
 require('dotenv').config();
 

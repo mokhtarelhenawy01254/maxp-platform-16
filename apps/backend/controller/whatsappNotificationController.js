@@ -754,7 +754,7 @@ function getCategoryForEvent(eventType) {
 }
 
 function getErrorMessage(reason) {
-  const { t } = require('../services/aiAgent/i18n');
+  const { t } = require('../legacy-ai-agent/aiAgent/i18n');
   const key = `whatsapp.${reason}`;
   const translated = t(key);
   if (translated !== key) return translated;

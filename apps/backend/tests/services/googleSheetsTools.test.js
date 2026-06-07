@@ -74,7 +74,7 @@ beforeEach(() => {
     getSharedPrismaClient: jest.fn(() => ({})),
   }));
 
-  googleSheetsTools = require('../../services/aiAgent/tools/googleSheetsTools');
+  googleSheetsTools = require('../../legacy-ai-agent/aiAgent/tools/googleSheetsTools');
 });
 
 // ═════════════════════════════════════════════════════════════════════════════

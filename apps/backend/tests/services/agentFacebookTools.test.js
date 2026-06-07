@@ -8,7 +8,7 @@ jest.mock('../../utils/allFunctions', () => ({
 const {
   executeTool,
   getNativeToolDefinitions,
-} = require('../../services/aiAgent/agentToolRegistry');
+} = require('../../legacy-ai-agent/aiAgent/agentToolRegistry');
 
 describe('agent facebook.reply tool', () => {
   beforeEach(() => {

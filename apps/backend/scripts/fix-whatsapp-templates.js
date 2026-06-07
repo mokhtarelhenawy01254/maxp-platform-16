@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Update WhatsApp Templates - Fix variables without deleting data
  */
 

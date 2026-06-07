@@ -10,7 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.repo.approval_repo import ApprovalRepository
 from src.db.session import get_session
 from src.deps import get_company_id
-from src.workflows.approval import execute_approved_action
+from src.i18n import t
+from src.workflows.approval import (
+    create_sdk_approval_response,
+    execute_approved_action,
+    resume_sdk_approval_workflow,
+)
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -54,6 +59,40 @@ async def resume(
             status="approved",
             decided_by=body.decided_by or "merchant",
         )
+        sdk_response = await create_sdk_approval_response(
+            draft_id=body.draft_id,
+            approved=True,
+            session=session,
+        )
+        logger.info(
+            "sdk approval response created",
+            draft_id=body.draft_id,
+            sdk_approval_id=getattr(sdk_response, "id", None),
+            approved=True,
+        )
+
+        try:
+            sdk_result = await resume_sdk_approval_workflow(
+                draft_id=body.draft_id,
+                approved=True,
+                thread_id=body.thread_id,
+                customer_id=str(getattr(approval, "customer_id", "") or ""),
+                session=session,
+                is_merchant=False,
+            )
+            if sdk_result is not None:
+                logger.info("sdk approval workflow resumed", draft_id=body.draft_id)
+                return ResumeResponse(
+                    status="ok",
+                    reply=t("approval.executed", locale="ar"),
+                    thread_id=body.thread_id,
+                )
+        except Exception as exc:
+            logger.warning(
+                "sdk approval workflow resume failed; falling back to manual execution",
+                draft_id=body.draft_id,
+                error=str(exc),
+            )
 
         try:
             await execute_approved_action(
@@ -62,14 +101,14 @@ async def resume(
             )
             return ResumeResponse(
                 status="ok",
-                reply="تمت الموافقة وتنفيذ الطلب بنجاح.",
+                reply=t("approval.executed", locale="ar"),
                 thread_id=body.thread_id,
             )
         except Exception as e:
             logger.error("approval execution failed", draft_id=body.draft_id, error=str(e))
             return ResumeResponse(
                 status="error",
-                reply="عذراً، حدث خطأ أثناء تنفيذ الطلب بعد الموافقة.",
+                reply=t("approval.execution_failed", locale="ar"),
                 thread_id=body.thread_id,
             )
     else:
@@ -78,8 +117,34 @@ async def resume(
             status="rejected",
             decided_by=body.decided_by or "merchant",
         )
+        sdk_response = await create_sdk_approval_response(
+            draft_id=body.draft_id,
+            approved=False,
+            session=session,
+        )
+        logger.info(
+            "sdk approval response created",
+            draft_id=body.draft_id,
+            sdk_approval_id=getattr(sdk_response, "id", None),
+            approved=False,
+        )
+        try:
+            await resume_sdk_approval_workflow(
+                draft_id=body.draft_id,
+                approved=False,
+                thread_id=body.thread_id,
+                customer_id=str(getattr(approval, "customer_id", "") or ""),
+                session=session,
+                is_merchant=False,
+            )
+        except Exception as exc:
+            logger.warning(
+                "sdk approval rejection resume failed",
+                draft_id=body.draft_id,
+                error=str(exc),
+            )
         return ResumeResponse(
             status="ok",
-            reply="تم رفض الطلب. سيتم إعلام العميل بذلك.",
+            reply=t("approval.rejected", locale="ar"),
             thread_id=body.thread_id,
         )

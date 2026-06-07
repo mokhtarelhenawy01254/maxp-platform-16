@@ -1,4 +1,4 @@
-const { generateSchemaFromFunction, createToolFromFunction } = require('../../../services/aiAgent/utils/autoSchemaGenerator');
+const { generateSchemaFromFunction, createToolFromFunction } = require('../../../legacy-ai-agent/aiAgent/utils/autoSchemaGenerator');
 
 describe('Auto Schema Generator', () => {
   test('generates schema from JSDoc', () => {

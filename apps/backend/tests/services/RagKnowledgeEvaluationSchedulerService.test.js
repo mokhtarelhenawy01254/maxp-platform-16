@@ -6,7 +6,7 @@ jest.mock('../../services/rag/RagKnowledgeMaintenanceService', () => ({
   runEvaluation: jest.fn(),
 }));
 
-jest.mock('../../services/aiAgent/providerLogService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/providerLogService', () => ({
   recordProviderEvent: jest.fn(),
   listProviderLogs: jest.fn(),
 }));
@@ -17,7 +17,7 @@ jest.mock('../../services/telegramAlertService', () => ({
 
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 const RagKnowledgeMaintenanceService = require('../../services/rag/RagKnowledgeMaintenanceService');
-const providerLogService = require('../../services/aiAgent/providerLogService');
+const providerLogService = require('../../legacy-ai-agent/aiAgent/providerLogService');
 const telegramAlertService = require('../../services/telegramAlertService');
 const schedulerService = require('../../services/rag/RagKnowledgeEvaluationSchedulerService');
 

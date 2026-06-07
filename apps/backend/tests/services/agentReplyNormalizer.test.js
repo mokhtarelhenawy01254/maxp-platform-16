@@ -1,4 +1,4 @@
-const { normalizeAgentReply } = require('../../services/aiAgent/agentReplyNormalizer');
+const { normalizeAgentReply } = require('../../legacy-ai-agent/aiAgent/agentReplyNormalizer');
 
 describe('agentReplyNormalizer', () => {
   test('removes outer quotes without changing normal customer replies', () => {

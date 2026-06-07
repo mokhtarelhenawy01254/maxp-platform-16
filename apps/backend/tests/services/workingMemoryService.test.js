@@ -12,7 +12,7 @@ jest.mock('../../services/redisCacheService', () => ({
   }),
 }));
 
-const workingMemoryService = require('../../services/aiAgent/workingMemoryService');
+const workingMemoryService = require('../../legacy-ai-agent/aiAgent/workingMemoryService');
 
 describe('workingMemoryService', () => {
   beforeEach(async () => {

@@ -6,7 +6,7 @@
 const {
   generateDeterministicEmbedding,
   cosineSimilarity,
-} = require('../../services/aiAgent/intentExemplarService');
+} = require('../../legacy-ai-agent/aiAgent/intentExemplarService');
 
 describe('Intent Exemplar Service', () => {
   describe('generateDeterministicEmbedding', () => {

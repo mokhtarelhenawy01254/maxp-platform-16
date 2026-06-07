@@ -307,11 +307,11 @@ jest.mock('../../services/sharedDatabase', () => {
   };
 });
 
-const agentManagerService = require('../../services/aiAgent/agentManagerService');
-const agentInboxService = require('../../services/aiAgent/agentInboxService');
-const agentProvisioningService = require('../../services/aiAgent/agentProvisioningService');
-const toolOrchestratorService = require('../../services/aiAgent/toolOrchestratorService');
-const draftProposalService = require('../../services/aiAgent/draftProposalService');
+const agentManagerService = require('../../legacy-ai-agent/aiAgent/agentManagerService');
+const agentInboxService = require('../../legacy-ai-agent/aiAgent/agentInboxService');
+const agentProvisioningService = require('../../legacy-ai-agent/aiAgent/agentProvisioningService');
+const toolOrchestratorService = require('../../legacy-ai-agent/aiAgent/toolOrchestratorService');
+const draftProposalService = require('../../legacy-ai-agent/aiAgent/draftProposalService');
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 
 describe('Agent manager runtime layer', () => {

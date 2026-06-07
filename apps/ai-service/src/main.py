@@ -9,9 +9,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.agents.loader import seed_templates
+from src.skills import seed_skills
 from src.api.admin import router as admin_router
+from src.api.billing import router as billing_router
 from src.api.chat import router as chat_router
 from src.api.health import router as health_router
+from src.api.channels.whatsapp import router as whatsapp_router
 from src.api.middleware import (
     RateLimitMiddleware,
     ServiceAuthMiddleware,
@@ -77,9 +80,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             log = structlog.get_logger()
             log.warning("MCP registration skipped", error=str(exc))
 
-        # Seed filesystem templates before rebuilding the runtime registry.
+        # Seed filesystem templates and skills before rebuilding the runtime registry.
         async for session in get_session():
             await seed_templates(session)
+            await seed_skills(session)
 
         if async_session:
             await init_registry_from_db(async_session)
@@ -120,8 +124,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(ThreadConcurrencyMiddleware)
 
     app.include_router(health_router)
+    app.include_router(billing_router)
     app.include_router(chat_router)
     app.include_router(resume_router)
+    app.include_router(whatsapp_router)
     app.include_router(admin_router, prefix="/admin")
 
     setup_error_handlers(app)

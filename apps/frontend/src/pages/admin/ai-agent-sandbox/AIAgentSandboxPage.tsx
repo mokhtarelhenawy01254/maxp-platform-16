@@ -16,7 +16,6 @@ import {
 } from "@mui/material";
 import {
   Refresh as RefreshIcon,
-  Assessment as EvalIcon,
   Clear as ClearIcon,
   ChevronLeft as PanelCloseIcon,
   ChevronRight as PanelOpenIcon,
@@ -43,8 +42,6 @@ const AIAgentSandboxPage: React.FC = () => {
     isSessionsLoading,
     error,
     activityLog,
-    currentEval,
-    safetyChecks,
     agents,
     models,
     centralKeys,
@@ -61,7 +58,6 @@ const AIAgentSandboxPage: React.FC = () => {
     deleteSession,
     updateSessionTitle,
     sendMessage,
-    evaluateLastResponse,
     exportSession,
     formatCost,
     formatTokens,
@@ -234,8 +230,6 @@ const AIAgentSandboxPage: React.FC = () => {
         <InspectorPanel
           tools={agentTools}
           activityLog={activityLog}
-          evalScore={currentEval}
-          safetyChecks={safetyChecks}
           onClearLog={clearActivityLog}
           collapsed={!inspectorOpen}
         />

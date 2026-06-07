@@ -1,7 +1,7 @@
-﻿/**
+/**
  * Clear SimpleKeyRotator failed keys and check status
  */
-const { getSimpleKeyRotator } = require('../services/aiAgent/SimpleKeyRotator');
+const { getSimpleKeyRotator } = require('../legacy-ai-agent/aiAgent/SimpleKeyRotator');
 
 const rotator = getSimpleKeyRotator();
 

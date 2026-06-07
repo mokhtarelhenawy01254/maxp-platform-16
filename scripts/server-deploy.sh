@@ -37,7 +37,7 @@ echo "✅ Code updated to: $(git rev-parse --short HEAD)"
 
 # ── 2. Build Frontend ────────────────────────────────────────
 echo "🔨 Building frontend..."
-cd "$REPO_DIR/frontend"
+cd "$REPO_DIR/apps/frontend"
 npm ci --prefer-offline 2>/dev/null || npm install
 NODE_OPTIONS='--max-old-space-size=2048' npm run build
 echo "✅ Frontend built"
@@ -45,9 +45,9 @@ echo "✅ Frontend built"
 # ── 3. Sync frontend dist ────────────────────────────────────
 echo "📂 Syncing frontend..."
 sudo mkdir -p "$FRONTEND_DIST"
-sudo rsync -a --exclude 'index.html' "$REPO_DIR/frontend/dist/" "$FRONTEND_DIST/"
-sudo cp "$REPO_DIR/frontend/dist/index.html" "$FRONTEND_DIST/index.html"
-sudo rsync -a --delete --exclude 'index.html' "$REPO_DIR/frontend/dist/" "$FRONTEND_DIST/"
+sudo rsync -a --exclude 'index.html' "$REPO_DIR/apps/frontend/dist/" "$FRONTEND_DIST/"
+sudo cp "$REPO_DIR/apps/frontend/dist/index.html" "$FRONTEND_DIST/index.html"
+sudo rsync -a --delete --exclude 'index.html' "$REPO_DIR/apps/frontend/dist/" "$FRONTEND_DIST/"
 sudo chown -R "$(whoami):$(whoami)" "$FRONTEND_DIST"
 echo "✅ Frontend synced"
 
@@ -64,7 +64,7 @@ sudo rsync -a --delete \
   --exclude logs \
   --exclude .env \
   --exclude node_modules \
-  "$REPO_DIR/backend/" "$BACKEND_DIR/"
+  "$REPO_DIR/apps/backend/" "$BACKEND_DIR/"
 
 # Restore preserved files
 [ -d /tmp/maxp_uploads_bak ] && sudo mv /tmp/maxp_uploads_bak "$BACKEND_DIR/uploads" || true

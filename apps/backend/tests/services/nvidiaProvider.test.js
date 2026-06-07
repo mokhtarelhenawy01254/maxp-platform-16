@@ -3,7 +3,7 @@ jest.mock('axios', () => ({
 }));
 
 const axios = require('axios');
-const NvidiaProvider = require('../../services/aiAgent/providers/NvidiaProvider');
+const NvidiaProvider = require('../../legacy-ai-agent/aiAgent/providers/NvidiaProvider');
 
 describe('NvidiaProvider', () => {
   beforeEach(() => {

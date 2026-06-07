@@ -5,56 +5,36 @@ import {
   Tabs,
   Tab,
   Switch,
-  FormControlLabel,
-  Divider,
   Chip,
   IconButton,
   Tooltip,
-  Button,
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  FormControl,
-  FormLabel,
-  RadioGroup,
-  Radio,
 } from "@mui/material";
 import {
   Build as ToolIcon,
   Timeline as LogIcon,
-  Assessment as EvalIcon,
-  Security as SafetyIcon,
   Clear as ClearIcon,
   ExpandMore as ExpandMoreIcon,
   Warning as WarningIcon,
-  CheckCircle as PassIcon,
-  Error as FailIcon,
-  Report as WarnIcon,
 } from "@mui/icons-material";
 import type {
   ToolDefinition,
   ActivityLogEntry,
-  EvalScore,
-  SafetyCheck,
 } from "../types/sandbox.types";
 
 interface InspectorPanelProps {
   tools: ToolDefinition[];
   activityLog: ActivityLogEntry[];
-  evalScore: EvalScore | null;
-  safetyChecks: SafetyCheck[];
   onClearLog: () => void;
-  onRunSafetyCheck?: () => void;
   collapsed?: boolean;
 }
 
 export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   tools,
   activityLog,
-  evalScore,
-  safetyChecks,
   onClearLog,
-  onRunSafetyCheck,
   collapsed = false,
 }) => {
   const [tab, setTab] = useState(0);
@@ -98,8 +78,6 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
       >
         <Tab icon={<ToolIcon sx={{ fontSize: 16 }} />} iconPosition="start" label="Tools" />
         <Tab icon={<LogIcon sx={{ fontSize: 16 }} />} iconPosition="start" label="Log" />
-        <Tab icon={<EvalIcon sx={{ fontSize: 16 }} />} iconPosition="start" label="Eval" />
-        <Tab icon={<SafetyIcon sx={{ fontSize: 16 }} />} iconPosition="start" label="Safety" />
       </Tabs>
 
       <Box sx={{ flex: 1, overflow: "auto" }}>
@@ -281,157 +259,6 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                 </AccordionDetails>
               </Accordion>
             ))}
-          </Box>
-        )}
-
-        {tab === 2 && (
-          <Box sx={{ p: 2 }}>
-            {!evalScore ? (
-              <Box sx={{ textAlign: "center", py: 4 }}>
-                <EvalIcon sx={{ fontSize: 40, color: "text.secondary", opacity: 0.4, mb: 1 }} />
-                <Typography variant="body2" color="text.secondary" fontSize={12}>
-                  No evaluation yet
-                </Typography>
-                <Typography variant="caption" color="text.secondary" fontSize={11}>
-                  Click "Evaluate" to score the last response
-                </Typography>
-              </Box>
-            ) : (
-              <Box>
-                <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 2 }}>
-                  Evaluation Score
-                </Typography>
-
-                {[
-                  { label: "Accuracy", value: evalScore.accuracy, color: "success" },
-                  { label: "Helpfulness", value: evalScore.helpfulness, color: "info" },
-                  { label: "Relevance", value: evalScore.relevance, color: "primary" },
-                  { label: "Completeness", value: evalScore.completeness, color: "warning" },
-                  { label: "Safety", value: evalScore.safety, color: "error" },
-                ].map(({ label, value, color }) => (
-                  <Box key={label} sx={{ mb: 1.5 }}>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.25 }}>
-                      <Typography variant="caption" fontSize={11}>
-                        {label}
-                      </Typography>
-                      <Typography variant="caption" fontWeight={700} fontSize={11}>
-                        {value}%
-                      </Typography>
-                    </Box>
-                    <Box sx={{ height: 6, borderRadius: 3, bgcolor: "grey.800", overflow: "hidden" }}>
-                      <Box
-                        sx={{
-                          height: "100%",
-                          width: `${value}%`,
-                          borderRadius: 3,
-                          bgcolor: `${color}.main`,
-                          transition: "width 0.5s ease",
-                        }}
-                      />
-                    </Box>
-                  </Box>
-                ))}
-
-                <Divider sx={{ my: 2 }} />
-
-                <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: "grey.900", border: "1px solid", borderColor: "divider" }}>
-                  <Typography variant="caption" color="text.secondary" fontSize={10}>
-                    Overall Score
-                  </Typography>
-                  <Typography variant="h4" fontWeight={700} color="primary.main">
-                    {evalScore.overall}
-                    <Typography component="span" variant="body2" color="text.secondary">
-                      /100
-                    </Typography>
-                  </Typography>
-                </Box>
-
-                {evalScore.comment && (
-                  <Box sx={{ mt: 2, p: 1.5, borderRadius: 1, bgcolor: "grey.900", border: "1px solid", borderColor: "divider" }}>
-                    <Typography variant="caption" color="text.secondary" fontSize={10}>
-                      Judge Comment
-                    </Typography>
-                    <Typography variant="body2" fontSize={12} sx={{ mt: 0.5 }}>
-                      {evalScore.comment}
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            )}
-          </Box>
-        )}
-
-        {tab === 3 && (
-          <Box sx={{ p: 2 }}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
-              <Typography variant="subtitle2" fontWeight={700}>
-                Safety Checks
-              </Typography>
-              {onRunSafetyCheck && (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="warning"
-                  onClick={onRunSafetyCheck}
-                  startIcon={<SecurityIcon sx={{ fontSize: 14 }} />}
-                  sx={{ fontSize: 10, height: 28 }}
-                >
-                  Run Check
-                </Button>
-              )}
-            </Box>
-
-            {safetyChecks.length === 0 ? (
-              <Box sx={{ textAlign: "center", py: 4 }}>
-                <SafetyIcon sx={{ fontSize: 40, color: "text.secondary", opacity: 0.4, mb: 1 }} />
-                <Typography variant="body2" color="text.secondary" fontSize={12}>
-                  No safety checks yet
-                </Typography>
-                <Typography variant="caption" color="text.secondary" fontSize={11}>
-                  Run a check to validate responses
-                </Typography>
-              </Box>
-            ) : (
-              safetyChecks.map((check) => (
-                <Box
-                  key={check.id}
-                  sx={{
-                    p: 1.5,
-                    mb: 1,
-                    borderRadius: 1,
-                    border: "1px solid",
-                    borderColor:
-                      check.status === "pass"
-                        ? "success.main"
-                        : check.status === "warn"
-                        ? "warning.main"
-                        : "error.main",
-                    bgcolor:
-                      check.status === "pass"
-                        ? "rgba(46, 125, 50, 0.08)"
-                        : check.status === "warn"
-                        ? "rgba(237, 108, 2, 0.08)"
-                        : "rgba(211, 47, 47, 0.08)",
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    {check.status === "pass" ? (
-                      <PassIcon sx={{ fontSize: 16, color: "success.main" }} />
-                    ) : check.status === "warn" ? (
-                      <WarnIcon sx={{ fontSize: 16, color: "warning.main" }} />
-                    ) : (
-                      <FailIcon sx={{ fontSize: 16, color: "error.main" }} />
-                    )}
-                    <Typography variant="body2" fontSize={12} fontWeight={600}>
-                      {check.name}
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary" fontSize={11} sx={{ mt: 0.5, display: "block" }}>
-                    {check.message}
-                  </Typography>
-                </Box>
-              ))
-            )}
           </Box>
         )}
       </Box>

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from contextlib import suppress
 from typing import Any, Literal
 
 import structlog
@@ -12,13 +13,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.models.thread import Thread
 from src.db.session import get_session
 from src.deps import get_company_id, get_customer_id
+from src.i18n import t
 from src.workflows.approval import create_approval_draft
 from src.workflows.orchestration_flow import run_orchestration
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
 
-SAFE_FALLBACK_REPLY = "تم استلام رسالتك، وسأساعدك حالاً."
+SAFE_FALLBACK_REPLY = ""
 THOUGHT_BLOCK_RE = re.compile(r"<thought\b[^>]*>.*?</thought>\s*", re.IGNORECASE | re.DOTALL)
 THOUGHT_TAG_RE = re.compile(r"</?thought\b[^>]*>", re.IGNORECASE)
 
@@ -50,7 +52,7 @@ def sanitize_model_reply(reply: Any) -> str:
     if THOUGHT_TAG_RE.search(text):
         text = THOUGHT_TAG_RE.split(text, maxsplit=1)[0].strip()
 
-    return text or SAFE_FALLBACK_REPLY
+    return text
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -60,20 +62,42 @@ async def chat(
     session: AsyncSession = Depends(get_session),  # noqa: B008
 ) -> ChatResponse:
     """Handle a customer chat message."""
+    import uuid
+
     company_id = get_company_id(request)
     customer_id = get_customer_id(request)
 
-    thread_id = body.thread_id or f"{company_id}:{customer_id}:chat"
-    stmt = select(Thread).where(
-        Thread.company_id == company_id,
-        Thread.customer_id == customer_id,
-        Thread.channel == "chat",
-    )
-    result = await session.execute(stmt)
-    thread = result.scalar_one_or_none()
+    thread = None
+    if body.thread_id:
+        try:
+            thread_uuid = uuid.UUID(body.thread_id)
+            stmt = select(Thread).where(
+                Thread.id == thread_uuid,
+                Thread.company_id == company_id,
+                Thread.customer_id == customer_id,
+                Thread.channel == "chat",
+            )
+            result = await session.execute(stmt)
+            thread = result.scalar_one_or_none()
+        except ValueError:
+            pass
 
     if not thread:
+        stmt = select(Thread).where(
+            Thread.company_id == company_id,
+            Thread.customer_id == customer_id,
+            Thread.channel == "chat",
+        )
+        result = await session.execute(stmt)
+        thread = result.scalar_one_or_none()
+
+    if not thread:
+        new_id = uuid.uuid4()
+        if body.thread_id:
+            with suppress(ValueError):
+                new_id = uuid.UUID(body.thread_id)
         thread = Thread(
+            id=new_id,
             company_id=company_id,
             customer_id=customer_id,
             channel="chat",
@@ -82,6 +106,8 @@ async def chat(
         session.add(thread)
         await session.commit()
         await session.refresh(thread)
+
+    thread_id = str(thread.id)
 
     try:
         outcome = await run_orchestration(
@@ -104,6 +130,7 @@ async def chat(
                     customer_id=customer_id,
                     thread_id=thread_id,
                     session=session,
+                    sdk_approval_id=tr.get("sdk_approval_id"),
                 )
                 return ChatResponse(
                     status="awaiting_approval",
@@ -122,7 +149,7 @@ async def chat(
         return ChatResponse(
             status="error",
             thread_id=thread_id,
-            reply="عذراً، حدث خطأ في معالجة طلبك. الرجاء المحاولة مرة أخرى.",
+            reply=None,
         )
 
 
@@ -133,20 +160,42 @@ async def chat_merchant(
     session: AsyncSession = Depends(get_session),  # noqa: B008
 ) -> ChatResponse:
     """Handle a merchant chat message (Admin/CEO level)."""
+    import uuid
+
     company_id = get_company_id(request)
     customer_id = "merchant_admin"
 
-    thread_id = body.thread_id or f"{company_id}:merchant:chat"
-    stmt = select(Thread).where(
-        Thread.company_id == company_id,
-        Thread.customer_id == customer_id,
-        Thread.channel == "merchant",
-    )
-    result = await session.execute(stmt)
-    thread = result.scalar_one_or_none()
+    thread = None
+    if body.thread_id:
+        try:
+            thread_uuid = uuid.UUID(body.thread_id)
+            stmt = select(Thread).where(
+                Thread.id == thread_uuid,
+                Thread.company_id == company_id,
+                Thread.customer_id == customer_id,
+                Thread.channel == "merchant",
+            )
+            result = await session.execute(stmt)
+            thread = result.scalar_one_or_none()
+        except ValueError:
+            pass
 
     if not thread:
+        stmt = select(Thread).where(
+            Thread.company_id == company_id,
+            Thread.customer_id == customer_id,
+            Thread.channel == "merchant",
+        )
+        result = await session.execute(stmt)
+        thread = result.scalar_one_or_none()
+
+    if not thread:
+        new_id = uuid.uuid4()
+        if body.thread_id:
+            with suppress(ValueError):
+                new_id = uuid.UUID(body.thread_id)
         thread = Thread(
+            id=new_id,
             company_id=company_id,
             customer_id=customer_id,
             channel="merchant",
@@ -155,6 +204,8 @@ async def chat_merchant(
         session.add(thread)
         await session.commit()
         await session.refresh(thread)
+
+    thread_id = str(thread.id)
 
     try:
         outcome = await run_orchestration(
@@ -178,6 +229,7 @@ async def chat_merchant(
                     customer_id=customer_id,
                     thread_id=thread_id,
                     session=session,
+                    sdk_approval_id=tr.get("sdk_approval_id"),
                 )
                 return ChatResponse(
                     status="awaiting_approval",
@@ -196,5 +248,5 @@ async def chat_merchant(
         return ChatResponse(
             status="error",
             thread_id=thread_id,
-            reply="عذراً، حدث خطأ في معالجة طلبك كتاجر. الرجاء المحاولة مرة أخرى.",
+            reply=t("error.chat.merchant", locale="ar"),
         )

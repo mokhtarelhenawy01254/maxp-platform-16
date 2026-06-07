@@ -5,7 +5,7 @@
 
 const express = require('express');
 const verifyToken = require('../utils/verifyToken');
-const aiServiceBridge = require('../services/aiAgent/aiServiceKeyBridge');
+const aiServiceBridge = require('../legacy-ai-agent/aiAgent/aiServiceKeyBridge');
 
 const router = express.Router();
 

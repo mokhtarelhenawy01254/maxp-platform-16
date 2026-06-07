@@ -39,8 +39,41 @@ const createResponse = () => {
 describe("verifyToken middleware", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    delete process.env.AI_SERVICE_TOKEN;
+    delete process.env.MAXP_SERVICE_TOKEN;
+    process.env.JWT_SECRET = "test-jwt-secret";
     sharedDatabase.executeWithRetry.mockImplementation(async (operation) => operation());
     sharedDatabase.getSharedPrismaClientAsync.mockResolvedValue(mockPrisma);
+  });
+
+  it("allows ai-service token with explicit company scope without JWT lookup", async () => {
+    process.env.AI_SERVICE_TOKEN = "service-secret";
+    const req = {
+      method: "GET",
+      path: "/products",
+      headers: {
+        authorization: "Bearer service-secret",
+      },
+      query: { companyId: "company-1" },
+      body: {},
+    };
+    const res = createResponse();
+    const next = jest.fn();
+
+    await authenticateToken(req, res, next);
+
+    expect(jwt.verify).not.toHaveBeenCalled();
+    expect(sharedDatabase.getSharedPrismaClientAsync).not.toHaveBeenCalled();
+    expect(tenantContext.run).toHaveBeenCalledWith("company-1", expect.any(Function));
+    expect(req.user).toEqual(
+      expect.objectContaining({
+        id: "ai-service",
+        role: "AI_SERVICE",
+        companyId: "company-1",
+        service: true,
+      }),
+    );
+    expect(next).toHaveBeenCalled();
   });
 
   it("authenticates with the guaranteed async Prisma client", async () => {

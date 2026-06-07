@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import i18n from "../../i18n";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import useSocket from "../../hooks/useSocket";
@@ -433,6 +434,16 @@ const DEFAULT_ORDER_STATUSES: OrderStatusDefinition[] = [
   { code: "PARTIALLY_REFUNDED", name: "مسترد جزئياً", color: "#9CA3AF" },
 ];
 
+const DEFAULT_PAYMENT_STATUSES: OrderStatusDefinition[] = [
+  { code: "PENDING", name: i18n.t('orderStatus.paymentPending'), color: "#F59E0B" },
+  { code: "COMPLETED", name: i18n.t('orderStatus.paymentCompleted'), color: "#10B981" },
+  { code: "PARTIALLY_PAID", name: i18n.t('orderStatus.paymentPartiallyPaid'), color: "#3B82F6" },
+  { code: "FAILED", name: i18n.t('orderStatus.paymentFailed'), color: "#EF4444" },
+  { code: "ON_HOLD", name: i18n.t('orderStatus.paymentOnHold'), color: "#F97316" },
+  { code: "REFUNDED", name: i18n.t('orderStatus.paymentRefunded'), color: "#6B7280" },
+  { code: "PARTIALLY_REFUNDED", name: i18n.t('orderStatus.paymentPartiallyRefunded'), color: "#9CA3AF" },
+];
+
 const FILTERABLE_STATUS_CODES = [
   "PENDING",
   "CONFIRMED",
@@ -856,6 +867,9 @@ const Orders: React.FC = () => {
   const [orderStatuses, setOrderStatuses] = useState<OrderStatusDefinition[]>(
     DEFAULT_ORDER_STATUSES,
   );
+  const [paymentStatuses, setPaymentStatuses] = useState<OrderStatusDefinition[]>(
+    DEFAULT_PAYMENT_STATUSES,
+  );
   const [merchantOptions, setMerchantOptions] = useState<MerchantFilterOption[]>(
     [],
   );
@@ -1010,6 +1024,19 @@ const Orders: React.FC = () => {
       ),
     [orderStatuses],
   );
+  const paymentStatusMap = useMemo(
+    () =>
+      new Map(
+        paymentStatuses.map((status) => [
+          normalizeStatusCode(status.code),
+          {
+            ...status,
+            code: normalizeStatusCode(status.code),
+          },
+        ]),
+      ),
+    [paymentStatuses],
+  );
   const activeFilterCount = useMemo(
     () =>
       Object.entries(filters).reduce((count, [key, value]) => {
@@ -1057,37 +1084,47 @@ const Orders: React.FC = () => {
 
     const fetchOrderStatuses = async () => {
       try {
-        const response = await apiClient.get("/order-status?statusType=order", {
+        const response = await apiClient.get("/order-status", {
           _skipErrorToast: true,
         });
         if (!response.data?.success) {
           return;
         }
 
-        const mergedStatuses = new Map(
+        const mergedOrderStatuses = new Map(
           DEFAULT_ORDER_STATUSES.map((status) => [status.code, status]),
+        );
+        const mergedPaymentStatuses = new Map(
+          DEFAULT_PAYMENT_STATUSES.map((status) => [status.code, status]),
         );
 
         const fetchedStatuses = Array.isArray(response.data.data)
-          ? (response.data.data as Array<Partial<OrderStatusDefinition>>)
+          ? (response.data.data as Array<Partial<OrderStatusDefinition> & { statusType?: string }>)
           : [];
 
         fetchedStatuses.forEach((status) => {
           const normalizedCode = normalizeStatusCode(status?.code);
           if (!normalizedCode) return;
 
-          mergedStatuses.set(normalizedCode, {
+          const def: OrderStatusDefinition = {
             ...status,
             code: normalizedCode,
             name: typeof status.name === "string" ? status.name : normalizedCode,
-          });
+          };
+
+          if (status.statusType === "payment") {
+            mergedPaymentStatuses.set(normalizedCode, def);
+          } else {
+            mergedOrderStatuses.set(normalizedCode, def);
+          }
         });
 
         if (isMounted) {
-          setOrderStatuses(Array.from(mergedStatuses.values()));
+          setOrderStatuses(Array.from(mergedOrderStatuses.values()));
+          setPaymentStatuses(Array.from(mergedPaymentStatuses.values()));
         }
       } catch (error) {
-        console.error("Failed to fetch order statuses for list view:", error);
+        console.error("Failed to fetch order and payment statuses for list view:", error);
       }
     };
 
@@ -1945,20 +1982,81 @@ const Orders: React.FC = () => {
   };
 
   const getPaymentStatusText = (status: string) => {
-    switch (status) {
-      case "completed":
-      case "paid":
+    const normalizedStatus = normalizeStatusCode(status);
+    const configuredStatus = paymentStatusMap.get(normalizedStatus);
+    if (configuredStatus?.name) {
+      return configuredStatus.name;
+    }
+
+    switch (normalizedStatus) {
+      case "COMPLETED":
+      case "PAID":
         return t("orders.completed");
-      case "pending":
+      case "PENDING":
         return t("orders.pendingPayment");
-      case "failed":
+      case "FAILED":
         return t("orders.failed");
-      case "unavailable":
+      case "UNAVAILABLE":
         return t("orders.notSpecified");
       default:
         return status;
     }
   };
+
+  const getPaymentStatusBadgeStyle = (status: string): React.CSSProperties | undefined => {
+    const configuredColor = paymentStatusMap.get(
+      normalizeStatusCode(status),
+    )?.color;
+
+    if (!configuredColor) {
+      return undefined;
+    }
+
+    return {
+      backgroundColor: `${configuredColor}20`,
+      color: configuredColor,
+      border: `1px solid ${configuredColor}`,
+    };
+  };
+
+  const filterableOrderStatuses = useMemo(() => {
+    const list = orderStatuses.filter((s) => normalizeStatusCode(s.code) !== "TRASH");
+    const activeFilter = normalizeStatusCode(filters.status);
+    if (activeFilter && activeFilter !== "TRASH" && activeFilter !== "TRASH_ORDER") {
+      const exists = list.some((s) => normalizeStatusCode(s.code) === activeFilter);
+      if (!exists) {
+        list.push({
+          code: activeFilter,
+          name: getStatusText(activeFilter),
+        });
+      }
+    }
+    return list;
+  }, [orderStatuses, filters.status]);
+
+  const filterablePaymentStatuses = useMemo(() => {
+    const list = [...paymentStatuses];
+    const activeFilter = normalizeStatusCode(filters.paymentStatus);
+    if (activeFilter) {
+      const exists = list.some((s) => normalizeStatusCode(s.code) === activeFilter);
+      if (!exists) {
+        list.push({
+          code: activeFilter,
+          name: getPaymentStatusText(activeFilter.toLowerCase()),
+        });
+      }
+    }
+    return list;
+  }, [paymentStatuses, filters.paymentStatus]);
+
+  const bulkUpdatableStatuses = useMemo(() => {
+    return orderStatuses.filter(
+      (s) => {
+        const code = normalizeStatusCode(s.code);
+        return code !== "TRASH" && code !== "DRAFT";
+      }
+    );
+  }, [orderStatuses]);
 
   const getOrderSourceText = (order: Order) => {
     if (order.extractionMethod === "ai_enhanced") return t("orders.enhancedExtraction");
@@ -2502,12 +2600,12 @@ const Orders: React.FC = () => {
                         className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
                       >
                         <option value="">{t("orders.allStatuses")}</option>
-                        {FILTERABLE_STATUS_CODES.map((statusCode) => (
+                        {filterableOrderStatuses.map((status) => (
                           <option
-                            key={statusCode}
-                            value={statusCode.toLowerCase()}
+                            key={status.code}
+                            value={status.code.toLowerCase()}
                           >
-                            {getStatusText(statusCode)}
+                            {status.name}
                           </option>
                         ))}
                         <option value="trash">سلة المحذوفات</option>
@@ -2524,9 +2622,14 @@ const Orders: React.FC = () => {
                         className={`${fieldClassName} appearance-none text-xs sm:text-sm`}
                       >
                         <option value="">{t("orders.allPaymentStatuses")}</option>
-                        <option value="completed">{t("orders.completed")}</option>
-                        <option value="pending">{t("orders.pendingPayment")}</option>
-                        <option value="failed">{t("orders.failed")}</option>
+                        {filterablePaymentStatuses.map((status) => (
+                          <option
+                            key={status.code}
+                            value={status.code.toLowerCase()}
+                          >
+                            {status.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -2749,12 +2852,12 @@ const Orders: React.FC = () => {
               disabled={bulkProcessing}
             >
               <option value="">{t("orders.updateStatus")}</option>
-              {BULK_UPDATABLE_STATUS_CODES.map((statusCode) => (
+              {bulkUpdatableStatuses.map((status) => (
                 <option
-                  key={statusCode}
-                  value={statusCode.toLowerCase()}
+                  key={status.code}
+                  value={status.code.toLowerCase()}
                 >
-                  {getStatusText(statusCode)}
+                  {status.name}
                 </option>
               ))}
               <option value="trash">نقل إلى سلة المحذوفات</option>
@@ -2920,9 +3023,14 @@ const Orders: React.FC = () => {
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <span
-                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getPaymentStatusColor(
-                      (order.paymentStatus || "pending").toLowerCase(),
-                    )}`}
+                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getPaymentStatusBadgeStyle(
+                      order.paymentStatus || "pending",
+                    )
+                      ? ""
+                      : getPaymentStatusColor(
+                          (order.paymentStatus || "pending").toLowerCase(),
+                        )}`}
+                    style={getPaymentStatusBadgeStyle(order.paymentStatus || "pending")}
                   >
                     {getPaymentStatusText(
                       (order.paymentStatus || "pending").toLowerCase(),
@@ -3272,7 +3380,14 @@ const Orders: React.FC = () => {
                       {columnsToRender.includes("payment") && (
                         <td className="px-3 py-2.5 lg:px-4">
                           <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentStatusColor((order.paymentStatus || "pending").toLowerCase())}`}
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentStatusBadgeStyle(
+                              order.paymentStatus || "pending",
+                            )
+                              ? ""
+                              : getPaymentStatusColor(
+                                  (order.paymentStatus || "pending").toLowerCase(),
+                                )}`}
+                            style={getPaymentStatusBadgeStyle(order.paymentStatus || "pending")}
                           >
                             {getPaymentStatusText(
                               (order.paymentStatus || "pending").toLowerCase(),

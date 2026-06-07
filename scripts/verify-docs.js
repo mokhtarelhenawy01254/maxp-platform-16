@@ -12,15 +12,15 @@ const path = require('path');
 
 // Configuration
 const REQUIRED_DOC_FILES = [
-    'backend/Bugs.md',
-    'backend/Structure.md', 
-    'backend/TEAM_SYNC.md',
+    'apps/backend/Bugs.md',
+    'apps/backend/Structure.md', 
+    'apps/backend/TEAM_SYNC.md',
     // Domain-specific doc files (any of these count as documentation)
-    'backend/docs/storefront/',
-    'backend/docs/orders/',
-    'backend/docs/whatsapp/',
-    'backend/docs/hr/',
-    'backend/docs/infrastructure/',
+    'apps/backend/docs/storefront/',
+    'apps/backend/docs/orders/',
+    'apps/backend/docs/whatsapp/',
+    'apps/backend/docs/hr/',
+    'apps/backend/docs/infrastructure/',
 ];
 
 const BYPASS_FLAG = '[no-doc]';

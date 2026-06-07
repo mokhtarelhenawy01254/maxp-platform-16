@@ -2,7 +2,7 @@ const {
   createFacebookWebhookDurableIngressService,
   extractFacebookWebhookJobs,
   WEBHOOK_QUEUE_NAME,
-} = require('../../services/aiAgent/facebookWebhookDurableIngressService');
+} = require('../../legacy-ai-agent/aiAgent/facebookWebhookDurableIngressService');
 
 describe('facebookWebhookDurableIngressService', () => {
   test('extracts durable jobs for messages, reads, and comments', () => {

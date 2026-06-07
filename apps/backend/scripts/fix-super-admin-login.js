@@ -1,4 +1,4 @@
-﻿const { getSharedPrismaClient, initializeSharedDatabase } = require('../services/sharedDatabase');
+const { getSharedPrismaClient, initializeSharedDatabase } = require('../services/sharedDatabase');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 

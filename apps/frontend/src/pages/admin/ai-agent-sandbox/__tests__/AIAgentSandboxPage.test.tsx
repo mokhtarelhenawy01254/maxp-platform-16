@@ -84,7 +84,6 @@ describe("AIAgentSandboxPage", () => {
       deleteSession: vi.fn(),
       updateSessionTitle: vi.fn(),
       sendMessage: vi.fn(),
-      evaluateLastResponse: vi.fn(),
       runQuickScenario: vi.fn(),
       exportSession: vi.fn(),
       formatCost: (value: number) => `$${value.toFixed(4)}`,

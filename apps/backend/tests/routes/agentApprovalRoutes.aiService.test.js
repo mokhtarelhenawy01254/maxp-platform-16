@@ -17,12 +17,12 @@ jest.mock('../../utils/verifyToken', () => ({
   },
 }));
 
-jest.mock('../../services/aiAgent/draftProposalService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/draftProposalService', () => ({
   getDraft: (...args) => mockGetDraft(...args),
   listDrafts: (...args) => mockListDrafts(...args),
 }));
 
-jest.mock('../../services/aiAgent/humanApprovalService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/humanApprovalService', () => ({
   processApprovalResponse: (...args) => mockProcessApprovalResponse(...args),
   processRejectionResponse: (...args) => mockProcessRejectionResponse(...args),
 }));
@@ -31,7 +31,7 @@ jest.mock('../../services/aiSdkClient', () => ({
   resumeWorkflow: (...args) => mockResumeWorkflow(...args),
 }));
 
-jest.mock('../../services/aiAgent/aiServiceRouter', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/aiServiceRouter', () => ({
   isAiServiceEnabled: (...args) => mockIsAiServiceEnabled(...args),
 }));
 

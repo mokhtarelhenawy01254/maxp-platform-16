@@ -5,9 +5,9 @@
 
 const express = require('express');
 const verifyToken = require('../utils/verifyToken');
-const agentManagerService = require('../services/aiAgent/agentManagerService');
-const agentInboxService = require('../services/aiAgent/agentInboxService');
-const toolOrchestratorService = require('../services/aiAgent/toolOrchestratorService');
+const agentManagerService = require('../legacy-ai-agent/aiAgent/agentManagerService');
+const agentInboxService = require('../legacy-ai-agent/aiAgent/agentInboxService');
+const toolOrchestratorService = require('../legacy-ai-agent/aiAgent/toolOrchestratorService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const router = express.Router();

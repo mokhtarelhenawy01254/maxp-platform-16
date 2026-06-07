@@ -6,7 +6,7 @@ let mockCeoProcessResult = null;
 const mockProcessTaskPayloads = [];
 const mockLogIntentPlan = jest.fn(async () => ({}));
 
-jest.mock('../../services/aiAgent/workingMemoryService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/workingMemoryService', () => ({
   addMessage: mockAddMessage,
   getContext: mockGetContext,
   initSession: mockEnsureSessionMemory,
@@ -17,7 +17,7 @@ jest.mock('../../services/rag/CorrectiveRAGEngine', () => ({
   query: jest.fn(async () => null),
 }));
 
-jest.mock('../../services/aiAgent/telemetryTracerService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/telemetryTracerService', () => ({
   startTrace: jest.fn(async () => null),
   endTrace: jest.fn(async () => null),
   startSpan: jest.fn(async () => null),
@@ -40,27 +40,27 @@ jest.mock('../../services/redisCacheService', () => ({
   }),
 }));
 
-jest.mock('../../services/aiAgent/agentReplyNormalizer', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentReplyNormalizer', () => ({
   normalizeAgentReply: value => String(value || '').trim(),
 }));
 
-jest.mock('../../services/aiAgent/agentToolCallParser', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentToolCallParser', () => ({
   containsInternalToolSyntax: () => false,
 }));
 
-jest.mock('../../services/aiAgent/agentToolGatewayService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentToolGatewayService', () => ({
   logIntentPlan: mockLogIntentPlan,
   newTraceId: jest.fn(() => 'trace_test_1'),
 }));
 
-jest.mock('../../services/aiAgent/agentChatTranscriptService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentChatTranscriptService', () => ({
   appendMessage: jest.fn(async () => ({})),
   saveSession: jest.fn(async () => ({})),
   saveSessions: jest.fn(async () => ({})),
   listSessions: jest.fn(async () => []),
 }));
 
-jest.mock('../../services/aiAgent/agentManagerService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentManagerService', () => ({
   getManagerAgent: jest.fn(async () => ({
     id: 'agent_ceo_1',
     name: 'CEO Agent',
@@ -73,7 +73,7 @@ jest.mock('../../services/aiAgent/agentManagerService', () => ({
   })),
 }));
 
-jest.mock('../../services/aiAgent/CEOAgent', () => class MockCEOAgent {
+jest.mock('../../legacy-ai-agent/aiAgent/CEOAgent', () => class MockCEOAgent {
   constructor(companyId, config = {}) {
     this.companyId = companyId;
     this.id = config.id || 'agent_ceo_1';
@@ -115,7 +115,7 @@ jest.mock('../../services/aiAgent/CEOAgent', () => class MockCEOAgent {
   }
 });
 
-const aiChatService = require('../../services/aiAgent/aiChatService');
+const aiChatService = require('../../legacy-ai-agent/aiAgent/aiChatService');
 const CorrectiveRAGEngine = require('../../services/rag/CorrectiveRAGEngine');
 
 describe('aiChatService.sendMessage', () => {

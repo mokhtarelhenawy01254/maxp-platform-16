@@ -1100,7 +1100,7 @@ const sendInstagramTypingIndicator = async (req, res) => {
         const companyId = req.user?.companyId;
 
         if (!companyId) {
-            return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+            return res.status(403).json({ success: false, error: 'COMPANY_ID_REQUIRED' });
         }
 
         if (!['typing_on', 'typing_off'].includes(action)) {
@@ -1116,7 +1116,7 @@ const sendInstagramTypingIndicator = async (req, res) => {
         }, 3);
 
         if (!conversation || conversation.channel !== 'INSTAGRAM') {
-            return res.status(404).json({ success: false, message: 'المحادثة غير موجودة أو ليست Instagram' });
+            return res.status(404).json({ success: false, error: 'INSTAGRAM_CONVERSATION_NOT_FOUND' });
         }
 
         const igPage = await executeWithRetry(async () => {
@@ -1127,7 +1127,7 @@ const sendInstagramTypingIndicator = async (req, res) => {
         }, 3);
 
         if (!igPage?.pageAccessToken || !igPage?.instagramAccountId) {
-            return res.status(400).json({ success: false, message: 'لا يوجد حساب Instagram متصل' });
+            return res.status(400).json({ success: false, error: 'INSTAGRAM_ACCOUNT_NOT_CONNECTED' });
         }
 
         const customer = await executeWithRetry(async () => {
@@ -1138,7 +1138,7 @@ const sendInstagramTypingIndicator = async (req, res) => {
         }, 3);
 
         if (!customer?.instagramId) {
-            return res.status(400).json({ success: false, message: 'لا يوجد معرف Instagram للعميل' });
+            return res.status(400).json({ success: false, error: 'CUSTOMER_INSTAGRAM_ID_MISSING' });
         }
 
         const axios = require('axios');

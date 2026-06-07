@@ -1,4 +1,4 @@
-﻿const recruitmentService = require('../services/hr/recruitmentService');
+const recruitmentService = require('../services/hr/recruitmentService');
 const { initializeSharedDatabase } = require('../services/sharedDatabase');
 
 async function test() {

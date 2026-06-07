@@ -1,7 +1,7 @@
 const mockGatewayExecute = jest.fn();
 const mockProviderGenerateResponse = jest.fn();
 
-jest.mock('../../services/aiAgent/agentSoulConfig', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentSoulConfig', () => ({
   loadSoul: jest.fn(async () => ({
     soul: 'You answer for {companyName}.',
     rules: 'Use tools for current inventory questions.',
@@ -10,13 +10,13 @@ jest.mock('../../services/aiAgent/agentSoulConfig', () => ({
   })),
 }));
 
-jest.mock('../../services/aiAgent/providers/AIProviderFactory', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory', () => ({
   getProvider: jest.fn(() => ({
     generateResponse: mockProviderGenerateResponse,
   })),
 }));
 
-jest.mock('../../services/aiAgent/agentToolGatewayService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/agentToolGatewayService', () => ({
   newTraceId: jest.fn(() => 'trace_inventory_1'),
   logIntentPlan: jest.fn(async () => null),
   logReplyBlocked: jest.fn(async () => null),
@@ -51,9 +51,9 @@ jest.mock('../../services/sharedDatabase', () => {
   };
 });
 
-const { resolveToolPlan } = require('../../services/aiAgent/agentIntentRelevanceService');
-const agentIntentClassifierService = require('../../services/aiAgent/agentIntentClassifierService');
-const CEOAgent = require('../../services/aiAgent/CEOAgent');
+const { resolveToolPlan } = require('../../legacy-ai-agent/aiAgent/agentIntentRelevanceService');
+const agentIntentClassifierService = require('../../legacy-ai-agent/aiAgent/agentIntentClassifierService');
+const CEOAgent = require('../../legacy-ai-agent/aiAgent/CEOAgent');
 
 describe('model-classified inventory availability replies', () => {
   beforeEach(() => {

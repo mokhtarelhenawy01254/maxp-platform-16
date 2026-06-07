@@ -1971,7 +1971,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
         setImmediate(async () => {
           try {
             console.log(`🤖 [AI-AUTOREPLY] Triggered AI auto-reply check for customer: ${customer.id}`);
-            const aiMessageProcessor = require('../services/aiAgent/aiMessageProcessor');
+            const aiMessageProcessor = require('../legacy-ai-agent/aiAgent/aiMessageProcessor');
             
             // 1. Process the message through AI
             const replyText = await aiMessageProcessor.processMessage({
@@ -2585,7 +2585,7 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
                 timestamp: savedReply.createdAt,
                 metadata: JSON.parse(savedReply.metadata),
                 senderId: null,
-                senderName: 'الذكاء الاصطناعي',
+                senderName: 'AI Agent',
                 lastMessageIsFromCustomer: false,
                 lastCustomerMessageIsUnread: false,
                 companyId: customer.companyId,
@@ -2657,7 +2657,7 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
 async function sendInstagramMessage({ recipientId, messageText, igAccountId, pageAccessToken, companyId }) {
   try {
     if (!recipientId || !igAccountId || !pageAccessToken) {
-      return { success: false, error: 'MISSING_PARAMS', message: 'بيانات إرسال Instagram ناقصة' };
+      return { success: false, error: 'MISSING_PARAMS', reason: 'MISSING_INSTAGRAM_SEND_PARAMS' };
     }
 
     const axios = require('axios');
@@ -2707,4 +2707,3 @@ module.exports = {
   updateConversationLastMessageStatus,
   resetConversationUnreadCount
 };
-

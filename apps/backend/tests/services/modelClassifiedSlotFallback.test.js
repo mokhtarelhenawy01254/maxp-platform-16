@@ -12,9 +12,9 @@ const {
   _getModelClassifiedWriteToolExecution,
   _getModelClassifiedHandoffExecution,
   _firstNonEmptySlot,
-} = require('../../services/aiAgent/executors/intentExecutionRouter');
-const orderDraftEngine = require('../../services/aiAgent/executors/orderDraftEngine');
-const adminDeterministicParamParser = require('../../services/aiAgent/executors/adminDeterministicParamParser');
+} = require('../../legacy-ai-agent/aiAgent/executors/intentExecutionRouter');
+const orderDraftEngine = require('../../legacy-ai-agent/aiAgent/executors/orderDraftEngine');
+const adminDeterministicParamParser = require('../../legacy-ai-agent/aiAgent/executors/adminDeterministicParamParser');
 
 describe('_firstNonEmptySlot', () => {
   test('returns first non-empty value from slot names', () => {

@@ -41,11 +41,10 @@ const RewardsLayout: React.FC = () => {
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Gift className="h-8 w-8 text-primary" />
-          {t("rewards.pageTitle") || "نظام المكافآت والحوافز"}
+          {t("rewards.pageTitle")}
         </h1>
         <p className="text-gray-500 mt-1">
-          {t("rewards.pageDescription") ||
-            "إدارة المكافآت، الحوافز، والتقدير الوظيفي."}
+          {t("rewards.pageDescription")}
         </p>
       </div>
 
@@ -58,23 +57,23 @@ const RewardsLayout: React.FC = () => {
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-5 h-auto">
           <TabsTrigger value="my-rewards" className="py-3 flex gap-2">
             <User className="h-4 w-4" />
-            {t("rewards.myRewards") || "مكافآتي"}
+            {t("rewards.myRewards")}
           </TabsTrigger>
 
           {isManager && (
             <>
               <TabsTrigger value="apply" className="py-3 flex gap-2">
                 <Award className="h-4 w-4" />
-                {t("rewards.apply") || "صرف مكافأة"}
+                {t("rewards.apply")}
               </TabsTrigger>
               <TabsTrigger value="types" className="py-3 flex gap-2">
                 <Briefcase className="h-4 w-4" />
-                {t("rewards.types") || "أنواع المكافآت"}
+                {t("rewards.types")}
               </TabsTrigger>
               {/* Future Implementation
               <TabsTrigger value="reports" className="py-3 flex gap-2">
                 <BarChart3 className="h-4 w-4" />
-                {t('rewards.reports') || 'التقارير'}
+                {t('rewards.reports')}
               </TabsTrigger>
               */}
             </>
@@ -83,7 +82,7 @@ const RewardsLayout: React.FC = () => {
 
         <div className="mt-6">
           <React.Suspense
-            fallback={<div className="p-8 text-center">جاري التحميل...</div>}
+            fallback={<div className="p-8 text-center">{t("rewards.loading")}</div>}
           >
             <TabsContent value="my-rewards">
               <MyRewards />

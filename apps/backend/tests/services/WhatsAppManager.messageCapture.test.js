@@ -230,6 +230,59 @@ describe('WhatsAppManager message capture helpers', () => {
         expect(__testing.getMessageStatusFromBaileysStatus('READ')).toBe('READ');
         expect(__testing.getMessageStatusFromBaileysStatus(undefined)).toBeNull();
     });
+
+    test('getSocketReadyState extracts websocket readyState from diverse Baileys locations', () => {
+        const { getSocketReadyState } = __testing;
+        
+        expect(getSocketReadyState({ ws: { readyState: 1 } })).toBe(1);
+        expect(getSocketReadyState({ ws: { socket: { readyState: 0 } } })).toBe(0);
+        expect(getSocketReadyState({ ws: { _socket: { readyState: 3 } } })).toBe(3);
+        expect(getSocketReadyState({ ws: { stream: { readyState: 2 } } })).toBe(2);
+        expect(getSocketReadyState({ ws: { stream: { socket: { readyState: 1 } } } })).toBe(1);
+        expect(getSocketReadyState({})).toBeUndefined();
+    });
+
+    test('classifySessionSocketHealth correctly determines session socket state and staleness', () => {
+        const { classifySessionSocketHealth } = __testing;
+
+        // Not in memory
+        expect(classifySessionSocketHealth(null)).toMatchObject({ alive: false, reason: 'not_in_memory' });
+
+        // Missing socket
+        expect(classifySessionSocketHealth({ status: 'connected' })).toMatchObject({ alive: false, reason: 'no_socket' });
+
+        // Socket readyState is OPEN (1)
+        expect(classifySessionSocketHealth({
+            status: 'connected',
+            sock: {
+                ws: { readyState: 1 },
+                lastReceivedMessageTimestamp: Date.now() - 5000
+            }
+        })).toMatchObject({ alive: true, stale: false });
+
+        // Socket readyState is OPEN (1) but stale (no messages for > 15 mins)
+        expect(classifySessionSocketHealth({
+            status: 'connected',
+            sock: {
+                ws: { readyState: 1 },
+                lastReceivedMessageTimestamp: Date.now() - 20 * 60 * 1000
+            }
+        })).toMatchObject({ alive: true, stale: true });
+
+        // Socket readyState is CLOSED (3)
+        expect(classifySessionSocketHealth({
+            status: 'connected',
+            sock: {
+                ws: { readyState: 3 }
+            }
+        })).toMatchObject({ alive: false, reason: 'websocket_3' });
+
+        // Websocket state is unavailable but session status is connected
+        expect(classifySessionSocketHealth({
+            status: 'connected',
+            sock: {}
+        })).toMatchObject({ alive: true, stale: false, reason: 'websocket_state_unavailable' });
+    });
 });
 
 describe('WhatsAppInboundService status helpers', () => {

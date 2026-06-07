@@ -50,11 +50,11 @@ function assertMatches(source, pattern, message) {
 }
 
 function main() {
-  const relevance = read('services/aiAgent/agentIntentRelevanceService.js');
-  const planner = read('services/aiAgent/agentIntentPlannerService.js');
-  const classifier = read('services/aiAgent/agentIntentClassifierService.js');
-  const ceoAgent = read('services/aiAgent/CEOAgent.js').replace(/\r\n/g, '\n');
-  const routerSource = read('services/aiAgent/executors/intentExecutionRouter.js');
+  const relevance = read('legacy-ai-agent/aiAgent/agentIntentRelevanceService.js');
+  const planner = read('legacy-ai-agent/aiAgent/agentIntentPlannerService.js');
+  const classifier = read('legacy-ai-agent/aiAgent/agentIntentClassifierService.js');
+  const ceoAgent = read('legacy-ai-agent/aiAgent/CEOAgent.js').replace(/\r\n/g, '\n');
+  const routerSource = read('legacy-ai-agent/aiAgent/executors/intentExecutionRouter.js');
   const allFunctions = read('utils/allFunctions.js');
   const customerSoulPaths = [
     'agents/facebook-sales-support-agent/SOUL.md',
@@ -87,11 +87,11 @@ function main() {
   assert(!/includesAny|matchesAny|RegExp|keyword|regex/i.test(jsonFallbackClassifier), 'Classifier JSON fallback must not add keyword or regex routing');
 
   // Check pipeline stages for customer channel detection
-  const resolveIntentSource = read('services/aiAgent/pipeline/stages/resolveIntent.js');
+  const resolveIntentSource = read('legacy-ai-agent/aiAgent/pipeline/stages/resolveIntent.js');
   assert(resolveIntentSource.includes('detectCustomerChannel'), 'resolveIntent must detect customer reply channels');
   assert(resolveIntentSource.includes('CUSTOMER_CHANNELS'), 'resolveIntent must define customer channel list');
 
-  const routeToToolsSource = read('services/aiAgent/pipeline/stages/routeToTools.js');
+  const routeToToolsSource = read('legacy-ai-agent/aiAgent/pipeline/stages/routeToTools.js');
   assertMatches(
     routeToToolsSource,
     /const deterministicReadExecution =[\s\S]*?&& !isCustomerReplyChannel[\s\S]*?\? intentExecutionRouter\._getDeterministicReadToolExecution/,
@@ -104,10 +104,10 @@ function main() {
   );
   assert(routeToToolsSource.includes('const contextOrderDraftParams = !isCustomerReplyChannel'), 'Customer channels must not parse order draft params with local fallback');
 
-  const executeToolsSource = read('services/aiAgent/pipeline/stages/executeTools.js');
+  const executeToolsSource = read('legacy-ai-agent/aiAgent/pipeline/stages/executeTools.js');
   assert(executeToolsSource.includes('isCustomerReplyChannel'), 'executeTools must be aware of customer channels');
 
-  const handleFallbackSource = read('services/aiAgent/pipeline/stages/handleFallback.js');
+  const handleFallbackSource = read('legacy-ai-agent/aiAgent/pipeline/stages/handleFallback.js');
   assert(handleFallbackSource.includes('isCustomerReplyChannel'), 'handleFallback must be aware of customer channels');
   assert(handleFallbackSource.includes('_getModelClassifiedHandoffExecution'), 'Customer handoff repair must use model-classified handoff execution');
   assert(!handleFallbackSource.includes('_getDeterministicActionToolExecution(relevancePlan'), 'Customer handoff repair must not call deterministic action fallback');
@@ -117,7 +117,7 @@ function main() {
   const customerRepairBranch = (handleFallbackSource.match(/if \(isCustomerReplyChannel\) \{([\s\S]*?)\} else \{/) || [])[1] || '';
   assert(customerRepairBranch && !/_getDeterministic(?:Read|Write|Action)ToolExecution/.test(customerRepairBranch), 'Customer repair branch must not call deterministic parser helpers');
 
-  const validateReplySource = read('services/aiAgent/pipeline/stages/validateReply.js');
+  const validateReplySource = read('legacy-ai-agent/aiAgent/pipeline/stages/validateReply.js');
   assert(validateReplySource.includes('isCustomerReplyChannel'), 'validateReply must be aware of customer channels');
 
   const modelClassifiedReadExecution = extractFunction(routerSource, '_getModelClassifiedReadToolExecution');

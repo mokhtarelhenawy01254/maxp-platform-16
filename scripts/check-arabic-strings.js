@@ -52,6 +52,7 @@ const SKIP_PATTERNS = [
   /\.next/,
   /dist/,
   /build/,
+  /apps[/\\]backend[/\\]legacy-ai-agent/, // legacy compatibility archive kept during AI service migration
   /locales/,           // translation files are expected to have Arabic
   /i18n\.js$/,         // i18n config files
   /i18n[/\\]index\.ts$/,
@@ -60,6 +61,7 @@ const SKIP_PATTERNS = [
   /\.min\./,
   /seed/i,             // seed data files
   /migration/i,        // database migrations
+  /scripts[/\\]scripts/, // utility/build scripts
   /\.uat\./,           // UAT test scripts
   /uat[/\\]/,          // UAT directories
 ];

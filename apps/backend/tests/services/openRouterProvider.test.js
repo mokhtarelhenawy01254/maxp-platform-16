@@ -3,7 +3,7 @@ jest.mock('axios', () => ({
 }));
 
 const axios = require('axios');
-const OpenRouterProvider = require('../../services/aiAgent/providers/OpenRouterProvider');
+const OpenRouterProvider = require('../../legacy-ai-agent/aiAgent/providers/OpenRouterProvider');
 
 describe('OpenRouterProvider multimodal requests', () => {
   beforeEach(() => {

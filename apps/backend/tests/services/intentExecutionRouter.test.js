@@ -7,7 +7,7 @@ const {
   _getModelClassifiedReadToolParams,
   _getModelClassifiedWriteToolParams,
   _firstNonEmptySlot,
-} = require('../../services/aiAgent/executors/intentExecutionRouter');
+} = require('../../legacy-ai-agent/aiAgent/executors/intentExecutionRouter');
 
 describe('Intent Execution Router - Classifier Contract', () => {
   describe('_firstNonEmptySlot', () => {

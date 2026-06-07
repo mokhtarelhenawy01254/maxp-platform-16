@@ -1,4 +1,4 @@
-﻿// Direct test of WhatsApp notification
+// Direct test of WhatsApp notification
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const prisma = getSharedPrismaClient();

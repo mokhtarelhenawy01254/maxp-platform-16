@@ -15,13 +15,13 @@ jest.mock('../../services/sharedDatabase', () => {
   };
 });
 
-const agentFileSystemService = require('../../services/aiAgent/agentFileSystemService');
-const toolRegistryService = require('../../services/aiAgent/toolRegistryService');
-const skillRegistryService = require('../../services/aiAgent/skillRegistryService');
-const agentProfileLoaderService = require('../../services/aiAgent/agentProfileLoaderService');
-const agentProvisioningService = require('../../services/aiAgent/agentProvisioningService');
-const agentSkillAuthoringService = require('../../services/aiAgent/agentSkillAuthoringService');
-const CEOAgent = require('../../services/aiAgent/CEOAgent');
+const agentFileSystemService = require('../../legacy-ai-agent/aiAgent/agentFileSystemService');
+const toolRegistryService = require('../../legacy-ai-agent/aiAgent/toolRegistryService');
+const skillRegistryService = require('../../legacy-ai-agent/aiAgent/skillRegistryService');
+const agentProfileLoaderService = require('../../legacy-ai-agent/aiAgent/agentProfileLoaderService');
+const agentProvisioningService = require('../../legacy-ai-agent/aiAgent/agentProvisioningService');
+const agentSkillAuthoringService = require('../../legacy-ai-agent/aiAgent/agentSkillAuthoringService');
+const CEOAgent = require('../../legacy-ai-agent/aiAgent/CEOAgent');
 
 describe('Agent file-system registries', () => {
   beforeEach(() => {
@@ -262,7 +262,7 @@ describe('Agent file-system registries', () => {
   });
 
   test('every tool has required metadata fields', () => {
-    const { TOOLS } = require('../../services/aiAgent/agentToolRegistry');
+    const { TOOLS } = require('../../legacy-ai-agent/aiAgent/agentToolRegistry');
     const missing = [];
 
     for (const [name, tool] of Object.entries(TOOLS)) {

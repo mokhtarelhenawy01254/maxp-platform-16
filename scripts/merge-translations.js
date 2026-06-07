@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const LOCALES_DIR = path.join(__dirname, '../frontend/src/locales');
+const LOCALES_DIR = path.join(__dirname, '../apps/frontend/src/locales');
 
 function mergeFiles(lang) {
   const sectionsDir = path.join(LOCALES_DIR, lang, 'sections');

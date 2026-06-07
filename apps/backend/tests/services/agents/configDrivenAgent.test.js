@@ -1,4 +1,4 @@
-const BaseAgent = require('../../../services/aiAgent/BaseAgent');
+const BaseAgent = require('../../../legacy-ai-agent/aiAgent/BaseAgent');
 
 describe('Config-Driven Agent Factory', () => {
   test('SAS_SALES from template has correct tools', () => {
@@ -80,7 +80,7 @@ describe('Config-Driven Agent Factory', () => {
   });
 
   test('Input guardrail blocks sensitive data', async () => {
-    const { SensitiveDataGuardrail } = require('../../../services/aiAgent/guardrails/InputGuardrail');
+    const { SensitiveDataGuardrail } = require('../../../legacy-ai-agent/aiAgent/guardrails/InputGuardrail');
     const agent = BaseAgent.fromTemplate('sas-sales-agent', 'comp1');
     agent.addInputGuardrail(SensitiveDataGuardrail);
     
@@ -90,7 +90,7 @@ describe('Config-Driven Agent Factory', () => {
   });
 
   test('Output guardrail detects tool name exposure', async () => {
-    const { ToolNameExposureGuardrail } = require('../../../services/aiAgent/guardrails/OutputGuardrail');
+    const { ToolNameExposureGuardrail } = require('../../../legacy-ai-agent/aiAgent/guardrails/OutputGuardrail');
     const agent = BaseAgent.fromTemplate('sas-sales-agent', 'comp1');
     agent.addOutputGuardrail(ToolNameExposureGuardrail);
     
@@ -116,7 +116,7 @@ describe('Config-Driven Agent Factory', () => {
   });
 
   test('ConversationSessionManager creates and manages sessions', () => {
-    const { getConversationSessionManager } = require('../../../services/aiAgent/ConversationSessionManager');
+    const { getConversationSessionManager } = require('../../../legacy-ai-agent/aiAgent/ConversationSessionManager');
     const manager = getConversationSessionManager();
 
     const session = manager.createSession({ companyId: 'test', customerId: 'cust1' });

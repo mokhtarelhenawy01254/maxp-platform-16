@@ -2,9 +2,9 @@ const {
   buildProductSearchCandidates,
   scoreProductMatch,
   parseImageList,
-} = require('../../services/aiAgent/utils/productSearchQueryService');
-const { parseSearchQuery } = require('../../services/aiAgent/utils/queryUnderstandingParser');
-const { getToolDescriptions } = require('../../services/aiAgent/agentToolRegistry');
+} = require('../../legacy-ai-agent/aiAgent/utils/productSearchQueryService');
+const { parseSearchQuery } = require('../../legacy-ai-agent/aiAgent/utils/queryUnderstandingParser');
+const { getToolDescriptions } = require('../../legacy-ai-agent/aiAgent/agentToolRegistry');
 
 describe('productSearchQueryService', () => {
   test('expands Arabic transliteration into searchable product phrases', () => {
