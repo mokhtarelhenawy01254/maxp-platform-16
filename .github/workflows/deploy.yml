@@ -92,10 +92,14 @@ jobs:
 
       # Build Frontend
       - name: Install Frontend Dependencies
-        if: steps.cache-frontend.outputs.cache-hit != 'true'
         working-directory: ./apps/frontend
         run: |
-          npm ci --ignore-scripts || npm install --ignore-scripts
+          if [ "${{ steps.cache-frontend.outputs.cache-hit }}" != 'true' ] || [ ! -f node_modules/.bin/vite ]; then
+            echo "📦 Installing frontend dependencies (cache-hit=${{ steps.cache-frontend.outputs.cache-hit }}, vite-found=$(test -f node_modules/.bin/vite && echo yes || echo no))..."
+            npm ci --ignore-scripts || npm install --ignore-scripts
+          else
+            echo "✅ Frontend dependencies restored from cache and vite binary found"
+          fi
         env:
           HUSKY: '0'
         continue-on-error: false
