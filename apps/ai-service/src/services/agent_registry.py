@@ -4,7 +4,7 @@ import json
 import uuid
 
 import structlog
-from agent_framework import Agent, FunctionTool
+from src.agents.base import BaseAgent, BaseAgentConfig
 from agent_framework.anthropic import RawClaudeAgent
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -43,7 +43,7 @@ class AgentRegistry:
         self,
         company_id: str,
         agent_id: str,
-        agent: Agent | RawClaudeAgent,
+        agent: BaseAgent | RawClaudeAgent,
         tool_names: list[str] | None = None,
     ) -> None:
         if company_id not in self._registry:
@@ -54,7 +54,7 @@ class AgentRegistry:
         )
         self._company_id_map[agent_id] = company_id
 
-    def get(self, company_id: str, agent_id: str) -> Agent | RawClaudeAgent | None:
+    def get(self, company_id: str, agent_id: str) -> BaseAgent | RawClaudeAgent | None:
         record = self._registry.get(company_id, {}).get(agent_id)
         return record.agent if record else None
 
@@ -62,7 +62,7 @@ class AgentRegistry:
         record = self._registry.get(company_id, {}).get(agent_id)
         return record.tool_names if record else []
 
-    def list_agents(self, company_id: str) -> list[tuple[str, Agent | RawClaudeAgent, list[str]]]:
+    def list_agents(self, company_id: str) -> list[tuple[str, BaseAgent | RawClaudeAgent, list[str]]]:
         """Return list of (agent_id, agent, tool_names) for a company."""
         return [
             (agent_id, record.agent, record.tool_names)
@@ -97,45 +97,27 @@ class AgentRegistry:
         template_slug: str | None = None,
         company_name: str | None = None,
         db_session: AsyncSession | None = None,
-    ) -> tuple[Agent | RawClaudeAgent, str]:
+    ) -> tuple[BaseAgent, str]:
         """Create a new agent with role-specific tools, register in memory, persist to DB."""
         settings = get_settings()
         agent_id = _generate_agent_id(company_id)
         resolved_model = model or settings.default_model
 
         tool_names = allowed_tools or get_tool_names_for_role(role)
-        raw_tools: list[FunctionTool] = resolve_tools_from_names(tool_names)
-        agent_tools = wrap_tools_for_gateway(
-            raw_tools,
+        
+        config = BaseAgentConfig(
+            id=agent_id,
+            name=name or f"{role} Agent",
+            role=role,
             company_id=company_id,
-            agent_role=role,
             allowed_tools=tool_names,
+            model=resolved_model,
+            parent_id=parent_id,
+            template_slug=template_slug,
+            # instructions handled via template or overrides in BaseAgent
         )
-        agent_instructions = instructions or self._default_instructions(role, company_name or "")
-
-        if settings.default_llm_provider == "anthropic":
-            agent: Agent | RawClaudeAgent = RawClaudeAgent(
-                name=name or f"{role} Agent",
-                instructions=agent_instructions,
-                tools=agent_tools,
-                default_options={"model": resolved_model},
-            )
-        else:
-            client = await build_agent_client_async(
-                settings,
-                model=resolved_model,
-                tools=agent_tools,
-                system_prompt=agent_instructions,
-                company_id=company_id,
-            )
-            agent = Agent(
-                client=client,
-                name=name or f"{role} Agent",
-                instructions=agent_instructions,
-                tools=agent_tools,
-                middleware=build_maxp_function_middleware(company_id, role),
-                default_options={"model": resolved_model},
-            )
+        
+        agent = BaseAgent(config)
 
         self.register(company_id, agent_id, agent, tool_names=tool_names)
 
@@ -239,27 +221,22 @@ async def init_registry_from_db(session_factory) -> None:
                 )
 
                 if settings.default_llm_provider == "anthropic":
-                    agent: Agent | RawClaudeAgent = RawClaudeAgent(
+                    agent: BaseAgent | RawClaudeAgent = RawClaudeAgent(
                         name=db_agent.name,
                         instructions=db_agent.soul or "",
                         tools=agent_tools,
                         default_options={"model": db_agent.model or settings.default_model},
                     )
                 else:
-                    client = await build_agent_client_async(
-                        settings,
-                        model=db_agent.model or settings.default_model,
-                        tools=agent_tools,
-                        system_prompt=db_agent.soul or "",
-                        company_id=company_id,
-                    )
-                    agent = Agent(
-                        client=client,
+                    config = BaseAgentConfig(
+                        id=db_agent.id,
                         name=db_agent.name,
-                        instructions=db_agent.soul or "",
-                        tools=agent_tools,
-                        middleware=build_maxp_function_middleware(company_id, db_agent.role),
+                        role=db_agent.role,
+                        company_id=company_id,
+                        allowed_tools=tool_names,
+                        model=db_agent.model or settings.default_model,
                     )
+                    agent = BaseAgent(config)
 
                 registry.register(company_id, db_agent.id, agent, tool_names=tool_names)
 

@@ -48,7 +48,7 @@ class Settings(BaseSettings):
 
     default_llm_provider: Literal["anthropic", "openai", "google"] = "anthropic"
     default_model: str = "claude-sonnet-4-6"
-    google_gemini_model: str = "gemma-4-31b-it"
+    google_gemini_model: str = "gemini-1.5-flash"
 
     otlp_endpoint: str | None = Field(
         default=None,
@@ -76,6 +76,11 @@ class Settings(BaseSettings):
     mcp_servers: list[dict] | None = Field(
         default=None,
         description="List of MCP server configs: [{name, url, api_key?}]",
+    )
+
+    skills_mcp_url: str | None = Field(
+        default=None,
+        description="URL for the skills MCP server (serves agent skills as MCP resources)",
     )
 
     prompt_cache_ttl: int = Field(

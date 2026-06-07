@@ -78,39 +78,11 @@ async function invalidate({ text, model, dimension, imageBytes = null, mimeType 
   }
 }
 
-async function invalidateByModel(model) {
-  try {
-    const prefix = `${KEY_PREFIX}:${model}:`;
-    const client = redisCacheService.client;
-    if (client && redisCacheService.isConnected) {
-      let cursor = '0';
-      do {
-        const result = await client.scan(cursor, 'MATCH', `${prefix}*`, 'COUNT', 100);
-        cursor = result[0];
-        const keys = result[1];
-        if (keys.length > 0) {
-          await client.del(...keys);
-        }
-      } while (cursor !== '0');
-    }
-    for (const key of redisCacheService.localCache.keys()) {
-      if (key.startsWith(prefix)) {
-        redisCacheService.localCache.delete(key);
-      }
-    }
-    return true;
-  } catch (err) {
-    console.warn('[EMBEDDING-CACHE] invalidateByModel failed:', err.message);
-    return false;
-  }
-}
-
 module.exports = {
   buildKey,
   get,
   set,
   invalidate,
-  invalidateByModel,
   DEFAULT_TTL_SECONDS,
   MULTIMODAL_TTL_SECONDS,
 };

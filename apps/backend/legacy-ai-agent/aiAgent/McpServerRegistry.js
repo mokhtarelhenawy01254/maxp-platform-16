@@ -13,7 +13,7 @@ class McpServerRegistry {
   /**
    * Register an MCP server from command config (like OpenAI SDK).
    * @param {string} name - Server name
-   * @param {Object} config - { command, args, env, toolMetadata?: { [toolName]: { readOnly?: boolean, requiresApproval?: boolean } } }
+   * @param {Object} config - { command, args, env }
    */
   async registerServer(name, config) {
     const transport = new StdioClientTransport({
@@ -25,23 +25,14 @@ class McpServerRegistry {
     const client = new Client({ name: 'maxp-agent', version: '1.0.0' });
     await client.connect(transport);
 
+    // Discover tools from MCP server
     const toolsResponse = await client.listTools();
     const tools = toolsResponse.tools || [];
-
-    const toolMetadata = config.toolMetadata || {};
-    const annotatedTools = tools.map(mcpTool => {
-      const meta = toolMetadata[mcpTool.name] || {};
-      return {
-        ...mcpTool,
-        _readOnly: meta.readOnly !== undefined ? Boolean(meta.readOnly) : true,
-        _requiresApproval: Boolean(meta.requiresApproval),
-      };
-    });
 
     this._servers.set(name, {
       client,
       transport,
-      tools: annotatedTools,
+      tools,
       config,
     });
 
@@ -59,8 +50,6 @@ class McpServerRegistry {
     return server.tools.map(mcpTool => ({
       name: `mcp_${serverName}_${mcpTool.name}`,
       description: mcpTool.description || `MCP tool: ${mcpTool.name}`,
-      readOnly: mcpTool._readOnly !== false,
-      requiresApproval: mcpTool._requiresApproval === true,
       handler: async (companyId, params) => {
         const result = await server.client.callTool({
           name: mcpTool.name,
@@ -68,6 +57,7 @@ class McpServerRegistry {
         });
         return result;
       },
+      // Convert MCP inputSchema to our param format
       params: this._convertSchemaToParams(mcpTool.inputSchema),
     }));
   }

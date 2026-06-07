@@ -136,6 +136,10 @@ const translations = {
     },
     agent: {
       facebook_messenger_name: 'وكيل فيسبوك وماسنجر'
+    },
+    agentConfig: {
+      saved: 'تم حفظ إعدادات الوكيل بنجاح',
+      saveFailed: 'فشل حفظ الإعدادات'
     }
   },
   en: {
@@ -270,6 +274,10 @@ const translations = {
     },
     agent: {
       facebook_messenger_name: 'Facebook & Messenger Agent'
+    },
+    agentConfig: {
+      saved: 'Agent configuration saved successfully',
+      saveFailed: 'Failed to save configuration'
     }
   }
 };

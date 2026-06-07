@@ -15,14 +15,17 @@ const express = require('express');
 const router = express.Router();
 const verifyToken = require('../utils/verifyToken');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const { TOOLS } = require('../legacy-ai-agent/aiAgent/agentToolRegistry');
+const { getTools } = require('../legacy-ai-agent/aiAgent/agentToolRegistry');
 const { clearCache } = require('../legacy-ai-agent/aiAgent/agentSoulConfig');
+const { t } = require('../legacy-ai-agent/aiAgent/i18n');
 
 router.use(verifyToken.authenticateToken);
 
 const getCompanyId = (req) => req.user?.companyId || req.companyId;
 
-const ALL_TOOL_NAMES = Object.keys(TOOLS);
+function getAllToolNames() {
+  return Object.keys(getTools());
+}
 
 function parseJson(val, fallback) {
   if (!val) return fallback;
@@ -52,19 +55,21 @@ router.get('/', async (req, res) => {
     }
 
     // ── Skills ───────────────────────────────────────────────────────────────
+    const tools = getTools();
+    const allToolNames = getAllToolNames();
     const modelSettings = parseJson(setting?.modelSettings, {});
     const storedSkills = modelSettings.agentSkills;
     const enabledSet = new Set(
       Array.isArray(storedSkills) && storedSkills.length > 0
         ? storedSkills
-        : ALL_TOOL_NAMES
+        : allToolNames
     );
 
-    const skills = ALL_TOOL_NAMES.map(name => ({
+    const skills = allToolNames.map(name => ({
       name,
-      description: TOOLS[name].description,
-      params: TOOLS[name].params,
-      readOnly: TOOLS[name].readOnly,
+      description: tools[name]?.description || '',
+      params: tools[name]?.params || {},
+      readOnly: tools[name]?.readOnly !== false,
       enabled: enabledSet.has(name),
     }));
 
@@ -88,10 +93,11 @@ router.put('/', async (req, res) => {
     // Preserve existing modelSettings, only update agentSkills
     const existing = await prisma.aiSetting.findUnique({ where: { companyId } });
     const currentModelSettings = parseJson(existing?.modelSettings, {});
+    const allToolNames = getAllToolNames();
 
     const skillsToSave = Array.isArray(enabledSkills)
-      ? enabledSkills.filter(s => ALL_TOOL_NAMES.includes(s))
-      : ALL_TOOL_NAMES;
+      ? enabledSkills.filter(s => allToolNames.includes(s))
+      : allToolNames;
 
     const updatedModelSettings = {
       ...currentModelSettings,
@@ -120,10 +126,10 @@ router.put('/', async (req, res) => {
     // Invalidate 5-min soul cache so the agent picks up changes immediately
     clearCache(companyId);
 
-    return res.json({ success: true, message: 'تم حفظ إعدادات الوكيل بنجاح ✅' });
+    return res.json({ success: true, message: t('agentConfig.saved') });
   } catch (error) {
     console.error('[AGENT-CONFIG] PUT error:', error.message);
-    return res.status(500).json({ success: false, error: 'فشل حفظ الإعدادات' });
+    return res.status(500).json({ success: false, error: t('agentConfig.saveFailed') });
   }
 });
 

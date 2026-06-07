@@ -232,8 +232,8 @@ async def test_queue_service_records_attempts():
 @pytest.mark.asyncio
 async def test_mcp_registry_registers_server_and_discovers_tools():
     """register_server should connect, list tools, and store them under mcp_<name>_<tool>."""
-    from src.mcp.client import MCPClient, MCPTool
-    from src.mcp.registry import MCPRegistry
+    from src.mcp_integration.client import MCPClient, MCPTool
+    from src.mcp_integration.registry import MCPRegistry
 
     mock_client = MagicMock(spec=MCPClient)
     mock_client.list_tools = AsyncMock(
@@ -248,7 +248,7 @@ async def test_mcp_registry_registers_server_and_discovers_tools():
     )
     mock_client.close = AsyncMock()
 
-    with patch("src.mcp.registry.MCPClient", return_value=mock_client):
+    with patch("src.mcp_integration.registry.MCPClient", return_value=mock_client):
         registry = MCPRegistry()
         await registry.register_server("catalog", "http://localhost:9999")
 
@@ -264,8 +264,8 @@ async def test_mcp_registry_registers_server_and_discovers_tools():
 @pytest.mark.asyncio
 async def test_mcp_registry_get_tool_returns_dict():
     """get_tool returns the full tool info dict, not the MCPTool instance."""
-    from src.mcp.client import MCPClient, MCPTool
-    from src.mcp.registry import MCPRegistry
+    from src.mcp_integration.client import MCPClient, MCPTool
+    from src.mcp_integration.registry import MCPRegistry
 
     mock_client = MagicMock(spec=MCPClient)
     mock_client.list_tools = AsyncMock(
@@ -273,7 +273,7 @@ async def test_mcp_registry_get_tool_returns_dict():
     )
     mock_client.close = AsyncMock()
 
-    with patch("src.mcp.registry.MCPClient", return_value=mock_client):
+    with patch("src.mcp_integration.registry.MCPClient", return_value=mock_client):
         registry = MCPRegistry()
         await registry.register_server("ops", "http://localhost:9999")
 
@@ -289,8 +289,8 @@ async def test_mcp_registry_get_tool_returns_dict():
 @pytest.mark.asyncio
 async def test_mcp_registry_call_tool_dispatches_to_correct_server():
     """call_tool should find the right server and invoke call_tool on it."""
-    from src.mcp.client import MCPClient, MCPTool
-    from src.mcp.registry import MCPRegistry
+    from src.mcp_integration.client import MCPClient, MCPTool
+    from src.mcp_integration.registry import MCPRegistry
 
     mock_client = MagicMock(spec=MCPClient)
     mock_client.list_tools = AsyncMock(
@@ -301,7 +301,7 @@ async def test_mcp_registry_call_tool_dispatches_to_correct_server():
     )
     mock_client.close = AsyncMock()
 
-    with patch("src.mcp.registry.MCPClient", return_value=mock_client):
+    with patch("src.mcp_integration.registry.MCPClient", return_value=mock_client):
         registry = MCPRegistry()
         await registry.register_server("catalog", "http://localhost:9999")
 

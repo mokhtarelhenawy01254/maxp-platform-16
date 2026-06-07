@@ -5,7 +5,7 @@ const { getModelCapabilities, decorateModel } = require('../legacy-ai-agent/aiAg
 const aiProviderLogService = require('../legacy-ai-agent/aiAgent/providerLogService');
 const providerBudgetLedgerService = require('../legacy-ai-agent/aiAgent/providerBudgetLedgerService');
 const providerCatalogService = require('../legacy-ai-agent/aiAgent/providerCatalogService');
-const aiServiceKeyBridge = require('../legacy-ai-agent/aiAgent/aiServiceKeyBridge');
+const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const {
     isRetiredGeminiModelName,
     isUnstableGeminiAliasModelName,
@@ -1180,7 +1180,7 @@ exports.updateGlobalAIConfig = async (req, res) => {
         aiRuntimeService.getModelManager().clearAllCaches();
 
         // ✅ DUAL-WRITE: Mirror global config to maxp-ai-service admin API.
-        aiServiceKeyBridge.updateGlobalConfig({
+        aiServiceAdminClient.updateGlobalConfig({
             default_provider: normalizedDefaultProvider || config.defaultProvider || 'GOOGLE',
             enable_failover: enableFailover !== undefined ? enableFailover : config.enableFailover,
         });
@@ -1436,7 +1436,7 @@ exports.updateProviderPriority = async (req, res) => {
         }));
 
         // ✅ DUAL-WRITE: Mirror provider priority to maxp-ai-service admin API.
-        aiServiceKeyBridge.setProviderPriority(requestedProviders);
+        aiServiceAdminClient.setProviderPriority(requestedProviders);
 
         console.log('🔄 [SUPER-ADMIN] Provider priority updated. Clearing ModelManager caches...');
         aiRuntimeService.getModelManager().clearAllCaches();
@@ -2124,7 +2124,7 @@ exports.addNewAIKey = async (req, res) => {
 
         // ✅ DUAL-WRITE: Mirror to maxp-ai-service admin API (Phase 2 migration).
         // Best-effort, fire-and-forget: bridge logs failures internally and never throws.
-        aiServiceKeyBridge.createKey(newKey);
+        aiServiceAdminClient.createKey(newKey);
 
         // ✅ FIX: Invalidate ModelManager caches to include new key immediately
         console.log('🔄 [SUPER-ADMIN] New key added. Clearing ModelManager caches...');
@@ -2164,7 +2164,7 @@ exports.deleteAIKey = async (req, res) => {
         await removePreferredAiKeyIds(prisma, [id]);
 
         // ✅ DUAL-WRITE: Mirror delete to maxp-ai-service admin API.
-        aiServiceKeyBridge.deleteKey(id);
+        aiServiceAdminClient.deleteKey(id);
 
         // ✅ FIX: Invalidate ModelManager caches to remove key immediately
         console.log('🔄 [SUPER-ADMIN] Key deleted. Clearing ModelManager caches...');
@@ -2274,7 +2274,7 @@ exports.updateKeyActiveStatus = async (req, res) => {
         }
 
         // ✅ DUAL-WRITE: Mirror status change to maxp-ai-service admin API.
-        aiServiceKeyBridge.setKeyStatus(id, isActive);
+        aiServiceAdminClient.setKeyStatus(id, isActive);
 
         // ✅ FIX: Invalidate ModelManager caches
         console.log(`🔄 [SUPER-ADMIN] Key ${id} active status updated to ${isActive}. Clearing ModelManager caches...`);
@@ -2315,7 +2315,7 @@ exports.bulkDeleteAIKeys = async (req, res) => {
 
         // ✅ DUAL-WRITE: Mirror deletes to maxp-ai-service admin API.
         for (const id of ids) {
-            aiServiceKeyBridge.deleteKey(id);
+            aiServiceAdminClient.deleteKey(id);
         }
 
         // ✅ FIX: Invalidate ModelManager caches
@@ -2364,7 +2364,7 @@ exports.bulkUpdateKeysActiveStatus = async (req, res) => {
 
         // ✅ DUAL-WRITE: Mirror status changes to maxp-ai-service admin API.
         for (const id of ids) {
-            aiServiceKeyBridge.setKeyStatus(id, isActive);
+            aiServiceAdminClient.setKeyStatus(id, isActive);
         }
 
         // ✅ FIX: Invalidate ModelManager caches

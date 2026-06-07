@@ -9,31 +9,10 @@ const CorrectiveRAGEngine = require('../../services/rag/CorrectiveRAGEngine');
 
 class SemanticCacheService {
   constructor() {
-    /** @type {Map<string, Array<{ query: string, vector: number[], answer: string, createdAt: number, lastAccessed: number, finalSource?: string, retrievalMode?: string }>>} */
+    /** @type {Map<string, Array<{ query: string, vector: number[], answer: string, createdAt: number, finalSource?: string, retrievalMode?: string }>>} */
     this._cache = new Map();
     this.maxCacheSizePerCompany = 500;
-    this.maxCompanyCaches = 100;
     this.ttlMs = 15 * 60 * 1000;
-  }
-
-  _evictLeastActiveCompany() {
-    let oldest = null;
-    let oldestTime = Infinity;
-    for (const [companyId, entries] of this._cache) {
-      const lastAccess = entries.reduce((max, e) => Math.max(max, e.lastAccessed || 0), 0);
-      if (lastAccess < oldestTime) {
-        oldestTime = lastAccess;
-        oldest = companyId;
-      }
-    }
-    if (oldest) this._cache.delete(oldest);
-  }
-
-  _touch(entries) {
-    const now = Date.now();
-    for (const entry of entries) {
-      entry.lastAccessed = now;
-    }
   }
 
   /**
@@ -89,7 +68,6 @@ class SemanticCacheService {
         return null;
       }
 
-      this._touch(companyCache);
       return {
         answer: bestMatch.answer,
         similarity: bestSimilarity,
@@ -112,15 +90,13 @@ class SemanticCacheService {
     if (!answerText) return;
 
     if (!this._cache.has(companyId)) {
-      if (this._cache.size >= this.maxCompanyCaches) {
-        this._evictLeastActiveCompany();
-      }
       this._cache.set(companyId, []);
     }
 
     const companyCache = this._cache.get(companyId);
     const vector = CorrectiveRAGEngine._localEmbedding(query);
 
+    // Evict oldest item if capacity exceeded
     if (companyCache.length >= this.maxCacheSizePerCompany) {
       companyCache.shift();
     }
@@ -132,7 +108,6 @@ class SemanticCacheService {
       finalSource: typeof answer === 'object' ? answer.finalSource : undefined,
       retrievalMode: typeof answer === 'object' ? answer.retrievalMode : undefined,
       createdAt: Date.now(),
-      lastAccessed: Date.now(),
     });
   }
 

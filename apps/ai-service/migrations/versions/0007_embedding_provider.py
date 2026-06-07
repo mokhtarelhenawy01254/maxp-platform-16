@@ -64,10 +64,21 @@ def upgrade() -> None:
 
     op.execute(
         """
-        UPDATE ai.agentic_memory_fact
-        SET embedding_provider = 'pseudo'
-        WHERE embedding_provider = 'gemini'
-          AND embedding IS NULL
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 
+                FROM information_schema.columns 
+                WHERE table_schema='ai' 
+                  AND table_name='agentic_memory_fact' 
+                  AND column_name='embedding'
+            ) THEN
+                UPDATE ai.agentic_memory_fact
+                SET embedding_provider = 'pseudo'
+                WHERE embedding_provider = 'gemini'
+                  AND embedding IS NULL;
+            END IF;
+        END $$;
         """
     )
 

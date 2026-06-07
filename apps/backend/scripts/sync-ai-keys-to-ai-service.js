@@ -14,7 +14,7 @@
  */
 
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const aiServiceKeyBridge = require('../legacy-ai-agent/aiAgent/aiServiceKeyBridge');
+const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -29,12 +29,12 @@ function parseArgs() {
 async function main() {
   const args = parseArgs();
 
-  if (!aiServiceKeyBridge.isConfigured()) {
+  if (!aiServiceAdminClient.isConfigured()) {
     console.error('AI service is not configured. Set AI_SERVICE_URL and AI_SERVICE_TOKEN in .env');
     process.exit(1);
   }
 
-  const healthRes = await aiServiceKeyBridge.health();
+  const healthRes = await aiServiceAdminClient.health();
   if (!healthRes.ok) {
     console.error(`AI service health check failed: status=${healthRes.status} error=${healthRes.error || 'unknown'}`);
     process.exit(1);
@@ -59,7 +59,7 @@ async function main() {
   let ok = 0;
   let failed = 0;
   for (const key of keys) {
-    const res = await aiServiceKeyBridge.createKey(key);
+    const res = await aiServiceAdminClient.createKey(key);
     if (res.ok) {
       ok += 1;
       console.log(`  ✓ ${key.provider} / ${key.name}`);

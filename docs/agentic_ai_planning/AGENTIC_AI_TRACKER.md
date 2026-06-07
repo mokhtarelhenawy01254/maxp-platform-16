@@ -252,11 +252,18 @@
 - تغطي 41 من 52 حالة في مصفوفة FB-001 إلى FB-050
 - تصحيح 2026-05-26: semantic cache يستخدم سياق RAG فقط ولا يرجع رد عميل مباشر، وملف `eval_scenarios.json` بقى seed صريح للاختبارات بدل default إنتاجي لكل شركة.
 
-## 📊 Total: 36 service files + 12 unit/integration test files + 1 scenario playbook = READY FOR CI VERIFICATION
+## 🌐 المرحلة 21: بوابة القدرات (MCP Gateway)
 
----
+| الملف | الحالة | اختبارات | ملاحظات |
+|-------|--------|----------|---------|
+| `apps/mcp-servers/catalog-mcp/` | ✅ **موجود** | ✅ 6/6 PASS | أول MCP server للإنتاج (product/inventory) |
+| `apps/mcp-servers/skills-mcp/` | ✅ **موجود** | ✅ 4/4 PASS | تحويل المهارات لـ MCP resources + hot-reload |
+| `legacy-ai-agent/aiAgent/agentToolGatewayService.js` | ✅ **محدث** | ✅ 5/5 PASS | إغلاق ثغرة الـ bypass لـ MCP tools |
+| `ai-service/src/mcp/registry.py` | ✅ **محدث** | ✅ `test_registry.py` PASS | دعم `skills_mcp_url` و `get_skill_clients` |
+| `ai-service/src/agents/base.py` | ✅ **محدث** | ✅ Wiring | ربط `MCPSkillsSource` بـ `AggregatingSkillsSource` |
+| `scripts/test_mcp_e2e.sh` | ✅ **موجود** | ✅ E2E PASS | اختبار المسار الكامل من العميل للـ MCP tool |
 
-## قواعد المراقبة (Monitoring Rules)
+**🟢 الحالة: تم تنفيذ الـ MCP Gateway architecture بالكامل كـ Baseline.**
 
 عندما يكتب الـ Codex Agent أي ملف جديد:
 1. 🔍 **اقرأ الملف** — هل يطابق الـ spec في `roadmap_20_phases.md`؟

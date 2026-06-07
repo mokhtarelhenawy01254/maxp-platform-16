@@ -28,6 +28,49 @@ def _strip_tool_sections(prompt: str) -> str:
     return stripped.strip()
 
 
+def _strip_reasoning(text: str) -> str:
+    """Strip reasoning blocks, options, and internal analysis from the final response."""
+    if not text:
+        return ""
+    
+    # Remove <think>...</think> blocks
+    text = re.sub(r"<think [^>]*>[\s\S]*?</think>", "", text, flags=re.IGNORECASE)
+    
+    # Remove common reasoning patterns like "* Option 1:", "* Goal:", "* Context:", etc.
+    # This is a heuristic for models that output their thought process as a list of points.
+    lines = text.split("\n")
+    final_lines = []
+    in_reasoning = False
+    
+    for line in lines:
+        stripped = line.strip()
+        # Detect start of reasoning/analysis blocks
+        if stripped.startswith(("* Option", "* Goal", "* Context", "* Constraint", "* User Question", "* Refined", "* Analysis", "* Reasoning", "* Input", "* Meaning", "* Language")):
+            in_reasoning = True
+            continue
+        
+        # If we are in reasoning, and we encounter a line that looks like the final answer
+        # (e.g., it's just text, or it's a quoted string at the end)
+        # This is tricky. A better way is to look for the last paragraph.
+        
+        if in_reasoning:
+            # If the line is empty, we might have transitioned
+            if not stripped:
+                continue
+            # If the line doesn't start with a bullet point or reasoning marker, 
+            # it might be the final answer.
+            if not stripped.startswith("*") and not stripped.startswith("-"):
+                in_reasoning = False
+        
+        if not in_reasoning:
+            final_lines.append(line)
+            
+    if not final_lines:
+        # If we stripped everything, just return the original text without <think>
+        return text.strip()
+        
+    return "\n".join(final_lines).strip()
+
 def _provider_error(ctx: PipelineContext, exc: Exception) -> None:
     ctx.early_return = {
         "status": "PROVIDER_ERROR",
@@ -76,7 +119,9 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
                         "role": "system",
                         "content": (
                             "You write customer-facing chat replies for the selected MaxP agent. "
-                            "Return plain text only. Do not emit JSON, function-call syntax, or tool-call syntax. "
+                            "Return ONLY the final plain text reply. "
+                            "Do NOT include any internal reasoning, thought process, options, or analysis (no '* Option 1', no '* Goal', etc.). "
+                            "Do not emit JSON, function-call syntax, or tool-call syntax. "
                             "Do not invent product, order, shipping, customer, price, stock, or action-completion facts."
                             f"\n\nAgent voice profile:\n{_strip_tool_sections(voice_profile)}"
                         ).strip(),
@@ -104,17 +149,18 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
                         "Generate an appropriate natural reply without exposing internal policy details."
                     ),
                 })
-            try:
-                response = await client.get_response(
-                    to_client_messages(messages),
-                    options={"tools_enabled": False, "temperature": 0.2},
-                )
-                ctx.llm_response = response.text if hasattr(response, "text") else str(response)
-            except Exception as exc:
-                if not ((requires_tool and not ctx.tool_evidence) or classifier_unavailable):
-                    _provider_error(ctx, exc)
-                    return ctx
-                ctx.llm_response = ""
+                try:
+                    response = await client.get_response(
+                        to_client_messages(messages),
+                        options={"tools_enabled": False, "temperature": 0.2},
+                    )
+                    raw_text = response.text if hasattr(response, "text") else str(response)
+                    ctx.llm_response = _strip_reasoning(raw_text)
+                except Exception as exc:
+                    if not ((requires_tool and not ctx.tool_evidence) or classifier_unavailable):
+                        _provider_error(ctx, exc)
+                        return ctx
+                    ctx.llm_response = ""
             if ((requires_tool and not ctx.tool_evidence) or classifier_unavailable) and not ctx.llm_response.strip():
                 retry_messages = [
                     Message(
@@ -139,7 +185,8 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
                         retry_messages,
                         options={"tools_enabled": False, "temperature": 0.2},
                     )
-                    ctx.llm_response = retry.text if hasattr(retry, "text") else str(retry)
+                    raw_retry = retry.text if hasattr(retry, "text") else str(retry)
+                    ctx.llm_response = _strip_reasoning(raw_retry)
                 except Exception as exc:
                     _provider_error(ctx, exc)
         else:

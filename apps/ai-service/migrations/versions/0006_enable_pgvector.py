@@ -18,7 +18,16 @@ depends_on: str | None = None
 
 
 def upgrade() -> None:
-    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    # Try to create pgvector extension, skip if not available (e.g., local Windows dev)
+    op.execute("""
+        DO $$
+        BEGIN
+            CREATE EXTENSION IF NOT EXISTS vector;
+        EXCEPTION WHEN OTHERS THEN
+            RAISE NOTICE 'pgvector extension not available, skipping: %', SQLERRM;
+        END $$;
+    """)
+
     op.execute("""
         CREATE TABLE IF NOT EXISTS ai.agentic_memory_fact (
             id VARCHAR NOT NULL PRIMARY KEY,
@@ -37,18 +46,29 @@ def upgrade() -> None:
     op.execute("CREATE INDEX IF NOT EXISTS ix_agentic_memory_fact_company_id ON ai.agentic_memory_fact (company_id)")
     op.execute("CREATE INDEX IF NOT EXISTS ix_agentic_memory_fact_customer_id ON ai.agentic_memory_fact (customer_id)")
     op.execute("CREATE INDEX IF NOT EXISTS ix_agentic_memory_fact_type ON ai.agentic_memory_fact (type)")
-    op.execute(
-        "ALTER TABLE ai.agentic_memory_fact ADD COLUMN IF NOT EXISTS embedding vector(768)"
-    )
-    op.create_index(
-        "ix_agentic_memory_fact_embedding",
-        "agentic_memory_fact",
-        [sa.text("embedding vector_cosine_ops")],
-        schema="ai",
-        postgresql_using="ivfflat",
-    )
+    
+    # Safe addition of vector column
+    op.execute("""
+        DO $$
+        BEGIN
+            ALTER TABLE ai.agentic_memory_fact ADD COLUMN IF NOT EXISTS embedding vector(768);
+        EXCEPTION WHEN undefined_object THEN
+            RAISE NOTICE 'vector type not available, skipping embedding column';
+        END $$;
+    """)
+    
+    # Safe index creation
+    op.execute("""
+        DO $$
+        BEGIN
+            CREATE INDEX IF NOT EXISTS ix_agentic_memory_fact_embedding 
+            ON ai.agentic_memory_fact USING ivfflat (embedding vector_cosine_ops);
+        EXCEPTION WHEN OTHERS THEN
+            RAISE NOTICE 'Could not create vector index: %', SQLERRM;
+        END $$;
+    """)
 
 
 def downgrade() -> None:
-    op.drop_index("ix_agentic_memory_fact_embedding", schema="ai")
-    op.drop_column("agentic_memory_fact", "embedding", schema="ai")
+    op.execute("DROP INDEX IF EXISTS ai.ix_agentic_memory_fact_embedding")
+    op.execute("ALTER TABLE ai.agentic_memory_fact DROP COLUMN IF EXISTS embedding")

@@ -44,7 +44,7 @@ const FRONTEND_STATIC_EXACT_PATHS = new Set([
   "/google4ca0156de75f91cd.html",
 ]);
 
-const { getAiServiceMode } = require('./legacy-ai-agent/aiAgent/aiServiceRouter');
+const getAiServiceMode = () => process.env.AI_SERVICE_MODE || 'off';
 const isAiServicePrimary = getAiServiceMode() === 'primary';
 
 const createFrontendStaticFallback = () => {

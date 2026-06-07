@@ -118,17 +118,23 @@ class TestMigrationSprint4:
 
     def test_model_manager_exists_in_python(self):
         """modelManager.js should be migrated"""
-        manager_path = Path("src/llm/manager.py")
-        # Uncomment after migration:
-        # assert manager_path.exists(), "Python model manager should exist"
-        assert True  # Placeholder
+        manager_path = Path("src/llm/model_manager.py")
+        assert manager_path.exists(), "Python model manager should exist"
+        assert manager_path.stat().st_size > 5000, "Model manager should have substantial content"
 
     def test_model_api_exists(self):
         """Model management API should be exposed"""
-        api_path = Path("src/api/models.py")
-        # Uncomment after migration:
-        # assert api_path.exists(), "Model API should exist"
-        assert True  # Placeholder
+        # We can check if the methods exist in the singleton
+        from src.llm.model_manager import model_manager
+        required_methods = [
+            'get_next_key_simple',
+            'get_simple_routing_pools',
+            'record_routing_success',
+            'get_global_ui_config',
+            'get_provider_priority_order',
+        ]
+        for method in required_methods:
+            assert hasattr(model_manager, method), f"ModelManager should have {method} method"
 
 
 class TestMigrationSprint5:

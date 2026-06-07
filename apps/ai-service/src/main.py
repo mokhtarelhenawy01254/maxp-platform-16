@@ -24,7 +24,7 @@ from src.api.middleware import (
 from src.api.resume import router as resume_router
 from src.config import Settings, get_settings
 from src.db.session import async_session, close_db, get_session, init_db
-from src.mcp.registry import get_mcp_registry
+from src.mcp_integration.registry import get_mcp_registry
 from src.observability.errors import setup_error_handlers
 from src.observability.metrics import setup_metrics
 from src.observability.sentry import setup_sentry

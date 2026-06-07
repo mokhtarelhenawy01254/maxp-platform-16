@@ -251,10 +251,6 @@ function _getDeterministicReadToolParams(tool, message = '', relevancePlan = {})
     case 'product.topSelling':
     case 'customer.topBuyers':
       return {};
-    case 'product.search': {
-      const q = _firstNonEmptySlot(relevancePlan.slots || {}, ['productName', 'productNameOrSku', 'name', 'sku', 'query']);
-      return q ? { query: String(q), limit: 5 } : { query: '', listAll: true, limit: 10 };
-    }
     case 'inventory.check':
       return _parseInventoryCheckParams(message);
     default:
@@ -294,7 +290,7 @@ function _getModelClassifiedReadToolParams(tool, relevancePlan = {}) {
   switch (tool) {
     case 'product.search': {
       const query = _firstNonEmptySlot(slots, ['productName', 'productNameOrSku', 'name', 'sku', 'query']);
-      return query ? { query: String(query), limit: 5 } : { query: '', listAll: true, limit: 10 };
+      return query ? { query: String(query), limit: 5 } : null;
     }
     case 'inventory.check': {
       const productNameOrSku = _firstNonEmptySlot(slots, ['productNameOrSku', 'productName', 'name', 'sku', 'query']);
