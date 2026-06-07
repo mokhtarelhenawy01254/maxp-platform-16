@@ -84,7 +84,10 @@ class BackendClient:
         result = await self._request("GET", "/api/v1/inventory/alerts", params={
             "threshold": threshold, "limit": limit, "companyId": company_id,
         })
-        return result.get("data", result.get("products", []))
+        data = result.get("data", {})
+        if isinstance(data, dict):
+            return list(data.get("lowStock", [])) + list(data.get("outOfStock", []))
+        return data if isinstance(data, list) else []
     
     async def get_top_selling_products(
         self, company_id: str, period: str = "month", limit: int = 5
