@@ -1,3 +1,56 @@
+## [2026-06-07] ai-service — DEFAULT_LLM_PROVIDER=groq Invalid (Pydantic Literal Constraint)
+- **Bug/Issue**: ai-service crashed at startup with a Pydantic validation error because `DEFAULT_LLM_PROVIDER=groq` was set in `/var/www/ai-service/.env`.
+- **Cause**: The `Settings` model declares `default_llm_provider: Literal["anthropic", "openai", "google"]`. The value `groq` is not in the allowed set, so Pydantic raises `ValidationError` before the app can start.
+- **Fix**: Changed `DEFAULT_LLM_PROVIDER=openai` in `/var/www/ai-service/.env`. GROQ is used as the underlying provider via the OpenAI-compatible SDK (GROQ exposes an OpenAI-compatible API endpoint), so `openai` is the correct Literal value. Updated `.env.example` default accordingly.
+- **Affected Files**:
+  - `/var/www/ai-service/.env` (server only — not committed)
+  - `apps/ai-service/.env.example`
+
+## [2026-06-07] ai-service — GROQ Key Used with Incompatible gemini-2.0-flash Model
+- **Bug/Issue**: ai-service fetched GROQ API keys from `public.ai_keys` table but called the GROQ endpoint with `DEFAULT_MODEL=gemini-2.0-flash`, which GROQ does not support. Replies were empty or errored silently.
+- **Cause**: The model name `gemini-2.0-flash` is a Google model. GROQ's API rejects it. ai-service picks the API key by provider name (`groq`) from `public.ai_keys` but uses `DEFAULT_MODEL` from the env for the model name — the two were inconsistent.
+- **Fix**: Changed `DEFAULT_MODEL=qwen/qwen3-32b` in `/var/www/ai-service/.env` and updated `GOOGLE_GEMINI_MODEL=qwen/qwen3-32b`. The model `qwen/qwen3-32b` is a valid GROQ-hosted model. Also updated `.env.example` defaults.
+- **Affected Files**:
+  - `/var/www/ai-service/.env` (server only — not committed)
+  - `apps/ai-service/.env.example`
+
+## [2026-06-07] ai-service Migration 0007 — Invalid pgvector Cast `'[]'::vector`
+- **Bug/Issue**: Alembic migration 0007 failed with `DataError: vector must have at least 1 dimension` when trying to reset fake embeddings.
+- **Cause**: The original migration used `embedding = '[]'::vector` in a WHERE/SET clause. pgvector requires vectors to have at least 1 dimension — an empty vector `[]` is invalid syntax and causes a runtime error.
+- **Fix**: Replaced the invalid vector comparison with `embedding IS NULL`. Rows with no real embedding are null, not empty-vector, so the NULL check correctly identifies unembedded rows.
+- **Affected Files**:
+  - `apps/ai-service/migrations/versions/0007_embedding_provider.py`
+
+## [2026-06-07] ai-service Migration 0006 — agentic_memory_fact Table Never Created
+- **Bug/Issue**: Alembic migration 0006 failed with `UndefinedTableError: relation "ai.agentic_memory_fact" does not exist` when trying to `ALTER TABLE ai.agentic_memory_fact ADD COLUMN embedding vector(768)`.
+- **Cause**: No prior migration created `ai.agentic_memory_fact`. The table was assumed to exist but was never defined in the migration chain.
+- **Fix**: Added a full `CREATE TABLE IF NOT EXISTS ai.agentic_memory_fact (...)` block inside migration 0006's `upgrade()` function, including all columns, indexes, then the `ALTER TABLE ... ADD COLUMN IF NOT EXISTS embedding vector(768)` and the ivfflat index.
+- **Affected Files**:
+  - `apps/ai-service/migrations/versions/0006_enable_pgvector.py`
+
+## [2026-06-07] ai-service Migration 0004 — Missing PrimaryKeyConstraint on agent_departments
+- **Bug/Issue**: Alembic migration 0004 failed with `InvalidForeignKeyError: there is no unique constraint matching given keys for referenced table "agent_departments"` when creating the FK in `company_agents.department_id`.
+- **Cause**: The `agent_departments` table was created without a `PrimaryKeyConstraint("id")` clause. PostgreSQL requires the referenced column to have a unique or primary key constraint before a foreign key can reference it.
+- **Fix**: Added `sa.PrimaryKeyConstraint("id")` to the `agent_departments` `create_table` call in migration 0004.
+- **Affected Files**:
+  - `apps/ai-service/migrations/versions/0004_agent_management.py`
+
+## [2026-06-07] ai-service — CORS_ORIGINS Empty String Broke Pydantic Settings Parsing
+- **Bug/Issue**: ai-service failed to start with a Pydantic parse error on `CORS_ORIGINS`.
+- **Cause**: `CORS_ORIGINS=` (empty string) in the env file. Pydantic tries to parse it as `list[str]` and fails on an empty bare string — it expects either `[]` or a comma-separated list.
+- **Fix**: Changed to `CORS_ORIGINS=[]` in `/var/www/ai-service/.env` so Pydantic correctly parses it as an empty list.
+- **Affected Files**:
+  - `/var/www/ai-service/.env` (server only — not committed)
+
+## [2026-06-07] ai-service — AI_SERVICE_URL Pointed to Backend Itself (nginx Loop)
+- **Bug/Issue**: backend2 called ai-service at `AI_SERVICE_URL=https://ai.maxp.online/` but got a response from backend2 itself (`{"message":"Chat Bot Backend API",...}`). No actual ai-service was reached.
+- **Cause**: The nginx virtual host for `ai.maxp.online` is configured to proxy to port 3007 (backend2), not port 8000 (ai-service). ai-service is internal-only and has no public domain — it listens only on `localhost:8000`. Setting `AI_SERVICE_URL` to the public domain created a self-referencing loop through nginx back into backend2.
+- **Fix**: Changed `AI_SERVICE_URL=http://localhost:8000` in `/var/www/backend2/.env`. Removed the wrong hardcoded `AI_SERVICE_URL: 'https://ai.maxp-ai.pro'` from `apps/backend/ecosystem.config.js` `env_production` block so the env file value is authoritative.
+- **Affected Files**:
+  - `/var/www/backend2/.env` (server only — not committed)
+  - `apps/backend/ecosystem.config.js`
+  - `apps/backend/.env.example`
+
 ## [2026-06-07] Facebook Ads — Hidden Products Blocked from Ad Launch Metadata
 - **Bug/Issue**: Creating a Facebook ad from a product link failed for products marked hidden from customers because the ad metadata loader reused the public storefront product API.
 - **Cause**: `getProductLaunchMetadata()` requested `/api/v1/public/products/:slug`, inheriting the public storefront visibility filter that intentionally excludes `isHidden: true` products.

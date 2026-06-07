@@ -1,3 +1,34 @@
+## [2026-06-07] CI/CD Pipeline — Auto-Deploy ai-service via GitHub Actions (uv + PM2)
+- **Details**: Updated `.github/workflows/deploy.yml` to fully deploy the Python ai-service on every push to `main`, replacing the previous Docker Compose block that required Docker on the server.
+- **Architecture**:
+  - **uv Detection**: The deploy step checks `/root/.local/bin/uv` and `/usr/local/bin/uv`. If neither exists, it installs uv on the fly via the official install script (`curl -LsSf https://astral.sh/uv/install.sh | sh`).
+  - **Dependency Sync**: Runs `uv sync --frozen` inside `/var/www/ai-service` to install exact locked dependencies from `uv.lock` without upgrading anything.
+  - **Alembic Migrations**: Runs `uv run alembic upgrade head` automatically after each deploy so new migrations are applied without manual intervention.
+  - **PM2 Process Management**: If a `maxp-ai-service` process already exists in PM2 it is restarted with `--update-env` to pick up new env vars. If it doesn't exist yet, it is started with `uv run uvicorn src.main:app --host 0.0.0.0 --port 8000` via `pm2 start ... --interpreter none`. After start/restart, `pm2 save` persists the process list for server reboots.
+  - **Source Packaging**: The deploy job already packages `apps/ai-service` as `ai-service.tar.gz` (excluding `.env`, `__pycache__`, `.venv`, `*.pyc`) and SCPs it to `/var/www/ai-service`. The server-side `.env` is never overwritten by the deploy.
+- **Files**:
+  - `.github/workflows/deploy.yml`
+
+## [2026-06-07] ai-service Integration — Shared Token Auth, PM2 Deployment, and Pilot Mode
+- **Details**: Full integration between backend2 (Node.js/PM2, port 3007) and maxp-ai-service (Python/FastAPI/PM2, port 8000) on server 153.92.223.119. All communication is internal (localhost-to-localhost); ai-service is not exposed on any public domain.
+- **Architecture**:
+  - **Shared Token**: backend2 sends `Authorization: Bearer <token>` on every request to ai-service. The token is stored in `AI_SERVICE_TOKEN` in `/var/www/backend2/.env` and validated against `MAXP_SERVICE_TOKEN` in `/var/www/ai-service/.env`. Both must be identical. The token is a 64-char hex string generated once with `openssl rand -hex 32`.
+  - **AI_SERVICE_MODE**: Controls routing behavior in backend2. Values: `off` (ai-service never called), `shadow` (called in background, backend2 reply used), `pilot` (ai-service reply used for companies in `AI_SERVICE_ENABLED_COMPANIES`), `primary` (ai-service reply used for all companies). Production is set to `pilot` for gradual rollout.
+  - **AI_SERVICE_ENABLED_COMPANIES**: Comma-separated list of company IDs that receive ai-service responses in `pilot` mode. In `primary` mode, wildcard `*` is honored.
+  - **GROQ LLM via OpenAI-Compatible SDK**: ai-service fetches GROQ API keys from `public.ai_keys` (Prisma table, provider `groq`). It calls GROQ's endpoint using the OpenAI Python SDK pointed at GROQ's base URL. The `DEFAULT_LLM_PROVIDER` env var must be `openai` (Pydantic Literal constraint), not `groq`. The actual model is controlled by `DEFAULT_MODEL` (e.g., `qwen/qwen3-32b`).
+  - **Alembic / PostgreSQL Schema**: ai-service uses the `ai` schema in the shared PostgreSQL `maxp` database. The schema must be created manually once (`CREATE SCHEMA IF NOT EXISTS ai`) before running migrations. The `appuser` role needs `USAGE` and `CREATE` on the `ai` schema. Migrations 0001–0009 are applied via `uv run alembic upgrade head`.
+  - **uv Package Manager**: ai-service dependencies are managed by `uv` (Rust-based fast pip replacement). Lock file is `uv.lock`. Run `uv sync --frozen` to install. Run `uv run <command>` to execute within the virtual environment.
+  - **PM2 Process**: ai-service runs as `maxp-ai-service` (PM2 id=3) alongside `maxp-backend` (id=0) and `maxp-webhook-worker` (id=1). Logs: `pm2 logs maxp-ai-service`.
+  - **Qwen3 `<think>` Tags**: The `qwen/qwen3-32b` model emits internal reasoning wrapped in `<think>...</think>` tags before the final answer. These currently pass through to customer replies — a stripping step is needed in ai-service response post-processing.
+- **Files**:
+  - `.github/workflows/deploy.yml`
+  - `apps/backend/ecosystem.config.js`
+  - `apps/backend/.env.example`
+  - `apps/ai-service/.env.example`
+  - `apps/ai-service/migrations/versions/0004_agent_management.py`
+  - `apps/ai-service/migrations/versions/0006_enable_pgvector.py`
+  - `apps/ai-service/migrations/versions/0007_embedding_provider.py`
+
 ## [2026-06-06] AI Customer Channel Pipeline — Sandbox Testing Fixes and Product Search Improvements
 - **Details**: Diagnosed and fixed the full customer-facing AI pipeline for Facebook/Messenger channels (Path 5 — LLM with native tools). Covered product search, product listing, variant display, image handling, log noise, and LLM hallucination.
 - **Architecture**:

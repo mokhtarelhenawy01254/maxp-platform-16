@@ -1,3 +1,21 @@
+## [2026-06-07] maxp-ai-service — Backend Integration and Production Deployment [CONNECTED]
+- **Objective**: Get the Python ai-service running on the production server and verify that backend2 routes customer messages to it correctly via shared-token auth.
+- **Accomplishments**:
+  - **Service Running**: maxp-ai-service is live as a PM2 process (id=3) on `localhost:8000`. All 9 Alembic migrations (0001–0009) applied successfully against the `ai` schema in the `maxp` PostgreSQL database.
+  - **Connection Verified**: Sent a test message from within the backend2 PM2 process (`node -e "..."`) and received a real LLM reply from ai-service — confirming the shared-token auth handshake, HTTP routing, and LLM call-chain all work end-to-end.
+  - **Pilot Mode Active**: `AI_SERVICE_MODE=pilot` with `AI_SERVICE_ENABLED_COMPANIES=cmlc65tfr0000jutofd95qi23` on the server. Only that one company receives ai-service replies; all others fall back to legacy agent.
+  - **CI/CD Auto-Deploy**: `deploy.yml` updated — every push to `main` now automatically runs `uv sync`, `alembic upgrade head`, and `pm2 restart maxp-ai-service` on the server. No manual steps needed after pushing code changes.
+  - **Migration Bugs Fixed**: 3 Alembic migration bugs found and fixed (missing PrimaryKeyConstraint on `agent_departments`, missing table creation in migration 0006, invalid `'[]'::vector` cast in migration 0007).
+  - **LLM Config Fixed**: Fixed `DEFAULT_LLM_PROVIDER=groq` → `openai` (Pydantic Literal constraint), `DEFAULT_MODEL=gemini-2.0-flash` → `qwen/qwen3-32b` (valid GROQ model).
+- **Technical Details**:
+  - GROQ API keys stored in `public.ai_keys` table (provider column = `grouq`). ai-service fetches them at runtime.
+  - Shared secret token: 64-char hex, stored in both `AI_SERVICE_TOKEN` (backend2) and `MAXP_SERVICE_TOKEN` (ai-service).
+  - `AI_SERVICE_URL=http://localhost:8000` — internal only. `ai.maxp.online` routes to backend2 via nginx and must NOT be used as `AI_SERVICE_URL`.
+- **Next Steps**:
+  - Strip `<think>...</think>` tags from Qwen3 replies before sending to customers.
+  - Fix `AGENTS_TEMPLATES_ROOT` path so ai-service can load skill JSON files (required for product search tools to work inside ai-service).
+  - Gradually expand `AI_SERVICE_ENABLED_COMPANIES` or switch to `AI_SERVICE_MODE=primary` after validation.
+
 ## [2026-06-07] Frontend — Product Public URL Copy Feature [READY]
 - **Objective**: Add public storefront URL generation and copy-to-clipboard functionality to the product editor for merchants to easily share product links.
 - **Accomplishments**:
