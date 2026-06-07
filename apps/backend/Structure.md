@@ -1,3 +1,14 @@
+## [2026-06-07] Frontend — Product Public URL Utility and Copy Button
+- **Details**: Extended the product editor with a public URL generation utility and a copy-to-clipboard button for merchant sharing.
+- **Architecture**:
+  - **New Utility Function** (`apps/frontend/src/pages/products/utils/productPreviewUrl.ts`): Added `buildProductPublicUrl()` that constructs storefront-facing product URLs using the pattern `/store/product/{slug}` with optional `companyId` query param. This complements the existing `buildProductPreviewUrl()` which uses admin preview routes.
+  - **UI Integration** (`apps/frontend/src/pages/products/ProductNewFinal.tsx`): Added "نسخ الرابط العام" button next to "معاينة" (Preview). The button calls `buildPublicUrl()` and copies the result to clipboard via `navigator.clipboard.writeText()`.
+  - **Multi-tenant Support**: Both preview and public URL functions now resolve `companyId` from user context, localStorage, and query params for correct tenant routing.
+- **Files**:
+  - `apps/frontend/src/pages/products/ProductNewFinal.tsx`
+  - `apps/frontend/src/pages/products/utils/productPreviewUrl.ts`
+- **Related**: Product preview routing improvements from [2026-06-03].
+
 ## [2026-06-05] AI Agent Service — New TypeScript Microservice
 
 - **Details**: Built a new standalone Node.js/TypeScript microservice (`apps/ai-agent`) responsible for multi-agent orchestration using Google Gemini with function calling, failover logic, tool execution, memory, telemetry, and a REST API.

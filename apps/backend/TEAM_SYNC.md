@@ -1,3 +1,15 @@
+## [2026-06-07] Frontend — Product Public URL Copy Feature [READY]
+- **Objective**: Add public storefront URL generation and copy-to-clipboard functionality to the product editor for merchants to easily share product links.
+- **Accomplishments**:
+  - **New Utility**: Added `buildProductPublicUrl()` in `productPreviewUrl.ts` — generates public-facing product URLs (`/store/product/{slug}?companyId=...`) distinct from admin preview URLs.
+  - **UI Button**: Added "نسخ الرابط العام" (Copy Public Link) button in `ProductNewFinal.tsx` next to the Preview button. Uses `navigator.clipboard.writeText()` for clipboard access.
+  - **Multi-tenant Routing**: Both preview and public URL functions resolve `companyId` from user session, localStorage (`storefront_companyId`, `companyId`), and query params.
+- **Verification**: Frontend build passes (1m 11s). TypeScript type-check passes. No lint errors.
+- **Affected Files**:
+  - `apps/frontend/src/pages/products/ProductNewFinal.tsx`
+  - `apps/frontend/src/pages/products/utils/productPreviewUrl.ts`
+- **Related**: Builds on product preview routing fix from [2026-06-03] Merchant Order Status Filters and Product Preview Routing Drift.
+
 ## [2026-06-06] Production AI Service Source Deployment [READY]
 - **Objective**: Ensure the production GitHub Actions deployment publishes the Python AI service source alongside frontend, backend, shared files, and Nginx configuration.
 - **Accomplishments**:

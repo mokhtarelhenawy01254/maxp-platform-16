@@ -1,3 +1,14 @@
+## [2026-06-07] Frontend — Product Public URL Copy Button and Utility Function
+- **Feature**: Added "Copy Public Link" button to product editor and new `buildProductPublicUrl` utility function.
+- **Details**: 
+  1. Added `buildProductPublicUrl()` function in `productPreviewUrl.ts` — generates public storefront product URLs using the storefront route `/store/product/{slug}` with optional `companyId` query parameter for multi-tenant routing.
+  2. Added "نسخ الرابط العام" (Copy Public Link) button in `ProductNewFinal.tsx` next to the Preview button — copies the generated public URL to clipboard for easy sharing.
+  3. The public URL differs from preview URL: preview uses admin routes, public uses storefront routes accessible to customers.
+- **Affected Files**:
+  - `apps/frontend/src/pages/products/ProductNewFinal.tsx`
+  - `apps/frontend/src/pages/products/utils/productPreviewUrl.ts`
+- **Related**: Product preview routing drift fix from [2026-06-03].
+
 ## [2026-06-06] AI Sandbox — Product Variants Showing Wrong Color (LLM Hallucination)
 - **Bug/Issue**: When a customer asks about product colors (e.g. "ايه الالوان لكوتشي لمسه؟"), the AI replies with incorrect colors like "أحمر" even though the actual colors in the database are "أبيض، أسود، بيج".
 - **Cause**: The LLM overrides the tool evidence with its training priors. When it sees a shoe product it "knows" common shoe colors and substitutes them instead of reading the exact values from `availableColors[].value` in the tool result. The nested JSON structure makes it easier for the LLM to hallucinate than to parse deeply.
