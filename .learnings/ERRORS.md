@@ -4,6 +4,29 @@ Command failures and integration errors.
 
 ---
 
+## [ERR-20260607-001] backend-jest-bin-missing
+
+**Logged**: 2026-06-07T00:00:00+02:00
+**Priority**: medium
+**Status**: pending
+**Area**: tests
+
+### Summary
+`npm test -w apps/backend -- --runTestsByPath ...` failed because `jest` was not available in `node_modules/.bin`.
+
+### Details
+The backend package declares Jest, but the current workspace has no root or backend `node_modules/.bin/jest.cmd`, so the workspace test script cannot run until dependencies are installed.
+
+### Suggested Action
+Run `npm install` at the workspace root before backend Jest verification, or use the bundled workspace runtime if project dependencies are intentionally not installed.
+
+### Metadata
+- Source: error
+- Related Files: apps/backend/package.json
+- Tags: jest, node_modules, verification
+
+---
+
 ## [ERR-20260519-003] bash-not-on-powershell-path
 
 **Logged**: 2026-05-19T14:06:00+03:00

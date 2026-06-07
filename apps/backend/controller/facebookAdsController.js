@@ -8,11 +8,6 @@ const FacebookAdsService = require("../services/facebookAdsService");
 const facebookAdsDecisionService = require("../services/facebookAdsDecisionService");
 const { FacebookAdLibraryService } = require("../services/facebookAdLibraryService");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
-const axios = require("axios");
-const dns = require("dns").promises;
-const http = require("http");
-const https = require("https");
-const net = require("net");
 const crypto = require("crypto");
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 
@@ -24,90 +19,6 @@ const PRODUCT_LAUNCH_DEV_HOSTS = [
   "localhost",
   "127.0.0.1",
 ];
-
-function normalizeNetworkAddress(address) {
-  if (!address) return "";
-  const normalized = String(address).trim().replace(/^\[|\]$/g, "").toLowerCase();
-  if (normalized.startsWith("::ffff:")) {
-    const mappedIpv4 = normalized.slice("::ffff:".length);
-    if (net.isIPv4(mappedIpv4)) return mappedIpv4;
-  }
-  return normalized;
-}
-
-function isPrivateNetworkAddress(address) {
-  const normalizedAddress = normalizeNetworkAddress(address);
-  if (!normalizedAddress) return true;
-
-  if (net.isIPv4(normalizedAddress)) {
-    const parts = normalizedAddress.split(".").map((part) => Number(part));
-    return (
-      parts[0] === 0 ||
-      parts[0] === 10 ||
-      parts[0] === 127 ||
-      (parts[0] === 100 && parts[1] >= 64 && parts[1] <= 127) ||
-      (parts[0] === 169 && parts[1] === 254) ||
-      (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
-      (parts[0] === 192 && parts[1] === 0 && parts[2] === 0) ||
-      (parts[0] === 192 && parts[1] === 0 && parts[2] === 2) ||
-      (parts[0] === 192 && parts[1] === 168) ||
-      (parts[0] === 198 && (parts[1] === 18 || parts[1] === 19)) ||
-      (parts[0] === 198 && parts[1] === 51 && parts[2] === 100) ||
-      (parts[0] === 203 && parts[1] === 0 && parts[2] === 113) ||
-      parts[0] >= 224
-    );
-  }
-
-  if (net.isIPv6(normalizedAddress)) {
-    return (
-      normalizedAddress === "::" ||
-      normalizedAddress === "::1" ||
-      normalizedAddress.startsWith("::ffff:") ||
-      normalizedAddress.startsWith("fc") ||
-      normalizedAddress.startsWith("fd") ||
-      normalizedAddress.startsWith("fe80:") ||
-      normalizedAddress.startsWith("ff") ||
-      normalizedAddress.startsWith("2001:db8:")
-    );
-  }
-
-  return true;
-}
-
-function createPinnedLookup(addresses) {
-  const safeAddresses = (Array.isArray(addresses) ? addresses : [])
-    .map((entry) => {
-      const address = normalizeNetworkAddress(entry?.address || entry);
-      return {
-        address,
-        family: net.isIP(address) || entry?.family,
-      };
-    })
-    .filter((entry) => entry.address && entry.family);
-
-  return (hostname, options, callback) => {
-    let lookupOptions = options;
-    let lookupCallback = callback;
-    if (typeof lookupOptions === "function") {
-      lookupCallback = lookupOptions;
-      lookupOptions = {};
-    }
-
-    if (!safeAddresses.length) {
-      return lookupCallback(new Error(`No safe address available for ${hostname}`));
-    }
-
-    if (lookupOptions?.all) {
-      return lookupCallback(null, safeAddresses);
-    }
-
-    const preferredFamily = Number(lookupOptions?.family || 0);
-    const selectedAddress =
-      safeAddresses.find((entry) => preferredFamily && entry.family === preferredFamily) ||
-      safeAddresses[0];
-    return lookupCallback(null, selectedAddress.address, selectedAddress.family);
-  };
-}
 
 /**
  * جلب Access Token للشركة
@@ -251,36 +162,48 @@ function parseProductLaunchUrl(rawUrl) {
   };
 }
 
-async function assertSafeProductLaunchUrl(productApiUrl) {
-  const parsedUrl = new URL(productApiUrl);
-  const hostname = normalizeNetworkAddress(parsedUrl.hostname);
-
-  if (net.isIP(hostname)) {
-    if (isPrivateNetworkAddress(hostname)) {
-      throw new Error("Product metadata URL resolved to a private address");
-    }
-    return {
-      parsedUrl,
-      addresses: [{ address: hostname, family: net.isIP(hostname) }],
-    };
+function decodeProductLaunchSlug(value) {
+  const rawValue = String(value || "").trim();
+  if (!rawValue) {
+    return "";
   }
 
-  const addresses = await dns.lookup(hostname, { all: true });
-  if (!addresses.length || addresses.some((entry) => isPrivateNetworkAddress(entry.address))) {
-    throw new Error("Product metadata URL resolved to a private or unavailable address");
+  try {
+    return decodeURIComponent(rawValue);
+  } catch {
+    return rawValue;
   }
-
-  return { parsedUrl, addresses };
 }
 
-function createProductLaunchAgents(parsedUrl, addresses) {
-  const lookup = createPinnedLookup(addresses);
-  const agentOptions = { lookup };
-  return {
-    httpAgent: parsedUrl.protocol === "http:" ? new http.Agent(agentOptions) : undefined,
-    httpsAgent: parsedUrl.protocol === "https:" ? new https.Agent(agentOptions) : undefined,
-  };
-}
+const PRODUCT_LAUNCH_METADATA_PRODUCT_SELECT = Object.freeze({
+  id: true,
+  name: true,
+  description: true,
+  sku: true,
+  price: true,
+  comparePrice: true,
+  category: {
+    select: {
+      name: true,
+    },
+  },
+  isActive: true,
+  isHidden: true,
+  stock: true,
+  trackInventory: true,
+  mainImage: true,
+  images: true,
+  slug: true,
+  productVariants: {
+    where: { isActive: true },
+    orderBy: { sortOrder: "asc" },
+    select: {
+      image: true,
+      mainImage: true,
+      images: true,
+    },
+  },
+});
 
 function stripHtml(value) {
   return String(value || "")
@@ -8118,6 +8041,7 @@ const getFacebookPixels = async (req, res) => {
 const getProductLaunchMetadata = async (req, res) => {
   try {
     const { url } = req.query;
+    const companyId = req.user?.companyId;
 
     if (!url) {
       return res.status(400).json({
@@ -8126,45 +8050,45 @@ const getProductLaunchMetadata = async (req, res) => {
       });
     }
 
-    const parsedProductUrl = parseProductLaunchUrl(url);
-    const productApiUrl = new URL(`${parsedProductUrl.origin}/api/v1/public/products/${encodeURIComponent(
-      parsedProductUrl.productSlug,
-    )}`);
-    productApiUrl.searchParams.set("companyId", parsedProductUrl.storeSlug);
-    const productApiSafety = await assertSafeProductLaunchUrl(productApiUrl.toString());
-    const productApiAgents = createProductLaunchAgents(
-      productApiSafety.parsedUrl,
-      productApiSafety.addresses,
-    );
-
-    const productResponse = await axios.get(productApiUrl.toString(), {
-      timeout: 12000,
-      maxRedirects: 0,
-      httpAgent: productApiAgents.httpAgent,
-      httpsAgent: productApiAgents.httpsAgent,
-      headers: {
-        Accept: "application/json",
-        "X-Store-Subdomain": parsedProductUrl.storeSlug,
-        "X-Company-Subdomain": parsedProductUrl.storeSlug,
-        "X-Subdomain": parsedProductUrl.storeSlug,
-        "X-Company-Slug": parsedProductUrl.storeSlug,
-      },
-      validateStatus: (status) => status < 500,
-    });
-
-    if (
-      productResponse.status >= 400 ||
-      !productResponse.data?.success ||
-      !productResponse.data?.data
-    ) {
-      return res.status(productResponse.status >= 400 ? 404 : 502).json({
+    if (!companyId) {
+      return res.status(401).json({
         success: false,
-        error: "Product metadata could not be loaded",
-        details: productResponse.data?.error || productResponse.data?.message,
+        error: "Company authentication is required",
       });
     }
 
-    const product = productResponse.data.data;
+    const parsedProductUrl = parseProductLaunchUrl(url);
+    const decodedProductSlug = decodeProductLaunchSlug(
+      parsedProductUrl.productSlug,
+    );
+    const productApiUrl = new URL(
+      `${parsedProductUrl.origin}/api/v1/public/products/${encodeURIComponent(
+        decodedProductSlug,
+      )}`,
+    );
+    productApiUrl.searchParams.set("companyId", parsedProductUrl.storeSlug);
+
+    const product = await getSharedPrismaClient().product.findFirst({
+      where: {
+        companyId,
+        deletedAt: null,
+        isActive: true,
+        OR: [
+          { id: decodedProductSlug },
+          { slug: decodedProductSlug },
+          { slug: parsedProductUrl.productSlug },
+        ],
+      },
+      select: PRODUCT_LAUNCH_METADATA_PRODUCT_SELECT,
+    });
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: "Product metadata could not be loaded",
+      });
+    }
+
     const imageUrls = collectProductLaunchImages(
       product,
       parsedProductUrl.origin,
@@ -8185,6 +8109,7 @@ const getProductLaunchMetadata = async (req, res) => {
         comparePrice: toNullableNumber(product.comparePrice),
         category: product.category?.name || product.category || null,
         isActive: product.isActive !== false,
+        isHidden: product.isHidden === true,
         stock: toNullableNumber(product.stock),
         trackInventory: product.trackInventory !== false,
         mainImage: imageUrls[0] || null,

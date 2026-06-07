@@ -929,6 +929,7 @@ export interface ProductLaunchMetadata {
   comparePrice?: number | null;
   category?: string | null;
   isActive: boolean;
+  isHidden: boolean;
   stock?: number | null;
   trackInventory?: boolean;
   mainImage?: string | null;

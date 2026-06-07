@@ -1,3 +1,14 @@
+## [2026-06-07] Facebook Ads — Hidden Products Blocked from Ad Launch Metadata
+- **Bug/Issue**: Creating a Facebook ad from a product link failed for products marked hidden from customers because the ad metadata loader reused the public storefront product API.
+- **Cause**: `getProductLaunchMetadata()` requested `/api/v1/public/products/:slug`, inheriting the public storefront visibility filter that intentionally excludes `isHidden: true` products.
+- **Fix**:
+  1. Changed ad launch metadata loading to query the authenticated company's product directly by URL slug/id.
+  2. Preserved `deletedAt: null` and `isActive: true` checks while removing any dependency on `isHidden`.
+  3. Kept public storefront routes unchanged so hidden products remain hidden from customer-facing product lists and pages.
+- **Affected Files**:
+  - `apps/backend/controller/facebookAdsController.js`
+  - `apps/backend/tests/controller/facebookAdsController.productLaunchMetadata.test.js`
+
 ## [2026-06-07] Frontend — Product Public URL Copy Button and Utility Function
 - **Feature**: Added "Copy Public Link" button to product editor and new `buildProductPublicUrl` utility function.
 - **Details**: 
@@ -3140,5 +3151,4 @@
 - **Bug/Issue**: TypeScript `any` types used throughout, and Arabic strings were hardcoded without i18n.
 - **Fix**: Added proper `FacebookPage` and `InstagramAccount` interfaces. Used `useTranslation()` for all strings.
 - **Affected Files**: `frontend/src/pages/settings/InstagramSettings.tsx`
-
 
