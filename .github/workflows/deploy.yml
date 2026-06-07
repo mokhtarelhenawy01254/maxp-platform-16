@@ -48,12 +48,27 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: |
-            apps/frontend/package-lock.json
-            apps/backend/package-lock.json
+
+      - name: Cache Backend node_modules
+        uses: actions/cache@v4
+        id: cache-backend
+        with:
+          path: apps/backend/node_modules
+          key: backend-node-${{ hashFiles('apps/backend/package-lock.json') }}
+          restore-keys: |
+            backend-node-
+
+      - name: Cache Frontend node_modules
+        uses: actions/cache@v4
+        id: cache-frontend
+        with:
+          path: apps/frontend/node_modules
+          key: frontend-node-${{ hashFiles('apps/frontend/package-lock.json') }}
+          restore-keys: |
+            frontend-node-
 
       - name: Install Backend Test Dependencies
+        if: steps.cache-backend.outputs.cache-hit != 'true'
         working-directory: ./apps/backend
         run: |
           npm ci --ignore-scripts || npm install --ignore-scripts
@@ -77,6 +92,7 @@ jobs:
 
       # Build Frontend
       - name: Install Frontend Dependencies
+        if: steps.cache-frontend.outputs.cache-hit != 'true'
         working-directory: ./apps/frontend
         run: |
           npm ci --ignore-scripts || npm install --ignore-scripts
