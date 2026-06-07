@@ -3255,3 +3255,95 @@
 - **Fix**: Added proper `FacebookPage` and `InstagramAccount` interfaces. Used `useTranslation()` for all strings.
 - **Affected Files**: `frontend/src/pages/settings/InstagramSettings.tsx`
 
+
+---
+
+## [2026-06-07] ai-service — Pipeline Returns Empty Reply for All Intents [FIXED]
+
+- **Bug/Issue**: `/chat` endpoint returned `{"reply": ""}` for every message, including simple greetings.
+- **Root Cause**: The pipeline had no LLM call path for `general.chat` (no-tool) intents:
+  - `execute_tools` stage exits early when `ctx.tool_context` is empty (`if not ctx.tool_context: return ctx`)
+  - `handle_fallback` stage only calls the LLM when `requires_tool=True` (missing tool result) or `classifier_unavailable=True`
+  - For `general.chat`, both conditions are False → LLM never called → empty reply
+- **Fix**: Added conversational fallback at end of `handle_fallback.py`:
+  ```python
+  if not ctx.llm_response.strip() and not ctx.early_return:
+      client = getattr(ctx, "llm_client", None) or ...
+      response = await client.get_response(to_client_messages(fallback_messages), ...)
+      ctx.llm_response = _strip_reasoning(raw_text)
+  ```
+- **Files**: `apps/ai-service/src/pipeline/stages/handle_fallback.py`
+
+---
+
+## [2026-06-07] ai-service — `'RoutingResult' object is not subscriptable` in factory.py [FIXED]
+
+- **Bug/Issue**: `ProviderFactory.get_provider()` crashed with `TypeError: 'RoutingResult' object is not subscriptable` when trying to access `key_info["api_key"]`.
+- **Root Cause**: `model_manager.get_next_key()` returns a `RoutingResult` dataclass, but `factory.py` treats it as a plain dict with `key_info["api_key"]` and `key_info["provider"]`.
+- **Fix**:
+  1. Normalize `RoutingResult` to dict in `get_provider()`:
+     ```python
+     if hasattr(key_info, "api_key") and not isinstance(key_info, dict):
+         from dataclasses import asdict as _asdict
+         key_info = _asdict(key_info)
+     ```
+  2. Attribute-safe access in `get_active_provider()`:
+     ```python
+     provider_type = key_info.provider if hasattr(key_info, "provider") else key_info["provider"]
+     ```
+- **Files**: `apps/ai-service/src/llm/providers/factory.py`
+
+---
+
+## [2026-06-07] ai-service — OpenRouter `HTTP-Referer: None` Header Crash [FIXED]
+
+- **Bug/Issue**: `httpx` rejected OPENROUTER requests with `Header value must be str or bytes, not <class 'NoneType'>`.
+- **Root Cause**: `PROVIDER_DEFS["OPENROUTER"]["extra_headers"]` contained `"HTTP-Referer": None`.
+- **Fix**: Removed the `"HTTP-Referer": None` entry — kept only `"X-Title": "MaxP AI Service"`.
+- **Files**: `apps/ai-service/src/llm/providers/factory.py`
+
+---
+
+## [2026-06-07] ai-service — Startup Crash `ModuleNotFoundError: src.api.admin.tools` [FIXED]
+
+- **Bug/Issue**: ai-service (PM2 process 3) crashed on startup with `ModuleNotFoundError: No module named 'src.api.admin.tools'`.
+- **Root Cause**: `src/api/admin/__init__.py` imported `tools_router` from `src.api.admin.tools` — a module that doesn't exist.
+- **Fix**: Removed the broken import; kept only `agents_router`, `embeddings_router`, `keys_router`.
+- **Files**: `apps/ai-service/src/api/admin/__init__.py`
+
+---
+
+## [2026-06-07] backend — Circular Dependency `getAiServiceMode is not a function` [FIXED]
+
+- **Bug/Issue**: `maxp-backend` (PM2 process 0) was in "waiting"/crash-loop. Error: `TypeError: getAiServiceMode is not a function`.
+- **Root Cause**: Node.js circular require chain:
+  `agentProvisioningService` → `aiServiceRouter` → `aiSdkClient` → `aiChatService` → `CEOAgent` → `agentProvisioningService`
+  When the circle completed, `aiServiceRouter` exports were an empty `{}` — so `getAiServiceMode` was undefined.
+- **Fix**: Made `aiSdkClient` require lazy (inside the function body) instead of top-level:
+  ```js
+  async function routeToAiService(...) {
+    const aiSdkClient = require('../../services/aiSdkClient'); // lazy
+    ...
+  }
+  ```
+- **Files**: `apps/backend/legacy-ai-agent/aiAgent/aiServiceRouter.js`
+
+---
+
+## [2026-06-07] backend — Missing Module `aiServiceAdminClient` [FIXED]
+
+- **Bug/Issue**: Backend crashed with `Cannot find module '../services/aiServiceAdminClient'`.
+- **Root Cause**: `agentControlRoutes.js` required `aiServiceAdminClient` but the file didn't exist.
+- **Fix**: Created `apps/backend/services/aiServiceAdminClient.js` — HTTP client for the ai-service admin API.
+  Methods: `listTools()`, `listAgents()`, `chatWithAgent()`, `updateGlobalConfig()`, `setProviderPriority()`, `createKey()`, `deleteKey()`, `setKeyStatus()`
+- **Files**: `apps/backend/services/aiServiceAdminClient.js` *(new)*
+
+---
+
+## [2026-06-07] backend — Missing Module `aiSessionService` [FIXED]
+
+- **Bug/Issue**: Backend crashed with `Cannot find module '../services/aiSessionService'`.
+- **Root Cause**: `aiAgentChatController.js` required `aiSessionService` but the file didn't exist.
+- **Fix**: Created `apps/backend/services/aiSessionService.js` — manages AI agent chat sessions via Prisma.
+  Methods: `getHistory()`, `clearHistory()`, `listSessions()`, `createSession()`, `getAgentStatus()`
+- **Files**: `apps/backend/services/aiSessionService.js` *(new)*

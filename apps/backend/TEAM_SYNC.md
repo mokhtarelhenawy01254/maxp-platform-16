@@ -13050,3 +13050,56 @@ ishlist and debounced search engine wiring)
     - `apps/ai-service/src/memory/episodic_memory.py`
     - `apps/ai-service/src/memory/working_memory.py`
     - `backend/services/aiAgent/embeddingCacheService.js`
+
+---
+
+## [2026-06-07] Session — Backend Crash Fix + AI Pipeline Empty Reply Fix [DONE]
+
+### المشاكل اللي اتحلت
+
+**1. maxp-backend (PM2 process 0) — كان في crash loop**
+- Circular dependency: `aiServiceRouter` → `aiSdkClient` → `CEOAgent` → `agentProvisioningService` → `aiServiceRouter`
+- ملفين مش موجودين: `aiServiceAdminClient.js` و `aiSessionService.js`
+- **النتيجة**: Backend شغال online، 462+ restarts وقفت
+
+**2. maxp-ai-service (PM2 process 3) — كان بيرجع reply فاضية دايمًا**
+- Startup crash من import مكسور (`src.api.admin.tools` مش موجود)
+- Groq keys مش موجودة في `ai.ai_keys` (كانت بس في `public.ai_keys`)
+- `RoutingResult` dataclass مش subscriptable في `factory.py`
+- `HTTP-Referer: None` header بيعطل OpenRouter calls
+- Pipeline مش بيستدعي LLM للـ `general.chat` intents
+
+### الـ LLM Provider Stack الشغال دلوقتي
+
+- **Provider**: Groq (`https://api.groq.com/openai/v1`)
+- **Model**: `llama-3.3-70b-versatile`
+- **Keys**: 3 keys في `ai.ai_keys` (schema: `ai`, مش `public`)
+- **Classifier**: يستخدم `build_agent_client_async` → `ProviderFactory` → Groq
+- **Agent**: يستخدم `LLMFallbackProvider.get_client()` → Groq
+
+### ملفات اتعملت أو اتعدلت
+
+| الملف | التغيير |
+|-------|---------|
+| `apps/ai-service/src/api/admin/__init__.py` | حذف import مكسور |
+| `apps/ai-service/src/llm/providers/factory.py` | RoutingResult fix + HTTP-Referer fix |
+| `apps/ai-service/src/pipeline/stages/handle_fallback.py` | Conversational LLM fallback |
+| `apps/backend/legacy-ai-agent/aiAgent/aiServiceRouter.js` | Lazy require fix |
+| `apps/backend/services/aiServiceAdminClient.js` | ملف جديد |
+| `apps/backend/services/aiSessionService.js` | ملف جديد |
+
+### نتيجة الـ AI Test
+
+```
+POST /chat {"message": "مرحبا"}
+→ {"reply": "مرحباً بك في شركة MaxP. كيف يمكنني مساعدتك اليوم؟"}
+```
+
+الـ classifier شغال (`general.chat`, confidence: 1.0) والـ LLM بيرد بالعربي.
+
+### ملاحظات للـ Team
+
+- **`ai.ai_keys`** (schema: `ai`) هي الـ table الصح للـ ai-service — مش `public.ai_keys`
+- **`agent_framework.Agent`** مش بيعمل expose لـ `instructions` كـ attribute مباشر — بتلاقيها في `agent.default_options["instructions"]`
+- الـ OpenRouter key موجود في الـ DB بس رصيده خلص (402) — Groq هو الـ active provider
+- في خلط صغير في ردود اللغة (أحيانًا عربي+صيني) — محتاج system prompt أحسن في `ceo.py`

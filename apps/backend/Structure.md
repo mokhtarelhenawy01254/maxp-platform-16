@@ -2384,3 +2384,34 @@ Added a new marketplace-ready fashion storefront preset focused on mobile app-st
 - Updated documentation to reflect backtick handling fix in the i18n replacement script.
 - Ensured architectural documentation includes this script improvement.
 
+
+---
+
+## [2026-06-07] New Files — AI Service Integration
+
+### `apps/backend/services/aiServiceAdminClient.js`
+HTTP client for the maxp-ai-service admin API (internal, localhost:8000).
+
+**Methods:**
+- `listTools()` — GET /admin/tools
+- `listAgents(companyId)` — GET /admin/agents?company_id=...
+- `chatWithAgent({companyId, agentId, message, threadId})` — POST /admin/agents/chat
+- `updateGlobalConfig(config)` — POST /admin/config
+- `setProviderPriority(providers)` — POST /admin/provider-priority
+- `createKey(key)` — POST /admin/keys
+- `deleteKey(id)` — DELETE /admin/keys/:id
+- `setKeyStatus(id, isActive)` — PATCH /admin/keys/:id/status
+
+**Env vars used:** `AI_SERVICE_URL` (default: `http://localhost:8000`), `AI_SERVICE_TOKEN`
+
+---
+
+### `apps/backend/services/aiSessionService.js`
+Manages AI agent chat sessions via Prisma (`aIChatSession`, `aIChatMessage` models).
+
+**Methods:**
+- `getHistory(companyId, userId, sessionId, user)` — returns message array
+- `clearHistory(companyId, userId, sessionId)` — deletes messages
+- `listSessions(companyId, userId)` — returns sessions list
+- `createSession(companyId, userId, user, options)` — creates new session
+- `getAgentStatus(companyId)` — returns `{ status: "active", companyId }`
