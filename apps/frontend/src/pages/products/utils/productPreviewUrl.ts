@@ -59,3 +59,28 @@ export const buildProductPreviewUrl = ({
 
   return url.toString();
 };
+
+export const buildProductPublicUrl = ({
+  origin,
+  productId,
+  productSlug,
+  companyId,
+}: BuildProductPreviewUrlArgs): string => {
+  const normalizedProductId = normalizeValue(productId);
+  if (!normalizedProductId) {
+    return "";
+  }
+  const productRouteKey = normalizeValue(productSlug) || normalizedProductId;
+
+  const url = new URL(
+    `/store/product/${encodeURIComponent(productRouteKey)}`,
+    origin,
+  );
+  const normalizedCompanyId = normalizeValue(companyId);
+
+  if (normalizedCompanyId) {
+    url.searchParams.set("companyId", normalizedCompanyId);
+  }
+
+  return url.toString();
+};

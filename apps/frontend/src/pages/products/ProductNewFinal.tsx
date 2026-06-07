@@ -19,6 +19,7 @@ import {
   MegaphoneIcon,
   XMarkIcon,
   MagnifyingGlassIcon,
+  LinkIcon,
 } from "@heroicons/react/24/outline";
 
 // Hooks
@@ -74,6 +75,7 @@ import {
 import { getProductPageCheckoutOverrideEnabled } from "../../utils/productPageCheckout";
 import {
   buildProductPreviewUrl,
+  buildProductPublicUrl,
   resolveProductPreviewCompanyId,
 } from "./utils/productPreviewUrl";
 
@@ -902,6 +904,34 @@ export const ProductNewFinal: React.FC = () => {
     [formData.slug, productCompanyId, user?.companyId],
   );
 
+  const buildPublicUrl = useCallback(
+    (productId: string) => {
+      const resolvedProductId = String(productId || "").trim();
+      if (!resolvedProductId) {
+        return "";
+      }
+
+      const companyId = resolveProductPreviewCompanyId({
+        productCompanyId,
+        userCompanyId: user?.companyId,
+        storedCompanyId:
+          localStorage.getItem("storefront_companyId") ||
+          localStorage.getItem("companyId"),
+        queryCompanyId: new URLSearchParams(window.location.search).get(
+          "companyId",
+        ),
+      });
+
+      return buildProductPublicUrl({
+        origin: window.location.origin,
+        productId: resolvedProductId,
+        productSlug: formData.slug,
+        companyId,
+      });
+    },
+    [formData.slug, productCompanyId, user?.companyId],
+  );
+
   const validateProduct = useCallback(
     (mode: "draft" | "strict") => {
       const errors: Record<string, string> = {};
@@ -1324,6 +1354,22 @@ export const ProductNewFinal: React.FC = () => {
             >
               <EyeIcon className="ml-2 h-4 w-4" />
               معاينة
+            </button>
+            <button
+              onClick={() => {
+                const url = effectiveProductId ? buildPublicUrl(effectiveProductId) : "";
+                if (url) {
+                  navigator.clipboard.writeText(url);
+                }
+              }}
+              disabled={loading || !effectiveProductId}
+              className={`inline-flex items-center rounded-md border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700 hover:bg-green-100 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200 dark:hover:bg-green-900/30 ${
+                loading || !effectiveProductId ? "cursor-not-allowed opacity-75" : ""
+              }`}
+              title="نسخ رابط المنتج العام للمشاركة"
+            >
+              <LinkIcon className="ml-2 h-4 w-4" />
+              نسخ الرابط العام
             </button>
             <button
               onClick={() => runWorkflowAction("save_draft")}
