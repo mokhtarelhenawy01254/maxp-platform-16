@@ -14,7 +14,6 @@ module.exports = {
             env_production: {
                 NODE_ENV: 'production',
                 PORT: 3007,
-                AI_SERVICE_URL: 'https://ai.maxp-ai.pro',
             },
             exp_backoff_restart_delay: 100,
             error_file: 'logs/err.log',

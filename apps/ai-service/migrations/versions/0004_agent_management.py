@@ -40,6 +40,7 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.func.now(),
         ),
+        sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("company_id", "key"),
         schema="ai",
     )

@@ -19,6 +19,24 @@ depends_on: str | None = None
 
 def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS ai.agentic_memory_fact (
+            id VARCHAR NOT NULL PRIMARY KEY,
+            company_id VARCHAR NOT NULL,
+            customer_id VARCHAR NOT NULL,
+            type VARCHAR NOT NULL,
+            content TEXT NOT NULL,
+            confidence FLOAT DEFAULT 1.0,
+            importance INTEGER DEFAULT 3,
+            embedding_provider VARCHAR(32) NOT NULL DEFAULT 'gemini',
+            metadata_json JSON,
+            created_at TIMESTAMP DEFAULT now(),
+            updated_at TIMESTAMP DEFAULT now()
+        )
+    """)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agentic_memory_fact_company_id ON ai.agentic_memory_fact (company_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agentic_memory_fact_customer_id ON ai.agentic_memory_fact (customer_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_agentic_memory_fact_type ON ai.agentic_memory_fact (type)")
     op.execute(
         "ALTER TABLE ai.agentic_memory_fact ADD COLUMN IF NOT EXISTS embedding vector(768)"
     )

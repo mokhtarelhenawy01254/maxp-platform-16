@@ -449,14 +449,44 @@ jobs:
               test -f /var/www/ai-service/src/main.py
               echo "✅ Python AI service source is present at /var/www/ai-service"
 
-              if command -v docker >/dev/null 2>&1 && sudo -n docker compose version >/dev/null 2>&1 && [ -f /var/www/ai-service/.env ]; then
-                echo "🐳 Building/restarting Python AI service containers..."
-                cd /var/www/ai-service
-                sudo -n docker compose -f docker-compose.prod.yml up -d --build
-                sleep 5
-                sudo -n docker compose -f docker-compose.prod.yml ps
-              else
-                echo "⚠️ Docker Compose or /var/www/ai-service/.env not available; source deployed but container restart skipped"
+              UV_BIN=""
+              for candidate in /root/.local/bin/uv /usr/local/bin/uv; do
+                if [ -x "$candidate" ]; then
+                  UV_BIN="$candidate"
+                  break
+                fi
+              done
+
+              if [ -z "$UV_BIN" ]; then
+                echo "📦 Installing uv package manager..."
+                curl -LsSf https://astral.sh/uv/install.sh | sh
+                UV_BIN="/root/.local/bin/uv"
+              fi
+
+              echo "🐍 Installing Python dependencies..."
+              cd /var/www/ai-service
+              "$UV_BIN" sync --frozen 2>&1 | tail -5
+
+              echo "🗄️ Running ai-service database migrations..."
+              "$UV_BIN" run alembic upgrade head 2>&1
+
+              echo "🔄 Starting/restarting maxp-ai-service in PM2..."
+              if [ -n "$PM2_BIN" ]; then
+                if "$PM2_BIN" list | grep -q "maxp-ai-service"; then
+                  "$PM2_BIN" restart maxp-ai-service --update-env
+                else
+                  "$PM2_BIN" start "$UV_BIN run uvicorn src.main:app --host 0.0.0.0 --port 8000" \
+                    --name maxp-ai-service --interpreter none \
+                    --cwd /var/www/ai-service
+                fi
+                sleep 4
+                if "$PM2_BIN" list | grep "maxp-ai-service" | grep -q "online"; then
+                  echo "✅ maxp-ai-service is running"
+                else
+                  echo "⚠️ maxp-ai-service may not be running — check logs"
+                  "$PM2_BIN" logs maxp-ai-service --lines 20 --nostream || true
+                fi
+                "$PM2_BIN" save || true
               fi
             else
               echo "⚠️ AI service archive not found, skipping Python AI service deploy"

@@ -62,24 +62,14 @@ def upgrade() -> None:
         except Exception:
             pass
 
-    if has_vector:
-        op.execute(
-            """
-            UPDATE ai.agentic_memory_fact
-            SET embedding_provider = 'pseudo'
-            WHERE embedding_provider = 'gemini'
-              AND (embedding IS NULL OR embedding = '[]'::vector)
-            """
-        )
-    else:
-        op.execute(
-            """
-            UPDATE ai.agentic_memory_fact
-            SET embedding_provider = 'pseudo'
-            WHERE embedding_provider = 'gemini'
-              AND (embedding IS NULL OR embedding::text = '[]')
-            """
-        )
+    op.execute(
+        """
+        UPDATE ai.agentic_memory_fact
+        SET embedding_provider = 'pseudo'
+        WHERE embedding_provider = 'gemini'
+          AND embedding IS NULL
+        """
+    )
 
 
 
