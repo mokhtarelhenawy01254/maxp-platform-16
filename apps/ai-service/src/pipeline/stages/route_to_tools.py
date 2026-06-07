@@ -36,8 +36,7 @@ def _populate_tool_params(ctx: PipelineContext, execution: dict | None) -> None:
     if tool_name == "product_search":
         params.setdefault(
             "query",
-            _first_slot(slots, "query", "productName", "product_name", "product", "sku")
-            or ctx.message,
+            _first_slot(slots, "query", "productName", "product_name", "product", "sku") or "",
         )
     elif tool_name == "inventory_check":
         params.setdefault(

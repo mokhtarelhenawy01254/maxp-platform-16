@@ -317,6 +317,15 @@ INTENT_CONFIGURED_TOOLS: dict[str, dict[str, Any]] = {
             "inventory_check",
         ],
     },
+    "products.read": {
+        "primaryTool": "product_search",
+        "allowedTools": [
+            "product_search",
+            "product_low_stock",
+            "product_top_selling",
+            "inventory_check",
+        ],
+    },
     "shipping.rates": {
         "primaryTool": "shipping_rates",
         "allowedTools": ["shipping_rates"],

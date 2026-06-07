@@ -66,9 +66,10 @@ class BackendClient:
     async def search_products(
         self, company_id: str, query: str, limit: int = 10
     ) -> list[dict[str, Any]]:
-        result = await self._request("GET", "/api/v1/products", params={
-            "search": query, "limit": limit, "companyId": company_id,
-        })
+        params = {"limit": limit, "companyId": company_id}
+        if query:
+            params["search"] = query
+        result = await self._request("GET", "/api/v1/products", params=params)
         return result.get("data", result.get("products", []))
     
     async def get_product(self, company_id: str, product_id: str) -> dict[str, Any] | None:

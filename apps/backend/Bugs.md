@@ -1,3 +1,32 @@
+## [2026-06-07] ai-service — product_search Tool Not Called (5 Root Causes Fixed)
+- **Bug/Issue**: AI responded with hallucinated product data (MaxP electronics) instead of Wofod's actual shoe products when customers asked about products.
+- **Root Cause (chain of 5 issues)**:
+  1. **Qwen3 `<think>` block truncated by `max_tokens: 500`**: Classifier returned `<think>...</think>` before JSON, but 500 tokens was too short — the think block consumed all tokens and the closing `</think>` was never emitted. `_parse_json_object()` couldn't strip an unclosed tag → parse failure → no classifier result → no tool plan.
+  2. **LLM hallucinating `"products.read"` intent**: Even after the think-block fix, the Qwen3 model returned `intent: "products.read"` — a plausible but non-existent intent. `_normalize_classifier_result` accepted it because `get_policy()` always returns a non-null fallback. `INTENT_CONFIGURED_TOOLS` had no entry for `"products.read"` → no tool config → `requiresTool=False`.
+  3. **CEO sub-agent architecture mismatch in `_filter_available`**: `build_intent_contract_async` filtered `["product_search"]` against `available_tools=["support_specialist", "order_specialist"]` (CEO's tools) — returned empty → `primaryTool=None` → `requiresTool=False`. (This would also have blocked the tool even if the intent was correct.)
+  4. **`to_tool_plan` double-filtered `allowedTools`**: Even if `requiresTool=True` from planner, `to_tool_plan` re-ran `_filter_available` on `allowedTools` → returned empty → `ToolPlan.allowedTools=[]` → `ToolGateway.execute` received CEO tool names as `allowed_tools` → FORBIDDEN for `product_search`.
+  5. **Product search query was full Arabic question**: `_populate_tool_params` used `ctx.message` ("عايز اشوف المنتجات") as the search term → backend returned 0 results since no product is named that.
+- **Fix**:
+  1. Added `/no_think\n` prefix to classifier system prompt (disables Qwen3 think block); increased `max_tokens` from 500 to 1500
+  2. Added `"products.read"` to `INTENT_CONFIGURED_TOOLS` mapping to `product_search`
+  3. `build_intent_contract_async`: falls back to `configured_primary` when `_filter_available` returns empty (CEO sub-agent architecture bypass)
+  4. `to_tool_plan`: preserves `allowedTools` from static config when filter returns empty (`filtered or route_allowed`)
+  5. `route_to_tools._populate_tool_params`: uses `""` (empty) instead of `ctx.message` for product_search fallback; `backend_client.search_products` omits `search` param when query is empty (returns all products); `product_tools.search_products` removed early-return guard for empty query
+- **Affected Files**:
+  - `apps/ai-service/src/intent/classifier.py`
+  - `apps/ai-service/src/intent/planner.py`
+  - `apps/ai-service/src/intent/schema.py`
+  - `apps/ai-service/src/pipeline/stages/route_to_tools.py`
+  - `apps/ai-service/src/tools/backend_client.py`
+  - `apps/ai-service/src/tools/product_tools.py`
+
+## [2026-06-07] CI — `vite: not found` Build Failure Due to npm Workspace Hoisting
+- **Bug/Issue**: GitHub Actions `Build Frontend` step failed with `sh: 1: vite: not found` (exit code 127) even though vite is listed as a devDependency in `apps/frontend/package.json`.
+- **Cause**: The root `package.json` declares `workspaces: ["apps/backend", "apps/frontend"]`. npm workspace hoisting moves devDependencies (including `vite`) from `apps/frontend/node_modules/.bin/` up to the ROOT `node_modules/.bin/`. The CI workflow caches and installs only `apps/frontend/node_modules`, so on a cache hit the `Install Frontend Dependencies` step was skipped entirely (`if: cache-hit != 'true'`). Root `node_modules` doesn't exist on the runner — vite was nowhere to be found.
+- **Fix**: Removed the unconditional `if: cache-hit != 'true'` guard from the install step. The step now always runs a binary existence check (`[ ! -f node_modules/.bin/vite ]`). If vite is present (good cache) → fast skip. If vite is missing (bad/partial cache) → `npm ci` runs and installs correctly.
+- **Affected Files**:
+  - `.github/workflows/deploy.yml`
+
 ## [2026-06-07] ai-service — DEFAULT_LLM_PROVIDER=groq Invalid (Pydantic Literal Constraint)
 - **Bug/Issue**: ai-service crashed at startup with a Pydantic validation error because `DEFAULT_LLM_PROVIDER=groq` was set in `/var/www/ai-service/.env`.
 - **Cause**: The `Settings` model declares `default_llm_provider: Literal["anthropic", "openai", "google"]`. The value `groq` is not in the allowed set, so Pydantic raises `ValidationError` before the app can start.

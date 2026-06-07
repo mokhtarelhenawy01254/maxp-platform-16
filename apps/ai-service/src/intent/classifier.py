@@ -16,19 +16,33 @@ from src.pipeline.llm_messages import to_client_messages
 logger = structlog.get_logger(__name__)
 
 
+_THINK_TAG_RE = re.compile(r"<think[^>]*>[\s\S]*?</think>", re.IGNORECASE)
+
+def _strip_think_tags(text: str) -> str:
+    """Remove <think>...</think> reasoning blocks emitted by Qwen3 and similar models."""
+    return _THINK_TAG_RE.sub("", text).strip()
+
+
 def _parse_json_object(text: str) -> dict[str, Any] | None:
-    trimmed = text.strip()
+    trimmed = _strip_think_tags(text.strip())
     if not trimmed:
         return None
     try:
         return json.loads(trimmed)
     except json.JSONDecodeError:
-        match = re.search(r"\{.*\}", trimmed, re.DOTALL)
+        # Extract first {...} block (non-greedy to avoid swallowing nested JSON)
+        match = re.search(r"\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}", trimmed, re.DOTALL)
         if match:
             try:
                 return json.loads(match.group())
             except json.JSONDecodeError:
-                return None
+                # Last resort: greedy match
+                match2 = re.search(r"\{.*\}", trimmed, re.DOTALL)
+                if match2 and match2.group() != match.group():
+                    try:
+                        return json.loads(match2.group())
+                    except json.JSONDecodeError:
+                        return None
     return None
 
 
@@ -83,6 +97,7 @@ async def classify_intent(
     # Use dynamic intent registry (with static fallback if not loaded)
     intent_enum = dynamic_intent_registry.get_intent_enum()
     system_prompt = (
+        "/no_think\n"
         "You are a schema-only intent classifier for customer and merchant operations.\n"
         "Return exactly one JSON object and no markdown, comments, or customer-facing answer.\n"
         f"Allowed intents: {', '.join(intent_enum)}\n"
@@ -122,17 +137,18 @@ async def classify_intent(
                     ),
                 },
             ]),
-            options={"temperature": 0, "max_tokens": 500},
+            options={"temperature": 0, "max_tokens": 1500},
         )
         raw_text = response.text if hasattr(response, "text") else str(response)
         parsed = _parse_json_object(raw_text)
         if parsed is None:
-            logger.warning("classifier returned unparseable JSON", raw=raw_text[:200])
+            logger.warning("classifier returned unparseable JSON", raw=raw_text[:800])
             return None
         result = _normalize_classifier_result(parsed)
         if result is None:
             logger.warning("classifier returned invalid result", parsed=parsed)
             return None
+        logger.info("classifier result", intent=result.intent, confidence=result.confidence, slots=result.slots)
         return result
     except Exception as exc:
         logger.error("classifier LLM call failed", error=str(exc), message=message[:100])

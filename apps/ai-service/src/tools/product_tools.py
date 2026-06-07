@@ -12,16 +12,7 @@ logger = structlog.get_logger(__name__)
 async def search_products(
     company_id: str, query: str, limit: int = 5
 ) -> dict[str, Any]:
-    """Search active catalog products by name or SKU."""
-    if not query:
-        return {
-            "found": False,
-            "code": "MISSING_PRODUCT_QUERY",
-            "query": None,
-            "products": [],
-            "needsClarification": True,
-        }
-
+    """Search active catalog products by name or SKU. Empty query returns all products."""
     client = get_backend_client()
     products = await client.search_products(company_id, query, limit=limit)
 

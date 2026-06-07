@@ -157,13 +157,16 @@ async def build_intent_contract_async(
             filtered_allowed = _filter_available(config["allowedTools"], available_tools)
             configured_primary = config["primaryTool"]
             primary_available = _filter_available([configured_primary], available_tools)
-            policy_plan.primaryTool = (primary_available or filtered_allowed or [None])[0]
-            policy_plan.allowedTools = filtered_allowed
+            # Fall back to static config when CEO uses sub-agent architecture
+            # (available_tools has support_specialist/order_specialist, not product_search)
+            policy_plan.primaryTool = (primary_available or filtered_allowed or [None])[0] or configured_primary
+            policy_plan.allowedTools = filtered_allowed or config["allowedTools"]
         else:
             policy_plan.primaryTool = None
             policy_plan.allowedTools = []
 
         policy_plan.requiresTool = bool(policy_plan.primaryTool)
+        logger.info("intent_routed", intent=policy_plan.intent, requiresTool=policy_plan.requiresTool, primaryTool=policy_plan.primaryTool, allowedTools=policy_plan.allowedTools)
         missing_slots = _unique(classifier_result.missingSlots or [])
         slots = dict(classifier_result.slots or {})
         policy_plan.slots = slots
@@ -212,7 +215,10 @@ def to_tool_plan(contract: IntentContract, available_tools: list[str]) -> ToolPl
         intent=contract.intent,
         requiresTool=contract.requiresTool,
         primaryTool=contract.route.get("primaryTool"),
-        allowedTools=_filter_available(contract.route.get("allowedTools", []), available_tools),
+        allowedTools=(
+            _filter_available(contract.route.get("allowedTools", []), available_tools)
+            or contract.route.get("allowedTools", [])
+        ),
         blockedTools=_filter_available(contract.route.get("blockedTools", []), available_tools),
         reason=contract.reason,
         missingSlots=contract.missingSlots,

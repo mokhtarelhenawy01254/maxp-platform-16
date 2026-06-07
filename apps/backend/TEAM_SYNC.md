@@ -1,3 +1,22 @@
+## [2026-06-07] ai-service — Product Search Tool Working End-to-End [FIXED]
+- **Objective**: Fix ai-service returning hallucinated product data (MaxP electronics) instead of Wofod's actual shoe products.
+- **Accomplishments**:
+  - **Root Cause Chain Found & Fixed**: 5 stacked bugs prevented the `product_search` tool from being called:
+    - `/no_think` added to classifier system prompt + `max_tokens` raised to 1500 → Qwen3 no longer truncates think blocks before JSON
+    - `"products.read"` added to `INTENT_CONFIGURED_TOOLS` → LLM-invented intent now routes correctly
+    - Planner falls back to static config when CEO sub-agent architecture makes `_filter_available` return empty → `requiresTool=True`
+    - `to_tool_plan` preserves `allowedTools` when filter returns empty → `ToolGateway` allows the tool call
+    - `route_to_tools` uses empty string (not full message) as fallback → backend returns all products when no specific product requested
+  - **Verified**: Wofod test shows actual shoe products ("نعال منصة", "نعال فرنسية", "كوتشي لمسة") with real prices and stock counts.
+- **Next Steps**: Strip `<think>` tags from final LLM reply (currently pass-through). Fix `product_low_stock` tool (`'str' object has no attribute 'get'` error on inventory queries).
+
+## [2026-06-07] CI — Frontend Build `vite: not found` Fix [FIXED]
+- **Objective**: Fix the GitHub Actions frontend build failure caused by a missing `vite` binary.
+- **Accomplishments**:
+  - **Root Cause Found**: npm workspace hoisting (configured in root `package.json`) moves `vite` to root `node_modules/.bin/` instead of `apps/frontend/node_modules/.bin/`. CI only cached the frontend node_modules, so on cache hit the install was skipped and vite was never available on the runner.
+  - **Guard Added**: `Install Frontend Dependencies` step now checks `node_modules/.bin/vite` exists before skipping install. Cache is still used on clean hits; `npm ci` fires automatically when the binary is missing.
+- **Next Steps**: None — build passes. Long term, consider switching to `actions/setup-node` built-in npm cache (`cache: npm`) which caches the npm tarball store rather than node_modules, avoiding hoisting issues entirely.
+
 ## [2026-06-07] maxp-ai-service — Backend Integration and Production Deployment [CONNECTED]
 - **Objective**: Get the Python ai-service running on the production server and verify that backend2 routes customer messages to it correctly via shared-token auth.
 - **Accomplishments**:
