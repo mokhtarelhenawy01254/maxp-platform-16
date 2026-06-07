@@ -1,3 +1,12 @@
+## [2026-06-07] CI/CD Pipeline — npm Workspace-Aware Frontend Dependency Guard
+- **Details**: Fixed a fragile assumption in the GitHub Actions frontend build step caused by npm workspace hoisting interacting with the cache-skip pattern.
+- **Architecture**:
+  - **Problem**: The root `package.json` defines `workspaces: ["apps/backend", "apps/frontend"]`. npm hoists devDependencies (like `vite`) to the root `node_modules/.bin/`, not to `apps/frontend/node_modules/.bin/`. The CI cached only `apps/frontend/node_modules` and skipped the install step on cache hit, leaving vite absent.
+  - **Guard Pattern**: The `Install Frontend Dependencies` step now always checks `[ ! -f node_modules/.bin/vite ]` before deciding whether to run `npm ci`. This makes the step workspace-aware: it triggers a reinstall whenever the vite binary is missing, regardless of the cache-hit flag. Fast path (cache hit + vite found) still skips the install. Slow path (cache miss or corrupt cache) still runs `npm ci` fully.
+  - **Why Not Just Remove the Cache?**: The cache still helps for most runs. The fix only adds a cheap file-existence check as a safety net, not a full reinstall on every run.
+- **Files**:
+  - `.github/workflows/deploy.yml`
+
 ## [2026-06-07] CI/CD Pipeline — Auto-Deploy ai-service via GitHub Actions (uv + PM2)
 - **Details**: Updated `.github/workflows/deploy.yml` to fully deploy the Python ai-service on every push to `main`, replacing the previous Docker Compose block that required Docker on the server.
 - **Architecture**:
