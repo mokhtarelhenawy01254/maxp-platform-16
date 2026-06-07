@@ -191,7 +191,17 @@ const finalizeSectionEntry = (
 const getFieldDisplayValue = (
   settings: SectionSettings,
   field: StorefrontSectionFieldDefinition,
-): string => getStorefrontSectionFieldDisplayValue(settings, field.key);
+  contentOverrides: ReturnType<typeof getStorefrontContentOverridesFromDesignTokens> = { home: { sections: {} } },
+  sectionType: string = "",
+): string => {
+  if (sectionType && isContentManagedField(sectionType, field.key)) {
+    const contentValue = contentOverrides?.home?.sections?.[sectionType]?.[field.key];
+    if (contentValue !== undefined && contentValue !== null && contentValue !== "") {
+      return getStorefrontSectionFieldDisplayValue({ [field.key]: contentValue } as SectionSettings, field.key);
+    }
+  }
+  return getStorefrontSectionFieldDisplayValue(settings, field.key);
+};
 
 const getHomeLibrarySections = () =>
   HOME_LIBRARY_SECTION_TYPES.map((sectionType) => ({
@@ -975,7 +985,7 @@ const StorefrontVisualEditor: React.FC<StorefrontVisualEditorProps> = ({
                         {field.type === "textarea" ? (
                           <textarea
                             rows={field.key === "subtitle" ? 3 : 4}
-                            value={getFieldDisplayValue(selectedSectionSettings, field)}
+                            value={getFieldDisplayValue(selectedSectionSettings, field, contentOverrides, selectedSectionType)}
                             onChange={(event) =>
                               handleSectionFieldChange(field, event.target.value)
                             }
@@ -984,7 +994,7 @@ const StorefrontVisualEditor: React.FC<StorefrontVisualEditorProps> = ({
                           />
                         ) : field.type === "select" ? (
                           <select
-                            value={getFieldDisplayValue(selectedSectionSettings, field)}
+                            value={getFieldDisplayValue(selectedSectionSettings, field, contentOverrides, selectedSectionType)}
                             onChange={(event) =>
                               handleSectionFieldChange(field, event.target.value)
                             }
@@ -1000,7 +1010,7 @@ const StorefrontVisualEditor: React.FC<StorefrontVisualEditorProps> = ({
                         ) : (
                           <input
                             type={field.type === "number" ? "number" : field.type === "url" ? "url" : "text"}
-                            value={getFieldDisplayValue(selectedSectionSettings, field)}
+                            value={getFieldDisplayValue(selectedSectionSettings, field, contentOverrides, selectedSectionType)}
                             onChange={(event) =>
                               handleSectionFieldChange(field, event.target.value)
                             }

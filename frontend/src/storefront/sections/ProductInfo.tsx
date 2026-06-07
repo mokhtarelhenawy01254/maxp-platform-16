@@ -1160,12 +1160,30 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   const shouldRenderInlinePdpQuickOrder =
     forceInlineKhemetQuickOrder ||
     (hasEmbeddedPdpCheckout && supportsInlineQuickOrderPlacement);
+  const hasQuantityOffersInMetadata = React.useMemo(() => {
+    if (!product?.metadata) return false;
+    const metadata = parseProductMetadata(product.metadata);
+    const offers = metadata.quantityOffers || metadata.multiPackOffers;
+    if (Array.isArray(offers) && offers.length > 0) return true;
+    return getProductVolumeDiscounts(product).some((d) => d.isActive !== false);
+  }, [product?.metadata, product?.productVariants]);
+
   const shouldRenderInlineQuantityOffers =
-    Boolean(embeddedQuantityOffersSection) &&
-    embeddedQuantityOffersSettings?.placement === 'inline-buybox';
+    (Boolean(embeddedQuantityOffersSection) &&
+      embeddedQuantityOffersSettings?.placement === 'inline-buybox') ||
+    (hasQuantityOffersInMetadata &&
+      isStorefrontMarketplaceAppEnabled(storefrontSettings, 'quantity-offers-pro') &&
+      getStorefrontMarketplaceAppSettings(storefrontSettings, 'quantity-offers-pro')['renderOnProductPage'] !== false);
+
+  const effectiveQuantityOffersSettings =
+    embeddedQuantityOffersSettings ||
+    (hasQuantityOffersInMetadata
+      ? { placement: 'inline-buybox', decisionMode: 'supporting' }
+      : undefined);
+
   const isPrimaryQuantityOffersDecision =
     shouldRenderInlineQuantityOffers &&
-    embeddedQuantityOffersSettings?.decisionMode === 'primary';
+    effectiveQuantityOffersSettings?.decisionMode === 'primary';
 
   const homePath = buildStorefrontPath(location.pathname, '/', location.search);
   const shopPath = buildStorefrontPath(location.pathname, '/shop', location.search);
@@ -3221,8 +3239,8 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     placement: pdpQuickOrderPlacement,
     surfaceMode: pdpQuickOrderSurfaceMode,
     decisionMode:
-      typeof embeddedQuantityOffersSettings?.decisionMode === 'string'
-        ? embeddedQuantityOffersSettings.decisionMode
+      typeof effectiveQuantityOffersSettings?.decisionMode === 'string'
+        ? effectiveQuantityOffersSettings.decisionMode
         : undefined,
   };
   const inlinePdpQuickOrder = shouldRenderInlinePdpQuickOrder ? (
@@ -3259,7 +3277,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   const inlineQuantityOffers = shouldRenderInlineQuantityOffers ? (
     <QuantityOffersSection
       section={embeddedQuantityOffersSectionConfig}
-      settings={embeddedQuantityOffersSettings}
+      settings={effectiveQuantityOffersSettings}
     />
   ) : null;
   const externalPurchaseLabel =

@@ -99,7 +99,6 @@ export const STOREFRONT_CONVERSION_SECTION_IDS = [
   "back-in-stock",
   "trusted-badges",
   "bulk-savings",
-  "quantity-offers",
 ] as const;
 
 export const STOREFRONT_QUANTITY_OFFERS_VARIANTS = [

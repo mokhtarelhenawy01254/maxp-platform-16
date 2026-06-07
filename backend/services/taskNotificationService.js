@@ -2,6 +2,7 @@ const { getSharedPrismaClient } = require('./sharedDatabase');
 const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
 const { queueTaskWebhook } = require('./taskWebhookService');
 const { t } = require('./aiAgent/i18n');
+const { getNotificationSettingsForUser } = require('./notificationPreferencesService');
 
 function getTaskStatusLabel(status) {
     const key = String(status || '').toUpperCase();
@@ -169,28 +170,54 @@ const taskNotificationService = {
             let whatsappResult = null;
 
             if (whatsappData) {
-                // Fetch recipient user details (phone)
+                // Check user notification preferences
                 const recipient = await prisma.user.findUnique({
                     where: { id: userId },
-                    select: { phone: true, firstName: true, lastName: true, email: true }
+                    select: { phone: true, firstName: true, lastName: true, email: true, timezone: true }
                 });
 
                 if (recipient && recipient.phone) {
-                    whatsappResult = await WhatsAppNotificationService.sendNotification({
+                    // Get user notification settings
+                    const settings = await getNotificationSettingsForUser({
+                        userId,
                         companyId,
-                        recipientPhone: recipient.phone,
-                        recipientName: buildUserName(recipient),
-                        recipientType: 'EMPLOYEE',
-                        category: 'TASKS',
-                        eventType: whatsappData.templateName || whatsappData.eventType || 'TASK_UPDATED',
-                        variables: {
-                            userName: recipient.firstName || buildUserName(recipient),
-                            taskTitle: whatsappData.taskTitle || 'مهمة جديدة',
-                            ...whatsappData.variables
-                        },
-                        contentOverride: whatsappData.contentOverride,
-                        buttons: whatsappData.buttons || null
+                        email: recipient.email,
+                        timezone: recipient.timezone || 'Africa/Cairo'
                     });
+
+                    // Check if WhatsApp is enabled for this notification type
+                    const typeSettings = settings.typeSettings?.[type];
+                    const whatsappEnabled = settings.globalEnabled &&
+                        settings.channels?.whatsapp?.enabled !== false &&
+                        typeSettings?.enabled !== false &&
+                        Array.isArray(typeSettings.channels) &&
+                        typeSettings.channels.includes('whatsapp');
+
+                    // Check quiet hours
+                    const { isQuietHoursActive } = require('./notificationPreferencesService');
+                    const inQuietHours = isQuietHoursActive(settings);
+
+                    if (whatsappEnabled && !inQuietHours) {
+                        whatsappResult = await WhatsAppNotificationService.sendNotification({
+                            companyId,
+                            recipientPhone: recipient.phone,
+                            recipientName: buildUserName(recipient),
+                            recipientType: 'EMPLOYEE',
+                            category: 'TASKS',
+                            eventType: whatsappData.templateName || whatsappData.eventType || 'TASK_UPDATED',
+                            variables: {
+                                userName: recipient.firstName || buildUserName(recipient),
+                                taskTitle: whatsappData.taskTitle || 'مهمة جديدة',
+                                ...whatsappData.variables
+                            },
+                            contentOverride: whatsappData.contentOverride,
+                            buttons: whatsappData.buttons || null
+                        });
+                    } else if (inQuietHours) {
+                        console.log(`📵 [TASK-NOTIFICATION] Skipping WhatsApp for user ${userId} - quiet hours active`);
+                    } else {
+                        console.log(`📵 [TASK-NOTIFICATION] Skipping WhatsApp for user ${userId} - disabled in preferences`);
+                    }
                 }
             }
 

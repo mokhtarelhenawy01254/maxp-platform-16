@@ -872,6 +872,18 @@ try {
   );
 }
 
+// Start Task Execution Check Cron Service (periodic check on IN_PROGRESS tasks)
+try {
+  const { startTaskExecutionCheckScheduler } = require("./cron/taskExecutionCheckCron");
+  startTaskExecutionCheckScheduler();
+  console.log("✅ [TASK-EXECUTION-CHECK-CRON] Task execution check service started");
+} catch (error) {
+  console.error(
+    "❌ [TASK-EXECUTION-CHECK-CRON] Failed to start task execution check service:",
+    error,
+  );
+}
+
 // Start AI Provider Health Check Service (auto-disable dead keys)
 try {
   const providerHealthCheckService = require("./services/aiAgent/providerHealthCheckService");

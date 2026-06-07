@@ -1186,25 +1186,6 @@ export const ProductNewFinal: React.FC = () => {
       } catch {
         // Ignore if the browser does not allow mutating opener.
       }
-      previewWindow.document.title = "جاري التحضير...";
-      previewWindow.document.write(`
-        <html>
-          <head>
-            <meta charset="utf-8" />
-            <style>
-              body { display: flex; justify-content: center; align-items: center; height: 100vh; background: #f9fafb; font-family: system-ui, -apple-system, sans-serif; margin: 0; flex-direction: column; }
-              .spinner { width: 40px; height: 40px; border: 4px solid #e5e7eb; border-top-color: #4f46e5; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
-              @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-              .text { color: #4b5563; font-weight: 500; font-size: 16px; }
-            </style>
-          </head>
-          <body>
-            <div class="spinner"></div>
-            <div class="text">جاري حفظ التعديلات وتجهيز المعاينة...</div>
-          </body>
-        </html>
-      `);
-      previewWindow.document.close();
     }
 
     const savedProduct = await persistProduct({

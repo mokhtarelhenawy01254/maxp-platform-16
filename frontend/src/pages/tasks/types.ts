@@ -176,3 +176,59 @@ export interface WhatsAppSession {
   name: string;
   status: string;
 }
+
+export interface NotificationChannelSettings {
+  enabled: boolean;
+  sound?: boolean;
+  vibration?: boolean;
+  badge?: boolean;
+  address?: string;
+  frequency?: string;
+  format?: string;
+  phoneNumber?: string;
+  showBadge?: boolean;
+  autoMarkRead?: boolean;
+  showPreview?: boolean;
+  requireInteraction?: boolean;
+}
+
+export interface NotificationTypeSettings {
+  enabled: boolean;
+  channels: string[];
+  priority: string;
+  customSound: string | null;
+}
+
+export interface QuietHoursSettings {
+  enabled: boolean;
+  startTime: string;
+  endTime: string;
+  timezone: string;
+}
+
+export interface NotificationSettings {
+  userId: string;
+  companyId: string;
+  globalEnabled: boolean;
+  quietHours: QuietHoursSettings;
+  channels: {
+    push: NotificationChannelSettings;
+    email: NotificationChannelSettings;
+    sms: NotificationChannelSettings;
+    inApp: NotificationChannelSettings;
+    browser: NotificationChannelSettings;
+    whatsapp: NotificationChannelSettings;
+  };
+  typeSettings: Record<string, NotificationTypeSettings>;
+}
+
+export interface NotificationType {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  priority: string;
+  defaultEnabled: boolean;
+  channels: string[];
+  canDisable: boolean;
+}

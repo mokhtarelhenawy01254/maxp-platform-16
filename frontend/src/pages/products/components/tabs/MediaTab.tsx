@@ -139,12 +139,14 @@ export const MediaTab: React.FC<MediaTabProps> = ({
   );
 
   const handleRemoveImage = (urlToRemove: string) => {
+    const remainingImages = uploadedImages.filter((url) => url !== urlToRemove);
+
     setFormData((prev) => {
       if (prev.mainImage !== urlToRemove) {
         return prev;
       }
 
-      const nextMainImage = uploadedImages.find((url) => url !== urlToRemove) || "";
+      const nextMainImage = remainingImages[0] || "";
       return {
         ...prev,
         mainImage: nextMainImage,
