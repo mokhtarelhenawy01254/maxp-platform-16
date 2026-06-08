@@ -237,10 +237,10 @@ const bulkOrderService = {
     if (format === 'excel') {
       const wb = XLSX.utils.book_new();
       const wsData = [
-        ['رقم العملية', 'اسم العملية', 'عدد الطلبات', 'تاريخ الإنشاء', 'الحالة', 'نسبة الإنجاز', 'المنشئ'],
+        ['Operation Number', 'Name', 'Total Orders', 'Created At', 'Status', 'Progress', 'Created By'],
         [record.operationNumber, record.name, record.totalOrders, record.createdAt, record.status, `${record.progress}%`, record.createdByName],
         [],
-        ['رقم الطلب', 'اسم العميل', 'الهاتف', 'المنتج', 'الكمية', 'السعر', 'الإجمالي', 'الحالة'],
+        ['Order Number', 'Customer Name', 'Phone', 'Product', 'Quantity', 'Price', 'Total', 'Status'],
         ...record.items.map((item) => [
           item.orderNumber, item.customerName, item.customerPhone, item.productName,
           item.quantity, Number(item.price), Number(item.total), item.status,
@@ -296,12 +296,12 @@ const bulkOrderService = {
     }
     return records.map((r, i) => ({
       row: i + 2,
-      orderNumber: String(r['رقم الطلب'] || r['orderNumber'] || r['Order Number'] || '').trim(),
-      customerName: String(r['اسم العميل'] || r['customerName'] || r['Customer Name'] || '').trim(),
-      customerPhone: String(r['الهاتف'] || r['customerPhone'] || r['Phone'] || r['phone'] || '').trim(),
-      productName: String(r['المنتج'] || r['productName'] || r['Product Name'] || r['product'] || '').trim(),
-      quantity: parseInt(r['الكمية'] || r['quantity'] || r['Quantity'] || '1', 10) || 1,
-      price: parseFloat(r['السعر'] || r['price'] || r['Price'] || '0') || 0,
+      orderNumber: String(r['orderNumber'] || r['Order Number'] || r['order_number'] || '').trim(),
+      customerName: String(r['customerName'] || r['Customer Name'] || r['customer_name'] || '').trim(),
+      customerPhone: String(r['customerPhone'] || r['Phone'] || r['phone'] || r['customer_phone'] || '').trim(),
+      productName: String(r['productName'] || r['Product Name'] || r['product_name'] || r['product'] || '').trim(),
+      quantity: parseInt(r['quantity'] || r['Quantity'] || '1', 10) || 1,
+      price: parseFloat(r['price'] || r['Price'] || '0') || 0,
     }));
   },
 
