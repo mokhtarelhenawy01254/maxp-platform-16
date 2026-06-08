@@ -510,6 +510,7 @@ export const getSidebarConfig = (
                 { to: '/tickets', icon: TicketIcon, label: t('sidebar.turboTickets') },
                 { to: '/shipping-companies', icon: TruckIcon, label: t('sidebar.shippingCompanies') },
                 { to: '/returns', icon: CheckCircleIcon, label: t('sidebar.returnReviews') },
+                { to: '/orders/bulk', icon: QueueListIcon, label: t('sidebar.bulkOrders', 'Bulk Orders') },
                 { to: '/orders/analytics', icon: ChartBarIcon, label: t('sidebar.orderAnalytics') },
                 { to: '/returns/settings', icon: CogIcon, label: t('sidebar.returnSettings') },
                 { to: '/platform-integrations', icon: BoltIcon, label: t('sidebar.platformIntegrations') },

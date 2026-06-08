@@ -1,3 +1,28 @@
+## [2026-06-08] Bulk Orders — Full CRUD Module with RBAC, Import/Export, Audit Logging
+- **Details**: Added a complete Bulk Orders management tab under the Orders section, enabling merchants to create, edit, view, duplicate, import (Excel/CSV), and export (Excel/JSON) bulk orders with status tracking and RBAC.
+- **Architecture**:
+  - **Prisma Model**: Created `BulkOrder` and `BulkOrderItem` models with `BulkOrderStatus` enum (`DRAFT`, `PENDING`, `PROCESSING`, `COMPLETED`, `CANCELLED`). Bulk orders store `customerData`, `productData`, and `fileAttachments` as JSON strings. Items track `productSku`, `productName`, `quantity`, `unitPrice`, `totalPrice`, and optional `notes`.
+  - **Backend Service** (`bulkOrderService.js`): Implements CRUD operations, duplication, Excel/JSON export, Excel/CSV import with preview, execution (status transitions), and full audit logging for every action.
+  - **RBAC**: Added 5 permissions (`bulkOrders.view/create/edit/delete/export`) via `rbacMiddleware.js`. All endpoints guarded.
+  - **Backend Routes** (`bulkOrders.js`): RESTful API at `/api/v1/bulk-orders` with multer upload support, pagination, filtering by status, and search by order name.
+  - **Frontend Page** (`BulkOrders.tsx`): Full data table with instant search, status filter, sortable columns, pagination, multi-select, bulk delete, and delete confirmation dialog.
+  - **Modals**: `BulkOrderModal.tsx` for create/edit with Excel/CSV upload preview; `BulkOrderView.tsx` for order details with stats summary and items table.
+  - **i18n**: Added 72 translation keys across Arabic and English orders.json. Sidebar link under orders section with `QueueListIcon`.
+  - **Routing**: Lazy-loaded route at `/orders/bulk` in `App.tsx`. Sidebar entry in `sidebar.ts`.
+- **Files**:
+  - `apps/backend/prisma/schema/bulk_orders.prisma`
+  - `apps/backend/services/bulkOrderService.js`
+  - `apps/backend/routes/bulkOrders.js`
+  - `apps/backend/middleware/rbacMiddleware.js`
+  - `apps/backend/server.js`
+  - `apps/frontend/src/pages/orders/BulkOrders.tsx`
+  - `apps/frontend/src/pages/orders/components/BulkOrderModal.tsx`
+  - `apps/frontend/src/pages/orders/components/BulkOrderView.tsx`
+  - `apps/frontend/src/App.tsx`
+  - `apps/frontend/src/config/sidebar.ts`
+  - `apps/frontend/src/locales/{ar,en}/sections/orders.json`
+  - `apps/frontend/src/locales/{ar,en}/sections/sidebar.json`
+
 ## [2026-06-08] AI Service — Agent Template Seeding Path Discovery Fix
 - **Details**: Fixed path discovery bug in template loader so that templates seed successfully from `apps/backend/agents`. Run database migration/repair scripts to seed templates and link existing agents in `ai.agents` to their correct template slug, resolving 400 Bad Request errors on reconciliation.
 - **Architecture**:

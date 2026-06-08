@@ -576,6 +576,7 @@ const Tasks = React.lazy(() => import("./pages/tasks/Tasks"));
 const TasksDashboard = React.lazy(() => import("./pages/tasks/Dashboard"));
 const KanbanBoard = React.lazy(() => import("./pages/tasks/KanbanBoard"));
 const TurboRecords = React.lazy(() => import("./pages/orders/TurboRecords"));
+const BulkOrders = React.lazy(() => import("./pages/orders/BulkOrders"));
 const TaskDetails = React.lazy(() => import("./pages/tasks/TaskDetails"));
 const TaskNotifications = React.lazy(
   () => import("./pages/tasks/TaskNotifications"),
@@ -3612,6 +3613,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <TurboRecords />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/bulk"
+                  element={
+                    <Layout>
+                      <BulkOrders />
                     </Layout>
                   }
                 />
