@@ -3469,3 +3469,4 @@
 - **Fix**: Added a guard — if `selectedVariantImages.length > 0`, return only those variant images. Only fall back to `product?.images` when the selected variant has no images of its own.
 - **Affected Files**:
   - `apps/frontend/src/storefront/sections/ProductGallery.tsx`
+
