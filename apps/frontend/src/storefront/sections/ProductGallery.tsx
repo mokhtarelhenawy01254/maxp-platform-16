@@ -2193,23 +2193,19 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ section }) => {
     );
   }, [product?.id, product?.productVariants, selection]);
   const images = useMemo(() => {
-    // Only treat images[] and galleryImages[] as a proper variant gallery.
-    // imageUrl / image are variant thumbnails (shown on the swatch), not gallery
-    // replacements — they must NOT suppress the product-level image list.
-    const variantGalleryImages = selectedVariant
+    const selectedVariantImages = selectedVariant
       ? buildStorefrontImageCandidates(
           (selectedVariant as { images?: unknown }).images,
           (selectedVariant as { galleryImages?: unknown }).galleryImages,
+          selectedVariant.imageUrl,
+          selectedVariant.image,
         )
       : [];
 
-    // If the variant has a dedicated gallery, show only those images.
-    if (variantGalleryImages.length > 0) {
-      return variantGalleryImages;
-    }
-
-    // Otherwise fall back to the product-level images.
-    return buildStorefrontImageCandidates(product?.images || []);
+    return buildStorefrontImageCandidates(
+      selectedVariantImages,
+      product?.images || [],
+    );
   }, [product?.images, selectedVariant]);
 
   const currency =
