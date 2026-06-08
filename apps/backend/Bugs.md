@@ -2403,8 +2403,7 @@
 - **Verification**: TypeScript transpilation check passed.
 
 ## [2026-05-13] Merge Conflict Resolution & Code Cleanup
-- **Problem**: Multiple files had unresolved Git merge conflict markers (`<<<<<<< HEAD`, `=======`, `>>>>>>>`) causing build failure in CI.
-- **Affected Files**: `CompanyAssistantSettings.tsx` had 20 unresolved conflict blocks.
+- **Problem**: Multiple files had unresolved Git merge conflict markers (`- **Affected Files**: `CompanyAssistantSettings.tsx` had 20 unresolved conflict blocks.
 - **Fix**: Automated resolution keeping HEAD (ours) side across all conflicts. Re-ran after initial CI build failure.
 - **Verification**: All source files confirmed clean (zero conflict markers remaining).
 - **Follow-up**: `companyAssistantService.ts` had an additional 8 conflict blocks resolved in a subsequent fix commit.
@@ -3342,6 +3341,7 @@
 - **Affected Files**: `frontend/src/pages/settings/InstagramSettings.tsx`
 
 
+<<<<<<< Updated upstream
 ---
 
 ## [2026-06-07] ai-service — Pipeline Returns Empty Reply for All Intents [FIXED]
@@ -3444,3 +3444,28 @@
 - **Affected Files**:
   - `apps/frontend/src/config/sidebar.ts`
   - `apps/frontend/src/pages/settings/SidebarSettings.tsx`
+
+---
+
+## [2026-06-07] Storefront — Short Shareable Preview Links via Nginx [READY]
+- **Feature**: Added customer-facing short URLs for the admin "Preview" button that merchants can paste into WhatsApp/Facebook without the long `companyId`, `productPreview`, `previewSource`, and `previewProductId` query string.
+- **Details**:
+  1. Added two reusable snippets under `/etc/nginx/snippets/`: `shortlink-preview.conf` (apex /p/<slug>) and `shortlink-preview-flora.conf` (per-subdomain /product/<slug>). Each is a static `return 301` to the canonical preview URL, with a `^~ /prefix/` fallback that returns 302 to the homepage for unknown slugs.
+  2. Wired both snippets into the wildcard `*.maxp.online` and the `maxp.online` apex server blocks in `nginx_configs/maxp.online.conf` immediately after the security headers so the rules win over the catch-all `location /` proxy.
+  3. Verified with `nginx -t` (syntax ok) and `nginx -s reload`; tested end-to-end via `curl -sI` from the server itself.
+- **Live URLs** (301 permanent, share as-is):
+  - `https://maxp.online/p/nike-kotchii-offer` and `/p/nike-kotchii`
+  - `https://flora.maxp.online/product/nike-kotchii-offer`
+- **Affected Files**:
+  - `nginx_configs/maxp.online.conf` (added `include` directives in both server blocks)
+  - `apps/backend/Bugs.md`, `Structure.md`, `TEAM_SYNC.md` (this entry)
+- **Operational Note**: Nginx configs in the repo are now the source of truth — `nginx_configs/maxp.online.conf` must be committed alongside any new short-link snippet so CI's Nginx sync step (`deploy.yml` → "Package Nginx configs") ships them on the next deploy.
+
+---
+
+## [2026-06-08] Storefront — Product Gallery Showed Extra Images [FIXED]
+- **Bug/Issue**: The product gallery on the storefront showed all product-level images in addition to the variant-specific images, even when the merchant had configured specific images per variant.
+- **Root Cause**: `ProductGallery.tsx` `useMemo` for `images` always called `buildStorefrontImageCandidates(selectedVariantImages, product?.images || [])`, combining both arrays regardless of whether the variant already had its own images.
+- **Fix**: Added a guard — if `selectedVariantImages.length > 0`, return only those variant images. Only fall back to `product?.images` when the selected variant has no images of its own.
+- **Affected Files**:
+  - `apps/frontend/src/storefront/sections/ProductGallery.tsx`

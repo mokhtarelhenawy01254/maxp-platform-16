@@ -13158,3 +13158,39 @@ POST /chat {"message": "مرحبا"}
 - **`agent_framework.Agent`** مش بيعمل expose لـ `instructions` كـ attribute مباشر — بتلاقيها في `agent.default_options["instructions"]`
 - الـ OpenRouter key موجود في الـ DB بس رصيده خلص (402) — Groq هو الـ active provider
 - في خلط صغير في ردود اللغة (أحيانًا عربي+صيني) — محتاج system prompt أحسن في `ceo.py`
+
+---
+
+## [2026-06-07] Storefront — Short Shareable Preview Links via Nginx [READY]
+- **Objective**: Give merchants a clean short URL to send in WhatsApp/Facebook for the admin "Preview" button, and remove the long `companyId`, `productPreview`, `previewSource`, `previewProductId` query string from shared links.
+- **Accomplishments**:
+  - **Nginx Snippets**: Authored two reusable files in `/etc/nginx/snippets/`:
+    - `shortlink-preview.conf` exposes `https://maxp.online/p/<slug>` (apex).
+    - `shortlink-preview-flora.conf` exposes `https://flora.maxp.online/product/<slug>` (per-subdomain).
+    - Each snippet combines a single `location =` 301 redirect for the known slug with a `^~ /<prefix>/` 302 fallback to the homepage for unknown slugs.
+  - **Server Wiring**: Added `include` directives for both snippets inside the `*.maxp.online` wildcard block and the `maxp.online` apex block of `nginx_configs/maxp.online.conf`, immediately after the security headers so the static redirects win over the catch-all proxy.
+  - **Validation**: Ran `nginx -t` (syntax ok) and `nginx -s reload` on the production box; confirmed `curl -sI` returns 301 to the canonical preview URL and the redirect chain resolves to the storefront HTML rendered by the backend.
+- **Live URLs** (301 permanent, safe to paste anywhere):
+  - `https://maxp.online/p/nike-kotchii-offer` (and `/p/nike-kotchii` alias)
+  - `https://flora.maxp.online/product/nike-kotchii-offer`
+- **Verification**:
+  - `curl -sI https://maxp.online/p/nike-kotchii-offer` → `301` + `location: https://maxp.online/store/product/nike-kotchii-offer?companyId=…`.
+  - `curl -sIL https://flora.maxp.online/product/nike-kotchii-offer` → `301` → `200` storefront HTML.
+  - `curl -sI https://maxp.online/` and `https://flora.maxp.online/` still return `200` (apex and wildcard unaffected).
+  - `nginx -t` reports the config as `syntax is ok / test is successful` after each edit.
+- **Affected Files**:
+  - `nginx_configs/maxp.online.conf`
+  - `/etc/nginx/snippets/shortlink-preview.conf` (new)
+  - `/etc/nginx/snippets/shortlink-preview-flora.conf` (new)
+  - `apps/backend/Bugs.md`, `apps/backend/Structure.md`, `apps/backend/TEAM_SYNC.md`
+- **Operational Note**: The repo's `nginx_configs/maxp.online.conf` is now the source of truth — any future short link must be added as a new `location =` block inside one of the snippet files and committed in the same change so CI's "Package Nginx configs" step ships them on the next deploy.
+
+---
+
+## [2026-06-08] Storefront - Product Gallery Image Isolation [FIXED]
+- **Objective**: When a merchant assigns specific images to a product variant, the storefront gallery should display only those images, not the full product-level image list.
+- **Root Cause**: ProductGallery.tsx images useMemo always called buildStorefrontImageCandidates(selectedVariantImages, product.images), merging both arrays unconditionally.
+- **Fix**: Added an early-return guard. If selectedVariantImages.length > 0, return only the variant images. Only fall back to product.images when the selected variant has no images at all.
+- **Verification**: Tested via product preview URL with a variant that has specific images assigned. Gallery now shows only variant-configured images; no extra product images appear.
+- **Affected Files**:
+  - apps/frontend/src/storefront/sections/ProductGallery.tsx

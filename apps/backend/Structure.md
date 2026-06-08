@@ -2475,3 +2475,43 @@ Manages AI agent chat sessions via Prisma (`aIChatSession`, `aIChatMessage` mode
 - **Files**:
   - `apps/frontend/src/config/sidebar.ts`
   - `apps/frontend/src/pages/settings/SidebarSettings.tsx`
+
+---
+
+- **Episodic Memory (`apps/ai-service/src/memory/episodic_memory.py`)**: Manages the persistence of historical dialogue turns. It uses vector embeddings to perform semantic search across previous chat episodes and falls back automatically to a local PL/pgSQL dot-product query when `pgvector` is unavailable.
+- **Working Memory (`apps/ai-service/src/memory/working_memory.py`)**: Stores volatile session states, active goals, and reasoning variables.
+- **Embedding Cache (`apps/ai-service/src/memory/embedding_cache.py`)**: Caches calculated vector embeddings to reduce model latency and minimize external LLM token consumption.
+- **Backend Cache Coordinator (`backend/services/aiAgent/embeddingCacheService.js`)**: Interfaces with the AI service embedding cache and enforces timeout safety.
+- **Merchant Chat Routing (`apps/ai-service/src/api/chat.py`)**: Standardizes the chat gateway to support UUID thread lookups and creation, avoiding hardcoded string keys.
+- **SQL State Retrieval (`apps/ai-service/src/services/run_state_manager.py`)**: Restricts checkpointer lookups to `.limit(1)` to fetch only the active run state, eliminating DB overhead.
+
+## [2026-06-07] Nginx — Reusable Shortlink Snippets for Storefront Preview Links
+- **Details**: Introduced a small nginx snippet convention so customer-facing short URLs for admin product previews can be added without redeploying the backend or rebuilding the frontend.
+- **Architecture**:
+  - **Snippets** (`/etc/nginx/snippets/`):
+    - `shortlink-preview.conf` — apex /p/<slug> 301 redirects plus a `^~ /p/` 302 fallback to the homepage.
+    - `shortlink-preview-flora.conf` — per-subdomain /product/<slug> 301 redirect with a `^~ /product/` 302 fallback.
+  - **Server blocks** (`nginx_configs/maxp.online.conf`):
+    - Both `*.maxp.online` (wildcard) and `maxp.online` (apex) include the snippets right after the security headers. Because `return 301/302` short-circuits request processing, the rules win over the catch-all `location /` that proxies to the backend.
+  - **Deployment**:
+    - The CI `deploy.yml` "Package Nginx configs" step ships `nginx_configs/*.conf` as `nginx-configs.tar.gz` to `/var/www/backend2` and reloads nginx only if the new config passes `nginx -t`.
+    - On the production box the snippets live in `/etc/nginx/snippets/`; both file paths and the include directives must be committed in the same change to keep the repo as the source of truth.
+- **New convention**:
+  - Per-product short link = one `location =` block returning 301 to the canonical `/store/product/<slug>?companyId=…&productPreview=1&previewSource=admin&previewProductId=…` URL.
+  - Per-catch-all prefix = one `location ^~ /<prefix>/` block returning 302 to `/` to avoid leaking 404s.
+- **Affected Files**:
+  - `nginx_configs/maxp.online.conf` (added two `include` lines in each of the two server blocks)
+  - `/etc/nginx/snippets/shortlink-preview.conf` (new, in-repo mirror needed for future CI deploys)
+  - `/etc/nginx/snippets/shortlink-preview-flora.conf` (new, in-repo mirror needed)
+
+---
+
+## [2026-06-08] Storefront — Product Gallery Image Isolation
+- **Details**: Product gallery now shows only variant-specific images when a variant has its own images configured, preventing product-level images from bleeding into variant views.
+- **Architecture**:
+  - **Before**: `ProductGallery.tsx` `images` memo always merged `selectedVariantImages` + `product.images`, so both arrays were displayed together.
+  - **After**: If `selectedVariantImages.length > 0`, return only those. Fall back to `product.images` only when the variant has no images.
+- **Files**:
+  - `apps/frontend/src/storefront/sections/ProductGallery.tsx`
+
+

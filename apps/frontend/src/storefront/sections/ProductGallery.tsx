@@ -2202,10 +2202,13 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ section }) => {
         )
       : [];
 
-    return buildStorefrontImageCandidates(
-      selectedVariantImages,
-      product?.images || [],
-    );
+    // If the selected variant has its own images, show only those images.
+    // Otherwise, fall back to the product-level images.
+    if (selectedVariantImages.length > 0) {
+      return selectedVariantImages;
+    }
+
+    return buildStorefrontImageCandidates(product?.images || []);
   }, [product?.images, selectedVariant]);
   const currency =
     storefrontSettings?.storefront?.settings?.currency ||
