@@ -1,3 +1,47 @@
+## [2026-06-08] AI Service — `product.search` Tool Returns Empty Results for "List All" and Wrong Query for Specific Search
+- **Bug/Issue**:
+  1. When a customer asked to see all products (e.g., "عايز اشوف كل المنتجات"), the `product.search` tool returned `count: 0, results: []`.
+  2. When a customer asked about a specific product by name (e.g., "عايزين نعرف سعر Swan Sneaker"), the tool searched with the full raw Arabic message instead of the extracted product name, returning no results.
+  3. When `product.search` was called by the SDK agent with empty input `{}`, `company_id` was `None`, causing the search to hit the backend with `companyId=` (empty string) and match nothing.
+- **Cause**:
+  1. In `route_to_tools.py → _populate_tool_params`, the `product_search` block always fell through to set `params["query"] = ctx.message` (the raw user message) when no `query`/`productName` slot was found — even when `slots.listAll = true` was present. The classifier correctly extracted `slots: {listAll: true}` but the router ignored it.
+  2. The intent classifier used slot key `requestedProduct` for specific product searches, but `_first_slot()` only looked for `query`, `productName`, `product_name`, `product`, `sku` — missing `requestedProduct`. This caused the fallback to `ctx.message`.
+  3. `ProductSearchInput.company_id` defaults to `None` in the Pydantic model. However, `ToolGateway.execute` in `gateway.py` always injects `model_data["company_id"] = company_id` from the SDK context before constructing the tool input, so this was not the actual root cause. The real issue was #1 above.
+- **Fix**:
+  1. Updated `route_to_tools.py → _populate_tool_params` to detect `slots.listAll` first: when truthy, sets `params["list_all"] = True` and `params.setdefault("limit", 20)` instead of falling through to the query fallback.
+  2. Added `"requestedProduct"` to the `_first_slot` key list in the `product_search` branch so the extracted product name is used as the query instead of `ctx.message`.
+- **Affected Files**:
+  - `apps/ai-service/src/pipeline/stages/route_to_tools.py`
+
+## [2026-06-08] AI Service — `product.search` Tool Payload Too Large for LLM Synthesis (413 / 429)
+- **Bug/Issue**: After fetching all products with `list_all=True`, the LLM synthesis step (Groq `llama-3.3-70b-versatile`) failed with HTTP 413 "Payload Too Large" because the full product objects (including all fields, images, variants) exceeded the 12k TPM limit.
+- **Cause**: `registry.py → product_search` returned the full mapped product objects for all 50+ products (each with images array, comparePrice, categoryName, featured flag, etc.), totalling ~19k tokens when combined with the agent system prompt.
+- **Fix**: When `list_all=True`, slim each product to only `{name, price, sku, status}` before returning. Also reduced the default `list_all` limit from 50 to 20 in `route_to_tools.py`.
+- **Affected Files**:
+  - `apps/ai-service/src/tools/registry.py`
+  - `apps/ai-service/src/pipeline/stages/route_to_tools.py`
+
+## [2026-06-08] AI Service — `TOOL_NOT_AVAILABLE` for All Agents in AI Sandbox
+- **Bug/Issue**: Every tool call in the AI sandbox returned `TOOL_NOT_AVAILABLE`, even for tools explicitly listed in the agent's `allowedTools`.
+- **Cause**: In `agents.py → _load_chat_agent`, the agent config was merged using `{**raw_config, **request_config}`. The `raw_config` (from `public.company_agents` DB row) always contains `allowed_tools: []` (empty list, as a camelCase→snake_case mismatch). Since `**request_config` also had an empty `allowed_tools` key after dict spread, the Node.js-provided `allowedTools` (camelCase) was never promoted to `allowed_tools`. `ToolGateway` then saw `allowed_tools=[]` and blocked every tool.
+- **Fix**: After the merge, explicitly extract `req_tools = request_config.get("allowedTools") or request_config.get("allowed_tools")` and set `raw_config["allowed_tools"] = list(req_tools)` when present.
+- **Affected Files**:
+  - `apps/ai-service/src/api/admin/agents.py`
+
+## [2026-06-08] AI Service — Intent Classifier Blocks `product.search` When No `productName` Slot
+- **Bug/Issue**: When the intent was `products` but no specific product name was in the message (e.g., listing all products), `_missing_core_tool_slots` in `planner.py` required `productName` for `product_search`, returning `NEEDS_CLARIFICATION` and blocking the tool.
+- **Cause**: `_missing_core_tool_slots` incorrectly treated `product_search` identically to `inventory_check`, requiring a product identifier slot before allowing execution.
+- **Fix**: Removed `product_search` from `_missing_core_tool_slots`. Only `inventory_check` retains the slot guard (it genuinely cannot execute without a product identifier).
+- **Affected Files**:
+  - `apps/ai-service/src/intent/planner.py`
+
+## [2026-06-08] Node.js Backend — `AI_SERVICE_URL` CERT_HAS_EXPIRED in AI Sandbox Chat
+- **Bug/Issue**: `POST /api/v1/ai-sandbox/chat/stream` returned `run_error: CERT_HAS_EXPIRED` for all chat requests.
+- **Cause**: PM2 stored `AI_SERVICE_URL=https://ai.maxp-ai.pro` in its process environment from a previous `pm2 start`. Node.js `dotenv.config()` does NOT override existing env vars, so the `.env` file's correct `AI_SERVICE_URL=http://localhost:8000` was silently ignored. The TLS certificate for `ai.maxp-ai.pro` expired on 2026-03-06.
+- **Fix**: Added `AI_SERVICE_URL: 'http://localhost:8000'` explicitly to both `env` and `env_production` sections in `ecosystem.config.js`, then ran `pm2 reload ecosystem.config.js --update-env` on the server. PM2 env always wins over dotenv — always pin critical URLs in `ecosystem.config.js`.
+- **Affected Files**:
+  - `apps/backend/ecosystem.config.js`
+
 ## [2026-06-08] AI Service — Missing Embedding Column and Disabled Llama Model Config
 - **Bug/Issue**:
   1. The Python `ai-service` RAG semantic search crashed due to missing `embedding` column on the `ai.agentic_memory_fact` table in Windows local dev environments where the pgvector extension is not pre-installed.

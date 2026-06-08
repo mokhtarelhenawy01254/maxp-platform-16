@@ -187,6 +187,7 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
             }
 
     if request_config:
+        req_tools = request_config.get("allowedTools") or request_config.get("allowed_tools")
         raw_config = {
             **raw_config,
             **request_config,
@@ -199,6 +200,8 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
                 **dict(request_config.get("policies") or {}),
             },
         }
+        if req_tools:
+            raw_config["allowed_tools"] = list(req_tools)
     if not raw_config:
         raise HTTPException(status_code=404, detail=f"Agent not found: {body.agent_id}")
 

@@ -9,11 +9,13 @@ module.exports = {
             max_memory_restart: '2G',
             env: {
                 NODE_ENV: 'development',
-                PORT: 3007
+                PORT: 3007,
+                AI_SERVICE_URL: 'http://localhost:8000'
             },
             env_production: {
                 NODE_ENV: 'production',
                 PORT: 3007,
+                AI_SERVICE_URL: 'http://localhost:8000'
             },
             exp_backoff_restart_delay: 100,
             error_file: 'logs/err.log',

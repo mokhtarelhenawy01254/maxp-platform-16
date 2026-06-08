@@ -424,6 +424,7 @@ class SlotValues:
     exchangeReason: str | None = None
     refundReason: str | None = None
     complaintDetails: str | None = None
+    listAll: bool | None = None
 
 
 @dataclass
@@ -610,6 +611,7 @@ INTENT_CLASSIFICATION_SCHEMA = {
                 "exchangeReason",
                 "refundReason",
                 "complaintDetails",
+                "listAll",
             ],
             "properties": {
                 "productName": {"type": ["string", "null"]},
@@ -634,6 +636,7 @@ INTENT_CLASSIFICATION_SCHEMA = {
                 "exchangeReason": {"type": ["string", "null"]},
                 "refundReason": {"type": ["string", "null"]},
                 "complaintDetails": {"type": ["string", "null"]},
+                "listAll": {"type": ["boolean", "null"]},
             },
         },
         "missingSlots": {"type": "array", "items": {"type": "string"}},

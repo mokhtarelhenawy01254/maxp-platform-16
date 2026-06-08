@@ -76,23 +76,65 @@ async function productSearchHandler(companyId, {
   query,
   productName,
   productNameOrSku,
+  listAll,
   limit = 5,
   conversationId,
   productSize,
   productColor,
   referencesPreviousProduct,
 }) {
-  /** Search active catalog products by name or SKU.
-   * @param {string} query - Search text to find products by name or SKU.
+  /** Search active catalog products by name, SKU, or list the full company catalog.
+   * @param {string} [query] - Search text to find products by name or SKU. Use when the customer asks about a specific product.
+   * @param {boolean} [listAll] - Set to true when the customer asks to see all products or the full catalog. Returns the complete active product list sorted by name.
    * @param {string} [productName] - Optional product name when provided by a structured classifier.
    * @param {string} [productNameOrSku] - Optional product name or SKU when provided by a structured classifier.
-   * @param {integer} [limit] - Maximum number of results. Default 5.
+   * @param {integer} [limit] - Maximum number of results for specific searches. Default 5, max 20.
    * @param {string} [conversationId] - Optional conversation ID for memory context.
    * @param {string} [productSize] - Optional size filter.
    * @param {string} [productColor] - Optional color filter.
    * @param {boolean} [referencesPreviousProduct] - True only when the model-classified turn refers to the previous shown product.
    */
   const prisma = getSharedPrismaClient();
+
+  // ── List all products ────────────────────────────────────────────────────
+  if (isTrue(listAll)) {
+    const allProducts = await prisma.product.findMany({
+      where: { companyId, isActive: true },
+      orderBy: { name: 'asc' },
+      take: 100,
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        price: true,
+        comparePrice: true,
+        stock: true,
+        trackInventory: true,
+        isActive: true,
+        isFeatured: true,
+        images: true,
+        mainImage: true,
+        category: { select: { name: true } },
+        productVariants: {
+          where: { isActive: true },
+          orderBy: { sortOrder: 'asc' },
+          select: {
+            name: true, type: true, sku: true, images: true,
+            stock: true, trackInventory: true, isActive: true, metadata: true,
+          },
+        },
+      },
+    });
+    return {
+      found: allProducts.length > 0,
+      count: allProducts.length,
+      listAll: true,
+      query: null,
+      products: allProducts.map(mapProductForSearch),
+    };
+  }
+
+  // ── Specific product search ──────────────────────────────────────────────
   const safeLimit = Number.isFinite(Number(limit))
     ? Math.min(Math.max(parseInt(limit, 10), 1), 20)
     : 5;

@@ -42,7 +42,9 @@ def _executed_result(action: str, result: dict[str, Any]) -> dict[str, Any]:
 
 
 class ProductSearchInput(BaseModel):
-    query: str = Field(description="Search query for products (name, SKU, or keyword)")
+    query: str = Field(default="", description="Search query for products (name, SKU, or keyword). Leave empty when list_all is true.")
+    list_all: bool = Field(default=False, description="Set to true to return ALL available products without filtering. Use when the customer asks to see all products or the full catalog.")
+    limit: int = Field(default=5, description="Maximum number of results. Default 5. Use 20+ when list_all is true.")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
@@ -80,10 +82,15 @@ class ProductPerformanceInput(BaseModel):
 
 
 async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
+    query = "" if input_data.list_all else (input_data.query or "")
+    limit = input_data.limit if input_data.list_all else min(input_data.limit, 20)
     result = await product_tools.search_products(
-        input_data.company_id or "", input_data.query
+        input_data.company_id or "", query, limit=limit
     )
-    return {"results": result.get("products", [])}
+    products = result.get("products", [])
+    if input_data.list_all:
+        products = [{"name": p.get("name"), "price": p.get("price"), "sku": p.get("sku"), "status": p.get("status")} for p in products]
+    return {"results": products, "count": result.get("count", 0), "listAll": input_data.list_all}
 
 
 async def product_create(input_data: ProductCreateInput) -> dict[str, Any]:
@@ -128,7 +135,7 @@ async def product_performance(input_data: ProductPerformanceInput) -> dict[str, 
 
 product_search_tool = FunctionTool(
     name="product_search",
-    description="Search for products by name, SKU, or keyword. Returns matching products with prices and availability.",
+    description="Search for products by name, SKU, or keyword. Set list_all=true to browse the full catalog. Returns products with prices, stock, and availability.",
     func=product_search,
     input_model=ProductSearchInput,
 )

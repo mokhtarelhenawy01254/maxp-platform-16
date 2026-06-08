@@ -130,7 +130,7 @@ def _has_any_slot(slots: dict[str, Any], names: tuple[str, ...]) -> bool:
 
 def _missing_core_tool_slots(tool_name: str | None, slots: dict[str, Any]) -> list[str]:
     canonical = canonical_tool_name(tool_name or "")
-    if canonical in {"inventory_check", "product_search"} and not _has_any_slot(
+    if canonical == "inventory_check" and not _has_any_slot(
         slots,
         ("productName", "product_name", "product", "sku", "query", "productColor", "product_color"),
     ):

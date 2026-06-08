@@ -31,9 +31,13 @@ def _populate_tool_params(ctx: PipelineContext, execution: dict | None) -> None:
         slots = {**dict(ctx.relevance_plan.classification.get("slots") or {}), **slots}
 
     if tool_name == "product_search":
-        if not str(params.get("query") or "").strip():
+        list_all = slots.get("listAll") or slots.get("list_all")
+        if list_all:
+            params["list_all"] = True
+            params.setdefault("limit", 20)
+        elif not str(params.get("query") or "").strip():
             params["query"] = (
-                _first_slot(slots, "query", "productName", "product_name", "product", "sku")
+                _first_slot(slots, "query", "productName", "requestedProduct", "product_name", "product", "sku")
                 or ctx.message
             )
     elif tool_name == "inventory_check":

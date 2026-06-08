@@ -1,3 +1,24 @@
+## [2026-06-08] AI Service — `product.search` Tool: `listAll` Support, Slot Routing, and LLM Context Trimming
+- **Details**: Upgraded the `product.search` tool pipeline to support two distinct search modes — full catalog browsing (`listAll=true`) and specific product lookup — and fixed the intent-to-params routing so the correct backend call is made in each case.
+- **Architecture**:
+  - **`ProductSearchInput` Schema** (`registry.py`): Added `list_all: bool = Field(default=False)` and `limit: int = Field(default=5)` to the Pydantic input model. `query` now defaults to `""` instead of being required. The tool description was updated to advertise `list_all=true` for catalog browsing.
+  - **`product_search` Function** (`registry.py`): When `list_all=True`, sends an empty query to `product_tools.search_products` (which calls `GET /api/v1/products` with no `search` param, returning all products). Slims each product to `{name, price, sku, status}` only before returning to prevent LLM context overflow. When `list_all=False`, enforces `limit ≤ 20` and passes the query string as-is.
+  - **Intent → Params Routing** (`route_to_tools.py → _populate_tool_params`): Added `listAll` slot detection before the query fallback. When `slots.listAll` is truthy, sets `params["list_all"]=True` and `params.setdefault("limit", 20)`. Added `"requestedProduct"` to the `_first_slot` key order so the classifier's extracted product name is used as the query instead of falling back to the raw user message.
+  - **Intent Classifier** (`classifier.py`): Added instruction to system prompt: set `slots.listAll = true` only for read-only catalog browsing (`intent: products`); `products.manage` is reserved for create/edit actions only.
+  - **Slot Schema** (`schema.py`): Added `listAll: bool | None = None` to `SlotValues` dataclass and `"listAll": {"type": ["boolean", "null"]}` to `INTENT_CLASSIFICATION_SCHEMA`.
+  - **Planner Guard** (`planner.py`): Removed `product_search` from `_missing_core_tool_slots`. Only `inventory_check` still requires a product identifier slot before execution.
+  - **Agent Config Merge** (`agents.py`): Fixed `_load_chat_agent` to promote `request_config.allowedTools` (camelCase from Node.js) over `raw_config.allowed_tools: []` (empty from DB) after the config merge.
+  - **Node.js Handler** (`productTools.js`): Added `listAll` boolean parameter. When `listAll=true`, fetches up to 100 active products directly from Prisma (bypassing the `UnifiedProductSearchOrchestrator`), sorted by name.
+- **Files**:
+  - `apps/ai-service/src/tools/registry.py`
+  - `apps/ai-service/src/pipeline/stages/route_to_tools.py`
+  - `apps/ai-service/src/intent/classifier.py`
+  - `apps/ai-service/src/intent/schema.py`
+  - `apps/ai-service/src/intent/planner.py`
+  - `apps/ai-service/src/api/admin/agents.py`
+  - `apps/backend/legacy-ai-agent/aiAgent/tools/productTools.js`
+  - `apps/backend/ecosystem.config.js`
+
 ## [2026-06-08] Bulk Orders — Full CRUD Module with RBAC, Import/Export, Audit Logging
 - **Details**: Added a complete Bulk Orders management tab under the Orders section, enabling merchants to create, edit, view, duplicate, import (Excel/CSV), and export (Excel/JSON) bulk orders with status tracking and RBAC.
 - **Architecture**:
