@@ -1,3 +1,27 @@
+## [2026-06-08] Bulk Orders — Full CRUD Module [DONE] (Sync Date: 2026-06-08)
+- **Objective**: Add Bulk Orders tab under Orders section with create, edit, delete, duplicate, import (Excel/CSV), export (Excel/JSON), RBAC, and audit logging.
+- **Accomplishments**:
+  - **Prisma Models**: Created `BulkOrder` and `BulkOrderItem` models with `BulkOrderStatus` enum (`DRAFT`, `PENDING`, `PROCESSING`, `COMPLETED`, `CANCELLED`).
+  - **Backend Service**: Full CRUD + duplicate, import/export, execute, audit logging in `bulkOrderService.js`.
+  - **RBAC**: 5 new permissions (`bulkOrders.view/create/edit/delete/export`) added via `rbacMiddleware.js`.
+  - **API Routes**: RESTful endpoints at `/api/v1/bulk-orders` with multer upload, pagination, filtering, search.
+  - **Frontend**: `BulkOrders.tsx` page with search, filter, sort, pagination, multi-select, bulk delete; `BulkOrderModal.tsx` for create/edit with Excel/CSV preview; `BulkOrderView.tsx` for details.
+  - **i18n**: 72 keys in orders.json (AR/EN), sidebar link with `QueueListIcon`.
+  - **Routing**: Lazy-loaded `/orders/bulk` route, sidebar entry under Orders.
+- **Affected Files**:
+  - `apps/backend/prisma/schema/bulk_orders.prisma`
+  - `apps/backend/services/bulkOrderService.js`
+  - `apps/backend/routes/bulkOrders.js`
+  - `apps/backend/middleware/rbacMiddleware.js`
+  - `apps/backend/server.js`
+  - `apps/frontend/src/pages/orders/BulkOrders.tsx`
+  - `apps/frontend/src/pages/orders/components/BulkOrderModal.tsx`
+  - `apps/frontend/src/pages/orders/components/BulkOrderView.tsx`
+  - `apps/frontend/src/App.tsx`
+  - `apps/frontend/src/config/sidebar.ts`
+  - `apps/frontend/src/locales/{ar,en}/sections/orders.json`
+  - `apps/frontend/src/locales/{ar,en}/sections/sidebar.json`
+
 ## [2026-06-08] AI Service — Memory Schema and Model Routing Fixes [DONE] (Sync Date: 2026-03-09)
 - **Objective**: Fix semantic search memory crashes in local environments and resolve LLM routing failures for the Facebook Sales Support Agent.
 - **Accomplishments**:

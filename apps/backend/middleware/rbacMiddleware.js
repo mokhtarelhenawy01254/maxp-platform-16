@@ -66,6 +66,13 @@ const PERMISSIONS = {
   'reports.view.own': ['MODERATOR'],
   'reports.view.team': ['TEAM_LEADER'],
   'reports.view.all': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+
+  // Bulk Orders
+  'bulkOrders.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
+  'bulkOrders.create': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'bulkOrders.edit': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
+  'bulkOrders.delete': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
+  'bulkOrders.export': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
 };
 
 const {
