@@ -182,21 +182,35 @@ jobs:
           echo "💡 Use this IP to whitelist port ${{ env.SERVER_SSH_PORT }} in your server/hosting firewall if connection fails."
 
       - name: Verify SSH Port Reachability
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
         run: |
           echo "🔎 Checking SSH target reachability..."
-          for attempt in 1 2 3 4 5; do
-            echo "Attempt $attempt/5: checking SSH port..."
-            if nc -zv -w 15 "${{ secrets.SERVER_HOST }}" "${{ env.SERVER_SSH_PORT }}" 2>&1; then
+          SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > "$SSH_KEY_PATH"
+          chmod 600 "$SSH_KEY_PATH"
+          for attempt in $(seq 1 5); do
+            echo "Attempt $attempt/5: connecting to ${{ secrets.SERVER_HOST }}:${{ env.SERVER_SSH_PORT }}..."
+            if ssh -o ConnectTimeout=30 \
+                   -o StrictHostKeyChecking=accept-new \
+                   -o BatchMode=yes \
+                   -i "$SSH_KEY_PATH" \
+                   -p "${{ env.SERVER_SSH_PORT }}" \
+                   "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
+                   "echo SSH_REACHABLE" 2>&1 | grep -q SSH_REACHABLE; then
               echo "✅ SSH port is reachable from this runner"
               exit 0
             fi
             if [ "$attempt" -lt 5 ]; then
-              echo "⏳ SSH port not reachable yet; waiting 10s..."
-              sleep 10
+              echo "⏳ SSH not reachable yet; waiting 15s before retry..."
+              sleep 15
             fi
           done
-          echo "❌ SSH port ${{ env.SERVER_SSH_PORT }} NOT reachable after 5 attempts"
-          exit 1
+          echo "⚠️ SSH port ${{ env.SERVER_SSH_PORT }} NOT reachable after 5 attempts — attempting SSH connection anyway in subsequent steps"
+          echo "💡 Runner IP may need to be whitelisted in the server/hosting firewall"
 
       - name: Prepare SSH Key
         shell: bash
