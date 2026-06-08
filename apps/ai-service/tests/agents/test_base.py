@@ -440,7 +440,7 @@ class TestTemplateAdapter:
 class TestBuild:
     def test_build_caches_framework_agent(self, agent: BaseAgent):
         with patch("src.agents.base.build_agent_client") as mock_client, \
-             patch("src.agents.base.get_all_tools", return_value=[]):
+             patch.object(agent, "_resolve_tools", return_value=[]):
             mock_client.return_value = MagicMock()
             fa1 = agent.build()
             fa2 = agent.build()
@@ -449,7 +449,7 @@ class TestBuild:
 
     def test_build_attaches_sdk_context_provider(self, agent: BaseAgent):
         with patch("src.agents.base.build_agent_client", return_value=MagicMock()), \
-             patch("src.agents.base.get_all_tools", return_value=[]):
+             patch.object(agent, "_resolve_tools", return_value=[]):
             framework_agent = agent.build()
 
         providers = getattr(framework_agent, "context_providers", [])
@@ -462,7 +462,7 @@ class TestBuild:
         fake_registry.get_skill_clients.return_value = [MagicMock()]
 
         with patch("src.agents.base.build_agent_client", return_value=MagicMock()), \
-             patch("src.agents.base.get_all_tools", return_value=[]), \
+             patch.object(agent, "_resolve_tools", return_value=[]), \
              patch("src.agents.base.get_mcp_registry", return_value=fake_registry):
             framework_agent = agent.build()
 
@@ -475,7 +475,7 @@ class TestBuild:
         agent = BaseAgent(cfg)
 
         with patch("src.agents.base.build_agent_client", return_value=MagicMock()), \
-             patch("src.agents.base.get_all_tools", return_value=[]):
+             patch.object(agent, "_resolve_tools", return_value=[]):
             framework_agent = agent.build()
 
         assert getattr(framework_agent, "default_options", {})["output_schema"] == schema
@@ -509,7 +509,7 @@ class TestBuild:
     async def test_ensure_client_reuses_framework_agent_client(self, agent: BaseAgent):
         framework_client = MagicMock()
         with patch("src.agents.base.build_agent_client_async", new=AsyncMock(return_value=framework_client)) as build_async, \
-             patch("src.agents.base.get_all_tools", return_value=[]):
+             patch.object(agent, "_resolve_tools", return_value=[]):
             client = await agent.ensure_client()
 
         assert client is framework_client

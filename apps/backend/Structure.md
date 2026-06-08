@@ -1,3 +1,45 @@
+## [2026-06-08] AI Service — Agent Template Seeding Path Discovery Fix
+- **Details**: Fixed path discovery bug in template loader so that templates seed successfully from `apps/backend/agents`. Run database migration/repair scripts to seed templates and link existing agents in `ai.agents` to their correct template slug, resolving 400 Bad Request errors on reconciliation.
+- **Architecture**:
+  - **Environment Path Verification**: Updated `_get_agents_root()` in `loader.py` to check that `BACKEND_AGENTS_ROOT` is not an empty string before using it as a directory path candidate. This prevents path resolution falling back to `.` (the current directory) and failing to load manifest files.
+  - **API Tests**: Added `test_reconcile_agent_success` and `test_reconcile_agent_no_template` to verify reconciliation inputs and endpoints.
+- **Files**:
+  - `apps/ai-service/src/agents/loader.py`
+  - `apps/ai-service/tests/api/test_admin_agents.py`
+
+## [2026-06-08] AI Service — Orchestration Flow & Agent Instructions Refactoring
+- **Details**: Refactored orchestration workflow initialization and agent instructions extraction to handle raw SDK agents and database query sessions correctly.
+- **Architecture**:
+  - **Pipeline Context Session Alignment**: Changed the `session` parameter of `PipelineContext` inside `run_orchestration` from the SDK's `AgentSession` to the SQLAlchemy `AsyncSession` database session. This allows database-querying stages (RAG, episodic memory, context assembler) to execute queries against the DB successfully.
+  - **Polymorphic Agent Instructions Resolution**: Created a central `get_agent_instructions` utility to dynamically resolve instructions from various agent object types: `BaseAgent` wrappers, raw `agent_framework.Agent` instances (which define instructions in `default_options`), and raw database `CompanyAgent` objects (which define instructions in `soul`).
+- **Files**:
+  - `apps/ai-service/src/workflows/orchestration_flow.py`
+  - `apps/ai-service/src/pipeline/stages/resolve_intent.py`
+  - `apps/ai-service/src/context/assembler.py`
+
+## [2026-06-08] AI Service — Shared Keys & Agent Schema Alignment
+- **Details**: Refactored Python `ai-service` database models and routes to query public schema database tables and auto-migrate agents dynamically on-the-fly.
+- **Architecture**:
+  - **Shared Public Schema Keys**: Configured `AiKey` and `AiModelConfig` to point to the `public` schema. Mapped all snake_case SQLAlchemy attributes to their camelCase database equivalents (e.g. `apiKey`, `baseUrl`, `keyType`, etc.) to directly access Node-managed credentials. Added property accessors for missing analytics columns.
+  - **Enum Type-Casting Queries**: Cast the `AiKey.provider` column to `String` in SQLAlchemy comparison queries (`cast(AiKey.provider, String)`) in `model_manager.py` and `keys.py` to prevent PostgreSQL type mismatch errors where string inputs are compared to database enum values (`ai_keys_provider`).
+  - **On-the-Fly Agent Migration**: Implemented a lazy migration barrier `_ensure_agent_in_db` that intercepts agent retrieve/update/reconcile actions, queries `public.company_agents` dynamically when absent from the Python schema, copies template defaults and instructions, and persists the runtime agent record into `ai.agents` to allow full FastAPI routing support.
+- **Files**:
+  - `apps/ai-service/src/db/models/provider.py`
+  - `apps/ai-service/src/api/admin/agents.py`
+
+## [2026-06-08] AI Hub & MUI-to-Tailwind Consolidation
+- **Details**: Consolidated the frontend AI management and diagnostic tools under a unified, premium tabbed workspace and migrated all code to Tailwind CSS and shadcn/ui.
+- **Architecture**:
+  - **AIHubLayout** (`frontend/src/pages/admin/AIHubLayout.tsx`): Built a sticky-header, tab-driven admin layout utilizing shadcn tabs to centralize the 6 distinct AI sub-views (Agents, Sandbox, RAG Lab, Tools, Skills, Scheduler) into a single page context, resolving the layout friction of 11 separate disjoint routes.
+  - **MUI Deprecation**: Rewrote the entire `AIAgentSandboxPage.tsx` and `AgenticRAGLab.tsx` along with all sandbox sub-components (`ChatArea`, `SessionList`, `InspectorPanel`, `HeaderBar`, `StatusBar`, `CostTracker`) to remove dependency on `@mui/material` and `@mui/icons-material`, adopting custom styled Tailwind layouts, shadcn component overlays, and Lucide React icons.
+  - **Redirect Routing** (`frontend/src/App.tsx` & `sidebar.ts`): Registered the `/admin/ai-hub` path, mapped individual routes (`/admin/ai-agents`, `/admin/ai-rag-lab`, `/admin/ai-agent-sandbox`, `/admin/ai-skills`, `/admin/ai-tools`, `/admin/ai-scheduler`) to redirect to `/admin/ai-hub?tab=...` parameters, and updated the sidebar navigation configurations.
+- **Files**:
+  - [AIHubLayout.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/AIHubLayout.tsx)
+  - [AgenticRAGLab.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/AgenticRAGLab.tsx)
+  - [AIAgentSandboxPage.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/ai-agent-sandbox/AIAgentSandboxPage.tsx)
+  - [App.tsx](file:///h:/maxp-platform/apps/frontend/src/App.tsx)
+  - [sidebar.ts](file:///h:/maxp-platform/apps/frontend/src/config/sidebar.ts)
+
 ## [2026-06-07] CI/CD Pipeline — Auto-Deploy ai-service via GitHub Actions (uv + PM2)
 - **Details**: Updated `.github/workflows/deploy.yml` to fully deploy the Python ai-service on every push to `main`, replacing the previous Docker Compose block that required Docker on the server.
 - **Architecture**:

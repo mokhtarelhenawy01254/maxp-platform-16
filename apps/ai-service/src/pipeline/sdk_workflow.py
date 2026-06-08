@@ -58,7 +58,7 @@ class PipelineWorkflowSnapshot:
     resumed_from_checkpoint: bool = False
 
     @classmethod
-    def from_context(cls, ctx: PipelineContext) -> "PipelineWorkflowSnapshot":
+    def from_context(cls, ctx: PipelineContext) -> PipelineWorkflowSnapshot:
         return cls(
             message=ctx.message,
             thread_id=ctx.thread_id,

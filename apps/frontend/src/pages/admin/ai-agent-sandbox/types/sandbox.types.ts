@@ -108,6 +108,7 @@ export interface ChatMessage {
   cost?: number;
   metadata?: PipelineTrace;
   usedFallbackKey?: boolean;
+  runtime?: string;
 }
 
 export interface TokenUsage {
@@ -172,6 +173,7 @@ export interface StreamEvent {
   latencyMs?: number;
   cost?: number;
   error?: string;
+  reason?: string;
   done?: boolean;
   sessionId?: string;
   model?: string;
@@ -179,6 +181,7 @@ export interface StreamEvent {
   keyId?: string;
   keyName?: string;
   toolCalls?: ToolCall[];
+  runtime?: string;
 }
 
 export interface EvalScore {

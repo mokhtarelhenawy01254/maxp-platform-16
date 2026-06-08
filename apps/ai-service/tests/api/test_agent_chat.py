@@ -27,6 +27,7 @@ def test_agent_chat_uses_selected_agent_config_when_db_agent_is_missing(monkeypa
     mock_session = AsyncMock(spec=AsyncSession)
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
+    mock_result.mappings().one_or_none.return_value = None
     mock_session.execute = AsyncMock(return_value=mock_result)
 
     captured: dict[str, object] = {}

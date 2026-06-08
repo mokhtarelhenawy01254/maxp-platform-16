@@ -16,13 +16,11 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import time
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Literal
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
-
-from src.config import get_settings
 
 logger = structlog.get_logger(__name__)
 
@@ -339,7 +337,7 @@ class BudgetLedgerService:
         """Generate Redis keys for usage windows."""
         now = now_ms or int(time.time() * 1000)
         minute_bucket = now // 60000
-        day_bucket = datetime.fromtimestamp(now / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
+        day_bucket = datetime.fromtimestamp(now / 1000, tz=UTC).strftime("%Y-%m-%d")
         minute_key = f"{PREFIX}:usage:{identity.hash}:minute:{minute_bucket}"
         day_key = f"{PREFIX}:usage:{identity.hash}:day:{day_bucket}"
         return WindowKeys(
@@ -357,7 +355,7 @@ class BudgetLedgerService:
     async def _read_cache(self, key: str) -> dict[str, Any] | None:
         """Read value from Redis or local cache."""
         redis = self._get_redis()
-        if redis:
+        if redis and redis.available:
             try:
                 value = await redis.get(key)
                 if value and isinstance(value, str):
@@ -373,7 +371,7 @@ class BudgetLedgerService:
         """Write value to Redis or local cache."""
         ttl = max(1, int(ttl_seconds or 60))
         redis = self._get_redis()
-        if redis:
+        if redis and redis.available:
             try:
                 import json
                 await redis.set(key, json.dumps(value), ttl=ttl)
@@ -446,7 +444,7 @@ class BudgetLedgerService:
                 "minute": (usage or {}).get("minute", {}),
                 "day": (usage or {}).get("day", {}),
             },
-            budget_key=(usage or {}).get("identity", {}).get("hash", ""),
+            budget_key=getattr((usage or {}).get("identity"), "hash", None) or "",
             reset_at=reset_at,
             retry_after_seconds=max(1, retry_after) if retry_after else None,
             **(extra or {}),
@@ -617,7 +615,7 @@ class BudgetLedgerService:
                             "reason": status.get("reason"),
                             "limit": status.get("limit"),
                             "current": status.get("current"),
-                            "resetAt": datetime.fromtimestamp(status.get("resetAt", 0) / 1000, tz=timezone.utc).isoformat() if status.get("resetAt") else None,
+                            "resetAt": datetime.fromtimestamp(status.get("resetAt", 0) / 1000, tz=UTC).isoformat() if status.get("resetAt") else None,
                         }),
                     },
                 )
@@ -660,7 +658,7 @@ class BudgetLedgerService:
                     limits,
                     usage,
                     budget_status.get("reset_at"),
-                    {"companyId": company_id, "error": "BUDGET_EXCEEDED"},
+                    {"company_id": company_id, "error": "BUDGET_EXCEEDED"},
                 )
 
         limits = self.parse_provider_limits(selection)
@@ -668,7 +666,10 @@ class BudgetLedgerService:
             return self._build_allowed_status(selection, limits, None)
 
         estimated_tokens = self._normalize_token_count(options)
-        usage = await self._get_usage(selection)
+        now = options.get("now")
+        identity = self._get_budget_identity(selection)
+        windows = self._get_window_keys(identity, now) if now else None
+        usage = await self._get_usage(selection, windows=windows)
         penalty = await self._get_penalty(selection, options)
 
         if penalty:
@@ -677,25 +678,25 @@ class BudgetLedgerService:
                 limits,
                 usage,
                 penalty.get("retryAt"),
-                {"penaltyReason": penalty.get("reason"), "penaltyScore": penalty.get("score")},
+                {"penalty_reason": penalty.get("reason"), "penalty_score": penalty.get("score")},
             )
 
         w = usage["windows"]
 
-        if limits.get("rpm") and usage["minute"].requests + 1 > limits["rpm"]:
+        if limits.get("rpm") and usage["minute"].requests + 1 >= limits["rpm"]:
             return self._build_denied_status("RPM_LIMIT", limits, usage, w.minute_reset_at)
 
-        if limits.get("rpd") and usage["day"].requests + 1 > limits["rpd"]:
+        if limits.get("rpd") and usage["day"].requests + 1 >= limits["rpd"]:
             return self._build_denied_status("RPD_LIMIT", limits, usage, w.day_reset_at)
 
-        if limits.get("tpm") and usage["minute"].tokens + estimated_tokens > limits["tpm"]:
+        if limits.get("tpm") and usage["minute"].tokens + estimated_tokens >= limits["tpm"]:
             return self._build_denied_status(
-                "TPM_LIMIT", limits, usage, w.minute_reset_at, {"estimatedTokens": estimated_tokens}
+                "TPM_LIMIT", limits, usage, w.minute_reset_at, {"estimated_tokens": estimated_tokens}
             )
 
-        if limits.get("tpd") and usage["day"].tokens + estimated_tokens > limits["tpd"]:
+        if limits.get("tpd") and usage["day"].tokens + estimated_tokens >= limits["tpd"]:
             return self._build_denied_status(
-                "TPD_LIMIT", limits, usage, w.day_reset_at, {"estimatedTokens": estimated_tokens}
+                "TPD_LIMIT", limits, usage, w.day_reset_at, {"estimated_tokens": estimated_tokens}
             )
 
         return self._build_allowed_status(selection, limits, usage)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.intent.schema import ToolPlan, is_admin_channel, is_customer_channel
+from src.intent.schema import ToolPlan
 
 
 def resolve_admin_policy_plan(

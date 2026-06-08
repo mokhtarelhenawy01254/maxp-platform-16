@@ -250,3 +250,33 @@ def test_archive_ceo_denied(client, mock_session, valid_headers):
     resp = client.delete("/admin/agents/agent_ceo", headers=valid_headers)
     assert resp.status_code == 400
     assert "Cannot archive the CEO agent" in resp.json()["detail"]
+
+
+def test_reconcile_agent_success(client, mock_session, valid_headers):
+    agent = _make_mock_agent(agent_id="agent_123")
+    agent.template_slug = "support-agent"
+    template = _make_mock_template()
+    template.allowed_tools = ["tool_1", "tool_2"]
+    template.allowed_skills = ["skill_1"]
+    template.version = "2.0.0"
+
+    setup_execute_mock(mock_session, template_return=template, agent_return=agent)
+
+    resp = client.post("/admin/agents/agent_123/reconcile", headers=valid_headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["allowed_tools"] == ["tool_1", "tool_2"]
+    assert data["allowed_skills"] == ["skill_1"]
+    assert data["version"] == "2.0.0"
+
+
+def test_reconcile_agent_no_template(client, mock_session, valid_headers):
+    agent = _make_mock_agent(agent_id="agent_123")
+    agent.template_slug = None
+
+    setup_execute_mock(mock_session, agent_return=agent)
+
+    resp = client.post("/admin/agents/agent_123/reconcile", headers=valid_headers)
+    assert resp.status_code == 400
+    assert "no template to reconcile with" in resp.json()["detail"]
+

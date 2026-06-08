@@ -31,7 +31,7 @@ class AiKey(Base):
     __tablename__ = "ai_keys"
     __table_args__ = (
         UniqueConstraint("provider", "name", name="uq_provider_key_name"),
-        {"schema": "ai"},
+        {"schema": "public"},
     )
 
     id: Mapped[str] = mapped_column(
@@ -40,56 +40,74 @@ class AiKey(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     provider: Mapped[str] = mapped_column(
         String(50),
-        ForeignKey("ai.providers.name", ondelete="RESTRICT"),
         nullable=False,
     )
-    api_key: Mapped[str] = mapped_column(Text, nullable=False)
-    base_url: Mapped[str | None] = mapped_column(Text, nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    key_type: Mapped[str] = mapped_column(String(20), nullable=False, default="CENTRAL")
-    company_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
-    max_requests_per_day: Mapped[int] = mapped_column(Integer, nullable=False, default=1500)
-    current_usage: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    api_key: Mapped[str] = mapped_column("apiKey", Text, nullable=False)
+    base_url: Mapped[str | None] = mapped_column("baseUrl", Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column("isActive", Boolean, nullable=False, default=True)
+    key_type: Mapped[str] = mapped_column("keyType", String(20), nullable=False, default="CENTRAL")
+    company_id: Mapped[str | None] = mapped_column("companyId", String(100), nullable=True, index=True)
+    max_requests_per_day: Mapped[int] = mapped_column("maxRequestsPerDay", Integer, nullable=False, default=1500)
+    current_usage: Mapped[int] = mapped_column("currentUsage", Integer, nullable=False, default=0)
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    last_used_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
-    )
-    last_tested_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
-    )
-    last_test_status: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    usage: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
     created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False, default=datetime.now
+        "createdAt", TIMESTAMP(timezone=False), nullable=False, default=datetime.now
     )
     updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False, default=datetime.now, onupdate=datetime.now
+        "updatedAt", TIMESTAMP(timezone=False), nullable=False, default=datetime.now, onupdate=datetime.now
     )
+
+    @property
+    def last_used_at(self) -> datetime | None:
+        return None
+
+    @last_used_at.setter
+    def last_used_at(self, val: datetime | None) -> None:
+        pass
+
+    @property
+    def last_tested_at(self) -> datetime | None:
+        return None
+
+    @last_tested_at.setter
+    def last_tested_at(self, val: datetime | None) -> None:
+        pass
+
+    @property
+    def last_test_status(self) -> str | None:
+        return None
+
+    @last_test_status.setter
+    def last_test_status(self, val: str | None) -> None:
+        pass
 
 
 class AiModelConfig(Base):
     __tablename__ = "ai_model_configs"
     __table_args__ = (
-        UniqueConstraint("key_id", "model_name", name="uq_key_model"),
-        {"schema": "ai"},
+        UniqueConstraint("keyId", "modelName", name="uq_key_model"),
+        {"schema": "public"},
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    id: Mapped[str] = mapped_column(
+        String(50), primary_key=True, default=lambda: str(uuid.uuid4())
     )
     key_id: Mapped[str] = mapped_column(
+        "keyId",
         String(50),
-        ForeignKey("ai.ai_keys.id", ondelete="CASCADE"),
+        ForeignKey("public.ai_keys.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    model_name: Mapped[str] = mapped_column(String(200), nullable=False)
-    is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    model_name: Mapped[str] = mapped_column("modelName", String(200), nullable=False)
+    is_enabled: Mapped[bool] = mapped_column("isEnabled", Boolean, nullable=False, default=True)
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False, default=datetime.now
+        "createdAt", TIMESTAMP(timezone=False), nullable=False, default=datetime.now
     )
     updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False, default=datetime.now, onupdate=datetime.now
+        "updatedAt", TIMESTAMP(timezone=False), nullable=False, default=datetime.now, onupdate=datetime.now
     )
 
 
@@ -119,7 +137,7 @@ class ProviderLog(Base):
     provider: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     key_id: Mapped[str | None] = mapped_column(
         String(50),
-        ForeignKey("ai.ai_keys.id", ondelete="SET NULL"),
+        ForeignKey("public.ai_keys.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
@@ -132,3 +150,4 @@ class ProviderLog(Base):
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=datetime.now, index=True
     )
+

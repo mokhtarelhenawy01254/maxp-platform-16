@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from typing import Any, Literal
 
@@ -70,7 +71,7 @@ class AiKeyTestResult(BaseModel):
     status: Literal["ok", "error"]
     latency_ms: int | None
     error: str | None
-    tested_at: datetime
+    tested_at: datetime | None
 
 
 class AiKeyStatusUpdate(BaseModel):
@@ -92,7 +93,7 @@ class AiModelConfigRead(BaseModel):
 class GlobalConfigRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
+    id: str | uuid.UUID
     default_provider: str | None
     enable_failover: bool
     provider_priority: list[str]

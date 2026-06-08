@@ -186,28 +186,6 @@ class BaseAgent {
           label: 'preferred',
         },
       ];
-      if (allowModelFallback) {
-        for (const fallbackModel of fallbackModels) {
-          routingAttempts.push({
-            ...baseRoutingOptions,
-            preferredModel: fallbackModel,
-            label: 'model-fallback',
-          });
-        }
-        const providerFailoverAttempts = Math.max(
-          1,
-          Math.min(Number(options.providerFailoverAttempts || modelPolicy.providerFailoverAttempts || 2), 3)
-        );
-        for (let attempt = 0; attempt < providerFailoverAttempts; attempt += 1) {
-          routingAttempts.push({
-            ...baseRoutingOptions,
-            preferredProvider: null,
-            preferredKeyId: null,
-            preferredModel: null,
-            label: attempt === 0 ? 'provider-failover' : `provider-failover-retry-${attempt}`,
-          });
-        }
-      }
 
       let lastFailure = null;
       let attemptedProviderCall = false;
@@ -577,48 +555,92 @@ class BaseAgent {
   // ── Main entry: process any task/message via pipeline ────────────────────────
 
   async processTask(task) {
-    const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
-    const AI_SERVICE_TOKEN = process.env.AI_SERVICE_TOKEN || 'test_token';
+    // Check if the AI service mode allows routing to the Python service
+    const { isAiServiceEnabled } = require('./aiServiceRouter');
+    if (this.companyId && isAiServiceEnabled(this.companyId)) {
+      const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+      const AI_SERVICE_TOKEN = process.env.AI_SERVICE_TOKEN || 'test_token';
 
-    try {
-      const response = await axios.post(`${AI_SERVICE_URL}/chat`, {
-        message: task.currentMessage || task.description,
-        thread_id: task.sessionId || task.conversationId || null,
-      }, {
-        headers: { 
-          'Authorization': `Bearer ${AI_SERVICE_TOKEN}`,
-          'x-company-id': this.companyId,
-          'x-customer-id': task.userId || 'test-user-456',
-        },
-        timeout: DEFAULT_AGENT_LLM_TIMEOUT_MS,
-      });
+      try {
+        const response = await axios.post(`${AI_SERVICE_URL}/chat`, {
+          message: task.currentMessage || task.description,
+          thread_id: task.sessionId || task.conversationId || null,
+        }, {
+          headers: { 
+            'Authorization': `Bearer ${AI_SERVICE_TOKEN}`,
+            'x-company-id': this.companyId,
+            'x-customer-id': task.userId || 'test-user-456',
+          },
+          timeout: DEFAULT_AGENT_LLM_TIMEOUT_MS,
+        });
 
-      const data = response.data;
-      
-      return {
-        agentId: this.id,
-        role: this.role,
-        status: data.status === 'ok' ? 'SUCCESS' : (data.status === 'awaiting_approval' ? 'PAUSED' : 'ERROR'),
-        result: {
-          reply: data.reply,
-          summary: data.reply,
-          toolsUsed: false,
-          toolRounds: 0,
-          tools: [],
-          repaired: false,
-          presentedFromToolResults: false,
-          goalRun: null,
-          status: data.status,
-          thread_id: data.thread_id,
-          draft_id: data.draft_id,
-        },
-        modelSelection: null,
-        task,
-      };
-    } catch (error) {
-      console.error(`[BaseAgent] AI Service call failed for ${this.id}:`, error.response?.data || error.message);
-      throw error;
+        const data = response.data;
+        
+        return {
+          agentId: this.id,
+          role: this.role,
+          status: data.status === 'ok' ? 'SUCCESS' : (data.status === 'awaiting_approval' ? 'PAUSED' : 'ERROR'),
+          result: {
+            reply: data.reply,
+            summary: data.reply,
+            toolsUsed: false,
+            toolRounds: 0,
+            tools: [],
+            repaired: false,
+            presentedFromToolResults: false,
+            goalRun: null,
+            status: data.status,
+            thread_id: data.thread_id,
+            draft_id: data.draft_id,
+          },
+          modelSelection: null,
+          task,
+        };
+      } catch (error) {
+        console.error(`[BaseAgent] AI Service call failed for ${this.id}, falling back to local pipeline:`, error.response?.data || error.message);
+      }
     }
+
+    // Fallback: run the local 5-stage pipeline
+    return this._runLocalPipeline(task);
+  }
+
+  async _runLocalPipeline(task) {
+    const context = {
+      task,
+      agent: this,
+      companyId: this.companyId,
+      traceId: agentToolGatewayService.newTraceId(),
+    };
+
+    const ctx1 = await resolveIntent(context);
+    if (ctx1.earlyReturn) return ctx1.earlyReturn.result;
+    const ctx2 = await routeToTools(ctx1);
+    const ctx3 = await executeTools(ctx2);
+    const ctx4 = await handleFallback(ctx3);
+    if (ctx4.earlyReturn) return ctx4.earlyReturn.result;
+    const ctx5 = await validateReply(ctx4);
+    if (ctx5.earlyReturn) return ctx5.earlyReturn.result;
+
+    return {
+      agentId: this.id,
+      role: this.role,
+      status: 'SUCCESS',
+      result: {
+        reply: ctx5.finalReply || '',
+        summary: ctx5.finalReply || '',
+        toolsUsed: true,
+        toolRounds: (ctx3.executedTools || []).length,
+        tools: (ctx3.executedTools || []).map(t => ({ name: t.tool, success: t.success })),
+        repaired: false,
+        presentedFromToolResults: false,
+        goalRun: null,
+        status: 'ok',
+        thread_id: task.sessionId || task.conversationId || null,
+      },
+      modelSelection: null,
+      task,
+    };
   }
 
 

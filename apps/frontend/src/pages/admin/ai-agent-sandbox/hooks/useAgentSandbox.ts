@@ -116,6 +116,12 @@ function generateId(): string {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function formatStreamError(error?: string, reason?: string): string {
+  const code = String(error || "Unknown streaming error").trim();
+  const detail = String(reason || "").trim();
+  return detail ? `${code}: ${detail}` : code;
+}
+
 function reconstructActivityLogFromMessages(messages: ChatMessage[]): ActivityLogEntry[] {
   const logs: ActivityLogEntry[] = [];
   for (const msg of messages) {
@@ -554,6 +560,7 @@ export function useAgentSandbox() {
       let finalCost = 0;
       let updateSessionId = sessionId;
       let finalUsedFallbackKey = false;
+      let finalRuntime: string | undefined;
       let pipelineTrace: any = null;
 
       try {
@@ -738,7 +745,7 @@ export function useAgentSandbox() {
                 break;
 
               case "run_error":
-                runError = event.error || "Unknown streaming error";
+                runError = formatStreamError(event.error, event.reason);
                 addActivityLog({
                   id: generateId(),
                   timestamp: new Date().toISOString(),
@@ -759,8 +766,9 @@ export function useAgentSandbox() {
               if (event.keyName) finalKeyName = event.keyName;
               if (event.cost !== undefined) finalCost = event.cost;
               if (event.sessionId) updateSessionId = event.sessionId;
-              if (event.error) runError = event.error;
+              if (event.error) runError = formatStreamError(event.error, event.reason);
               if (event.usedFallbackKey) finalUsedFallbackKey = true;
+              if (event.runtime) finalRuntime = event.runtime;
             }
           }
         );
@@ -810,6 +818,7 @@ export function useAgentSandbox() {
                     cost: finalCost,
                     metadata: pipelineTrace,
                     usedFallbackKey: finalUsedFallbackKey,
+                    runtime: finalRuntime,
                   }
                 : m
             );

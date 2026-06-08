@@ -61,8 +61,20 @@ async function listAgents(companyId) {
   return request('GET', `/admin/agents${qs}`) || [];
 }
 
-async function chatWithAgent({ companyId, agentId, message, threadId }) {
-  return request('POST', '/admin/agents/chat', { company_id: companyId, agent_id: agentId, message, thread_id: threadId });
+async function chatWithAgent({ companyId, agentId, message, threadId, conversationId, customerId, channel, agentConfig, memoryContext, attachments }) {
+  const body = {
+    company_id: companyId,
+    agent_id: agentId,
+    message,
+    thread_id: threadId,
+  };
+  if (conversationId) body.conversation_id = conversationId;
+  if (customerId) body.customer_id = customerId;
+  if (channel) body.channel = channel;
+  if (agentConfig) body.agent_config = agentConfig;
+  if (memoryContext) body.memory_context = memoryContext;
+  if (attachments) body.attachments = attachments;
+  return request('POST', '/admin/agents/chat', body);
 }
 
 async function updateGlobalConfig(config) {

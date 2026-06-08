@@ -7,6 +7,7 @@ from __future__ import annotations
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 import time
+from datetime import UTC, datetime
 
 from src.billing.ledger import (
     BudgetLedgerService,
@@ -222,7 +223,7 @@ class TestCanRoute:
     @pytest.mark.asyncio
     async def test_can_route_rpd_exceeded(self, ledger: BudgetLedgerService):
         now_ms = int(time.time() * 1000)
-        day_bucket = "2024-01-01"
+        day_bucket = datetime.fromtimestamp(now_ms / 1000, tz=UTC).strftime("%Y-%m-%d")
         identity = ledger._get_budget_identity({
             "provider": "openai", "modelName": "gpt-4o", "id": "key-rpd"
         })
@@ -266,7 +267,7 @@ class TestCanRoute:
     @pytest.mark.asyncio
     async def test_can_route_tpd_exceeded(self, ledger: BudgetLedgerService):
         now_ms = int(time.time() * 1000)
-        day_bucket = "2024-01-01"
+        day_bucket = datetime.fromtimestamp(now_ms / 1000, tz=UTC).strftime("%Y-%m-%d")
         identity = ledger._get_budget_identity({
             "provider": "anthropic", "modelName": "claude-3", "id": "key-tpd"
         })
@@ -293,6 +294,8 @@ class TestCanRoute:
             "id": "key-penalty",
             "limits": {"rpm": 100},
         }
+        # Need two violations to drop score below threshold (1.0 - 0.4 - 0.4 = 0.2 <= 0.3)
+        await ledger.record_penalty(selection, {"reason": "429", "retryAfterMs": 30000})
         await ledger.record_penalty(selection, {"reason": "429", "retryAfterMs": 30000})
         status = await ledger.can_route(selection)
         assert status.allowed is False

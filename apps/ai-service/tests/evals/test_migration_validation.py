@@ -53,7 +53,7 @@ class TestMigrationSprint2:
 
     def test_mcp_integrated(self):
         """MCP should be properly integrated"""
-        mcp_path = Path("src/mcp")
+        mcp_path = Path("src/mcp_integration")
         assert mcp_path.exists(), "MCP module should exist"
 
     def test_tracing_enabled(self):
@@ -190,7 +190,7 @@ class TestSDKUsage2026:
             assert True
         except ImportError:
             # MCP might be imported differently
-            mcp_path = Path("src/mcp")
+            mcp_path = Path("src/mcp_integration")
             assert mcp_path.exists()
 
     def test_magentic_builder_available(self):

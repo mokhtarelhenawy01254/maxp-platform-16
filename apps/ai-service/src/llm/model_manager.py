@@ -8,11 +8,11 @@ from datetime import UTC, datetime
 from typing import Any, ClassVar
 
 import structlog
-from sqlalchemy import select, update
+from sqlalchemy import select, update, cast, String
 
 from src.config import get_settings
-from src.db.models.provider import AiKey, AiModelConfig, GlobalAiConfig
 from src.db import session
+from src.db.models.provider import AiKey, AiModelConfig, GlobalAiConfig
 from src.services.redis_client import redis_client
 
 logger = structlog.get_logger(__name__)
@@ -510,9 +510,13 @@ class ModelManager:
         async with session.async_session() as db:
             for provider_type in provider_priority:
                 result = await db.execute(
-                    select(AiKey).where(
-                        AiKey.provider == provider_type,
+                    select(AiKey)
+                    .join(AiModelConfig, AiModelConfig.key_id == AiKey.id)
+                    .where(
+                        cast(AiKey.provider, String) == provider_type,
                         AiKey.is_active == True,  # noqa: E712
+                        AiModelConfig.model_name == model_name,
+                        AiModelConfig.is_enabled == True,  # noqa: E712
                     )
                 )
                 keys = result.scalars().all()

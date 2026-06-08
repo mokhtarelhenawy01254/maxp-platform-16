@@ -9,6 +9,7 @@ from typing import Any
 
 import structlog
 
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.session import async_session
 from src.services.queue_service import QueuePriority, queue_service
 
@@ -388,7 +389,7 @@ async def handle_facebook_message(job: dict[str, Any]) -> None:
             company_id=company_id,
             allowed_tools=[],
         ))
-        
+
         start_time = datetime.utcnow()
         task_result = await agent.process_task({
             "description": message_text,
@@ -398,10 +399,10 @@ async def handle_facebook_message(job: dict[str, Any]) -> None:
             "channel": "facebook",
         })
         latency = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-        
+
         status = "SUCCESS" if task_result.get("status") == "SUCCESS" else "FAILED"
         result_data = task_result.get("result", {})
-        
+
         async with async_session() as run_session:
             task_id = _generate_id()
             await run_session.execute(
@@ -449,7 +450,7 @@ async def handle_facebook_comment(job: dict[str, Any]) -> None:
         if pattern.search(comment_text):
             is_negative = True
             break
-    
+
     async with async_session() as session:
         page_row = await session.execute(
             "SELECT page_access_token FROM facebook_pages WHERE page_id = :page_id",
@@ -591,7 +592,7 @@ async def handle_whatsapp_message(job: dict[str, Any]) -> None:
             company_id=company_id,
             allowed_tools=[],
         ))
-        
+
         task_result = await agent.process_task({
             "description": message_text,
             "session_id": thread_id,
@@ -599,7 +600,7 @@ async def handle_whatsapp_message(job: dict[str, Any]) -> None:
             "company_id": company_id,
             "channel": "whatsapp",
         })
-        
+
         reply = task_result.get("result", {}).get("reply")
         if reply:
             from src.tools.whatsapp_client import WhatsAppClient
@@ -670,7 +671,7 @@ async def handle_telegram_message(job: dict[str, Any]) -> None:
             company_id=company_id,
             allowed_tools=[],
         ))
-        
+
         start_time = datetime.utcnow()
         task_result = await agent.process_task({
             "description": message_text,
@@ -680,10 +681,10 @@ async def handle_telegram_message(job: dict[str, Any]) -> None:
             "channel": "telegram",
         })
         latency = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-        
+
         status = "SUCCESS" if task_result.get("status") == "SUCCESS" else "FAILED"
         result_data = task_result.get("result", {})
-        
+
         async with async_session() as run_session:
             task_id = _generate_id()
             await run_session.execute(
@@ -704,14 +705,14 @@ async def handle_telegram_message(job: dict[str, Any]) -> None:
                 step_name="chat_reply",
             )
             await run_session.commit()
-        
+
         reply = result_data.get("reply")
         if reply:
             from src.db.repo.telegram_config_repo import TelegramConfigRepository
             async with async_session() as config_session:
                 repo = TelegramConfigRepository(config_session)
                 config = await repo.get_active_config(company_id)
-            
+
             if not config:
                 logger.error("no active telegram config for company", company_id=company_id)
                 return
@@ -728,95 +729,7 @@ async def handle_telegram_message(job: dict[str, Any]) -> None:
             logger.info("telegram reply sent", sender_id=sender_id, reply=reply)
 
 
-async def handle_whatsapp_message(job: dict[str, Any]) -> None:
-    """Background task: process an incoming WhatsApp message."""
-    payload = job.get("payload", {})
-    sender_id = payload.get("sender_id")
-    phone_number_id = payload.get("phone_number_id")
-    message_text = payload.get("text")
-    company_id = payload.get("company_id")
-    mid = payload.get("mid")
-
-    if not all([sender_id, phone_number_id, message_text, company_id]):
-        logger.warning("whatsapp message skipped: missing required fields", payload=payload)
-        return
-
-    logger.info("processing whatsapp message", sender_id=sender_id, company_id=company_id)
-
-    async with async_session() as session:
-        # 1. Get Page/Phone Token
-        page_row = await session.execute(
-            "SELECT page_access_token FROM facebook_pages WHERE page_id = :pid AND company_id = :cid",
-            {"pid": phone_number_id, "cid": company_id},
-        )
-        page_res = page_row.scalar_one_or_none()
-        if not page_res:
-            logger.error("whatsapp phone not found", pid=phone_number_id, cid=company_id)
-            return
-        token = page_res
-
-        # 2. Customer Lookup/Creation
-        cust_row = await session.execute(
-            "SELECT id FROM customers WHERE whatsapp_id = :sid AND company_id = :cid",
-            {"sid": sender_id, "cid": company_id},
-        )
-        customer_id = cust_row.scalar_one_or_none()
-        if not customer_id:
-            cust_id = _generate_id()
-            await session.execute(
-                "INSERT INTO customers (id, company_id, whatsapp_id, name) VALUES (:id, :cid, :sid, :name)",
-                {"id": cust_id, "cid": company_id, "sid": sender_id, "name": f"WA User {sender_id}"},
-            )
-            customer_id = cust_id
-
-        # 3. Manage Conversation (Thread)
-        thread_row = await session.execute(
-            "SELECT id FROM ai.threads WHERE customer_id = :cid AND company_id = :coid AND channel = 'whatsapp' AND status = 'active'",
-            {"cid": customer_id, "coid": company_id},
-        )
-        thread_id = thread_row.scalar_one_or_none()
-        if not thread_id:
-            thread_id = _generate_id()
-            await session.execute(
-                "INSERT INTO ai.threads (id, company_id, customer_id, channel, status) VALUES (:id, :coid, :cid, 'whatsapp', 'active')",
-                {"id": thread_id, "coid": company_id, "cid": customer_id},
-            )
-
-        # 4. Save Message (deduplicated)
-        try:
-            await session.execute(
-                "INSERT INTO messages (id, conversation_id, content, is_from_customer, created_at) VALUES (:id, :conv_id, :content, true, NOW())",
-                {"id": mid, "conv_id": thread_id, "content": message_text},
-            )
-        except Exception:
-            logger.debug("message already exists", mid=mid)
-
-        await session.commit()
-
-        # 5. AI Process
-        from src.agents.base import BaseAgent, BaseAgentConfig
-        agent = BaseAgent(BaseAgentConfig(
-            id=f"wa_agent_{phone_number_id[:8]}",
-            name=f"WA Agent {phone_number_id[:8]}",
-            role="SALES",
-            company_id=company_id,
-            allowed_tools=[],
-        ))
-        
-        task_result = await agent.process_task({
-            "description": message_text,
-            "session_id": thread_id,
-            "user_id": customer_id,
-            "company_id": company_id,
-            "channel": "whatsapp",
-        })
-        
-        reply = task_result.get("result", {}).get("reply")
-        if reply:
-            from src.tools.whatsapp_client import WhatsAppClient
-            async with WhatsAppClient(token, phone_number_id) as wa:
-                await wa.send_text(sender_id, reply)
-            logger.info("whatsapp reply sent", sender_id=sender_id, reply=reply)
+# ── Scheduled Agent Task (RoutineExecutorService port) ───────────────────
 
 
 # ── Scheduled Agent Task (RoutineExecutorService port) ───────────────────
@@ -834,7 +747,7 @@ async def handle_scheduled_agent_task(job: dict[str, Any]) -> None:
     logger.info("executing scheduled agent task", company_id=company_id, type=task_type, job_id=job_id)
 
     from src.agents.base import BaseAgent, BaseAgentConfig
-    
+
     agent = BaseAgent(BaseAgentConfig(
         id=agent_id or f"routine_{_generate_id()[:8]}",
         name=f"Routine-{task_type}",
@@ -854,7 +767,7 @@ async def handle_scheduled_agent_task(job: dict[str, Any]) -> None:
         start_time = datetime.utcnow()
         task_result = await agent.process_task(task_obj)
         latency = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-        
+
         status = "SUCCESS" if task_result.get("status") == "SUCCESS" else "FAILED"
         result_data = task_result.get("result", {})
 
@@ -874,7 +787,7 @@ async def handle_scheduled_agent_task(job: dict[str, Any]) -> None:
                     "prio": "medium",
                 }
             )
-            
+
             # 2. Log the run
             await _log_agent_run(
                 session=session,
@@ -888,7 +801,7 @@ async def handle_scheduled_agent_task(job: dict[str, Any]) -> None:
                 latency_ms=latency,
                 step_name=task_type,
             )
-            
+
             # 3. Legacy provider log
             action_map = {"FOLLOW_UP": "FOLLOW_UP_SENT", "INVENTORY_CHECK": "INVENTORY_AUDITED", "REPORT": "REPORT_GENERATED"}
             action = action_map.get(task_type, f"{task_type}_COMPLETED")
@@ -986,7 +899,7 @@ def run_worker_sync():
 
 
 async def _run_worker_async():
-    from src.db.session import init_db, close_db
+    from src.db.session import close_db, init_db
     from src.services.redis_client import redis_client
 
     await init_db()

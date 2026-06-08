@@ -198,8 +198,7 @@ class TestProcessTaskProgressiveExposure:
         )
         agent = BaseAgent(config)
 
-        with patch("src.agents.base.build_agent_client") as mock_client, \
-             patch("src.agents.base.get_all_tools", return_value=[]):
+        with patch("src.agents.base.build_agent_client") as mock_client:
             mock_client.return_value = MagicMock()
             agent.build()
 
@@ -224,8 +223,7 @@ class TestProcessTaskProgressiveExposure:
         )
         agent = BaseAgent(config)
 
-        with patch("src.agents.base.build_agent_client") as mock_client, \
-             patch("src.agents.base.get_all_tools", return_value=[]):
+        with patch("src.agents.base.build_agent_client") as mock_client:
             mock_client.return_value = MagicMock()
             agent.build()
 

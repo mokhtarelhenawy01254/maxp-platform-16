@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import structlog
 from typing import Any
+
+import structlog
 from sqlalchemy import text
 
 from src.context.compressor import compress_history, count_tokens
@@ -163,7 +164,8 @@ class ContextAssembler:
         4. <company_knowledge> — RAG evidence from knowledge base
         5. <relevant_memories> — episodic memories for this customer
         """
-        base_prompt = ctx.system_prompt or (ctx.agent.instructions if ctx.agent else "") or ""
+        from src.pipeline.stages.resolve_intent import get_agent_instructions
+        base_prompt = ctx.system_prompt or (get_agent_instructions(ctx.agent) if ctx.agent else "") or ""
 
         sections: list[tuple[str, str]] = []  # (section_name, xml_content)
 

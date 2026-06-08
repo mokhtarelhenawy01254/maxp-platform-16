@@ -4,16 +4,14 @@ import json
 import uuid
 
 import structlog
-from src.agents.base import BaseAgent, BaseAgentConfig
 from agent_framework.anthropic import RawClaudeAgent
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.agents.middleware import build_maxp_function_middleware
+from src.agents.base import BaseAgent, BaseAgentConfig
 from src.config import get_settings
 from src.db.models.agent import CompanyAgent
 from src.db.repo.agent_repo import AgentRepository
-from src.llm.agent_client_factory import build_agent_client_async
 from src.prompts.template_registry import get_prompt_registry
 from src.tools.registry import (
     get_tool_names_for_role,
@@ -104,7 +102,7 @@ class AgentRegistry:
         resolved_model = model or settings.default_model
 
         tool_names = allowed_tools or get_tool_names_for_role(role)
-        
+
         config = BaseAgentConfig(
             id=agent_id,
             name=name or f"{role} Agent",
@@ -116,7 +114,7 @@ class AgentRegistry:
             template_slug=template_slug,
             # instructions handled via template or overrides in BaseAgent
         )
-        
+
         agent = BaseAgent(config)
 
         self.register(company_id, agent_id, agent, tool_names=tool_names)
@@ -168,7 +166,7 @@ class AgentRegistry:
 
 
 class _AgentRecord:
-    def __init__(self, agent: Agent | RawClaudeAgent, tool_names: list[str]) -> None:
+    def __init__(self, agent: BaseAgent | RawClaudeAgent, tool_names: list[str]) -> None:
         self.agent = agent
         self.tool_names = tool_names
 

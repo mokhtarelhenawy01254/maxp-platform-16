@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
-from agent_framework import FunctionTool, FunctionInvocationContext
+from agent_framework import FunctionInvocationContext, FunctionTool
 from pydantic import BaseModel
 
 from src.tools.gateway import ToolGateway

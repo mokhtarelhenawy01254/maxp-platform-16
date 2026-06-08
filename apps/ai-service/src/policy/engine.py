@@ -11,7 +11,6 @@ This module is pure business logic - no AI runtime dependency.
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any, Literal

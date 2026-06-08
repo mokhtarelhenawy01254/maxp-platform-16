@@ -11,7 +11,6 @@ const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const aiSandboxService = require('../services/aiSandboxService');
 const { calculateCost, getModelCost } = require('../config/modelCosts');
 const agentProfileLoaderService = require('../legacy-ai-agent/aiAgent/agentProfileLoaderService');
-
 const MAX_SANDBOX_MESSAGE_CHARS = 12000;
 const MAX_SANDBOX_RESPONSE_CHARS = 12000;
 const MAX_SANDBOX_SESSION_ID_CHARS = 120;
@@ -196,6 +195,7 @@ async function runSelectedAgentInPython({
   modelSelection,
   channel = 'FACEBOOK',
 }) {
+  // Route all sandbox AI to the Python ai-service (always, for all companies)
   const agentConfig = buildAiServiceAgentConfig(agentBundle.sandboxAgent);
   if (modelSelection?.model) {
     agentConfig.model = modelSelection.model;
@@ -215,17 +215,22 @@ async function runSelectedAgentInPython({
     attachments,
   });
 
-  if (!result.ok) {
-    const error = createHttpError('AI_SERVICE_AGENT_CHAT_FAILED', result.status || 502);
-    error.reason = result.data?.error
-      || result.error
-      || result.reason
-      || JSON.stringify(result).slice(0, 500)
-      || 'ai-service unreachable';
+  if (!result) {
+    const error = createHttpError('AI_SERVICE_AGENT_CHAT_FAILED', 502);
+    error.reason = 'ai-service unreachable';
     throw error;
   }
 
-  const data = result.data || {};
+  const data = result.ok === true && result.data ? result.data : result;
+  if (data.ok === false || data.success === false) {
+    const error = createHttpError('AI_SERVICE_AGENT_CHAT_FAILED', data.status || 502);
+    error.reason = data.error
+      || data.reason
+      || JSON.stringify(data).slice(0, 500)
+      || 'ai-service returned an error';
+    throw error;
+  }
+
   const tools = Array.isArray(data.tool_calls) ? data.tool_calls : [];
   return {
     agentId: data.agent_id || agentId,
@@ -252,6 +257,7 @@ async function runSelectedAgentInPython({
       runtime: data.runtime || 'python-agent',
     },
     modelSelection: data.model_selection || null,
+    usageMetadata: data.usage_metadata || data.usage || null,
     task: {
       currentMessage: messageText,
       sessionId: threadId,
@@ -381,7 +387,26 @@ async function hydrateSandboxWorkingMemory(companyId, conversationId, sessionMes
 }
 
 async function createSandboxRuntimeAgent(companyId, agentId, modelSelection) {
-  const runtimeAgent = agentProvisioningService.getAgent(companyId, agentId);
+  let runtimeAgent = agentProvisioningService.getAgent(companyId, agentId);
+  if (!runtimeAgent) {
+    const prisma = getSharedPrismaClient();
+    const row = await prisma.companyAgent.findUnique({ where: { id: agentId } });
+    if (row && row.companyId === companyId) {
+      const recoveredSkills = (() => { try { return JSON.parse(row.skills || '[]'); } catch { return []; } })();
+      agentProvisioningService._restoreAgent(companyId, {
+        id: row.id,
+        name: row.name,
+        role: row.role,
+        model: row.model,
+        templateSlug: row.templateSlug,
+        parentId: row.parentId,
+        allowedSkills: recoveredSkills,
+        soul: row.soul,
+        status: row.status,
+      });
+      runtimeAgent = agentProvisioningService.getAgent(companyId, agentId);
+    }
+  }
   if (!runtimeAgent) {
     return null;
   }
@@ -567,6 +592,8 @@ async function runSandboxChatTurn({
     toolCallCount: toolCalls.length,
   });
 
+  const runtime = taskResult?.result?.runtime || 'unknown';
+
   return {
     reply,
     toolCalls,
@@ -585,6 +612,7 @@ async function runSandboxChatTurn({
     taskResult,
     agentInfo,
     usedFallbackKey: modelSelection.usedFallbackKey ?? false,
+    runtime,
   };
 }
 
@@ -1145,6 +1173,7 @@ async function sendChatMessage(req, res) {
       agentId,
       sessionId: turnResult.sessionId,
       usedFallbackKey: turnResult.usedFallbackKey ?? false,
+      runtime: turnResult.runtime || 'unknown',
     });
   } catch (error) {
     return sendCodeError(res, error.statusCode || 500, error.code || 'AI_SANDBOX_CHAT_FAILED');
@@ -1288,6 +1317,8 @@ async function streamChatMessage(req, res) {
       toolCallCount: toolCalls.length,
     });
 
+    const streamRuntime = taskResult?.result?.runtime || 'unknown';
+
     res.write(`data: ${JSON.stringify({
       done: true,
       tokens: { input: 0, output: 0, total: 0 },
@@ -1298,6 +1329,7 @@ async function streamChatMessage(req, res) {
       keyName: modelSelection.key.name,
       cost: 0,
       sessionId: resolvedSessionId,
+      runtime: streamRuntime,
     })}\n\n`);
 
     res.end();

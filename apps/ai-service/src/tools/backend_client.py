@@ -16,13 +16,13 @@ class BackendClient:
     
     Replaces the ai-bridge pattern by calling business APIs directly.
     """
-    
+
     def __init__(self) -> None:
         settings = get_settings()
         self.base_url = settings.maxp_api_url.rstrip("/")
         self.token = settings.maxp_service_token
         self._client: httpx.AsyncClient | None = None
-    
+
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None:
             self._client = httpx.AsyncClient(
@@ -35,7 +35,7 @@ class BackendClient:
                 trust_env=False,
             )
         return self._client
-    
+
     async def _request(
         self,
         method: str,
@@ -60,9 +60,9 @@ class BackendClient:
                 if attempt < 2:
                     await asyncio.sleep(2 ** attempt)
         raise RuntimeError(f"Request failed: {method} {path}") from last_error
-    
+
     # ── Product APIs ──
-    
+
     async def search_products(
         self, company_id: str, query: str, limit: int = 10
     ) -> list[dict[str, Any]]:
@@ -71,13 +71,13 @@ class BackendClient:
             params["search"] = query
         result = await self._request("GET", "/api/v1/products", params=params)
         return result.get("data", result.get("products", []))
-    
+
     async def get_product(self, company_id: str, product_id: str) -> dict[str, Any] | None:
         try:
             return await self._request("GET", f"/api/v1/products/{product_id}", params={"companyId": company_id})
         except RuntimeError:
             return None
-    
+
     async def get_low_stock_products(
         self, company_id: str, threshold: int = 5, limit: int = 10
     ) -> list[dict[str, Any]]:
@@ -88,7 +88,7 @@ class BackendClient:
         if isinstance(data, dict):
             return list(data.get("lowStock", [])) + list(data.get("outOfStock", []))
         return data if isinstance(data, list) else []
-    
+
     async def get_top_selling_products(
         self, company_id: str, period: str = "month", limit: int = 5
     ) -> list[dict[str, Any]]:
@@ -108,7 +108,7 @@ class BackendClient:
         )
 
     # ── Order APIs ──
-    
+
     async def get_order_by_number(
         self, company_id: str, order_number: str
     ) -> dict[str, Any] | None:
@@ -119,7 +119,7 @@ class BackendClient:
             )
         except RuntimeError:
             return None
-    
+
     async def list_recent_orders(
         self, company_id: str, limit: int = 5, status: str | None = None
     ) -> list[dict[str, Any]]:
@@ -128,20 +128,20 @@ class BackendClient:
             params["status"] = status
         result = await self._request("GET", "/api/v1/orders-v2/simple", params=params)
         return result.get("data", result.get("orders", []))
-    
+
     async def get_order_summary(
         self, company_id: str, period: str = "today"
     ) -> dict[str, Any]:
         return await self._request("GET", "/api/v1/orders-v2/stats/summary", params={
             "period": period, "companyId": company_id,
         })
-    
+
     async def create_order(
         self, company_id: str, order_data: dict[str, Any]
     ) -> dict[str, Any]:
         order_data.setdefault("companyId", company_id)
         return await self._request("POST", "/api/v1/orders-v2/create-simple", json_body=order_data)
-    
+
     async def update_order_status(
         self, company_id: str, order_number: str, status: str
     ) -> dict[str, Any]:
@@ -149,7 +149,7 @@ class BackendClient:
             "PATCH", f"/api/v1/orders-v2/simple/{order_number}/status",
             json_body={"status": status, "companyId": company_id},
         )
-    
+
     async def cancel_order(
         self, company_id: str, order_number: str, reason: str | None = None
     ) -> dict[str, Any]:
@@ -157,7 +157,7 @@ class BackendClient:
             "POST", f"/api/v1/orders-v2/simple/{order_number}/cancel",
             json_body={"reason": reason, "companyId": company_id},
         )
-    
+
     async def get_shipping_rate(
         self, company_id: str, governorate: str, city: str | None = None, weight: float | None = None
     ) -> dict[str, Any] | None:
@@ -168,9 +168,9 @@ class BackendClient:
             )
         except RuntimeError:
             return None
-    
+
     # ── Customer APIs ──
-    
+
     async def search_customers(
         self, company_id: str, query: str, limit: int = 5
     ) -> list[dict[str, Any]]:
@@ -178,7 +178,7 @@ class BackendClient:
             "q": query, "limit": limit, "companyId": company_id,
         })
         return result.get("data", result.get("customers", []))
-    
+
     async def get_customer(
         self, company_id: str, customer_id: str
     ) -> dict[str, Any] | None:
@@ -189,7 +189,7 @@ class BackendClient:
             )
         except RuntimeError:
             return None
-    
+
     async def get_customer_orders(
         self, company_id: str, customer_id: str, limit: int = 5
     ) -> list[dict[str, Any]]:
@@ -198,9 +198,9 @@ class BackendClient:
             params={"limit": limit, "companyId": company_id},
         )
         return result.get("data", result.get("orders", []))
-    
+
     # ── Inventory APIs ──
-    
+
     async def check_inventory(
         self, company_id: str, product_id: str
     ) -> dict[str, Any] | None:
@@ -211,7 +211,7 @@ class BackendClient:
             )
         except RuntimeError:
             return None
-    
+
     async def adjust_inventory(
         self, company_id: str, product_id: str, quantity: int, reason: str | None = None
     ) -> dict[str, Any]:
@@ -224,7 +224,7 @@ class BackendClient:
                 "companyId": company_id,
             },
         )
-    
+
     async def get_inventory_alerts(
         self, company_id: str, threshold: int = 5
     ) -> list[dict[str, Any]]:

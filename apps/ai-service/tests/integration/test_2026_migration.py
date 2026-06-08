@@ -53,13 +53,20 @@ async def test_episodic_memory_pgvector_search_uses_cosine_sql():
     ]
     mock_session.execute.return_value = mock_result
 
-    results = await service.search_similar(
-        session=mock_session,
-        company_id="comp1",
-        customer_id="cust1",
-        query_text="customer wants XL",
-        top_k=5,
-    )
+    with patch.object(service, "generate_embedding_with_provider", new=AsyncMock(return_value={
+        "vector": [0.1] * 768,
+        "provider": "gemini",
+        "model": "gemini-embedding-2",
+        "dimension": 768,
+        "cached": False,
+    })):
+        results = await service.search_similar(
+            session=mock_session,
+            company_id="comp1",
+            customer_id="cust1",
+            query_text="customer wants XL",
+            top_k=5,
+        )
 
     assert len(results) == 1
     assert results[0]["content"] == "customer prefers XL"

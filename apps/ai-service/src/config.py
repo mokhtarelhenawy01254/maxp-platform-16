@@ -45,6 +45,26 @@ class Settings(BaseSettings):
         repr=False,
         description="Sensitive: Google AI API key (for Gemini)",
     )
+    groq_api_key: str | None = Field(
+        default=None,
+        repr=False,
+        description="Sensitive: GROQ API key",
+    )
+    nvidia_api_key: str | None = Field(
+        default=None,
+        repr=False,
+        description="Sensitive: NVIDIA NIM API key",
+    )
+    deepseek_api_key: str | None = Field(
+        default=None,
+        repr=False,
+        description="Sensitive: DeepSeek API key",
+    )
+    openrouter_api_key: str | None = Field(
+        default=None,
+        repr=False,
+        description="Sensitive: OpenRouter API key",
+    )
 
     default_llm_provider: Literal["anthropic", "openai", "google"] = "anthropic"
     default_model: str = "claude-sonnet-4-6"

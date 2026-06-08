@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+
 import structlog
-from src.db.session import init_db, close_db
+
+from src.db.session import close_db, init_db
 from src.services.redis_client import redis_client
 from src.workers.agent_worker import start_worker
 from src.workers.telegram_worker import run_telegram_worker

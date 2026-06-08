@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import structlog
 from typing import Any
+
+import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,7 +25,7 @@ class DynamicIntentRegistry:
 
         try:
             # Statically import to prevent circular dependencies during module loading
-            from src.intent.schema import INTENT_ENUM, INTENT_POLICIES, INTENT_CONFIGURED_TOOLS
+            from src.intent.schema import INTENT_CONFIGURED_TOOLS, INTENT_ENUM, INTENT_POLICIES
 
             stmt = select(IntentDefinition)
             result = await session.execute(stmt)
@@ -62,7 +63,7 @@ class DynamicIntentRegistry:
                 self._load_fallbacks(INTENT_ENUM, INTENT_POLICIES, INTENT_CONFIGURED_TOOLS)
         except Exception as e:
             logger.warning("failed to load intent definitions from database, using fallback schemas", error=str(e))
-            from src.intent.schema import INTENT_ENUM, INTENT_POLICIES, INTENT_CONFIGURED_TOOLS
+            from src.intent.schema import INTENT_CONFIGURED_TOOLS, INTENT_ENUM, INTENT_POLICIES
             self._load_fallbacks(INTENT_ENUM, INTENT_POLICIES, INTENT_CONFIGURED_TOOLS)
 
     def _load_fallbacks(

@@ -14,7 +14,7 @@ async def test_spawn_wraps_tools_with_gateway(monkeypatch):
     settings = MagicMock(default_model="gemini-2.5-flash", default_llm_provider="google")
     monkeypatch.setattr("src.services.agent_registry.get_settings", lambda: settings)
     monkeypatch.setattr(
-        "src.services.agent_registry.build_agent_client_async",
+        "src.agents.base.build_agent_client_async",
         AsyncMock(return_value=MagicMock()),
     )
 
@@ -26,7 +26,7 @@ async def test_spawn_wraps_tools_with_gateway(monkeypatch):
         name="Inventory Agent",
     )
 
-    tools = agent.default_options["tools"]
+    tools = agent._resolve_tools()
     middleware = getattr(agent, "middleware", [])
     result = await tools[0].func(
         ProductCreateInput(

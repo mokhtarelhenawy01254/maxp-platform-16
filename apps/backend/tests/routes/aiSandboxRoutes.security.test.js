@@ -9,6 +9,7 @@ const mockProviderClient = {
 };
 let mockCeoAgentInstance;
 let mockCeoAgentNextResult;
+let mockAiServiceChatResult;
 const mockWorkingMemoryStore = new Map();
 
 const mockPrisma = {
@@ -65,10 +66,19 @@ jest.mock('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory', () => ({
   getActiveProvider: jest.fn(() => mockProviderClient),
 }));
 
-jest.mock('../../services/aiRuntimeService', () => ({
+jest.mock('../../legacy-ai-agent/aiAgent/aiRuntimeService', () => ({
   getModelManager: jest.fn(() => ({
     getNextKeySimple: jest.fn(),
   })),
+}));
+
+jest.mock('../../services/aiServiceAdminClient', () => ({
+  chatWithAgent: jest.fn(async () => mockAiServiceChatResult || {
+    status: 'ok',
+    reply: 'LLM reply',
+    tool_calls: [],
+    runtime: 'python-agent',
+  }),
 }));
 
 jest.mock('../../legacy-ai-agent/aiAgent/workingMemoryService', () => ({
@@ -135,6 +145,43 @@ jest.mock('../../legacy-ai-agent/aiAgent/CEOAgent', () => jest.fn().mockImplemen
   return mockCeoAgentInstance;
 }));
 
+jest.mock('../../legacy-ai-agent/aiAgent/BaseAgent', () => ({
+  fromTemplate: jest.fn((_templateSlug, _companyId, agentConfig = {}) => {
+    const defaultResult = {
+      status: 'SUCCESS',
+      result: {
+        reply: 'LLM reply',
+        summary: 'LLM reply',
+        tools: [],
+      },
+      modelSelection: {
+        provider: 'GOOGLE',
+        model: 'gemini-2.5-flash',
+        keyId: 'key_google',
+        keyName: 'Production Gemini',
+      },
+    };
+    mockCeoAgentInstance = {
+      ...agentConfig,
+      setModelManager: jest.fn(),
+      processTask: jest.fn(async () => mockCeoAgentNextResult || defaultResult),
+      getTools: jest.fn(() => Array.isArray(agentConfig.allowedTools) ? agentConfig.allowedTools : []),
+      getSkills: jest.fn(() => Array.isArray(agentConfig.allowedSkills) ? agentConfig.allowedSkills : []),
+      getInfo: jest.fn(() => ({
+        selectedModel: 'gemini-2.5-flash',
+        selectedProvider: 'GOOGLE',
+        lastModelSelection: {
+          provider: 'GOOGLE',
+          model: 'gemini-2.5-flash',
+          keyId: 'key_google',
+          keyName: 'Production Gemini',
+        },
+      })),
+    };
+    return mockCeoAgentInstance;
+  }),
+}));
+
 jest.mock('../../legacy-ai-agent/aiAgent/agentProvisioningService', () => ({
   getAgent: jest.fn(() => ({
     id: 'agent_sales',
@@ -149,6 +196,7 @@ jest.mock('../../legacy-ai-agent/aiAgent/agentProvisioningService', () => ({
 
 jest.mock('../../legacy-ai-agent/aiAgent/agentProfileLoaderService', () => ({
   loadProfile: jest.fn(() => null),
+  getTemplateSlugForRole: jest.fn(() => 'sales-agent'),
 }));
 
 jest.mock('../../legacy-ai-agent/aiAgent/agentManagerService', () => ({
@@ -175,6 +223,7 @@ jest.mock('../../legacy-ai-agent/aiAgent/agentManagerService', () => ({
 }));
 
 const AIProviderFactory = require('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory');
+const aiServiceAdminClient = require('../../services/aiServiceAdminClient');
 
 const createApp = () => {
   const app = express();
@@ -191,6 +240,7 @@ describe('AI sandbox route security', () => {
     mockWorkingMemoryStore.clear();
     mockCeoAgentInstance = null;
     mockCeoAgentNextResult = null;
+    mockAiServiceChatResult = null;
     jest.spyOn(console, 'warn').mockImplementation(() => {});
     mockCurrentUser = { id: 'user_1', companyId: 'company_1', role: 'OWNER' };
     mockProviderClient.generateContent = jest.fn().mockResolvedValue({
@@ -435,15 +485,13 @@ describe('AI sandbox route security', () => {
   });
 
   test('returns a structured error when the sandbox agent cannot produce a reply', async () => {
-    mockCeoAgentNextResult = {
-      status: 'FAILED',
-      errorCode: 'AI_AGENT_LLM_UNAVAILABLE',
+    mockAiServiceChatResult = {
+      status: 'error',
+      reply: '',
+      error_code: 'AI_AGENT_LLM_UNAVAILABLE',
       error: 'No model response was available for this task',
-      result: {
-        reply: '',
-        summary: '',
-        tools: [],
-      },
+      tool_calls: [],
+      runtime: 'python-agent',
     };
 
     const response = await request(app)
@@ -458,6 +506,7 @@ describe('AI sandbox route security', () => {
 
     expect(response.status).toBe(502);
     expect(response.body.code).toBe('AI_AGENT_LLM_UNAVAILABLE');
+    expect(mockCeoAgentInstance.processTask).not.toHaveBeenCalled();
     expect(JSON.stringify(response.body)).not.toMatch(/[\u0600-\u06FF]/);
   });
 
@@ -534,18 +583,25 @@ describe('AI sandbox route security', () => {
 
     expect(response.status).toBe(200);
     expect(mockCeoAgentInstance.setModelManager).toHaveBeenCalled();
-    expect(mockCeoAgentInstance.processTask).toHaveBeenCalledTimes(1);
-    const task = mockCeoAgentInstance.processTask.mock.calls[0][0];
-    expect(task.conversationHistory).toEqual([
+    expect(mockCeoAgentInstance.processTask).not.toHaveBeenCalled();
+    expect(aiServiceAdminClient.chatWithAgent).toHaveBeenCalledTimes(1);
+    const task = aiServiceAdminClient.chatWithAgent.mock.calls[0][0];
+    expect(task.memoryContext.recentMessages).toEqual([
       { role: 'user', content: 'I need help with an order.' },
       { role: 'assistant', content: 'What would you like to know about the order?' },
       { role: 'user', content: 'Create an order' },
     ]);
-    expect(task.intentContext).toEqual(expect.objectContaining({
+    expect(task).toEqual(expect.objectContaining({
       channel: 'FACEBOOK',
-      sandbox: true,
+      message: 'Create an order',
+      threadId: 'session_1',
     }));
-    const ctorArgs = require('../../legacy-ai-agent/aiAgent/CEOAgent').mock.calls[0][1];
+    expect(task.agentConfig).toEqual(expect.objectContaining({
+      model: 'gemini-2.5-flash',
+      provider: 'GOOGLE',
+      keyId: 'key_google',
+    }));
+    const ctorArgs = require('../../legacy-ai-agent/aiAgent/BaseAgent').fromTemplate.mock.calls[0][2];
     expect(ctorArgs.persona.agentInstructions).toContain('Ask for required customer details before order actions.');
     expect(ctorArgs.persona.soulInstructions).toContain('Use dynamic customer-facing phrasing for every reply.');
     expect(ctorArgs.persona.modelPolicy).toEqual(expect.objectContaining({
@@ -608,7 +664,7 @@ describe('AI sandbox route security', () => {
       });
 
     expect(response.status).toBe(200);
-    const ctorArgs = require('../../legacy-ai-agent/aiAgent/CEOAgent').mock.calls[0][1];
+    const ctorArgs = require('../../legacy-ai-agent/aiAgent/BaseAgent').fromTemplate.mock.calls[0][2];
     expect(ctorArgs.persona.modelPolicy).toEqual(expect.objectContaining({
       provider: 'GOOGLE',
       keyId: 'key_preferred',
@@ -675,7 +731,7 @@ describe('AI sandbox route security', () => {
       });
 
     expect(centralKeyResponse.status).toBe(200);
-    const ctorArgs = require('../../legacy-ai-agent/aiAgent/CEOAgent').mock.calls[0][1];
+    const ctorArgs = require('../../legacy-ai-agent/aiAgent/BaseAgent').fromTemplate.mock.calls[0][2];
     expect(ctorArgs.persona.modelPolicy).toEqual(expect.objectContaining({
       provider: 'GOOGLE',
       keyId: 'central_key',
@@ -683,19 +739,17 @@ describe('AI sandbox route security', () => {
   });
 
   test('returns and persists token usage and cost from sandbox runtime metadata', async () => {
-    mockCeoAgentNextResult = {
-      status: 'SUCCESS',
-      result: {
-        reply: 'Measured reply',
-        summary: 'Measured reply',
-        tools: [],
-      },
-      usageMetadata: {
+    mockAiServiceChatResult = {
+      status: 'ok',
+      reply: 'Measured reply',
+      tool_calls: [],
+      runtime: 'python-agent',
+      usage_metadata: {
         promptTokenCount: 1000,
         candidatesTokenCount: 2000,
         totalTokenCount: 3000,
       },
-      modelSelection: {
+      model_selection: {
         provider: 'GOOGLE',
         model: 'gemini-2.5-flash',
         keyId: 'key_google',
@@ -747,7 +801,7 @@ describe('AI sandbox route security', () => {
     expect(mockProviderClient.generateContent).not.toHaveBeenCalled();
   });
 
-  test('normalizes set-like agent tools and supports OpenAI-compatible provider clients', async () => {
+  test('normalizes set-like agent tools before sending the selected agent config to Python', async () => {
     const agentProvisioningService = require('../../legacy-ai-agent/aiAgent/agentProvisioningService');
     agentProvisioningService.getAgent.mockReturnValueOnce({
       id: 'agent_sales',
@@ -756,24 +810,11 @@ describe('AI sandbox route security', () => {
       persona: { soulInstructions: 'Private operating instructions' },
       allowedTools: new Set(['product.search', 'order.create_draft']),
     });
-    mockProviderClient.generateContent = undefined;
-    mockProviderClient.generateResponse = jest.fn().mockResolvedValue({
-      candidates: [{ content: { parts: [{ text: 'OpenAI compatible reply' }] } }],
-      usageMetadata: { promptTokenCount: 11, candidatesTokenCount: 13 },
-    });
-    mockCeoAgentNextResult = {
-      status: 'SUCCESS',
-      result: {
-        reply: 'OpenAI compatible reply',
-        summary: 'OpenAI compatible reply',
-        tools: [],
-      },
-      modelSelection: {
-        provider: 'GOOGLE',
-        model: 'gemini-2.5-flash',
-        keyId: 'key_google',
-        keyName: 'Production Gemini',
-      },
+    mockAiServiceChatResult = {
+      status: 'ok',
+      reply: 'Python reply',
+      tool_calls: [],
+      runtime: 'python-agent',
     };
 
     const response = await request(app)
@@ -788,13 +829,13 @@ describe('AI sandbox route security', () => {
       });
 
     expect(response.status).toBe(200);
-    expect(response.body.reply).toBe('OpenAI compatible reply');
-    expect(mockCeoAgentInstance.processTask).toHaveBeenCalledWith(expect.objectContaining({
-      currentMessage: 'Hello',
-      intentMessage: 'Hello',
-      conversationHistory: expect.arrayContaining([
-        expect.objectContaining({ role: 'user', content: 'Hello' }),
-      ]),
+    expect(response.body.reply).toBe('Python reply');
+    expect(mockCeoAgentInstance.processTask).not.toHaveBeenCalled();
+    expect(aiServiceAdminClient.chatWithAgent).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'Hello',
+      agentConfig: expect.objectContaining({
+        allowedTools: ['product.search', 'order.create_draft'],
+      }),
     }));
   });
 });

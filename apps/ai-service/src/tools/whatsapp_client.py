@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from typing import Any
+
 import httpx
 import structlog
-from typing import Any
 
 logger = structlog.get_logger(__name__)
 
@@ -48,7 +49,7 @@ class WhatsAppClient:
         }
         # Clean up None values
         payload = {k: v for k, v in payload.items() if v is not None}
-        
+
         response = await self._client.post(f"/{self.phone_number_id}/messages", json=payload)
         response.raise_for_status()
         return response.json()

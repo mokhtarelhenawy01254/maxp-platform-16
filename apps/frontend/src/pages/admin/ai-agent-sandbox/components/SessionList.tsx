@@ -1,29 +1,17 @@
 import React from "react";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
-  Box,
-  Typography,
-  IconButton,
-  Button,
-  Tooltip,
-  TextField,
-  InputAdornment,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Skeleton,
-} from "@mui/material";
-import {
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  Chat as ChatIcon,
-  Search as SearchIcon,
-  Star as StarIcon,
-  StarBorder as StarBorderIcon,
-  PushPin as PinIcon,
-  PushPinOutlined as PinOutlineIcon,
-} from "@mui/icons-material";
+  Plus,
+  Trash2,
+  MessageSquare,
+  Search,
+  Star,
+  Pin,
+  X,
+  Loader2
+} from "lucide-react";
 import type { Session } from "../types/sandbox.types";
 
 interface SessionListProps {
@@ -94,80 +82,64 @@ export const SessionList: React.FC<SessionListProps> = ({
   };
 
   return (
-    <Box
-      sx={{
-        width: collapsed ? 0 : 260,
-        minWidth: collapsed ? 0 : 260,
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        borderRight: "1px solid",
-        borderColor: "divider",
-        bgcolor: "background.paper",
-        overflow: "hidden",
-        transition: "width 0.25s ease, min-width 0.25s ease",
-      }}
+    <div
+      className={`h-full flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 overflow-hidden ${
+        collapsed ? "w-0 min-w-0" : "w-64 min-w-64"
+      }`}
     >
-      <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider" }}>
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.5 }}>
-          <Typography variant="subtitle2" fontWeight={700}>
+      {/* Header & Add Button */}
+      <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 space-y-2.5">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Sessions
-          </Typography>
-          <Tooltip title="New Session">
-            <IconButton size="small" onClick={onCreateSession} color="primary">
-              <AddIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
-        <TextField
-          fullWidth
-          size="small"
-          placeholder="Search sessions..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" sx={{ color: "text.secondary" }} />
-              </InputAdornment>
-            ),
-          }}
-          sx={{ "& .MuiInputBase-root": { fontSize: 13 } }}
-        />
-      </Box>
+          </span>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onCreateSession}
+            className="size-7 hover:bg-slate-50 dark:hover:bg-slate-805 text-indigo-600 dark:text-indigo-400"
+            title="New Session"
+          >
+            <Plus className="size-4" />
+          </Button>
+        </div>
 
-      <Box sx={{ flex: 1, overflow: "auto", py: 0.5 }}>
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 size-3.5 text-slate-400 pointer-events-none" />
+          <Input
+            type="text"
+            placeholder="Search sessions..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 text-xs h-8 dark:bg-slate-950 dark:border-slate-800 focus-visible:ring-indigo-650"
+          />
+        </div>
+      </div>
+
+      {/* Session Scroll Area */}
+      <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 p-1 space-y-1">
         {isSessionsLoading && (
-          <Box sx={{ px: 2, py: 1.5 }}>
-            <Skeleton variant="rounded" height={36} sx={{ mb: 1 }} />
-            <Skeleton variant="rounded" height={36} sx={{ mb: 1 }} />
-            <Skeleton variant="rounded" height={36} sx={{ mb: 1 }} />
-            <Skeleton variant="rounded" height={36} />
-          </Box>
+          <div className="px-3 py-4 space-y-2.5">
+            <div className="h-9 bg-slate-50 dark:bg-slate-950/40 rounded-lg animate-pulse" />
+            <div className="h-9 bg-slate-50 dark:bg-slate-950/40 rounded-lg animate-pulse" />
+            <div className="h-9 bg-slate-50 dark:bg-slate-950/40 rounded-lg animate-pulse" />
+          </div>
         )}
 
         {!isSessionsLoading && sortedSessions.length === 0 && sessions.length > 0 && (
-          <Box sx={{ p: 3, textAlign: "center" }}>
-            <SearchIcon sx={{ fontSize: 40, color: "text.secondary", mb: 1, opacity: 0.4 }} />
-            <Typography variant="body2" color="text.secondary" fontSize={12}>
-              No sessions match your search
-            </Typography>
-            <Typography variant="caption" color="text.secondary" fontSize={11}>
-              Try a different search term
-            </Typography>
-          </Box>
+          <div className="p-6 text-center space-y-2">
+            <Search className="size-8 text-slate-300 dark:text-slate-700 mx-auto" />
+            <p className="text-xs text-slate-500 font-semibold">No matches found</p>
+          </div>
         )}
 
         {!isSessionsLoading && sortedSessions.length === 0 && sessions.length === 0 && (
-          <Box sx={{ p: 3, textAlign: "center" }}>
-            <ChatIcon sx={{ fontSize: 40, color: "text.secondary", mb: 1, opacity: 0.4 }} />
-            <Typography variant="body2" color="text.secondary" fontSize={12}>
-              No sessions yet
-            </Typography>
-            <Typography variant="caption" color="text.secondary" fontSize={11}>
-              Click + to create one
-            </Typography>
-          </Box>
+          <div className="p-6 text-center space-y-2">
+            <MessageSquare className="size-8 text-slate-300 dark:text-slate-700 mx-auto" />
+            <p className="text-xs text-slate-500 font-semibold">No sessions yet</p>
+            <p className="text-[10px] text-slate-400">Click + to start a session</p>
+          </div>
         )}
 
         {sortedSessions.map((session) => {
@@ -176,41 +148,29 @@ export const SessionList: React.FC<SessionListProps> = ({
           const isPinned = pinnedIds.has(session.id);
 
           return (
-            <Box
+            <div
               key={session.id}
               onClick={() => onSelectSession(session.id)}
               onDoubleClick={() => handleDoubleClick(session)}
-              sx={{
-                px: 2,
-                py: 1.25,
-                cursor: "pointer",
-                bgcolor: isActive ? "primary.main" : "transparent",
-                color: isActive ? "primary.contrastText" : "text.primary",
-                "&:hover": {
-                  bgcolor: isActive ? "primary.dark" : "action.hover",
-                },
-                transition: "background-color 0.15s",
-                borderBottom: "1px solid",
-                borderColor: isActive ? "primary.dark" : "divider",
-              }}
+              className={`p-2.5 rounded-lg cursor-pointer transition-all duration-150 relative group ${
+                isActive
+                  ? "bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50"
+                  : "hover:bg-slate-50 dark:hover:bg-slate-950 border border-transparent"
+              }`}
             >
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <Tooltip title={isPinned ? "Unpin session" : "Pin session"}>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleTogglePin(e, session.id)}
-                    sx={{
-                      color: isPinned ? "warning.main" : isActive ? "primary.contrastText" : "text.secondary",
-                      mr: 0.5,
-                      opacity: 0.7,
-                      "&:hover": { opacity: 1 },
-                    }}
-                  >
-                    {isPinned ? <PinIcon sx={{ fontSize: 14 }} /> : <PinOutlineIcon sx={{ fontSize: 14 }} />}
-                  </IconButton>
-                </Tooltip>
+              <div className="flex items-center justify-between gap-1.5">
+                <button
+                  onClick={(e) => handleTogglePin(e, session.id)}
+                  className={`flex-shrink-0 opacity-40 hover:opacity-100 transition-opacity ${
+                    isPinned ? "text-amber-500 opacity-100" : "text-slate-400"
+                  }`}
+                  title={isPinned ? "Unpin session" : "Pin session"}
+                >
+                  <Pin className={`size-3.5 ${isPinned ? "fill-amber-500" : ""}`} />
+                </button>
+
                 {editingId === session.id ? (
-                  <TextField
+                  <input
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
                     onBlur={handleSaveTitle}
@@ -219,115 +179,89 @@ export const SessionList: React.FC<SessionListProps> = ({
                       if (e.key === "Escape") setEditingId(null);
                     }}
                     autoFocus
-                    size="small"
-                    sx={{
-                      flex: 1,
-                      "& .MuiInputBase-root": {
-                        fontSize: 13,
-                        color: isActive ? "primary.contrastText" : "text.primary",
-                      },
-                    }}
+                    className="flex-1 text-xs bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded px-1.5 py-0.5 outline-none font-medium text-slate-850 dark:text-slate-100 focus:ring-1 focus:ring-indigo-650"
                   />
                 ) : (
-                  <Typography
-                    variant="body2"
-                    fontWeight={isActive ? 600 : 400}
-                    sx={{ flex: 1, fontSize: 13 }}
-                    noWrap
-                  >
+                  <span className={`flex-1 text-xs truncate font-medium ${
+                    isActive ? "text-indigo-700 dark:text-indigo-400 font-bold" : "text-slate-700 dark:text-slate-350"
+                  }`}>
                     {session.title}
-                  </Typography>
+                  </span>
                 )}
-                <Tooltip title="Delete session">
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteConfirmId(session.id);
-                    }}
-                    sx={{
-                      color: isActive ? "primary.contrastText" : "text.secondary",
-                      opacity: 0.5,
-                      "&:hover": { opacity: 1, color: "error.main" },
-                    }}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </Box>
 
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
-                <Typography
-                  variant="caption"
-                  sx={{ color: isActive ? "primary.contrastText" : "text.secondary", opacity: 0.7, fontSize: 11 }}
-                >
-                  {session.messageCount} msgs
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{ color: isActive ? "primary.contrastText" : "text.secondary", opacity: 0.7, fontSize: 11 }}
-                >
-                  {session.toolCallCount} tools
-                </Typography>
-                {score !== undefined && (
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
-                    {score >= 80 ? (
-                      <StarIcon sx={{ fontSize: 12, color: "gold" }} />
-                    ) : (
-                      <StarBorderIcon sx={{ fontSize: 12, color: "text.secondary" }} />
-                    )}
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontSize: 11,
-                        color: isActive ? "primary.contrastText" : "text.secondary",
-                        opacity: 0.7,
-                      }}
-                    >
-                      {score}
-                    </Typography>
-                  </Box>
-                )}
-                <Typography
-                  variant="caption"
-                  sx={{
-                    ml: "auto",
-                    color: isActive ? "primary.contrastText" : "text.secondary",
-                    opacity: 0.5,
-                    fontSize: 10,
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteConfirmId(session.id);
                   }}
+                  className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity flex-shrink-0"
+                  title="Delete session"
                 >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
+
+              {/* Meta details */}
+              <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-semibold select-none">
+                <span>{session.messageCount} msgs</span>
+                <span className="w-1 h-1 bg-slate-200 dark:bg-slate-800 rounded-full" />
+                <span>{session.toolCallCount} tools</span>
+
+                {score !== undefined && (
+                  <>
+                    <span className="w-1 h-1 bg-slate-200 dark:bg-slate-800 rounded-full" />
+                    <div className="flex items-center gap-0.5">
+                      <Star className={`size-3 ${score >= 80 ? "fill-yellow-400 text-yellow-400" : ""}`} />
+                      <span>{score}</span>
+                    </div>
+                  </>
+                )}
+
+                <span className="ml-auto font-mono text-[9px] text-slate-400 dark:text-slate-500">
                   {formatCost(session.totalCost)}
-                </Typography>
-              </Box>
-            </Box>
+                </span>
+              </div>
+            </div>
           );
         })}
-      </Box>
+      </div>
 
-      <Dialog open={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)}>
-        <DialogTitle>Delete Session?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            This will permanently delete this session and all its messages. This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteConfirmId(null)}>Cancel</Button>
-          <Button
-            onClick={() => {
-              if (deleteConfirmId) {
-                onDeleteSession(deleteConfirmId);
-                setDeleteConfirmId(null);
-              }
-            }}
-            color="error"
-            variant="contained"
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      {/* Lightweight Delete Confirm Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-xl space-y-4">
+            <div>
+              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Delete Session?</h4>
+              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                This will permanently delete this session and all its messages. This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 text-xs">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteConfirmId(null)}
+                className="h-8 border-slate-200 dark:border-slate-800"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  if (deleteConfirmId) {
+                    onDeleteSession(deleteConfirmId);
+                    setDeleteConfirmId(null);
+                  }
+                }}
+                className="h-8"
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };

@@ -1,51 +1,35 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Alert,
-  Avatar,
-  Box,
-  Button,
-  Checkbox,
-  Chip,
-  CircularProgress,
-  Divider,
-  FormControlLabel,
-  IconButton,
-  MenuItem,
-  Paper,
-  Stack,
-  Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Tabs,
-  TextField,
-  Tooltip,
-  Typography,
-} from "@mui/material";
-import {
-  ContentCopy as CopyIcon,
-  AutoFixHigh as BackfillIcon,
-  CheckCircle as ApproveIcon,
-  FactCheck as EvaluationIcon,
-  Forum as MessengerIcon,
-  Policy as PolicyIcon,
-  PlayArrow as RunIcon,
-  PlaylistAddCheck as ScenarioIcon,
-  QuestionAnswer as FaqIcon,
-  Refresh as RefreshIcon,
-  Science as LabIcon,
-  Send as SendIcon,
-  Storage as KnowledgeIcon,
-  Close as RejectIcon,
-  WarningAmber as WarningIcon,
-} from "@mui/icons-material";
 import { Link as RouterLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Copy,
+  Sparkles,
+  CheckCircle2,
+  FileCheck2,
+  MessageSquare,
+  Shield,
+  Play,
+  CheckSquare,
+  HelpCircle,
+  RefreshCw,
+  FlaskConical,
+  Send,
+  Database,
+  XCircle,
+  AlertTriangle,
+  FileText,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList
+} from "lucide-react";
 
 type RagSource = {
   content: string;
@@ -569,7 +553,7 @@ const AgenticRAGLab: React.FC = () => {
     else if (tabIndex === 3) loadPolicyItems();
   }, [tabIndex]);
 
-  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (newValue: number) => {
     setTabIndex(newValue);
     setError("");
     setNotice("");
@@ -775,790 +759,1001 @@ const AgenticRAGLab: React.FC = () => {
     }
   };
 
+  const isRtl = i18n.dir() === "rtl";
+
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, direction: i18n.dir(), bgcolor: "background.default", minHeight: "100%" }}>
-      <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={2} sx={{ mb: 2 }}>
-        <Typography variant="h5" sx={{ display: "flex", alignItems: "center", gap: 1, fontWeight: 700 }}>
-          <LabIcon color="primary" />
-          {tr("agenticRagLab.title")}
-        </Typography>
-        <Tooltip title={tr("agenticRagLab.refreshTooltip")}>
-          <span>
-            <IconButton
-              onClick={() => {
-                loadFailures();
-                loadOverview().catch(() => {});
-                loadProposals().catch(() => {});
-              }}
-              disabled={failuresLoading || overviewLoading}
-            >
-              {failuresLoading || overviewLoading ? <CircularProgress size={20} /> : <RefreshIcon />}
-            </IconButton>
-          </span>
-        </Tooltip>
-      </Stack>
+    <div className={`p-4 md:p-6 w-full min-h-screen text-slate-900 dark:text-slate-100 bg-background ${isRtl ? "rtl" : "ltr"}`}>
+      {/* Premium Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-6 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-xl">
+            <FlaskConical className="size-6 animate-pulse" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400 bg-clip-text text-transparent">
+              {tr("agenticRagLab.title")}
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {tr("agenticRagLab.refreshTooltip")}
+            </p>
+          </div>
+        </div>
 
-      <Paper variant="outlined" sx={{ p: 2.5, mb: 2 }}>
-        <Stack spacing={2}>
-          <TextField
-            fullWidth
-            label={tr("agenticRagLab.question")}
-            value={question}
-            onChange={(event) => setQuestion(event.target.value)}
-            multiline
-            minRows={2}
-          />
-          <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
-            <TextField
-              select
-              label={tr("agenticRagLab.source")}
-              value={sourcePreset}
-              onChange={(event) => setSourcePreset(event.target.value as SourcePresetKey)}
-              sx={{ minWidth: 180 }}
-              size="small"
-            >
-              {Object.entries(SOURCE_PRESETS).map(([key, preset]) => (
-                <MenuItem key={key} value={key}>{tr(preset.labelKey)}</MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              label={tr("agenticRagLab.category")}
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              size="small"
-              sx={{ minWidth: 220 }}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            loadFailures();
+            loadOverview().catch(() => {});
+            loadProposals().catch(() => {});
+          }}
+          disabled={failuresLoading || overviewLoading}
+          className="flex items-center gap-2"
+        >
+          {failuresLoading || overviewLoading ? (
+            <Loader2 className="size-4 animate-spin text-indigo-600" />
+          ) : (
+            <RefreshCw className="size-4 text-indigo-600 dark:text-indigo-400" />
+          )}
+          <span>تحديث</span>
+        </Button>
+      </div>
+
+      {/* Main Form Box */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 mb-6 shadow-sm">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+              {tr("agenticRagLab.question")}
+            </label>
+            <Textarea
+              className="w-full text-sm dark:bg-slate-950 dark:border-slate-800 focus-visible:ring-indigo-600"
+              placeholder={trAr("agenticRagLab.defaultQuestion")}
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              rows={2}
             />
-            <Button
-              variant="contained"
-              onClick={runPreview}
-              disabled={loading || !question.trim()}
-              startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <SendIcon />}
-              sx={{ minWidth: 140 }}
-            >
-              {tr("agenticRagLab.run")}
-            </Button>
-          </Stack>
-        </Stack>
-      </Paper>
+          </div>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError("")}>{error}</Alert>}
-      {notice && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setNotice("")}>{notice}</Alert>}
-
-      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}>
-        <Tabs value={tabIndex} onChange={handleTabChange}>
-          <Tab label="RAG Lab" />
-          <Tab label="Products" />
-          <Tab label="FAQs" />
-          <Tab label="Policies" />
-        </Tabs>
-      </Box>
-
-      {tabIndex === 0 && (
-      <>
-      <Paper variant="outlined" sx={{ p: 2.5, mb: 2 }}>
-        <Stack spacing={2}>
-          <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" spacing={1.5}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <KnowledgeIcon color="primary" />
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>{tr("agenticRagLab.knowledge.title")}</Typography>
-            </Stack>
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-              <Button
-                variant="outlined"
-                component={RouterLink}
-                to="/admin/faqs"
-                startIcon={<FaqIcon />}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                {tr("agenticRagLab.source")}
+              </label>
+              <select
+                value={sourcePreset}
+                onChange={(e) => setSourcePreset(e.target.value as SourcePresetKey)}
+                className="w-full rounded-md border border-slate-200 dark:border-slate-800 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
               >
-                {tr("agenticRagLab.knowledge.openFaqs")}
-              </Button>
-              <Button
-                variant="outlined"
-                component={RouterLink}
-                to="/admin/policies"
-                startIcon={<PolicyIcon />}
-              >
-                {tr("agenticRagLab.knowledge.openPolicies")}
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={backfillBusy ? <CircularProgress size={18} /> : <BackfillIcon />}
-                onClick={runBackfill}
-                disabled={backfillBusy}
-              >
-                {tr("agenticRagLab.knowledge.backfill")}
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={evaluationBusy ? <CircularProgress size={18} color="inherit" /> : <EvaluationIcon />}
-                onClick={runEvaluation}
-                disabled={evaluationBusy}
-              >
-                {tr("agenticRagLab.knowledge.runEvaluation")}
-              </Button>
-            </Stack>
-          </Stack>
-
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", xl: "repeat(5, minmax(0, 1fr))" },
-              gap: 1.25,
-            }}
-          >
-            {[
-              {
-                label: tr("agenticRagLab.overview.faq"),
-                value: `${overview?.faqs.active || 0}/${overview?.faqs.total || 0}`,
-                meta: tr("agenticRagLab.overview.missingEmbeddings", { count: overview?.faqs.missingEmbeddings || 0 }),
-              },
-              {
-                label: tr("agenticRagLab.overview.policies"),
-                value: `${overview?.policies.current || 0}/${overview?.policies.total || 0}`,
-                meta: tr("agenticRagLab.overview.missingEmbeddings", { count: overview?.policies.missingEmbeddings || 0 }),
-              },
-              {
-                label: tr("agenticRagLab.overview.approvals"),
-                value: `${overview?.proposals.pending || 0}`,
-                meta: tr("agenticRagLab.overview.approved", { count: overview?.proposals.approved || 0 }),
-              },
-              {
-                label: tr("agenticRagLab.overview.failures"),
-                value: `${overview?.failures.unansweredCount || 0}`,
-                meta: tr("agenticRagLab.overview.guardrails", { count: overview?.failures.guardrailedCount || 0 }),
-              },
-              {
-                label: tr("agenticRagLab.overview.latestEvaluation"),
-                value: overview?.latestEvaluation
-                  ? `${overview.latestEvaluation.passed}/${overview.latestEvaluation.total}`
-                  : "-",
-                meta: overview?.latestEvaluation
-                  ? `${formatPercent(overview.latestEvaluation.passRate)} · ${overview.latestEvaluation.status}`
-                  : tr("agenticRagLab.overview.noSavedRun"),
-              },
-            ].map((item) => (
-              <Box
-                key={item.label}
-                sx={{
-                  border: 1,
-                  borderColor: "divider",
-                  borderRadius: 1,
-                  p: 1.5,
-                  minHeight: 92,
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Typography variant="caption" color="text.secondary">{item.label}</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800, lineHeight: 1.2 }}>{item.value}</Typography>
-                <Typography variant="body2" color="text.secondary">{overviewLoading ? "..." : item.meta}</Typography>
-              </Box>
-            ))}
-          </Box>
-
-          {evaluation && (
-            <Box sx={{ border: 1, borderColor: "divider", borderRadius: 1, p: 1.5 }}>
-              <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={1} sx={{ mb: 1.25 }}>
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                  <Chip
-                    color={evaluation.failed ? "warning" : "success"}
-                    label={`${evaluation.passed}/${evaluation.total}`}
-                  />
-                  <Chip variant="outlined" label={formatPercent(evaluation.passRate)} />
-                  <Chip variant="outlined" label={evaluation.scenarioSource} />
-                </Stack>
-              </Stack>
-              <Stack spacing={1}>
-                {evaluation.results.map((item) => (
-                  <Box
-                    key={item.id}
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: { xs: "1fr", md: "160px minmax(0, 1fr) 170px" },
-                      gap: 1,
-                      alignItems: "center",
-                    }}
-                  >
-                    <Chip
-                      size="small"
-                      color={item.passed ? "success" : "warning"}
-                      label={item.passed ? tr("agenticRagLab.status.pass") : tr("agenticRagLab.status.review")}
-                    />
-                    <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>
-                      {item.name}
-                    </Typography>
-                    <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-                      <Chip size="small" label={item.finalSource} variant="outlined" />
-                      <Chip size="small" label={formatScore(item.avgRelevance)} variant="outlined" />
-                    </Stack>
-                  </Box>
+                {Object.entries(SOURCE_PRESETS).map(([key, preset]) => (
+                  <option key={key} value={key}>
+                    {tr(preset.labelKey)}
+                  </option>
                 ))}
-              </Stack>
-            </Box>
-          )}
-        </Stack>
-      </Paper>
+              </select>
+            </div>
 
-      <Paper variant="outlined" sx={{ p: 2.5, mb: 2 }}>
-        <Stack spacing={2}>
-          <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" spacing={1.5}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <MessengerIcon color="primary" />
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>{tr("agenticRagLab.messenger.title")}</Typography>
-            </Stack>
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-              <Button
-                variant="outlined"
-                startIcon={<ScenarioIcon />}
-                onClick={() => setSelectedScenarioIds(MESSENGER_SCENARIO_DEFINITIONS.map((scenario) => scenario.id))}
-                disabled={messengerBusy}
-              >
-                {tr("agenticRagLab.messenger.selectAll")}
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={() => setSelectedScenarioIds([])}
-                disabled={messengerBusy}
-              >
-                {tr("agenticRagLab.messenger.clear")}
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={() => runMessengerScenarios("failed")}
-                disabled={messengerBusy || !messengerEvaluation?.failed}
-              >
-                {tr("agenticRagLab.messenger.runFailed")}
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={messengerBusy ? <CircularProgress size={18} color="inherit" /> : <RunIcon />}
-                onClick={() => runMessengerScenarios("selected")}
-                disabled={messengerBusy || selectedScenarioIds.length === 0}
-              >
-                {tr("agenticRagLab.messenger.runSelected")}
-              </Button>
-            </Stack>
-          </Stack>
-
-          {messengerEvaluation && (
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              <Chip
-                color={messengerEvaluation.failed ? "warning" : "success"}
-                label={`${messengerEvaluation.passed}/${messengerEvaluation.total}`}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                {tr("agenticRagLab.category")}
+              </label>
+              <Input
+                type="text"
+                placeholder="مثال: shipping"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="dark:bg-slate-950 dark:border-slate-800"
               />
-              <Chip variant="outlined" label={formatPercent(messengerEvaluation.passRate)} />
-              <Chip variant="outlined" label={messengerEvaluation.scenarioSource} />
-            </Stack>
-          )}
+            </div>
 
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", xl: "repeat(2, minmax(0, 1fr))" },
-              gap: 1.25,
-            }}
-          >
-            {messengerScenarios.map((scenario) => {
-              const item = messengerResultMap.get(scenario.id);
-              return (
-                <Paper key={scenario.id} variant="outlined" sx={{ p: 1.5 }}>
-                  <Stack spacing={1.25}>
-                    <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1}>
-                      <FormControlLabel
-                        control={(
-                          <Checkbox
-                            checked={selectedScenarioSet.has(scenario.id)}
-                            onChange={() => toggleScenarioSelection(scenario.id)}
-                            disabled={messengerBusy}
-                          />
-                        )}
-                        label={(
-                          <Stack spacing={0.5}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{scenario.name}</Typography>
-                            <Typography variant="caption" color="text.secondary">{scenario.intent}</Typography>
-                          </Stack>
-                        )}
-                        sx={{ alignItems: "flex-start", m: 0 }}
-                      />
-                      {item && (
-                        <Chip
-                          size="small"
-                          color={item.passed ? "success" : "warning"}
-                          label={item.passed ? tr("agenticRagLab.status.pass") : tr("agenticRagLab.status.review")}
-                        />
-                      )}
-                    </Stack>
-                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-                      {scenario.message}
-                    </Typography>
-                    <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-                      {scenario.expectedSources.map((source) => (
-                        <Chip key={source} size="small" variant="outlined" label={source} />
-                      ))}
-                      {scenario.expectGuardrail && <Chip size="small" color="warning" label={tr("agenticRagLab.labels.guardrail")} />}
-                    </Stack>
-                    {item && (
-                      <Box sx={{ borderTop: 1, borderColor: "divider", pt: 1 }}>
-                        <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mb: 0.75 }}>
-                          <Chip size="small" label={item.finalSource} color={item.passed ? "success" : "default"} />
-                          <Chip size="small" label={formatScore(item.avgRelevance)} variant="outlined" />
-                          <Chip size="small" label={`${item.latencyMs}ms`} variant="outlined" />
-                        </Stack>
-                        {item.missingTerms.length > 0 && (
-                          <Typography variant="caption" color="warning.main" sx={{ display: "block", mb: 0.75 }}>
-                            {tr("agenticRagLab.messenger.missingTerms", { terms: item.missingTerms.join(", ") })}
-                          </Typography>
-                        )}
-                        {item.answerPreview && (
-                          <Typography variant="caption" color="text.secondary" sx={{ display: "block", whiteSpace: "pre-wrap" }}>
-                            {item.answerPreview}
-                          </Typography>
-                        )}
-                      </Box>
-                    )}
-                  </Stack>
-                </Paper>
-              );
-            })}
-          </Box>
-        </Stack>
-      </Paper>
+            <div className="flex items-end">
+              <Button
+                variant="default"
+                onClick={runPreview}
+                disabled={loading || !question.trim()}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium flex items-center justify-center gap-2 h-10 shadow-sm"
+              >
+                {loading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Send className="size-4" />
+                )}
+                <span>{tr("agenticRagLab.run")}</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      {result && (
-        <Paper variant="outlined" sx={{ p: 2.5, mb: 2 }}>
-          <Stack spacing={2}>
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              <Chip
-                label={tr("agenticRagLab.result.source", { value: result.finalSource })}
-                color={result.finalSource === "EXHAUSTED" ? "warning" : "primary"}
-              />
-              <Chip label={tr("agenticRagLab.result.mode", { value: result.retrievalMode || "source" })} variant="outlined" />
-              <Chip label={tr("agenticRagLab.result.score", { value: formatScore(result.grading?.avgRelevance) })} variant="outlined" />
-              <Chip label={tr("agenticRagLab.result.iterations", { value: result.iterations })} variant="outlined" />
-              {result.traceId && (
-                <Chip label={tr("agenticRagLab.result.trace", { value: result.traceId.slice(0, 10) })} variant="outlined" />
-              )}
-              {result.grading?.blocked && <Chip icon={<WarningIcon />} label={tr("agenticRagLab.labels.guardrail")} color="warning" />}
-            </Stack>
-
-            <Paper variant="outlined" sx={{ p: 2, bgcolor: "action.hover", whiteSpace: "pre-wrap", lineHeight: 1.7 }}>
-              {result.answer}
-            </Paper>
-
-            <Divider />
-
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", lg: "repeat(2, minmax(0, 1fr))" },
-                gap: 1.5,
-              }}
-            >
-              {result.sources.map((source, index) => (
-                <Paper key={`${source.metadata?.id || index}-${source.source}`} variant="outlined" sx={{ p: 1.5 }}>
-                  <Stack spacing={1}>
-                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                      <Chip size="small" label={source.metadata?.type || source.source} color="secondary" variant="outlined" />
-                      <Chip size="small" label={tr("agenticRagLab.result.relevance", { value: formatScore(source.relevance) })} />
-                      {source.metadata?.category && <Chip size="small" label={source.metadata.category} variant="outlined" />}
-                      <Tooltip title={tr("agenticRagLab.copyEvidence")}>
-                        <IconButton size="small" onClick={() => navigator.clipboard.writeText(source.content).catch(() => {})}>
-                          <CopyIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Stack>
-                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.65 }}>
-                      {source.content}
-                    </Typography>
-                    {source.metadata?.retrieval && (
-                      <Typography variant="caption" color="text.secondary" sx={{ fontFamily: "monospace", direction: "ltr" }}>
-                        {JSON.stringify(source.metadata.retrieval)}
-                      </Typography>
-                    )}
-                  </Stack>
-                </Paper>
-              ))}
-            </Box>
-          </Stack>
-        </Paper>
+      {/* Notifications */}
+      {error && (
+        <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 rounded-xl p-4 mb-6 flex justify-between items-center text-sm">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="size-4 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button onClick={() => setError("")} className="hover:opacity-75">
+            <XCircle className="size-4" />
+          </button>
+        </div>
+      )}
+      {notice && (
+        <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-xl p-4 mb-6 flex justify-between items-center text-sm">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="size-4 flex-shrink-0" />
+            <span>{notice}</span>
+          </div>
+          <button onClick={() => setNotice("")} className="hover:opacity-75">
+            <XCircle className="size-4" />
+          </button>
+        </div>
       )}
 
-      <Paper variant="outlined" sx={{ p: 2.5, mb: 2 }}>
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-          <ApproveIcon color="success" />
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>{tr("agenticRagLab.proposals.title")}</Typography>
-        </Stack>
-        <Stack spacing={1.5}>
-          {proposals.length === 0 && (
-            <Typography variant="body2" color="text.secondary">{tr("agenticRagLab.proposals.empty")}</Typography>
-          )}
-          {proposals.map((proposal) => {
-            const edit = proposalEdits[proposal.id] || proposal.input || {};
-            const isPolicy = proposal.targetType === "POLICY";
-            const canApprove = isProposalReady(proposal, edit);
-            return (
-              <Paper key={proposal.id} variant="outlined" sx={{ p: 1.5 }}>
-                <Stack spacing={1.5}>
-                  <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                    <Chip
-                      size="small"
-                      color={isPolicy ? "secondary" : "primary"}
-                      label={isPolicy ? tr("agenticRagLab.labels.policy") : tr("agenticRagLab.labels.faq")}
-                    />
-                    <Chip size="small" label={proposal.intent || tr("agenticRagLab.labels.general")} variant="outlined" />
-                    <Chip size="small" label={proposal.status} variant="outlined" />
-                  </Stack>
-                  <Typography variant="body2" color="text.secondary">{proposal.originalQuery}</Typography>
-
-                  <Box
-                    sx={{
-                      display: "grid",
-                      gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
-                      gap: 1.25,
-                    }}
-                  >
-                    {isPolicy ? (
-                      <>
-                        <TextField
-                          label={tr("agenticRagLab.proposals.policyTitle")}
-                          value={edit.title || ""}
-                          onChange={(event) => updateProposalEdit(proposal.id, "title", event.target.value)}
-                          size="small"
-                        />
-                        <TextField
-                          label={tr("agenticRagLab.category")}
-                          value={edit.category || ""}
-                          onChange={(event) => updateProposalEdit(proposal.id, "category", event.target.value)}
-                          size="small"
-                        />
-                        <TextField
-                          label={tr("agenticRagLab.proposals.policyContent")}
-                          value={edit.content || ""}
-                          onChange={(event) => updateProposalEdit(proposal.id, "content", event.target.value)}
-                          multiline
-                          minRows={3}
-                          sx={{ gridColumn: { xs: "auto", md: "1 / -1" } }}
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <TextField
-                          label={tr("agenticRagLab.question")}
-                          value={edit.question || ""}
-                          onChange={(event) => updateProposalEdit(proposal.id, "question", event.target.value)}
-                          size="small"
-                        />
-                        <TextField
-                          label={tr("agenticRagLab.category")}
-                          value={edit.category || ""}
-                          onChange={(event) => updateProposalEdit(proposal.id, "category", event.target.value)}
-                          size="small"
-                        />
-                        <TextField
-                          label={tr("agenticRagLab.proposals.approvedAnswer")}
-                          value={edit.answer || ""}
-                          onChange={(event) => updateProposalEdit(proposal.id, "answer", event.target.value)}
-                          multiline
-                          minRows={3}
-                          sx={{ gridColumn: { xs: "auto", md: "1 / -1" } }}
-                        />
-                      </>
-                    )}
-                  </Box>
-
-                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-                    <Button
-                      size="small"
-                      variant="contained"
-                      color="success"
-                      startIcon={<ApproveIcon />}
-                      disabled={!canApprove || Boolean(proposalBusy)}
-                      onClick={() => approveProposal(proposal)}
-                    >
-                      {tr("agenticRagLab.proposals.approve")}
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      color="inherit"
-                      startIcon={<RejectIcon />}
-                      disabled={Boolean(proposalBusy)}
-                      onClick={() => rejectProposal(proposal)}
-                    >
-                      {tr("agenticRagLab.proposals.reject")}
-                    </Button>
-                  </Stack>
-                </Stack>
-              </Paper>
-            );
-          })}
-        </Stack>
-      </Paper>
-
-      <Paper variant="outlined" sx={{ p: 2.5 }}>
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-          <WarningIcon color="warning" />
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>{tr("agenticRagLab.failures.title")}</Typography>
-        </Stack>
-        <Stack spacing={1}>
-          {failures.length === 0 && (
-            <Typography variant="body2" color="text.secondary">{tr("agenticRagLab.failures.empty")}</Typography>
-          )}
-          {failures.map((item) => (
-            <Paper key={item.id} variant="outlined" sx={{ p: 1.5 }}>
-              <Stack spacing={0.75}>
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                  <Chip size="small" label={item.finalSource || "EXHAUSTED"} color={item.blocked ? "warning" : "default"} />
-                  <Chip size="small" label={tr("agenticRagLab.result.score", { value: formatScore(item.avgRelevance) })} variant="outlined" />
-                  {item.category && <Chip size="small" label={item.category} variant="outlined" />}
-                </Stack>
-                <Typography variant="body2">{item.query}</Typography>
-                {!item.blocked && (
-                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => createProposal(item, "FAQ")}
-                      disabled={Boolean(proposalBusy)}
-                    >
-                      {tr("agenticRagLab.failures.suggestFaq")}
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => createProposal(item, "POLICY")}
-                      disabled={Boolean(proposalBusy)}
-                    >
-                      {tr("agenticRagLab.failures.suggestPolicy")}
-                    </Button>
-                  </Stack>
-                )}
-              </Stack>
-            </Paper>
-          ))}
-        </Stack>
-      </Paper>
-      </>)}
-      {tabIndex === 1 && (
-        <Stack spacing={2} sx={{ mb: 2 }}>
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", xl: "repeat(5, minmax(0, 1fr))" },
-              gap: 1.25,
-            }}
+      {/* Modern Tabs Menu */}
+      <div className="flex border-b border-slate-200 dark:border-slate-800 mb-6 overflow-x-auto gap-2">
+        {["RAG Lab", "Products", "FAQs", "Policies"].map((label, idx) => (
+          <button
+            key={label}
+            onClick={() => handleTabChange(idx)}
+            className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
+              tabIndex === idx
+                ? "border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400"
+                : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+            }`}
           >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* TAB 0: RAG Lab */}
+      {tabIndex === 0 && (
+        <div className="space-y-6">
+          {/* Section 1: Overview */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
+              <div className="flex items-center gap-2">
+                <Database className="size-5 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="text-lg font-bold">{tr("agenticRagLab.knowledge.title")}</h3>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <RouterLink to="/admin/faqs" className="flex items-center gap-1.5">
+                    <HelpCircle className="size-3.5" />
+                    <span>{tr("agenticRagLab.knowledge.openFaqs")}</span>
+                  </RouterLink>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <RouterLink to="/admin/policies" className="flex items-center gap-1.5">
+                    <Shield className="size-3.5" />
+                    <span>{tr("agenticRagLab.knowledge.openPolicies")}</span>
+                  </RouterLink>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={backfillBusy}
+                  onClick={runBackfill}
+                  className="flex items-center gap-1.5"
+                >
+                  {backfillBusy ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+                  )}
+                  <span>{tr("agenticRagLab.knowledge.backfill")}</span>
+                </Button>
+                <Button
+                  variant="indigo"
+                  size="sm"
+                  disabled={evaluationBusy}
+                  onClick={runEvaluation}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5"
+                >
+                  {evaluationBusy ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <FileCheck2 className="size-3.5" />
+                  )}
+                  <span>{tr("agenticRagLab.knowledge.runEvaluation")}</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Overview Stats Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+              {[
+                {
+                  label: tr("agenticRagLab.overview.faq"),
+                  value: `${overview?.faqs.active || 0}/${overview?.faqs.total || 0}`,
+                  meta: tr("agenticRagLab.overview.missingEmbeddings", { count: overview?.faqs.missingEmbeddings || 0 }),
+                },
+                {
+                  label: tr("agenticRagLab.overview.policies"),
+                  value: `${overview?.policies.current || 0}/${overview?.policies.total || 0}`,
+                  meta: tr("agenticRagLab.overview.missingEmbeddings", { count: overview?.policies.missingEmbeddings || 0 }),
+                },
+                {
+                  label: tr("agenticRagLab.overview.approvals"),
+                  value: `${overview?.proposals.pending || 0}`,
+                  meta: tr("agenticRagLab.overview.approved", { count: overview?.proposals.approved || 0 }),
+                },
+                {
+                  label: tr("agenticRagLab.overview.failures"),
+                  value: `${overview?.failures.unansweredCount || 0}`,
+                  meta: tr("agenticRagLab.overview.guardrails", { count: overview?.failures.guardrailedCount || 0 }),
+                },
+                {
+                  label: tr("agenticRagLab.overview.latestEvaluation"),
+                  value: overview?.latestEvaluation
+                    ? `${overview.latestEvaluation.passed}/${overview.latestEvaluation.total}`
+                    : "-",
+                  meta: overview?.latestEvaluation
+                    ? `${formatPercent(overview.latestEvaluation.passRate)} · ${overview.latestEvaluation.status}`
+                    : tr("agenticRagLab.overview.noSavedRun"),
+                },
+              ].map((item, idx) => (
+                <div
+                  key={idx}
+                  className="border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-xl p-4 flex flex-col justify-between min-h-[100px] hover:shadow-md transition-shadow"
+                >
+                  <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{item.label}</span>
+                  <span className="text-xl font-bold mt-1 text-slate-800 dark:text-slate-100">{item.value}</span>
+                  <span className="text-[10px] text-slate-500 mt-2 block overflow-hidden text-ellipsis whitespace-nowrap">
+                    {overviewLoading ? "..." : item.meta}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Evaluation Results */}
+            {evaluation && (
+              <div className="mt-5 border border-slate-200 dark:border-slate-800 rounded-xl p-4 bg-slate-50/30 dark:bg-slate-950/10">
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <Badge variant={evaluation.failed ? "destructive" : "success"}>
+                    {evaluation.passed}/{evaluation.total}
+                  </Badge>
+                  <Badge variant="outline">{formatPercent(evaluation.passRate)}</Badge>
+                  <Badge variant="outline">{evaluation.scenarioSource}</Badge>
+                </div>
+
+                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                  {evaluation.results.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex flex-col md:flex-row justify-between items-start md:items-center p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-xs gap-2"
+                    >
+                      <div className="flex items-center gap-2 flex-1 min-w-0 w-full">
+                        <Badge variant={item.passed ? "success" : "warning"} className="flex-shrink-0">
+                          {item.passed ? tr("agenticRagLab.status.pass") : tr("agenticRagLab.status.review")}
+                        </Badge>
+                        <span className="truncate text-slate-700 dark:text-slate-300 font-medium">
+                          {item.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <Badge variant="secondary">{item.finalSource}</Badge>
+                        <Badge variant="outline">{formatScore(item.avgRelevance)}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 2: Messenger Scenarios */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-5">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="size-5 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="text-lg font-bold">{tr("agenticRagLab.messenger.title")}</h3>
+              </div>
+
+              <div className="flex flex-wrap gap-2 w-full lg:w-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedScenarioIds(MESSENGER_SCENARIO_DEFINITIONS.map((s) => s.id))}
+                  disabled={messengerBusy}
+                >
+                  {tr("agenticRagLab.messenger.selectAll")}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedScenarioIds([])}
+                  disabled={messengerBusy}
+                >
+                  {tr("agenticRagLab.messenger.clear")}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => runMessengerScenarios("failed")}
+                  disabled={messengerBusy || !messengerEvaluation?.failed}
+                >
+                  {tr("agenticRagLab.messenger.runFailed")}
+                </Button>
+                <Button
+                  variant="indigo"
+                  size="sm"
+                  onClick={() => runMessengerScenarios("selected")}
+                  disabled={messengerBusy || selectedScenarioIds.length === 0}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5"
+                >
+                  {messengerBusy ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Play className="size-3.5" />
+                  )}
+                  <span>{tr("agenticRagLab.messenger.runSelected")}</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Run Performance Results */}
+            {messengerEvaluation && (
+              <div className="flex flex-wrap gap-2 mb-4 bg-slate-50 dark:bg-slate-950/20 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+                <Badge variant={messengerEvaluation.failed ? "destructive" : "success"}>
+                  {messengerEvaluation.passed}/{messengerEvaluation.total}
+                </Badge>
+                <Badge variant="outline">{formatPercent(messengerEvaluation.passRate)}</Badge>
+                <Badge variant="outline">{messengerEvaluation.scenarioSource}</Badge>
+              </div>
+            )}
+
+            {/* Scenarios Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {messengerScenarios.map((scenario) => {
+                const item = messengerResultMap.get(scenario.id);
+                const isSelected = selectedScenarioSet.has(scenario.id);
+                return (
+                  <div
+                    key={scenario.id}
+                    className={`border rounded-xl p-4 transition-all duration-200 bg-white dark:bg-slate-900 ${
+                      isSelected
+                        ? "border-indigo-200 dark:border-indigo-900/60 ring-1 ring-indigo-500/10"
+                        : "border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex items-start gap-2.5">
+                          <Checkbox
+                            id={scenario.id}
+                            checked={isSelected}
+                            onCheckedChange={() => toggleScenarioSelection(scenario.id)}
+                            disabled={messengerBusy}
+                            className="mt-1"
+                          />
+                          <div>
+                            <label htmlFor={scenario.id} className="text-sm font-bold text-slate-800 dark:text-slate-200 cursor-pointer hover:text-indigo-600 transition-colors block">
+                              {scenario.name}
+                            </label>
+                            <span className="text-[10px] text-slate-400 font-mono block mt-0.5">{scenario.intent}</span>
+                          </div>
+                        </div>
+                        {item && (
+                          <Badge variant={item.passed ? "success" : "warning"}>
+                            {item.passed ? tr("agenticRagLab.status.pass") : tr("agenticRagLab.status.review")}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-950/40 p-2.5 rounded-lg border border-slate-100 dark:border-slate-950/60 whitespace-pre-wrap font-medium">
+                        {scenario.message}
+                      </div>
+
+                      <div className="flex flex-wrap gap-1">
+                        {scenario.expectedSources.map((src) => (
+                          <Badge key={src} variant="outline" className="text-[10px] py-0 px-1.5">
+                            {src}
+                          </Badge>
+                        ))}
+                        {scenario.expectGuardrail && (
+                          <Badge variant="warning" className="text-[10px] py-0 px-1.5">
+                            {tr("agenticRagLab.labels.guardrail")}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Previous Result Detail */}
+                      {item && (
+                        <div className="border-t border-slate-100 dark:border-slate-800 pt-3 mt-1 space-y-2">
+                          <div className="flex flex-wrap gap-1.5">
+                            <Badge variant={item.passed ? "success" : "secondary"} className="text-[10px]">
+                              {item.finalSource}
+                            </Badge>
+                            <Badge variant="outline" className="text-[10px]">
+                              {formatScore(item.avgRelevance)}
+                            </Badge>
+                            <Badge variant="outline" className="text-[10px]">
+                              {item.latencyMs}ms
+                            </Badge>
+                          </div>
+                          {item.missingTerms.length > 0 && (
+                            <p className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                              {tr("agenticRagLab.messenger.missingTerms", { terms: item.missingTerms.join(", ") })}
+                            </p>
+                          )}
+                          {item.answerPreview && (
+                            <div className="text-[11px] text-slate-400 bg-slate-50/50 dark:bg-slate-950/20 p-2 rounded border border-slate-100 dark:border-slate-950/50 whitespace-pre-wrap">
+                              {item.answerPreview}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Section 3: Test Results */}
+          {result && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+              <div className="flex flex-wrap gap-1.5 items-center">
+                <Badge variant={result.finalSource === "EXHAUSTED" ? "warning" : "default"} className="bg-indigo-600 text-white">
+                  {tr("agenticRagLab.result.source", { value: result.finalSource })}
+                </Badge>
+                <Badge variant="outline">
+                  {tr("agenticRagLab.result.mode", { value: result.retrievalMode || "source" })}
+                </Badge>
+                <Badge variant="outline">
+                  {tr("agenticRagLab.result.score", { value: formatScore(result.grading?.avgRelevance) })}
+                </Badge>
+                <Badge variant="outline">
+                  {tr("agenticRagLab.result.iterations", { value: result.iterations })}
+                </Badge>
+                {result.traceId && (
+                  <Badge variant="outline">
+                    {tr("agenticRagLab.result.trace", { value: result.traceId.slice(0, 10) })}
+                  </Badge>
+                )}
+                {result.grading?.blocked && (
+                  <Badge variant="destructive" className="flex items-center gap-1">
+                    <AlertTriangle className="size-3" />
+                    <span>{tr("agenticRagLab.labels.guardrail")}</span>
+                  </Badge>
+                )}
+              </div>
+
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 text-sm leading-relaxed whitespace-pre-wrap text-slate-800 dark:text-slate-200 font-medium">
+                {result.answer}
+              </div>
+
+              <div className="border-t border-slate-200 dark:border-slate-800 pt-4">
+                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">Retrieved Evidence Blocks</h4>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {result.sources.map((src, idx) => (
+                    <div key={idx} className="border border-slate-100 dark:border-slate-800 dark:bg-slate-900/50 rounded-xl p-3.5 space-y-2">
+                      <div className="flex justify-between items-center flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1.5">
+                          <Badge variant="secondary" className="text-[10px]">
+                            {src.metadata?.type || src.source}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px]">
+                            {tr("agenticRagLab.result.relevance", { value: formatScore(src.relevance) })}
+                          </Badge>
+                          {src.metadata?.category && (
+                            <Badge variant="outline" className="text-[10px]">
+                              {src.metadata.category}
+                            </Badge>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-7"
+                          onClick={() => navigator.clipboard.writeText(src.content).catch(() => {})}
+                        >
+                          <Copy className="size-3.5 text-slate-500" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-350 leading-relaxed whitespace-pre-wrap">
+                        {src.content}
+                      </p>
+                      {src.metadata?.retrieval && (
+                        <div className="text-[9px] font-mono text-slate-400 bg-slate-50 dark:bg-slate-950 p-1 rounded overflow-x-auto">
+                          {JSON.stringify(src.metadata.retrieval)}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Section 4: Proposals */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <CheckCircle2 className="size-5 text-indigo-600 dark:text-indigo-400" />
+              <h3 className="text-lg font-bold">{tr("agenticRagLab.proposals.title")}</h3>
+            </div>
+
+            <div className="space-y-4">
+              {proposals.length === 0 && (
+                <p className="text-sm text-slate-500 dark:text-slate-450 text-center py-4 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-dashed">
+                  {tr("agenticRagLab.proposals.empty")}
+                </p>
+              )}
+
+              {proposals.map((proposal) => {
+                const edit = proposalEdits[proposal.id] || proposal.input || {};
+                const isPolicy = proposal.targetType === "POLICY";
+                const canApprove = isProposalReady(proposal, edit);
+                return (
+                  <div key={proposal.id} className="border border-slate-200 dark:border-slate-800 rounded-xl p-4 bg-slate-50/20 dark:bg-slate-950/10 space-y-3">
+                    <div className="flex flex-wrap gap-1.5 items-center">
+                      <Badge variant={isPolicy ? "secondary" : "default"}>
+                        {isPolicy ? tr("agenticRagLab.labels.policy") : tr("agenticRagLab.labels.faq")}
+                      </Badge>
+                      <Badge variant="outline">{proposal.intent || tr("agenticRagLab.labels.general")}</Badge>
+                      <Badge variant="outline" className="capitalize">{proposal.status}</Badge>
+                    </div>
+
+                    <p className="text-xs text-slate-500 dark:text-slate-400 italic bg-white dark:bg-slate-900 p-2.5 rounded border border-slate-100 dark:border-slate-800">
+                      Query: "{proposal.originalQuery}"
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {isPolicy ? (
+                        <>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-450 uppercase">{tr("agenticRagLab.proposals.policyTitle")}</label>
+                            <Input
+                              value={edit.title || ""}
+                              onChange={(e) => updateProposalEdit(proposal.id, "title", e.target.value)}
+                              className="h-9 text-xs dark:bg-slate-900 dark:border-slate-800"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-450 uppercase">{tr("agenticRagLab.category")}</label>
+                            <Input
+                              value={edit.category || ""}
+                              onChange={(e) => updateProposalEdit(proposal.id, "category", e.target.value)}
+                              className="h-9 text-xs dark:bg-slate-900 dark:border-slate-800"
+                            />
+                          </div>
+                          <div className="space-y-1 md:col-span-2">
+                            <label className="text-[10px] font-bold text-slate-450 uppercase">{tr("agenticRagLab.proposals.policyContent")}</label>
+                            <Textarea
+                              value={edit.content || ""}
+                              onChange={(e) => updateProposalEdit(proposal.id, "content", e.target.value)}
+                              rows={3}
+                              className="text-xs dark:bg-slate-900 dark:border-slate-800"
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-450 uppercase">{tr("agenticRagLab.question")}</label>
+                            <Input
+                              value={edit.question || ""}
+                              onChange={(e) => updateProposalEdit(proposal.id, "question", e.target.value)}
+                              className="h-9 text-xs dark:bg-slate-900 dark:border-slate-800"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-450 uppercase">{tr("agenticRagLab.category")}</label>
+                            <Input
+                              value={edit.category || ""}
+                              onChange={(e) => updateProposalEdit(proposal.id, "category", e.target.value)}
+                              className="h-9 text-xs dark:bg-slate-900 dark:border-slate-800"
+                            />
+                          </div>
+                          <div className="space-y-1 md:col-span-2">
+                            <label className="text-[10px] font-bold text-slate-450 uppercase">{tr("agenticRagLab.proposals.approvedAnswer")}</label>
+                            <Textarea
+                              value={edit.answer || ""}
+                              onChange={(e) => updateProposalEdit(proposal.id, "answer", e.target.value)}
+                              rows={3}
+                              className="text-xs dark:bg-slate-900 dark:border-slate-800"
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        size="xs"
+                        variant="default"
+                        disabled={!canApprove || Boolean(proposalBusy)}
+                        onClick={() => approveProposal(proposal)}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8 px-3 rounded-lg"
+                      >
+                        {proposalBusy === `${proposal.id}:approve` ? (
+                          <Loader2 className="size-3.5 animate-spin mr-1" />
+                        ) : (
+                          <CheckCircle2 className="size-3.5 mr-1" />
+                        )}
+                        <span>{tr("agenticRagLab.proposals.approve")}</span>
+                      </Button>
+
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        disabled={Boolean(proposalBusy)}
+                        onClick={() => rejectProposal(proposal)}
+                        className="border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 text-xs h-8 px-3 rounded-lg"
+                      >
+                        {proposalBusy === `${proposal.id}:reject` ? (
+                          <Loader2 className="size-3.5 animate-spin mr-1" />
+                        ) : (
+                          <XCircle className="size-3.5 mr-1 text-red-500" />
+                        )}
+                        <span>{tr("agenticRagLab.proposals.reject")}</span>
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Section 5: Unanswered Failures */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <AlertTriangle className="size-5 text-indigo-600 dark:text-indigo-400" />
+              <h3 className="text-lg font-bold">{tr("agenticRagLab.failures.title")}</h3>
+            </div>
+
+            <div className="space-y-3">
+              {failures.length === 0 && (
+                <p className="text-sm text-slate-500 dark:text-slate-450 text-center py-4 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-dashed">
+                  {tr("agenticRagLab.failures.empty")}
+                </p>
+              )}
+
+              {failures.map((item) => (
+                <div key={item.id} className="border border-slate-100 dark:border-slate-850 rounded-xl p-3.5 bg-slate-50/20 dark:bg-slate-950/10 space-y-2.5">
+                  <div className="flex flex-wrap gap-1.5 items-center">
+                    <Badge variant={item.blocked ? "warning" : "secondary"}>
+                      {item.finalSource || "EXHAUSTED"}
+                    </Badge>
+                    <Badge variant="outline">
+                      {tr("agenticRagLab.result.score", { value: formatScore(item.avgRelevance) })}
+                    </Badge>
+                    {item.category && <Badge variant="outline">{item.category}</Badge>}
+                  </div>
+
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-250">
+                    "{item.query}"
+                  </p>
+
+                  {!item.blocked && (
+                    <div className="flex gap-2">
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        onClick={() => createProposal(item, "FAQ")}
+                        disabled={Boolean(proposalBusy)}
+                        className="text-xs h-7 px-2.5 rounded-lg border-slate-200 dark:border-slate-800"
+                      >
+                        {proposalBusy === `${item.id}:FAQ` && <Loader2 className="size-3 animate-spin mr-1" />}
+                        <span>{tr("agenticRagLab.failures.suggestFaq")}</span>
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        onClick={() => createProposal(item, "POLICY")}
+                        disabled={Boolean(proposalBusy)}
+                        className="text-xs h-7 px-2.5 rounded-lg border-slate-200 dark:border-slate-800"
+                      >
+                        {proposalBusy === `${item.id}:POLICY` && <Loader2 className="size-3 animate-spin mr-1" />}
+                        <span>{tr("agenticRagLab.failures.suggestPolicy")}</span>
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 1: Products */}
+      {tabIndex === 1 && (
+        <div className="space-y-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             {[
               { label: "Total Products", value: productsStats?.total || 0 },
               { label: "With Text Embedding", value: productsStats?.withTextEmbedding || 0 },
               { label: "With Image Embedding", value: productsStats?.withImageEmbedding || 0 },
               { label: "Missing Text", value: productsStats?.missingTextEmbedding || 0 },
               { label: "Missing Image", value: productsStats?.missingImageEmbedding || 0 },
-            ].map((stat) => (
-              <Box
-                key={stat.label}
-                sx={{
-                  border: 1,
-                  borderColor: "divider",
-                  borderRadius: 1,
-                  p: 1.5,
-                  minHeight: 80,
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Typography variant="caption" color="text.secondary">{stat.label}</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800 }}>{productsLoading ? "..." : stat.value}</Typography>
-              </Box>
+            ].map((stat, idx) => (
+              <div key={idx} className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-xl p-4 flex flex-col justify-between min-h-[80px]">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{stat.label}</span>
+                <span className="text-xl font-bold mt-1 text-slate-850 dark:text-slate-100">
+                  {productsLoading ? "..." : stat.value}
+                </span>
+              </div>
             ))}
-          </Box>
+          </div>
 
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant="contained"
-              startIcon={productsBackfillBusy ? <CircularProgress size={18} /> : <BackfillIcon />}
-              onClick={() => runProductBackfill()}
-              disabled={productsBackfillBusy}
-            >
-              Backfill All Products
-            </Button>
-          </Stack>
-
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Product</TableCell>
-                  <TableCell>SKU</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Text Embedding</TableCell>
-                  <TableCell>Image Embedding</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {products.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center">{productsLoading ? "Loading..." : "No products found"}</TableCell>
-                  </TableRow>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="flex justify-between items-center gap-4 flex-wrap">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <Database className="size-5 text-indigo-650" />
+                <span>Product Embeddings Directory</span>
+              </h3>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => runProductBackfill()}
+                disabled={productsBackfillBusy}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium flex items-center gap-1.5"
+              >
+                {productsBackfillBusy ? (
+                  <Loader2 className="size-3.5 animate-spin" />
                 ) : (
-                  products.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          {product.mainImage && <Avatar src={product.mainImage} alt={product.name} sx={{ width: 36, height: 36 }} />}
-                          <Typography variant="body2">{product.name}</Typography>
-                        </Stack>
-                      </TableCell>
-                      <TableCell><Typography variant="body2">{product.sku}</Typography></TableCell>
-                      <TableCell>
-                        <Chip size="small" color={product.isActive ? "success" : "default"} label={product.isActive ? "Active" : "Inactive"} />
-                      </TableCell>
-                      <TableCell>
-                        {product.hasTextEmbedding ? (
-                          <Chip size="small" color="success" label={product.textEmbeddingGeneratedAt ? new Date(product.textEmbeddingGeneratedAt).toLocaleDateString() : "\u2705 Done"} />
-                        ) : (
-                          <Chip size="small" color="default" label={"\u274C Missing"} />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {product.hasImageEmbedding ? (
-                          <Chip size="small" color="success" label={product.imageEmbeddingGeneratedAt ? new Date(product.imageEmbeddingGeneratedAt).toLocaleDateString() : "\u2705 Done"} />
-                        ) : (
-                          <Chip size="small" color="default" label={"\u274C Missing"} />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          disabled={productsBackfillBusy || (product.hasTextEmbedding && product.hasImageEmbedding)}
-                          onClick={() => runProductBackfill(product.id)}
-                        >
-                          Generate Embedding
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  <Sparkles className="size-3.5" />
                 )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                <span>Backfill All Products</span>
+              </Button>
+            </div>
 
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="body2" color="text.secondary">
-              Showing {productsOffset + 1}–{Math.min(productsOffset + 50, productsTotal)} of {productsTotal}
-            </Typography>
-            <Stack direction="row" spacing={1}>
-              <Button size="small" variant="outlined" disabled={productsOffset === 0 || productsLoading} onClick={handleProductsPrevPage}>Previous</Button>
-              <Button size="small" variant="outlined" disabled={productsOffset + 50 >= productsTotal || productsLoading} onClick={handleProductsNextPage}>Next</Button>
-            </Stack>
-          </Stack>
-        </Stack>
+            {/* Table */}
+            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+              <table className="w-full text-sm text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-500 uppercase">
+                    <th className="px-4 py-3">Product</th>
+                    <th className="px-4 py-3">SKU</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Text Embedding</th>
+                    <th className="px-4 py-3">Image Embedding</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {products.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center py-6 text-slate-400">
+                        {productsLoading ? "Loading..." : "No products found"}
+                      </td>
+                    </tr>
+                  ) : (
+                    products.map((product) => (
+                      <tr key={product.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/10">
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-2.5">
+                            {product.mainImage ? (
+                              <img src={product.mainImage} alt={product.name} className="size-9 rounded-lg object-cover border border-slate-100 dark:border-slate-850" />
+                            ) : (
+                              <div className="size-9 bg-slate-100 dark:bg-slate-850 rounded-lg flex items-center justify-center text-[10px] text-slate-400">No Img</div>
+                            )}
+                            <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs truncate max-w-[200px]">
+                              {product.name}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5 text-xs text-slate-500 font-mono">{product.sku}</td>
+                        <td className="px-4 py-3.5">
+                          <Badge variant={product.isActive ? "success" : "secondary"} className="text-[10px]">
+                            {product.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          {product.hasTextEmbedding ? (
+                            <Badge variant="success" className="text-[10px]">
+                              {product.textEmbeddingGeneratedAt ? new Date(product.textEmbeddingGeneratedAt).toLocaleDateString() : "Done"}
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px]">Missing</Badge>
+                          )}
+                        </td>
+                        <td className="px-4 py-3.5">
+                          {product.hasImageEmbedding ? (
+                            <Badge variant="success" className="text-[10px]">
+                              {product.imageEmbeddingGeneratedAt ? new Date(product.imageEmbeddingGeneratedAt).toLocaleDateString() : "Done"}
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px]">Missing</Badge>
+                          )}
+                        </td>
+                        <td className="px-4 py-3.5 text-right">
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            disabled={productsBackfillBusy || (product.hasTextEmbedding && product.hasImageEmbedding)}
+                            onClick={() => runProductBackfill(product.id)}
+                            className="text-xs h-7 px-2.5 rounded-lg border-slate-200 dark:border-slate-800"
+                          >
+                            Generate Embedding
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex justify-between items-center pt-2 text-xs">
+              <span className="text-slate-500">
+                Showing {productsOffset + 1}–{Math.min(productsOffset + 50, productsTotal)} of {productsTotal}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={productsOffset === 0 || productsLoading}
+                  onClick={handleProductsPrevPage}
+                  className="flex items-center gap-1 h-8 px-2.5"
+                >
+                  <ChevronLeft className="size-3.5" />
+                  <span>Previous</span>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={productsOffset + 50 >= productsTotal || productsLoading}
+                  onClick={handleProductsNextPage}
+                  className="flex items-center gap-1 h-8 px-2.5"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="size-3.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
+      {/* TAB 2: FAQs */}
       {tabIndex === 2 && (
-        <Stack spacing={2} sx={{ mb: 2 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 1 }}>
-              <FaqIcon color="primary" />
-              FAQs
-            </Typography>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+          <div className="flex justify-between items-center gap-4 flex-wrap">
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <HelpCircle className="size-5 text-indigo-650" />
+              <span>FAQs Embedding Index</span>
+            </h3>
             <Button
-              variant="outlined"
-              startIcon={faqBackfillBusy ? <CircularProgress size={18} /> : <BackfillIcon />}
+              variant="outline"
+              size="sm"
               onClick={runFaqBackfill}
               disabled={faqBackfillBusy}
+              className="flex items-center gap-1.5"
             >
-              Backfill FAQs
+              {faqBackfillBusy ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+              )}
+              <span>Backfill FAQs</span>
             </Button>
-          </Stack>
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Question</TableCell>
-                  <TableCell>Category</TableCell>
-                  <TableCell>Active</TableCell>
-                  <TableCell>Embedding</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+            <table className="w-full text-sm text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-500 uppercase">
+                  <th className="px-4 py-3">ID</th>
+                  <th className="px-4 py-3">Question</th>
+                  <th className="px-4 py-3">Category</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3 text-right">Embedding</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {faqItems.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center">{faqLoading ? "Loading..." : "No FAQs found"}</TableCell>
-                  </TableRow>
+                  <tr>
+                    <td colSpan={5} className="text-center py-6 text-slate-400">
+                      {faqLoading ? "Loading..." : "No FAQs found"}
+                    </td>
+                  </tr>
                 ) : (
                   faqItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell><Typography variant="body2" sx={{ fontFamily: "monospace", fontSize: 12 }}>{item.id.slice(0, 8)}</Typography></TableCell>
-                      <TableCell><Typography variant="body2">{item.question}</Typography></TableCell>
-                      <TableCell><Chip size="small" label={item.category} variant="outlined" /></TableCell>
-                      <TableCell><Chip size="small" color={item.isActive ? "success" : "default"} label={item.isActive ? "Active" : "Inactive"} /></TableCell>
-                      <TableCell><Chip size="small" color={item.hasEmbedding ? "success" : "warning"} label={item.hasEmbedding ? "\u2705 Done" : "\u274C Missing"} /></TableCell>
-                    </TableRow>
+                    <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/10">
+                      <td className="px-4 py-3 text-xs text-slate-500 font-mono">{item.id.slice(0, 8)}</td>
+                      <td className="px-4 py-3 text-xs font-semibold text-slate-800 dark:text-slate-200">{item.question}</td>
+                      <td className="px-4 py-3">
+                        <Badge variant="outline" className="text-[10px]">{item.category}</Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={item.isActive ? "success" : "secondary"} className="text-[10px]">
+                          {item.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Badge variant={item.hasEmbedding ? "success" : "warning"} className="text-[10px]">
+                          {item.hasEmbedding ? "Done" : "Missing"}
+                        </Badge>
+                      </td>
+                    </tr>
                   ))
                 )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Stack>
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
+      {/* TAB 3: Policies */}
       {tabIndex === 3 && (
-        <Stack spacing={2} sx={{ mb: 2 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 1 }}>
-              <PolicyIcon color="primary" />
-              Policies
-            </Typography>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+          <div className="flex justify-between items-center gap-4 flex-wrap">
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <FileText className="size-5 text-indigo-650" />
+              <span>Policies Embedding Index</span>
+            </h3>
             <Button
-              variant="outlined"
-              startIcon={policyBackfillBusy ? <CircularProgress size={18} /> : <BackfillIcon />}
+              variant="outline"
+              size="sm"
               onClick={runPolicyBackfill}
               disabled={policyBackfillBusy}
+              className="flex items-center gap-1.5"
             >
-              Backfill Policies
+              {policyBackfillBusy ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+              )}
+              <span>Backfill Policies</span>
             </Button>
-          </Stack>
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Title</TableCell>
-                  <TableCell>Category</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Effective</TableCell>
-                  <TableCell>Expiry</TableCell>
-                  <TableCell>Embedding</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+            <table className="w-full text-sm text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-500 uppercase">
+                  <th className="px-4 py-3">Title</th>
+                  <th className="px-4 py-3">Category</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Effective</th>
+                  <th className="px-4 py-3">Expiry</th>
+                  <th className="px-4 py-3 text-right">Embedding</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {policyItems.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center">{policyLoading ? "Loading..." : "No policies found"}</TableCell>
-                  </TableRow>
+                  <tr>
+                    <td colSpan={6} className="text-center py-6 text-slate-400">
+                      {policyLoading ? "Loading..." : "No policies found"}
+                    </td>
+                  </tr>
                 ) : (
                   policyItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell><Typography variant="body2">{item.title}</Typography></TableCell>
-                      <TableCell><Chip size="small" label={item.category} variant="outlined" /></TableCell>
-                      <TableCell><Chip size="small" color={item.isActive ? "success" : "default"} label={item.isActive ? "Active" : "Inactive"} /></TableCell>
-                      <TableCell><Typography variant="body2">{item.effectiveAt ? new Date(item.effectiveAt).toLocaleDateString() : "-"}</Typography></TableCell>
-                      <TableCell><Typography variant="body2">{item.expiresAt ? new Date(item.expiresAt).toLocaleDateString() : "-"}</Typography></TableCell>
-                      <TableCell><Chip size="small" color={item.hasEmbedding ? "success" : "warning"} label={item.hasEmbedding ? "\u2705 Done" : "\u274C Missing"} /></TableCell>
-                    </TableRow>
+                    <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-950/10">
+                      <td className="px-4 py-3 text-xs font-semibold text-slate-800 dark:text-slate-200">{item.title}</td>
+                      <td className="px-4 py-3">
+                        <Badge variant="outline" className="text-[10px]">{item.category}</Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={item.isActive ? "success" : "secondary"} className="text-[10px]">
+                          {item.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-500">
+                        {item.effectiveAt ? new Date(item.effectiveAt).toLocaleDateString() : "-"}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-500">
+                        {item.expiresAt ? new Date(item.expiresAt).toLocaleDateString() : "-"}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Badge variant={item.hasEmbedding ? "success" : "warning"} className="text-[10px]">
+                          {item.hasEmbedding ? "Done" : "Missing"}
+                        </Badge>
+                      </td>
+                    </tr>
                   ))
                 )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Stack>
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
-
-    </Box>
+    </div>
   );
 };
 

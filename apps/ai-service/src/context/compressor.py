@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import structlog
 from typing import Any
+
+import structlog
 
 logger = structlog.get_logger(__name__)
 
@@ -41,7 +42,7 @@ async def compress_history(
     """
     if not messages:
         return [], None
-        
+
     # Calculate total tokens
     total_tokens = sum(count_tokens(m.get("content", "")) for m in messages)
     if total_tokens <= max_tokens or len(messages) <= keep_recent:
@@ -53,7 +54,7 @@ async def compress_history(
     recent_messages = messages[split_idx:]
 
     summary_text = None
-    
+
     # Attempt LLM summarization if client is provided
     if llm_client and len(old_messages) > 1:
         try:
@@ -62,13 +63,13 @@ async def compress_history(
                 for m in old_messages
                 if m.get("content")
             )
-            
+
             summary_prompt = (
                 "قم بتلخيص نقاط هذا النقاش السابق بين العميل والوكيل باختصار شديد في سطرين:\n\n"
                 f"{formatted_old}\n\n"
                 "التلخيص:"
             )
-            
+
             from agent_framework import Message
             response = await llm_client.get_response([
                 Message(role="user", contents=[summary_prompt])
@@ -88,7 +89,7 @@ async def compress_history(
                 # Truncate long content in summary
                 preview = content[:50] + "..." if len(content) > 50 else content
                 summary_lines.append(f"- {role_label}: {preview}")
-        
+
         summary_text = "نقاش سابق:\n" + "\n".join(summary_lines)
         logger.info("history compressed via rule-based list", original_messages=len(old_messages))
 

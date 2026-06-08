@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import asyncio
 import structlog
 from telethon import TelegramClient, events
-from src.tools.telegram_client import TelegramUserbotClient
+
 from src.workers.agent_worker import enqueue_agent_task
 
 logger = structlog.get_logger(__name__)
@@ -31,11 +30,11 @@ class TelegramWorker:
             sender = await event.get_sender()
             if not sender:
                 return
-            
+
             # Extract basic info
             sender_id = str(event.sender_id)
             text = event.text
-            
+
             # Lookup company associated with this telegram_id
             from src.db.session import async_session
             company_id = "default_company"
@@ -47,9 +46,9 @@ class TelegramWorker:
                 res = row.scalar_one_or_none()
                 if res:
                     company_id = res
-            
+
             logger.info("telegram message received", sender_id=sender_id, text=text, company_id=company_id)
-            
+
             # Enqueue for the agent_worker to process
             await enqueue_agent_task(
                 task_type="telegram.message",
@@ -70,21 +69,21 @@ class TelegramWorker:
 
 async def run_telegram_worker():
     """Entry point to run the telegram worker."""
-    from src.db.session import async_session
     from src.db.repo.telegram_config_repo import TelegramConfigRepository
-    
+    from src.db.session import async_session
+
     async with async_session() as session:
         repo = TelegramConfigRepository(session)
         # For now, we take the first active config as the global userbot
         # In production, we would spawn multiple workers or use a single bot for all
         config = await repo.get_active_config("global") or await repo.get_active_config("")
-        
+
         if not config:
             logger.error("no active telegram configuration found in database")
             return
 
         worker = TelegramWorker(
-            api_id=int(config.api_id) if config.api_id else 0, 
+            api_id=int(config.api_id) if config.api_id else 0,
             api_hash=config.api_hash or "",
             session_str=config.session_string
         )

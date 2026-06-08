@@ -73,6 +73,7 @@ describe('aiSdkClient', () => {
   });
 
   test('resumeWorkflow can use MAXP_SERVICE_TOKEN as an explicit fallback', async () => {
+    delete process.env.AI_SERVICE_TOKEN;
     process.env.MAXP_SERVICE_TOKEN = 'maxp-secret';
     const { resumeWorkflow } = require('../../services/aiSdkClient');
 

@@ -11309,6 +11309,8 @@ model DevSystemSettings {
   leaderboardSettings   String?
   taskDetailsVisibility String?
   automationSettings    String?
+  evaluationWeights     String?
+  evaluationPeriod      String?  @default("MONTHLY")
   timezone              String?  @default("Africa/Cairo")
   updatedAt             DateTime @updatedAt
 

@@ -81,7 +81,6 @@ async function classifyIntentWithJsonFallback({ classifierAgent, message, availa
     maxTokens: 500,
     timeoutMs: 15000,
     allowModelFallback: true,
-    providerFailoverAttempts: 2,
   });
   return normalizeClassifierResult(parseJsonObject(fallbackResult?.text || ''));
 }
@@ -237,7 +236,6 @@ Rules:
       maxTokens: 500,
       timeoutMs: 15000, // 15 seconds limit
       allowModelFallback: true,
-      providerFailoverAttempts: 2,
     });
 
     if (!result || !result.toolCalls || result.toolCalls.length === 0) {

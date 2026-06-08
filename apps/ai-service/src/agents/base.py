@@ -29,7 +29,13 @@ from pathlib import Path
 from typing import Any
 
 import structlog
-from agent_framework import Agent, FunctionTool, AggregatingSkillsSource, SkillsProvider, SkillsSource
+from agent_framework import (
+    Agent,
+    AggregatingSkillsSource,
+    FunctionTool,
+    SkillsProvider,
+    SkillsSource,
+)
 
 try:
     from agent_framework import MCPSkillsSource  # type: ignore[attr-defined]
@@ -47,8 +53,13 @@ from src.agents.middleware import build_maxp_function_middleware
 from src.config import get_settings
 from src.context.sdk_provider import MaxPContextProvider
 from src.guardrails.base import BaseGuardrail
-from src.llm.agent_client_factory import build_agent_client, build_agent_client_async, build_provider_client_async
+from src.llm.agent_client_factory import (
+    build_agent_client,
+    build_agent_client_async,
+    build_provider_client_async,
+)
 from src.llm.model_capabilities import route_for_modalities, supports_vision
+from src.mcp_integration.registry import get_mcp_registry
 from src.pipeline.context import PipelineContext
 from src.pipeline.runner import execute_pipeline
 from src.pipeline.stages.execute_tools import execute_tools
@@ -59,9 +70,7 @@ from src.pipeline.stages.retrieve_knowledge import retrieve_knowledge
 from src.pipeline.stages.route_to_tools import route_to_tools
 from src.pipeline.stages.validate_reply import validate_reply
 from src.prompts.template_registry import HydratedPrompt, get_prompt_registry
-from src.tools.registry import get_all_tools
 from src.tools.sdk_gateway import wrap_tools_for_gateway
-from src.mcp_integration.registry import get_mcp_registry
 
 _SKILLS_ROOT = Path(__file__).resolve().parent.parent.parent / "skills"
 
@@ -338,11 +347,11 @@ class BaseAgent:
         By default, agents start with only CORE_TOOLS to implement Progressive Tool Exposure.
         Advanced tools are unlocked dynamically via the unlock_advanced_tools tool.
         """
-        from src.tools.registry import CORE_TOOLS, ALL_TOOLS
-        
+        from src.tools.registry import CORE_TOOLS
+
         # Base set is CORE_TOOLS for progressive exposure
         base_set = CORE_TOOLS
-        
+
         if not self.allowed_tools:
             return wrap_tools_for_gateway(
                 base_set,
@@ -350,19 +359,19 @@ class BaseAgent:
                 agent_role=self.role,
                 allowed_tools=[_tool_name(tool) for tool in base_set],
             )
-            
+
         allowed = {name.lower() for name in self.allowed_tools}
         # Filter core tools by allowed list, but always ensure unlock_advanced_tools is present
         scoped = [
             t for t in base_set
             if _tool_name(t).lower() in allowed or _tool_name(t).replace("_", ".").lower() in allowed
         ]
-        
+
         # Ensure unlock_advanced_tools is always available for agents that can unlock them
         from src.tools.registry import unlock_advanced_tools_tool
         if unlock_advanced_tools_tool not in scoped:
             scoped.append(unlock_advanced_tools_tool)
-            
+
         return wrap_tools_for_gateway(
             scoped,
             company_id=self.company_id,
