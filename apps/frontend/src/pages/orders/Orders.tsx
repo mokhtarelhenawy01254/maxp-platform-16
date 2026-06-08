@@ -2458,11 +2458,12 @@ const Orders: React.FC = () => {
               </button>
               <button
                 onClick={() => navigate("/orders/workspace")}
+                title={t('orders.workspaceSubtitle')}
                 className="relative inline-flex min-w-[126px] items-center justify-center gap-2 rounded-[16px] bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] dark:from-blue-500 dark:to-indigo-500 dark:hover:from-blue-600 dark:hover:to-indigo-600"
               >
                 <BriefcaseIcon className="h-4 w-4" />
-                <span className="hidden sm:inline">مساحة العمل</span>
-                <span className="sm:hidden">العمل</span>
+                <span className="hidden sm:inline">{t('orders.workspaceTitle')}</span>
+                <span className="sm:hidden">{t('orders.myWorkspace')}</span>
               </button>
               {!isMerchant && (
                 <button
