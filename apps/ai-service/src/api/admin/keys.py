@@ -5,7 +5,7 @@ from typing import Annotated
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import select, cast, String
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -90,7 +90,7 @@ async def list_keys(
 ) -> list[AiKeyRead]:
     stmt = select(AiKey).order_by(AiKey.provider, AiKey.priority, AiKey.created_at)
     if provider:
-        stmt = stmt.where(AiKey.provider == provider)
+        stmt = stmt.where(cast(AiKey.provider, String) == provider)
     if company_id:
         stmt = stmt.where(AiKey.company_id == company_id)
     if is_active is not None:

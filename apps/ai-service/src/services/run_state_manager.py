@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import Any
 import uuid
-from sqlalchemy import select, desc
+from typing import Any
+
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models.checkpoint import Checkpoint
+
 
 class RunStateManager:
     """
@@ -23,13 +25,13 @@ class RunStateManager:
         """
         # Normalize thread_id to UUID
         t_id = uuid.UUID(str(thread_id)) if isinstance(thread_id, str) else thread_id
-        
+
         checkpoint = Checkpoint(
             thread_id=t_id,
             checkpoint_id=state_id,
             state=state
         )
-        
+
         # Use merge to update if state_id already exists for this thread
         await self.session.merge(checkpoint)
         await self.session.commit()
@@ -38,27 +40,27 @@ class RunStateManager:
     async def load_state(self, thread_id: str | uuid.UUID, state_id: str) -> dict[str, Any] | None:
         """Loads a specific state by its ID."""
         t_id = uuid.UUID(str(thread_id)) if isinstance(thread_id, str) else thread_id
-        
+
         stmt = select(Checkpoint).where(
             Checkpoint.thread_id == t_id,
             Checkpoint.checkpoint_id == state_id
         )
         result = await self.session.execute(stmt)
         checkpoint = result.scalar_one_or_none()
-        
+
         return checkpoint.state if checkpoint else None
 
     async def get_latest_state(self, thread_id: str | uuid.UUID) -> tuple[str, dict[str, Any]] | None:
         """Retrieves the most recent checkpoint for the given thread."""
         t_id = uuid.UUID(str(thread_id)) if isinstance(thread_id, str) else thread_id
-        
+
         stmt = select(Checkpoint).where(
             Checkpoint.thread_id == t_id
         ).order_by(desc(Checkpoint.created_at)).limit(1)
-        
+
         result = await self.session.execute(stmt)
         checkpoint = result.scalar_one_or_none()
-        
+
         if checkpoint:
             return checkpoint.checkpoint_id, checkpoint.state
         return None

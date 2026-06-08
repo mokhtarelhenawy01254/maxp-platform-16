@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from typing import Any
-import json
 
 from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 
 from src.services.agent_manager_service import AgentManagerService, get_agent_manager_service
 from src.services.agent_registry import get_agent_registry
+
 
 class AgentSpawnInput(BaseModel):
     role: str = Field(description="Agent role: SUPPORT, SALES, INVENTORY, MARKETING, ORDER, or custom")

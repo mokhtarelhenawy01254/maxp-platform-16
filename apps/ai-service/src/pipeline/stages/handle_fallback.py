@@ -32,43 +32,43 @@ def _strip_reasoning(text: str) -> str:
     """Strip reasoning blocks, options, and internal analysis from the final response."""
     if not text:
         return ""
-    
+
     # Remove <think>...</think> blocks
     text = re.sub(r"<think [^>]*>[\s\S]*?</think>", "", text, flags=re.IGNORECASE)
-    
+
     # Remove common reasoning patterns like "* Option 1:", "* Goal:", "* Context:", etc.
     # This is a heuristic for models that output their thought process as a list of points.
     lines = text.split("\n")
     final_lines = []
     in_reasoning = False
-    
+
     for line in lines:
         stripped = line.strip()
         # Detect start of reasoning/analysis blocks
         if stripped.startswith(("* Option", "* Goal", "* Context", "* Constraint", "* User Question", "* Refined", "* Analysis", "* Reasoning", "* Input", "* Meaning", "* Language")):
             in_reasoning = True
             continue
-        
+
         # If we are in reasoning, and we encounter a line that looks like the final answer
         # (e.g., it's just text, or it's a quoted string at the end)
         # This is tricky. A better way is to look for the last paragraph.
-        
+
         if in_reasoning:
             # If the line is empty, we might have transitioned
             if not stripped:
                 continue
-            # If the line doesn't start with a bullet point or reasoning marker, 
+            # If the line doesn't start with a bullet point or reasoning marker,
             # it might be the final answer.
             if not stripped.startswith("*") and not stripped.startswith("-"):
                 in_reasoning = False
-        
+
         if not in_reasoning:
             final_lines.append(line)
-            
+
     if not final_lines:
         # If we stripped everything, just return the original text without <think>
         return text.strip()
-        
+
     return "\n".join(final_lines).strip()
 
 def _provider_error(ctx: PipelineContext, exc: Exception) -> None:
@@ -149,6 +149,7 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
                         "Generate an appropriate natural reply without exposing internal policy details."
                     ),
                 })
+            if (requires_tool and not ctx.tool_evidence) or classifier_unavailable or ctx.early_return:
                 try:
                     response = await client.get_response(
                         to_client_messages(messages),
@@ -161,7 +162,7 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
                         _provider_error(ctx, exc)
                         return ctx
                     ctx.llm_response = ""
-            if ((requires_tool and not ctx.tool_evidence) or classifier_unavailable) and not ctx.llm_response.strip():
+            if ((requires_tool and not ctx.tool_evidence) or classifier_unavailable) and (not ctx.llm_response or not ctx.llm_response.strip()):
                 retry_messages = [
                     Message(
                         role="system",
@@ -197,7 +198,7 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
 
     # Conversational fallback: generate a direct reply when no tool call was needed
     # and no LLM call was made yet (e.g. general.chat, greetings, policy questions).
-    if not ctx.llm_response.strip() and not ctx.early_return:
+    if (not ctx.llm_response or not ctx.llm_response.strip()) and not ctx.early_return:
         client = getattr(ctx, "llm_client", None) or (getattr(ctx.agent, "client", None) if ctx.agent else None)
         if client:
             fallback_messages = ctx.messages or [

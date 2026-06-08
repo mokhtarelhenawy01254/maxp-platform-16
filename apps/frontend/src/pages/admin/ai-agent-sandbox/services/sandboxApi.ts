@@ -71,6 +71,7 @@ export interface SendMessageResponse {
   cost: number;
   sessionId: string;
   pipelineTrace?: any;
+  runtime?: string;
 }
 
 export interface AgentListResponse {

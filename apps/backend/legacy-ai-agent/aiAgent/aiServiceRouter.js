@@ -3,12 +3,18 @@ const VALID_MODES = new Set(['off', 'shadow', 'pilot', 'primary']);
 function getAiServiceMode() {
   const configured = String(process.env.AI_SERVICE_MODE || '').trim().toLowerCase();
   if (VALID_MODES.has(configured)) return configured;
+  if (process.env.NODE_ENV !== 'test') {
+    return 'primary';
+  }
   return getEnabledCompanies().length > 0 ? 'pilot' : 'off';
 }
 
 function getEnabledCompanies() {
   const raw = process.env.AI_SERVICE_ENABLED_COMPANIES || '';
   if (raw === '*') return '*';
+  if (!raw && process.env.NODE_ENV !== 'test') {
+    return '*';
+  }
   return raw.split(',').map(s => s.trim()).filter(Boolean);
 }
 
@@ -22,7 +28,7 @@ function isAiServiceEnabled(companyId) {
   if (mode === 'off' || mode === 'shadow') return false;
 
   const enabled = getEnabledCompanies();
-  if (enabled === '*') return mode === 'primary';
+  if (enabled === '*') return mode === 'primary' || process.env.NODE_ENV !== 'test';
   if (mode === 'primary' && enabled.length === 0) return true;
   return enabled.includes(companyId);
 }

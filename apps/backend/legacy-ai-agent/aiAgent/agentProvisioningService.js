@@ -1,9 +1,18 @@
 const BaseAgent = require('./BaseAgent');
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 const agentProfileLoaderService = require('./agentProfileLoaderService');
-const { getAiServiceMode } = require('./aiServiceRouter');
 const agentAiServiceClient = require('./agentAiServiceClient');
 const crypto = require('crypto');
+
+const VALID_MODES = new Set(['off', 'shadow', 'pilot', 'primary']);
+
+function getAiServiceMode() {
+  const configured = String(process.env.AI_SERVICE_MODE || '').trim().toLowerCase();
+  if (VALID_MODES.has(configured)) return configured;
+  const raw = process.env.AI_SERVICE_ENABLED_COMPANIES || '';
+  if (raw === '*') return 'primary';
+  return raw.split(',').map(s => s.trim()).filter(Boolean).length > 0 ? 'pilot' : 'off';
+}
 
 function shouldRefreshTemplateSoulSnapshot({ persistedSoul = '', runtimeSoul = '' } = {}) {
   const persisted = String(persistedSoul || '').trim();

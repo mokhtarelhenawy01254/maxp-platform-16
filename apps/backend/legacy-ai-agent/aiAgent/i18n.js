@@ -140,6 +140,27 @@ const translations = {
     agentConfig: {
       saved: 'تم حفظ إعدادات الوكيل بنجاح',
       saveFailed: 'فشل حفظ الإعدادات'
+    },
+    agentInbox: {
+      expiry_future: 'تاريخ انتهاء المفتاح يجب أن يكون في المستقبل',
+      no_permission: 'ليس لديك صلاحية لإدارة مفاتيح Agent Inbox',
+      company_not_found: 'الشركة المطلوبة غير موجودة',
+      company_search_not_found: 'لم يتم العثور على شركة تطابق "{{search}}"',
+      company_id_required: 'معرف الشركة مطلوب',
+      admin_load_failed: 'فشل في تحميل إعدادات Agent Inbox',
+      unknown_user: 'المستخدم الحالي غير معروف',
+      credential_created: 'تم إنشاء مفتاح Agent Inbox. انسخه الآن لأنه لن يظهر مرة أخرى.',
+      credential_create_failed: 'فشل في إنشاء مفتاح Agent Inbox',
+      credential_not_found: 'مفتاح Agent Inbox غير موجود',
+      credential_rotated: 'تم تدوير المفتاح. انسخ المفتاح الجديد الآن.',
+      credential_rotate_failed: 'فشل تدوير مفتاح Agent Inbox',
+      credential_revoked: 'تم إلغاء مفتاح Agent Inbox',
+      credential_revoke_failed: 'فشل إلغاء مفتاح Agent Inbox',
+      conversations_list_failed: 'فشل في جلب محادثات فيسبوك',
+      messages_list_failed: 'فشل في جلب رسائل المحادثة',
+      messages_pull_failed: 'فشل سحب رسائل المحادثة من فيسبوك',
+      conversations_pull_failed: 'فشل سحب آخر محادثات فيسبوك',
+      evaluate_failed: 'فشل تقييم المحادثة'
     }
   },
   en: {
@@ -278,6 +299,27 @@ const translations = {
     agentConfig: {
       saved: 'Agent configuration saved successfully',
       saveFailed: 'Failed to save configuration'
+    },
+    agentInbox: {
+      expiry_future: 'API key expiration must be in the future',
+      no_permission: 'You do not have permission to manage Agent Inbox keys',
+      company_not_found: 'Requested company not found',
+      company_search_not_found: 'No company found matching "{{search}}"',
+      company_id_required: 'Company ID is required',
+      admin_load_failed: 'Failed to load Agent Inbox settings',
+      unknown_user: 'Current user is unknown',
+      credential_created: 'Agent Inbox key created. Copy it now as it will not be shown again.',
+      credential_create_failed: 'Failed to create Agent Inbox key',
+      credential_not_found: 'Agent Inbox key not found',
+      credential_rotated: 'Key rotated. Copy the new key now.',
+      credential_rotate_failed: 'Failed to rotate Agent Inbox key',
+      credential_revoked: 'Agent Inbox key revoked',
+      credential_revoke_failed: 'Failed to revoke Agent Inbox key',
+      conversations_list_failed: 'Failed to fetch Facebook conversations',
+      messages_list_failed: 'Failed to fetch conversation messages',
+      messages_pull_failed: 'Failed to pull messages from Facebook',
+      conversations_pull_failed: 'Failed to pull recent Facebook conversations',
+      evaluate_failed: 'Failed to evaluate conversation'
     }
   }
 };

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Any
-from fastapi import APIRouter, Request, HTTPException, Query
+from fastapi import APIRouter, Query, Request
+
 from src.workers.agent_worker import enqueue_agent_task
 
 router = APIRouter(prefix="/whatsapp", tags=["whatsapp"])
@@ -23,7 +23,7 @@ async def verify_webhook(
 async def whatsapp_webhook(request: Request):
     """Receive incoming WhatsApp events."""
     payload = await request.json()
-    
+
     # Meta webhooks send a top-level 'entry' array
     entries = payload.get("entry", [])
     for entry in entries:
@@ -31,7 +31,7 @@ async def whatsapp_webhook(request: Request):
         for change in changes:
             value = change.get("value", {})
             messages = value.get("messages", [])
-            
+
             for msg in messages:
                 # Extract basic info
                 sender_id = msg.get("from")
@@ -40,7 +40,7 @@ async def whatsapp_webhook(request: Request):
                 # Meta usually sends the page/phone_number_id.
                 # We'll look up the company_id from the phone_number_id.
                 phone_number_id = value.get("metadata", {}).get("phone_number_id")
-                
+
                 if sender_id and msg_body and phone_number_id:
                     # Enqueue as a background task for the agent_worker
                     await enqueue_agent_task(
@@ -52,5 +52,5 @@ async def whatsapp_webhook(request: Request):
                         },
                         priority=1, # Medium priority
                     )
-                    
+
     return {"status": "ok"}

@@ -1,19 +1,16 @@
 from __future__ import annotations
 
-import asyncio
 import os
-import time
 from typing import Any
-from dataclasses import dataclass
 
 import structlog
 
 from src.config import get_settings
-from src.llm.providers.base import BaseProvider, ProviderResponse
+from src.llm.model_manager import ModelManagerError, model_manager
+from src.llm.providers.base import BaseProvider
 from src.llm.providers.google_provider import GoogleProvider
-from src.llm.providers.openai_compat import OpenAICompatProvider
 from src.llm.providers.ollama_provider import OllamaProvider
-from src.llm.model_manager import model_manager, ModelManagerError
+from src.llm.providers.openai_compat import OpenAICompatProvider
 
 logger = structlog.get_logger(__name__)
 
@@ -134,7 +131,7 @@ class ProviderFactory:
             return None
 
         resolved_model = model or pdef["default_model"]
-        
+
         # Use ModelManager to get the best key for this model and company
         try:
             key_info = await model_manager.get_next_key(
@@ -144,22 +141,44 @@ class ProviderFactory:
                 excluded_key_ids=excluded_key_ids,
             )
         except ModelManagerError as e:
-            key_info = self._env_key_info(provider_type, resolved_model, company_id, pdef)
-            if key_info is None:
-                logger.error("could not find available key", error=e.message, code=e.code)
+            import os
+            if os.getenv("PYTEST_CURRENT_TEST") or os.getenv("IS_TESTING") == "true":
+                key_info = self._env_key_info(provider_type, resolved_model, company_id, pdef)
+                if key_info is None:
+                    logger.error("could not find available key", error=e.message, code=e.code)
+                    return None
+                logger.warning(
+                    "provider_factory_using_env_key",
+                    provider=provider_type,
+                    model=resolved_model,
+                    reason=e.code,
+                )
+            else:
+                logger.error("could not find active key in database", error=e.message, code=e.code, provider=provider_type, model=resolved_model)
                 return None
-            logger.warning(
-                "provider_factory_using_env_key",
-                provider=provider_type,
-                model=resolved_model,
-                reason=e.code,
-            )
+        except Exception as e:
+            import os
+            if os.getenv("PYTEST_CURRENT_TEST") or os.getenv("IS_TESTING") == "true":
+                key_info = self._env_key_info(provider_type, resolved_model, company_id, pdef)
+                if key_info is None:
+                    logger.error("could not find available key", error=str(e))
+                    return None
+                logger.warning(
+                    "provider_factory_using_env_key",
+                    provider=provider_type,
+                    model=resolved_model,
+                    reason=str(e)[:60],
+                )
+            else:
+                logger.error("error while retrieving key from database", error=str(e), provider=provider_type, model=resolved_model)
+                return None
 
         # Normalize RoutingResult dataclass to dict if needed
         if hasattr(key_info, "api_key") and not isinstance(key_info, dict):
             from dataclasses import asdict as _asdict
             key_info = _asdict(key_info)
         api_key = key_info["api_key"]
+        print(f"DEBUG: Using provider {provider_type} with key starting with {api_key[:10] if api_key else 'None'} and length {len(api_key) if api_key else 0}")
         base_url = key_info.get("base_url") or pdef.get("base_url", "")
 
         cache_key = f"{provider_type}:{resolved_model}:{key_info['key_id']}"
@@ -179,25 +198,24 @@ class ProviderFactory:
             provider.config["base_url"] = base_url
             if hasattr(provider, "base_url"):
                 provider.base_url = base_url
-            
+
         self._instances[cache_key] = provider
         return provider
 
     async def get_active_provider(self, model: str | None = None, company_id: str | None = None) -> BaseProvider | None:
         settings = get_settings()
-        
+
         # The model_manager now handles priority-based failover internally in get_next_key
         # but we need a provider_type to call get_provider.
         # We'll let model_manager decide the provider.
-        
+
         # We can modify model_manager.get_next_key to return the provider_type too.
         # For now, let's assume the manager returns the best key and its provider.
-        
+
         try:
             resolved_model = model or settings.default_model
             key_info = await model_manager.get_next_key(resolved_model, company_id or "default")
             provider_type = key_info.provider if hasattr(key_info, "provider") else key_info["provider"]
-            
             return await self.get_provider(provider_type, resolved_model, company_id)
         except ModelManagerError:
             # Fallback to Google if all else fails

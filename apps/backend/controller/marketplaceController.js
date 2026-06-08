@@ -818,6 +818,7 @@ exports.getAllApps = async (req, res) => {
         getSharedPrismaClient().marketplaceApp.count({ where })
       ]);
     });
+
     const catalogAppMetadataMap = await getCatalogAppMetadataMap();
     const apps = rawApps.map((app) => ({
       ...withCatalogAppMetadata(app, catalogAppMetadataMap),

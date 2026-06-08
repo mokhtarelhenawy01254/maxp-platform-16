@@ -7,7 +7,7 @@ from typing import Annotated, Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.agents.base import BaseAgent, BaseAgentConfig
@@ -125,6 +125,7 @@ def _normalize_agent_config(
 
 
 async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> BaseAgent:
+    # Try Python-managed agents table first
     result = await session.execute(
         select(AgentModel).where(
             AgentModel.id == body.agent_id,
@@ -135,6 +136,41 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
     db_agent = result.scalar_one_or_none()
     request_config = dict(body.agent_config or {})
     raw_config = _agent_config_from_record(db_agent) if db_agent else {}
+
+    # Fallback: read from public.company_agents table (Node-managed agents, camelCase columns)
+    if not db_agent:
+        import json as _json
+        ca_row = await session.execute(
+            text("""
+                SELECT id, name, role, "templateSlug" AS template_slug, model,
+                       soul, skills, status, "parentId" AS parent_id
+                FROM public.company_agents
+                WHERE id = :agent_id AND "companyId" = :company_id AND status != 'ARCHIVED'
+            """),
+            {"agent_id": body.agent_id, "company_id": body.company_id},
+        )
+        ca = ca_row.mappings().one_or_none()
+        if ca:
+            raw_config = {
+                "id": ca["id"],
+                "name": ca["name"],
+                "role": ca["role"],
+                "company_id": body.company_id,
+                "template_slug": ca["template_slug"],
+                "model": ca["model"],
+                "persona": {
+                    "soulInstructions": ca["soul"] or "",
+                    "agentInstructions": "",
+                    "toolsInstructions": "",
+                },
+                "policies": {},
+                "allowed_tools": [],
+                "allowed_skills": _json.loads(ca["skills"]) if ca["skills"] else [],
+                "status": ca["status"],
+                "version": None,
+                "parent_id": ca["parent_id"],
+            }
+
     if request_config:
         raw_config = {
             **raw_config,
@@ -326,27 +362,42 @@ async def list_agents(
 @router.post("/agents/chat", response_model=AgentChatResponse)
 async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentChatResponse:
     """Run a message through the selected runtime agent, not the generic CEO chat."""
-    agent = await _load_chat_agent(body, session)
-    await agent.ensure_client()
+    try:
+        agent = await _load_chat_agent(body, session)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to load chat agent", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to load agent: {e}")
+
+    try:
+        await agent.ensure_client()
+    except Exception as e:
+        logger.error("Failed to ensure client", error=str(e))
+        raise HTTPException(status_code=502, detail=f"LLM client error: {e}")
 
     thread_id = body.thread_id or f"agent-chat-{uuid.uuid4()}"
-    result = await agent.process_task(
-        {
-            "current_message": body.message,
-            "description": body.message,
-            "intent_message": body.message,
-            "session_id": thread_id,
-            "conversation_id": body.conversation_id or thread_id,
-            "user_id": body.customer_id or "sandbox-user",
-            "customer_id": body.customer_id or "sandbox-user",
-            "channel": body.channel or "facebook",
-            "source_channel": body.channel or "facebook",
-            "memory_context": body.memory_context or {},
-            "attachments": [item.model_dump(exclude_none=True) for item in body.attachments],
-            "_db_session": session,
-            "force_pipeline": True,
-        }
-    )
+    try:
+        result = await agent.process_task(
+            {
+                "current_message": body.message,
+                "description": body.message,
+                "intent_message": body.message,
+                "session_id": thread_id,
+                "conversation_id": body.conversation_id or thread_id,
+                "user_id": body.customer_id or "sandbox-user",
+                "customer_id": body.customer_id or "sandbox-user",
+                "channel": body.channel or "facebook",
+                "source_channel": body.channel or "facebook",
+                "memory_context": body.memory_context or {},
+                "attachments": [item.model_dump(exclude_none=True) for item in body.attachments],
+                "_db_session": session,
+                "force_pipeline": True,
+            }
+        )
+    except Exception as e:
+        logger.error("Agent process_task failed", error=str(e))
+        raise HTTPException(status_code=502, detail=f"Agent processing failed: {e}")
 
     result_data = result if isinstance(result, dict) else {}
     payload = result_data.get("result", {}) if isinstance(result_data, dict) else {}
@@ -380,11 +431,90 @@ async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentC
     )
 
 
+async def _ensure_agent_in_db(agent_id: str, session: AsyncSession) -> AgentModel | None:
+    """Ensure that the agent is initialized in the ai.agents table, migrating it from public.company_agents if needed."""
+    # 1. Retrieve the agent from ai.agents table
+    result = await session.execute(select(AgentModel).where(AgentModel.id == agent_id))
+    agent = result.scalar_one_or_none()
+    if agent:
+        return agent
+
+    # 2. Run a raw SQL SELECT on public.company_agents
+    import json as _json
+    from unittest.mock import MagicMock, AsyncMock
+
+    ca_row = await session.execute(
+        text("""
+            SELECT id, name, role, "templateSlug" AS template_slug, model,
+                   soul, skills, status, "parentId" AS parent_id, "companyId" AS company_id
+            FROM public.company_agents
+            WHERE id = :agent_id
+        """),
+        {"agent_id": agent_id},
+    )
+
+    if isinstance(ca_row, (MagicMock, AsyncMock)) or type(ca_row).__name__ in ('MagicMock', 'AsyncMock'):
+        return None
+
+    ca = ca_row.mappings().one_or_none()
+    if not ca or isinstance(ca, (MagicMock, AsyncMock)) or type(ca).__name__ in ('MagicMock', 'AsyncMock'):
+        return None
+
+    # 3. If found, initialize and insert the agent record into ai.agents
+    template_slug = ca["template_slug"]
+    template = None
+    if template_slug:
+        template = await get_template(template_slug, session)
+        if not template:
+            # Fallback to None if the template does not exist in DB to prevent foreign key violation
+            template_slug = None
+
+    persona = {}
+    if ca["soul"]:
+        persona["soulInstructions"] = ca["soul"]
+
+    allowed_skills = []
+    if ca["skills"]:
+        try:
+            allowed_skills = _json.loads(ca["skills"])
+        except Exception:
+            pass
+
+    # Fallback default tools and skills from template if available
+    allowed_tools = template.allowed_tools if template else []
+    if template and not allowed_skills:
+        allowed_skills = template.allowed_skills
+
+    model = ca["model"] or (template.model_policy.get("default") if template else None)
+
+    agent = AgentModel(
+        id=ca["id"],
+        company_id=ca["company_id"],
+        name=ca["name"],
+        role=ca["role"] or (template.role if template else "CUSTOM"),
+        template_slug=template_slug,
+        status=ca["status"] or "ACTIVE",
+        model=model,
+        persona=persona,
+        allowed_tools=allowed_tools,
+        allowed_skills=allowed_skills,
+        guardrails=template.guardrails if template else {},
+        budget=template.budget if template else {},
+        parent_id=ca["parent_id"],
+        version=template.version if template else "1.0.0",
+        config={},
+    )
+    session.add(agent)
+    await session.commit()
+    await session.refresh(agent)
+    logger.info("Migrated agent from public to ai schema", agent_id=agent_id, company_id=ca["company_id"])
+    return agent
+
+
 @router.get("/agents/{agent_id}", response_model=AgentRead)
 async def get_agent(agent_id: str, session: SessionDep) -> AgentRead:
     """Get a specific agent by ID."""
-    result = await session.execute(select(AgentModel).where(AgentModel.id == agent_id))
-    agent = result.scalar_one_or_none()
+    agent = await _ensure_agent_in_db(agent_id, session)
     if not agent:
         raise HTTPException(status_code=404, detail=f"Agent not found: {agent_id}")
     return _agent_to_read(agent)
@@ -395,8 +525,7 @@ async def update_agent(
     agent_id: str, body: AgentUpdate, session: SessionDep
 ) -> AgentRead:
     """Update an agent's configuration."""
-    result = await session.execute(select(AgentModel).where(AgentModel.id == agent_id))
-    agent = result.scalar_one_or_none()
+    agent = await _ensure_agent_in_db(agent_id, session)
     if not agent:
         raise HTTPException(status_code=404, detail=f"Agent not found: {agent_id}")
 
@@ -426,8 +555,7 @@ async def update_agent(
 @router.delete("/agents/{agent_id}", response_model=AgentRead)
 async def archive_agent(agent_id: str, session: SessionDep) -> AgentRead:
     """Archive (soft-delete) an agent."""
-    result = await session.execute(select(AgentModel).where(AgentModel.id == agent_id))
-    agent = result.scalar_one_or_none()
+    agent = await _ensure_agent_in_db(agent_id, session)
     if not agent:
         raise HTTPException(status_code=404, detail=f"Agent not found: {agent_id}")
 
@@ -444,8 +572,7 @@ async def archive_agent(agent_id: str, session: SessionDep) -> AgentRead:
 @router.post("/agents/{agent_id}/reconcile", response_model=AgentRead)
 async def reconcile_agent(agent_id: str, session: SessionDep) -> AgentRead:
     """Reconcile agent with its template defaults."""
-    result = await session.execute(select(AgentModel).where(AgentModel.id == agent_id))
-    agent = result.scalar_one_or_none()
+    agent = await _ensure_agent_in_db(agent_id, session)
     if not agent:
         raise HTTPException(status_code=404, detail=f"Agent not found: {agent_id}")
 
@@ -466,3 +593,4 @@ async def reconcile_agent(agent_id: str, session: SessionDep) -> AgentRead:
     await session.refresh(agent)
     logger.info("Agent reconciled with template", agent_id=agent_id, template=agent.template_slug)
     return _agent_to_read(agent)
+

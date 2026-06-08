@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Typography, Chip, Divider, Tooltip } from "@mui/material";
+import { Badge } from "@/components/ui/badge";
 import { CostBreakdown } from "../hooks/useCostTracker";
 
 interface CostTrackerProps {
@@ -14,82 +14,58 @@ export const CostTracker: React.FC<CostTrackerProps> = ({
   formatTokens,
 }) => {
   return (
-    <Box
-      sx={{
-        p: 1.5,
-        borderRadius: 1,
-        border: "1px solid",
-        borderColor: "divider",
-        bgcolor: "background.paper",
-      }}
-    >
-      <Typography variant="caption" color="text.secondary" fontSize={10} sx={{ mb: 1, display: "block" }}>
+    <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-3">
+      <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
         Cost Breakdown
-      </Typography>
+      </span>
 
-      <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
-        <Box>
-          <Typography variant="caption" color="text.secondary" fontSize={9}>
-            Input Tokens
-          </Typography>
-          <Typography variant="body2" fontSize={12} fontWeight={600}>
+      <div className="grid grid-cols-2 gap-3 text-xs">
+        <div>
+          <span className="text-[10px] text-slate-500 block mb-0.5">Input Tokens</span>
+          <span className="font-bold text-slate-850 dark:text-slate-100">
             {formatTokens(breakdown.inputTokens)}
-          </Typography>
-        </Box>
-        <Box>
-          <Typography variant="caption" color="text.secondary" fontSize={9}>
-            Output Tokens
-          </Typography>
-          <Typography variant="body2" fontSize={12} fontWeight={600}>
+          </span>
+        </div>
+        <div>
+          <span className="text-[10px] text-slate-500 block mb-0.5">Output Tokens</span>
+          <span className="font-bold text-slate-850 dark:text-slate-100">
             {formatTokens(breakdown.outputTokens)}
-          </Typography>
-        </Box>
-        <Box>
-          <Typography variant="caption" color="text.secondary" fontSize={9}>
-            Input Cost
-          </Typography>
-          <Typography variant="body2" fontSize={12} fontWeight={600} color="info.main">
+          </span>
+        </div>
+        <div>
+          <span className="text-[10px] text-slate-500 block mb-0.5">Input Cost</span>
+          <span className="font-bold text-sky-600 dark:text-sky-400">
             {formatCost(breakdown.inputCost)}
-          </Typography>
-        </Box>
-        <Box>
-          <Typography variant="caption" color="text.secondary" fontSize={9}>
-            Output Cost
-          </Typography>
-          <Typography variant="body2" fontSize={12} fontWeight={600} color="warning.main">
+          </span>
+        </div>
+        <div>
+          <span className="text-[10px] text-slate-500 block mb-0.5">Output Cost</span>
+          <span className="font-bold text-amber-600 dark:text-amber-400">
             {formatCost(breakdown.outputCost)}
-          </Typography>
-        </Box>
-      </Box>
+          </span>
+        </div>
+      </div>
 
-      <Divider sx={{ my: 1 }} />
+      <hr className="border-slate-100 dark:border-slate-800" />
 
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Typography variant="caption" color="text.secondary" fontSize={9}>
-          Tool Calls
-        </Typography>
-        <Chip label={breakdown.toolCallCount} size="small" sx={{ height: 18, fontSize: 10 }} />
-      </Box>
+      <div className="flex justify-between items-center text-xs">
+        <span className="text-slate-500">Tool Calls</span>
+        <Badge variant="secondary" className="text-[10px] py-0 px-2">
+          {breakdown.toolCallCount}
+        </Badge>
+      </div>
 
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 0.5 }}>
-        <Typography variant="caption" color="text.secondary" fontSize={9}>
-          Total Cost
-        </Typography>
-        <Typography variant="body2" fontSize={14} fontWeight={700} color="primary.main">
+      <div className="flex justify-between items-center text-xs font-bold pt-1">
+        <span className="text-slate-500">Total Cost</span>
+        <span className="text-sm text-indigo-600 dark:text-indigo-400">
           {formatCost(breakdown.totalCost)}
-        </Typography>
-      </Box>
+        </span>
+      </div>
 
-      <Tooltip title="Estimated monthly cost based on 30 sessions">
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 0.5 }}>
-          <Typography variant="caption" color="text.secondary" fontSize={9}>
-            Est. Monthly
-          </Typography>
-          <Typography variant="caption" color="text.secondary" fontSize={10}>
-            {formatCost(breakdown.estimatedMonthly)}
-          </Typography>
-        </Box>
-      </Tooltip>
-    </Box>
+      <div className="flex justify-between items-center text-[10px] text-slate-400 pt-1 border-t border-slate-50 dark:border-slate-900" title="Estimated monthly cost based on 30 sessions">
+        <span>Est. Monthly</span>
+        <span>{formatCost(breakdown.estimatedMonthly)}</span>
+      </div>
+    </div>
   );
 };

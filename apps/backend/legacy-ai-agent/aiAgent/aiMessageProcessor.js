@@ -32,6 +32,8 @@ class AIMessageProcessor {
   constructor() {
     /** @type {Map<string, CEOAgent>} company/channel → agent instance */
     this._agents = new Map();
+    /** @type {Map<string, Promise>} dedup concurrent agent creation */
+    this._agentPromises = new Map();
   }
 
   /**
@@ -261,66 +263,64 @@ class AIMessageProcessor {
     const normalizedChannel = String(channel || 'WHATSAPP').trim().toUpperCase();
     const key = `${companyId}:${normalizedChannel}`;
 
+    // Fast path: already cached
+    if (this._agents.has(key)) return this._agents.get(key);
+
+    // Dedup concurrent creation: if another call is already creating,
+    // wait for its promise instead of running a duplicate
+    const pending = this._agentPromises.get(key);
+    if (pending) return pending;
+
+    const createPromise = this._createAgent(companyId, normalizedChannel, key);
+    this._agentPromises.set(key, createPromise);
+
+    try {
+      const agent = await createPromise;
+      this._agents.set(key, agent);
+      return agent;
+    } finally {
+      this._agentPromises.delete(key);
+    }
+  }
+
+  async _createAgent(companyId, normalizedChannel, key) {
     if (normalizedChannel === 'FACEBOOK') {
-      // Only load from DB on first use; subsequent messages reuse the cached agent
-      if (!this._agents.has(key)) {
-        try {
-          const agentManagerService = require('./agentManagerService');
-          const savedAgent = await agentManagerService.ensureFacebookMessengerAgent(companyId);
-          if (savedAgent) {
-            // Reconcile and use the actual specialized agent instance directly from registry
-            const activeAgent = agentProvisioningService.getAgent(companyId, savedAgent.id) || savedAgent;
-            this._agents.set(key, activeAgent);
-          }
-        } catch (err) {
-          console.warn('[AI-PROCESSOR] Facebook sub-agent load failed, using fallback:', err.message);
+      try {
+        const agentManagerService = require('./agentManagerService');
+        const savedAgent = await agentManagerService.ensureFacebookMessengerAgent(companyId);
+        if (savedAgent) {
+          const activeAgent = agentProvisioningService.getAgent(companyId, savedAgent.id) || savedAgent;
+          return activeAgent;
         }
-        if (!this._agents.has(key)) {
-          // Fallback facebook agent using proper BaseAgent/specialist spawn:
-          // includeAllCeoTools: false (comply with regression tests)
-          // Uses facebook-sales-support-agent template
-          const fallbackAgent = await agentProvisioningService.spawn(companyId, {
-            id: `facebook_sales_support_${companyId.slice(-6)}`,
-            role: FACEBOOK_AGENT_ROLE,
-            templateSlug: 'facebook-sales-support-agent',
-          });
-          this._agents.set(key, fallbackAgent);
-        }
+      } catch (err) {
+        console.warn('[AI-PROCESSOR] Facebook sub-agent load failed, using fallback:', err.message);
       }
-      return this._agents.get(key);
+      return agentProvisioningService.spawn(companyId, {
+        id: `facebook_sales_support_${companyId.slice(-6)}`,
+        role: FACEBOOK_AGENT_ROLE,
+        templateSlug: 'facebook-sales-support-agent',
+      });
     }
 
-    if (!this._agents.has(key)) {
-      // Locate active SALES or SUPPORT specialized agent for WHATSAPP
-      const activeSalesAgent = agentProvisioningService.listAgents(companyId)
-        .find(a => a.role === 'SALES' && a.status === 'ACTIVE');
-      if (activeSalesAgent) {
-        this._agents.set(key, activeSalesAgent);
-      } else {
-        const activeSupportAgent = agentProvisioningService.listAgents(companyId)
-          .find(a => a.role === 'SUPPORT' && a.status === 'ACTIVE');
-        if (activeSupportAgent) {
-          this._agents.set(key, activeSupportAgent);
-        } else {
-          // Fall back to spawning a new SALES specialized agent
-          try {
-            const defaultSales = await agentProvisioningService.spawn(companyId, {
-              role: 'SALES',
-              name: 'Sales Agent',
-            });
-            this._agents.set(key, defaultSales);
-          } catch (err) {
-            // Absolute fallback to a BaseAgent
-            const fallbackBase = await agentProvisioningService.spawn(companyId, {
-              role: 'AGENT',
-              name: 'Agent',
-            });
-            this._agents.set(key, fallbackBase);
-          }
-        }
-      }
+    const activeSalesAgent = agentProvisioningService.listAgents(companyId)
+      .find(a => a.role === 'SALES' && a.status === 'ACTIVE');
+    if (activeSalesAgent) return activeSalesAgent;
+
+    const activeSupportAgent = agentProvisioningService.listAgents(companyId)
+      .find(a => a.role === 'SUPPORT' && a.status === 'ACTIVE');
+    if (activeSupportAgent) return activeSupportAgent;
+
+    try {
+      return await agentProvisioningService.spawn(companyId, {
+        role: 'SALES',
+        name: 'Sales Agent',
+      });
+    } catch (err) {
+      return agentProvisioningService.spawn(companyId, {
+        role: 'AGENT',
+        name: 'Agent',
+      });
     }
-    return this._agents.get(key);
   }
 
   _getTraceProvider(channel = 'WHATSAPP') {

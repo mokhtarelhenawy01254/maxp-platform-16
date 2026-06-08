@@ -82,6 +82,7 @@ async def classify_intent(
     message: str,
     company_id: str,
     context: dict[str, Any] | None = None,
+    client: Any | None = None,
 ) -> ClassifierResult | None:
     ctx = context or {}
     available_tools = ctx.get("availableTools", [])
@@ -115,12 +116,13 @@ async def classify_intent(
         "Do not classify by lexical shortcuts. Interpret the latest message semantically, including negation and corrections.\n"
     )
 
-    fallback = LLMFallbackProvider()
-    client = await fallback.get_client(
-        company_id=company_id,
-        model=model_route.model,
-        provider=model_route.provider,
-    )
+    if client is None:
+        fallback = LLMFallbackProvider()
+        client = await fallback.get_client(
+            company_id=company_id,
+            model=model_route.model,
+            provider=model_route.provider,
+        )
     if not client:
         logger.error("no LLM client available for intent classification")
         return None

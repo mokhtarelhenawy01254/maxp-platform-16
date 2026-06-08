@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import asyncio
-import structlog
 from typing import Any
-from telethon import TelegramClient, events
-from telethon.tl.types import PeerUser, PeerChat, PeerChannel
+
+import structlog
+from telethon import TelegramClient
 
 logger = structlog.get_logger(__name__)
 
@@ -35,7 +34,7 @@ class TelegramUserbotClient:
         """Send a message to a user, chat, or channel."""
         if not self._client:
             await self.connect()
-        
+
         try:
             return await self._client.send_message(entity, text)
         except Exception as e:
@@ -46,7 +45,7 @@ class TelegramUserbotClient:
         """Fetch user profile info."""
         if not self._client:
             await self.connect()
-        
+
         user = await self._client.get_entity(user_id)
         return {
             "id": user.id,

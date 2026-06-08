@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, ClassVar
+from typing import Any
 
 from sqlalchemy import DateTime, ForeignKey, Index, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP

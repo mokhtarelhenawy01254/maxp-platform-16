@@ -132,12 +132,8 @@ async def build_agent_client_async(
         provider_type = settings.default_llm_provider.upper()
         provider = await factory.get_provider(provider_type, resolved_model, company_id)
     if provider is None:
-        return build_agent_client(
-            settings,
-            model=resolved_model,
-            tools=tools,
-            system_prompt=system_prompt,
-        )
+        logger.error("No active provider found in database for model", model=resolved_model)
+        return None
 
     logger.info("agent_client.routed", provider=provider.__class__.__name__, model=resolved_model)
     return ProviderAdapter(provider, tools=tools, system_prompt=system_prompt)

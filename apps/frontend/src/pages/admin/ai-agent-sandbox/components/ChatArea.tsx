@@ -1,26 +1,20 @@
 import React, { useState, useRef, useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  Box,
-  Typography,
-  TextField,
-  IconButton,
-  Avatar,
-  Chip,
-  CircularProgress,
-  Divider,
-} from "@mui/material";
-import {
-  Send as SendIcon,
-  SmartToy as BotIcon,
-  Person as PersonIcon,
-  ContentCopy as CopyIcon,
-  Check as CheckIcon,
-  CheckCircle as SuccessIcon,
-  Error as ErrorIcon,
-  HourglassEmpty as PendingIcon,
+  Send,
+  Bot,
+  User,
+  Copy,
+  Check,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
   Image as ImageIcon,
-  Close as CloseIcon,
-} from "@mui/icons-material";
+  X,
+  Loader2
+} from "lucide-react";
 import type { ChatMessage, AgentConfig, ModelConfig, ToolCall } from "../types/sandbox.types";
 
 interface ChatAreaProps {
@@ -78,11 +72,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
   if (!agent) {
     return (
-      <Box sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Typography variant="body2" color="text.secondary">
+      <div className="flex-1 flex items-center justify-center p-6 text-slate-400">
+        <span className="text-sm font-semibold select-none">
           Select an agent to start chatting
-        </Typography>
-      </Box>
+        </span>
+      </div>
     );
   }
 
@@ -150,288 +144,265 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   };
 
   return (
-    <Box
-      sx={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        minWidth: 0,
-      }}
-    >
-      <Box sx={{ flex: 1, overflow: "auto", px: 2, py: 2 }}>
+    <div className="flex-1 flex flex-col h-full min-w-0 bg-slate-50/20 dark:bg-slate-905">
+      {/* Scrollable Chat Message History */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.map((msg) => {
           const { images, text } = parseMessageContent(msg.content);
+          const isUser = msg.role === "user";
           return (
-            <Box
+            <div
               key={msg.id}
-              sx={{
-                display: "flex",
-                gap: 1.5,
-                mb: 2,
-                alignItems: "flex-start",
-              }}
+              className={`flex gap-3 items-start ${isUser ? "flex-row-reverse" : "flex-row"}`}
             >
-              <Avatar
-                sx={{
-                  width: 32,
-                  height: 32,
-                  bgcolor: msg.role === "user" ? "grey.600" : "primary.main",
-                  fontSize: 14,
-                }}
-              >
-                {msg.role === "user" ? <PersonIcon sx={{ fontSize: 16 }} /> : <BotIcon sx={{ fontSize: 16 }} />}
-              </Avatar>
+              {/* Avatar */}
+              <div className={`size-8 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0 select-none ${
+                isUser ? "bg-slate-500" : "bg-indigo-600 dark:bg-indigo-500"
+              }`}>
+                {isUser ? <User className="size-4" /> : <Bot className="size-4" />}
+              </div>
 
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: "12px 12px 12px 2px",
-                    bgcolor: msg.role === "user" ? "primary.light" : "background.paper",
-                    border: msg.role === "user" ? "none" : "1px solid",
-                    color: msg.role === "user" ? "#111827" : undefined,
-                    borderColor: "divider",
-                    position: "relative",
-                    "&:hover .copy-btn": { opacity: 1 },
-                  }}
+              {/* Message Body */}
+              <div className="flex flex-col max-w-[80%] min-w-0">
+                <div
+                  className={`p-3.5 rounded-2xl relative group shadow-sm text-sm ${
+                    isUser
+                      ? "bg-indigo-600 text-white rounded-tr-none"
+                      : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-tl-none"
+                  }`}
                 >
                   {images.map((imgUrl, idx) => (
-                    <Box
+                    <img
                       key={idx}
-                      component="img"
                       src={imgUrl}
                       alt="Attachment"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = "none";
                       }}
-                      sx={{
-                        maxWidth: "100%",
-                        maxHeight: 200,
-                        borderRadius: "8px",
-                        mb: text ? 1.5 : 0,
-                        display: "block",
-                        objectFit: "cover",
-                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-                        transition: "transform 0.2s, box-shadow 0.2s",
-                        "&:hover": {
-                          transform: "scale(1.02)",
-                          boxShadow: "0 8px 24px rgba(25, 118, 210, 0.25)",
-                        },
-                      }}
+                      className={`max-w-full max-h-[200px] rounded-lg object-cover shadow-sm transition-transform duration-200 hover:scale-[1.01] ${
+                        text ? "mb-3" : "mb-0"
+                      }`}
                     />
                   ))}
+                  
                   {text && (
-                    <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 1.6 }}>
+                    <p className="whitespace-pre-wrap leading-relaxed">
                       {text}
-                    </Typography>
+                    </p>
                   )}
 
-                  <IconButton
-                    className="copy-btn"
-                    size="small"
+                  {/* Copy Button */}
+                  <button
                     onClick={() => copyToClipboard(msg.content, msg.id)}
-                    sx={{
-                      position: "absolute",
-                      top: 4,
-                      right: 4,
-                      opacity: 0,
-                      transition: "opacity 0.15s",
-                      bgcolor: "background.paper",
-                      border: "1px solid",
-                      borderColor: "divider",
-                      "&:hover": { opacity: 1 },
-                    }}
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded shadow-xs"
+                    title="Copy message text"
                   >
                     {copiedId === msg.id ? (
-                      <CheckIcon sx={{ fontSize: 12, color: "success.main" }} />
+                      <Check className="size-3 text-emerald-500" />
                     ) : (
-                      <CopyIcon sx={{ fontSize: 12 }} />
+                      <Copy className="size-3 text-slate-400 hover:text-slate-650" />
                     )}
-                  </IconButton>
-                </Box>
+                  </button>
 
+                  {/* Message Runtime Info */}
+                  {!isUser && msg.runtime && (
+                    <div className="mt-2 flex items-center">
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold border ${
+                        msg.runtime === "local-nodejs"
+                          ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50"
+                          : "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/50"
+                      }`}>
+                        {msg.runtime === "local-nodejs" ? "⬡ Node" : "🐍 Python"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tool Calls Chips */}
                 {msg.toolCalls && msg.toolCalls.length > 0 && (
-                  <Box sx={{ mt: 1, display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
                     {msg.toolCalls.map((tc, idx) => (
-                      <Chip
+                      <Badge
                         key={`${tc.id || tc.name}-${idx}`}
-                        icon={tc.status === "success" ? <SuccessIcon sx={{ fontSize: 12 }} /> : tc.status === "error" ? <ErrorIcon sx={{ fontSize: 12 }} /> : <PendingIcon sx={{ fontSize: 12 }} />}
-                        label={tc.name}
-                        size="small"
-                        color={tc.status === "success" ? "success" : tc.status === "error" ? "error" : "default"}
-                        variant="outlined"
-                        sx={{ height: 22, fontSize: 10 }}
-                      />
+                        variant={
+                          tc.status === "success"
+                            ? "success"
+                            : tc.status === "error"
+                            ? "destructive"
+                            : "outline"
+                        }
+                        className="text-[10px] py-0 px-2 flex items-center gap-1 font-medium select-none"
+                      >
+                        {tc.status === "success" ? (
+                          <CheckCircle2 className="size-3" />
+                        ) : tc.status === "error" ? (
+                          <AlertCircle className="size-3" />
+                        ) : (
+                          <Clock className="size-3" />
+                        )}
+                        <span>{tc.name}</span>
+                      </Badge>
                     ))}
-                  </Box>
+                  </div>
                 )}
-              </Box>
-            </Box>
+              </div>
+            </div>
           );
         })}
 
+        {/* Loading / Generating Placeholder */}
         {isLoading && (
-          <Box sx={{ display: "flex", gap: 1.5, mb: 2, alignItems: "flex-start" }}>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main" }}>
-              <BotIcon sx={{ fontSize: 14 }} />
-            </Avatar>
-            <Box sx={{ p: 1.5, borderRadius: "12px 12px 12px 2px", bgcolor: "background.paper", border: "1px solid", borderColor: "divider", minWidth: 180 }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: (typingStage || (activeToolCalls && activeToolCalls.length > 0)) ? 1 : 0 }}>
-                <CircularProgress size={14} />
-                <Typography variant="body2" color="text.secondary" fontSize={13}>
+          <div className="flex gap-3 items-start">
+            <div className="size-8 rounded-full bg-indigo-650 dark:bg-indigo-500 flex items-center justify-center text-white text-xs flex-shrink-0 select-none">
+              <Bot className="size-4 animate-pulse" />
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl rounded-tl-none p-3.5 shadow-sm text-sm space-y-2 max-w-[80%] min-w-[180px]">
+              <div className="flex items-center gap-2 text-slate-500">
+                <Loader2 className="size-3.5 animate-spin text-indigo-600" />
+                <span className="text-xs font-medium">
                   {typingStage || (isStreaming ? "Generating..." : "Thinking...")}
-                </Typography>
-              </Box>
+                </span>
+              </div>
+
               {activeToolCalls && activeToolCalls.length > 0 && (
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.5 }}>
+                <div className="flex flex-wrap gap-1 pt-1">
                   {activeToolCalls.map((tc, idx) => (
-                    <Chip
+                    <Badge
                       key={`${tc.id || tc.name}-${idx}`}
-                      icon={tc.status === "success" ? <SuccessIcon sx={{ fontSize: 12 }} /> : tc.status === "error" ? <ErrorIcon sx={{ fontSize: 12 }} /> : <PendingIcon sx={{ fontSize: 12 }} />}
-                      label={tc.name}
-                      size="small"
-                      color={tc.status === "success" ? "success" : tc.status === "error" ? "error" : "default"}
-                      variant="outlined"
-                      sx={{ height: 22, fontSize: 10 }}
-                    />
+                      variant={
+                        tc.status === "success"
+                          ? "success"
+                          : tc.status === "error"
+                          ? "destructive"
+                          : "outline"
+                      }
+                      className="text-[10px] py-0 px-2 flex items-center gap-1 select-none"
+                    >
+                      {tc.status === "success" ? (
+                        <CheckCircle2 className="size-3" />
+                      ) : tc.status === "error" ? (
+                        <AlertCircle className="size-3" />
+                      ) : (
+                        <Clock className="size-3" />
+                      )}
+                      <span>{tc.name}</span>
+                    </Badge>
                   ))}
-                </Box>
+                </div>
               )}
-            </Box>
-          </Box>
+            </div>
+          </div>
         )}
 
         <div ref={messagesEndRef} />
-      </Box>
+      </div>
 
+      {/* Attachment Panel */}
       {showAttachmentPanel && (
-        <Box
-          sx={{
-            p: 1.5,
-            borderTop: "1px solid",
-            borderColor: "divider",
-            bgcolor: "action.hover",
-            display: "flex",
-            flexDirection: "column",
-            gap: 1.5,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <Typography variant="caption" sx={{ fontWeight: "bold", color: "text.secondary" }}>
+        <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-slate-550 uppercase tracking-wider">
               Image Attachment
-            </Typography>
-            <IconButton size="small" onClick={() => { setShowAttachmentPanel(false); setSelectedImageUrl(""); }}>
-              <CloseIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-          </Box>
+            </span>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => {
+                setShowAttachmentPanel(false);
+                setSelectedImageUrl("");
+              }}
+              className="size-6 text-slate-450 hover:bg-slate-100 dark:hover:bg-slate-850"
+            >
+              <X className="size-4" />
+            </Button>
+          </div>
 
-          <TextField
-            fullWidth
+          <input
+            type="text"
             placeholder="Enter image URL..."
             value={selectedImageUrl}
             onChange={(e) => setSelectedImageUrl(e.target.value)}
-            size="small"
-            sx={{ "& .MuiInputBase-root": { fontSize: 12 } }}
+            className="w-full text-xs rounded-md border border-slate-200 dark:border-slate-800 bg-background px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-650"
           />
 
-          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
-            <Typography variant="caption" sx={{ color: "text.secondary", mr: 1 }}>
-              Quick Select:
-            </Typography>
+          <div className="flex items-center gap-2 flex-wrap text-xs">
+            <span className="text-slate-450 font-medium">Quick Select:</span>
             {TEST_IMAGES.map((img) => (
-              <Chip
+              <Badge
                 key={img.label}
-                avatar={<Avatar sx={{ bgcolor: "transparent" }}>{img.icon}</Avatar>}
-                label={img.label}
+                variant={selectedImageUrl === img.url ? "default" : "outline"}
                 onClick={() => setSelectedImageUrl(img.url)}
-                variant={selectedImageUrl === img.url ? "filled" : "outlined"}
-                color={selectedImageUrl === img.url ? "primary" : "default"}
-                size="small"
-                sx={{
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                  "&:hover": { transform: "translateY(-1px)", boxShadow: "0 2px 6px rgba(0,0,0,0.1)" },
-                }}
-              />
+                className="cursor-pointer text-[10px] py-0.5 px-2 hover:scale-[1.01] transition-transform select-none"
+              >
+                <span className="mr-1">{img.icon}</span>
+                <span>{img.label}</span>
+              </Badge>
             ))}
-          </Box>
+          </div>
 
           {selectedImageUrl && (
-            <Box sx={{ position: "relative", width: 80, height: 80, mt: 0.5 }}>
-              <Box
-                component="img"
+            <div className="relative size-20">
+              <img
                 src={selectedImageUrl}
                 alt="Preview"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1594322436404-5a0526db4d13?auto=format&fit=crop&w=100&q=80";
                 }}
-                sx={{
-                  width: "100%",
-                  height: "100%",
-                  borderRadius: "8px",
-                  objectFit: "cover",
-                  border: "1px solid",
-                  borderColor: "divider",
-                }}
+                className="w-full h-full rounded-lg object-cover border border-slate-200 dark:border-slate-800"
               />
-              <IconButton
-                size="small"
+              <button
                 onClick={() => setSelectedImageUrl("")}
-                sx={{
-                  position: "absolute",
-                  top: -6,
-                  right: -6,
-                  bgcolor: "error.main",
-                  color: "white",
-                  padding: "2px",
-                  "&:hover": { bgcolor: "error.dark" },
-                }}
+                className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-red-500 text-white flex items-center justify-center p-0 hover:bg-red-650 transition-colors shadow-xs"
               >
-                <CloseIcon sx={{ fontSize: 10 }} />
-              </IconButton>
-            </Box>
+                <X className="size-3" />
+              </button>
+            </div>
           )}
-        </Box>
+        </div>
       )}
 
-      <Divider />
+      <hr className="border-slate-200 dark:border-slate-800" />
 
-      <Box sx={{ p: 2, bgcolor: "background.paper" }}>
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          <IconButton
-            color={showAttachmentPanel || selectedImageUrl ? "primary" : "default"}
-            onClick={() => setShowAttachmentPanel(!showAttachmentPanel)}
-            disabled={isLoading || !canSend}
-          >
-            <ImageIcon />
-          </IconButton>
-          <TextField
-            fullWidth
-            multiline
-            maxRows={4}
+      {/* Message Input Box */}
+      <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-50 dark:border-slate-950 flex items-end gap-2.5">
+        <Button
+          size="icon"
+          variant={showAttachmentPanel || selectedImageUrl ? "default" : "ghost"}
+          onClick={() => setShowAttachmentPanel(!showAttachmentPanel)}
+          disabled={isLoading || !canSend}
+          className="size-9 rounded-xl flex-shrink-0 text-slate-450 hover:bg-slate-50 dark:hover:bg-slate-850"
+        >
+          <ImageIcon className="size-5" />
+        </Button>
+
+        <div className="flex-1 min-w-0 relative">
+          <Textarea
             placeholder={canSend ? `Message ${agent.name}...` : "Select a central model to start chatting"}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isLoading || !canSend}
-            size="small"
-            helperText={!canSend ? "Go to HeaderBar to configure your central API key" : ""}
-            error={!canSend}
-            sx={{
-              "& .MuiInputBase-root": { fontSize: 13 },
-            }}
+            rows={1}
+            className="w-full min-h-[36px] max-h-[120px] text-sm resize-none rounded-xl dark:bg-slate-955 dark:border-slate-800 pr-10 focus-visible:ring-indigo-650"
           />
-          <IconButton
-            color="primary"
-            onClick={handleSend}
-            disabled={(!input.trim() && !selectedImageUrl) || isLoading || !canSend}
-            sx={{ alignSelf: "flex-end" }}
-          >
-            <SendIcon />
-          </IconButton>
-        </Box>
-      </Box>
-    </Box>
+          {!canSend && (
+            <span className="absolute bottom-1 right-2 text-[9px] text-red-500 font-semibold select-none">
+              Configure your API key in the HeaderBar
+            </span>
+          )}
+        </div>
+
+        <Button
+          size="icon"
+          variant="default"
+          onClick={handleSend}
+          disabled={(!input.trim() && !selectedImageUrl) || isLoading || !canSend}
+          className="size-9 rounded-xl flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+        >
+          <Send className="size-4" />
+        </Button>
+      </div>
+    </div>
   );
 };

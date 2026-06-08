@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any, ClassVar
+from typing import ClassVar
 
-from sqlalchemy import Boolean, String, TIMESTAMP, Text
+from sqlalchemy import TIMESTAMP, Boolean, String, Text
 from sqlalchemy.dialects.postgresql import TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.db.base import Base
+
 
 class TelegramConfig(Base):
     """Configuration for Telegram Userbots/Bots per company."""
@@ -27,7 +28,7 @@ class TelegramConfig(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     config_type: Mapped[str] = mapped_column(String, default="USERBOT") # USERBOT | BOT
     label: Mapped[str] = mapped_column(String, default="Main Account")
-    
+
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=datetime.now
     )

@@ -1,0 +1,12 @@
+{
+  "title": "AI Hub",
+  "subtitle": "Intelligent Agents Center",
+  "tabs": {
+    "agents": "Agents",
+    "sandbox": "Sandbox",
+    "rag": "Knowledge Base",
+    "tools": "Tools",
+    "skills": "Skills",
+    "scheduler": "Scheduler"
+  }
+}

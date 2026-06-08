@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-
 VISION_MODEL_DEFAULT = "gemini-2.5-flash"
 VISION_PROVIDER_DEFAULT = "GOOGLE"
 

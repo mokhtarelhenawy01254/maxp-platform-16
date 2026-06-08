@@ -28,7 +28,7 @@ async def generate_embedding(body: EmbeddingRequest) -> EmbeddingResponse:
     """
     if not body.text and not body.image_bytes:
         raise HTTPException(status_code=400, detail="Either text or image_bytes must be provided")
-        
+
     try:
         embedding = await episodic_memory_service.generate_embedding_async(
             text=body.text,

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models.telegram_config import TelegramConfig
+
 
 class TelegramConfigRepository:
     """Repository for ai.telegram_configs CRUD operations."""
@@ -31,7 +33,7 @@ class TelegramConfigRepository:
             await self._session.commit()
             await self._session.refresh(existing)
             return existing
-        
+
         config = TelegramConfig(company_id=company_id, **data)
         self._session.add(config)
         await self._session.commit()

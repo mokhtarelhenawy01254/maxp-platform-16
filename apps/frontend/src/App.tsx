@@ -755,6 +755,9 @@ const SuperAdminAgentConfig = React.lazy(
 const AIChatPage = React.lazy(
   () => import("./pages/admin/AIChatPage"),
 );
+const AIHubLayout = React.lazy(
+  () => import("./pages/admin/AIHubLayout"),
+);
 const AgenticRAGLab = React.lazy(
   () => import("./pages/admin/AgenticRAGLab"),
 );
@@ -6128,7 +6131,7 @@ const AppContent = () => {
                 />
                 <Route
                   path="/admin/agent-config"
-                  element={<Navigate to="/admin/ai-agents?agent=ceo" replace />}
+                  element={<Navigate to="/admin/ai-hub?agent=ceo" replace />}
                 />
                 <Route
                   path="/admin/ai-chat"
@@ -6140,25 +6143,21 @@ const AppContent = () => {
                 />
                 <Route
                   path="/admin/ai-rag-lab"
-                  element={
-                    <Layout fullWidth>
-                      <AgenticRAGLab />
-                    </Layout>
-                  }
+                  element={<Navigate to="/admin/ai-hub?tab=rag" replace />}
                 />
                 <Route
                   path="/admin/ai-agent-sandbox"
-                  element={
-                    <Layout fullWidth>
-                      <AIAgentSandboxPage />
-                    </Layout>
-                  }
+                  element={<Navigate to="/admin/ai-hub?tab=sandbox" replace />}
                 />
                 <Route
                   path="/admin/ai-agents"
+                  element={<Navigate to="/admin/ai-hub?tab=agents" replace />}
+                />
+                <Route
+                  path="/admin/ai-hub"
                   element={
                     <Layout fullWidth>
-                      <CompanyAIAgents />
+                      <AIHubLayout />
                     </Layout>
                   }
                 />
@@ -6180,19 +6179,11 @@ const AppContent = () => {
                 />
                 <Route
                   path="/admin/ai-skills"
-                  element={
-                    <Layout fullWidth>
-                      <AgentSkillsPage />
-                    </Layout>
-                  }
+                  element={<Navigate to="/admin/ai-hub?tab=skills" replace />}
                 />
                 <Route
                   path="/admin/ai-tools"
-                  element={
-                    <Layout fullWidth>
-                      <AgentToolsPage />
-                    </Layout>
-                  }
+                  element={<Navigate to="/admin/ai-hub?tab=tools" replace />}
                 />
                 <Route
                   path="/admin/sub-agents"
@@ -6204,11 +6195,7 @@ const AppContent = () => {
                 />
                 <Route
                   path="/admin/ai-scheduler"
-                  element={
-                    <Layout fullWidth>
-                      <CompanyAIScheduler />
-                    </Layout>
-                  }
+                  element={<Navigate to="/admin/ai-hub?tab=scheduler" replace />}
                 />
                 <Route
                   path="/"

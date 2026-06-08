@@ -1,0 +1,12 @@
+{
+  "title": "AI Hub",
+  "subtitle": "مركز الوكلاء الذكي",
+  "tabs": {
+    "agents": "الوكلاء",
+    "sandbox": "Sandbox",
+    "rag": "قاعدة المعرفة",
+    "tools": "الأدوات",
+    "skills": "المهارات",
+    "scheduler": "الجدولة"
+  }
+}

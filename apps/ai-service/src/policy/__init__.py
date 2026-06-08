@@ -1,23 +1,23 @@
 """Policy enforcement module for MaxP AI Service."""
 
 from src.policy.engine import (
-    PolicyEngine,
-    policy_engine,
     DEFAULT_POLICIES,
+    DiscountValidation,
+    PolicyEngine,
     PolicyViolation,
     PolicyWarning,
-    ValidationResult,
-    DiscountValidation,
     PriceChangeValidation,
+    ValidationResult,
+    policy_engine,
 )
 
 __all__ = [
-    "PolicyEngine",
-    "policy_engine",
     "DEFAULT_POLICIES",
+    "DiscountValidation",
+    "PolicyEngine",
     "PolicyViolation",
     "PolicyWarning",
-    "ValidationResult",
-    "DiscountValidation",
     "PriceChangeValidation",
+    "ValidationResult",
+    "policy_engine",
 ]

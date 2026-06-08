@@ -4,8 +4,8 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import ForeignKey, Integer, String, Text, DateTime
-from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, UUID
+from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.db.base import Base

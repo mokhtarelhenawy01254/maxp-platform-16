@@ -22,15 +22,18 @@ def _get_agents_root() -> Path:
         if root.exists():
             return root
     # Fallback: relative to project root
-    candidates = [
-        Path(os.environ.get("BACKEND_AGENTS_ROOT", "")),
+    candidates = []
+    env_root = os.environ.get("BACKEND_AGENTS_ROOT")
+    if env_root:
+        candidates.append(Path(env_root))
+    candidates.extend([
         Path(__file__).resolve().parent.parent.parent.parent.parent / "apps" / "backend" / "agents",
         Path(__file__).resolve().parent.parent.parent / "agents",
-    ]
+    ])
     for c in candidates:
         if c.exists():
             return c
-    return candidates[1]  # default fallback
+    return Path(__file__).resolve().parent.parent.parent.parent.parent / "apps" / "backend" / "agents"
 
 TEMPLATE_DESCRIPTIONS: list[dict[str, Any]] = []
 
@@ -136,7 +139,7 @@ async def list_templates(session: AsyncSession) -> list[AgentTemplate]:
 async def get_skills_for_agent(company_id: str, session: AsyncSession) -> list[dict[str, Any]]:
     """Fetch all enabled skills for the given company from the database."""
     from src.db.models.skill import Skill
-    
+
     stmt = (
         select(Skill)
         .where(Skill.company_id == company_id, Skill.enabled == True)
@@ -144,7 +147,7 @@ async def get_skills_for_agent(company_id: str, session: AsyncSession) -> list[d
     )
     result = await session.execute(stmt)
     skills = result.scalars().all()
-    
+
     return [
         {
             "name": s.name,

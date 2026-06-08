@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 
@@ -16,7 +16,7 @@ class MemorySession:
     company_id: str
     conversation_id: str
     messages: list[dict[str, Any]] = field(default_factory=list)
-    summary: Optional[str] = None
+    summary: str | None = None
     cart: dict[str, Any] = field(default_factory=dict)
     queried_products: list[Any] = field(default_factory=list)
     last_shown_product_ids: list[str] = field(default_factory=list)
@@ -41,7 +41,7 @@ class WorkingMemoryService:
     async def add_message(self, company_id: str, conversation_id: str, message: dict[str, Any] | str) -> MemorySession:
         key = self._key(company_id, conversation_id)
         session = self._sessions.get(key)
-        
+
         if not session:
             session = await self.init_session(company_id, conversation_id)
 
@@ -53,15 +53,15 @@ class WorkingMemoryService:
                 "role": message.get("role", "user"),
                 "content": message.get("content", ""),
             }
-        
+
         # Add optional metadata
         if "modelSelection" in message:
             msg_obj["modelSelection"] = message["modelSelection"]
         if "intentTrace" in message:
             msg_obj["intentTrace"] = message["intentTrace"]
-            
+
         msg_obj["timestamp"] = datetime.datetime.utcnow().isoformat()
-        
+
         session.messages.append(msg_obj)
         session.last_access = datetime.datetime.utcnow().isoformat()
 
@@ -87,9 +87,9 @@ class WorkingMemoryService:
         session = self._sessions.get(key)
         if not session:
             return None
-        
+
         session.last_access = datetime.datetime.utcnow().isoformat()
-        
+
         return {
             "summary": session.summary,
             "recentMessages": session.messages,
@@ -104,7 +104,7 @@ class WorkingMemoryService:
         session = self._sessions.get(key)
         if not session:
             return None
-        
+
         session.cart.update(cart_data)
         session.last_access = datetime.datetime.utcnow().isoformat()
         return session.cart
@@ -114,7 +114,7 @@ class WorkingMemoryService:
         session = self._sessions.get(key)
         if not session:
             return None
-        
+
         session.queried_products.append(product)
         session.last_access = datetime.datetime.utcnow().isoformat()
         return session.queried_products
@@ -146,7 +146,7 @@ class WorkingMemoryService:
         session = self._sessions.get(key)
         if not session:
             return False
-        
+
         session.last_shown_product_ids = []
         session.active_search_filters = {}
         session.last_access = datetime.datetime.utcnow().isoformat()
@@ -166,7 +166,7 @@ class WorkingMemoryService:
             last_access = datetime.datetime.fromisoformat(session.last_access)
             if (now - last_access).total_seconds() > SESSION_TTL_SECONDS:
                 expired_keys.append(key)
-        
+
         for key in expired_keys:
             del self._sessions[key]
         return len(expired_keys)

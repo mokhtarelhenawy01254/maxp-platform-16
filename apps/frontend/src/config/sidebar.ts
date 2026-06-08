@@ -466,7 +466,7 @@ export const getSidebarConfig = (
                 { to: '/whatsapp/analytics', icon: ChartBarIcon, label: t('sidebar.whatsappAnalytics') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-integration'),
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-business'),
         },
 
         // 2️⃣.6 تليجرام
@@ -485,7 +485,7 @@ export const getSidebarConfig = (
                 { to: '/settings/telegram', icon: CogIcon, label: t('sidebar.telegramSettings') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('telegram-integration'),
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('telegram-business'),
         },
 
         // 3️⃣ إدارة الطلبات (قسم مستقل شامل)
@@ -950,19 +950,19 @@ export const getSidebarConfig = (
             title: t('sidebar.aiOperatorSection'),
             icon: SparklesIcon,
             items: [
-                { to: '/admin/ai-agents', icon: UserGroupIcon, label: t('sidebar.aiAgentsTeam') },
+                { to: '/admin/ai-hub?tab=agents', icon: UserGroupIcon, label: t('sidebar.aiAgentsTeam') },
                 { to: '/admin/ai-catalog', icon: ShoppingBagIcon, label: t('sidebar.aiCatalog') },
                 { to: '/admin/ai-agent-map', icon: QueueListIcon, label: t('sidebar.aiAgentMap') },
                 { to: '/admin/sub-agents', icon: UserGroupIcon, label: t('sidebar.aiSubAgents') },
-                { to: '/admin/ai-skills', icon: AcademicCapIcon, label: t('sidebar.aiAgentSkills') },
-                { to: '/admin/ai-tools', icon: WrenchScrewdriverIcon, label: t('sidebar.aiAgentTools') },
+                { to: '/admin/ai-hub?tab=skills', icon: AcademicCapIcon, label: t('sidebar.aiAgentSkills') },
+                { to: '/admin/ai-hub?tab=tools', icon: WrenchScrewdriverIcon, label: t('sidebar.aiAgentTools') },
                 { to: '/admin/agent-manager', icon: SparklesIcon, label: t('sidebar.agentManager') },
                 { to: '/admin/ai-chat', icon: ChatBubbleLeftRightIcon, label: t('sidebar.ceoAgentChat') },
-{ to: '/admin/ai-rag-lab', icon: BeakerIcon, label: t('sidebar.aiRagLab') },
-                { to: '/admin/ai-agent-sandbox', icon: BeakerIcon, label: t('sidebar.aiAgentSandbox') },
+                { to: '/admin/ai-hub?tab=rag', icon: BeakerIcon, label: t('sidebar.aiRagLab') },
+                { to: '/admin/ai-hub?tab=sandbox', icon: BeakerIcon, label: t('sidebar.aiAgentSandbox') },
                 { to: '/admin/faqs', icon: QuestionMarkCircleIcon, label: t('sidebar.faqs') },
                 { to: '/admin/policies', icon: ClipboardDocumentCheckIcon, label: t('sidebar.policies') },
-                { to: '/admin/ai-scheduler', icon: ClockIcon, label: t('sidebar.aiScheduler') },
+                { to: '/admin/ai-hub?tab=scheduler', icon: ClockIcon, label: t('sidebar.aiScheduler') },
             ]
         }] : []),
 

@@ -20,7 +20,6 @@ async def test_provider_factory_uses_env_google_key_when_db_key_is_unavailable(m
         "src.llm.providers.factory.model_manager.get_next_key",
         AsyncMock(side_effect=ModelManagerError("ALL_KEYS_UNAVAILABLE", "no db keys")),
     )
-
     provider = await ProviderFactory().get_provider("GOOGLE", company_id="comp1")
 
     assert isinstance(provider, GoogleProvider)

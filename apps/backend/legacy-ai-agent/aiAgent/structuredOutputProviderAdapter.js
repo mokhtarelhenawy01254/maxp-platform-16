@@ -165,7 +165,7 @@ ${message}
 class OpenAIStructuredOutputAdapter extends BaseStructuredOutputAdapter {
   constructor(config = {}) {
     super('openai', config);
-    this.apiKey = config.apiKey || process.env.OPENAI_API_KEY;
+    this.apiKey = config.apiKey;
     this.baseUrl = config.baseUrl || 'https://api.openai.com/v1';
   }
 
@@ -217,7 +217,7 @@ class OpenAIStructuredOutputAdapter extends BaseStructuredOutputAdapter {
 class GeminiStructuredOutputAdapter extends BaseStructuredOutputAdapter {
   constructor(config = {}) {
     super('gemini', config);
-    this.apiKey = config.apiKey || process.env.GEMINI_API_KEY;
+    this.apiKey = config.apiKey;
     this.baseUrl = config.baseUrl || 'https://generativelanguage.googleapis.com/v1beta';
   }
 
@@ -310,7 +310,7 @@ class GeminiStructuredOutputAdapter extends BaseStructuredOutputAdapter {
 class AnthropicStructuredOutputAdapter extends BaseStructuredOutputAdapter {
   constructor(config = {}) {
     super('anthropic', config);
-    this.apiKey = config.apiKey || process.env.ANTHROPIC_API_KEY;
+    this.apiKey = config.apiKey;
     this.baseUrl = config.baseUrl || 'https://api.anthropic.com/v1';
   }
 

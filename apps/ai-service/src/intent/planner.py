@@ -126,6 +126,7 @@ async def build_intent_contract_async(
     context: dict[str, Any] | None = None,
     policy_plan: ToolPlan | None = None,
     company_id: str | None = None,
+    client: Any | None = None,
 ) -> IntentContract:
     from src.intent.classifier import classify_intent
 
@@ -144,6 +145,7 @@ async def build_intent_contract_async(
             message=message,
             company_id=company_id or "",
             context=context or {},
+            client=client,
         )
     except Exception as exc:
         logger.error("intent classification failed", error=str(exc), message=message[:100])

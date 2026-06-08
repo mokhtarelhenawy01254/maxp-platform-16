@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Any
 
-
 # Default token budget for context window (calibrated for gemini-2.5-flash)
 TOKEN_BUDGET_DEFAULT = 12_000
 

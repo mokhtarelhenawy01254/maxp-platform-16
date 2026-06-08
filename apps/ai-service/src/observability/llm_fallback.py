@@ -43,7 +43,10 @@ class LLMFallbackProvider:
                 self._log.info("prompt cache active", name=cached.cached_content_name)
 
         try:
-            from src.llm.agent_client_factory import build_agent_client_async, build_provider_client_async
+            from src.llm.agent_client_factory import (
+                build_agent_client_async,
+                build_provider_client_async,
+            )
 
             resolved_model = model or settings.google_gemini_model or settings.default_model
             if provider:

@@ -364,10 +364,7 @@ class ModelManager {
 
   async getProviderPriorityOrder(options = {}) {
     const globalConfig = await this.getGlobalUIConfig();
-    const order = this.resolveProviderPriorityOrder(globalConfig, options);
-    if (options.respectFailover === false || globalConfig?.enableFailover !== false) {
-      return order;
-    }
+    const order = this.resolveProviderPriorityOrder(globalConfig, { ...options, includeAllSupported: false });
     return order.slice(0, 1);
   }
 
@@ -699,15 +696,14 @@ class ModelManager {
     const globalConfig = await this.getGlobalUIConfig();
     const providerPriority = this.resolveProviderPriorityOrder(globalConfig, {
       preferredProvider: options.preferredProvider,
-      includeAllSupported: true
+      includeAllSupported: false
     });
     const activeProvider = providerPriority[0] || 'GOOGLE';
     const preferredAiKeyIds = this.getPreferredAiKeyIds(globalConfig?.settings);
     const preferredKeyId = options.preferredKeyId || preferredAiKeyIds[activeProvider] || null;
-    console.log(`[SIMPLE-KEY] Provider priority: ${providerPriority.join(' > ')} (${options.preferredProvider ? 'provider override' : 'settings/default'})`);
+    console.log(`[SIMPLE-KEY] Provider: ${activeProvider} (no failover)`);
 
-    const enableFailover = options.strictProvider ? false : (globalConfig?.enableFailover ?? true);
-    const providerRank = new Map(providerPriority.map((provider, index) => [provider, index]));
+    const providerRank = new Map([[activeProvider, 0]]);
     const orderedKeys = [...allKeys].sort((a, b) => {
       const providerDiff =
         (providerRank.get(String(a.provider || 'GOOGLE').toUpperCase()) ?? 999)
@@ -716,60 +712,61 @@ class ModelManager {
       return (a.priority || 0) - (b.priority || 0);
     });
     const toolSupportRejectedKeys = [];
-    const allProviderPoolsWithModels = providerPriority
-      .map((provider, index) => {
-        let keysForProvider = orderedKeys
-          .filter(key => String(key.provider || 'GOOGLE').toUpperCase() === provider)
-          .map(key => this.toSimpleRotatorKey(key))
-          .filter(key => {
-            if (!preferredModel) return true;
-            if (index === 0) return key.modelName === preferredModel;
-            return true;
-          });
+    
+    // Only use the first (primary) provider - NO FAILOVER
+    const primaryProviderKeys = orderedKeys
+      .filter(key => String(key.provider || 'GOOGLE').toUpperCase() === activeProvider)
+      .map(key => this.toSimpleRotatorKey(key))
+      .filter(key => {
+        if (!preferredModel) return true;
+        return key.modelName === preferredModel;
+      });
 
-        if (options.requireToolSupport) {
-          keysForProvider = keysForProvider.filter(key => {
-            const agentSuitability = getModelCapabilities(key.provider, key.modelName);
-            if (agentSuitability.agentReady) return true;
-            toolSupportRejectedKeys.push({
-              id: key.id,
-              name: key.name,
-              provider: key.provider,
-              modelName: key.modelName,
-              modelId: key.modelId || null,
-              selectedPool: index === 0 ? 'primary' : 'failover',
-              activeProvider,
-              preferredModel,
-              agentSuitability,
-            });
-            return false;
+    if (options.requireToolSupport) {
+      const filteredKeys = [];
+      for (const key of primaryProviderKeys) {
+        const agentSuitability = getModelCapabilities(key.provider, key.modelName);
+        if (agentSuitability.agentReady) {
+          filteredKeys.push(key);
+        } else {
+          toolSupportRejectedKeys.push({
+            id: key.id,
+            name: key.name,
+            provider: key.provider,
+            modelName: key.modelName,
+            modelId: key.modelId || null,
+            selectedPool: 'primary',
+            activeProvider,
+            preferredModel,
+            agentSuitability,
           });
         }
+      }
+      primaryProviderKeys.length = 0;
+      primaryProviderKeys.push(...filteredKeys);
+    }
 
-        return {
-          provider,
-          rank: index + 1,
-          selectedPool: index === 0 ? 'primary' : 'failover',
-          preferredKeyId: options.preferredKeyId || preferredAiKeyIds[provider] || null,
-          keys: keysForProvider
-        };
-      });
-    const routedPools = (enableFailover ? allProviderPoolsWithModels : allProviderPoolsWithModels.slice(0, 1))
-      .filter(pool => pool.keys.length > 0);
-    const primaryKeysWithModels = allProviderPoolsWithModels[0]?.keys || [];
-    const failoverKeysWithModels = routedPools.slice(1).flatMap(pool => pool.keys);
+    const routedPools = primaryProviderKeys.length > 0 ? [{
+      provider: activeProvider,
+      rank: 1,
+      selectedPool: 'primary',
+      preferredKeyId: preferredKeyId,
+      keys: primaryProviderKeys
+    }] : [];
 
-    console.log(`[SIMPLE-KEY] Provider routing pools: ${routedPools.map(pool => `${pool.provider}:${pool.keys.length}`).join(', ') || 'none'} | failover ${enableFailover ? 'enabled' : 'disabled'}${preferredModel ? ` | model ${preferredModel}` : ''}`);
+    const primaryKeysWithModels = primaryProviderKeys;
+
+    console.log(`[SIMPLE-KEY] Provider routing pool: ${activeProvider}:${primaryProviderKeys.length} | no failover${preferredModel ? ` | model ${preferredModel}` : ''}`);
 
     return {
       allKeys,
       activeProvider,
-      enableFailover,
-      providerPriority,
+      enableFailover: false,
+      providerPriority: [activeProvider],
       preferredKeyId,
       providerPoolsWithModels: routedPools,
       primaryKeysWithModels,
-      failoverKeysWithModels,
+      failoverKeysWithModels: [],
       toolSupportRejectedKeys
     };
   }
@@ -1492,16 +1489,16 @@ class ModelManager {
       // ✅ الحصول على الإعدادات العامة (أو استخدام التفضيل الممرر)
       const globalConfig = await this.getGlobalUIConfig();
       const preferredProvider = options.preferredProvider || globalConfig?.defaultProvider || 'GOOGLE';
-      const enableFailover = options.preferredProvider ? true : (globalConfig?.enableFailover ?? false); // Always allow if specifically requested
 
-      console.log(`🎯 [DB-PRIORITY] المزود المفضل: ${preferredProvider} | Failover: ${enableFailover}`);
+      console.log(`🎯 [DB-PRIORITY] المزود: ${preferredProvider} (no failover)`);
 
-      // الحصول على النماذج من قاعدة البيانات
+      // الحصول على النماذج من قاعدة البيانات - فقط للمزود المحدد
       const modelsFromDB = await this.prisma.aiModelConfig.findMany({
         where: {
           isEnabled: true,
           key: {
             isActive: true,
+            provider: preferredProvider,
             OR: [
               { companyId: companyId },
               { keyType: 'CENTRAL' }
@@ -1519,28 +1516,9 @@ class ModelManager {
         }
       });
 
-      // ✅ STRICT MODE: If failover is disabled, filter OUT models from other providers
-      let filteredModels = modelsFromDB;
-      if (!enableFailover) {
-        filteredModels = modelsFromDB.filter(m => m.key.provider === preferredProvider);
-        if (modelsFromDB.length !== filteredModels.length) {
-          console.log(`🔒 [STRICT-MODE] Filtered out ${modelsFromDB.length - filteredModels.length} models from other providers (Failover Disabled).`);
-        }
-      }
-
-      // ✅ الترتيب الذكي:
-      // 1. نماذج المزود المفضل تأخذ أرقم أولوية (0 + priority)
-      // 2. النماذج الأخرى تأخذ أرقام أولوية أعلى (1000 + priority)
-      const sortedRecords = filteredModels
-        .map(record => {
-          let score = record.priority;
-          if (record.key.provider === preferredProvider) {
-            score = record.priority; // يبدأ من 1 مثلاً
-          } else {
-            score = 1000 + record.priority; // يوضع في ذيل القائمة
-          }
-          return { ...record, finalScore: score };
-        })
+      // الترتيب حسب الأولوية
+      const sortedRecords = modelsFromDB
+        .map(record => ({ ...record, finalScore: record.priority }))
         .sort((a, b) => a.finalScore - b.finalScore);
 
       // إزالة التكرارات والحصول على قائمة فريدة مرتبة
@@ -1548,21 +1526,17 @@ class ModelManager {
       const seenModels = new Set();
 
       for (const record of sortedRecords) {
-        // تخطي النماذج المعطلة
         if (disabledModels.includes(record.modelName) || isProductionUnsafeGeminiModelName(record.modelName)) {
           continue;
         }
-
-        // تخطي النماذج المكررة
         if (seenModels.has(record.modelName)) {
           continue;
         }
-
         seenModels.add(record.modelName);
         uniqueModels.push(record.modelName);
       }
 
-      console.log(`📊 [DB-PRIORITY] تم تحميل ${uniqueModels.length} نموذج مرتب من قاعدة البيانات للمزود: ${preferredProvider}`);
+      console.log(`📊 [DB-PRIORITY] تم تحميل ${uniqueModels.length} نموذج من ${preferredProvider} (no failover)`);
 
       // ✅ PERFORMANCE: حفظ في cache
       this.modelsOrderedCache.set(cacheKey, {
@@ -2050,90 +2024,24 @@ class ModelManager {
 
   /**
    * ✅ الحصول على النموذج النشط الحالي للشركة
-   * يستخدم Reactive Round-Robin فقط (بدون نظام الكوتة)
+   * يستخدم Reactive Round-Robin فقط (بدون نظام الكوتة، بدون Failover)
    * @param {string} companyId - معرف الشركة
    */
   async getCurrentActiveModel(companyId, predictedTokens = 0, options = {}) {
     try {
-      // ✅ استخدام Reactive Round-Robin مباشرة
+      // ✅ استخدام Reactive Round-Robin مباشرة (بدون Failover)
       const systemResult = await this.getNextKeySimple(companyId, options);
 
       if (systemResult && !systemResult.error) {
         return systemResult;
       }
 
-      // ✅ FAILOVER CONTROL: Check both company and global settings
-      const prisma = getSharedPrismaClient();
-      let settings = null;
-      let globalConfig = null;
-
-      if (prisma) {
-        try {
-          settings = await prisma.aiSetting.findUnique({
-            where: { companyId: companyId },
-            select: { enableFailover: true }
-          });
-          globalConfig = await prisma.globalAiConfig.findFirst({
-            where: { isActive: true }
-          });
-        } catch (dbErr) {
-          console.warn(`⚠️ [MODEL-MANAGER] Could not load failover settings: ${dbErr.message}`);
-        }
+      // إذا فشل، أرجع الخطأ مباشرة - لا يوجد Failover
+      if (systemResult) {
+        return systemResult;
       }
 
-      if ((settings && settings.enableFailover === false) || (globalConfig && globalConfig.enableFailover === false)) {
-        console.warn(`🛑 [MODEL-MANAGER] Failover is disabled (Company: ${settings?.enableFailover}, Global: ${globalConfig?.enableFailover}). Returning error instead of switching providers.`);
-        return {
-          error: 'FAILOVER_DISABLED',
-          arabicMessage: 'عذراً، نظام الذكاء الاصطناعي مشغول حالياً. (التبديل التلقائي معطل)'
-        };
-      }
-
-      if (systemResult && systemResult.error === 'QUOTA_EXHAUSTED') {
-        return systemResult; // Bubble up exhausted error
-      }
-
-      // 2. Checking Global Config (Legacy / DeepSeek path)
-      const providerType = globalConfig?.defaultProvider || 'GOOGLE';
-
-      if (providerType !== 'GOOGLE') {
-        // ... (existing multi-provider logic)
-        const keys = await this.prisma.aiKey.findMany({
-          where: {
-            provider: providerType,
-            isActive: true,
-            OR: [{ companyId: companyId }, { companyId: null }]
-          },
-          include: { aiModelConfigs: true },
-          orderBy: { priority: 'asc' }
-        });
-
-        if (keys.length > 0) {
-          const selectedKey = keys[0];
-          const fallbackModels = {
-            DEEPSEEK: 'deepseek-chat',
-            GROQ: 'llama-3.3-70b-versatile',
-            OPENROUTER: 'openrouter/auto',
-            NVIDIA: 'openai/gpt-oss-120b'
-          };
-          const activeModel = selectedKey.aiModelConfigs.find(m => m.isEnabled) || { modelName: fallbackModels[providerType] || 'unknown' };
-          return {
-            apiKey: selectedKey.apiKey,
-            model: activeModel.modelName,
-            keyId: selectedKey.id,
-            modelId: activeModel.id,
-            keyName: selectedKey.name,
-            provider: providerType,
-            baseUrl: selectedKey.baseUrl
-          };
-        }
-      }
-
-      // Default to what findBestModel returned if something went wrong but no error was bubbled
-      if (!systemResult) {
-        return { error: 'NO_MODEL_AVAILABLE', arabicMessage: 'عذراً، لا يوجد نموذج متاح حالياً.' };
-      }
-      return systemResult;
+      return { error: 'NO_MODEL_AVAILABLE', arabicMessage: 'عذراً، لا يوجد نموذج متاح حالياً.' };
     } catch (error) {
       console.error('❌ [MODEL-MANAGER] Error in getCurrentActiveModel:', error);
       return { error: 'INTERNAL_ERROR', arabicMessage: 'خطأ داخلي في اختيار النموذج' };

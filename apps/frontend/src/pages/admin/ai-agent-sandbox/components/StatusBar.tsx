@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Typography, Chip, Tooltip } from "@mui/material";
+import { Badge } from "@/components/ui/badge";
 import { CostBreakdown } from "../hooks/useCostTracker";
 
 interface StatusBarProps {
@@ -24,64 +24,28 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   formatTokens,
 }) => {
   return (
-    <Box
-      sx={{
-        px: 2,
-        py: 0.75,
-        borderTop: "1px solid",
-        borderColor: "divider",
-        display: "flex",
-        alignItems: "center",
-        gap: 2,
-        bgcolor: "background.paper",
-        flexWrap: "wrap",
-      }}
-    >
-      <Tooltip title="Messages">
-        <Chip
-          label={`${messageCount} msgs`}
-          size="small"
-          sx={{ height: 22, fontSize: 11 }}
-        />
-      </Tooltip>
+    <div className="px-4 py-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 flex-wrap bg-white dark:bg-slate-900 text-xs">
+      <div className="flex items-center gap-2 flex-wrap">
+        <Badge variant="secondary" className="text-[10px]" title="Messages">
+          {messageCount} msgs
+        </Badge>
 
-      <Tooltip title="Tool Calls">
-        <Chip
-          label={`${toolCallCount} tools`}
-          size="small"
-          color="info"
-          variant="outlined"
-          sx={{ height: 22, fontSize: 11 }}
-        />
-      </Tooltip>
+        <Badge variant="outline" className="text-[10px] text-sky-600 dark:text-sky-400 border-sky-200 dark:border-sky-900/50" title="Tool Calls">
+          {toolCallCount} tools
+        </Badge>
 
-      <Tooltip title="Total Tokens">
-        <Chip
-          label={`${formatTokens(totalTokens)} tokens`}
-          size="small"
-          color="primary"
-          variant="outlined"
-          sx={{ height: 22, fontSize: 11 }}
-        />
-      </Tooltip>
+        <Badge variant="outline" className="text-[10px] text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50" title="Total Tokens">
+          {formatTokens(totalTokens)} tokens
+        </Badge>
 
-      <Tooltip title="Average Latency">
-        <Chip
-          label={`${avgLatency.toFixed(0)}ms avg`}
-          size="small"
-          color="warning"
-          variant="outlined"
-          sx={{ height: 22, fontSize: 11 }}
-        />
-      </Tooltip>
+        <Badge variant="outline" className="text-[10px] text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/50" title="Average Latency">
+          {avgLatency.toFixed(0)}ms avg
+        </Badge>
+      </div>
 
-      <Box sx={{ flex: 1 }} />
-
-      <Tooltip title="Total Cost">
-        <Typography variant="body2" fontSize={12} fontWeight={700} color="primary.main">
-          {formatCost(totalCost)}
-        </Typography>
-      </Tooltip>
-    </Box>
+      <div className="font-bold text-indigo-650 dark:text-indigo-400" title="Total Cost">
+        {formatCost(totalCost)}
+      </div>
+    </div>
   );
 };

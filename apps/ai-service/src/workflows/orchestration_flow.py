@@ -124,7 +124,7 @@ async def run_orchestration(
             company_id=company_id,
             customer_id=customer_id,
             agent=ceo_agent,
-            session=agent_session,
+            session=session,
             channel="merchant" if is_merchant else "chat",
         )
 

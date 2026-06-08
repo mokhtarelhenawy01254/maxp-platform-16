@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { useAgentSandbox } from "../hooks/useAgentSandbox";
 
@@ -9,6 +9,8 @@ const sandboxApiMock = vi.hoisted(() => ({
   getModels: vi.fn(),
   listSessions: vi.fn(),
   getSession: vi.fn(),
+  createSession: vi.fn(),
+  streamMessage: vi.fn(),
 }));
 
 vi.mock("../services/sandboxApi", () => ({
@@ -69,6 +71,14 @@ describe("useAgentSandbox", () => {
       sessions: [],
       count: 0,
     });
+    sandboxApiMock.createSession.mockResolvedValue({
+      success: true,
+      session: {
+        id: "session_1",
+        title: "Test Session",
+        createdAt: new Date().toISOString(),
+      },
+    });
   });
 
   test("mounts and loads initial sandbox data without a hook initialization crash", async () => {
@@ -81,5 +91,39 @@ describe("useAgentSandbox", () => {
     expect(result.current.selectedAgentId).toBe("agent_fb");
     expect(result.current.selectedModel).toBe("gemini-2.5-flash");
     expect(result.current.selectedKeyId).toBe("central_key");
+  });
+
+  test("surfaces stream done errors instead of leaving the sandbox with no visible reply state", async () => {
+    sandboxApiMock.streamMessage.mockImplementation(async (
+      _sessionId: string,
+      _message: string,
+      _agentId: string,
+      _model: string,
+      _provider: string,
+      _keyId: string | null,
+      _attachments: unknown,
+      onEvent?: (event: { done: boolean; error: string; reason: string }) => void
+    ) => {
+      onEvent?.({
+        done: true,
+        error: "AI_SANDBOX_EMPTY_REPLY",
+        reason: "The selected model returned no assistant text",
+      });
+    });
+
+    const { result } = renderHook(() => useAgentSandbox());
+
+    await waitFor(() => {
+      expect(result.current.isSessionsLoading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.sendMessage("Hello");
+    });
+
+    expect(result.current.error).toBe("AI_SANDBOX_EMPTY_REPLY: The selected model returned no assistant text");
+    expect(result.current.activityLog.some((entry) => (
+      entry.type === "error" && entry.details === "AI_SANDBOX_EMPTY_REPLY: The selected model returned no assistant text"
+    ))).toBe(true);
   });
 });

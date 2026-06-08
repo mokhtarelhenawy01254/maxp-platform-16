@@ -1,3 +1,89 @@
+## [2026-06-08] AI Service — Missing Embedding Column and Disabled Llama Model Config
+- **Bug/Issue**:
+  1. The Python `ai-service` RAG semantic search crashed due to missing `embedding` column on the `ai.agentic_memory_fact` table in Windows local dev environments where the pgvector extension is not pre-installed.
+  2. The Facebook Sales Support Agent failed with `ALL_KEYS_UNAVAILABLE` on chat request, falling back to Google which does not support the configured `llama-3.3-70b-versatile` model.
+- **Cause**:
+  1. Local dev databases did not execute pgvector migration successfully on Windows, leaving the `ai.agentic_memory_fact` table without the crucial `embedding` column.
+  2. In the `public.ai_model_configs` table, the model configuration for `llama-3.3-70b-versatile` associated with the Groq central key was set to `isEnabled` = `false`, preventing the model manager from routing queries to it.
+- **Fix**:
+  1. Created and ran a database repair script (`apps/ai-service/scratch/repair_memory_table.py`) to safely add the `embedding` column (using the `jsonb` datatype when `vector` is not available) to the `ai.agentic_memory_fact` table.
+  2. Executed a database script (`apps/ai-service/scratch/enable_model.py`) to update `isEnabled = true` for `llama-3.3-70b-versatile` in `public.ai_model_configs`.
+- **Affected Files**:
+  - `apps/ai-service/scratch/repair_memory_table.py`
+  - `apps/ai-service/scratch/enable_model.py`
+
+## [2026-06-08] AI Service — Agent Template Seeding Path Fallback & Reconcile 400 Bad Request
+- **Bug/Issue**: The `/admin/agents/{agent_id}/reconcile` endpoint returned `400 Bad Request` with details "Agent has no template to reconcile with" or "Template not found".
+- **Cause**: In `loader.py`, `_get_agents_root()` initialized candidate roots using `Path(os.environ.get("BACKEND_AGENTS_ROOT", ""))`. When `BACKEND_AGENTS_ROOT` was not set, it evaluated `Path("")` which resolved to `.` (the current working directory `apps/ai-service`) and erroneously passed `c.exists()` because `.` exists. This caused template seeding to look in the wrong directory, find zero templates, and leave `ai.agent_templates` empty. During dynamic database sync of legacy agents, since the template didn't exist in the database, `_ensure_agent_in_db` fell back to setting `template_slug` to `None` to prevent foreign key violations, making reconciliation fail.
+- **Fix**:
+  1. Modified `src/agents/loader.py` to only include `BACKEND_AGENTS_ROOT` in discovery candidates if it is a non-empty string.
+  2. Created scratch scripts to manually trigger template seeding and repair existing agent rows in `ai.agents` by reading `templateSlug` from `public.company_agents`.
+  3. Added pytest tests in `tests/api/test_admin_agents.py` to verify reconciliation behavior.
+- **Affected Files**:
+  - `apps/ai-service/src/agents/loader.py`
+  - `apps/ai-service/tests/api/test_admin_agents.py`
+
+## [2026-06-08] AI Service — Orchestration Session Parameter & SDK Agent Instructions Crashes
+- **Bug/Issue**: The Python `ai-service` crashed during run orchestration execution with two exceptions:
+  1. `AttributeError: 'AgentSession' object has no attribute 'execute'`
+  2. `AttributeError: 'Agent' object has no attribute 'instructions'`
+- **Cause**:
+  1. In `orchestration_flow.py`, the SDK's `AgentSession` object was mistakenly passed as the `session` parameter of `PipelineContext`. Downstream stages (retrieve knowledge, retrieve episodic memory, context assembler) expected a SQLAlchemy `AsyncSession` to execute database queries, calling `await ctx.session.execute(...)` which failed.
+  2. The pipeline stages accessed `ctx.agent.instructions` to build the system prompt. For specialized agents wrapped in `BaseAgent`, this works. However, the CEO agent is a raw `agent_framework.Agent` from the SDK, which stores instructions in `default_options["instructions"]` rather than a direct `.instructions` attribute, causing an AttributeError.
+- **Fix**:
+  1. Updated `orchestration_flow.py` to pass the database `session` (`AsyncSession`) to `PipelineContext.session`.
+  2. Added a robust `get_agent_instructions(agent: Any) -> str` utility in `resolve_intent.py` that checks multiple sources: the `.instructions` property (BaseAgent), `default_options["instructions"]` (SDK Agent), and the `.soul` attribute (CompanyAgent database model).
+  3. Refactored `resolve_intent.py` and `assembler.py` to use `get_agent_instructions` instead of direct `.instructions` attribute access.
+- **Affected Files**:
+  - `apps/ai-service/src/workflows/orchestration_flow.py`
+  - `apps/ai-service/src/pipeline/stages/resolve_intent.py`
+  - `apps/ai-service/src/context/assembler.py`
+
+## [2026-06-08] AI Service — Database Enum Type-Casting & API Keys Query Fix
+- **Bug/Issue**: The Python `ai-service` crashed during key orchestration or admin key retrieval with a `ProgrammingError` (`UndefinedFunctionError`):
+  `operator does not exist: ai_keys_provider = character varying`
+  `HINT: No operator matches the given name and argument types. You might need to add explicit type casts.`
+- **Cause**: The `provider` column in the `public.ai_keys` database table is of PostgreSQL enum type `ai_keys_provider`. When Python queried the keys using SQLAlchemy (`AiKey.provider == provider_type`), SQLAlchemy generated a query with string binding (`public.ai_keys.provider = $1::VARCHAR`), causing PostgreSQL to reject it because there is no implicit operator for comparing `ai_keys_provider` and `VARCHAR` directly.
+- **Fix**: Cast the `AiKey.provider` column to SQLAlchemy `String` type in all comparison queries, transforming comparisons to `cast(AiKey.provider, String) == provider_type`. This instructs SQLAlchemy to emit safe `CAST(public.ai_keys.provider AS VARCHAR) = $1` SQL.
+- **Affected Files**:
+  - `apps/ai-service/src/llm/model_manager.py` (selection query)
+  - `apps/ai-service/src/api/admin/keys.py` (filter/list query)
+
+## [2026-06-08] AI Service — Agent Reconcile 404 & Database Key Resolution Mismatch
+- **Bug/Issue**: 
+  1. Requests to reconcile existing agents returned HTTP 404 because Python `ai-service` queried `ai.agents` where those Node-spawned agents did not exist.
+  2. LLM Key Selection failed with `ALL_KEYS_UNAVAILABLE` because Python `ai-service` was querying schema `ai` tables (`ai.ai_keys` and `ai.ai_model_configs`) which are empty, instead of using the Node.js/Prisma tables in the `public` schema.
+- **Cause**:
+  1. Node.js manages agent persistence in `public.company_agents`, while Python was configured to query `ai.agents` for runtime management.
+  2. API keys and model configurations are populated in `public.ai_keys` and `public.ai_model_configs` using camelCase columns (`apiKey`, `isActive`, `createdAt`, etc.), whereas the Python model had them in `ai` schema using snake_case columns.
+- **Fix**:
+  1. Added `_ensure_agent_in_db` private helper in `agents.py` to check `ai.agents` and fall back to querying and migrating the agent from `public.company_agents` on-the-fly, handling fallback for non-existent templates to prevent foreign key violations, and skipping mock objects in unit tests. Updated `get_agent`, `update_agent`, `archive_agent`, and `reconcile_agent` to use it.
+  2. Changed schema mapping in `AiKey` and `AiModelConfig` models from `"ai"` to `"public"`. Mapped all SQLAlchemy class attributes to their correct camelCase database columns. Handled database-incompatible fields (`last_used_at`, `last_tested_at`, `last_test_status`) as custom python properties to prevent SQL column resolution errors.
+- **Affected Files**:
+  - `apps/ai-service/src/db/models/provider.py`
+  - `apps/ai-service/src/api/admin/agents.py`
+
+## [2026-06-08] AI Hub — Frontend Consolidation and MUI-to-Tailwind Migration
+- **Bug/Issue**: The AI management pages (Sandbox, RAG Lab, etc.) were split across 11 different routes, causing a fragmented user experience, and were heavily dependent on the deprecated `@mui/material` library, creating inconsistent design aesthetics compared to the rest of the Tailwind/shadcn dashboard.
+- **Cause**: Legacy pages were built as separate standalone modules using different UI toolkits before the modern Tailwind CSS design system was established.
+- **Fix**:
+  1. Built [AIHubLayout.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/AIHubLayout.tsx) to act as a unified dashboard workspace containing tab-driven sub-views.
+  2. Updated routes in [App.tsx](file:///h:/maxp-platform/apps/frontend/src/App.tsx) and navigation links in [sidebar.ts](file:///h:/maxp-platform/apps/frontend/src/config/sidebar.ts) to direct all older routes to the new `/admin/ai-hub?tab=...` structure.
+  3. Completely rewrote [AgenticRAGLab.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/AgenticRAGLab.tsx) to remove `@mui/material` and use Tailwind / shadcn/ui.
+  4. Completely rewrote [AIAgentSandboxPage.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/ai-agent-sandbox/AIAgentSandboxPage.tsx) and all its sub-components to use Tailwind / shadcn/ui.
+- **Affected Files**:
+  - [AIHubLayout.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/AIHubLayout.tsx)
+  - [AgenticRAGLab.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/AgenticRAGLab.tsx)
+  - [AIAgentSandboxPage.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/ai-agent-sandbox/AIAgentSandboxPage.tsx)
+  - [ChatArea.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/ai-agent-sandbox/components/ChatArea.tsx)
+  - [CostTracker.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/ai-agent-sandbox/components/CostTracker.tsx)
+  - [HeaderBar.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/ai-agent-sandbox/components/HeaderBar.tsx)
+  - [InspectorPanel.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/ai-agent-sandbox/components/InspectorPanel.tsx)
+  - [SessionList.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/ai-agent-sandbox/components/SessionList.tsx)
+  - [StatusBar.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/ai-agent-sandbox/components/StatusBar.tsx)
+  - [App.tsx](file:///h:/maxp-platform/apps/frontend/src/App.tsx)
+  - [sidebar.ts](file:///h:/maxp-platform/apps/frontend/src/config/sidebar.ts)
+
 ## [2026-06-07] ai-service — product_search Tool Not Called (5 Root Causes Fixed)
 - **Bug/Issue**: AI responded with hallucinated product data (MaxP electronics) instead of Wofod's actual shoe products when customers asked about products.
 - **Root Cause (chain of 5 issues)**:

@@ -1,24 +1,16 @@
 import React, { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
-  Box,
-  Typography,
-  Tabs,
-  Tab,
-  Switch,
-  Chip,
-  IconButton,
-  Tooltip,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-} from "@mui/material";
-import {
-  Build as ToolIcon,
-  Timeline as LogIcon,
-  Clear as ClearIcon,
-  ExpandMore as ExpandMoreIcon,
-  Warning as WarningIcon,
-} from "@mui/icons-material";
+  Wrench,
+  Activity,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle,
+  Info
+} from "lucide-react";
 import type {
   ToolDefinition,
   ActivityLogEntry,
@@ -37,7 +29,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   onClearLog,
   collapsed = false,
 }) => {
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState(0); // 0 = Tools, 1 = Log
   const [logFilter, setLogFilter] = useState<string>("all");
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
@@ -51,217 +43,193 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   });
 
   return (
-    <Box
-      sx={{
-        width: collapsed ? 0 : 300,
-        minWidth: collapsed ? 0 : 300,
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        borderLeft: "1px solid",
-        borderColor: "divider",
-        bgcolor: "background.paper",
-        overflow: "hidden",
-        transition: "width 0.25s ease, min-width 0.25s ease",
-      }}
+    <div
+      className={`h-full flex flex-col border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 overflow-hidden ${
+        collapsed ? "w-0 min-w-0" : "w-72 min-w-72"
+      }`}
     >
-      <Tabs
-        value={tab}
-        onChange={(_, v) => setTab(v)}
-        variant="fullWidth"
-        sx={{
-          borderBottom: "1px solid",
-          borderColor: "divider",
-          minHeight: 40,
-          "& .MuiTab-root": { minHeight: 40, fontSize: 11, py: 0 },
-        }}
-      >
-        <Tab icon={<ToolIcon sx={{ fontSize: 16 }} />} iconPosition="start" label="Tools" />
-        <Tab icon={<LogIcon sx={{ fontSize: 16 }} />} iconPosition="start" label="Log" />
-      </Tabs>
+      {/* Tabs Menu */}
+      <div className="flex border-b border-slate-200 dark:border-slate-800 select-none">
+        <button
+          onClick={() => setTab(0)}
+          className={`flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-all ${
+            tab === 0
+              ? "border-indigo-650 text-indigo-650 dark:text-indigo-400 dark:border-indigo-400"
+              : "border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+          }`}
+        >
+          <Wrench className="size-3.5" />
+          <span>Tools</span>
+        </button>
+        <button
+          onClick={() => setTab(1)}
+          className={`flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-all ${
+            tab === 1
+              ? "border-indigo-650 text-indigo-650 dark:text-indigo-400 dark:border-indigo-400"
+              : "border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+          }`}
+        >
+          <Activity className="size-3.5" />
+          <span>Log</span>
+        </button>
+      </div>
 
-      <Box sx={{ flex: 1, overflow: "auto" }}>
+      {/* Workspace scroll area */}
+      <div className="flex-1 overflow-y-auto p-3.5">
+        {/* Tab 0: Tools */}
         {tab === 0 && (
-          <Box sx={{ p: 1.5 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
-              <Typography variant="caption" color="text.secondary">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider">
                 Agent Tools ({tools.length})
-              </Typography>
-              <Box sx={{ display: "flex", gap: 0.5 }}>
-                <Chip
-                  label={`${readTools.length} read`}
-                  size="small"
-                  color="info"
-                  sx={{ height: 18, fontSize: 9 }}
-                />
-                <Chip
-                  icon={<WarningIcon sx={{ fontSize: 10 }} />}
-                  label={`${writeTools.length} write`}
-                  size="small"
-                  color="warning"
-                  sx={{ height: 18, fontSize: 9 }}
-                />
-              </Box>
-            </Box>
-            {tools.map((tool) => (
-              <Box
-                key={tool.name}
-                sx={{
-                  p: 1,
-                  mb: 0.5,
-                  borderRadius: 1,
-                  border: "1px solid",
-                  borderColor: tool.sideEffect === "write" ? "warning.main" : "divider",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  bgcolor: tool.sideEffect === "write" ? "rgba(237, 108, 2, 0.04)" : "transparent",
-                }}
-              >
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                    <Typography variant="body2" fontSize={12} fontWeight={600} noWrap>
-                      {tool.name}
-                    </Typography>
-                    {tool.sideEffect === "write" && (
-                      <Tooltip title="This tool modifies data - use with caution">
-                        <WarningIcon sx={{ fontSize: 12, color: "warning.main" }} />
-                      </Tooltip>
-                    )}
-                  </Box>
-                  <Typography variant="caption" color="text.secondary" fontSize={10} noWrap>
-                    {tool.description}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                  <Chip
-                    label={tool.sideEffect}
-                    size="small"
-                    color={tool.sideEffect === "read" ? "info" : "warning"}
-                    sx={{ height: 18, fontSize: 9 }}
-                  />
-                  <Switch checked={tool.enabled} size="small" disabled />
-                </Box>
-              </Box>
-            ))}
-          </Box>
+              </span>
+              <div className="flex items-center gap-1">
+                <Badge variant="secondary" className="text-[9px] py-0 px-1.5 font-medium">
+                  {readTools.length} read
+                </Badge>
+                <Badge variant="warning" className="text-[9px] py-0 px-1.5 font-medium flex items-center gap-0.5">
+                  <AlertTriangle className="size-2.5" />
+                  <span>{writeTools.length} write</span>
+                </Badge>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {tools.map((tool) => (
+                <div
+                  key={tool.name}
+                  className={`p-2.5 rounded-lg border text-xs flex items-center justify-between gap-3 ${
+                    tool.sideEffect === "write"
+                      ? "border-amber-200 bg-amber-50/15 dark:border-amber-900/40 dark:bg-amber-950/10"
+                      : "border-slate-100 dark:border-slate-850 bg-slate-50/20 dark:bg-slate-950/10"
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1">
+                      <span className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                        {tool.name}
+                      </span>
+                      {tool.sideEffect === "write" && (
+                        <AlertTriangle className="size-3 text-amber-500 flex-shrink-0" title="This tool modifies data - use with caution" />
+                      )}
+                    </div>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-550 truncate mt-0.5">
+                      {tool.description}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-shrink-0 select-none">
+                    <Badge variant={tool.sideEffect === "read" ? "secondary" : "warning"} className="text-[9px] py-0 px-1 font-bold">
+                      {tool.sideEffect}
+                    </Badge>
+                    <Switch checked={tool.enabled} disabled className="scale-75" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
+        {/* Tab 1: Activity Logs */}
         {tab === 1 && (
-          <Box sx={{ p: 1.5 }}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
-              <Typography variant="caption" color="text.secondary">
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">
                 Activity ({filteredLog.length})
-              </Typography>
-              <Box sx={{ display: "flex", gap: 0.5 }}>
+              </span>
+
+              {/* Filters */}
+              <div className="flex flex-wrap gap-1">
                 {["all", "input", "plan", "tool_call", "reply", "error"].map((type) => (
-                  <Chip
+                  <button
                     key={type}
-                    label={
-                      type === "all"
-                        ? "All"
-                        : type === "plan"
-                        ? "Pipeline"
-                        : type === "tool_call"
-                        ? "Tools"
-                        : type.charAt(0).toUpperCase() + type.slice(1)
-                    }
-                    size="small"
-                    variant={logFilter === type ? "filled" : "outlined"}
-                    color={logFilter === type ? "primary" : "default"}
                     onClick={() => setLogFilter(type)}
-                    sx={{ height: 20, fontSize: 9 }}
-                  />
+                    className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-colors ${
+                      logFilter === type
+                        ? "bg-indigo-600 border-indigo-600 text-white"
+                        : "bg-background border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-350"
+                    }`}
+                  >
+                    {type === "all"
+                      ? "All"
+                      : type === "plan"
+                      ? "Pipeline"
+                      : type === "tool_call"
+                      ? "Tools"
+                      : type.charAt(0).toUpperCase() + type.slice(1)}
+                  </button>
                 ))}
-              </Box>
-            </Box>
-            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
-              <Tooltip title="Clear Log">
-                <IconButton size="small" onClick={onClearLog}>
-                  <ClearIcon sx={{ fontSize: 14 }} />
-                </IconButton>
-              </Tooltip>
-            </Box>
+              </div>
+            </div>
+
+            <div className="flex justify-end select-none">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClearLog}
+                className="size-7 text-slate-400 hover:text-red-500 hover:bg-slate-50 dark:hover:bg-slate-850"
+                title="Clear Log"
+              >
+                <Trash2 className="size-3.5" />
+              </Button>
+            </div>
 
             {filteredLog.length === 0 && (
-              <Typography variant="body2" color="text.secondary" fontSize={12} sx={{ textAlign: "center", py: 3 }}>
-                No activity yet. Start a conversation.
-              </Typography>
+              <p className="text-[11px] text-slate-400 text-center py-6 bg-slate-50/50 dark:bg-slate-955/20 border border-dashed rounded-xl">
+                No activity yet. Start chatting.
+              </p>
             )}
 
-            {filteredLog.map((entry) => (
-              <Accordion
-                key={entry.id}
-                expanded={expandedLogId === entry.id}
-                onChange={(_, expanded) => setExpandedLogId(expanded ? entry.id : null)}
-                sx={{
-                  bgcolor: "transparent",
-                  boxShadow: "none",
-                  "&:before": { display: "none" },
-                  "& .MuiAccordionSummary-root": { px: 0, minHeight: 32 },
-                  "& .MuiAccordionDetails-root": { px: 0 },
-                }}
-              >
-                <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ fontSize: 16 }} />}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flex: 1 }}>
-                    <Typography variant="caption" sx={{ fontFamily: "monospace", fontSize: 9, color: "text.secondary", minWidth: 45 }}>
-                      {new Date(entry.timestamp).toLocaleTimeString("en-US", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                        hour12: false,
-                      })}
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontSize: 12 }}>
-                      {entry.icon}
-                    </Typography>
-                    <Typography variant="body2" fontSize={11} fontWeight={600} noWrap>
-                      {entry.title}
-                    </Typography>
-                    {entry.latencyMs !== undefined && (
-                      <Chip
-                        label={`${entry.latencyMs}ms`}
-                        size="small"
-                        sx={{ height: 14, fontSize: 8, ml: "auto" }}
-                      />
-                    )}
-                  </Box>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Box sx={{ pl: 4 }}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      fontSize={10}
-                      sx={{ display: "block", wordBreak: "break-all" }}
+            <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
+              {filteredLog.map((entry) => {
+                const isExpanded = expandedLogId === entry.id;
+                return (
+                  <div key={entry.id} className="py-2.5">
+                    <div
+                      onClick={() => setExpandedLogId(isExpanded ? null : entry.id)}
+                      className="flex items-center gap-1.5 cursor-pointer text-[11px] select-none hover:text-indigo-650 dark:hover:text-indigo-400 transition-colors"
                     >
-                      {entry.details}
-                    </Typography>
-                    {entry.metadata && (
-                      <Box sx={{ mt: 1, p: 1, bgcolor: "#1e1e1e", border: "1px solid #333", borderRadius: 1, overflowX: "auto" }}>
-                        <Typography
-                          component="pre"
-                          variant="caption"
-                          sx={{
-                            fontFamily: "monospace",
-                            fontSize: 9,
-                            color: "#e3e3e3",
-                            whiteSpace: "pre-wrap",
-                            wordBreak: "break-all",
-                            m: 0,
-                          }}
-                        >
-                          {JSON.stringify(entry.metadata, null, 2)}
-                        </Typography>
-                      </Box>
+                      <span className="font-mono text-[9px] text-slate-400 dark:text-slate-500 min-w-[42px] flex-shrink-0">
+                        {new Date(entry.timestamp).toLocaleTimeString("en-US", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                          hour12: false,
+                        })}
+                      </span>
+                      <span className="flex-shrink-0">{entry.icon}</span>
+                      <span className="font-bold text-slate-750 dark:text-slate-250 truncate flex-1">
+                        {entry.title}
+                      </span>
+                      {entry.latencyMs !== undefined && (
+                        <Badge variant="outline" className="text-[8px] py-0 px-1 text-slate-400 flex-shrink-0 scale-90">
+                          {entry.latencyMs}ms
+                        </Badge>
+                      )}
+                      {isExpanded ? (
+                        <ChevronUp className="size-3.5 text-slate-400 flex-shrink-0" />
+                      ) : (
+                        <ChevronDown className="size-3.5 text-slate-400 flex-shrink-0" />
+                      )}
+                    </div>
+
+                    {isExpanded && (
+                      <div className="pl-14 pt-1.5 text-[10px] text-slate-500 space-y-1.5 leading-relaxed break-all">
+                        <p>{entry.details}</p>
+                        {entry.metadata && (
+                          <div className="p-2 bg-slate-950 dark:bg-slate-950/70 border border-slate-850 rounded overflow-x-auto text-[9px] font-mono text-slate-300 whitespace-pre-wrap leading-normal">
+                            {JSON.stringify(entry.metadata, null, 2)}
+                          </div>
+                        )}
+                      </div>
                     )}
-                  </Box>
-                </AccordionDetails>
-              </Accordion>
-            ))}
-          </Box>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };

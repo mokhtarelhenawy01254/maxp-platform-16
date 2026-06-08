@@ -1,23 +1,12 @@
 import React from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
-  Box,
-  Typography,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Tooltip,
-  IconButton,
-  Divider,
-  Chip,
-  Button,
-} from "@mui/material";
-import {
-  SwapHoriz as CompareIcon,
-  Download as ExportIcon,
-  Science as SandboxIcon,
-  Assessment as EvalIcon,
-} from "@mui/icons-material";
+  Download,
+  FlaskConical,
+  ClipboardCheck,
+  ArrowLeftRight
+} from "lucide-react";
 import type { AgentConfig, ModelConfig } from "../types/sandbox.types";
 import type { CentralKeyConfig } from "../types/sandbox.types";
 
@@ -50,12 +39,11 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   onExport,
   isStreaming,
 }) => {
-  const agentSelectLabelId = "ai-sandbox-agent-select-label";
-  const modelSelectLabelId = "ai-sandbox-model-select-label";
   const optionValue = (m: ModelConfig) => `${m.provider}::${m.model}::${m.keyId || ""}`;
   const currentModel = models.find((m) => m.model === model && (!keyId || m.keyId === keyId))
     || models.find((m) => m.model === model);
   const selectedValue = currentModel ? optionValue(currentModel) : "";
+  
   const visibleCentralKeys = centralKeys.length
     ? centralKeys
     : Object.values(models.reduce<Record<string, CentralKeyConfig>>((acc, m) => {
@@ -74,210 +62,136 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 
   if (!agent || agents.length === 0) {
     return (
-      <Box
-        sx={{
-          px: 2,
-          py: 1,
-          borderBottom: "1px solid",
-          borderColor: "divider",
-          display: "flex",
-          alignItems: "center",
-          gap: 2,
-          bgcolor: "background.paper",
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <SandboxIcon color="primary" sx={{ fontSize: 20 }} />
-          <Typography variant="subtitle2" fontWeight={700} fontSize={14}>
-            AI Agent Sandbox
-          </Typography>
-        </Box>
-        <Divider orientation="vertical" flexItem />
-        <Typography variant="caption" color="text.secondary">
+      <div className="px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3 bg-white dark:bg-slate-900 text-xs">
+        <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200">
+          <FlaskConical className="size-4 text-indigo-600" />
+          <span>AI Agent Sandbox</span>
+        </div>
+        <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
+        <span className="text-slate-500">
           {agents.length === 0 ? "No agents available" : "Select an agent"}
-        </Typography>
-      </Box>
+        </span>
+      </div>
     );
   }
 
   return (
-    <Box
-      sx={{
-        px: 2,
-        py: 1,
-        borderBottom: "1px solid",
-        borderColor: "divider",
-        display: "flex",
-        alignItems: "center",
-        gap: 2,
-        bgcolor: "background.paper",
-      }}
-    >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <SandboxIcon color="primary" sx={{ fontSize: 20 }} />
-        <Typography variant="subtitle2" fontWeight={700} fontSize={14}>
-          AI Agent Sandbox
-        </Typography>
+    <div className="px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-3 bg-white dark:bg-slate-900 text-xs select-none">
+      <div className="flex items-center gap-2">
+        <FlaskConical className="size-4 text-indigo-600 dark:text-indigo-400" />
+        <span className="font-bold text-slate-800 dark:text-slate-200">AI Agent Sandbox</span>
         {isStreaming && (
-          <Box
-            sx={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              bgcolor: "success.main",
-              animation: "pulse 1.5s ease-in-out infinite",
-              "@keyframes pulse": {
-                "0%, 100%": { opacity: 1, transform: "scale(1)" },
-                "50%": { opacity: 0.5, transform: "scale(0.8)" },
-              },
-            }}
-          />
+          <span className="relative flex h-2 w-2 ml-1">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
         )}
-      </Box>
+      </div>
 
-      <Divider orientation="vertical" flexItem />
+      <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
 
-      <FormControl size="small" sx={{ minWidth: 140 }}>
-        <InputLabel id={agentSelectLabelId} fontSize={11}>Agent</InputLabel>
-        <Select
-          id="ai-sandbox-agent-select"
-          labelId={agentSelectLabelId}
+      {/* Agent Dropdown */}
+      <div className="flex items-center gap-1.5">
+        <select
           value={agent.id}
-          label="Agent"
           onChange={(e) => onAgentChange(e.target.value)}
-          inputProps={{ name: "ai-sandbox-agent" }}
-          sx={{ fontSize: 12 }}
+          className="rounded-md border border-slate-200 dark:border-slate-800 bg-background px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-650 font-medium"
         >
           {agents.map((a) => (
-            <MenuItem key={a.id} value={a.id}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <span>{a.icon}</span>
-                <Box>
-                  <Typography variant="body2" fontSize={12}>
-                    {a.name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" fontSize={10}>
-                    {a.role}
-                  </Typography>
-                </Box>
-              </Box>
-            </MenuItem>
+            <option key={a.id} value={a.id}>
+              {a.icon} {a.name} ({a.role})
+            </option>
           ))}
-        </Select>
-      </FormControl>
+        </select>
+      </div>
 
-      <FormControl size="small" sx={{ minWidth: 160 }}>
-        <InputLabel id={modelSelectLabelId} fontSize={11}>Model</InputLabel>
-        <Select
-          id="ai-sandbox-model-select"
-          labelId={modelSelectLabelId}
+      {/* Model Dropdown */}
+      <div className="flex items-center gap-1.5">
+        <select
           value={selectedValue}
-          label="Model"
           onChange={(e) => {
             const selected = models.find((m) => optionValue(m) === e.target.value);
             if (selected) onModelChange(selected.model, selected.provider, selected.keyId || null);
           }}
-          inputProps={{ name: "ai-sandbox-model" }}
-          sx={{ fontSize: 12 }}
+          className="rounded-md border border-slate-200 dark:border-slate-800 bg-background px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-650 font-medium"
         >
           {models.map((m) => (
-            <MenuItem
+            <option
               key={optionValue(m)}
               value={optionValue(m)}
               disabled={m.isSelectable === false || m.keyIsActive === false}
             >
-              <Box>
-                <Typography variant="body2" fontSize={12}>
-                  {m.label}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" fontSize={10}>
-                  {m.provider} | {m.maxTokens >= 1000000 ? `${m.maxTokens / 1000000}M` : `${m.maxTokens / 1000}K`} tokens
-                </Typography>
-                {m.keyName && (
-                  <Typography variant="caption" color="text.secondary" fontSize={10} sx={{ display: "block" }}>
-                    {m.keyName} · {m.keyId} · {m.keyIsActive === false ? "INACTIVE" : "CENTRAL"}
-                  </Typography>
-                )}
-              </Box>
-            </MenuItem>
+              {m.label} ({m.provider})
+            </option>
           ))}
-        </Select>
-      </FormControl>
+        </select>
+      </div>
 
       {currentModel?.keyName && (
-        <Box sx={{ minWidth: 180 }}>
-          <Typography variant="caption" color="text.secondary" fontSize={10} sx={{ display: "block" }}>
-            Central key
-          </Typography>
-          <Typography variant="body2" fontSize={12} fontWeight={600} noWrap>
-            {currentModel.keyName}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" fontSize={10} noWrap>
-            {currentModel.keyId}
-          </Typography>
-        </Box>
+        <div className="hidden sm:block text-[10px] text-slate-500 pl-1">
+          <span className="font-semibold block text-[9px] uppercase tracking-wider text-slate-400">Central Key</span>
+          <span className="text-slate-700 dark:text-slate-300 font-medium">{currentModel.keyName}</span>
+        </div>
       )}
 
       {visibleCentralKeys.length > 0 && (
-        <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel fontSize={10}>Keys</InputLabel>
-          <Select
+        <div className="flex items-center gap-1.5">
+          <select
             value=""
-            label="Keys"
-            sx={{ fontSize: 11, height: 32 }}
+            disabled
             onChange={() => {}}
-            displayEmpty
+            className="rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-2 py-1 text-[10px] text-slate-400 cursor-not-allowed"
           >
+            <option value="">Central Keys ({visibleCentralKeys.length})</option>
             {visibleCentralKeys.map((key) => (
-              <MenuItem key={key.id} value={key.id} disabled>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Chip
-                    size="small"
-                    label={key.isActive ? "Active" : "Inactive"}
-                    color={key.isActive ? "success" : "warning"}
-                    sx={{ height: 16, fontSize: 9 }}
-                  />
-                  <Typography variant="body2" fontSize={11}>
-                    {key.name}
-                  </Typography>
-                </Box>
-              </MenuItem>
+              <option key={key.id} value={key.id}>
+                [{key.isActive ? "Active" : "Inactive"}] {key.name}
+              </option>
             ))}
-          </Select>
-        </FormControl>
+          </select>
+        </div>
       )}
 
-      <Box sx={{ flex: 1 }} />
+      <div className="flex-1" />
 
-      <Tooltip title="Evaluate last response">
+      <div className="flex items-center gap-1.5">
         <Button
-          size="small"
-          variant="outlined"
-          color="primary"
+          size="sm"
+          variant="outline"
           onClick={onEvaluate}
           disabled={isStreaming}
-          startIcon={<EvalIcon sx={{ fontSize: 16 }} />}
-          sx={{ fontSize: 11, height: 32 }}
+          className="h-8 text-xs font-semibold flex items-center gap-1.5 px-3 border-slate-200 dark:border-slate-850"
         >
-          Evaluate
+          <ClipboardCheck className="size-3.5 text-indigo-600 dark:text-indigo-400" />
+          <span>Evaluate</span>
         </Button>
-      </Tooltip>
 
-      {onExport && (
-        <Tooltip title="Export Session">
-          <IconButton size="small" onClick={onExport} disabled={isStreaming}>
-            <ExportIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      )}
+        {onExport && (
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onExport}
+            disabled={isStreaming}
+            className="size-8 hover:bg-slate-100 dark:hover:bg-slate-800"
+            title="Export Session"
+          >
+            <Download className="size-4 text-slate-650" />
+          </Button>
+        )}
 
-      {onCompare && (
-        <Tooltip title="Compare Models">
-          <IconButton size="small" onClick={onCompare} disabled={isStreaming}>
-            <CompareIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      )}
-    </Box>
+        {onCompare && (
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onCompare}
+            disabled={isStreaming}
+            className="size-8 hover:bg-slate-100 dark:hover:bg-slate-800"
+            title="Compare Models"
+          >
+            <ArrowLeftRight className="size-4 text-slate-650" />
+          </Button>
+        )}
+      </div>
+    </div>
   );
 };

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, ClassVar
+from typing import ClassVar
 
 from sqlalchemy import DateTime, String, func
 from sqlalchemy.dialects.postgresql import JSONB

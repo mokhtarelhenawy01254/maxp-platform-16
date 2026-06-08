@@ -1,4 +1,5 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { t } = require('../legacy-ai-agent/aiAgent/i18n');
 const {
   AGENT_INBOX_API_SCOPES,
   AGENT_INBOX_DEFAULT_SCOPES,
@@ -19,7 +20,7 @@ const parseFutureDate = (value) => {
 
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime()) || parsed <= new Date()) {
-    const error = new Error('تاريخ انتهاء المفتاح يجب أن يكون في المستقبل');
+    const error = new Error(t('agentInbox.expiry_future'));
     error.statusCode = 400;
     throw error;
   }
@@ -42,7 +43,7 @@ const validateManagementRole = (req, res) => {
   if (!MANAGEMENT_ROLES.includes(req.user?.role)) {
     res.status(403).json({
       success: false,
-      message: 'ليس لديك صلاحية لإدارة مفاتيح Agent Inbox'
+      message: t('agentInbox.no_permission')
     });
     return false;
   }
@@ -61,7 +62,7 @@ const resolveManagedCompany = async (req) => {
       select: { id: true, name: true, slug: true, email: true, isActive: true }
     });
     if (!company) {
-      const error = new Error('الشركة المطلوبة غير موجودة');
+      const error = new Error(t('agentInbox.company_not_found'));
       error.statusCode = 404;
       throw error;
     }
@@ -81,7 +82,7 @@ const resolveManagedCompany = async (req) => {
       select: { id: true, name: true, slug: true, email: true, isActive: true }
     });
     if (!company) {
-      const error = new Error(`لم يتم العثور على شركة تطابق "${search}"`);
+      const error = new Error(t('agentInbox.company_search_not_found', 'ar', { search }));
       error.statusCode = 404;
       throw error;
     }
@@ -90,7 +91,7 @@ const resolveManagedCompany = async (req) => {
 
   const companyId = req.user?.companyId;
   if (!companyId) {
-    const error = new Error('معرف الشركة مطلوب');
+    const error = new Error(t('agentInbox.company_id_required'));
     error.statusCode = 403;
     throw error;
   }
@@ -169,7 +170,7 @@ const getAdminContext = async (req, res) => {
     console.error('Agent Inbox admin context failed:', error);
     return res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'فشل في تحميل إعدادات Agent Inbox'
+      message: error.message || t('agentInbox.admin_load_failed')
     });
   }
 };
@@ -192,7 +193,7 @@ const createCredential = async (req, res) => {
     if (!requestUserId) {
       return res.status(403).json({
         success: false,
-        message: 'المستخدم الحالي غير معروف'
+        message: t('agentInbox.unknown_user')
       });
     }
 
@@ -217,13 +218,13 @@ const createCredential = async (req, res) => {
       secret: {
         apiKey: rawKey
       },
-      message: 'تم إنشاء مفتاح Agent Inbox. انسخه الآن لأنه لن يظهر مرة أخرى.'
+      message: t('agentInbox.credential_created')
     });
   } catch (error) {
     console.error('Agent Inbox credential create failed:', error);
     return res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'فشل في إنشاء مفتاح Agent Inbox'
+      message: error.message || t('agentInbox.credential_create_failed')
     });
   }
 };
@@ -246,7 +247,7 @@ const rotateCredential = async (req, res) => {
     if (!existing || !hasAgentInboxScope(existing)) {
       return res.status(404).json({
         success: false,
-        message: 'مفتاح Agent Inbox غير موجود'
+        message: t('agentInbox.credential_not_found')
       });
     }
 
@@ -267,13 +268,13 @@ const rotateCredential = async (req, res) => {
       secret: {
         apiKey: rawKey
       },
-      message: 'تم تدوير المفتاح. انسخ المفتاح الجديد الآن.'
+      message: t('agentInbox.credential_rotated')
     });
   } catch (error) {
     console.error('Agent Inbox credential rotate failed:', error);
     return res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'فشل تدوير مفتاح Agent Inbox'
+      message: error.message || t('agentInbox.credential_rotate_failed')
     });
   }
 };
@@ -296,7 +297,7 @@ const revokeCredential = async (req, res) => {
     if (!existing || !hasAgentInboxScope(existing)) {
       return res.status(404).json({
         success: false,
-        message: 'مفتاح Agent Inbox غير موجود'
+        message: t('agentInbox.credential_not_found')
       });
     }
 
@@ -312,13 +313,13 @@ const revokeCredential = async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'تم إلغاء مفتاح Agent Inbox'
+      message: t('agentInbox.credential_revoked')
     });
   } catch (error) {
     console.error('Agent Inbox credential revoke failed:', error);
     return res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'فشل إلغاء مفتاح Agent Inbox'
+      message: error.message || t('agentInbox.credential_revoke_failed')
     });
   }
 };
@@ -334,7 +335,7 @@ const listFacebookConversations = async (req, res) => {
     console.error('Agent Inbox list Facebook conversations failed:', error);
     return res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'فشل في جلب محادثات فيسبوك'
+      message: error.message || t('agentInbox.conversations_list_failed')
     });
   }
 };
@@ -352,7 +353,7 @@ const getConversationMessages = async (req, res) => {
     console.error('Agent Inbox get Facebook messages failed:', error);
     return res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'فشل في جلب رسائل المحادثة'
+      message: error.message || t('agentInbox.messages_list_failed')
     });
   }
 };
@@ -370,7 +371,7 @@ const pullConversationMessages = async (req, res) => {
     console.error('Agent Inbox pull Facebook messages failed:', error);
     return res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'فشل سحب رسائل المحادثة من فيسبوك',
+      message: error.message || t('agentInbox.messages_pull_failed'),
       code: error.facebookCode || undefined
     });
   }
@@ -388,7 +389,7 @@ const pullRecentConversations = async (req, res) => {
     console.error('Agent Inbox pull recent Facebook conversations failed:', error);
     return res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'فشل سحب آخر محادثات فيسبوك'
+      message: error.message || t('agentInbox.conversations_pull_failed')
     });
   }
 };
@@ -405,7 +406,7 @@ const evaluateConversation = async (req, res) => {
     console.error('Agent Inbox evaluate Facebook conversation failed:', error);
     return res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'فشل تقييم المحادثة'
+      message: error.message || t('agentInbox.evaluate_failed')
     });
   }
 };

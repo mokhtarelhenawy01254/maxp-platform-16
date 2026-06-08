@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+from src.context.assembler import ContextAssembler
 from src.intent.planner import (
     get_model_classified_handoff_execution,
     get_model_classified_read_tool_execution,
     get_model_classified_write_tool_execution,
 )
-from src.context.assembler import ContextAssembler
 from src.pipeline.context import PipelineContext
 
 

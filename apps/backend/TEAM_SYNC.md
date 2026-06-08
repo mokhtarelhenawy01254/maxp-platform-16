@@ -1,19 +1,57 @@
-## [2026-06-08] Order Notes Edit & Delete [READY]
-- **Objective**: Add edit and delete functionality for order notes in the order details page.
+## [2026-06-08] AI Service — Memory Schema and Model Routing Fixes [DONE] (Sync Date: 2026-03-09)
+- **Objective**: Fix semantic search memory crashes in local environments and resolve LLM routing failures for the Facebook Sales Support Agent.
 - **Accomplishments**:
-  - **Backend API**: Added `PATCH /simple/notes/:noteId` and `DELETE /simple/notes/:noteId` endpoints with company ownership validation and role-based permission checks (author/COMPANY_ADMIN/SUPER_ADMIN only)
-  - **Frontend Edit UI**: Pencil icon on each note opens inline textarea editor with save/cancel buttons
-  - **Frontend Delete UI**: Trash icon opens confirmation dialog before deletion; note is removed from UI and database without page reload
-  - **State Management**: Added `updateNote`/`deleteNote` functions and `updatingNote`/`deletingNote` loading states in `useOrderDetails` hook
-  - **Permission Gating**: Edit/delete buttons only visible to the note author; admins can edit/delete any note in their company
-- **Verification**: Dark mode supported, responsive design preserved, error handling with toast messages, no existing functionality broken
+  - **Memory Table Schema Repair**: Identified and resolved missing `embedding` column on the `ai.agentic_memory_fact` table in Windows dev environments without pgvector. Created and executed a repair script to safely add it.
+  - **Model Config Activation**: Identified that the model `llama-3.3-70b-versatile` was marked as disabled (`isEnabled = false`) under public model configs, causing key resolution failures. Activated it in the DB, resolving chat endpoint 500 crashes for the Facebook Sales Support Agent.
 - **Affected Files**:
-  - `apps/backend/routes/orders.js`
-  - `apps/frontend/src/pages/orders/OrderDetails.tsx`
-  - `apps/frontend/src/pages/orders/components/OrderActivityLog.tsx`
-  - `apps/frontend/src/pages/orders/hooks/useOrderDetails.ts`
-  - `apps/frontend/src/pages/orders/types.ts`
-  - `apps/backend/docs/orders/order-notes-edit-delete-2026-06-08.md`
+  - `apps/ai-service/scratch/repair_memory_table.py`
+  - `apps/ai-service/scratch/enable_model.py`
+
+## [2026-06-08] AI Service — Agent Template Seeding Path Fallback & Reconcile 400 Bad Request [DONE] (Sync Date: 2026-03-09)
+- **Objective**: Fix the `/admin/agents/{agent_id}/reconcile` endpoint failing with `400 Bad Request` because agent templates failed to seed.
+- **Accomplishments**:
+  - **Template Seeding Fallback Fix**: Fixed `loader.py` path resolution where `BACKEND_AGENTS_ROOT` empty string resolved to `.` and falsely passed existence check, resulting in empty templates in database.
+  - **Data Repair**: Ran templates seeding and set correct `template_slug` for existing agents matching their `public.company_agents` records.
+  - **Regression Tests**: Wrote API test cases for the reconciliation endpoint under success and failure modes.
+- **Affected Files**:
+  - `apps/ai-service/src/agents/loader.py`
+  - `apps/ai-service/tests/api/test_admin_agents.py`
+
+## [2026-06-08] AI Service — Orchestration Flow Session & Agent Instructions Fixes [DONE]
+- **Objective**: Fix crashes in the Python AI Service orchestration pipeline when running with real database sessions and raw SDK agents.
+- **Accomplishments**:
+  - **SQLAlchemy Session Routing**: Corrected `orchestration_flow.py` to route the database `session` (`AsyncSession`) into `PipelineContext.session`, allowing subsequent database query steps (RAG, memory, customer profile retrieval) to execute SQL operations instead of crashing on the framework's `AgentSession`.
+  - **Polymorphic Agent Instructions helper**: Designed and implemented `get_agent_instructions(agent: Any) -> str` to safely fetch system prompts from all variations of agent representations (`BaseAgent` properties, `agent_framework.Agent` `default_options`, and database `soul` definitions), avoiding AttributeError crashes when the CEO agent executes.
+  - **Verification**: Verified using targeted pytest runs (`test_orchestration_flow.py`, `test_resolve_intent.py`, `test_context_assembly.py`, `test_ai_system_evaluation.py`) which all passed successfully.
+- **Affected Files**:
+  - `apps/ai-service/src/workflows/orchestration_flow.py`
+  - `apps/ai-service/src/pipeline/stages/resolve_intent.py`
+  - `apps/ai-service/src/context/assembler.py`
+
+## [2026-06-08] AI Service — Database Enum Type-Casting & API Keys Query Fix [DONE]
+- **Objective**: Resolve database type-casting error on `provider` column comparison queries in the Python `ai-service`.
+- **Accomplishments**:
+  - **Type-Casting Comparison Queries**: Added explicit `cast(AiKey.provider, String)` to key retrieval queries in `model_manager.py` and key filter queries in `keys.py`. This instructs SQLAlchemy to emit safe `CAST(public.ai_keys.provider AS VARCHAR) = $1` queries, avoiding the `UndefinedFunctionError` crash (`operator does not exist: ai_keys_provider = character varying`) when comparing PostgreSQL enum columns to string bindings.
+  - **Verification**: Verified using a local test database script confirming that comparison queries with casting run successfully, and ran the Python test suite.
+- **Affected Files**:
+  - `apps/ai-service/src/llm/model_manager.py`
+  - `apps/ai-service/src/api/admin/keys.py`
+
+## [2026-06-08] AI Hub UI Consolidation & Python AI Service Transition [READY]
+- **Objective**: Consolidate AI management and diagnostics into a unified "AI Hub" dashboard using Tailwind and shadcn/ui, deprecating Material UI and moving backend LLM traffic 100% to the Python AI service.
+- **Accomplishments**:
+  - **Python AI Service Keys & Reconcile Alignment**:
+    - Refactored `provider.py` DB model to point to the `public` schema (`public.ai_keys`, `public.ai_model_configs`) and mapped fields to their exact camelCase column counterparts, resolving key resolution crashes (`ALL_KEYS_UNAVAILABLE`).
+    - Implemented dynamic agent recovery & fallback in `agents.py` (`_ensure_agent_in_db`) to pull Node-managed agents from `public.company_agents` on-the-fly and insert them into `ai.agents` safely, resolving reconcile HTTP 404 errors.
+  - **Unified AI Hub Layout**: Built [AIHubLayout.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/AIHubLayout.tsx) layout using shadcn/ui tabs to centralize the 6 distinct AI sub-views (Agents, Sandbox, RAG Lab, Tools, Skills, Scheduler) into a single page context.
+  - **Material UI Deprecation**: Rewrote the entire [AIAgentSandboxPage.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/ai-agent-sandbox/AIAgentSandboxPage.tsx) (and sub-components: `ChatArea`, `SessionList`, `InspectorPanel`, `HeaderBar`, `StatusBar`, `CostTracker`) and [AgenticRAGLab.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/AgenticRAGLab.tsx) to remove `@mui/material` and `@mui/icons-material`, adopting clean Tailwind/shadcn layouts.
+  - **Redirect Routing**: Registered `/admin/ai-hub` in [App.tsx](file:///h:/maxp-platform/apps/frontend/src/App.tsx) and updated [sidebar.ts](file:///h:/maxp-platform/apps/frontend/src/config/sidebar.ts) to map legacy paths automatically using query parameters.
+  - **Backend Python AI Service Routing**:
+    - Modified [aiSdkClient.js](file:///h:/maxp-platform/apps/backend/services/aiSdkClient.js) to route 100% of LLM chat/utility traffic to the Python AI service (port 8000), deprecating Node.js fallbacks.
+    - Updated [aiServiceRouter.js](file:///h:/maxp-platform/apps/backend/legacy-ai-agent/aiAgent/aiServiceRouter.js) to make `primary` routing mode the default.
+    - Cleaned up duplicated TS controllers and routes ([ProductController.ts](file:///h:/maxp-platform/apps/backend/controller/ProductController.ts) and [productRoutes.ts](file:///h:/maxp-platform/apps/backend/routes/productRoutes.ts)).
+  - **Verification**: Verified via backend integration tests, customer intent schema checks, and Arabic strings check.
+- **Next Steps**: Monitor the Python AI service logs for request latency and run manual UI walkthroughs.
 
 ## [2026-06-07] ai-service — Product Search Tool Working End-to-End [FIXED]
 - **Objective**: Fix ai-service returning hallucinated product data (MaxP electronics) instead of Wofod's actual shoe products.
@@ -13120,20 +13158,3 @@ POST /chat {"message": "مرحبا"}
 - **`agent_framework.Agent`** مش بيعمل expose لـ `instructions` كـ attribute مباشر — بتلاقيها في `agent.default_options["instructions"]`
 - الـ OpenRouter key موجود في الـ DB بس رصيده خلص (402) — Groq هو الـ active provider
 - في خلط صغير في ردود اللغة (أحيانًا عربي+صيني) — محتاج system prompt أحسن في `ceo.py`
-
----
-
-## [2026-06-08] Sidebar Management — App Activation & Role Restrictions Now Enforced [FIXED]
-
-- **Objective**: Ensure sidebar always respects app activation status and role restrictions, even when DB/user settings override visibility.
-- **Root Cause**: `mergeSectionOverrides()` in `sidebar.ts` unconditionally set `section.hidden = false` when DB/user setting had `isVisible: true`, overriding the base config's `hidden: true` from deactivated apps or restricted roles.
-- **Accomplishments**:
-  - **Bug Fix** (`sidebar.ts:114`): Added `|| section.hidden === true` guard — sections hidden by app deactivation or role gate can never be made visible via DB overrides
-  - **Settings Page Filtering** (`SidebarSettings.tsx`): Added `visibleSectionIds` derived from `getSidebarConfig()` filtered by `!s.hidden` — settings UI only shows active/permitted sections
-  - **Safe Save** (`performSave()`): Merges DB settings for inactive sections with local changes before writing — no data loss on app reactivation
-  - **Immediate Update**: Sidebar re-renders via React Context instantly after save without page reload
-  - **Layout Variants**: All 5 variants (Classic, ThreeTier, Minimal, Floating, Horizontal) already filter correctly — untouched
-- **Files Changed**:
-  - `apps/frontend/src/config/sidebar.ts` (+4 lines)
-  - `apps/frontend/src/pages/settings/SidebarSettings.tsx` (+31 lines)
-- **Verification**: Frontend build succeeds (warnings pre-existing, unrelated). No console errors. All layout variants respect `hidden` flag.

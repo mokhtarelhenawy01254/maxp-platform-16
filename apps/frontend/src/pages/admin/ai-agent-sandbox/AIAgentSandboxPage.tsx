@@ -1,31 +1,21 @@
 import React, { useMemo, useState } from "react";
 import {
-  Box,
-  Typography,
-  Snackbar,
-  Alert,
-  IconButton,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material";
-import {
-  Refresh as RefreshIcon,
-  Clear as ClearIcon,
-  ChevronLeft as PanelCloseIcon,
-  ChevronRight as PanelOpenIcon,
-} from "@mui/icons-material";
+  RefreshCw,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  AlertTriangle,
+  CheckCircle2,
+  FileCheck2,
+  Share2
+} from "lucide-react";
 import { useAgentSandbox } from "./hooks/useAgentSandbox";
 import { SessionList } from "./components/SessionList";
 import { ChatArea } from "./components/ChatArea";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { HeaderBar } from "./components/HeaderBar";
 import { StatusBar } from "./components/StatusBar";
+import { Button } from "@/components/ui/button";
 import type { ToolDefinition } from "./types/sandbox.types";
 
 const AIAgentSandboxPage: React.FC = () => {
@@ -58,6 +48,7 @@ const AIAgentSandboxPage: React.FC = () => {
     deleteSession,
     updateSessionTitle,
     sendMessage,
+    evaluateLastResponse,
     exportSession,
     formatCost,
     formatTokens,
@@ -66,11 +57,9 @@ const AIAgentSandboxPage: React.FC = () => {
     toolsMetadata,
   } = useAgentSandbox();
 
-  const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down("lg"));
-  // Use lazy initialization to avoid capturing stale media-query state on first render
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => !isSmallScreen);
-  const [inspectorOpen, setInspectorOpen] = useState<boolean>(() => !isSmallScreen);
+  // Media query states implemented directly via window check / resize listener or basic defaults
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+  const [inspectorOpen, setInspectorOpen] = useState<boolean>(true);
 
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{
@@ -141,7 +130,8 @@ const AIAgentSandboxPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ height: "calc(100vh - 64px)", display: "flex", flexDirection: "column" }}>
+    <div className="h-[calc(100vh-140px)] flex flex-col bg-slate-50/20 dark:bg-slate-950 overflow-hidden relative">
+      {/* Top Header Controls */}
       <HeaderBar
         agent={selectedAgent}
         agents={agents}
@@ -160,7 +150,9 @@ const AIAgentSandboxPage: React.FC = () => {
         isStreaming={isStreaming}
       />
 
-      <Box sx={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      {/* Main Sandbox Workspace */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Left Session Pane */}
         <SessionList
           sessions={sessions}
           activeSessionId={activeSessionId}
@@ -173,68 +165,52 @@ const AIAgentSandboxPage: React.FC = () => {
           isSessionsLoading={isSessionsLoading}
         />
 
-        <Box
-          sx={{
-            width: 28,
-            minWidth: 28,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            borderRight: "1px solid",
-            borderColor: "divider",
-            bgcolor: "background.default",
-          }}
-        >
-          <Tooltip title={sidebarOpen ? "Hide sessions" : "Show sessions"}>
-            <IconButton size="small" onClick={() => setSidebarOpen((p) => !p)} sx={{ opacity: 0.5, "&:hover": { opacity: 1 } }}>
-              {sidebarOpen ? <PanelCloseIcon fontSize="small" /> : <PanelOpenIcon fontSize="small" />}
-            </IconButton>
-          </Tooltip>
-        </Box>
+        {/* Sidebar Toggle Tab */}
+        <div className="w-7 min-w-[28px] border-r border-slate-200 dark:border-slate-800 flex flex-col justify-center items-center bg-white dark:bg-slate-900 select-none">
+          <button
+            onClick={() => setSidebarOpen((p) => !p)}
+            className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-650"
+            title={sidebarOpen ? "Hide sessions" : "Show sessions"}
+          >
+            {sidebarOpen ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
+          </button>
+        </div>
 
-         <ChatArea
-           messages={activeSession?.messages || []}
-           agent={selectedAgent}
-           model={selectedModel}
-           providers={models}
-           isLoading={isLoading}
-           isStreaming={isStreaming}
-           canSend={canUseSelectedCentralModel}
-           typingStage={typingStage}
-           activeToolCalls={activeToolCalls}
-           onSendMessage={sendMessage}
-         />
+        {/* Central Chat Board */}
+        <ChatArea
+          messages={activeSession?.messages || []}
+          agent={selectedAgent}
+          model={selectedModel}
+          providers={models}
+          isLoading={isLoading}
+          isStreaming={isStreaming}
+          canSend={canUseSelectedCentralModel}
+          typingStage={typingStage}
+          activeToolCalls={activeToolCalls}
+          onSendMessage={sendMessage}
+        />
 
-        <Box
-          sx={{
-            width: 28,
-            minWidth: 28,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            borderRight: "1px solid",
-            borderLeft: "1px solid",
-            borderColor: "divider",
-            bgcolor: "background.default",
-          }}
-        >
-          <Tooltip title={inspectorOpen ? "Hide inspector" : "Show inspector"}>
-            <IconButton size="small" onClick={() => setInspectorOpen((p) => !p)} sx={{ opacity: 0.5, "&:hover": { opacity: 1 } }}>
-              {inspectorOpen ? <PanelCloseIcon fontSize="small" /> : <PanelOpenIcon fontSize="small" />}
-            </IconButton>
-          </Tooltip>
-        </Box>
+        {/* Inspector Panel Toggle Tab */}
+        <div className="w-7 min-w-[28px] border-l border-r border-slate-200 dark:border-slate-800 flex flex-col justify-center items-center bg-white dark:bg-slate-900 select-none">
+          <button
+            onClick={() => setInspectorOpen((p) => !p)}
+            className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-650"
+            title={inspectorOpen ? "Hide inspector" : "Show inspector"}
+          >
+            {inspectorOpen ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+          </button>
+        </div>
 
+        {/* Right Inspector Log & Tools Pane */}
         <InspectorPanel
           tools={agentTools}
           activityLog={activityLog}
           onClearLog={clearActivityLog}
           collapsed={!inspectorOpen}
         />
-      </Box>
+      </div>
 
+      {/* Footer Stats status bar */}
       {activeSession && (
         <StatusBar
           messageCount={activeSession.messageCount}
@@ -248,63 +224,83 @@ const AIAgentSandboxPage: React.FC = () => {
         />
       )}
 
-      <Dialog open={exportDialogOpen} onClose={() => setExportDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Export Session</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary">
-            Choose export format for the current session.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setExportDialogOpen(false)}>Cancel</Button>
-          <Button onClick={() => handleExport("json")} variant="outlined">
-            JSON
-          </Button>
-          <Button onClick={() => handleExport("markdown")} variant="contained">
-            Markdown
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert
-          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-          severity={snackbar.severity}
-          variant="filled"
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-
-      {error && (
-        <Snackbar
-          open={!!error}
-          autoHideDuration={5000}
-          onClose={clearError}
-          anchorOrigin={{ vertical: "top", horizontal: "center" }}
-        >
-          <Alert
-            onClose={clearError}
-            severity="error"
-            variant="filled"
-            sx={{ width: "100%" }}
-            action={
-              <Button color="inherit" size="small" onClick={() => window.location.reload()}>
-                Retry
+      {/* Export Session Modal overlay */}
+      {exportDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm select-none">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-xl space-y-4">
+            <div>
+              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Export Session</h4>
+              <p className="text-xs text-slate-500 mt-1">
+                Choose the export format for the current chat session.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 text-xs">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setExportDialogOpen(false)}
+                className="h-8 border-slate-200 dark:border-slate-800"
+              >
+                Cancel
               </Button>
-            }
-          >
-            {error}
-          </Alert>
-        </Snackbar>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleExport("json")}
+                className="h-8 border-slate-200 dark:border-slate-805"
+              >
+                JSON
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => handleExport("markdown")}
+                className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+              >
+                Markdown
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
-    </Box>
+
+      {/* Alerts Snackbar notification */}
+      {snackbar.open && (
+        <div className="fixed bottom-4 right-4 z-50 bg-slate-900 text-white dark:bg-slate-800 dark:text-white rounded-xl shadow-lg p-3 text-xs flex items-center gap-2 animate-bounce">
+          {snackbar.severity === "success" ? (
+            <CheckCircle2 className="size-4 text-emerald-450" />
+          ) : (
+            <AlertTriangle className="size-4 text-red-500" />
+          )}
+          <span>{snackbar.message}</span>
+          <button
+            onClick={() => setSnackbar((s) => ({ ...s, open: false }))}
+            className="ml-2 hover:opacity-75"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Major Errors Snackbar */}
+      {error && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-600 text-white rounded-xl shadow-xl px-4 py-2.5 text-xs flex items-center gap-3">
+          <AlertTriangle className="size-4 flex-shrink-0" />
+          <span>{error}</span>
+          <Button
+            size="xs"
+            variant="outline"
+            className="h-7 text-[10px] bg-red-700 text-white border-red-500 hover:bg-red-850"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </Button>
+          <button onClick={clearError} className="hover:opacity-75">
+            <X className="size-4" />
+          </button>
+        </div>
+      )}
+    </div>
   );
 };
 

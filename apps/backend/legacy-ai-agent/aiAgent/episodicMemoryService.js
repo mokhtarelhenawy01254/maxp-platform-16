@@ -234,7 +234,7 @@ class EpisodicMemoryService {
       });
       if (aiKey?.apiKey) return aiKey.apiKey;
     } catch (_) {}
-    return process.env.GEMINI_API_KEY || null;
+    return null;
   }
 
   /**
