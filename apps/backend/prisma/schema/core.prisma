@@ -174,8 +174,10 @@ model Company {
   orderWorkflowAuditLogs         OrderWorkflowAuditLog[]
   orderConfirmationSettings      OrderConfirmationSettings?
   orderAssignments               OrderAssignment[]
-  orders                          Order[]
-  pageResponseSettings            PageResponseSettings[]
+   orders                          Order[]
+   bulkOrders                      BulkOrder[]
+   bulkOrderItems                  BulkOrderItem[]
+   pageResponseSettings            PageResponseSettings[]
   payments                        Payment[]
   platformEnterprisePlan          PlatformEnterprisePlan?          @relation("PlatformEnterprisePlan")
   platformSignupCouponRedemptions PlatformSignupCouponRedemption[]
