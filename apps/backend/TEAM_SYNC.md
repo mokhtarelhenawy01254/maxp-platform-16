@@ -13194,3 +13194,12 @@ POST /chat {"message": "مرحبا"}
 - **Verification**: Tested via product preview URL with a variant that has specific images assigned. Gallery now shows only variant-configured images; no extra product images appear.
 - **Affected Files**:
   - apps/frontend/src/storefront/sections/ProductGallery.tsx
+
+---
+
+## [2026-06-08] Storefront - Revert Product Gallery Image Fix [REVERTED]
+- **Objective**: Restore original product gallery image logic after the previous fix broke image display entirely.
+- **Root Cause**: The attempted fix to isolate variant images from product images caused all images to disappear because product.images was empty at runtime and variant thumbnails (imageUrl/image) were excluded from the gallery.
+- **Fix**: Reverted ProductGallery.tsx images useMemo to the original working code that merges variant images with product-level images.
+- **Affected Files**:
+  - apps/frontend/src/storefront/sections/ProductGallery.tsx

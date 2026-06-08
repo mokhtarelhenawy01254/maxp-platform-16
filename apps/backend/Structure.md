@@ -2515,3 +2515,12 @@ Manages AI agent chat sessions via Prisma (`aIChatSession`, `aIChatMessage` mode
   - `apps/frontend/src/storefront/sections/ProductGallery.tsx`
 
 
+
+---
+
+## [2026-06-08] Storefront - Revert Product Gallery Image Fix [REVERTED]
+- **Objective**: Restore original product gallery image logic after the previous fix broke image display entirely.
+- **Root Cause**: The attempted fix to isolate variant images from product images caused all images to disappear because product.images was empty at runtime and variant thumbnails (imageUrl/image) were excluded from the gallery.
+- **Fix**: Reverted ProductGallery.tsx images useMemo to the original working code that merges variant images with product-level images.
+- **Affected Files**:
+  - apps/frontend/src/storefront/sections/ProductGallery.tsx
