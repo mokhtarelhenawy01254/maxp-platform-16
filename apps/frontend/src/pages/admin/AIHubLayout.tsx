@@ -1,5 +1,6 @@
 import React from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bot, PlayCircle, BookOpen, Wrench, Shield, Clock } from "lucide-react";
 
@@ -14,6 +15,7 @@ const CompanyAIScheduler = React.lazy(() => import("./CompanyAIScheduler"));
 export default function AIHubLayout() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "agents";
+  const { t } = useTranslation("aiHub");
 
   const setActiveTab = (tab: string) => {
     const nextParams = new URLSearchParams(searchParams);
@@ -29,37 +31,37 @@ export default function AIHubLayout() {
           <div className="flex items-center gap-2">
             <Bot className="size-5 text-indigo-600 animate-pulse" />
             <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-              مركز الوكلاء الذكي (AI Hub)
+              {t("subtitle")} ({t("title")})
             </h1>
           </div>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full md:w-auto">
-            <TabsList className="grid grid-cols-3 md:flex md:w-auto h-auto p-0.5 bg-muted/60 rounded-lg border">
-              <TabsTrigger value="agents" className="flex items-center gap-1.5 px-3 py-1.5 text-xs transition-all duration-200">
-                <Bot className="size-3.5" />
-                <span>الوكلاء</span>
-              </TabsTrigger>
-              <TabsTrigger value="sandbox" className="flex items-center gap-1.5 px-3 py-1.5 text-xs transition-all duration-200">
-                <PlayCircle className="size-3.5" />
-                <span>الـ Sandbox</span>
-              </TabsTrigger>
-              <TabsTrigger value="rag" className="flex items-center gap-1.5 px-3 py-1.5 text-xs transition-all duration-200">
-                <BookOpen className="size-3.5" />
-                <span>قاعدة المعرفة</span>
-              </TabsTrigger>
-              <TabsTrigger value="tools" className="flex items-center gap-1.5 px-3 py-1.5 text-xs transition-all duration-200">
-                <Wrench className="size-3.5" />
-                <span>الأدوات</span>
-              </TabsTrigger>
-              <TabsTrigger value="skills" className="flex items-center gap-1.5 px-3 py-1.5 text-xs transition-all duration-200">
-                <Shield className="size-3.5" />
-                <span>المهارات</span>
-              </TabsTrigger>
-              <TabsTrigger value="scheduler" className="flex items-center gap-1.5 px-3 py-1.5 text-xs transition-all duration-200">
-                <Clock className="size-3.5" />
-                <span>الجدولة</span>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full md:w-auto">
+             <TabsList className="flex overflow-x-auto no-scrollbar md:flex md:w-auto h-auto p-0.5 bg-muted/60 rounded-lg border w-full md:w-auto">
+               <TabsTrigger value="agents" className="flex items-center gap-1.5 px-3 py-1.5 text-xs transition-all duration-200 flex-shrink-0">
+                 <Bot className="size-3.5" />
+                 <span>{t("tabs.agents")}</span>
+               </TabsTrigger>
+               <TabsTrigger value="sandbox" className="flex items-center gap-1.5 px-3 py-1.5 text-xs transition-all duration-200 flex-shrink-0">
+                 <PlayCircle className="size-3.5" />
+                 <span>{t("tabs.sandbox")}</span>
+               </TabsTrigger>
+               <TabsTrigger value="rag" className="flex items-center gap-1.5 px-3 py-1.5 text-xs transition-all duration-200 flex-shrink-0">
+                 <BookOpen className="size-3.5" />
+                 <span>{t("tabs.rag")}</span>
+               </TabsTrigger>
+               <TabsTrigger value="tools" className="flex items-center gap-1.5 px-3 py-1.5 text-xs transition-all duration-200 flex-shrink-0">
+                 <Wrench className="size-3.5" />
+                 <span>{t("tabs.tools")}</span>
+               </TabsTrigger>
+               <TabsTrigger value="skills" className="flex items-center gap-1.5 px-3 py-1.5 text-xs transition-all duration-200 flex-shrink-0">
+                 <Shield className="size-3.5" />
+                 <span>{t("tabs.skills")}</span>
+               </TabsTrigger>
+               <TabsTrigger value="scheduler" className="flex items-center gap-1.5 px-3 py-1.5 text-xs transition-all duration-200 flex-shrink-0">
+                 <Clock className="size-3.5" />
+                 <span>{t("tabs.scheduler")}</span>
+               </TabsTrigger>
+             </TabsList>
+           </Tabs>
         </div>
       </div>
 
@@ -71,31 +73,31 @@ export default function AIHubLayout() {
           </div>
         }>
           {activeTab === "agents" && <CompanyAIAgents />}
-          {activeTab === "sandbox" && (
-            <div className="p-4 bg-background border rounded-xl m-6 shadow-sm">
-              <AIAgentSandboxPage />
-            </div>
-          )}
-          {activeTab === "rag" && (
-            <div className="p-4 bg-background border rounded-xl m-6 shadow-sm">
-              <AgenticRAGLab />
-            </div>
-          )}
-          {activeTab === "tools" && (
-            <div className="p-4 bg-background border rounded-xl m-6 shadow-sm">
-              <AgentToolsPage />
-            </div>
-          )}
-          {activeTab === "skills" && (
-            <div className="p-4 bg-background border rounded-xl m-6 shadow-sm">
-              <AgentSkillsPage />
-            </div>
-          )}
-          {activeTab === "scheduler" && (
-            <div className="p-4 bg-background border rounded-xl m-6 shadow-sm">
-              <CompanyAIScheduler />
-            </div>
-          )}
+           {activeTab === "sandbox" && (
+             <div className="p-2 md:p-4 bg-background border rounded-xl m-2 md:m-6 shadow-sm">
+               <AIAgentSandboxPage />
+             </div>
+           )}
+           {activeTab === "rag" && (
+             <div className="p-2 md:p-4 bg-background border rounded-xl m-2 md:m-6 shadow-sm">
+               <AgenticRAGLab />
+             </div>
+           )}
+           {activeTab === "tools" && (
+             <div className="p-2 md:p-4 bg-background border rounded-xl m-2 md:m-6 shadow-sm">
+               <AgentToolsPage />
+             </div>
+           )}
+           {activeTab === "skills" && (
+             <div className="p-2 md:p-4 bg-background border rounded-xl m-2 md:m-6 shadow-sm">
+               <AgentSkillsPage />
+             </div>
+           )}
+           {activeTab === "scheduler" && (
+             <div className="p-2 md:p-4 bg-background border rounded-xl m-2 md:m-6 shadow-sm">
+               <CompanyAIScheduler />
+             </div>
+           )}
         </React.Suspense>
       </div>
     </div>
