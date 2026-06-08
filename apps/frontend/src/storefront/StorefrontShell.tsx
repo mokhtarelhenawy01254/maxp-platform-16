@@ -8533,8 +8533,8 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
 
       <main className="flex-1">
         <Routes>
-          {renderScopedRoutes()}
           {renderScopedRoutes("store")}
+          {renderScopedRoutes()}
           <Route path="*" element={notFoundElement} />
         </Routes>
       </main>
