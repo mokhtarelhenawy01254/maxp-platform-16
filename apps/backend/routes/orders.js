@@ -2838,6 +2838,113 @@ router.post('/simple/:orderNumber/notes', requireAuth, async (req, res) => {
   }
 });
 
+// تعديل ملاحظة طلب
+router.patch('/simple/notes/:noteId', requireAuth, async (req, res) => {
+  try {
+    const { noteId } = req.params;
+    const { content } = req.body;
+    const companyId = req.user?.companyId;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح - معرف الشركة مطلوب' });
+    }
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ success: false, message: 'محتوى الملاحظة مطلوب' });
+    }
+
+    // Find the note with its order/guestOrder to verify company ownership
+    const existingNote = await getSharedPrismaClient().orderNote.findUnique({
+      where: { id: noteId },
+      include: {
+        order: { select: { companyId: true } },
+        guestOrder: { select: { companyId: true } },
+      }
+    });
+
+    if (!existingNote) {
+      return res.status(404).json({ success: false, message: 'الملاحظة غير موجودة' });
+    }
+
+    // Verify company ownership through related order or guestOrder
+    const noteCompanyId = existingNote.order?.companyId || existingNote.guestOrder?.companyId;
+    if (!noteCompanyId || noteCompanyId !== companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح - الملاحظة لا تنتمي لشركتك' });
+    }
+
+    // Permission check: only the author or admins can edit
+    if (existingNote.authorId !== userId && userRole !== 'COMPANY_ADMIN' && userRole !== 'SUPER_ADMIN') {
+      return res.status(403).json({ success: false, message: 'يمكنك تعديل ملاحظاتك فقط' });
+    }
+
+    const updatedNote = await getSharedPrismaClient().orderNote.update({
+      where: { id: noteId },
+      data: { content: content.trim() },
+      include: {
+        user: {
+          select: { id: true, firstName: true, lastName: true, avatar: true }
+        }
+      }
+    });
+
+    console.log(`✅ [ORDER-NOTE] Updated note: ${noteId}`);
+    return res.json({ success: true, data: updatedNote });
+
+  } catch (error) {
+    console.error('❌ Error updating note:', error);
+    res.status(500).json({ success: false, message: 'خطأ في تعديل الملاحظة', error: error.message });
+  }
+});
+
+// حذف ملاحظة طلب
+router.delete('/simple/notes/:noteId', requireAuth, async (req, res) => {
+  try {
+    const { noteId } = req.params;
+    const companyId = req.user?.companyId;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح - معرف الشركة مطلوب' });
+    }
+
+    // Find the note with its order/guestOrder to verify company ownership
+    const existingNote = await getSharedPrismaClient().orderNote.findUnique({
+      where: { id: noteId },
+      include: {
+        order: { select: { companyId: true } },
+        guestOrder: { select: { companyId: true } },
+      }
+    });
+
+    if (!existingNote) {
+      return res.status(404).json({ success: false, message: 'الملاحظة غير موجودة' });
+    }
+
+    // Verify company ownership through related order or guestOrder
+    const noteCompanyId = existingNote.order?.companyId || existingNote.guestOrder?.companyId;
+    if (!noteCompanyId || noteCompanyId !== companyId) {
+      return res.status(403).json({ success: false, message: 'غير مصرح - الملاحظة لا تنتمي لشركتك' });
+    }
+
+    // Permission check: only the author or admins can delete
+    if (existingNote.authorId !== userId && userRole !== 'COMPANY_ADMIN' && userRole !== 'SUPER_ADMIN') {
+      return res.status(403).json({ success: false, message: 'يمكنك حذف ملاحظاتك فقط' });
+    }
+
+    await getSharedPrismaClient().orderNote.delete({ where: { id: noteId } });
+
+    console.log(`✅ [ORDER-NOTE] Deleted note: ${noteId}`);
+    return res.json({ success: true, message: 'تم حذف الملاحظة بنجاح' });
+
+  } catch (error) {
+    console.error('❌ Error deleting note:', error);
+    res.status(500).json({ success: false, message: 'خطأ في حذف الملاحظة', error: error.message });
+  }
+});
+
 // الحصول على طلب بسيط محدد بالرقم
 router.get('/simple/:orderNumber', requireAuth, async (req, res) => {
   try {

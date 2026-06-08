@@ -3125,10 +3125,6 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/company-links"
-                  element={<Navigate to="/my-companies/links" replace />}
-                />
-                <Route
                   path="/comments/:id"
                   element={
                     <Layout>

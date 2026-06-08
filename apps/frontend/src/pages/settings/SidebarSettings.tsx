@@ -224,12 +224,25 @@ const SidebarSettings: React.FC = () => {
     }
   }, [t, user]);
 
+  // Sections visible in settings = only those from active apps and permitted roles
+  const visibleSectionIds = useMemo(() => {
+    return new Set(sidebarSections.filter((s) => !s.hidden).map((s) => s.id));
+  }, [sidebarSections]);
+
   useEffect(() => {
     if (settings && settings.sections) {
-      setLocalSections(settings.sections);
+      // Only keep settings for sections that are currently accessible (active apps + permitted roles)
+      const filtered: Record<string, SidebarSectionSettings> = {};
+      for (const [sectionId, section] of Object.entries(settings.sections)) {
+        if (visibleSectionIds.has(sectionId)) {
+          filtered[sectionId] = section;
+        }
+      }
+      setLocalSections(filtered);
     } else if (sidebarSections.length > 0 && !settings) {
       const defaults: Record<string, SidebarSectionSettings> = {};
       for (const section of sidebarSections) {
+        if (section.hidden) continue; // Skip inactive/restricted sections
         const sectionItems: Record<string, SidebarItemSettings> = {};
         for (const item of section.items) {
           const itemId = item.itemId || item.to.replace(/[^a-zA-Z0-9]/g, "_");
@@ -251,7 +264,7 @@ const SidebarSettings: React.FC = () => {
       }
       setLocalSections(defaults);
     }
-  }, [settings, sidebarSections]);
+  }, [settings, sidebarSections, visibleSectionIds]);
 
   const triggerSave = useCallback(() => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -263,12 +276,14 @@ const SidebarSettings: React.FC = () => {
 
   const performSave = useCallback(async () => {
     setSaveStatus("saving");
-    const success = await updateSettings({ sections: localSections } as Partial<SidebarManagementData>);
+    // Preserve settings for inactive/restricted sections that exist in DB
+    const mergedSections = { ...settings?.sections, ...localSections };
+    const success = await updateSettings({ sections: mergedSections } as Partial<SidebarManagementData>);
     setSaveStatus(success ? "saved" : "error");
     if (success) {
       setTimeout(() => setSaveStatus("idle"), 2000);
     }
-  }, [localSections, updateSettings]);
+  }, [localSections, updateSettings, settings]);
 
   const toggleItemVisibility = useCallback((sectionId: string, itemId: string) => {
     setLocalSections((prev) => {
@@ -415,6 +430,7 @@ const SidebarSettings: React.FC = () => {
     const categoryOrder = ["رئيسية", "تواصل", "مبيعات", "تحليلات", "عملاء", "تسويق", "مشتريات", "مخزون", "موظفين", "عمليات", "إدارة", "مالية", "دعم", "نظام"];
 
     for (const [sectionId, section] of Object.entries(localSections)) {
+      if (!visibleSectionIds.has(sectionId)) continue;
       const cat = CATEGORY_MAP[sectionId] || "نظام";
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push({ sectionId, section });
@@ -430,13 +446,14 @@ const SidebarSettings: React.FC = () => {
         category,
         sections: sections.sort((a, b) => (a.section.order ?? 0) - (b.section.order ?? 0)),
       }));
-  }, [localSections]);
+  }, [localSections, visibleSectionIds]);
 
   const flatItems = useMemo(() => {
     if (!searchQuery.trim()) return null;
     const q = searchQuery.toLowerCase();
     const results: Array<{ sectionId: string; sectionTitle: string; itemId: string; item: SidebarItemSettings }> = [];
     for (const [sectionId, section] of Object.entries(localSections)) {
+      if (!visibleSectionIds.has(sectionId)) continue;
       const sectionDef = sidebarSections.find((s) => s.id === sectionId);
       const sectionTitle = sectionDef?.title || sectionId;
       for (const [itemId, item] of Object.entries(section.items)) {
@@ -448,11 +465,12 @@ const SidebarSettings: React.FC = () => {
       }
     }
     return results;
-  }, [searchQuery, localSections, sidebarSections]);
+  }, [searchQuery, localSections, sidebarSections, visibleSectionIds]);
 
   const visibleCount = useMemo(() => {
     let count = 0;
-    for (const section of Object.values(localSections)) {
+    for (const [sectionId, section] of Object.entries(localSections)) {
+      if (!visibleSectionIds.has(sectionId)) continue;
       if (section.visible) {
         for (const item of Object.values(section.items)) {
           if (item.visible) count++;
@@ -460,15 +478,16 @@ const SidebarSettings: React.FC = () => {
       }
     }
     return count;
-  }, [localSections]);
+  }, [localSections, visibleSectionIds]);
 
   const totalCount = useMemo(() => {
     let count = 0;
-    for (const section of Object.values(localSections)) {
+    for (const [sectionId, section] of Object.entries(localSections)) {
+      if (!visibleSectionIds.has(sectionId)) continue;
       count += Object.keys(section.items).length;
     }
     return count;
-  }, [localSections]);
+  }, [localSections, visibleSectionIds]);
 
   return (
     <div className="px-4 py-6 sm:px-6">
@@ -633,7 +652,9 @@ const SidebarSettings: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {Object.entries(localSections).map(([sectionId, section], sectionIdx) => {
+          {Object.entries(localSections)
+            .filter(([sectionId]) => visibleSectionIds.has(sectionId))
+            .map(([sectionId, section], sectionIdx) => {
             const sectionDef = sidebarSections.find((s) => s.id === sectionId);
             const sectionTitle = sectionDef?.title || sectionId;
             const isExpanded = expandedSections[sectionId] ?? true;

@@ -16,8 +16,11 @@ export interface OrderNote {
   id: string;
   content: string;
   authorName: string;
+  authorId?: string;
   createdAt: string;
+  updatedAt?: string;
   author?: {
+    id?: string;
     firstName: string;
     lastName: string;
     avatar?: string;

@@ -99,6 +99,10 @@ const OrderDetails: React.FC = () => {
     updateStatus,
     updatePaymentStatus,
     addNote,
+    updateNote,
+    deleteNote,
+    updatingNote,
+    deletingNote,
     saveChanges,
   } = useOrderDetails(orderNumber);
 
@@ -899,8 +903,13 @@ const OrderDetails: React.FC = () => {
               orderNotes: orderNotes,
             }}
             onAddNote={addNote}
+            onUpdateNote={updateNote}
+            onDeleteNote={deleteNote}
             addingNote={false}
+            updatingNote={updatingNote}
+            deletingNote={deletingNote}
             canAddNote={!isMerchant}
+            currentUserId={user?.id}
           />
 
           {/* Scheduled Order Info */}

@@ -109,7 +109,9 @@ const mergeSectionOverrides = (
     const sectionVisible = effectiveVisible !== false;
     const sectionRoleAccess = hasRoleAccess(userRole, effectiveRoles);
 
-    if (!sectionVisible || !sectionRoleAccess) {
+    // Respect original hidden (app deactivation, role restrictions, etc.)
+    // even if DB/user settings say visible
+    if (!sectionVisible || !sectionRoleAccess || section.hidden === true) {
         return { ...section, hidden: true };
     }
 

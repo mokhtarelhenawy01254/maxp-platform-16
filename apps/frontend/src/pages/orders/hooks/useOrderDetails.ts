@@ -93,6 +93,8 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [addingNote, setAddingNote] = useState(false);
+  const [updatingNote, setUpdatingNote] = useState(false);
+  const [deletingNote, setDeletingNote] = useState(false);
 
   // Lookups State
   const [orderStatuses, setOrderStatuses] = useState<
@@ -653,6 +655,50 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
     }
   };
 
+  const updateNote = async (noteId: string, content: string) => {
+    if (!content.trim()) return false;
+    try {
+      setUpdatingNote(true);
+      const response = await apiClient.patch(
+        `/orders-new/simple/notes/${noteId}`,
+        { content },
+      );
+      if (response.data.success) {
+        setOrderNotes((prev) =>
+          prev.map((n) => (n.id === noteId ? response.data.data : n)),
+        );
+        toast.success("تم تعديل الملاحظة بنجاح");
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "فشل تعديل الملاحظة");
+      return false;
+    } finally {
+      setUpdatingNote(false);
+    }
+  };
+
+  const deleteNote = async (noteId: string) => {
+    try {
+      setDeletingNote(true);
+      const response = await apiClient.delete(
+        `/orders-new/simple/notes/${noteId}`,
+      );
+      if (response.data.success) {
+        setOrderNotes((prev) => prev.filter((n) => n.id !== noteId));
+        toast.success("تم حذف الملاحظة بنجاح");
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "فشل حذف الملاحظة");
+      return false;
+    } finally {
+      setDeletingNote(false);
+    }
+  };
+
   const saveChanges = async () => {
     if (!order) return false;
 
@@ -787,6 +833,8 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
     loading,
     updating,
     addingNote,
+    updatingNote,
+    deletingNote,
     // Lookups
     orderStatuses,
     paymentStatuses,
@@ -808,6 +856,8 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
     updateStatus,
     updatePaymentStatus,
     addNote,
+    updateNote,
+    deleteNote,
     saveChanges,
   };
 };

@@ -3433,3 +3433,14 @@
 - **Fix**: Created `apps/backend/services/aiSessionService.js` — manages AI agent chat sessions via Prisma.
   Methods: `getHistory()`, `clearHistory()`, `listSessions()`, `createSession()`, `getAgentStatus()`
 - **Files**: `apps/backend/services/aiSessionService.js` *(new)*
+
+---
+
+## [2026-06-08] Frontend — Sidebar Permission Bypass via DB Settings Override [FIXED]
+
+- **Bug/Issue**: Deactivated apps and restricted roles could appear in the sidebar when a user with `isVisible: true` override in DB/user settings saved their preferences, bypassing the base config's `hidden: true` state.
+- **Root Cause**: `mergeSectionOverrides()` in `sidebar.ts` unconditionally overwrote `section.hidden = false` when DB/user settings had `isVisible: true`, even when the original config had `hidden: true` (due to app deactivation or role restriction).
+- **Fix**: Added `|| section.hidden === true` guard in `mergeSectionOverrides()` so that a section with `hidden: true` can never be shown regardless of DB overrides. Added `visibleSectionIds` filtering in `SidebarSettings.tsx` to exclude inactive/restricted sections from settings UI. Added safe-merge logic in `performSave()` to preserve DB data for inactive sections.
+- **Affected Files**:
+  - `apps/frontend/src/config/sidebar.ts`
+  - `apps/frontend/src/pages/settings/SidebarSettings.tsx`
