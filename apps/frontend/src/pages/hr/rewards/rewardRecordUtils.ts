@@ -89,11 +89,14 @@ export const isRewardDeleteAvailable = (
   record: RewardRecordState,
 ): boolean => getRewardDeleteBlockReason(record) === null;
 
+const normalizeRole = (role?: string | null): string =>
+  (role || "").toUpperCase();
+
 export const canUserApproveReward = (role?: string | null): boolean =>
-  APPROVE_REWARD_ROLES.has(role || "");
+  APPROVE_REWARD_ROLES.has(normalizeRole(role));
 
 export const canUserEditReward = (role?: string | null): boolean =>
-  EDIT_REWARD_ROLES.has(role || "");
+  EDIT_REWARD_ROLES.has(normalizeRole(role));
 
 export const canUserDeleteReward = (role?: string | null): boolean =>
-  DELETE_REWARD_ROLES.has(role || "");
+  DELETE_REWARD_ROLES.has(normalizeRole(role));

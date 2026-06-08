@@ -34,7 +34,7 @@ const RewardsLayout: React.FC = () => {
     "COMPANY_ADMIN",
     "OWNER",
     "MANAGER",
-  ].includes(user?.role || "");
+  ].includes((user?.role || "").toUpperCase());
 
   return (
     <div className="p-6 space-y-6" dir="rtl">
