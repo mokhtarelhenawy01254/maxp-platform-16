@@ -72,32 +72,12 @@ export default function AIHubLayout() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
           </div>
         }>
-          {activeTab === "agents" && <CompanyAIAgents />}
-           {activeTab === "sandbox" && (
-             <div className="p-2 md:p-4 bg-background border rounded-xl m-2 md:m-6 shadow-sm">
-               <AIAgentSandboxPage />
-             </div>
-           )}
-           {activeTab === "rag" && (
-             <div className="p-2 md:p-4 bg-background border rounded-xl m-2 md:m-6 shadow-sm">
-               <AgenticRAGLab />
-             </div>
-           )}
-           {activeTab === "tools" && (
-             <div className="p-2 md:p-4 bg-background border rounded-xl m-2 md:m-6 shadow-sm">
-               <AgentToolsPage />
-             </div>
-           )}
-           {activeTab === "skills" && (
-             <div className="p-2 md:p-4 bg-background border rounded-xl m-2 md:m-6 shadow-sm">
-               <AgentSkillsPage />
-             </div>
-           )}
-           {activeTab === "scheduler" && (
-             <div className="p-2 md:p-4 bg-background border rounded-xl m-2 md:m-6 shadow-sm">
-               <CompanyAIScheduler />
-             </div>
-           )}
+           {activeTab === "agents" && <CompanyAIAgents />}
+           {activeTab === "sandbox" && <AIAgentSandboxPage />}
+           {activeTab === "rag" && <AgenticRAGLab />}
+           {activeTab === "tools" && <AgentToolsPage />}
+           {activeTab === "skills" && <AgentSkillsPage />}
+           {activeTab === "scheduler" && <CompanyAIScheduler />}
         </React.Suspense>
       </div>
     </div>

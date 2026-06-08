@@ -77,25 +77,25 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 
   return (
     <div className="px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-3 bg-white dark:bg-slate-900 text-xs select-none">
-      <div className="flex items-center gap-2">
-        <FlaskConical className="size-4 text-indigo-600 dark:text-indigo-400" />
-        <span className="font-bold text-slate-800 dark:text-slate-200">AI Agent Sandbox</span>
+      <div className="flex items-center gap-2 min-w-0">
+        <FlaskConical className="size-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+        <span className="font-bold text-slate-800 dark:text-slate-200 truncate">AI Agent Sandbox</span>
         {isStreaming && (
-          <span className="relative flex h-2 w-2 ml-1">
+          <span className="relative flex h-2 w-2 ml-1 flex-shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
         )}
       </div>
-
-      <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
-
+ 
+      <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+ 
       {/* Agent Dropdown */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 min-w-0">
         <select
           value={agent.id}
           onChange={(e) => onAgentChange(e.target.value)}
-          className="rounded-md border border-slate-200 dark:border-slate-800 bg-background px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-650 font-medium"
+          className="rounded-md border border-slate-200 dark:border-slate-800 bg-background px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-650 font-medium w-full sm:w-auto max-w-[140px] sm:max-w-none truncate"
         >
           {agents.map((a) => (
             <option key={a.id} value={a.id}>
@@ -104,16 +104,16 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
           ))}
         </select>
       </div>
-
+ 
       {/* Model Dropdown */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 min-w-0">
         <select
           value={selectedValue}
           onChange={(e) => {
             const selected = models.find((m) => optionValue(m) === e.target.value);
             if (selected) onModelChange(selected.model, selected.provider, selected.keyId || null);
           }}
-          className="rounded-md border border-slate-200 dark:border-slate-800 bg-background px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-650 font-medium"
+          className="rounded-md border border-slate-200 dark:border-slate-800 bg-background px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-650 font-medium w-full sm:w-auto max-w-[160px] sm:max-w-none truncate"
         >
           {models.map((m) => (
             <option

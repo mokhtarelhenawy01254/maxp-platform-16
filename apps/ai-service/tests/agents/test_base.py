@@ -7,6 +7,7 @@ guardrails, system-prompt caching, lifecycle, and observability hooks.
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -710,6 +711,56 @@ class TestProcessTask:
         assert result["result"]["reply"] == "hello back"
         assert result["role"] == "SUPPORT"
         assert "run_id" in result
+
+    @pytest.mark.asyncio
+    async def test_process_task_returns_pipeline_trace_for_sandbox_tools(self, agent: BaseAgent):
+        fake_plan = SimpleNamespace(
+            intent="inventory.check",
+            primaryTool="inventory_check",
+            allowedTools=["inventory.check"],
+            reason="classified by model",
+            confidence=0.91,
+            confidenceLevel="high",
+            ambiguous=False,
+            clarificationQuestion=None,
+            slots={"productName": "black shoes"},
+            missingSlots=[],
+        )
+
+        fake_ctx = SimpleNamespace(
+            early_return=None,
+            final_reply="tool-backed reply",
+            relevance_plan=fake_plan,
+            execution_plan={
+                "deterministicReadExecution": {
+                    "tool": "inventory.check",
+                    "nativeName": "inventory_check",
+                    "params": {"product_name_or_sku": "black shoes"},
+                },
+                "deterministicActionExecution": None,
+                "plannedExecutions": [],
+            },
+            executed_tools=[{
+                "tool": "inventory_check",
+                "status": "success",
+                "success": True,
+                "result": {"status": "NOT_FOUND"},
+                "latencyMs": 12,
+            }],
+            rounds=1,
+            repaired=False,
+            thread_id="thread_1",
+        )
+
+        with patch("src.agents.base.execute_pipeline", new=AsyncMock(return_value=fake_ctx)):
+            result = await agent.process_task({"current_message": "check black shoes"})
+
+        trace = result["result"]["pipeline_trace"]
+        assert trace["intentClassification"]["intent"] == "inventory.check"
+        assert trace["toolPlan"]["primaryTool"] == "inventory_check"
+        assert trace["toolExecutions"][0]["name"] == "inventory_check"
+        assert trace["toolExecutions"][0]["params"] == {"product_name_or_sku": "black shoes"}
+        assert trace["toolExecutions"][0]["output"] == {"status": "NOT_FOUND"}
 
     @pytest.mark.asyncio
     async def test_process_task_awaiting_approval_marks_paused(self, agent: BaseAgent):

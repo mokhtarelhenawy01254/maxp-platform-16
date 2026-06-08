@@ -129,3 +129,22 @@ class AgentChatResponse(BaseModel):
     agent_role: str
     runtime: str = "agent"
     tool_calls: list[dict[str, Any]] = Field(default_factory=list)
+    pipeline_trace: dict[str, Any] | None = None
+
+
+class SandboxEvaluateRequest(BaseModel):
+    company_id: str = Field(..., min_length=1)
+    message: str = Field(..., min_length=1)
+    response: str = Field(..., min_length=1)
+    tool_calls: list[dict[str, Any]] = Field(default_factory=list)
+    criteria: list[str] = Field(default_factory=list)
+    provider: str | None = None
+    model: str | None = None
+    key_id: str | None = None
+
+
+class SandboxEvaluateResponse(BaseModel):
+    success: bool = True
+    scores: dict[str, int]
+    overall: int
+    comment: str = ""

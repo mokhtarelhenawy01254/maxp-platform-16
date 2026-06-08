@@ -769,6 +769,7 @@ export function useAgentSandbox() {
               if (event.error) runError = formatStreamError(event.error, event.reason);
               if (event.usedFallbackKey) finalUsedFallbackKey = true;
               if (event.runtime) finalRuntime = event.runtime;
+              if (event.pipelineTrace) pipelineTrace = event.pipelineTrace;
             }
           }
         );
@@ -788,6 +789,19 @@ export function useAgentSandbox() {
           details: `${finalTokens?.total || 0} tokens | ${finalLatencyMs || 0}ms | ${finalKeyName || finalKeyId || "central key"} | $${(finalCost || 0).toFixed(4)}`,
           latencyMs: finalLatencyMs,
         });
+
+        if (pipelineTrace) {
+          const traceLogEntries = reconstructActivityLogFromMessages([{
+            id: assistantId,
+            role: "assistant",
+            content: streamingReply,
+            timestamp: new Date().toISOString(),
+            metadata: pipelineTrace,
+          }]).filter((entry) => entry.type !== "reply");
+          for (const entry of traceLogEntries) {
+            addActivityLog(entry);
+          }
+        }
 
         if (finalUsedFallbackKey) {
           addActivityLog({

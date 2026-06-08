@@ -77,6 +77,19 @@ async function chatWithAgent({ companyId, agentId, message, threadId, conversati
   return request('POST', '/admin/agents/chat', body);
 }
 
+async function evaluateSandboxResponse({ companyId, message, response, toolCalls, criteria, provider, model, keyId }) {
+  return request('POST', '/admin/sandbox/evaluate-response', {
+    company_id: companyId,
+    message,
+    response,
+    tool_calls: Array.isArray(toolCalls) ? toolCalls : [],
+    criteria: Array.isArray(criteria) ? criteria : [],
+    provider,
+    model,
+    key_id: keyId,
+  });
+}
+
 async function updateGlobalConfig(config) {
   return request('POST', '/admin/config', config);
 }
@@ -101,6 +114,7 @@ module.exports = {
   listTools,
   listAgents,
   chatWithAgent,
+  evaluateSandboxResponse,
   updateGlobalConfig,
   setProviderPriority,
   createKey,

@@ -8,7 +8,7 @@ import structlog
 
 from src.context.multimodal import build_user_content
 from src.intent.dynamic_registry import dynamic_intent_registry
-from src.intent.schema import ClassifierResult
+from src.intent.schema import INTENT_CLASSIFICATION_SCHEMA, ClassifierResult
 from src.llm.model_capabilities import route_for_modalities
 from src.observability.llm_fallback import LLMFallbackProvider
 from src.pipeline.llm_messages import to_client_messages
@@ -68,7 +68,7 @@ def _normalize_classifier_result(args: dict[str, Any]) -> ClassifierResult | Non
         intent=intent,
         confidence=float(args.get("confidence", 0.8)),
         confidenceLevel=args.get("confidenceLevel", "medium"),
-        ambiguous=bool(args.get("ambiguous", False)),
+        ambiguous=bool(args.get("ambiguous", args.get("ambiguity", False))),
         clarificationQuestion=args.get("clarificationQuestion"),
         slots=slots,
         missingSlots=missing_slots,
@@ -102,8 +102,10 @@ async def classify_intent(
         "You are a schema-only intent classifier for customer and merchant operations.\n"
         "Return exactly one JSON object and no markdown, comments, or customer-facing answer.\n"
         f"Allowed intents: {', '.join(intent_enum)}\n"
-        "JSON shape: {\"intent\": string, \"confidence\": number, \"ambiguous\": boolean, "
-        "\"clarificationQuestion\": string|null, \"slots\": object, \"missingSlots\": array, \"reasonCodes\": array}.\n"
+        "JSON shape: {\"intent\": string, \"confidence\": number, \"confidenceLevel\": \"low|medium|high\", "
+        "\"ambiguity\": boolean, \"clarificationQuestion\": string|null, \"slots\": object, "
+        "\"missingSlots\": array, \"toolEligibility\": {\"status\": \"allowed|blocked|needs_clarification\"}, "
+        "\"reasonCodes\": array}.\n"
         f"Available tools: {', '.join(available_tools) if available_tools else 'none'}.\n"
         "For customer read-only catalog questions about price, availability, stock, images, size, color, SKU, or variants, "
         "choose inventory when a current stock/variant fact is requested; choose products only for broad catalog browsing.\n"
@@ -139,7 +141,12 @@ async def classify_intent(
                     ),
                 },
             ]),
-            options={"temperature": 0, "max_tokens": 1500},
+            options={
+                "temperature": 0,
+                "max_tokens": 1500,
+                "tools_enabled": False,
+                "output_schema": INTENT_CLASSIFICATION_SCHEMA,
+            },
         )
         raw_text = response.text if hasattr(response, "text") else str(response)
         parsed = _parse_json_object(raw_text)

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import secrets
+import json
+import re
 import uuid
 from datetime import UTC, datetime
 from typing import Annotated, Any
@@ -20,15 +22,28 @@ from src.api.admin.agents_schemas import (
     AgentTemplateList,
     AgentTemplateRead,
     AgentUpdate,
+    SandboxEvaluateRequest,
+    SandboxEvaluateResponse,
 )
 from src.db.models.agent import Agent as AgentModel
 from src.db.models.agent import AgentTemplate
 from src.db.session import get_session
+from src.llm.agent_client_factory import build_provider_client_async
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+
+
+EVALUATION_FALLBACK_SCORES = {
+    "accuracy": 75,
+    "helpfulness": 75,
+    "relevance": 75,
+    "completeness": 75,
+    "safety": 85,
+    "overall": 77,
+}
 
 
 def _generate_agent_id() -> str:
@@ -428,6 +443,89 @@ async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentC
         agent_role=agent.role,
         runtime=str(payload.get("runtime") or "agent"),
         tool_calls=list(tools) if isinstance(tools, list) else [],
+        pipeline_trace=payload.get("pipeline_trace") if isinstance(payload.get("pipeline_trace"), dict) else None,
+    )
+
+
+def _clamp_score(value: Any, fallback: int) -> int:
+    try:
+        numeric = int(round(float(value)))
+    except (TypeError, ValueError):
+        return fallback
+    return max(0, min(100, numeric))
+
+
+def _extract_json_object(text: str) -> dict[str, Any] | None:
+    if not text:
+        return None
+    try:
+        parsed = json.loads(text)
+        return parsed if isinstance(parsed, dict) else None
+    except json.JSONDecodeError:
+        pass
+    match = re.search(r"\{[\s\S]*\}", text)
+    if not match:
+        return None
+    try:
+        parsed = json.loads(match.group(0))
+        return parsed if isinstance(parsed, dict) else None
+    except json.JSONDecodeError:
+        return None
+
+
+@router.post("/sandbox/evaluate-response", response_model=SandboxEvaluateResponse)
+async def evaluate_sandbox_response(body: SandboxEvaluateRequest) -> SandboxEvaluateResponse:
+    """Evaluate a sandbox answer through Python ai-service, keeping AI work out of Node."""
+    criteria = body.criteria or ["accuracy", "helpfulness", "relevance", "completeness", "safety"]
+    prompt = (
+        "Evaluate this AI agent sandbox response. Return only JSON with keys "
+        "scores, overall, and comment. Scores must be integers from 0 to 100.\n\n"
+        f"User message:\n{body.message}\n\n"
+        f"Agent response:\n{body.response}\n\n"
+        f"Tool calls:\n{json.dumps(body.tool_calls[:20], ensure_ascii=False, default=str)}\n\n"
+        f"Criteria:\n{json.dumps(criteria, ensure_ascii=False)}\n\n"
+        "Expected JSON shape: "
+        "{\"scores\":{\"accuracy\":85,\"helpfulness\":90,\"relevance\":88,"
+        "\"completeness\":75,\"safety\":100},\"overall\":88,\"comment\":\"...\"}"
+    )
+
+    try:
+        client = await build_provider_client_async(
+            body.provider or "GOOGLE",
+            model=body.model or "gemini-2.5-flash",
+            company_id=body.company_id,
+        )
+        response = await client.get_response(
+            [{"role": "user", "content": prompt}],
+            {"temperature": 0.1, "max_tokens": 1024, "tools_enabled": False},
+        )
+        parsed = _extract_json_object(str(getattr(response, "text", "") or ""))
+    except Exception as exc:
+        logger.warning("sandbox_evaluation_unavailable", error=str(exc))
+        parsed = None
+
+    if not parsed or not isinstance(parsed.get("scores"), dict):
+        return SandboxEvaluateResponse(
+            scores=dict(EVALUATION_FALLBACK_SCORES),
+            overall=EVALUATION_FALLBACK_SCORES["overall"],
+            comment="EVALUATION_UNAVAILABLE",
+        )
+
+    raw_scores = parsed["scores"]
+    scores = {
+        "accuracy": _clamp_score(raw_scores.get("accuracy"), EVALUATION_FALLBACK_SCORES["accuracy"]),
+        "helpfulness": _clamp_score(raw_scores.get("helpfulness"), EVALUATION_FALLBACK_SCORES["helpfulness"]),
+        "relevance": _clamp_score(raw_scores.get("relevance"), EVALUATION_FALLBACK_SCORES["relevance"]),
+        "completeness": _clamp_score(raw_scores.get("completeness"), EVALUATION_FALLBACK_SCORES["completeness"]),
+        "safety": _clamp_score(raw_scores.get("safety"), EVALUATION_FALLBACK_SCORES["safety"]),
+    }
+    overall = _clamp_score(parsed.get("overall", raw_scores.get("overall")), round(sum(scores.values()) / len(scores)))
+    scores["overall"] = overall
+
+    return SandboxEvaluateResponse(
+        scores=scores,
+        overall=overall,
+        comment=str(parsed.get("comment") or "Evaluation complete")[:1000],
     )
 
 
@@ -593,4 +691,3 @@ async def reconcile_agent(agent_id: str, session: SessionDep) -> AgentRead:
     await session.refresh(agent)
     logger.info("Agent reconciled with template", agent_id=agent_id, template=agent.template_slug)
     return _agent_to_read(agent)
-

@@ -182,6 +182,7 @@ export interface StreamEvent {
   keyName?: string;
   toolCalls?: ToolCall[];
   runtime?: string;
+  pipelineTrace?: PipelineTrace;
 }
 
 export interface EvalScore {

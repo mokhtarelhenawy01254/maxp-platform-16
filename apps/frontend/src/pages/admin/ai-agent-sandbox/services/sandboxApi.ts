@@ -55,6 +55,7 @@ export interface StreamChunk {
   cost?: number;
   sessionId?: string;
   pipelineTrace?: any;
+  runtime?: string;
 }
 
 export interface SendMessageResponse {

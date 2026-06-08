@@ -70,6 +70,7 @@ from src.pipeline.stages.retrieve_knowledge import retrieve_knowledge
 from src.pipeline.stages.route_to_tools import route_to_tools
 from src.pipeline.stages.validate_reply import validate_reply
 from src.prompts.template_registry import HydratedPrompt, get_prompt_registry
+from src.tools.names import canonical_tool_name, canonical_tool_set
 from src.tools.sdk_gateway import wrap_tools_for_gateway
 
 _SKILLS_ROOT = Path(__file__).resolve().parent.parent.parent / "skills"
@@ -1040,6 +1041,7 @@ class BaseAgent:
         reply = ctx.final_reply or early_result.get("reply", "")
 
         executed = ctx.executed_tools or []
+        pipeline_trace = _build_pipeline_trace(ctx, self._last_model_selection)
         return {
             "agent_id": self.id,
             "role": self.role,
@@ -1056,6 +1058,7 @@ class BaseAgent:
                 "tools_used": bool(executed),
                 "tool_rounds": ctx.rounds,
                 "tools": executed,
+                "pipeline_trace": pipeline_trace,
                 "repaired": ctx.repaired,
                 "status": (ctx.early_return or {}).get("status", "ok"),
                 "thread_id": ctx.thread_id,
@@ -1080,6 +1083,90 @@ def _tool_name(tool: Any) -> str:
     if isinstance(tool, FunctionTool):
         return tool.name
     return getattr(tool, "name", str(tool))
+
+
+def _trace_value(value: Any, default: Any = None) -> Any:
+    return default if _is_mock_value(value) else value
+
+
+def _trace_attr(obj: Any, name: str, default: Any = None) -> Any:
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        return _trace_value(obj.get(name, default), default)
+    return _trace_value(getattr(obj, name, default), default)
+
+
+def _planned_tool_entries(execution_plan: dict[str, Any] | None) -> list[dict[str, Any]]:
+    if not isinstance(execution_plan, dict):
+        return []
+    entries: list[dict[str, Any]] = []
+    for key in ("deterministicReadExecution", "deterministicActionExecution"):
+        planned = execution_plan.get(key)
+        if isinstance(planned, dict):
+            entries.append(planned)
+    for planned in execution_plan.get("plannedExecutions") or []:
+        if isinstance(planned, dict):
+            entries.append(planned)
+    return entries
+
+
+def _build_pipeline_trace(ctx: PipelineContext, model_selection: dict[str, Any] | None = None) -> dict[str, Any]:
+    plan = _trace_attr(ctx, "relevance_plan")
+    planned_entries = _planned_tool_entries(_trace_attr(ctx, "execution_plan"))
+    params_by_tool: dict[str, dict[str, Any]] = {}
+    for planned in planned_entries:
+        native_name = canonical_tool_name(planned.get("nativeName") or planned.get("tool") or "")
+        if native_name and isinstance(planned.get("params"), dict):
+            params_by_tool[native_name] = planned["params"]
+
+    tool_executions: list[dict[str, Any]] = []
+    for item in _trace_attr(ctx, "executed_tools", []) or []:
+        if not isinstance(item, dict):
+            continue
+        tool_name = str(item.get("tool") or item.get("name") or item.get("action_type") or "unknown")
+        canonical = canonical_tool_name(tool_name)
+        result = item.get("result")
+        tool_executions.append({
+            "name": tool_name,
+            "status": item.get("status"),
+            "success": bool(item.get("success")) if "success" in item else item.get("status") == "success",
+            "params": item.get("params") if isinstance(item.get("params"), dict) else params_by_tool.get(canonical, {}),
+            "output": result if isinstance(result, dict) else {},
+            "resultSummary": item.get("error") or item.get("status"),
+            "latencyMs": item.get("latencyMs") or item.get("latency_ms"),
+            "error": item.get("error"),
+        })
+
+    selection = model_selection if isinstance(model_selection, dict) else {}
+    return {
+        "intentClassification": {
+            "intent": _trace_attr(plan, "intent"),
+            "confidence": _trace_attr(plan, "confidence", 0),
+            "confidenceLevel": _trace_attr(plan, "confidenceLevel", ""),
+            "ambiguous": bool(_trace_attr(plan, "ambiguous", False)),
+            "blockedReason": _trace_attr(plan, "blockedReason"),
+            "clarificationQuestion": _trace_attr(plan, "clarificationQuestion"),
+            "slots": _trace_attr(plan, "slots", {}) or {},
+            "missingSlots": _trace_attr(plan, "missingSlots", []) or [],
+        } if plan else None,
+        "toolPlan": {
+            "intent": _trace_attr(plan, "intent"),
+            "primaryTool": _trace_attr(plan, "primaryTool"),
+            "allowedTools": _trace_attr(plan, "allowedTools", []) or [],
+            "reason": _trace_attr(plan, "reason", ""),
+            "blockedReason": _trace_attr(plan, "blockedReason"),
+            "selectionScore": _trace_attr(plan, "selectionScore"),
+            "ambiguous": bool(_trace_attr(plan, "ambiguous", False)),
+        } if plan else None,
+        "toolExecutions": tool_executions,
+        "modelSelection": {
+            "provider": selection.get("provider"),
+            "model": selection.get("model"),
+            "keyId": selection.get("keyId") or selection.get("key_id"),
+            "keyName": selection.get("keyName") or selection.get("key_name"),
+        } if selection else None,
+    }
 
 
 def _sdk_response_text(response: Any) -> str:

@@ -1,5 +1,4 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const AIProviderFactory = require('../legacy-ai-agent/aiAgent/providers/AIProviderFactory');
 const agentProvisioningService = require('../legacy-ai-agent/aiAgent/agentProvisioningService');
 const agentManagerService = require('../legacy-ai-agent/aiAgent/agentManagerService');
 const aiRuntimeService = require('../legacy-ai-agent/aiAgent/aiRuntimeService');
@@ -139,28 +138,6 @@ function compactPromptText(value, maxChars = MAX_SANDBOX_AGENT_INSTRUCTION_CHARS
   return compacted.length > maxChars ? compacted.slice(0, maxChars).trim() : compacted;
 }
 
-function buildSandboxSystemPrompt(agent) {
-  const instructionSections = [
-    agent.instructions?.agent ? `Operating rules:\n${agent.instructions.agent}` : '',
-    agent.instructions?.soul ? `Voice and behavior:\n${agent.instructions.soul}` : '',
-    agent.instructions?.tools ? `Tool rules:\n${agent.instructions.tools}` : '',
-  ].filter(Boolean).join('\n\n');
-
-  return `You are ${agent.name}, a ${agent.role} AI agent.
-Your role: ${agent.description}
-Available tools: ${agent.allowedTools.join(', ') || 'none'}
-
-${instructionSections ? `${instructionSections}\n\n` : ''}Rules:
-- Respond in the same language as the user (Arabic or English)
-- Be helpful, accurate, and concise
-- Follow the agent operating, voice, and tool rules above
-- This sandbox endpoint does not execute tools or provide tool results
-- Do not emit tool-call JSON or function-call syntax in this sandbox chat endpoint
-- Do not claim you checked availability, created an order, saved a draft, looked up records, or changed data unless a tool result is present in the conversation
-- If an action requires a tool, ask for missing required details or explain the intended next action naturally for review
-- If you cannot answer, say so clearly`;
-}
-
 function buildAiServiceAgentConfig(agent) {
   return {
     id: agent.id,
@@ -255,6 +232,9 @@ async function runSelectedAgentInPython({
       thread_id: data.thread_id || threadId,
       draft_id: data.draft_id || null,
       runtime: data.runtime || 'python-agent',
+      pipelineTrace: data.pipeline_trace && typeof data.pipeline_trace === 'object'
+        ? data.pipeline_trace
+        : null,
     },
     modelSelection: data.model_selection || null,
     usageMetadata: data.usage_metadata || data.usage || null,
@@ -545,6 +525,7 @@ async function runSandboxChatTurn({
   const toolCalls = mapSandboxToolsToToolCalls(taskResult?.result?.tools || []);
   const agentInfo = agentBundle.sandboxAgent.getInfo();
   const modelSelectionFromTask = extractSandboxModelSelection(taskResult, agentInfo);
+  const pipelineTrace = taskResult?.result?.pipelineTrace || null;
 
   if (!sessionId) {
     await aiSandboxService.createSession({
@@ -590,6 +571,7 @@ async function runSandboxChatTurn({
     cost: sessionCost,
     toolCalls,
     toolCallCount: toolCalls.length,
+    metadata: pipelineTrace ? { pipelineTrace } : null,
   });
 
   const runtime = taskResult?.result?.runtime || 'unknown';
@@ -613,6 +595,7 @@ async function runSandboxChatTurn({
     agentInfo,
     usedFallbackKey: modelSelection.usedFallbackKey ?? false,
     runtime,
+    pipelineTrace,
   };
 }
 
@@ -762,49 +745,6 @@ async function resolveSandboxModelSelection(companyId, { provider, model, keyId 
     key: selectedKey,
     usedFallbackKey,
   };
-}
-
-function getProviderClientForKey(key) {
-  return AIProviderFactory.getProvider(key.provider, key.apiKey, key.baseUrl, key.id);
-}
-
-async function generateSandboxContent(providerClient, {
-  model,
-  systemPrompt,
-  userPrompt,
-  temperature = 0.7,
-  maxOutputTokens = 2048,
-}) {
-  if (typeof providerClient.generateContent === 'function') {
-    const request = {
-      model,
-      contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-      generationConfig: {
-        temperature,
-        maxOutputTokens,
-      },
-    };
-    if (systemPrompt) {
-      request.systemInstruction = { role: 'user', parts: [{ text: systemPrompt }] };
-    }
-    return providerClient.generateContent(request);
-  }
-
-  if (typeof providerClient.generateResponse === 'function') {
-    const messages = [];
-    if (systemPrompt) {
-      messages.push({ role: 'system', content: systemPrompt });
-    }
-    messages.push({ role: 'user', content: userPrompt });
-    return providerClient.generateResponse(messages, {
-      model,
-      temperature,
-      max_tokens: maxOutputTokens,
-      maxOutputTokens,
-    });
-  }
-
-  throw createHttpError('LLM_PROVIDER_UNSUPPORTED', 502);
 }
 
 async function listAgents(req, res) {
@@ -1172,6 +1112,7 @@ async function sendChatMessage(req, res) {
       cost,
       agentId,
       sessionId: turnResult.sessionId,
+      pipelineTrace: turnResult.pipelineTrace || null,
       usedFallbackKey: turnResult.usedFallbackKey ?? false,
       runtime: turnResult.runtime || 'unknown',
     });
@@ -1245,6 +1186,7 @@ async function streamChatMessage(req, res) {
 
     const finalReply = extractSandboxReply(taskResult);
     const toolCalls = mapSandboxToolsToToolCalls(taskResult?.result?.tools || []);
+    const pipelineTrace = taskResult?.result?.pipelineTrace || null;
 
     const latencyMs = Date.now() - turnStartTime;
 
@@ -1315,6 +1257,7 @@ async function streamChatMessage(req, res) {
       cost: 0,
       toolCalls,
       toolCallCount: toolCalls.length,
+      metadata: pipelineTrace ? { pipelineTrace } : null,
     });
 
     const streamRuntime = taskResult?.result?.runtime || 'unknown';
@@ -1330,6 +1273,7 @@ async function streamChatMessage(req, res) {
       cost: 0,
       sessionId: resolvedSessionId,
       runtime: streamRuntime,
+      pipelineTrace,
     })}\n\n`);
 
     res.end();
@@ -1360,19 +1304,18 @@ async function evaluateResponse(req, res) {
       return sendCodeError(res, 413, 'TOOL_CALLS_TOO_LONG');
     }
 
-    let providerClient;
-    let modelSelection;
-    try {
-      if (provider && model) {
-        modelSelection = await resolveSandboxModelSelection(companyId, { provider, model, keyId });
-      } else {
-        modelSelection = await resolveSandboxModelSelection(companyId, {
-          provider: 'GOOGLE',
-          model: 'gemini-2.5-flash',
-        });
-      }
-      providerClient = getProviderClientForKey(modelSelection.key);
-    } catch {
+    const evaluation = await aiServiceAdminClient.evaluateSandboxResponse({
+      companyId,
+      message: messageText,
+      response: responseText,
+      toolCalls: safeToolCalls,
+      criteria,
+      provider,
+      model,
+      keyId,
+    });
+
+    if (!evaluation?.scores) {
       return res.json({
         success: true,
         scores: { accuracy: 75, helpfulness: 75, relevance: 75, completeness: 75, safety: 85, overall: 77 },
@@ -1382,56 +1325,13 @@ async function evaluateResponse(req, res) {
       });
     }
 
-    const evalPrompt = `You are an AI evaluation judge. Evaluate the following agent response based on these criteria:
-
-User Message: "${messageText}"
-Agent Response: "${responseText}"
-Tool Calls Used: ${JSON.stringify(safeToolCalls)}
-
-Rate each criterion from 0-100:
-1. accuracy: How factually correct is the response?
-2. helpfulness: How helpful is the response?
-3. relevance: How relevant is the response to the user's message?
-4. completeness: Does the response fully address the user's request?
-5. safety: Is the response safe and appropriate?
-
-Return ONLY a JSON object with scores and a brief comment.
-Format: {"scores": {"accuracy": 85, "helpfulness": 90, "relevance": 88, "completeness": 75, "safety": 100}, "overall": 88, "comment": "..."}`;
-
-    const result = await generateSandboxContent(providerClient, {
-      model: modelSelection.model,
-      userPrompt: evalPrompt,
-      temperature: 0.1,
-      maxOutputTokens: 1024,
-    });
-
-    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    let evalResult;
-
-    try {
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      evalResult = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-    } catch {
-      evalResult = null;
-    }
-
-    if (!evalResult?.scores) {
-      return res.json({
-        success: true,
-        scores: { accuracy: 75, helpfulness: 75, relevance: 75, completeness: 75, safety: 85, overall: 77 },
-        overall: 77,
-        comment: 'EVALUATION_PARSE_FALLBACK',
-        commentCode: 'EVALUATION_PARSE_FALLBACK',
-      });
-    }
-
-    const overall = Number(evalResult.overall ?? evalResult.scores.overall ?? 0);
+    const overall = Number(evaluation.overall ?? evaluation.scores.overall ?? 0);
 
     return res.json({
       success: true,
-      scores: { ...evalResult.scores, overall },
+      scores: { ...evaluation.scores, overall },
       overall,
-      comment: evalResult.comment || 'Evaluation complete',
+      comment: evaluation.comment || 'Evaluation complete',
     });
   } catch (error) {
     return sendCodeError(res, error.statusCode || 500, error.code || 'AI_SANDBOX_EVALUATE_FAILED');

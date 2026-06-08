@@ -11,10 +11,12 @@ from src.intent.schema import (
     ToolPlan,
     get_policy,
 )
+from src.tools.names import canonical_tool_name
 
 logger = structlog.get_logger(__name__)
 
 CONTRACT_SCHEMA_VERSION = "2026-05-model-intent-v2"
+MIN_TOOL_CONFIDENCE = 0.55
 
 
 def _unique(items: list[str]) -> list[str]:
@@ -27,15 +29,11 @@ def _unique(items: list[str]) -> list[str]:
     return result
 
 
-def _canonical_tool_name(name: str) -> str:
-    return str(name or "").replace(".", "_")
-
-
 def _filter_available(tools: list[str], available_tools: list[str]) -> list[str]:
-    available_by_canonical = {_canonical_tool_name(t): t for t in (available_tools or [])}
+    available_by_canonical = {canonical_tool_name(t): t for t in (available_tools or [])}
     resolved: list[str] = []
     for tool in tools:
-        canonical = _canonical_tool_name(tool)
+        canonical = canonical_tool_name(tool)
         if canonical in available_by_canonical:
             resolved.append(available_by_canonical[canonical])
     return _unique(resolved)
@@ -52,6 +50,8 @@ def _infer_source(policy_plan: ToolPlan, context: dict[str, Any] | None = None) 
 
 
 def _infer_decision(policy_plan: ToolPlan, policy: dict[str, Any], source: str, missing_slots: list[str]) -> str:
+    if policy_plan.blockedReason in {"NEEDS_CLARIFICATION", "LOW_CONFIDENCE", "TOOL_NOT_AVAILABLE", "TOOL_BLOCKED"}:
+        return "ask_followup"
     if policy_plan.ambiguous:
         return "ask_followup"
     if missing_slots:
@@ -87,6 +87,59 @@ def build_route(policy_plan: ToolPlan, policy: dict[str, Any]) -> dict[str, Any]
         "allowedTools": policy_plan.allowedTools or [],
         "blockedTools": policy_plan.blockedTools or [],
     }
+
+
+def _missing_required_slots(policy: dict[str, Any], slots: dict[str, Any]) -> list[str]:
+    missing: list[str] = []
+    for slot_name in policy.get("requiredSlots", []) or []:
+        value = slots.get(slot_name)
+        if value is None:
+            missing.append(slot_name)
+        elif isinstance(value, str) and not value.strip():
+            missing.append(slot_name)
+    return _unique(missing)
+
+
+def _tool_available(tool: str | None, available_tools: list[str]) -> bool:
+    if not tool:
+        return False
+    return bool(_filter_available([tool], available_tools))
+
+
+def _block_tool_execution(policy_plan: ToolPlan, reason: str) -> None:
+    policy_plan.requiresTool = False
+    policy_plan.blockedReason = reason
+    policy_plan.reason = reason
+    policy_plan.classification = {
+        **(policy_plan.classification or {}),
+        "toolExecutionDisabled": True,
+        "blockedReason": reason,
+    }
+
+
+def _has_any_slot(slots: dict[str, Any], names: tuple[str, ...]) -> bool:
+    for name in names:
+        value = slots.get(name)
+        if value is None:
+            continue
+        if isinstance(value, str) and not value.strip():
+            continue
+        return True
+    return False
+
+
+def _missing_core_tool_slots(tool_name: str | None, slots: dict[str, Any]) -> list[str]:
+    canonical = canonical_tool_name(tool_name or "")
+    if canonical in {"inventory_check", "product_search"} and not _has_any_slot(
+        slots,
+        ("productName", "product_name", "product", "sku", "query", "productColor", "product_color"),
+    ):
+        return ["productName"]
+    if canonical == "shipping_rates" and not _has_any_slot(slots, ("governorate", "city", "location")):
+        return ["governorate"]
+    if canonical == "order_lookup" and not _has_any_slot(slots, ("orderNumber", "order_number")):
+        return ["orderNumber"]
+    return []
 
 
 def build_intent_contract(
@@ -153,6 +206,7 @@ async def build_intent_contract_async(
     if classifier_result and classifier_result.intent != policy_plan.intent:
         policy = get_policy(classifier_result.intent)
         policy_plan.intent = classifier_result.intent
+        source = "llm-classifier"
         config = INTENT_CONFIGURED_TOOLS.get(classifier_result.intent)
 
         if config:
@@ -161,17 +215,58 @@ async def build_intent_contract_async(
             primary_available = _filter_available([configured_primary], available_tools)
             # Fall back to static config when CEO uses sub-agent architecture
             # (available_tools has support_specialist/order_specialist, not product_search)
-            policy_plan.primaryTool = (primary_available or filtered_allowed or [None])[0] or configured_primary
-            policy_plan.allowedTools = filtered_allowed or config["allowedTools"]
+            policy_plan.primaryTool = (primary_available or filtered_allowed or [None])[0]
+            policy_plan.allowedTools = filtered_allowed
         else:
             policy_plan.primaryTool = None
             policy_plan.allowedTools = []
 
         policy_plan.requiresTool = bool(policy_plan.primaryTool)
         logger.info("intent_routed", intent=policy_plan.intent, requiresTool=policy_plan.requiresTool, primaryTool=policy_plan.primaryTool, allowedTools=policy_plan.allowedTools)
-        missing_slots = _unique(classifier_result.missingSlots or [])
+        classifier_missing_slots = _unique(classifier_result.missingSlots or [])
         slots = dict(classifier_result.slots or {})
+        blocking_missing_slots = _unique([
+            *_missing_required_slots(policy, slots),
+            *_missing_core_tool_slots(policy_plan.primaryTool, slots),
+        ])
+        missing_slots = blocking_missing_slots
         policy_plan.slots = slots
+        policy_plan.missingSlots = missing_slots
+        policy_plan.ambiguous = bool(classifier_result.ambiguous)
+        policy_plan.classification = {
+            **(policy_plan.classification or {}),
+            "slots": slots,
+            "confidence": classifier_result.confidence,
+            "confidenceLevel": classifier_result.confidenceLevel,
+            "toolEligibility": classifier_result.toolEligibility,
+            "ambiguous": classifier_result.ambiguous,
+            "clarificationQuestion": classifier_result.clarificationQuestion,
+            "classifierMissingSlots": classifier_missing_slots,
+            "reasonCodes": list(classifier_result.reasonCodes or []),
+            "alternativeIntents": list(classifier_result.alternativeIntents or []),
+        }
+
+        tool_status = str(classifier_result.toolEligibility or "").strip().lower()
+        if policy_plan.requiresTool and (
+            classifier_result.ambiguous
+            or blocking_missing_slots
+            or (
+                tool_status == "needs_clarification"
+                and policy.get("actionType") in {"write", "workflow", "handoff"}
+            )
+        ):
+            _block_tool_execution(policy_plan, "NEEDS_CLARIFICATION")
+        elif policy_plan.requiresTool and (
+            classifier_result.confidence < MIN_TOOL_CONFIDENCE
+            or str(classifier_result.confidenceLevel or "").strip().lower() == "low"
+        ):
+            _block_tool_execution(policy_plan, "LOW_CONFIDENCE")
+        elif policy_plan.requiresTool and tool_status == "blocked":
+            _block_tool_execution(policy_plan, "TOOL_BLOCKED")
+        elif config and not _tool_available(policy_plan.primaryTool, available_tools):
+            policy_plan.primaryTool = None
+            policy_plan.allowedTools = []
+            _block_tool_execution(policy_plan, "TOOL_NOT_AVAILABLE")
 
     if not classifier_result and not missing_slots:
         policy_plan.requiresTool = False
@@ -213,6 +308,13 @@ async def build_intent_contract_async(
 
 
 def to_tool_plan(contract: IntentContract, available_tools: list[str]) -> ToolPlan:
+    blocked_reason = contract.reason if contract.reason in {
+        "CLASSIFIER_UNAVAILABLE",
+        "NEEDS_CLARIFICATION",
+        "LOW_CONFIDENCE",
+        "TOOL_NOT_AVAILABLE",
+        "TOOL_BLOCKED",
+    } else None
     return ToolPlan(
         intent=contract.intent,
         requiresTool=contract.requiresTool,
@@ -228,9 +330,11 @@ def to_tool_plan(contract: IntentContract, available_tools: list[str]) -> ToolPl
         classification={
             "slots": dict(contract.slots or {}),
             "classifierUnavailable": contract.reason == "CLASSIFIER_UNAVAILABLE",
+            "toolExecutionDisabled": blocked_reason is not None and blocked_reason != "CLASSIFIER_UNAVAILABLE",
+            "blockedReason": blocked_reason,
         },
         goalRunId=None,
-        blockedReason="CLASSIFIER_UNAVAILABLE" if contract.reason == "CLASSIFIER_UNAVAILABLE" else None,
+        blockedReason=blocked_reason,
     )
 
 
@@ -302,11 +406,11 @@ def get_model_classified_write_tool_execution(
 ) -> dict[str, Any] | None:
     if not relevance_plan.requiresTool or not relevance_plan.primaryTool:
         return None
-    primary = _canonical_tool_name(relevance_plan.primaryTool)
+    primary = canonical_tool_name(relevance_plan.primaryTool)
     tool_obj = None
     for tool in native_tools:
         tool_name = tool.get("name") if isinstance(tool, dict) else getattr(tool, "name", "")
-        if _canonical_tool_name(tool_name) == primary:
+        if canonical_tool_name(tool_name) == primary:
             tool_obj = tool
             break
     if tool_obj is None:

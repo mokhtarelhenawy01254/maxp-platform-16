@@ -79,6 +79,12 @@ jest.mock('../../services/aiServiceAdminClient', () => ({
     tool_calls: [],
     runtime: 'python-agent',
   }),
+  evaluateSandboxResponse: jest.fn(async () => ({
+    success: true,
+    scores: { accuracy: 91, helpfulness: 90, relevance: 89, completeness: 88, safety: 100, overall: 91 },
+    overall: 91,
+    comment: 'python evaluation',
+  })),
 }));
 
 jest.mock('../../legacy-ai-agent/aiAgent/workingMemoryService', () => ({
@@ -781,6 +787,65 @@ describe('AI sandbox route security', () => {
     expect(assistantCreate.data.cost).toBeCloseTo(0.000675, 10);
   });
 
+  test('returns and persists Python pipeline trace for sandbox tool diagnostics', async () => {
+    mockAiServiceChatResult = {
+      status: 'ok',
+      reply: 'Tool-backed reply',
+      runtime: 'python-agent',
+      tool_calls: [{
+        tool: 'inventory_check',
+        params: { product_name_or_sku: 'black shoes' },
+        result: { status: 'NOT_FOUND' },
+        success: true,
+      }],
+      pipeline_trace: {
+        intentClassification: {
+          intent: 'inventory.check',
+          confidence: 0.91,
+          confidenceLevel: 'high',
+          ambiguous: false,
+          slots: { productName: 'black shoes' },
+          missingSlots: [],
+        },
+        toolPlan: {
+          intent: 'inventory.check',
+          primaryTool: 'inventory_check',
+          allowedTools: ['inventory.check'],
+          reason: 'classified by model',
+        },
+        toolExecutions: [{
+          name: 'inventory_check',
+          params: { product_name_or_sku: 'black shoes' },
+          output: { status: 'NOT_FOUND' },
+          success: true,
+        }],
+      },
+    };
+
+    const response = await request(app)
+      .post('/ai-sandbox/chat')
+      .send({
+        sessionId: 'session_1',
+        agentId: 'agent_sales',
+        provider: 'GOOGLE',
+        model: 'gemini-2.5-flash',
+        keyId: 'key_google',
+        message: 'Check inventory',
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.pipelineTrace.toolExecutions[0]).toEqual(expect.objectContaining({
+      name: 'inventory_check',
+      params: { product_name_or_sku: 'black shoes' },
+      output: { status: 'NOT_FOUND' },
+    }));
+
+    const assistantCreate = mockPrisma.aiSandboxMessage.create.mock.calls
+      .map(([arg]) => arg)
+      .find(arg => arg.data.role === 'assistant');
+    expect(assistantCreate.data.metadata.pipelineTrace.toolPlan.primaryTool).toBe('inventory_check');
+  });
+
   test('rejects streaming chat for a missing or cross-tenant session before writing messages', async () => {
     mockPrisma.aiSandboxSession.findFirst.mockResolvedValue(null);
 
@@ -798,6 +863,75 @@ describe('AI sandbox route security', () => {
     expect(response.status).toBe(404);
     expect(response.body.code).toBe('SESSION_NOT_FOUND');
     expect(mockPrisma.aiSandboxMessage.create).not.toHaveBeenCalled();
+    expect(mockProviderClient.generateContent).not.toHaveBeenCalled();
+  });
+
+  test('streams Python pipeline trace in the final sandbox event', async () => {
+    mockAiServiceChatResult = {
+      status: 'ok',
+      reply: 'Streamed tool reply',
+      runtime: 'python-agent',
+      tool_calls: [],
+      pipeline_trace: {
+        toolPlan: {
+          intent: 'inventory.check',
+          primaryTool: 'inventory_check',
+          allowedTools: ['inventory.check'],
+          reason: 'classified by model',
+        },
+        toolExecutions: [{
+          name: 'inventory_check',
+          params: { product_name_or_sku: 'black shoes' },
+          output: { status: 'NOT_FOUND' },
+          success: true,
+        }],
+      },
+    };
+
+    const response = await request(app)
+      .post('/ai-sandbox/chat/stream')
+      .send({
+        sessionId: 'session_1',
+        agentId: 'agent_sales',
+        provider: 'GOOGLE',
+        model: 'gemini-2.5-flash',
+        keyId: 'key_google',
+        message: 'Check inventory',
+      });
+
+    expect(response.status).toBe(200);
+    const events = response.text
+      .split('\n\n')
+      .filter(Boolean)
+      .map(block => JSON.parse(block.replace(/^data: /, '')));
+    const doneEvent = events.find(event => event.done === true);
+    expect(doneEvent.pipelineTrace.toolPlan.primaryTool).toBe('inventory_check');
+    expect(doneEvent.pipelineTrace.toolExecutions[0].output).toEqual({ status: 'NOT_FOUND' });
+  });
+
+  test('routes sandbox response evaluation through Python ai-service instead of Node providers', async () => {
+    const response = await request(app)
+      .post('/ai-sandbox/evaluate')
+      .send({
+        message: 'Check inventory',
+        response: 'Need exact product model',
+        toolCalls: [{ name: 'inventory.check', input: { product: 'black shoes' }, status: 'success' }],
+        provider: 'GOOGLE',
+        model: 'gemini-2.5-flash',
+        keyId: 'key_google',
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.comment).toBe('python evaluation');
+    expect(aiServiceAdminClient.evaluateSandboxResponse).toHaveBeenCalledWith(expect.objectContaining({
+      companyId: 'company_1',
+      message: 'Check inventory',
+      response: 'Need exact product model',
+      provider: 'GOOGLE',
+      model: 'gemini-2.5-flash',
+      keyId: 'key_google',
+    }));
+    expect(AIProviderFactory.getProvider).not.toHaveBeenCalled();
     expect(mockProviderClient.generateContent).not.toHaveBeenCalled();
   });
 

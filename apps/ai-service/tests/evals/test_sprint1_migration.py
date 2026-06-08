@@ -18,6 +18,7 @@ from src.intent.schema import (
     ToolEligibility,
     ReasonCode,
     INTENT_ENUM,
+    INTENT_CLASSIFICATION_SCHEMA,
     SCHEMA_VERSION,
     get_provider_schema,
     get_openai_schema,
@@ -102,6 +103,18 @@ class TestIntentSchema:
         assert schema["type"] == "json_schema"
         assert schema["json_schema"]["name"] == "intent_classification"
         assert schema["json_schema"]["strict"] is True
+
+    def test_openai_schema_closes_nested_objects(self):
+        schema = INTENT_CLASSIFICATION_SCHEMA
+        assert schema["additionalProperties"] is False
+        assert schema["properties"]["slots"]["additionalProperties"] is False
+        assert set(schema["properties"]["slots"]["required"]) == set(schema["properties"]["slots"]["properties"])
+        assert schema["properties"]["toolEligibility"]["additionalProperties"] is False
+        assert set(schema["properties"]["toolEligibility"]["required"]) == set(
+            schema["properties"]["toolEligibility"]["properties"]
+        )
+        assert schema["properties"]["alternativeIntents"]["items"]["additionalProperties"] is False
+        assert "enum" not in schema["properties"]["reasonCodes"]["items"]
 
     def test_get_provider_schema_gemini(self):
         schema = get_gemini_schema()

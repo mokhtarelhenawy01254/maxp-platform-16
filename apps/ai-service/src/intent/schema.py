@@ -241,7 +241,7 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "actionType": "read",
         "riskLevel": "medium",
         "nextState": "read_shipping_rate",
-        "requiredSlots": [],
+        "requiredSlots": ["governorate"],
         "guardrails": [*DEFAULT_GUARDRAILS],
     },
     "support.exchange": {
@@ -469,6 +469,7 @@ class IntentContract:
     requiredSlots: list[str] = field(default_factory=list)
     missingSlots: list[str] = field(default_factory=list)
     slots: dict[str, Any] = field(default_factory=dict)
+    classification: dict[str, Any] = field(default_factory=dict)
     guardrails: list[str] = field(default_factory=list)
     reason: str = ""
 
@@ -564,7 +565,19 @@ class IntentClassificationResult:
 
 INTENT_CLASSIFICATION_SCHEMA = {
     "type": "object",
-    "required": ["intent", "confidence", "slots", "missingSlots", "toolEligibility", "reasonCodes"],
+    "required": [
+        "schemaVersion",
+        "intent",
+        "confidence",
+        "confidenceLevel",
+        "slots",
+        "missingSlots",
+        "ambiguity",
+        "clarificationQuestion",
+        "toolEligibility",
+        "reasonCodes",
+        "alternativeIntents",
+    ],
     "additionalProperties": False,
     "properties": {
         "schemaVersion": {"type": "string", "const": SCHEMA_VERSION},
@@ -573,6 +586,31 @@ INTENT_CLASSIFICATION_SCHEMA = {
         "confidenceLevel": {"type": "string", "enum": CONFIDENCE_ENUM},
         "slots": {
             "type": "object",
+            "additionalProperties": False,
+            "required": [
+                "productName",
+                "productPrice",
+                "productSize",
+                "productColor",
+                "quantity",
+                "customerName",
+                "customerPhone",
+                "city",
+                "address",
+                "orderNumber",
+                "confirmedByCustomer",
+                "skillName",
+                "skillDescription",
+                "agentName",
+                "agentRole",
+                "taskDescription",
+                "requestedProductImage",
+                "referencesPreviousProduct",
+                "shippingDestination",
+                "exchangeReason",
+                "refundReason",
+                "complaintDetails",
+            ],
             "properties": {
                 "productName": {"type": ["string", "null"]},
                 "productPrice": {"type": ["number", "null"]},
@@ -603,19 +641,21 @@ INTENT_CLASSIFICATION_SCHEMA = {
         "clarificationQuestion": {"type": ["string", "null"]},
         "toolEligibility": {
             "type": "object",
-            "required": ["status"],
+            "required": ["status", "blockedReason", "requiredTool"],
+            "additionalProperties": False,
             "properties": {
                 "status": {"type": "string", "enum": TOOL_ELIGIBILITY_ENUM},
                 "blockedReason": {"type": ["string", "null"]},
                 "requiredTool": {"type": ["string", "null"]},
             },
         },
-        "reasonCodes": {"type": "array", "items": {"type": "string", "enum": REASON_CODE_ENUM}},
+        "reasonCodes": {"type": "array", "items": {"type": "string"}},
         "alternativeIntents": {
             "type": "array",
             "items": {
                 "type": "object",
                 "required": ["intent", "confidence"],
+                "additionalProperties": False,
                 "properties": {
                     "intent": {"type": "string", "enum": INTENT_ENUM},
                     "confidence": {"type": "number", "minimum": 0, "maximum": 1},

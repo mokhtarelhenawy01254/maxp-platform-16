@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from src.tools.names import canonical_tool_name
+
 
 class IntentDefinitionBase(BaseModel):
     intent: str = Field(..., min_length=1, max_length=100, description="Unique intent slug (e.g. orders.create_draft)")
@@ -30,7 +32,7 @@ class IntentDefinitionBase(BaseModel):
             return v
         # Validate that the tool exists in our system registry
         from src.tools.registry import ALL_TOOLS
-        snake_name = v.replace(".", "_")
+        snake_name = canonical_tool_name(v)
         if snake_name not in ALL_TOOLS:
             raise ValueError(f"primary_tool '{v}' does not exist in the tool registry")
         return v
@@ -40,7 +42,7 @@ class IntentDefinitionBase(BaseModel):
     def validate_allowed_tools(cls, v: list[str]) -> list[str]:
         from src.tools.registry import ALL_TOOLS
         for tool in v:
-            snake_name = tool.replace(".", "_")
+            snake_name = canonical_tool_name(tool)
             if snake_name not in ALL_TOOLS:
                 raise ValueError(f"allowed_tool '{tool}' does not exist in the tool registry")
         return v
@@ -75,7 +77,7 @@ class IntentDefinitionUpdate(BaseModel):
         if v is None:
             return v
         from src.tools.registry import ALL_TOOLS
-        snake_name = v.replace(".", "_")
+        snake_name = canonical_tool_name(v)
         if snake_name not in ALL_TOOLS:
             raise ValueError(f"primary_tool '{v}' does not exist in the tool registry")
         return v
@@ -87,7 +89,7 @@ class IntentDefinitionUpdate(BaseModel):
             return v
         from src.tools.registry import ALL_TOOLS
         for tool in v:
-            snake_name = tool.replace(".", "_")
+            snake_name = canonical_tool_name(tool)
             if snake_name not in ALL_TOOLS:
                 raise ValueError(f"allowed_tool '{tool}' does not exist in the tool registry")
         return v

@@ -126,4 +126,67 @@ describe("useAgentSandbox", () => {
       entry.type === "error" && entry.details === "AI_SANDBOX_EMPTY_REPLY: The selected model returned no assistant text"
     ))).toBe(true);
   });
+
+  test("adds Python pipeline trace details from the final stream event to the activity log", async () => {
+    sandboxApiMock.streamMessage.mockImplementation(async (
+      _sessionId: string,
+      _message: string,
+      _agentId: string,
+      _model: string,
+      _provider: string,
+      _keyId: string | null,
+      _attachments: unknown,
+      onEvent?: (event: Record<string, unknown>) => void
+    ) => {
+      onEvent?.({
+        type: "agent_reply",
+        reply: "Need exact product model",
+        isIncremental: false,
+      });
+      onEvent?.({
+        done: true,
+        tokens: { input: 1, output: 2, total: 3 },
+        latencyMs: 25,
+        model: "gemini-2.5-flash",
+        provider: "GOOGLE",
+        keyId: "central_key",
+        keyName: "Central Key",
+        cost: 0,
+        sessionId: "session_1",
+        runtime: "python-agent",
+        pipelineTrace: {
+          toolPlan: {
+            intent: "inventory.check",
+            primaryTool: "inventory_check",
+            allowedTools: ["inventory.check"],
+            reason: "classified by model",
+          },
+          toolExecutions: [{
+            name: "inventory_check",
+            params: { product_name_or_sku: "black shoes" },
+            output: { status: "NOT_FOUND" },
+            success: true,
+          }],
+        },
+      });
+    });
+
+    const { result } = renderHook(() => useAgentSandbox());
+
+    await waitFor(() => {
+      expect(result.current.isSessionsLoading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.sendMessage("Check inventory");
+    });
+
+    expect(result.current.activityLog.some((entry) => (
+      entry.title === "Tool Plan" && entry.metadata?.primaryTool === "inventory_check"
+    ))).toBe(true);
+    expect(result.current.activityLog.some((entry) => (
+      entry.title === "Tool: inventory_check"
+      && (entry.metadata as any)?.params?.product_name_or_sku === "black shoes"
+    ))).toBe(true);
+  });
 });

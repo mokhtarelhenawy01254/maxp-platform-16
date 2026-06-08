@@ -44,7 +44,19 @@ def test_agent_chat_uses_selected_agent_config_when_db_agent_is_missing(monkeypa
             captured["task"] = task
             return {
                 "status": "SUCCESS",
-                "result": {"reply": "أنا شيرين", "tools": [], "draft_id": None},
+                "result": {
+                    "reply": "أنا شيرين",
+                    "tools": [],
+                    "draft_id": None,
+                    "pipeline_trace": {
+                        "toolExecutions": [{
+                            "name": "inventory_check",
+                            "params": {"product_name_or_sku": "black shoes"},
+                            "output": {"status": "NOT_FOUND"},
+                            "success": True,
+                        }],
+                    },
+                },
             }
 
     async def fake_from_template(cls, template_slug, company_id, overrides=None, session=None):
@@ -98,6 +110,7 @@ def test_agent_chat_uses_selected_agent_config_when_db_agent_is_missing(monkeypa
 
     assert response.status_code == 200
     assert response.json()["reply"] == "أنا شيرين"
+    assert response.json()["pipeline_trace"]["toolExecutions"][0]["name"] == "inventory_check"
     assert captured["template_slug"] == "facebook-sales-support-agent"
     overrides = captured["overrides"]
     assert overrides["id"] == "agent_fb"
@@ -107,3 +120,54 @@ def test_agent_chat_uses_selected_agent_config_when_db_agent_is_missing(monkeypa
     assert captured["task"]["channel"] == "facebook"
     assert captured["task"]["attachments"][0]["mime_type"] == "image/png"
     assert captured["task"]["attachments"][0]["detail"] == "low"
+
+
+def test_sandbox_evaluate_response_uses_python_llm_client(monkeypatch):
+    mock_session = AsyncMock(spec=AsyncSession)
+
+    class _Response:
+        text = """
+        {
+          "scores": {
+            "accuracy": 91,
+            "helpfulness": 90,
+            "relevance": 89,
+            "completeness": 88,
+            "safety": 100
+          },
+          "overall": 91,
+          "comment": "python evaluation"
+        }
+        """
+
+    class _Client:
+        async def get_response(self, messages, options=None):
+            assert "Check inventory" in messages[-1]["content"]
+            assert (options or {}).get("tools_enabled") is False
+            return _Response()
+
+    monkeypatch.setattr(
+        "src.api.admin.agents.build_provider_client_async",
+        AsyncMock(return_value=_Client()),
+    )
+
+    app = _create_test_app(mock_session)
+    with TestClient(app) as client:
+        response = client.post(
+            "/admin/sandbox/evaluate-response",
+            headers={"Authorization": "Bearer test-service-token"},
+            json={
+                "company_id": "comp_test",
+                "message": "Check inventory",
+                "response": "Need exact product model",
+                "tool_calls": [{"name": "inventory.check", "input": {"product": "black shoes"}}],
+                "provider": "GOOGLE",
+                "model": "gemini-2.5-flash",
+                "key_id": "key_google",
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.json()["scores"]["accuracy"] == 91
+    assert response.json()["overall"] == 91
+    assert response.json()["comment"] == "python evaluation"

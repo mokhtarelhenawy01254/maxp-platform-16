@@ -7,6 +7,7 @@ from src.intent.planner import (
     get_model_classified_write_tool_execution,
 )
 from src.pipeline.context import PipelineContext
+from src.tools.names import canonical_tool_name, canonical_tool_set
 
 
 def _first_slot(slots: dict, *keys: str) -> str | None:
@@ -20,24 +21,21 @@ def _first_slot(slots: dict, *keys: str) -> str | None:
     return None
 
 
-def _canonical_tool_name(name: str) -> str:
-    return str(name or "").replace(".", "_")
-
-
 def _populate_tool_params(ctx: PipelineContext, execution: dict | None) -> None:
     if not execution:
         return
-    tool_name = _canonical_tool_name(execution.get("nativeName") or execution.get("tool") or "")
+    tool_name = canonical_tool_name(execution.get("nativeName") or execution.get("tool") or "")
     params = dict(execution.get("params") or {})
     slots = dict(getattr(ctx.relevance_plan, "slots", {}) or {})
     if getattr(ctx.relevance_plan, "classification", None):
         slots = {**dict(ctx.relevance_plan.classification.get("slots") or {}), **slots}
 
     if tool_name == "product_search":
-        params.setdefault(
-            "query",
-            _first_slot(slots, "query", "productName", "product_name", "product", "sku") or "",
-        )
+        if not str(params.get("query") or "").strip():
+            params["query"] = (
+                _first_slot(slots, "query", "productName", "product_name", "product", "sku")
+                or ctx.message
+            )
     elif tool_name == "inventory_check":
         params.setdefault(
             "product_name_or_sku",
@@ -93,12 +91,8 @@ def _scope_tools(ctx: PipelineContext) -> None:
     if plan is None:
         return
 
-    # MagicMock compatibility — guard attribute access
-    def _canonical(name: str) -> str:
-        return str(name or "").replace(".", "_")
-
-    allowed = {_canonical(name) for name in (getattr(plan, "allowedTools", []) or [])}
-    blocked = {_canonical(name) for name in (getattr(plan, "blockedTools", []) or [])}
+    allowed = canonical_tool_set(getattr(plan, "allowedTools", []) or [])
+    blocked = canonical_tool_set(getattr(plan, "blockedTools", []) or [])
 
     if not allowed and not blocked:
         return
@@ -109,7 +103,7 @@ def _scope_tools(ctx: PipelineContext) -> None:
     scoped: list = []
     for tool in ctx.native_tools:
         n = _name(tool)
-        canonical = _canonical(n)
+        canonical = canonical_tool_name(n)
         if canonical in blocked:
             continue
         if allowed and canonical not in allowed:

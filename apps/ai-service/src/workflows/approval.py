@@ -11,14 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.repo.approval_repo import ApprovalRepository
 from src.pipeline.context import PipelineContext
 from src.pipeline.sdk_workflow import execute_pipeline_workflow
+from src.tools.names import canonical_tool_name
 from src.workflows.postgres_checkpoint import PostgresCheckpointStorage
 
 logger = structlog.get_logger(__name__)
 PIPELINE_WORKFLOW_NAME = "maxp-orchestration-pipeline"
-
-
-def _canonical_tool_name(name: str) -> str:
-    return name.replace(".", "_")
 
 
 def _request_key(
@@ -250,7 +247,7 @@ async def execute_approved_action(
 
     from src.tools.registry import get_tool
 
-    tool = get_tool(_canonical_tool_name(approval.action_type))
+    tool = get_tool(canonical_tool_name(approval.action_type))
     if not tool:
         # Transition back to approved if tool not found so it's not stuck in 'executing'
         await repo.update_status(draft_id, status="approved")

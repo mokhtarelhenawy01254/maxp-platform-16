@@ -51,5 +51,10 @@ async def test_classifier_receives_image_attachments_as_multimodal_content(monke
     assert isinstance(user_message, dict)
     assert user_message["content"][0]["type"] == "text"
     assert user_message["content"][1]["type"] == "image_url"
+    assert captured["options"]["tools_enabled"] is False
+    assert captured["options"]["output_schema"]["type"] == "object"
+    assert set(captured["options"]["output_schema"]["required"]) == set(
+        captured["options"]["output_schema"]["properties"]
+    )
     assert captured["client_kwargs"]["provider"] == "GOOGLE"
     assert captured["client_kwargs"]["model"] == "gemini-2.5-flash"

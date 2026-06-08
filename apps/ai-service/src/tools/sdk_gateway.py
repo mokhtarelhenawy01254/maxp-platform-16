@@ -7,6 +7,7 @@ from agent_framework import FunctionInvocationContext, FunctionTool
 from pydantic import BaseModel
 
 from src.tools.gateway import ToolGateway
+from src.tools.names import canonical_tool_name
 from src.tools.registry import get_tool
 
 
@@ -18,18 +19,14 @@ def _dump_input(input_data: Any) -> dict[str, Any]:
     return {}
 
 
-def _canonical(name: str) -> str:
-    return name.replace(".", "_")
-
-
 def is_gateway_managed_tool(tool: FunctionTool) -> bool:
-    return _canonical(tool.name).startswith("mcp_") or get_tool(_canonical(tool.name)) is not None
+    return canonical_tool_name(tool.name).startswith("mcp_") or get_tool(tool.name) is not None
 
 
 def requires_sdk_approval(tool: FunctionTool) -> bool:
-    if _canonical(tool.name).startswith("mcp_"):
+    if canonical_tool_name(tool.name).startswith("mcp_"):
         return False
-    registry_tool = get_tool(_canonical(tool.name))
+    registry_tool = get_tool(tool.name)
     target = registry_tool or tool
     return getattr(target, "approval_mode", "never_require") == "always_require"
 

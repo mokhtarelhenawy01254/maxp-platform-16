@@ -7,7 +7,10 @@ import {
   AlertTriangle,
   CheckCircle2,
   FileCheck2,
-  Share2
+  Share2,
+  MessageSquare,
+  LayoutList,
+  Activity
 } from "lucide-react";
 import { useAgentSandbox } from "./hooks/useAgentSandbox";
 import { SessionList } from "./components/SessionList";
@@ -60,6 +63,8 @@ const AIAgentSandboxPage: React.FC = () => {
   // Media query states implemented directly via window check / resize listener or basic defaults
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
   const [inspectorOpen, setInspectorOpen] = useState<boolean>(true);
+  const [activeMobilePanel, setActiveMobilePanel] = useState<'sessions' | 'chat' | 'inspector'>('chat');
+
 
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{
@@ -130,7 +135,7 @@ const AIAgentSandboxPage: React.FC = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-140px)] flex flex-col bg-slate-50/20 dark:bg-slate-950 overflow-hidden relative">
+    <div className="h-[calc(100dvh-140px)] md:h-[calc(100vh-140px)] flex flex-col bg-slate-50/20 dark:bg-slate-950 overflow-hidden relative p-2 md:p-4 md:m-6 bg-background border rounded-xl shadow-sm">
       {/* Top Header Controls */}
       <HeaderBar
         agent={selectedAgent}
@@ -150,79 +155,103 @@ const AIAgentSandboxPage: React.FC = () => {
         isStreaming={isStreaming}
       />
 
-      {/* Main Sandbox Workspace */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* Left Session Pane */}
-        <SessionList
-          sessions={sessions}
-          activeSessionId={activeSessionId}
-          onSelectSession={setActiveSessionId}
-          onCreateSession={createSession}
-          onDeleteSession={deleteSession}
-          onUpdateTitle={updateSessionTitle}
-          formatCost={formatCost}
-          collapsed={!sidebarOpen}
-          isSessionsLoading={isSessionsLoading}
-        />
+       {/* Main Sandbox Workspace */}
+       <div className="flex-1 flex overflow-hidden relative">
+         {/* Left Session Pane */}
+         <div className={`transition-all duration-300 ${activeMobilePanel === 'sessions' ? 'flex' : 'hidden'} md:flex`}>
+           <SessionList
+             sessions={sessions}
+             activeSessionId={activeSessionId}
+             onSelectSession={(id) => {
+               setActiveSessionId(id);
+               setActiveMobilePanel('chat');
+             }}
+             onCreateSession={createSession}
+             onDeleteSession={deleteSession}
+             onUpdateTitle={updateSessionTitle}
+             formatCost={formatCost}
+             collapsed={!sidebarOpen}
+             isSessionsLoading={isSessionsLoading}
+           />
+         </div>
+ 
+         {/* Sidebar Toggle Tab */}
+         <div className="hidden md:flex w-7 min-w-[28px] border-r border-slate-200 dark:border-slate-800 flex-col justify-center items-center bg-white dark:bg-slate-900 select-none">
+           <button
+             onClick={() => setSidebarOpen((p) => !p)}
+             className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-650"
+             title={sidebarOpen ? "Hide sessions" : "Show sessions"}
+           >
+             {sidebarOpen ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
+           </button>
+         </div>
+ 
+         {/* Central Chat Board */}
+         <div className={`flex-1 transition-all duration-300 ${activeMobilePanel === 'chat' ? 'flex' : 'hidden'} md:flex`}>
+           <ChatArea
+             messages={activeSession?.messages || []}
+             agent={selectedAgent}
+             model={selectedModel}
+             providers={models}
+             isLoading={isLoading}
+             isStreaming={isStreaming}
+             canSend={canUseSelectedCentralModel}
+             typingStage={typingStage}
+             activeToolCalls={activeToolCalls}
+             onSendMessage={sendMessage}
+           />
+         </div>
+ 
+         {/* Inspector Panel Toggle Tab */}
+         <div className="hidden md:flex w-7 min-w-[28px] border-l border-r border-slate-200 dark:border-slate-800 flex-col justify-center items-center bg-white dark:bg-slate-900 select-none">
+           <button
+             onClick={() => setInspectorOpen((p) => !p)}
+             className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-650"
+             title={inspectorOpen ? "Hide inspector" : "Show inspector"}
+           >
+             {inspectorOpen ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+           </button>
+         </div>
+ 
+         {/* Right Inspector Log & Tools Pane */}
+         <div className={`transition-all duration-300 ${activeMobilePanel === 'inspector' ? 'flex' : 'hidden'} md:flex`}>
+           <InspectorPanel
+             tools={agentTools}
+             activityLog={activityLog}
+             onClearLog={clearActivityLog}
+             collapsed={!inspectorOpen}
+           />
+         </div>
+       </div>
 
-        {/* Sidebar Toggle Tab */}
-        <div className="w-7 min-w-[28px] border-r border-slate-200 dark:border-slate-800 flex flex-col justify-center items-center bg-white dark:bg-slate-900 select-none">
-          <button
-            onClick={() => setSidebarOpen((p) => !p)}
-            className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-650"
-            title={sidebarOpen ? "Hide sessions" : "Show sessions"}
-          >
-            {sidebarOpen ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
-          </button>
-        </div>
+       {/* Footer Stats status bar */}
+       {/* StatusBar removed as requested */}
 
-        {/* Central Chat Board */}
-        <ChatArea
-          messages={activeSession?.messages || []}
-          agent={selectedAgent}
-          model={selectedModel}
-          providers={models}
-          isLoading={isLoading}
-          isStreaming={isStreaming}
-          canSend={canUseSelectedCentralModel}
-          typingStage={typingStage}
-          activeToolCalls={activeToolCalls}
-          onSendMessage={sendMessage}
-        />
 
-        {/* Inspector Panel Toggle Tab */}
-        <div className="w-7 min-w-[28px] border-l border-r border-slate-200 dark:border-slate-800 flex flex-col justify-center items-center bg-white dark:bg-slate-900 select-none">
-          <button
-            onClick={() => setInspectorOpen((p) => !p)}
-            className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-650"
-            title={inspectorOpen ? "Hide inspector" : "Show inspector"}
-          >
-            {inspectorOpen ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
-          </button>
-        </div>
-
-        {/* Right Inspector Log & Tools Pane */}
-        <InspectorPanel
-          tools={agentTools}
-          activityLog={activityLog}
-          onClearLog={clearActivityLog}
-          collapsed={!inspectorOpen}
-        />
-      </div>
-
-      {/* Footer Stats status bar */}
-      {activeSession && (
-        <StatusBar
-          messageCount={activeSession.messageCount}
-          toolCallCount={activeSession.toolCallCount}
-          totalTokens={activeSession.totalTokens}
-          totalCost={activeSession.totalCost}
-          avgLatency={activeSession.avgLatency}
-          costBreakdown={costBreakdown}
-          formatCost={formatCost}
-          formatTokens={formatTokens}
-        />
-      )}
+       {/* Mobile Bottom Navigation */}
+       <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-2 flex justify-around items-center pb-safe">
+         <button 
+           onClick={() => setActiveMobilePanel('sessions')}
+           className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${activeMobilePanel === 'sessions' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 scale-105' : 'text-slate-500 opacity-70'}`}
+         >
+           <LayoutList className="size-5" />
+           <span className="text-[10px] font-medium">Sessions</span>
+         </button>
+         <button 
+           onClick={() => setActiveMobilePanel('chat')}
+           className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${activeMobilePanel === 'chat' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 scale-105' : 'text-slate-500 opacity-70'}`}
+         >
+           <MessageSquare className="size-5" />
+           <span className="text-[10px] font-medium">Chat</span>
+         </button>
+         <button 
+           onClick={() => setActiveMobilePanel('inspector')}
+           className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${activeMobilePanel === 'inspector' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 scale-105' : 'text-slate-500 opacity-70'}`}
+         >
+           <Activity className="size-5" />
+           <span className="text-[10px] font-medium">Inspector</span>
+         </button>
+       </div>
 
       {/* Export Session Modal overlay */}
       {exportDialogOpen && (

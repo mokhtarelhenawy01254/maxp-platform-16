@@ -7,13 +7,10 @@ import structlog
 from agent_framework import FunctionInvocationContext
 
 from src.mcp_integration.registry import get_mcp_registry
+from src.tools.names import canonical_tool_name, canonical_tool_set
 from src.tools.registry import get_tool
 
 logger = structlog.get_logger(__name__)
-
-
-def _canonical_tool_name(name: str) -> str:
-    return name.replace(".", "_")
 
 
 class ToolResultStatus(StrEnum):
@@ -47,7 +44,7 @@ class ToolGateway:
         allowed_tools: list[str] | None,
         input_data: dict[str, Any] | None,
     ) -> dict[str, Any]:
-        requested_tool_name = _canonical_tool_name(tool_name)
+        requested_tool_name = canonical_tool_name(tool_name)
         registry = get_mcp_registry()
         tool = registry.get_tool(requested_tool_name)
         if not tool:
@@ -57,7 +54,7 @@ class ToolGateway:
                 "error": f"Tool '{tool_name}' not found",
             }
 
-        allowed_tool_names = {_canonical_tool_name(name) for name in (allowed_tools or [])}
+        allowed_tool_names = canonical_tool_set(allowed_tools)
         if allowed_tools is not None and agent_role and requested_tool_name not in allowed_tool_names:
             self._log.warning(
                 "mcp tool not permitted for agent",
@@ -117,7 +114,7 @@ class ToolGateway:
         Returns:
             Execution result with status
         """
-        requested_tool_name = _canonical_tool_name(tool_name)
+        requested_tool_name = canonical_tool_name(tool_name)
         if requested_tool_name.startswith("mcp_"):
             return await self._execute_mcp_tool(
                 tool_name=tool_name,
@@ -137,7 +134,7 @@ class ToolGateway:
 
         requires_approval = getattr(tool, "approval_mode", "never_require") == "always_require"
 
-        allowed_tool_names = {_canonical_tool_name(name) for name in (allowed_tools or [])}
+        allowed_tool_names = canonical_tool_set(allowed_tools)
         if allowed_tools is not None and agent_role and tool.name not in allowed_tool_names:
             self._log.warning(
                 "tool not permitted for agent",

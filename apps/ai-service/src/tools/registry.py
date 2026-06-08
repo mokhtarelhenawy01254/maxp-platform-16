@@ -15,6 +15,7 @@ from src.tools import (
     sales_tools,
 )
 from src.tools.backend_client import get_backend_client
+from src.tools.names import canonical_tool_name
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1144,16 +1145,12 @@ def get_tool_name_list(tools: list[FunctionTool]) -> list[str]:
     return [tool.name for tool in tools]
 
 
-def _canonical_tool_name(name: str) -> str:
-    return str(name or "").replace(".", "_")
-
-
 def resolve_tools_from_names(names: list[str]) -> list[FunctionTool]:
     """Resolve stored tool names back to FunctionTool objects."""
     resolved: list[FunctionTool] = []
     seen: set[str] = set()
     for name in names:
-        canonical = _canonical_tool_name(name)
+        canonical = canonical_tool_name(name)
         tool = _ALL_TOOLS.get(canonical)
         if tool and tool.name not in seen:
             resolved.append(tool)
@@ -1172,7 +1169,7 @@ def get_all_tools() -> list[FunctionTool]:
 
 
 def get_tool(name: str) -> FunctionTool | None:
-    return ALL_TOOLS.get(_canonical_tool_name(name))
+    return ALL_TOOLS.get(canonical_tool_name(name))
 
 
 async def _mcp_gateway_placeholder(input_data: dict[str, Any]) -> dict[str, Any]:
