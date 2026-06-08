@@ -154,6 +154,18 @@
       "proposalRejected": "تم رفض الاقتراح."
     }
   },
+  "aiHub": {
+    "title": "AI Hub",
+    "subtitle": "مركز الوكلاء الذكي",
+    "tabs": {
+      "agents": "الوكلاء",
+      "sandbox": "Sandbox",
+      "rag": "قاعدة المعرفة",
+      "tools": "الأدوات",
+      "skills": "المهارات",
+      "scheduler": "الجدولة"
+    }
+  },
   "appDashboard": {
     "title": "لوحة التطبيقات",
     "subtitle": "اختر تطبيقاً للبدء",

@@ -154,6 +154,18 @@
       "proposalRejected": "Proposal rejected."
     }
   },
+  "aiHub": {
+    "title": "AI Hub",
+    "subtitle": "Intelligent Agents Center",
+    "tabs": {
+      "agents": "Agents",
+      "sandbox": "Sandbox",
+      "rag": "Knowledge Base",
+      "tools": "Tools",
+      "skills": "Skills",
+      "scheduler": "Scheduler"
+    }
+  },
   "appDashboard": {
     "title": "Apps Dashboard",
     "subtitle": "Choose an app to get started",

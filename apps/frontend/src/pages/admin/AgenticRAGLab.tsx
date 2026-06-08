@@ -795,7 +795,7 @@ const AgenticRAGLab: React.FC = () => {
           ) : (
             <RefreshCw className="size-4 text-indigo-600 dark:text-indigo-400" />
           )}
-          <span>تحديث</span>
+          <span>{t("agenticRagLab.overview.runEvaluation")}</span>
         </Button>
       </div>
 
@@ -839,7 +839,7 @@ const AgenticRAGLab: React.FC = () => {
               </label>
               <Input
                 type="text"
-                placeholder="مثال: shipping"
+                placeholder={tr("agenticRagLab.category")}
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 className="dark:bg-slate-950 dark:border-slate-800"
