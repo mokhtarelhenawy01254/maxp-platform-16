@@ -1,3 +1,20 @@
+## [2026-06-08] Order Notes Edit & Delete [READY]
+- **Objective**: Add edit and delete functionality for order notes in the order details page.
+- **Accomplishments**:
+  - **Backend API**: Added `PATCH /simple/notes/:noteId` and `DELETE /simple/notes/:noteId` endpoints with company ownership validation and role-based permission checks (author/COMPANY_ADMIN/SUPER_ADMIN only)
+  - **Frontend Edit UI**: Pencil icon on each note opens inline textarea editor with save/cancel buttons
+  - **Frontend Delete UI**: Trash icon opens confirmation dialog before deletion; note is removed from UI and database without page reload
+  - **State Management**: Added `updateNote`/`deleteNote` functions and `updatingNote`/`deletingNote` loading states in `useOrderDetails` hook
+  - **Permission Gating**: Edit/delete buttons only visible to the note author; admins can edit/delete any note in their company
+- **Verification**: Dark mode supported, responsive design preserved, error handling with toast messages, no existing functionality broken
+- **Affected Files**:
+  - `apps/backend/routes/orders.js`
+  - `apps/frontend/src/pages/orders/OrderDetails.tsx`
+  - `apps/frontend/src/pages/orders/components/OrderActivityLog.tsx`
+  - `apps/frontend/src/pages/orders/hooks/useOrderDetails.ts`
+  - `apps/frontend/src/pages/orders/types.ts`
+  - `apps/backend/docs/orders/order-notes-edit-delete-2026-06-08.md`
+
 ## [2026-06-07] ai-service — Product Search Tool Working End-to-End [FIXED]
 - **Objective**: Fix ai-service returning hallucinated product data (MaxP electronics) instead of Wofod's actual shoe products.
 - **Accomplishments**:

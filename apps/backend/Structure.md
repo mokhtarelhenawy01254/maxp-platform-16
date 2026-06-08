@@ -1384,6 +1384,8 @@ The Company Assistant is a multi-channel (Telegram, WhatsApp, Web Chat) conversa
 - `update_order_status` â€” Change order status (WRITE)
 - `update_order` â€” Update payment, notes, customer info (WRITE)
 - `add_order_note` â€” Add internal note (WRITE)
+- `update_order_note` â€” Edit existing note content (WRITE)
+- `delete_order_note` â€” Delete order note (WRITE)
 - `search_returns` â€” Search return requests
 - `update_return_status` â€” Update return status (WRITE)
 - `refund_order` â€” Process a refund for an order (WRITE)
