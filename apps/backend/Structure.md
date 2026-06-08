@@ -2417,3 +2417,19 @@ Manages AI agent chat sessions via Prisma (`aIChatSession`, `aIChatMessage` mode
 - `listSessions(companyId, userId)` — returns sessions list
 - `createSession(companyId, userId, user, options)` — creates new session
 - `getAgentStatus(companyId)` — returns `{ status: "active", companyId }`
+
+---
+
+## [2026-06-08] Frontend — Sidebar Visibility Management (App Activation + Role Gates)
+
+- **Details**: Fixed sidebar permission architecture to always respect app activation status and role restrictions, even when DB/user settings say visible. Also filters settings page to show only active/permitted sections.
+- **Architecture**:
+  - **Base Config** (`sidebar.ts` → `getSidebarConfig()`): Returns sections with `hidden: true` for deactivated apps or restricted roles based on `requiredApps` array and current user's role.
+  - **Override Merge** (`mergeSectionOverrides()`): Applies DB (`company.settings.sidebar`) and user (`sidebarSettings`) overrides on top of base config. **Bug fix**: Added `section.hidden === true` guard — if base config says hidden, DB override can never make it visible.
+  - **Settings Page** (`SidebarSettings.tsx`): Derives `visibleSectionIds` from `getSidebarConfig()` filtered by `!s.hidden`. Used to exclude inactive/restricted sections from defaults, categorized view, flat view, search results, and item counts.
+  - **Save Logic** (`performSave()`): Before writing, merges current local state with existing DB data for sections that were filtered out (inactive apps) — prevents data loss on app reactivation.
+  - **Immediate Sidebar Update**: `Layout.tsx` re-renders via React Context (`SidebarSettingsContext`) after save without page reload.
+  - **Layout Variants**: All variants (Classic, ThreeTier, Minimal, Floating, Horizontal) already use `filter(!s.hidden)` / `filter(!i.hidden)` — no changes needed.
+- **Files**:
+  - `apps/frontend/src/config/sidebar.ts`
+  - `apps/frontend/src/pages/settings/SidebarSettings.tsx`

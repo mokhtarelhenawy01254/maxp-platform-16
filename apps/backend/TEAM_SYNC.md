@@ -13120,3 +13120,20 @@ POST /chat {"message": "مرحبا"}
 - **`agent_framework.Agent`** مش بيعمل expose لـ `instructions` كـ attribute مباشر — بتلاقيها في `agent.default_options["instructions"]`
 - الـ OpenRouter key موجود في الـ DB بس رصيده خلص (402) — Groq هو الـ active provider
 - في خلط صغير في ردود اللغة (أحيانًا عربي+صيني) — محتاج system prompt أحسن في `ceo.py`
+
+---
+
+## [2026-06-08] Sidebar Management — App Activation & Role Restrictions Now Enforced [FIXED]
+
+- **Objective**: Ensure sidebar always respects app activation status and role restrictions, even when DB/user settings override visibility.
+- **Root Cause**: `mergeSectionOverrides()` in `sidebar.ts` unconditionally set `section.hidden = false` when DB/user setting had `isVisible: true`, overriding the base config's `hidden: true` from deactivated apps or restricted roles.
+- **Accomplishments**:
+  - **Bug Fix** (`sidebar.ts:114`): Added `|| section.hidden === true` guard — sections hidden by app deactivation or role gate can never be made visible via DB overrides
+  - **Settings Page Filtering** (`SidebarSettings.tsx`): Added `visibleSectionIds` derived from `getSidebarConfig()` filtered by `!s.hidden` — settings UI only shows active/permitted sections
+  - **Safe Save** (`performSave()`): Merges DB settings for inactive sections with local changes before writing — no data loss on app reactivation
+  - **Immediate Update**: Sidebar re-renders via React Context instantly after save without page reload
+  - **Layout Variants**: All 5 variants (Classic, ThreeTier, Minimal, Floating, Horizontal) already filter correctly — untouched
+- **Files Changed**:
+  - `apps/frontend/src/config/sidebar.ts` (+4 lines)
+  - `apps/frontend/src/pages/settings/SidebarSettings.tsx` (+31 lines)
+- **Verification**: Frontend build succeeds (warnings pre-existing, unrelated). No console errors. All layout variants respect `hidden` flag.
