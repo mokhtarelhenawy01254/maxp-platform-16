@@ -68,6 +68,7 @@ import "./styles/storefront-layout.css";
 
 /* ─────────────────── Search Results ─────────────────── */
 import type { Product } from "./hooks/useProducts";
+import { useProduct } from "./hooks/useProduct";
 
 const GlobalConversionHost = React.lazy(
   () => import("./components/GlobalConversionHost"),
@@ -6985,8 +6986,16 @@ const StorefrontProductPreviewBanner: React.FC<{
   const location = useLocation();
   const isSoleaFemme = theme.id === "solea-femme";
   const isVelaFashion = theme.id === "vela-fashion-eg";
-  const editLink = previewProductId
-    ? `/products/${encodeURIComponent(previewProductId)}/edit`
+
+  const productRouteKey = getStorefrontProductRouteKey(location.pathname);
+  const { product } = useProduct(productRouteKey || undefined, {
+    enabled: Boolean(productRouteKey) && !previewProductId,
+  });
+
+  const effectiveProductId = previewProductId || product?.id;
+
+  const editLink = effectiveProductId
+    ? `/products/${encodeURIComponent(effectiveProductId)}/edit`
     : "/products";
   const editUrl = buildStorefrontPreviewAdminPath(editLink, location.search);
   const productsUrl = buildStorefrontPreviewAdminPath(
@@ -7389,7 +7398,9 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
   const isChronoGallery = theme.id === "elessi-chrono-gallery";
   const isGarageFit = theme.id === "elessi-garage-fit";
   const isElessiPackTheme = theme.id?.startsWith("elessi-") === true;
-  const isProductPreview = searchParams.get("productPreview") === "1";
+  const isProductPreview =
+    searchParams.get("productPreview") === "1" ||
+    searchParams.get("preview") === "1";
   const previewProductId = searchParams.get("previewProductId");
   const isFastlyTheme = theme.id === "fastly-eg";
   const productRouteKey = getStorefrontProductRouteKey(normalizedPath);

@@ -25,7 +25,9 @@ export const useStorefrontVisitTracking = (
   );
   const companyId = settings?.company?.id?.trim() || "";
   const isPreviewMode = Boolean(settings?.storefront?.isPreview);
-  const isProductPreview = searchParams.get("productPreview") === "1";
+  const isProductPreview =
+    searchParams.get("productPreview") === "1" ||
+    searchParams.get("preview") === "1";
 
   useEffect(() => {
     if (!companyId || isPreviewMode || isProductPreview) {

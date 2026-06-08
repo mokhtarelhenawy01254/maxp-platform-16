@@ -53,9 +53,7 @@ export const buildProductPreviewUrl = ({
     url.searchParams.set("companyId", normalizedCompanyId);
   }
 
-  url.searchParams.set("productPreview", "1");
-  url.searchParams.set("previewSource", "admin");
-  url.searchParams.set("previewProductId", normalizedProductId);
+  url.searchParams.set("preview", "1");
 
   return url.toString();
 };

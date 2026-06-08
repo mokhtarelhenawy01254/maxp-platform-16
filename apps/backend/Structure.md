@@ -2524,3 +2524,21 @@ Manages AI agent chat sessions via Prisma (`aIChatSession`, `aIChatMessage` mode
 - **Fix**: Reverted ProductGallery.tsx images useMemo to the original working code that merges variant images with product-level images.
 - **Affected Files**:
   - apps/frontend/src/storefront/sections/ProductGallery.tsx
+
+
+---
+
+## [2026-06-08] Storefront — Shortened Product Preview URLs [FIXED]
+- **Details**: Preview URLs are now simplified to carry only `preview=1` and `companyId` parameters. All other long or internal parameters (`productPreview`, `previewSource`, `previewProductId`) are omitted.
+- **Architecture**:
+  - The backend `getSingleProduct` admin controller is updated to support product lookup by slug or ID.
+  - The storefront shell resolves the missing `previewProductId` dynamically by matching the URL slug and fetching the product object.
+- **Affected Files**:
+  - `apps/backend/controller/productController.js`
+  - `apps/frontend/src/pages/products/hooks/useProducts.ts`
+  - `apps/frontend/src/pages/products/utils/productPreviewUrl.ts`
+  - `apps/frontend/src/pages/products/utils/__tests__/productPreviewUrl.test.ts`
+  - `apps/frontend/src/storefront/StorefrontShell.tsx`
+  - `apps/frontend/src/storefront/hooks/useProduct.ts`
+  - `apps/frontend/src/storefront/hooks/useStorefrontFacebookTracking.ts`
+  - `apps/frontend/src/storefront/hooks/useStorefrontVisitTracking.ts`

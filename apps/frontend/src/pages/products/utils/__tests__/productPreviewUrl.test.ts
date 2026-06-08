@@ -36,7 +36,7 @@ describe("product preview url helpers", () => {
         companyId: "cmlc7quet0000ju403h74m5o9",
       }),
     ).toBe(
-      "https://maxp.online/store/product/cmofn4xue0gsbjuabfhn3b35j?companyId=cmlc7quet0000ju403h74m5o9&productPreview=1&previewSource=admin&previewProductId=cmofn4xue0gsbjuabfhn3b35j",
+      "https://maxp.online/store/product/cmofn4xue0gsbjuabfhn3b35j?companyId=cmlc7quet0000ju403h74m5o9&preview=1",
     );
   });
 
@@ -49,7 +49,7 @@ describe("product preview url helpers", () => {
         companyId: "cmleybpf70028juo2wwpmp8rt",
       }),
     ).toBe(
-      "https://maxp.online/store/product/nova-sneakers?companyId=cmleybpf70028juo2wwpmp8rt&productPreview=1&previewSource=admin&previewProductId=cmoqxdziw01pkju2i5gvhgc9c",
+      "https://maxp.online/store/product/nova-sneakers?companyId=cmleybpf70028juo2wwpmp8rt&preview=1",
     );
   });
 });

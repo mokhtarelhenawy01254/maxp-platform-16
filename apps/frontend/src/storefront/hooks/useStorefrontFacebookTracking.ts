@@ -56,7 +56,8 @@ export const useStorefrontFacebookTracking = () => {
   const isPreviewMode = Boolean(settings?.storefront?.isPreview);
   const isProductPreview =
     typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).get('productPreview') === '1';
+    (new URLSearchParams(window.location.search).get('productPreview') === '1' ||
+     new URLSearchParams(window.location.search).get('preview') === '1');
   const shouldTrackInternally = !isPreviewMode && !isProductPreview;
 
   const trackingSettings = useMemo(

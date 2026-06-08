@@ -59,9 +59,7 @@ const buildPreviewPath = (productId: string, companyId?: string | null): string 
   if (companyId) {
     params.set("companyId", companyId);
   }
-  params.set("productPreview", "1");
-  params.set("previewSource", "admin");
-  params.set("previewProductId", productId);
+  params.set("preview", "1");
 
   const query = params.toString();
   return `/store/shop/products/${encodeURIComponent(productId)}${query ? `?${query}` : ""}`;

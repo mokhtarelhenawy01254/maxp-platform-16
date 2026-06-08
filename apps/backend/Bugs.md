@@ -3479,3 +3479,24 @@
 - **Fix**: Reverted ProductGallery.tsx images useMemo to the original working code that merges variant images with product-level images.
 - **Affected Files**:
   - apps/frontend/src/storefront/sections/ProductGallery.tsx
+
+
+---
+
+## [2026-06-08] Storefront — Shortened Product Preview URLs [FIXED]
+- **Bug/Issue**: Product preview URLs were extremely long and contained database-specific information (like `previewProductId`, `previewSource=admin`, and `productPreview=1`), which merchants didn't want to expose when copying and sharing.
+- **Root Cause**: The frontend generated preview URLs with extensive query parameters, and the backend admin API didn't support looking up products by slug, forcing the frontend to pass `previewProductId` as a lookup key.
+- **Fix**:
+  - Updated the backend `getSingleProduct` controller to support looking up products by ID or slug in the admin API.
+  - Simplified frontend preview URL builders (`buildProductPreviewUrl` and `buildPreviewPath`) to only use the `preview=1` flag and `companyId`, omitting the other query parameters.
+  - Updated the storefront shell, tracking, and hooks to support both `productPreview=1` and `preview=1`.
+  - Updated the storefront product preview banner to dynamically resolve the product ID by its slug from the pathname when the query parameter is not present.
+- **Affected Files**:
+  - `apps/backend/controller/productController.js`
+  - `apps/frontend/src/pages/products/hooks/useProducts.ts`
+  - `apps/frontend/src/pages/products/utils/productPreviewUrl.ts`
+  - `apps/frontend/src/pages/products/utils/__tests__/productPreviewUrl.test.ts`
+  - `apps/frontend/src/storefront/StorefrontShell.tsx`
+  - `apps/frontend/src/storefront/hooks/useProduct.ts`
+  - `apps/frontend/src/storefront/hooks/useStorefrontFacebookTracking.ts`
+  - `apps/frontend/src/storefront/hooks/useStorefrontVisitTracking.ts`

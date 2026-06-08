@@ -1070,7 +1070,13 @@ const getSingleProduct = async (req, res) => {
 
     const { id } = req.params;
     const companyId = req.user?.companyId;
-    const where = withActiveProductFilter({ id });
+    const orConditions = [{ slug: id }];
+    if (id.length > 20) {
+      orConditions.unshift({ id });
+    }
+    const where = withActiveProductFilter({
+      OR: orConditions,
+    });
 
     if (req.user?.role !== 'SUPER_ADMIN' && companyId) {
       where.companyId = companyId;

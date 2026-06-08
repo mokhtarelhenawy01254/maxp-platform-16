@@ -11,7 +11,8 @@ import { resolveLegacyProductSlugAlias } from '../utils/productSlugAliases';
 
 export const resolveStorefrontProductPreviewMode = (): boolean =>
   typeof window !== 'undefined' &&
-  new URLSearchParams(window.location.search).get('productPreview') === '1';
+  (new URLSearchParams(window.location.search).get('productPreview') === '1' ||
+   new URLSearchParams(window.location.search).get('preview') === '1');
 
 export const resolveStorefrontProductPreviewProductId = (): string | null => {
   if (typeof window === 'undefined') {

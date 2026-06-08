@@ -13203,3 +13203,22 @@ POST /chat {"message": "مرحبا"}
 - **Fix**: Reverted ProductGallery.tsx images useMemo to the original working code that merges variant images with product-level images.
 - **Affected Files**:
   - apps/frontend/src/storefront/sections/ProductGallery.tsx
+
+
+---
+
+## [2026-06-08] Storefront — Shortened Product Preview URLs [FIXED]
+- **Objective**: Simplify the merchant product preview URL from the admin dashboard to be short and copy-paste friendly.
+- **Accomplishments**:
+  - **Slug lookup support in Admin API**: Updated the backend `getSingleProduct` controller to support lookup by slug as well as ID.
+  - **Shorter builder options**: Updated URL builders to omit `previewSource` and `previewProductId`, replacing `productPreview=1` with `preview=1`.
+  - **Storefront Banner resolution**: Updated `StorefrontProductPreviewBanner` to dynamically fetch the product ID by the slug parsed from path if `previewProductId` query parameter is not present.
+- **Affected Files**:
+  - `apps/backend/controller/productController.js`
+  - `apps/frontend/src/pages/products/hooks/useProducts.ts`
+  - `apps/frontend/src/pages/products/utils/productPreviewUrl.ts`
+  - `apps/frontend/src/pages/products/utils/__tests__/productPreviewUrl.test.ts`
+  - `apps/frontend/src/storefront/StorefrontShell.tsx`
+  - `apps/frontend/src/storefront/hooks/useProduct.ts`
+  - `apps/frontend/src/storefront/hooks/useStorefrontFacebookTracking.ts`
+  - `apps/frontend/src/storefront/hooks/useStorefrontVisitTracking.ts`
