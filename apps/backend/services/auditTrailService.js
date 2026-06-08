@@ -4,7 +4,7 @@
  */
 
 const { getSharedPrismaClient } = require('./sharedDatabase');
-const { generateJobCorrelationId, getCurrentCorrelationId } = require('./correlation');
+const { generateJobCorrelationId, getCurrentCorrelationId } = require('../utils/correlation');
 
 // In-memory audit log (limited to 1000 entries)
 const auditLog = [];
