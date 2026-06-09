@@ -341,7 +341,7 @@ const OrderNotificationBell: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-sm font-medium text-gray-900 dark:text-white truncate mt-0.5">
-                        {order.displayName || 'عميل'}
+                        {order.displayName || `#${order.orderNumber}`}
                       </p>
                       <div className="flex items-center justify-between mt-1">
                         <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
