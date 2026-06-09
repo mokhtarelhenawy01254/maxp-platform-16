@@ -181,4 +181,18 @@ describe('productMediaUtils', () => {
       clonedMetadata.heroImage,
     );
   });
+
+  test('falls back mainImage when nextMainImage is not in nextImages', () => {
+    expect(
+      resolveProductMediaState({
+        currentImages: [`/uploads/products/${existingImageName}`],
+        currentMainImage: `/uploads/products/${existingImageName}`,
+        nextImages: ['https://cdn.example.com/new-image-1.jpg', 'https://cdn.example.com/new-image-2.jpg'],
+        nextMainImage: `/uploads/products/${existingImageName}`, // Stale mainImage not in nextImages
+      }),
+    ).toEqual({
+      images: ['https://cdn.example.com/new-image-1.jpg', 'https://cdn.example.com/new-image-2.jpg'],
+      mainImage: 'https://cdn.example.com/new-image-1.jpg',
+    });
+  });
 });

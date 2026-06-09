@@ -151,7 +151,9 @@ export const useProductApi = () => {
         weight: formData.weight || null,
         dimensions: formData.dimensions || null,
         images: uploadedImages,
-        mainImage: formData.mainImage || (uploadedImages.length > 0 ? uploadedImages[0] : null),
+        mainImage: (formData.mainImage && uploadedImages.includes(formData.mainImage)
+          ? formData.mainImage
+          : uploadedImages[0] || null),
         affiliateCommission: formData.affiliateCommission || 0,
         commissionType: formData.commissionType,
         allowAffiliateMarkup: formData.allowAffiliateMarkup,

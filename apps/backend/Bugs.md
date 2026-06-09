@@ -1,3 +1,15 @@
+## [2026-06-09] Storefront & Product Save — Cloned Product Shows Stale Images on Storefront
+- **Bug/Issue**: When copying/cloning a product, removing the old cloned images, uploading new ones, and saving, the storefront would still display the old cloned images instead of the new ones.
+- **Cause**: 
+  1. **Frontend**: The `formData.mainImage` persisted the old cloned product's main image from the initial load, even after all old images were removed from the UI.
+  2. **Backend**: `resolveProductMediaState` in `productMediaUtils.js` took the provided `nextMainImage` (which was the stale main image) and saved it without verifying if it was actually in the new `nextImages` array. This resulted in the stale image remaining as the main image and getting appended back into the product's image set.
+- **Fix**:
+  1. **Frontend**: Updated `useProductApi.ts` to check if `formData.mainImage` exists in the current `uploadedImages` list. If not, it falls back to the first uploaded image (or null).
+  2. **Backend**: Updated `productMediaUtils.js` to validate that `candidateMainImage` is part of `baseImages` when new images are provided. If it is not, it falls back to null, causing the backend to default to the first image in the new list.
+- **Affected Files**:
+  - `apps/backend/utils/productMediaUtils.js`
+  - `apps/frontend/src/pages/products/hooks/useProductApi.ts`
+
 ## [2026-06-09] Frontend — Remove "نسخ الرابط العام" Button from Product Editor
 - **Change**: Removed the unnecessary "نسخ الرابط العام" (Copy Public Link) button from the product editor toolbar in `ProductNewFinal.tsx`. The button was UI clutter not used in any merchant workflow.
 - **Cleanup**: Removed the unused `LinkIcon` import, the unused `buildPublicUrl` useCallback function, and the unused `buildProductPublicUrl` import from `productPreviewUrl` utilities.

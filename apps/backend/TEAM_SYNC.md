@@ -1,3 +1,12 @@
+## [2026-06-09] Storefront & Product Save — Cloned Product Stale Images Fix [DONE]
+- **Objective**: Fix the bug where a cloned product would display stale/old images on the storefront after the merchant replaced all images.
+- **Accomplishments**:
+  - **Frontend Safeguard**: Updated `useProductApi.ts` to validate that `formData.mainImage` is present in the current `uploadedImages` list before submitting, preventing stale image payloads.
+  - **Backend Validation**: Updated `resolveProductMediaState` in `productMediaUtils.js` to ensure the candidate main image exists in the new images list when `nextImages` is provided. If missing (stale cloned image), it falls back to the first available image in the list.
+- **Affected Files**:
+  - `apps/backend/utils/productMediaUtils.js`
+  - `apps/frontend/src/pages/products/hooks/useProductApi.ts`
+
 ## [2026-06-09] Product Editor Cleanup — Remove "نسخ الرابط العام" Button [DONE]
 - **Objective**: Remove unnecessary UI element from the product editor toolbar.
 - **Accomplishments**:

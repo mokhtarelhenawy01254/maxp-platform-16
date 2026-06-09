@@ -330,7 +330,17 @@ function resolveProductMediaState({
   let resolvedMainImage = null;
 
   if (mainImageProvided) {
-    resolvedMainImage = sanitizeStoredAssetUrl(nextMainImage);
+    const candidateMainImage = sanitizeStoredAssetUrl(nextMainImage);
+    // If new images were also provided, the mainImage MUST be among them.
+    // This prevents a stale mainImage (e.g. from a cloned product) from
+    // overriding the newly-uploaded images when the user replaces the set.
+    if (imagesProvided) {
+      resolvedMainImage = candidateMainImage && baseImages.includes(candidateMainImage)
+        ? candidateMainImage
+        : null;
+    } else {
+      resolvedMainImage = candidateMainImage;
+    }
   } else if (imagesProvided) {
     const existingMainImage = sanitizeStoredAssetUrl(currentMainImage);
     resolvedMainImage = existingMainImage && baseImages.includes(existingMainImage)
