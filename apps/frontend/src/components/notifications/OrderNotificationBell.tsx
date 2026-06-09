@@ -199,10 +199,12 @@ const OrderNotificationBell: React.FC = () => {
 
     const handleNewOrder = () => {
       fetchNewOrdersCount();
+      if (isOpen) fetchNewOrdersList();
     };
 
     const handleOrderUpdated = () => {
       fetchNewOrdersCount();
+      if (isOpen) fetchNewOrdersList();
     };
 
     socketService.on("order:created", handleNewOrder);
@@ -212,13 +214,18 @@ const OrderNotificationBell: React.FC = () => {
       socketService.off("order:created", handleNewOrder);
       socketService.off("order:updated", handleOrderUpdated);
     };
-  }, [isAuthenticated, user, fetchNewOrdersCount]);
+  }, [isAuthenticated, user, isOpen, fetchNewOrdersCount, fetchNewOrdersList]);
 
-  // Fetch list when dropdown opens
+  // Fetch list when dropdown opens, refresh periodically while open
   useEffect(() => {
-    if (isOpen) {
-      fetchNewOrdersList();
-    }
+    if (!isOpen) return;
+    fetchNewOrdersList();
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        fetchNewOrdersList();
+      }
+    }, 15000);
+    return () => clearInterval(interval);
   }, [isOpen, fetchNewOrdersList]);
 
   const formatTimestamp = (timestamp: string) => {

@@ -294,20 +294,30 @@ const companyDashboardOverview = async (req, res) => {
                     stock: { lte: 0 }
                 }
             }), 0),
-            withDashboardFallback('newOrdersCount', () => getSharedPrismaClient().order.count({
-                where: {
-                    companyId,
-                    isViewed: false,
-                    status: { notIn: DASHBOARD_EXCLUDED_ORDER_STATUSES }
-                }
-            }), 0),
-            withDashboardFallback('viewedOrdersCount', () => getSharedPrismaClient().order.count({
-                where: {
-                    companyId,
-                    isViewed: true,
-                    status: { notIn: DASHBOARD_EXCLUDED_ORDER_STATUSES }
-                }
-            }), 0),
+            withDashboardFallback('newOrdersCount', () => Promise.all([
+                getSharedPrismaClient().order.count({
+                    where: {
+                        companyId,
+                        isViewed: false,
+                        status: { notIn: DASHBOARD_EXCLUDED_ORDER_STATUSES }
+                    }
+                }),
+                getSharedPrismaClient().guestOrder.count({
+                    where: { companyId, isViewed: false }
+                })
+            ]).then(([orderCount, guestCount]) => orderCount + guestCount), 0),
+            withDashboardFallback('viewedOrdersCount', () => Promise.all([
+                getSharedPrismaClient().order.count({
+                    where: {
+                        companyId,
+                        isViewed: true,
+                        status: { notIn: DASHBOARD_EXCLUDED_ORDER_STATUSES }
+                    }
+                }),
+                getSharedPrismaClient().guestOrder.count({
+                    where: { companyId, isViewed: true }
+                })
+            ]).then(([orderCount, guestCount]) => orderCount + guestCount), 0),
         ]);
 
         const safeTrackedOrdersCount = trackedOrdersCount ?? totalOrdersCount;

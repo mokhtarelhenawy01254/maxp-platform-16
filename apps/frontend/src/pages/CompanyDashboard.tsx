@@ -696,7 +696,7 @@ const CompanyDashboard: React.FC = () => {
         <OrderStatsWidget
           newOrders={orderHealth.newOrders}
           viewedOrders={orderHealth.viewedOrders}
-          totalOrders={counts.orders}
+          totalOrders={(orderHealth.newOrders ?? 0) + (orderHealth.viewedOrders ?? 0)}
           formatCount={formatCount}
           isRtl={isRtl}
         />

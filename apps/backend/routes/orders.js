@@ -2517,7 +2517,7 @@ router.get('/simple/new-count', requireAuth, async (req, res) => {
       return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
     }
 
-    const excludedStatuses = ['TRASH', 'trash', 'deleted'];
+    const excludedStatuses = ['DRAFT', 'TRASH', 'DUPLICATE_ORDER'];
 
     const [orderCount, guestOrderCount] = await Promise.all([
       getSharedPrismaClient().order.count({
@@ -2560,7 +2560,7 @@ router.get('/simple/new-list', requireAuth, async (req, res) => {
     }
 
     const limit = parseInt(req.query.limit) || 10;
-    const excludedStatuses = ['TRASH', 'trash', 'deleted'];
+    const excludedStatuses = ['DRAFT', 'TRASH', 'DUPLICATE_ORDER'];
 
     const [orders, guestOrders] = await Promise.all([
       getSharedPrismaClient().order.findMany({
@@ -2592,8 +2592,8 @@ router.get('/simple/new-list', requireAuth, async (req, res) => {
         select: {
           id: true,
           orderNumber: true,
-          customerName: true,
-          customerPhone: true,
+          guestName: true,
+          guestPhone: true,
           total: true,
           status: true,
           createdAt: true,
@@ -2612,7 +2612,9 @@ router.get('/simple/new-list', requireAuth, async (req, res) => {
     const mappedGuestOrders = guestOrders.map(o => ({
       ...o,
       type: 'GUEST_ORDER',
-      displayName: o.customerName || 'عميل',
+      customerName: o.guestName,
+      customerPhone: o.guestPhone,
+      displayName: o.guestName || 'عميل',
       displayTotal: o.total || 0
     }));
 
@@ -2639,7 +2641,7 @@ router.post('/simple/mark-all-viewed', requireAuth, async (req, res) => {
       return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
     }
 
-    const excludedStatuses = ['TRASH', 'trash', 'deleted'];
+    const excludedStatuses = ['DRAFT', 'TRASH', 'DUPLICATE_ORDER'];
 
     const [orderResult, guestOrderResult] = await Promise.all([
       getSharedPrismaClient().order.updateMany({
