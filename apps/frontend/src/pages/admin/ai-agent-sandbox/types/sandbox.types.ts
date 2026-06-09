@@ -111,6 +111,16 @@ export interface ChatMessage {
   runtime?: string;
 }
 
+export interface SandboxTraceSummary {
+  runtime?: string;
+  model?: string;
+  provider?: string;
+  keyName?: string;
+  keyId?: string;
+  toolCalls?: ToolCall[];
+  pipelineTrace?: PipelineTrace | null;
+}
+
 export interface TokenUsage {
   input: number;
   output: number;

@@ -46,6 +46,37 @@ def _parse_json_object(text: str) -> dict[str, Any] | None:
     return None
 
 
+def _has_slot_value(slots: dict[str, Any], slot_name: str) -> bool:
+    value = slots.get(slot_name)
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    return True
+
+
+def _normalize_missing_slots(
+    policy: dict[str, Any] | None,
+    slots: dict[str, Any],
+    missing_slots: list[Any],
+) -> list[str]:
+    required_slots = set((policy or {}).get("requiredSlots") or [])
+    if not required_slots:
+        return []
+
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for slot_name in missing_slots:
+        slot_key = str(slot_name)
+        if slot_key not in required_slots or slot_key in seen:
+            continue
+        if _has_slot_value(slots, slot_key):
+            continue
+        normalized.append(slot_key)
+        seen.add(slot_key)
+    return normalized
+
+
 def _normalize_classifier_result(args: dict[str, Any]) -> ClassifierResult | None:
     if not args or not isinstance(args, dict):
         return None
@@ -64,6 +95,7 @@ def _normalize_classifier_result(args: dict[str, Any]) -> ClassifierResult | Non
     missing_slots = args.get("missingSlots")
     if not isinstance(missing_slots, list):
         missing_slots = []
+    missing_slots = _normalize_missing_slots(policy, slots, missing_slots)
     return ClassifierResult(
         intent=intent,
         confidence=float(args.get("confidence", 0.8)),
@@ -117,6 +149,7 @@ async def classify_intent(
         "such as replacement, return, refund, damage, complaint, or policy exception.\n"
         "Extract only values present in the latest message. Do not invent customer name, phone, address, price, or order number.\n"
         "Do not classify by lexical shortcuts. Interpret the latest message semantically, including negation and corrections.\n"
+        "For shipping-rate questions, set slots.governorate when the latest message contains a governorate or city destination.\n"
     )
 
     if client is None:

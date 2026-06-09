@@ -58,3 +58,57 @@ async def test_classifier_receives_image_attachments_as_multimodal_content(monke
     )
     assert captured["client_kwargs"]["provider"] == "GOOGLE"
     assert captured["client_kwargs"]["model"] == "gemini-2.5-flash"
+
+
+@pytest.mark.asyncio
+async def test_classifier_keeps_only_policy_required_missing_slots(monkeypatch):
+    class FakeClient:
+        async def get_response(self, messages, options=None):
+            return SimpleNamespace(
+                text=(
+                    '{"intent":"products","confidence":0.9,"confidenceLevel":"high",'
+                    '"ambiguity":false,"clarificationQuestion":null,'
+                    '"slots":{"productName":"sneakers"},'
+                    '"missingSlots":["productPrice","productSize","listAll"],'
+                    '"toolEligibility":{"status":"allowed","blockedReason":null,"requiredTool":null},'
+                    '"reasonCodes":[],"alternativeIntents":[]}'
+                )
+            )
+
+    result = await classify_intent(
+        message="Show me your sneakers.",
+        company_id="comp1",
+        context={"availableTools": ["product_search"]},
+        client=FakeClient(),
+    )
+
+    assert result is not None
+    assert result.intent == "products"
+    assert result.missingSlots == []
+
+
+@pytest.mark.asyncio
+async def test_classifier_preserves_policy_required_missing_slots(monkeypatch):
+    class FakeClient:
+        async def get_response(self, messages, options=None):
+            return SimpleNamespace(
+                text=(
+                    '{"intent":"shipping.rates","confidence":0.9,"confidenceLevel":"high",'
+                    '"ambiguity":false,"clarificationQuestion":null,'
+                    '"slots":{},'
+                    '"missingSlots":["governorate","productSize"],'
+                    '"toolEligibility":{"status":"needs_clarification","blockedReason":null,"requiredTool":null},'
+                    '"reasonCodes":[],"alternativeIntents":[]}'
+                )
+            )
+
+    result = await classify_intent(
+        message="How much is shipping?",
+        company_id="comp1",
+        context={"availableTools": ["shipping_rates"]},
+        client=FakeClient(),
+    )
+
+    assert result is not None
+    assert result.intent == "shipping.rates"
+    assert result.missingSlots == ["governorate"]

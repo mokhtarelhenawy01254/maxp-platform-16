@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from typing import Any
 
 import httpx
@@ -27,6 +28,32 @@ def _schema_dict(output_schema: Any) -> dict[str, Any] | None:
     if output_schema.get("responseSchema"):
         return output_schema.get("responseSchema")
     return output_schema
+
+
+def _gemini_response_schema(schema: dict[str, Any]) -> dict[str, Any]:
+    converted = copy.deepcopy(schema)
+
+    def convert_node(node: Any) -> Any:
+        if isinstance(node, list):
+            return [convert_node(item) for item in node]
+        if not isinstance(node, dict):
+            return node
+
+        result: dict[str, Any] = {}
+        for key, value in node.items():
+            if key in {"additionalProperties", "const", "minimum", "maximum"}:
+                continue
+            if key == "type" and isinstance(value, list):
+                non_null_types = [item for item in value if item != "null"]
+                if non_null_types:
+                    result["type"] = non_null_types[0]
+                if "null" in value:
+                    result["nullable"] = True
+                continue
+            result[key] = convert_node(value)
+        return result
+
+    return convert_node(converted)
 
 
 def _message_value(message: Any, key: str, default: Any = None) -> Any:
@@ -190,7 +217,7 @@ class GoogleProvider(BaseProvider):
         schema = _schema_dict(options.get("output_schema"))
         if schema:
             config["responseMimeType"] = "application/json"
-            config["responseSchema"] = schema
+            config["responseSchema"] = _gemini_response_schema(schema)
         return config
 
     def _normalize_tools(self, tools: list[dict[str, Any]]) -> list[dict[str, Any]]:

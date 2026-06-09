@@ -8,5 +8,19 @@
     "tools": "Tools",
     "skills": "Skills",
     "scheduler": "Scheduler"
+  },
+  "sandbox": {
+    "trace": {
+      "title": "Run trace",
+      "pythonRuntime": "Python",
+      "nodeRuntime": "Node",
+      "unknownRuntime": "Unknown",
+      "model": "Model",
+      "intent": "Intent",
+      "plannedTool": "Planned tool",
+      "executedTools": "Executed tools",
+      "none": "None",
+      "notAvailable": "N/A"
+    }
   }
 }

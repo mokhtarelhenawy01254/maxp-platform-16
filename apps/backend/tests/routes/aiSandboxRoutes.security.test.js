@@ -846,6 +846,61 @@ describe('AI sandbox route security', () => {
     expect(assistantCreate.data.metadata.pipelineTrace.toolPlan.primaryTool).toBe('inventory_check');
   });
 
+  test('returns persisted Python trace metadata when loading a sandbox session', async () => {
+    mockPrisma.aiSandboxSession.findFirst.mockResolvedValueOnce({
+      id: 'session_1',
+      companyId: 'company_1',
+      userId: 'user_1',
+      title: 'Trace Session',
+      agentId: 'agent_sales',
+      agentName: 'Sales Agent',
+      agentRole: 'SALES',
+      model: 'gemini-2.5-flash',
+      provider: 'GOOGLE',
+      keyId: 'key_google',
+      messageCount: 2,
+      toolCallCount: 1,
+      totalCost: 0,
+      totalTokens: 0,
+      avgLatency: 42,
+      score: null,
+      createdAt: new Date('2026-06-09T09:00:00.000Z'),
+      updatedAt: new Date('2026-06-09T09:00:10.000Z'),
+      messages: [{
+        id: 'msg_assistant',
+        role: 'assistant',
+        content: 'Tool-backed reply',
+        model: 'gemini-2.5-flash',
+        provider: 'GOOGLE',
+        keyId: 'key_google',
+        keyName: 'Production Gemini',
+        tokensInput: 0,
+        tokensOutput: 0,
+        tokensTotal: 0,
+        latencyMs: 42,
+        cost: 0,
+        toolCalls: JSON.stringify([{ name: 'inventory_check', status: 'success', input: {}, output: {} }]),
+        metadata: {
+          runtime: 'python-agent',
+          pipelineTrace: {
+            toolPlan: {
+              intent: 'inventory.check',
+              primaryTool: 'inventory_check',
+              reason: 'classified by model',
+            },
+          },
+        },
+        createdAt: new Date('2026-06-09T09:00:10.000Z'),
+      }],
+    });
+
+    const response = await request(app).get('/ai-sandbox/sessions/session_1');
+
+    expect(response.status).toBe(200);
+    expect(response.body.session.messages[0].runtime).toBe('python-agent');
+    expect(response.body.session.messages[0].metadata.pipelineTrace.toolPlan.primaryTool).toBe('inventory_check');
+  });
+
   test('rejects streaming chat for a missing or cross-tenant session before writing messages', async () => {
     mockPrisma.aiSandboxSession.findFirst.mockResolvedValue(null);
 

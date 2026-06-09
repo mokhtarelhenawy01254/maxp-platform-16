@@ -653,24 +653,6 @@ const GlobalConversionHost: React.FC = () => {
     showExitPopup,
   ]);
 
-  if (!shouldRenderShellMount) {
-    return null;
-  }
-
-  const handleCopyCoupon = async () => {
-    if (!exitIntentCouponCode) {
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(exitIntentCouponCode);
-      setCouponCopied(true);
-      window.setTimeout(() => setCouponCopied(false), 2200);
-    } catch {
-      setCouponCopied(false);
-    }
-  };
-
   const renderFreeShippingBar = useMemo(() =>
     freeShippingBarEnabled && thresholdAmount > 0 ? (
       <div
@@ -816,6 +798,24 @@ const GlobalConversionHost: React.FC = () => {
       currency,
     ],
   );
+
+  if (!shouldRenderShellMount) {
+    return null;
+  }
+
+  const handleCopyCoupon = async () => {
+    if (!exitIntentCouponCode) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(exitIntentCouponCode);
+      setCouponCopied(true);
+      window.setTimeout(() => setCouponCopied(false), 2200);
+    } catch {
+      setCouponCopied(false);
+    }
+  };
 
   return (
     <>

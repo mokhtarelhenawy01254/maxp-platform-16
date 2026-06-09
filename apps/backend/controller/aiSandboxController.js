@@ -115,6 +115,11 @@ function parseJsonObject(value, fallback = {}) {
   }
 }
 
+function parseSandboxMessageMetadata(value) {
+  const metadata = parseJsonObject(value, null);
+  return metadata && typeof metadata === 'object' && !Array.isArray(metadata) ? metadata : null;
+}
+
 function normalizeStringList(value) {
   if (!value) return [];
   if (Array.isArray(value)) {
@@ -545,6 +550,7 @@ async function runSandboxChatTurn({
   const sessionTokens = normalizeSandboxUsage(taskResult);
   const sessionCost = calculateCost(modelSelection.model, sessionTokens.input, sessionTokens.output);
   const latencyMs = Date.now() - turnStartTime;
+  const runtime = taskResult?.result?.runtime || 'unknown';
 
   await aiSandboxService.addMessage(resolvedSessionId, companyId, {
     role: 'user',
@@ -571,10 +577,8 @@ async function runSandboxChatTurn({
     cost: sessionCost,
     toolCalls,
     toolCallCount: toolCalls.length,
-    metadata: pipelineTrace ? { pipelineTrace } : null,
+    metadata: pipelineTrace ? { pipelineTrace, runtime } : (runtime ? { runtime } : null),
   });
-
-  const runtime = taskResult?.result?.runtime || 'unknown';
 
   return {
     reply,
@@ -974,20 +978,25 @@ async function getSession(req, res) {
     if (!session) {
       return sendCodeError(res, 404, 'SESSION_NOT_FOUND');
     }
-    const messages = session.messages.map(m => ({
-      id: m.id,
-      role: m.role,
-      content: m.content,
-      model: m.model,
-      provider: m.provider,
-      keyId: m.keyId,
-      keyName: m.keyName,
-      tokens: { input: m.tokensInput, output: m.tokensOutput, total: m.tokensTotal },
-      latencyMs: m.latencyMs,
-      cost: m.cost,
-      toolCalls: m.toolCalls ? JSON.parse(m.toolCalls) : [],
-      timestamp: m.createdAt,
-    }));
+    const messages = session.messages.map((m) => {
+      const metadata = parseSandboxMessageMetadata(m.metadata);
+      return {
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        model: m.model,
+        provider: m.provider,
+        keyId: m.keyId,
+        keyName: m.keyName,
+        tokens: { input: m.tokensInput, output: m.tokensOutput, total: m.tokensTotal },
+        latencyMs: m.latencyMs,
+        cost: m.cost,
+        toolCalls: m.toolCalls ? JSON.parse(m.toolCalls) : [],
+        timestamp: m.createdAt,
+        metadata,
+        runtime: metadata?.runtime || (metadata?.pipelineTrace ? 'python-agent' : undefined),
+      };
+    });
     return res.json({
       success: true,
       session: {
@@ -1244,6 +1253,8 @@ async function streamChatMessage(req, res) {
       metadata: safeAttachments.length ? { attachments: safeAttachments } : null,
     });
 
+    const streamRuntime = taskResult?.result?.runtime || 'unknown';
+
     await aiSandboxService.addMessage(resolvedSessionId, companyId, {
       role: 'assistant',
       content: finalReply,
@@ -1257,10 +1268,8 @@ async function streamChatMessage(req, res) {
       cost: 0,
       toolCalls,
       toolCallCount: toolCalls.length,
-      metadata: pipelineTrace ? { pipelineTrace } : null,
+      metadata: pipelineTrace ? { pipelineTrace, runtime: streamRuntime } : (streamRuntime ? { runtime: streamRuntime } : null),
     });
-
-    const streamRuntime = taskResult?.result?.runtime || 'unknown';
 
     res.write(`data: ${JSON.stringify({
       done: true,

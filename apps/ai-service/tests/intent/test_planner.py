@@ -77,7 +77,7 @@ async def test_classifier_missing_slots_disables_tool_execution(monkeypatch):
 
     assert contract.decision == "ask_followup"
     assert contract.requiresTool is False
-    assert contract.missingSlots == ["customerPhone", "productPrice"]
+    assert set(contract.missingSlots) == {"customerPhone", "productPrice"}
     assert contract.reason == "NEEDS_CLARIFICATION"
     assert plan.requiresTool is False
     assert plan.blockedReason == "NEEDS_CLARIFICATION"
@@ -111,6 +111,7 @@ async def test_classifier_optional_read_slots_do_not_disable_inventory_tool(monk
     assert contract.route["primaryTool"] == "inventory_check"
     assert plan.requiresTool is True
     assert plan.blockedReason is None
+    assert plan.confidence == 0.88
     assert plan.classification["classifierMissingSlots"] == ["productSize", "quantity"]
 
 

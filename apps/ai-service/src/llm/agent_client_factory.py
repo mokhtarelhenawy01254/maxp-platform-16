@@ -154,7 +154,12 @@ async def build_provider_client_async(
     if provider is None:
         raise ValueError(f"Provider '{provider_type}' is not configured")
     logger.info("agent_client.provider_client", provider=provider_type, model=resolved_model)
-    return ProviderAdapter(provider, tools=tools, system_prompt=system_prompt)
+    return ProviderAdapter(
+        provider,
+        tools=tools,
+        system_prompt=system_prompt,
+        allow_provider_failover=False,
+    )
 
 
 __all__ = [

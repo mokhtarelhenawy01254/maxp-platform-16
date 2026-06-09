@@ -8,5 +8,19 @@
     "tools": "الأدوات",
     "skills": "المهارات",
     "scheduler": "الجدولة"
+  },
+  "sandbox": {
+    "trace": {
+      "title": "مسار التشغيل",
+      "pythonRuntime": "Python",
+      "nodeRuntime": "Node",
+      "unknownRuntime": "غير معروف",
+      "model": "النموذج",
+      "intent": "النية",
+      "plannedTool": "الأداة المخططة",
+      "executedTools": "الأدوات المنفذة",
+      "none": "لا يوجد",
+      "notAvailable": "غير متاح"
+    }
   }
 }

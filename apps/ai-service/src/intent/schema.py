@@ -409,6 +409,7 @@ class SlotValues:
     quantity: int | None = None
     customerName: str | None = None
     customerPhone: str | None = None
+    governorate: str | None = None
     city: str | None = None
     address: str | None = None
     orderNumber: str | None = None
@@ -485,6 +486,9 @@ class ToolPlan:
     reason: str = ""
     goalRunId: str | None = None
     selectionScore: float | None = None
+    confidence: float = 0.0
+    confidenceLevel: str = ""
+    clarificationQuestion: str | None = None
     classification: dict[str, Any] | None = None
     alternatives: list[dict[str, Any]] = field(default_factory=list)
     missingSlots: list[str] = field(default_factory=list)
@@ -596,6 +600,7 @@ INTENT_CLASSIFICATION_SCHEMA = {
                 "quantity",
                 "customerName",
                 "customerPhone",
+                "governorate",
                 "city",
                 "address",
                 "orderNumber",
@@ -621,6 +626,7 @@ INTENT_CLASSIFICATION_SCHEMA = {
                 "quantity": {"type": ["number", "null"]},
                 "customerName": {"type": ["string", "null"]},
                 "customerPhone": {"type": ["string", "null"]},
+                "governorate": {"type": ["string", "null"]},
                 "city": {"type": ["string", "null"]},
                 "address": {"type": ["string", "null"]},
                 "orderNumber": {"type": ["string", "null"]},

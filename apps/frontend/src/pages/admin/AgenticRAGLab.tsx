@@ -566,11 +566,11 @@ const AgenticRAGLab: React.FC = () => {
         headers: getHeaders(),
       });
       const data = await response.json();
-      if (response.ok && data.success && data.data) {
-        setProducts(data.data.items || []);
-        setProductsStats(data.data.stats || null);
-        setProductsOffset(data.data.offset || 0);
-        setProductsTotal(data.data.total || 0);
+      if (response.ok && data.success) {
+        setProducts(data.items || []);
+        setProductsStats(data.stats || null);
+        setProductsOffset(data.offset || 0);
+        setProductsTotal(data.total || 0);
       }
     } finally {
       setProductsLoading(false);

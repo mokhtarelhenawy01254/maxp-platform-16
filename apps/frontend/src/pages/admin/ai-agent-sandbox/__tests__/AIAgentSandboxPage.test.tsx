@@ -72,6 +72,10 @@ describe("AIAgentSandboxPage", () => {
           isActive: true,
         },
       ],
+      toolsMetadata: [
+        { name: "agent.spawn", description: "Spawn agent", sideEffect: "write" },
+        { name: "product.search", description: "Search products", sideEffect: "read" },
+      ],
       quickScenarios: [],
       costBreakdown: [],
       selectedAgent,
@@ -84,6 +88,7 @@ describe("AIAgentSandboxPage", () => {
       deleteSession: vi.fn(),
       updateSessionTitle: vi.fn(),
       sendMessage: vi.fn(),
+      evaluateLastResponse: vi.fn(),
       runQuickScenario: vi.fn(),
       exportSession: vi.fn(),
       formatCost: (value: number) => `$${value.toFixed(4)}`,
@@ -144,5 +149,55 @@ describe("AIAgentSandboxPage", () => {
 
     expect(screen.getAllByText(/Inactive Central Key/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Inactive/).length).toBeGreaterThan(0);
+  });
+
+  test("shows Python run trace summary for the latest assistant message", () => {
+    (useAgentSandbox as vi.Mock).mockReturnValueOnce({
+      ...(useAgentSandbox as vi.Mock).getMockImplementation()?.(),
+      activeSession: {
+        id: "session_trace",
+        title: "Trace session",
+        agentId: selectedAgent.id,
+        model: "gemini-2.5-flash",
+        provider: "GOOGLE",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messageCount: 1,
+        toolCallCount: 1,
+        totalCost: 0,
+        totalTokens: 0,
+        avgLatency: 0,
+        messages: [{
+          id: "assistant_trace",
+          role: "assistant",
+          content: "Tool-backed reply",
+          timestamp: new Date().toISOString(),
+          runtime: "python-agent",
+          model: "gemini-2.5-flash",
+          provider: "GOOGLE",
+          toolCalls: [{ id: "tool_1", name: "inventory_check", input: {}, status: "success", timestamp: new Date().toISOString() }],
+          metadata: {
+            intentClassification: {
+              intent: "inventory.check",
+              confidence: 0.91,
+              confidenceLevel: "high",
+              ambiguous: false,
+            },
+            toolPlan: {
+              intent: "inventory.check",
+              primaryTool: "inventory_check",
+              reason: "classified by model",
+            },
+          },
+        }],
+      },
+    });
+
+    render(<AIAgentSandboxPage />);
+
+    expect(screen.getByText("Run trace")).toBeInTheDocument();
+    expect(screen.getByText("Python")).toBeInTheDocument();
+    expect(screen.getByText(/inventory\.check/)).toBeInTheDocument();
+    expect(screen.getAllByText(/inventory_check/).length).toBeGreaterThan(0);
   });
 });

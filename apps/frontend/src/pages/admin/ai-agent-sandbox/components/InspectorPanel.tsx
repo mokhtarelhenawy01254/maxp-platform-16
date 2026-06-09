@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -9,9 +10,11 @@ import {
   ChevronDown,
   ChevronUp,
   AlertTriangle,
-  Info
+  Route,
+  Cpu
 } from "lucide-react";
 import type {
+  SandboxTraceSummary,
   ToolDefinition,
   ActivityLogEntry,
 } from "../types/sandbox.types";
@@ -19,6 +22,7 @@ import type {
 interface InspectorPanelProps {
   tools: ToolDefinition[];
   activityLog: ActivityLogEntry[];
+  traceSummary?: SandboxTraceSummary | null;
   onClearLog: () => void;
   collapsed?: boolean;
 }
@@ -26,9 +30,11 @@ interface InspectorPanelProps {
 export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   tools,
   activityLog,
+  traceSummary,
   onClearLog,
   collapsed = false,
 }) => {
+  const { t } = useTranslation();
   const [tab, setTab] = useState(0); // 0 = Tools, 1 = Log
   const [logFilter, setLogFilter] = useState<string>("all");
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
@@ -41,6 +47,18 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     if (logFilter === "errors") return entry.type === "error";
     return entry.type === logFilter;
   });
+  const pipelineTrace = traceSummary?.pipelineTrace || null;
+  const intent = pipelineTrace?.intentClassification?.intent || pipelineTrace?.toolPlan?.intent || null;
+  const plannedTool = pipelineTrace?.toolPlan?.primaryTool || null;
+  const executedTools = pipelineTrace?.toolExecutions?.map((tool) => tool.name).filter(Boolean) || [];
+  const messageTools = traceSummary?.toolCalls?.map((tool) => tool.name).filter(Boolean) || [];
+  const toolNames = executedTools.length > 0 ? executedTools : messageTools;
+  const confidence = pipelineTrace?.intentClassification?.confidence;
+  const runtimeLabel = traceSummary?.runtime === "local-nodejs"
+    ? t("aiHub.sandbox.trace.nodeRuntime")
+    : traceSummary?.runtime
+    ? t("aiHub.sandbox.trace.pythonRuntime")
+    : t("aiHub.sandbox.trace.unknownRuntime");
 
   return (
     <div
@@ -133,6 +151,57 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
         {/* Tab 1: Activity Logs */}
         {tab === 1 && (
           <div className="space-y-3">
+            {traceSummary && (
+              <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/40 p-3 text-xs dark:border-emerald-900/50 dark:bg-emerald-950/10">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <Cpu className="size-3.5 flex-shrink-0 text-emerald-650 dark:text-emerald-400" />
+                    <span className="truncate font-bold text-slate-800 dark:text-slate-150">
+                      {t("aiHub.sandbox.trace.title")}
+                    </span>
+                  </div>
+                  <Badge variant="success" className="shrink-0 text-[9px] py-0 px-1.5">
+                    {runtimeLabel}
+                  </Badge>
+                </div>
+
+                <div className="mt-2 space-y-1.5 text-[10px] text-slate-600 dark:text-slate-350">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-semibold text-slate-450">{t("aiHub.sandbox.trace.model")}</span>
+                    <span className="min-w-0 break-all text-right font-mono text-slate-750 dark:text-slate-200">
+                      {[traceSummary.provider, traceSummary.model].filter(Boolean).join(" / ") || t("aiHub.sandbox.trace.notAvailable")}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-semibold text-slate-450">{t("aiHub.sandbox.trace.intent")}</span>
+                    <span className="min-w-0 break-all text-right font-mono text-slate-750 dark:text-slate-200">
+                      {intent || t("aiHub.sandbox.trace.notAvailable")}
+                      {typeof confidence === "number" ? ` (${Math.round(confidence * 100)}%)` : ""}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-semibold text-slate-450">{t("aiHub.sandbox.trace.plannedTool")}</span>
+                    <span className="min-w-0 break-all text-right font-mono text-slate-750 dark:text-slate-200">
+                      {plannedTool || t("aiHub.sandbox.trace.notAvailable")}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-semibold text-slate-450">{t("aiHub.sandbox.trace.executedTools")}</span>
+                    <span className="min-w-0 break-all text-right font-mono text-slate-750 dark:text-slate-200">
+                      {toolNames.length > 0 ? toolNames.join(", ") : t("aiHub.sandbox.trace.none")}
+                    </span>
+                  </div>
+                </div>
+
+                {pipelineTrace?.toolPlan?.reason && (
+                  <div className="mt-2 rounded border border-emerald-200/70 bg-white/60 p-2 text-[10px] leading-relaxed text-slate-600 dark:border-emerald-900/50 dark:bg-slate-950/30 dark:text-slate-300">
+                    <Route className="mr-1 inline size-3 text-emerald-650 dark:text-emerald-400" />
+                    {pipelineTrace.toolPlan.reason}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
               <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">
                 Activity ({filteredLog.length})

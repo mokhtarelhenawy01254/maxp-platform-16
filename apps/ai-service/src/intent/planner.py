@@ -168,6 +168,7 @@ def build_intent_contract(
         requiredSlots=policy.get("requiredSlots", []),
         missingSlots=missing_slots,
         slots=slots,
+        classification=dict(policy_plan.classification or {}),
         guardrails=policy.get("guardrails", []),
         reason=policy_plan.reason or "",
     )
@@ -302,6 +303,7 @@ async def build_intent_contract_async(
         requiredSlots=policy.get("requiredSlots", []),
         missingSlots=missing_slots,
         slots=slots,
+        classification=dict(policy_plan.classification or {}),
         guardrails=policy.get("guardrails", []),
         reason=policy_plan.reason or "",
     )
@@ -327,7 +329,11 @@ def to_tool_plan(contract: IntentContract, available_tools: list[str]) -> ToolPl
         reason=contract.reason,
         missingSlots=contract.missingSlots,
         slots=dict(contract.slots or {}),
+        confidence=contract.confidence,
+        confidenceLevel=str((contract.classification or {}).get("confidenceLevel") or ""),
+        clarificationQuestion=(contract.classification or {}).get("clarificationQuestion"),
         classification={
+            **dict(contract.classification or {}),
             "slots": dict(contract.slots or {}),
             "classifierUnavailable": contract.reason == "CLASSIFIER_UNAVAILABLE",
             "toolExecutionDisabled": blocked_reason is not None and blocked_reason != "CLASSIFIER_UNAVAILABLE",

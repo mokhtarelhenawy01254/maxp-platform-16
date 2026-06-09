@@ -37,6 +37,7 @@ export interface SessionDetail extends SessionSummary {
     toolCalls: ToolCall[];
     timestamp: string;
     metadata?: any;
+    runtime?: string;
   }>;
 }
 

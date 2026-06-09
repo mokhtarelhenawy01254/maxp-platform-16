@@ -8,6 +8,7 @@ import httpx
 from agent_framework import FunctionTool
 from pydantic import BaseModel
 
+from src.llm.agent_client_factory import build_provider_client_async
 from src.llm.providers.adapter import ProviderAdapter
 from src.llm.providers.base import BaseProvider, ProviderResponse
 
@@ -287,3 +288,52 @@ async def test_adapter_skips_current_provider_when_provider_quota_is_exhausted(m
     assert response.text == "model generated memory reply"
     record_failure.assert_awaited_once_with("groq-key", "QUOTA", retry_after_ms=None)
     assert factory.failover_calls[0]["skip_provider_types"] == {"GROQ"}
+
+
+async def test_adapter_can_disable_cross_provider_failover_for_explicit_provider(monkeypatch) -> None:
+    backup = BackupProvider()
+    factory = FakeProviderFactory(backup)
+    record_failure = AsyncMock()
+    record_success = AsyncMock()
+
+    monkeypatch.setattr("src.llm.providers.adapter.get_provider_factory", lambda: factory)
+    monkeypatch.setattr("src.llm.providers.adapter.model_manager.record_failure", record_failure)
+    monkeypatch.setattr("src.llm.providers.adapter.model_manager.record_success", record_success)
+
+    try:
+        await ProviderAdapter(
+            ProviderQuotaLimitedProvider(),
+            company_id="comp1",
+            provider_type="GROQ",
+            key_id="groq-key",
+            max_failover_attempts=2,
+            allow_provider_failover=False,
+        ).get_response([{"role": "user", "content": "عندك جزمة سودا متاحة؟"}])
+    except httpx.HTTPStatusError as exc:
+        assert exc.response.status_code == 429
+    else:
+        raise AssertionError("Expected explicit provider errors to surface without failover")
+
+    record_failure.assert_awaited_once_with("groq-key", "QUOTA", retry_after_ms=None)
+    record_success.assert_not_awaited()
+    assert factory.failover_calls == []
+    assert backup.calls == []
+
+
+async def test_explicit_provider_client_disables_cross_provider_failover(monkeypatch) -> None:
+    provider = RecordingProvider()
+    provider.config = {
+        "provider_type": "GROQ",
+        "key_id": "groq-key",
+        "company_id": "comp1",
+    }
+    factory = FakeProviderFactory(backup=BackupProvider())
+    factory.get_provider = AsyncMock(return_value=provider)
+
+    monkeypatch.setattr("src.llm.agent_client_factory.get_provider_factory", lambda: factory)
+
+    client = await build_provider_client_async("GROQ", model="test-model", company_id="comp1")
+
+    assert isinstance(client, ProviderAdapter)
+    assert client._allow_provider_failover is False
+    factory.get_provider.assert_awaited_once_with("GROQ", "test-model", "comp1")

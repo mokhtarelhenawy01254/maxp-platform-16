@@ -122,6 +122,13 @@ function formatStreamError(error?: string, reason?: string): string {
   return detail ? `${code}: ${detail}` : code;
 }
 
+function normalizePipelineTrace(metadata: any) {
+  if (!metadata || typeof metadata !== "object") return undefined;
+  return metadata.pipelineTrace && typeof metadata.pipelineTrace === "object"
+    ? metadata.pipelineTrace
+    : metadata;
+}
+
 function reconstructActivityLogFromMessages(messages: ChatMessage[]): ActivityLogEntry[] {
   const logs: ActivityLogEntry[] = [];
   for (const msg of messages) {
@@ -232,7 +239,8 @@ function mapSessionFromDetail(detail: SessionDetail): Session {
       tokens: m.tokens,
       latencyMs: m.latencyMs,
       cost: m.cost,
-      metadata: m.metadata,
+      metadata: normalizePipelineTrace(m.metadata),
+      runtime: m.runtime || m.metadata?.runtime,
     })),
   };
 }

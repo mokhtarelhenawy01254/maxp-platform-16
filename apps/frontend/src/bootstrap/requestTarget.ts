@@ -33,7 +33,18 @@ export const shouldBootstrapStorefront = (
   const pathname = normalizePathname(pathnameInput);
   const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
 
-  if (pathname === "/store" || pathname.startsWith("/store/")) {
+  if (
+    pathname === "/store" ||
+    pathname.startsWith("/store/") ||
+    pathname.startsWith("/product/") ||
+    pathname.startsWith("/products/") ||
+    pathname.startsWith("/shop/") ||
+    pathname.startsWith("/cart") ||
+    pathname.startsWith("/checkout") ||
+    pathname.startsWith("/thank-you") ||
+    pathname.startsWith("/collections/") ||
+    pathname.startsWith("/pages/")
+  ) {
     return true;
   }
 

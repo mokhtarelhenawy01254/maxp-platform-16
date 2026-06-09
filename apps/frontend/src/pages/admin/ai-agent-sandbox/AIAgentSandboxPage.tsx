@@ -19,7 +19,7 @@ import { InspectorPanel } from "./components/InspectorPanel";
 import { HeaderBar } from "./components/HeaderBar";
 import { StatusBar } from "./components/StatusBar";
 import { Button } from "@/components/ui/button";
-import type { ToolDefinition } from "./types/sandbox.types";
+import type { SandboxTraceSummary, ToolDefinition } from "./types/sandbox.types";
 
 const AIAgentSandboxPage: React.FC = () => {
   const {
@@ -98,6 +98,22 @@ const AIAgentSandboxPage: React.FC = () => {
       };
     });
   }, [selectedAgent, toolsMetadata]);
+
+  const latestTraceSummary: SandboxTraceSummary | null = useMemo(() => {
+    const assistantMessage = [...(activeSession?.messages || [])]
+      .reverse()
+      .find((message) => message.role === "assistant");
+    if (!assistantMessage) return null;
+    return {
+      runtime: assistantMessage.runtime,
+      model: assistantMessage.model,
+      provider: assistantMessage.provider,
+      keyName: assistantMessage.keyName,
+      keyId: assistantMessage.keyId,
+      toolCalls: assistantMessage.toolCalls,
+      pipelineTrace: assistantMessage.metadata || null,
+    };
+  }, [activeSession]);
 
   const handleExport = async (format: "json" | "markdown") => {
     try {
@@ -218,6 +234,7 @@ const AIAgentSandboxPage: React.FC = () => {
            <InspectorPanel
              tools={agentTools}
              activityLog={activityLog}
+             traceSummary={latestTraceSummary}
              onClearLog={clearActivityLog}
              collapsed={!inspectorOpen}
            />

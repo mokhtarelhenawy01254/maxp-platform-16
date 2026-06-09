@@ -219,6 +219,11 @@ class ModelManager:
         if (now - self._config_version_last_checked) < self.CONFIG_VERSION_CHECK_INTERVAL_MS:
             return
 
+        if session.async_session is None:
+            logger.debug("config_version_check_skipped_db_uninitialized")
+            self._config_version_last_checked = now
+            return
+
         try:
             async with session.async_session() as db_session:
                 result = await db_session.execute(
@@ -243,6 +248,10 @@ class ModelManager:
             and (now - self._global_config_last_loaded) < self.GLOBAL_CONFIG_TTL_MS
         ):
             return self._global_config_cache
+
+        if session.async_session is None:
+            logger.debug("global_config_skipped_db_uninitialized")
+            return None
 
         try:
             async with session.async_session() as db_session:
@@ -506,6 +515,12 @@ class ModelManager:
 
         all_keys: list[dict] = []
         active_provider = provider_priority[0] if provider_priority else "GOOGLE"
+
+        if session.async_session is None:
+            raise ModelManagerError(
+                "DB_UNINITIALIZED",
+                "Database session factory is not initialized",
+            )
 
         async with session.async_session() as db:
             for provider_type in provider_priority:

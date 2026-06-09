@@ -43,6 +43,7 @@ class ProviderAdapter:
         provider_type: str | None = None,
         key_id: str | None = None,
         max_failover_attempts: int = 4,
+        allow_provider_failover: bool = True,
     ) -> None:
         self._provider = provider
         self._tools = tools
@@ -51,6 +52,7 @@ class ProviderAdapter:
         self._provider_type = provider_type or _provider_config(provider, "provider_type")
         self._key_id = key_id or _provider_config(provider, "key_id")
         self._max_failover_attempts = max(1, max_failover_attempts)
+        self._allow_provider_failover = allow_provider_failover
         self._provider_tool_names: dict[str, str] = {}
         self._native_tool_names: dict[str, str] = {}
 
@@ -67,6 +69,7 @@ class ProviderAdapter:
             provider_type=self._provider_type,
             key_id=self._key_id,
             max_failover_attempts=self._max_failover_attempts,
+            allow_provider_failover=self._allow_provider_failover,
         )
 
     async def get_response(
@@ -168,6 +171,8 @@ class ProviderAdapter:
             except Exception as exc:
                 last_exc = exc
                 await self._record_failure(provider, exc)
+                if not self._allow_provider_failover:
+                    raise
                 if not _is_failover_error(exc) or attempt >= self._max_failover_attempts - 1:
                     raise
 

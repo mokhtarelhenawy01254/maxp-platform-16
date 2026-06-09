@@ -134,6 +134,12 @@ pytest                    # All tests
 pytest -v                 # Verbose
 pytest tests/api/         # API tests only
 pytest tests/security/    # Security/tenant isolation tests
+pytest tests/evals/test_intent_golden_cases.py  # Intent/tool routing golden cases
+pytest tests/evals/test_tool_execution_evals.py tests/evals/test_tool_execution_eval_report.py  # Tool execution + structured-result evals
+RUN_LIVE_INTENT_EVALS=1 pytest tests/evals/test_live_intent_classifier.py  # Optional live LLM classifier evals
+RUN_LIVE_INTENT_EVALS=1 LIVE_INTENT_EVAL_PROVIDER=GROQ LIVE_INTENT_EVAL_MODEL=openai/gpt-oss-120b pytest tests/evals/test_live_intent_classifier.py
+RUN_LIVE_INTENT_EVALS=1 LIVE_INTENT_EVAL_CASE_IDS=inventory_color_read_executes,product_browse_executes_search pytest tests/evals/test_live_intent_classifier.py
+RUN_LIVE_INTENT_EVALS=1 LIVE_INTENT_EVAL_MAX_CASES=3 LIVE_INTENT_EVAL_DELAY_SECONDS=2 pytest tests/evals/test_live_intent_classifier.py
 ```
 
 ## Observability

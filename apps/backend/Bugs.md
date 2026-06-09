@@ -61,6 +61,13 @@
 - **Affected Files**:
   - `apps/backend/ecosystem.config.js`
 
+## [2026-06-08] Storefront — Wildcard /product/ Redirect Breaking Product Details Pages on Subdomains
+- **Bug/Issue**: Clicking any product on subdomain storefronts (e.g., `https://swan.maxp.online/shop`) redirected users to the storefront homepage instead of opening the product details page.
+- **Cause**: Nginx configuration snippet `shortlink-preview-flora.conf` contained a wildcard redirect `location ^~ /product/ { return 302 /; }` which intercepted all product detail page URLs (e.g., `/product/kotshy-soan`) on company subdomains and redirected them to the root URL `/`.
+- **Fix**: Removed the wildcard `location ^~ /product/` redirect block from `shortlink-preview-flora.conf`, leaving only the exact shortlink match location for `/product/nike-kotchii-offer`.
+- **Affected Files**:
+  - `nginx_configs/snippets/shortlink-preview-flora.conf`
+
 ## [2026-06-08] AI Service — Missing Embedding Column and Disabled Llama Model Config
 - **Bug/Issue**:
   1. The Python `ai-service` RAG semantic search crashed due to missing `embedding` column on the `ai.agentic_memory_fact` table in Windows local dev environments where the pgvector extension is not pre-installed.

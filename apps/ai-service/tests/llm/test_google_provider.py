@@ -6,7 +6,16 @@ import pytest
 import respx
 from httpx import Response
 
+from src.intent.schema import INTENT_CLASSIFICATION_SCHEMA
 from src.llm.providers.google_provider import GoogleProvider
+
+
+def _contains_key(value, target_key: str) -> bool:
+    if isinstance(value, dict):
+        return target_key in value or any(_contains_key(item, target_key) for item in value.values())
+    if isinstance(value, list):
+        return any(_contains_key(item, target_key) for item in value)
+    return False
 
 
 def test_google_provider_maps_data_url_image_parts_to_inline_data() -> None:
@@ -60,3 +69,24 @@ async def test_google_provider_sends_native_response_schema_generation_config() 
     body = json.loads(route.calls.last.request.content)
     assert body["generationConfig"]["responseMimeType"] == "application/json"
     assert body["generationConfig"]["responseSchema"] == schema
+
+
+def test_google_provider_converts_json_schema_to_gemini_response_schema() -> None:
+    provider = GoogleProvider("test-key", "gemini-2.5-flash")
+
+    config = provider._generation_config({"output_schema": INTENT_CLASSIFICATION_SCHEMA})
+
+    response_schema = config["responseSchema"]
+    assert response_schema["type"] == "object"
+    assert not _contains_key(response_schema, "additionalProperties")
+    assert not _contains_key(response_schema, "const")
+    assert not _contains_key(response_schema, "minimum")
+    assert not _contains_key(response_schema, "maximum")
+    assert response_schema["properties"]["clarificationQuestion"] == {
+        "type": "string",
+        "nullable": True,
+    }
+    assert response_schema["properties"]["slots"]["properties"]["productName"] == {
+        "type": "string",
+        "nullable": True,
+    }

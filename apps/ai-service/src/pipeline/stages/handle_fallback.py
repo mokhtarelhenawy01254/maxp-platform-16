@@ -119,7 +119,7 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
                         "role": "system",
                         "content": (
                             "You write customer-facing chat replies for the selected MaxP agent. "
-                            "Return ONLY the final plain text reply. "
+                            "Return plain text only: ONLY the final plain text reply. "
                             "Do NOT include any internal reasoning, thought process, options, or analysis (no '* Option 1', no '* Goal', etc.). "
                             "Do not emit JSON, function-call syntax, or tool-call syntax. "
                             "Do not invent product, order, shipping, customer, price, stock, or action-completion facts."
