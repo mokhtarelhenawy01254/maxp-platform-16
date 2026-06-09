@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { apiClient } from "../../../services/apiClient";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { toast } from "react-hot-toast";
@@ -68,6 +69,7 @@ interface Statistics {
 
 const RewardsList: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -661,8 +663,8 @@ const RewardsList: React.FC = () => {
                               onClick={() => handleDeleteClick(record)}
                               disabled={deleting}
                               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 transition-colors hover:border-red-300 hover:bg-red-100 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400"
-                              title="حذف المكافأة"
-                              aria-label={`حذف المكافأة ${record.rewardType?.nameAr || record.rewardName}`}
+                              title={t("rewards.delete.tooltip")}
+                              aria-label={`${t("rewards.delete.tooltip")} ${record.rewardType?.nameAr || record.rewardName}`}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
