@@ -1,3 +1,17 @@
+## [2026-06-09] AI Service — Vector/Semantic Product Search [DONE]
+- **Objective**: Enable natural language and image-based product search (e.g. "winter boots", "كوتشي رياضي") without requiring exact product name matches.
+- **Accomplishments**:
+  - Created `ai.product_embeddings` table (migration 0012) with pgvector columns for text + image embeddings (768-dim, IVFFlat cosine index).
+  - Indexed all 57 products with text and image embeddings via `EpisodicMemoryService` (Gemini `gemini-embedding-2`).
+  - `vector_product_search.py` — standalone semantic search via pgvector `<=>` cosine operator; client-side cosine fallback.
+  - `registry.py` `product_search` now auto-falls back to vector search when text search returns 0 results (`searchType: "semantic"` in response).
+  - Fixed root cause of empty replies: `ensure_client()` now falls back to `gemini-2.5-flash` when the agent's preferred model (e.g. `deepseek-chat`) has no active API keys.
+- **Affected Files**:
+  - `apps/ai-service/src/tools/vector_product_search.py` (new)
+  - `apps/ai-service/migrations/versions/0012_product_embeddings.py` (new)
+  - `apps/ai-service/src/tools/registry.py`
+  - `apps/ai-service/src/agents/base.py`
+
 ## [2026-06-09] AI Sandbox Chat — Blank Product List & Classifier Fix [DONE]
 - **Objective**: Fix two linked issues causing the AI agent to respond with blank product names in the sandbox chat.
 - **Accomplishments**:

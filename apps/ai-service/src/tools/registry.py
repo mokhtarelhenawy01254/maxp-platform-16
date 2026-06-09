@@ -16,6 +16,7 @@ from src.tools import (
 )
 from src.tools.backend_client import get_backend_client
 from src.tools.names import canonical_tool_name
+from src.tools.vector_product_search import vector_product_search
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,7 @@ class ProductSearchInput(BaseModel):
     list_all: bool = Field(default=False, description="Set to true to return ALL available products without filtering. Use when the customer asks to see all products or the full catalog.")
     limit: int = Field(default=5, description="Maximum number of results. Default 5. Use 20+ when list_all is true.")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+    use_vector: bool = Field(default=True, description="Enable semantic/vector search fallback when text search returns no results")
 
 
 class ProductCreateInput(BaseModel):
@@ -90,7 +92,19 @@ async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
     products = result.get("products", [])
     if input_data.list_all:
         products = [{"name": p.get("name"), "price": p.get("price"), "sku": p.get("sku"), "status": p.get("status")} for p in products]
-    return {"results": products, "count": result.get("count", 0), "listAll": input_data.list_all}
+
+    # Vector fallback: if text search returned no results and we have a query, use semantic search
+    if not products and query and not input_data.list_all and input_data.use_vector:
+        vec_results = await vector_product_search(
+            company_id=input_data.company_id or "",
+            query=query,
+            limit=limit,
+        )
+        if vec_results:
+            products = vec_results
+            return {"results": products, "count": len(products), "listAll": False, "searchType": "semantic"}
+
+    return {"results": products, "count": result.get("count", 0), "listAll": input_data.list_all, "searchType": "text"}
 
 
 async def product_create(input_data: ProductCreateInput) -> dict[str, Any]:

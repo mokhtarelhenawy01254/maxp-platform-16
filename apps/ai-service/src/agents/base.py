@@ -340,6 +340,16 @@ class BaseAgent:
                 system_prompt=instructions,
                 company_id=self.company_id,
             )
+        # Fallback: if agent's preferred model has no keys, use gemini-2.5-flash
+        if self.client is None:
+            logger.warning("agent_client_unavailable_falling_back", agent_id=self.id, model=self.model)
+            self.client = await build_agent_client_async(
+                settings,
+                model="gemini-2.5-flash",
+                tools=tools,
+                system_prompt=instructions,
+                company_id=self.company_id,
+            )
         return self.client
 
     def _resolve_tools(self) -> list[FunctionTool]:
