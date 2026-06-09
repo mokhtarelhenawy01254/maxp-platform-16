@@ -1,3 +1,33 @@
+## [2026-06-09] Order Notification System — New Orders Bell & Dashboard Stats Widget
+- **Details**: Added a professional real-time order notification system that tracks unviewed (new) orders across the entire platform. The notification bell in the header displays a badge with the count of unviewed orders and a dropdown with direct navigation. A dashboard widget shows new, reviewed, and total order counts with attention-grabbing highlights.
+- **Architecture**:
+  - **Backend API** (`orders.js`): Added 3 new endpoints under `/api/v1/orders-v2/simple/`:
+    - `GET /new-count` — Returns the count of unviewed `Order` + `GuestOrder` records for the authenticated company (excludes TRASH/deleted statuses).
+    - `GET /new-list?limit=N` — Returns the N most recent unviewed orders and guest orders, combined and sorted by `createdAt` descending, with typenames (`ORDER`/`GUEST_ORDER`).
+    - `POST /mark-all-viewed` — Updates all unviewed orders (both `Order` and `GuestOrder`) for the company to `isViewed = true` in a single transaction using `updateMany`.
+    - All endpoints are protected by `requireAuth` and `requireCompanyAccess` middleware. Merchant users can access read-only endpoints via existing allowlist regex.
+  - **Dashboard Enhancement** (`companyDashboardController.js`): Added `newOrders` and `viewedOrders` to the `orderHealth` section of the dashboard overview response. These counts query the `Order` model filtered by `isViewed` with excluded statuses, running alongside existing dashboard queries in the Promise.all batch.
+  - **Frontend Notification Bell** (`OrderNotificationBell.tsx`): New React component rendering a bell icon in the header with:
+    - Red badge showing unviewed order count (capped at "99+").
+    - Click-to-open dropdown listing up to 10 new orders with order number, customer name, amount, and relative timestamp.
+    - Clicking an order marks it as viewed (`POST /orders-v2/simple/{id}/viewed`), removes it from the list, and navigates to the order.
+    - "Mark all as viewed" button and "View all orders" footer link.
+    - Real-time updates via Socket.IO listeners for `order:created` and `order:updated` events.
+    - Periodic polling every 30 seconds and page-visibility-triggered refresh.
+    - 5-second request timeout per API call with AbortController.
+  - **Dashboard Widget** (`OrderStatsWidget.tsx`): New card component displaying three interactive stat tiles — New Orders (red, with pulse animation and "Needs attention" badge), Reviewed Orders (green), and Total Orders (indigo). Each tile links to the orders page with appropriate filters. Uses `DashboardSurfaceCard` for consistent styling.
+  - **Type System** (`types.ts`): Added `newOrders` and `viewedOrders` optional fields to `DashboardOrderHealth` type.
+  - **i18n**: Added 5 translation keys (`orderStats.title/newOrders/viewedOrders/totalOrders/requiresAttention`) to both Arabic and English translation files under the `companyDashboard` namespace.
+- **Files**:
+  - `apps/backend/routes/orders.js`
+  - `apps/backend/controller/companyDashboardController.js`
+  - `apps/frontend/src/components/notifications/OrderNotificationBell.tsx`
+  - `apps/frontend/src/pages/dashboard/OrderStatsWidget.tsx`
+  - `apps/frontend/src/pages/dashboard/types.ts`
+  - `apps/frontend/src/components/Header.tsx`
+  - `apps/frontend/src/pages/CompanyDashboard.tsx`
+  - `apps/frontend/src/locales/{ar,en}/translation.json`
+
 ## [2026-06-08] AI Service — `product.search` Tool: `listAll` Support, Slot Routing, and LLM Context Trimming
 - **Details**: Upgraded the `product.search` tool pipeline to support two distinct search modes — full catalog browsing (`listAll=true`) and specific product lookup — and fixed the intent-to-params routing so the correct backend call is made in each case.
 - **Architecture**:
