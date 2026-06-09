@@ -8,7 +8,6 @@ import {
   canUserApproveReward,
   canUserDeleteReward,
   canUserEditReward,
-  getRewardDeleteBlockReason,
   mapRewardStatusFilterToApi,
   normalizeRewardStatus,
   type RewardUiStatus,
@@ -606,7 +605,6 @@ const RewardsList: React.FC = () => {
                     normalizedStatus === "PENDING" &&
                     canUserEditReward(user?.role);
                   const canDeleteThisReward = canUserDeleteReward(user?.role);
-                  const deleteBlockReason = getRewardDeleteBlockReason(record);
 
                   return (
                     <tr
@@ -661,9 +659,9 @@ const RewardsList: React.FC = () => {
                           {canDeleteThisReward && (
                             <button
                               onClick={() => handleDeleteClick(record)}
-                              disabled={deleting || Boolean(deleteBlockReason)}
+                              disabled={deleting}
                               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 transition-colors hover:border-red-300 hover:bg-red-100 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400"
-                              title={deleteBlockReason || "حذف المكافأة"}
+                              title="حذف المكافأة"
                               aria-label={`حذف المكافأة ${record.rewardType?.nameAr || record.rewardName}`}
                             >
                               <Trash2 className="h-4 w-4" />

@@ -73,7 +73,7 @@ describe("rewardManagementService.deleteRewardRecord", () => {
     });
   });
 
-  test("rejects deleting locked rewards", async () => {
+  test("deletes locked rewards (backward compatible)", async () => {
     mockPrisma.rewardRecord.findFirst.mockResolvedValue({
       id: "reward-1",
       companyId: "company-1",
@@ -81,41 +81,45 @@ describe("rewardManagementService.deleteRewardRecord", () => {
       isLocked: true,
       isIncludedInPayroll: false,
     });
+    mockPrisma.rewardRecord.delete.mockResolvedValue({ id: "reward-1" });
 
-    await expect(
-      rewardManagementService.deleteRewardRecord(
-        "company-1",
-        "reward-1",
-        "admin-1",
-      ),
-    ).rejects.toMatchObject({
-      name: "ValidationError",
-      message: "لا يمكن حذف مكافأة مقفلة",
+    const result = await rewardManagementService.deleteRewardRecord(
+      "company-1",
+      "reward-1",
+      "admin-1",
+    );
+
+    expect(mockPrisma.rewardRecord.delete).toHaveBeenCalledWith({
+      where: { id: "reward-1" },
     });
-
-    expect(mockPrisma.rewardRecord.delete).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      success: true,
+      message: "تم حذف المكافأة بنجاح",
+    });
   });
 
-  test("rejects deleting rewards that are already linked to payroll", async () => {
+  test("deletes payroll-linked rewards (backward compatible)", async () => {
     mockPrisma.rewardRecord.findFirst.mockResolvedValue({
       id: "reward-1",
       companyId: "company-1",
-      status: "PENDING",
-      isLocked: false,
+      status: "GIVEN",
+      isLocked: true,
       isIncludedInPayroll: true,
     });
+    mockPrisma.rewardRecord.delete.mockResolvedValue({ id: "reward-1" });
 
-    await expect(
-      rewardManagementService.deleteRewardRecord(
-        "company-1",
-        "reward-1",
-        "admin-1",
-      ),
-    ).rejects.toMatchObject({
-      name: "ValidationError",
-      message: "لا يمكن حذف مكافأة مدرجة في كشف الرواتب",
+    const result = await rewardManagementService.deleteRewardRecord(
+      "company-1",
+      "reward-1",
+      "admin-1",
+    );
+
+    expect(mockPrisma.rewardRecord.delete).toHaveBeenCalledWith({
+      where: { id: "reward-1" },
     });
-
-    expect(mockPrisma.rewardRecord.delete).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      success: true,
+      message: "تم حذف المكافأة بنجاح",
+    });
   });
 });

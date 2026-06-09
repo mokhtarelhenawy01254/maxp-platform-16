@@ -71,23 +71,11 @@ export const mapRewardStatusFilterToApi = (status?: string): string => {
   }
 };
 
-export const getRewardDeleteBlockReason = (
-  record: RewardRecordState,
-): string | null => {
-  if (record.isIncludedInPayroll) {
-    return "لا يمكن حذف مكافأة مدرجة في كشف الرواتب";
-  }
-
-  if (record.isLocked) {
-    return "لا يمكن حذف مكافأة مقفلة";
-  }
-
+export const getRewardDeleteBlockReason = (): string | null => {
   return null;
 };
 
-export const isRewardDeleteAvailable = (
-  record: RewardRecordState,
-): boolean => getRewardDeleteBlockReason(record) === null;
+export const isRewardDeleteAvailable = (): boolean => true;
 
 const normalizeRole = (role?: string | null): string =>
   (role || "").toUpperCase();

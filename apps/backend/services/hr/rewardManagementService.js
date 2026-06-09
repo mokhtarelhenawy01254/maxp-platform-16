@@ -545,15 +545,6 @@ class RewardManagementService {
                 throw new NotFoundError('المكافأة غير موجودة');
             }
 
-            // Check if can be deleted
-            if (existing.isLocked) {
-                throw new ValidationError('لا يمكن حذف مكافأة مقفلة');
-            }
-
-            if (existing.isIncludedInPayroll) {
-                throw new ValidationError('لا يمكن حذف مكافأة مدرجة في كشف الرواتب');
-            }
-
             await prisma.rewardRecord.delete({
                 where: { id: recordId }
             });

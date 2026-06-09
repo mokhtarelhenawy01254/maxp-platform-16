@@ -8,8 +8,6 @@ import {
   canUserApproveReward,
   canUserDeleteReward,
   canUserEditReward,
-  getRewardDeleteBlockReason,
-  isRewardDeleteAvailable,
   normalizeRewardStatus,
   type RewardUiStatus,
 } from "./rewardRecordUtils";
@@ -257,8 +255,6 @@ const RewardDetails: React.FC = () => {
   const canEditThisReward =
     normalizedStatus === "PENDING" && canUserEditReward(user?.role);
   const canDeleteThisReward = canUserDeleteReward(user?.role);
-  const deleteBlockReason = getRewardDeleteBlockReason(reward);
-  const isDeleteAvailable = isRewardDeleteAvailable(reward);
 
   return (
     <div className="p-6 space-y-6">
@@ -313,7 +309,7 @@ const RewardDetails: React.FC = () => {
               تعديل
             </button>
           )}
-          {canDeleteThisReward && isDeleteAvailable && (
+          {canDeleteThisReward && (
             <button
               onClick={() => setDeleteDialogOpen(true)}
               disabled={actionLoading}
@@ -323,15 +319,6 @@ const RewardDetails: React.FC = () => {
               <Trash2 className="w-5 h-5" />
               حذف
             </button>
-          )}
-          {canDeleteThisReward && !isDeleteAvailable && (
-            <div
-              title={deleteBlockReason || "الحذف غير متاح"}
-              className="inline-flex items-center gap-2 rounded-lg border border-red-100 bg-red-50 px-4 py-2 text-sm font-medium text-red-600"
-            >
-              <Ban className="h-4 w-4" />
-              الحذف غير متاح
-            </div>
           )}
         </div>
       </div>
@@ -344,9 +331,6 @@ const RewardDetails: React.FC = () => {
               حالة المكافأة
             </h2>
             {getStatusBadge(normalizedStatus)}
-            {deleteBlockReason && (
-              <p className="mt-3 text-sm text-red-600">{deleteBlockReason}</p>
-            )}
           </div>
           {reward.isIncludedInPayroll && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
