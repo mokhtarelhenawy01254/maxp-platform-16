@@ -16,6 +16,24 @@
   - `apps/ai-service/src/tools/vector_product_search.py` (new)
   - `apps/ai-service/migrations/versions/0012_product_embeddings.py` (new)
   - `apps/ai-service/src/tools/registry.py` — vector fallback in `product_search`
+## [2026-06-09] AI Service — Empty Reply After Vector Product Search (Agent Client Unavailable)
+- **Bug/Issue**: The AI agent returned `status: "error"` and empty reply even though vector/semantic product search ran successfully and returned products. The tool call appeared in the response but no LLM-generated reply was present.
+- **Cause**: Agent `agent_95qi23_24` had `model = 'deepseek-chat'` in the DB. `ensure_client()` tried to build an LLM client for `deepseek-chat`, found no API keys, and returned `None`. Both `execute_tools.py` and `handle_fallback.py` read `ctx.agent.client` for the reply LLM call — but since it was `None`, no reply was generated. `handle_fallback` set `ctx.early_return = {"status": "LLM_CLIENT_UNAVAILABLE"}` which mapped to `"status": "ERROR"` with a null error message in the API response.
+- **Fix**: Added a fallback in `ensure_client()`: if the agent's preferred model has no active API keys and returns `None`, fall back to `gemini-2.5-flash` (the same reliable model used by the classifier) so the pipeline always has a working LLM client.
+- **Affected Files**:
+  - `apps/ai-service/src/agents/base.py` — `ensure_client()` fallback to gemini-2.5-flash
+
+## [2026-06-09] AI Service — Vector/Semantic Product Search Feature
+- **Feature**: Added embedding-based product search as a fallback when text search returns 0 results. Queries like "winter boots", "كوتشي رياضي", or image uploads now find semantically similar products without requiring exact name matches.
+- **Implementation**:
+  1. Migration `0012_product_embeddings.py` creates `ai.product_embeddings` table with `vector(768)` columns and IVFFlat cosine indexes.
+  2. `index_products.py` (server-side script) indexes all 57 products with both text and image embeddings via `EpisodicMemoryService`.
+  3. `vector_product_search.py` performs cosine similarity search using pgvector's `<=>` operator; falls back to client-side cosine if pgvector fails.
+  4. `registry.py` `product_search` calls `vector_product_search()` when text search returns 0 results.
+- **Affected Files**:
+  - `apps/ai-service/src/tools/vector_product_search.py` (new)
+  - `apps/ai-service/migrations/versions/0012_product_embeddings.py` (new)
+  - `apps/ai-service/src/tools/registry.py` — vector fallback in `product_search`
 
 ## [2026-06-09] AI Sandbox Chat — Product List Items Stripped, Showing Blank Lines
 - **Bug/Issue**: The AI agent sandbox chat showed "المنتجات المتاحة حالياً عندنا هي:" followed by blank lines where product names should appear. The LLM response in the DB was correct (product names were there), but the UI rendered them as empty.
@@ -642,7 +660,8 @@
   1. Implemented checkOrderEditPermission in ackend/routes/orders.js.
   2. Applied the permission check universally across all status update endpoints (PATCH /:orderNumber/status, POST /:orderNumber/confirm, POST /:orderNumber/cancel, and PUT /simple/:orderNumber).
   3. Replicated this exact check inside the main updateOrder method in ackend/controller/orderController.js.
-  4. Now, if a user has the EMPLOYEE or MODERATOR role, the system mandates that their eq.user.id matches the createdBy field on the existing order. Otherwise, it throws a 403 Forbidden with a localized Arabic error message.
+  4. Now, if a user has the EMPLOYEE or MODERATOR role, the system mandates that their 
+eq.user.id matches the createdBy field on the existing order. Otherwise, it throws a 403 Forbidden with a localized Arabic error message.
 - **Affected Files**:
   - \ackend/controller/orderController.js\
   - \ackend/routes/orders.js\

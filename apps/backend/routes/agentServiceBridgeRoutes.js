@@ -82,4 +82,58 @@ router.post('/approvals/draft', async (req, res) => {
   }
 });
 
+// ── Hybrid product search (embeddings/vector-based) ────────────────
+
+const unifiedSearchOrchestrator = require('../legacy-ai-agent/aiAgent/utils/UnifiedProductSearchOrchestrator');
+
+router.post('/product-search', async (req, res) => {
+  try {
+    const { companyId, query, limit = 10, productSize, productColor, conversationId } = req.body || {};
+    if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
+    if (!query?.trim()) return res.status(400).json({ success: false, error: 'query is required' });
+
+    const safeLimit = Math.min(Math.max(Number(limit), 1), 20);
+
+    const result = await unifiedSearchOrchestrator.search(companyId, query, {
+      limit: safeLimit,
+      conversationId: conversationId || undefined,
+      intentSlots: {
+        ...(productSize ? { productSize } : {}),
+        ...(productColor ? { productColor } : {}),
+      },
+    });
+
+    const products = result.products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      sku: p.sku,
+      price: Number(p.price) || 0,
+      comparePrice: p.comparePrice ? Number(p.comparePrice) : null,
+      stock: p.stock ?? 0,
+      isFeatured: Boolean(p.isFeatured),
+      trackInventory: p.trackInventory !== false,
+      mainImage: p.mainImage || null,
+      images: Array.isArray(p.images) ? p.images : [],
+      category: p.category ? { name: p.category.name || p.category } : null,
+      searchScore: p.searchScore || 0,
+    }));
+
+    return res.json({
+      success: true,
+      data: products,
+      meta: {
+        query,
+        count: products.length,
+        recoveryUsed: result.recoveryUsed,
+        recoveryStrategy: result.recoveryStrategy || null,
+        latencyMs: result.latencyMs || 0,
+        didYouMean: result.didYouMean || null,
+      },
+    });
+  } catch (error) {
+    console.error('[ai-bridge] product-search failed:', error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
