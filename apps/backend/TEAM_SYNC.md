@@ -1,3 +1,13 @@
+## [2026-06-09] AI Sandbox Chat — Blank Product List & Classifier Fix [DONE]
+- **Objective**: Fix two linked issues causing the AI agent to respond with blank product names in the sandbox chat.
+- **Accomplishments**:
+  - **Classifier Fix**: Intent classifier was returning `CLASSIFIER_UNAVAILABLE` because it inherited the agent's `preferredModel = 'deepseek-chat'` which had no active key. Fixed by always using `gemini-2.5-flash` (ignoring agent's model config) and changing the Google key to `keyType='CENTRAL'` so all companies can reach it.
+  - **Frontend Rendering Fix**: `filterChainOfThought()` in `ChatArea.tsx` had a catch-all that stripped every line starting with `*`, including valid markdown bullet list items (product names). Removed the catch-all; specific `* Role:` / `* Task:` / `* Thinking:` patterns still filtered.
+- **Affected Files**:
+  - `apps/ai-service/src/intent/classifier.py`
+  - `apps/frontend/src/pages/admin/ai-agent-sandbox/components/ChatArea.tsx`
+  - **DB**: `ai_keys` — `keyType` set to `CENTRAL` on Google key `cmo07mmy0464hjunrfksbjn4a`
+
 ## [2026-06-09] Storefront & Product Save — Cloned Product Stale Images Fix [DONE]
 - **Objective**: Fix the bug where a cloned product would display stale/old images on the storefront after the merchant replaced all images.
 - **Accomplishments**:

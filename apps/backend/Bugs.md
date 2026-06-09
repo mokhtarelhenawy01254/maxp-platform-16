@@ -1,3 +1,23 @@
+## [2026-06-09] AI Sandbox Chat — Product List Items Stripped, Showing Blank Lines
+- **Bug/Issue**: The AI agent sandbox chat showed "المنتجات المتاحة حالياً عندنا هي:" followed by blank lines where product names should appear. The LLM response in the DB was correct (product names were there), but the UI rendered them as empty.
+- **Cause**: `filterChainOfThought()` in `ChatArea.tsx` had a catch-all guard `if (trimmed.startsWith('*')) return false` that stripped every markdown bullet list item (e.g. `* **Platform Sneakers** بسعر 499 جنيه.`), replacing each line with an empty string and leaving visible blank lines.
+- **Fix**: Removed the catch-all `startsWith('*')` filter. The three specific chain-of-thought patterns (`* Role:`, `* Task:`, `* Thinking:`) remain filtered by their explicit guards.
+- **Affected Files**:
+  - `apps/frontend/src/pages/admin/ai-agent-sandbox/components/ChatArea.tsx`
+
+## [2026-06-09] AI Service — Intent Classifier CLASSIFIER_UNAVAILABLE Due to Missing Agent Model Key
+- **Bug/Issue**: The intent classifier returned `CLASSIFIER_UNAVAILABLE` for all messages, preventing tool execution (product search never ran). Requests occasionally worked when an active fallback key happened to be picked.
+- **Cause**:
+  1. Agent `agent_95qi23_24` had `preferredModel = 'deepseek-chat'`. The classifier used this model, but no active `ai_model_configs` entry existed for `deepseek-chat`, so `get_next_key()` returned nothing and the LLM client was `null`.
+  2. Groq fallback models (`llama-3.3-70b-versatile`, `llama-3.1-8b-instant`) do not support the `json_schema` response format required by the classifier, causing 400 errors that tripped the circuit breaker.
+  3. The Google key with a valid `gemini-2.5-flash` model config had `keyType='COMPANY'` scoped to a different company, so it was filtered out for the requesting company.
+- **Fix**:
+  1. Classifier now always uses `gemini-2.5-flash` with `provider=None`, ignoring the agent's `preferredModel`/`preferredProvider` — classification is infrastructure, not per-agent config.
+  2. Changed Google key `cmo07mmy0464hjunrfksbjn4a` from `keyType='COMPANY'` → `keyType='CENTRAL'` in the DB so all companies can use it for classification.
+- **Affected Files**:
+  - `apps/ai-service/src/intent/classifier.py`
+  - **DB**: `ai_keys` — `keyType` updated to `CENTRAL` on key `cmo07mmy0464hjunrfksbjn4a`
+
 ## [2026-06-09] Storefront & Product Save — Cloned Product Shows Stale Images on Storefront
 - **Bug/Issue**: When copying/cloning a product, removing the old cloned images, uploading new ones, and saving, the storefront would still display the old cloned images instead of the new ones.
 - **Cause**: 

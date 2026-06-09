@@ -2,6 +2,26 @@
 
 > Domain-specific bug tracker for Prisma, auth, deployment, AI, billing, and general platform issues.
 
+### [FIX] AI Sandbox Chat — Product List Rendered as Blank Lines (2026-06-09)
+- **Description**: The AI agent sandbox chat (`/admin/ai-hub?tab=sandbox`) showed "المنتجات المتاحة حالياً عندنا هي:" followed by blank lines where product names should appear, even though the tool returned 20 products with correct names and the LLM response stored in the DB was correct.
+- **Root Cause**: `filterChainOfThought()` in `ChatArea.tsx` contained a catch-all guard `if (trimmed.startsWith('*')) return false` that was intended to filter chain-of-thought reasoning lines. It stripped every markdown bullet list item (e.g. `* **Platform Sneakers** بسعر 499 جنيه.`), replacing them with empty strings and leaving visible blank lines in the rendered output.
+- **Resolution**: Removed the catch-all `startsWith('*')` guard. The three specific chain-of-thought patterns (`* Role:`, `* Task:`, `* Thinking:`) are still filtered by their explicit guards above it.
+- **Files Modified**: `frontend/src/pages/admin/ai-agent-sandbox/components/ChatArea.tsx`
+
+
+### [FIX] AI Intent Classifier — CLASSIFIER_UNAVAILABLE Due to Missing Agent Model Key (2026-06-09)
+- **Description**: The AI agent intent classifier returned `CLASSIFIER_UNAVAILABLE` for all messages, causing the pipeline to skip tool execution (product search never ran). The classifier would occasionally work when an active key happened to be selected, but most requests failed silently.
+- **Root Cause**:
+  1. Agent `agent_95qi23_24` had `preferredModel = 'deepseek-chat'` in its DB config. The classifier used this as the model for classification, but there was no active `ai_model_configs` entry for `deepseek-chat`, so `get_next_key()` returned nothing and the LLM client was `null`.
+  2. Groq models `llama-3.3-70b-versatile` and `llama-3.1-8b-instant` do not support the `json_schema` response format required by the classifier, causing 400 errors that tripped the circuit breaker.
+  3. The Google key `cmo07mmy0464hjunrfksbjn4a` (which has a valid `gemini-2.5-flash` model config) was set to `keyType='COMPANY'` scoped to a different company, so it was filtered out for the test company.
+- **Resolution**:
+  1. Changed classifier to always use `gemini-2.5-flash` with `provider=None`, ignoring the agent's `preferredModel`/`preferredProvider` entirely — classification is infrastructure, not per-agent config.
+  2. Changed Google key `cmo07mmy0464hjunrfksbjn4a` from `keyType='COMPANY'` → `keyType='CENTRAL'` so all companies can use it for classification.
+- **Files Modified**: `apps/ai-service/src/intent/classifier.py`
+- **DB Changes**: `ai_keys` — updated `keyType` on key `cmo07mmy0464hjunrfksbjn4a` to `CENTRAL`
+
+
 ### [UX/FIX] WooCommerce Product Import Shows Clear Bulk Selection Controls (2026-05-09)
 - **Description**: The WooCommerce products import view needed a clearly visible `Select All` control next to the import action, while still keeping per-product selection available.
 - **Root Cause**:
