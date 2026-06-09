@@ -1,3 +1,10 @@
+## [2026-06-09] Frontend — Remove "نسخ الرابط العام" Button from Product Editor
+- **Change**: Removed the unnecessary "نسخ الرابط العام" (Copy Public Link) button from the product editor toolbar in `ProductNewFinal.tsx`. The button was UI clutter not used in any merchant workflow.
+- **Cleanup**: Removed the unused `LinkIcon` import, the unused `buildPublicUrl` useCallback function, and the unused `buildProductPublicUrl` import from `productPreviewUrl` utilities.
+- **Impact**: UI-only change. No backend, API, or routing changes. The Preview (معاينة) button is unaffected.
+- **Affected Files**:
+  - `apps/frontend/src/pages/products/ProductNewFinal.tsx`
+
 ## [2026-06-08] AI Service — `product.search` Tool Returns Empty Results for "List All" and Wrong Query for Specific Search
 - **Bug/Issue**:
   1. When a customer asked to see all products (e.g., "عايز اشوف كل المنتجات"), the `product.search` tool returned `count: 0, results: []`.

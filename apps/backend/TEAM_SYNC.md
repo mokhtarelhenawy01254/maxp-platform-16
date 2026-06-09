@@ -1,3 +1,12 @@
+## [2026-06-09] Product Editor Cleanup — Remove "نسخ الرابط العام" Button [DONE]
+- **Objective**: Remove unnecessary UI element from the product editor toolbar.
+- **Accomplishments**:
+  - Removed "نسخ الرابط العام" (Copy Public Link) button — identified as unused UI noise with no merchant workflow dependency.
+  - Cleaned up 3 unused code artifacts: `LinkIcon` import, `buildPublicUrl` useCallback, and `buildProductPublicUrl` import.
+  - Frontend-only change, zero backend impact.
+- **Affected Files**:
+  - `apps/frontend/src/pages/products/ProductNewFinal.tsx`
+
 ## [2026-06-08] Bulk Orders — Full CRUD Module [DONE] (Sync Date: 2026-06-08)
 - **Objective**: Add Bulk Orders tab under Orders section with create, edit, delete, duplicate, import (Excel/CSV), export (Excel/JSON), RBAC, and audit logging.
 - **Accomplishments**:
