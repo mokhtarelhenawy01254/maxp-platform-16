@@ -2605,7 +2605,7 @@ router.get('/simple/new-list', requireAuth, async (req, res) => {
     const mappedOrders = orders.map(o => ({
       ...o,
       type: 'ORDER',
-      displayName: o.customerName || 'عميل',
+      displayName: o.customerName || '',
       displayTotal: o.total || 0
     }));
 
@@ -2614,7 +2614,7 @@ router.get('/simple/new-list', requireAuth, async (req, res) => {
       type: 'GUEST_ORDER',
       customerName: o.guestName,
       customerPhone: o.guestPhone,
-      displayName: o.guestName || 'عميل',
+      displayName: o.guestName || '',
       displayTotal: o.total || 0
     }));
 
