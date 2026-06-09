@@ -113,7 +113,6 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         if (trimmed.startsWith('* Role:')) return false;
         if (trimmed.startsWith('* Task:')) return false;
         if (trimmed.startsWith('* Thinking:')) return false;
-        if (trimmed.startsWith('*')) return false;
         if (trimmed.startsWith('[') && trimmed.includes(']') && !trimmed.includes(':')) return false;
         return true;
       })

@@ -119,11 +119,10 @@ async def classify_intent(
     ctx = context or {}
     available_tools = ctx.get("availableTools", [])
     attachments = list(ctx.get("attachments") or [])
-    preferred_model = ctx.get("preferredModel") or ctx.get("model")
-    preferred_provider = ctx.get("preferredProvider") or ctx.get("provider")
+    _cls_model = 'gemini-2.5-flash'
     model_route = route_for_modalities(
-        model=str(preferred_model) if preferred_model else None,
-        provider=str(preferred_provider) if preferred_provider else None,
+        model=_cls_model,
+        provider=None,
         has_image_input=bool(attachments),
     )
 
