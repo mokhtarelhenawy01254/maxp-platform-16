@@ -215,7 +215,9 @@ const companyDashboardOverview = async (req, res) => {
             storeVisits,
             totalStoreVisits,
             lowStockCount,
-            outOfStockCount
+            outOfStockCount,
+            newOrdersCount,
+            viewedOrdersCount
         ] = await Promise.all([
             withDashboardFallback('newUsersCount', () => getSharedPrismaClient().user.count({
                 where: {
@@ -290,6 +292,20 @@ const companyDashboardOverview = async (req, res) => {
                     companyId,
                     trackInventory: true,
                     stock: { lte: 0 }
+                }
+            }), 0),
+            withDashboardFallback('newOrdersCount', () => getSharedPrismaClient().order.count({
+                where: {
+                    companyId,
+                    isViewed: false,
+                    status: { notIn: DASHBOARD_EXCLUDED_ORDER_STATUSES }
+                }
+            }), 0),
+            withDashboardFallback('viewedOrdersCount', () => getSharedPrismaClient().order.count({
+                where: {
+                    companyId,
+                    isViewed: true,
+                    status: { notIn: DASHBOARD_EXCLUDED_ORDER_STATUSES }
                 }
             }), 0),
         ]);
@@ -415,6 +431,8 @@ const companyDashboardOverview = async (req, res) => {
                 returnRate,
                 deliveredOrders,
                 openOrders,
+                newOrders: newOrdersCount,
+                viewedOrders: viewedOrdersCount,
                 totalItems: itemsCount,
                 piecesPerOrder
             },

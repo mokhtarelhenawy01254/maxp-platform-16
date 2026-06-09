@@ -62,6 +62,8 @@ export type DashboardOrderHealth = {
   returnRate?: number | null;
   deliveredOrders?: number | null;
   openOrders?: number | null;
+  newOrders?: number | null;
+  viewedOrders?: number | null;
   totalItems?: number | null;
   piecesPerOrder?: number | null;
 };

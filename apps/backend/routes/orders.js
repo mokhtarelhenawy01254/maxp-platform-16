@@ -2509,6 +2509,169 @@ router.post('/simple/:orderNumber/viewed', requireAuth, async (req, res) => {
   }
 });
 
+// جلب عدد الطلبات الجديدة غير المقروءة
+router.get('/simple/new-count', requireAuth, async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const excludedStatuses = ['TRASH', 'trash', 'deleted'];
+
+    const [orderCount, guestOrderCount] = await Promise.all([
+      getSharedPrismaClient().order.count({
+        where: {
+          companyId,
+          isViewed: false,
+          status: { notIn: excludedStatuses }
+        }
+      }),
+      getSharedPrismaClient().guestOrder.count({
+        where: {
+          companyId,
+          isViewed: false
+        }
+      })
+    ]);
+
+    const totalNew = orderCount + guestOrderCount;
+
+    res.json({
+      success: true,
+      data: {
+        count: totalNew,
+        orders: orderCount,
+        guestOrders: guestOrderCount
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching new orders count:', error);
+    res.status(500).json({ success: false, message: 'خطأ في جلب عدد الطلبات الجديدة' });
+  }
+});
+
+// جلب قائمة الطلبات الجديدة غير المقروءة
+router.get('/simple/new-list', requireAuth, async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const limit = parseInt(req.query.limit) || 10;
+    const excludedStatuses = ['TRASH', 'trash', 'deleted'];
+
+    const [orders, guestOrders] = await Promise.all([
+      getSharedPrismaClient().order.findMany({
+        where: {
+          companyId,
+          isViewed: false,
+          status: { notIn: excludedStatuses }
+        },
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          orderNumber: true,
+          customerName: true,
+          customerPhone: true,
+          total: true,
+          status: true,
+          createdAt: true,
+          isViewed: true
+        }
+      }),
+      getSharedPrismaClient().guestOrder.findMany({
+        where: {
+          companyId,
+          isViewed: false
+        },
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          orderNumber: true,
+          customerName: true,
+          customerPhone: true,
+          total: true,
+          status: true,
+          createdAt: true,
+          isViewed: true
+        }
+      })
+    ]);
+
+    const mappedOrders = orders.map(o => ({
+      ...o,
+      type: 'ORDER',
+      displayName: o.customerName || 'عميل',
+      displayTotal: o.total || 0
+    }));
+
+    const mappedGuestOrders = guestOrders.map(o => ({
+      ...o,
+      type: 'GUEST_ORDER',
+      displayName: o.customerName || 'عميل',
+      displayTotal: o.total || 0
+    }));
+
+    const combined = [...mappedOrders, ...mappedGuestOrders]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit);
+
+    res.json({
+      success: true,
+      data: combined,
+      total: combined.length
+    });
+  } catch (error) {
+    console.error('Error fetching new orders list:', error);
+    res.status(500).json({ success: false, message: 'خطأ في جلب قائمة الطلبات الجديدة' });
+  }
+});
+
+// تعليم كل الطلبات كمقروءة
+router.post('/simple/mark-all-viewed', requireAuth, async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+    }
+
+    const excludedStatuses = ['TRASH', 'trash', 'deleted'];
+
+    const [orderResult, guestOrderResult] = await Promise.all([
+      getSharedPrismaClient().order.updateMany({
+        where: {
+          companyId,
+          isViewed: false,
+          status: { notIn: excludedStatuses }
+        },
+        data: { isViewed: true }
+      }),
+      getSharedPrismaClient().guestOrder.updateMany({
+        where: {
+          companyId,
+          isViewed: false
+        },
+        data: { isViewed: true }
+      })
+    ]);
+
+    const totalUpdated = (orderResult.count || 0) + (guestOrderResult.count || 0);
+
+    res.json({
+      success: true,
+      message: `تم تعليم ${totalUpdated} طلب كمقروء`,
+      data: { updated: totalUpdated }
+    });
+  } catch (error) {
+    console.error('Error marking all orders as viewed:', error);
+    res.status(500).json({ success: false, message: 'خطأ في تعليم الطلبات كمقروءة' });
+  }
+});
+
 // تحديث حالة الدفع للطلب البسيط
 router.post('/simple/:orderNumber/payment-status', requireAuth, async (req, res) => {
   try {

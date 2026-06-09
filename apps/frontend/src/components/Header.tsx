@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuthSimple";
 import { useCompany } from "../contexts/CompanyContext";
 import NotificationDropdown from "./notifications/NotificationDropdown";
+import OrderNotificationBell from "./notifications/OrderNotificationBell";
 import LanguageSwitcher from "./common/LanguageSwitcher";
 import { envConfig } from "../config/environment";
 import {
@@ -294,6 +295,9 @@ const Header: React.FC = () => {
 
             {/* Language Switcher */}
             <LanguageSwitcher />
+
+            {/* New Orders Bell */}
+            <OrderNotificationBell />
 
             {/* Notifications */}
             <NotificationDropdown />

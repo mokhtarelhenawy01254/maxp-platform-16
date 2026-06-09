@@ -49,6 +49,7 @@ import ActivationLaunchCard from "./dashboard/ActivationLaunchCard";
 import DateRangeToolbar from "./dashboard/DateRangeToolbar";
 import FinancialSquare from "./dashboard/FinancialSquare";
 import DashboardOperationsPanel from "./dashboard/DashboardOperationsPanel";
+import OrderStatsWidget from "./dashboard/OrderStatsWidget";
 import TopProductsPanel from "./dashboard/TopProductsPanel";
 import RevenueTrendChart from "./dashboard/RevenueTrendChart";
 import DashboardSkeleton from "./dashboard/DashboardSkeleton";
@@ -690,6 +691,14 @@ const CompanyDashboard: React.FC = () => {
           onEndChange={handleEndDateChange}
           onSelectFilter={handleSelectFilter}
           onRefresh={() => void fetchDashboardData({ force: true })}
+        />
+
+        <OrderStatsWidget
+          newOrders={orderHealth.newOrders}
+          viewedOrders={orderHealth.viewedOrders}
+          totalOrders={counts.orders}
+          formatCount={formatCount}
+          isRtl={isRtl}
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

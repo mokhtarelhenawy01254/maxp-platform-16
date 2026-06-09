@@ -260,6 +260,13 @@
     "ordersLabel": "Orders",
     "empty": "No revenue data for the selected period"
   },
+  "orderStats": {
+    "title": "Order Status",
+    "newOrders": "New Orders",
+    "viewedOrders": "Reviewed Orders",
+    "totalOrders": "Total Orders",
+    "requiresAttention": "Needs attention"
+  },
   "loading": {
     "title": "Loading dashboard",
     "summary": "Fetching latest company data..."
