@@ -1,0 +1,80 @@
+{
+  "metadata": {
+    "companyId": "live-intent-eval",
+    "provider": "GOOGLE",
+    "model": "gemini-2.5-flash",
+    "caseIds": [
+      "product_browse_executes_search"
+    ],
+    "maxCases": null,
+    "delaySeconds": 0.0
+  },
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "score": 1.0
+  },
+  "cases": [
+    {
+      "id": "product_browse_executes_search",
+      "message": "Show me your sneakers.",
+      "passed": true,
+      "intent": "products",
+      "confidence": 0.95,
+      "confidenceLevel": "high",
+      "toolEligibility": "allowed",
+      "missingSlots": [],
+      "checks": {
+        "intent": {
+          "expected": "products",
+          "actual": "products",
+          "passed": true
+        },
+        "toolEligibility": {
+          "expected": "allowed",
+          "actual": "allowed",
+          "passed": true
+        },
+        "slots": {
+          "expected": {
+            "productName": "sneakers"
+          },
+          "actual": {
+            "productName": "sneakers",
+            "productPrice": null,
+            "productSize": null,
+            "productColor": null,
+            "quantity": null,
+            "customerName": null,
+            "customerPhone": null,
+            "city": null,
+            "address": null,
+            "orderNumber": null,
+            "confirmedByCustomer": null,
+            "skillName": null,
+            "skillDescription": null,
+            "agentName": null,
+            "agentRole": null,
+            "taskDescription": null,
+            "requestedProductImage": null,
+            "referencesPreviousProduct": null,
+            "shippingDestination": null,
+            "exchangeReason": null,
+            "refundReason": null,
+            "complaintDetails": null,
+            "listAll": false
+          },
+          "details": {
+            "productName": {
+              "expected": "sneakers",
+              "actual": "sneakers",
+              "passed": true
+            }
+          },
+          "passed": true
+        }
+      }
+    }
+  ]
+}

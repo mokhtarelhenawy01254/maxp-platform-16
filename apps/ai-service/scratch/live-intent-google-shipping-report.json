@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "companyId": "live-intent-eval",
+    "provider": "GOOGLE",
+    "model": "gemini-2.5-flash",
+    "caseIds": [
+      "shipping_rate_with_city_executes"
+    ],
+    "maxCases": null,
+    "delaySeconds": 0.0
+  },
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "score": 1.0
+  },
+  "cases": [
+    {
+      "id": "shipping_rate_with_city_executes",
+      "message": "How much is shipping to Cairo?",
+      "passed": true,
+      "intent": "shipping.rates",
+      "confidence": 0.95,
+      "confidenceLevel": "high",
+      "toolEligibility": "allowed",
+      "missingSlots": [],
+      "checks": {
+        "intent": {
+          "expected": "shipping.rates",
+          "actual": "shipping.rates",
+          "passed": true
+        },
+        "toolEligibility": {
+          "expected": "allowed",
+          "actual": "allowed",
+          "passed": true
+        },
+        "slots": {
+          "expected": {
+            "governorate": "Cairo"
+          },
+          "actual": {
+            "productName": null,
+            "productPrice": null,
+            "productSize": null,
+            "productColor": null,
+            "quantity": null,
+            "customerName": null,
+            "customerPhone": null,
+            "governorate": null,
+            "city": "Cairo",
+            "address": null,
+            "orderNumber": null,
+            "confirmedByCustomer": null,
+            "skillName": null,
+            "skillDescription": null,
+            "agentName": null,
+            "agentRole": null,
+            "taskDescription": null,
+            "requestedProductImage": null,
+            "referencesPreviousProduct": null,
+            "shippingDestination": "Cairo",
+            "exchangeReason": null,
+            "refundReason": null,
+            "complaintDetails": null,
+            "listAll": null
+          },
+          "details": {
+            "governorate": {
+              "expected": "Cairo",
+              "actual": null,
+              "passed": true
+            }
+          },
+          "passed": true
+        }
+      }
+    }
+  ]
+}
