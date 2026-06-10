@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Product,
   getStockStatus,
@@ -98,6 +99,8 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
   const stockLocationLabel =
     product.inventorySnapshot?.stockLocationLabel ||
     product.merchantContext?.stockLocationLabel;
+
+  const navigate = useNavigate();
 
   const openStorefront = () => {
     prepareStorefrontContext();
@@ -315,7 +318,7 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
               >
                 <EyeIcon className="h-4 w-4" />
               </button>
-              <button onClick={() => { window.location.href = `/products/${product.id}/edit`; }} className="text-green-600 hover:text-green-900 transition-colors" title="تعديل">
+              <button onClick={() => navigate(`/products/${product.id}/edit`)} className="text-green-600 hover:text-green-900 transition-colors" title="تعديل">
                 <PencilIcon className="h-4 w-4" />
               </button>
               <button onClick={() => onStartQuickEdit(product)} className="text-blue-600 hover:text-blue-900 transition-colors" title="تعديل سريع">
