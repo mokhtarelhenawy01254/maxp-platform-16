@@ -1,9 +1,9 @@
+import { useState } from "react";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -17,21 +17,21 @@ export function SectionGuide() {
   const { t } = useTranslation();
   const location = useLocation();
   const guide = findGuideForPath(location.pathname);
+  const [open, setOpen] = useState(false);
 
   if (!guide) return null;
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="business-icon-button"
-          title={t("guides.help")}
-        >
-          <QuestionMarkCircleIcon className="h-5 w-5" />
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="business-icon-button"
+        title={t("guides.help")}
+        onClick={() => setOpen(true)}
+      >
+        <QuestionMarkCircleIcon className="h-5 w-5" />
+      </Button>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t(guide.titleKey)}</DialogTitle>
