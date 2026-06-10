@@ -102,14 +102,19 @@ def _availability_status(product: dict[str, Any]) -> str:
     return "IN_STOCK"
 
 
+def _is_valid_image_url(url: str) -> bool:
+    return bool(url and (url.startswith("http://") or url.startswith("https://")))
+
 def _parse_images(product: dict[str, Any]) -> list[str]:
     images: list[str] = []
     main = product.get("mainImage")
-    if main:
+    if main and _is_valid_image_url(str(main)):
         images.append(str(main))
     extra = product.get("images")
     if isinstance(extra, list):
-        images.extend(str(img) for img in extra if img)
+        for img in extra:
+            if img and _is_valid_image_url(str(img)):
+                images.append(str(img))
     return images[:8]
 
 

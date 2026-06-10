@@ -1,3 +1,11 @@
+## [2026-06-10] AI Service — Product Image URL Validation in Tool Results
+- **Details**: Added image URL validation to ai-service tool results to prevent bare filenames (e.g. image.png) from being returned as product images. When product images are stored as bare filenames in the DB instead of full URLs, the LLM provider rejects them with image-input errors.
+- **Changes**:
+  - product_tools.py:_parse_images() now filters via _is_valid_image_url() — only returns URLs starting with http:// or https://
+  - ector_product_search.py filters image_url before returning results
+- **Affected Files**:
+  - pps/ai-service/src/tools/product_tools.py
+  - pps/ai-service/src/tools/vector_product_search.py
 ## [2026-06-09] Order Notification System — New Orders Bell & Dashboard Stats Widget
 - **Details**: Added a professional real-time order notification system that tracks unviewed (new) orders across the entire platform. The notification bell in the header displays a badge with the count of unviewed orders and a dropdown with direct navigation. A dashboard widget shows new, reviewed, and total order counts with attention-grabbing highlights.
 - **Architecture**:

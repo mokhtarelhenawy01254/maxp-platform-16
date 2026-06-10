@@ -1,3 +1,11 @@
+## [2026-06-10] AI Service — Product Image URL Validation [DONE]
+- **Objective**: Prevent bare filename image leaks from product tool results to the LLM. Product images stored in the DB as bare filenames (e.g. image.png) were causing LLM provider errors (Cannot read "image.png" — model does not support image input).
+- **Accomplishments**:
+  - product_tools.py:_parse_images() now validates image URLs via _is_valid_image_url() — only http/https URLs pass through
+  - ector_product_search.py filters image_url before returning semantic search results
+- **Affected Files**:
+  - pps/ai-service/src/tools/product_tools.py
+  - pps/ai-service/src/tools/vector_product_search.py
 ## [2026-06-09] AI Service — Vector/Semantic Product Search [DONE]
 - **Objective**: Enable natural language and image-based product search (e.g. "winter boots", "كوتشي رياضي") without requiring exact product name matches.
 - **Accomplishments**:

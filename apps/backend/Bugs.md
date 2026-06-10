@@ -1,3 +1,10 @@
+## [2026-06-10] AI Service — Bare Product Image Filenames Leaked as URLs to LLM (Model Rejects Image Input)
+- **Bug/Issue**: Product image fields (mainImage, images) in the DB sometimes store bare filenames (e.g. image.png) instead of full URLs. When the AI service returns these bare filenames inside tool results (product_search, inventory_check, vector_product_search), the LLM provider rejects them with Cannot read "image.png" (this model does not support image input).
+- **Root Cause**: product_tools.py:_parse_images() and ector_product_search.py returned raw DB values without validating they are valid full URLs (http/https). The LLM SDK treats string values from tool results with image-like extensions as image_url parts, causing the provider error.
+- **Fix**: Added _is_valid_image_url() filter in both functions — only URLs starting with http:// or https:// are returned. Bare filenames are silently dropped from the image list.
+- **Affected Files**:
+  - pps/ai-service/src/tools/product_tools.py — _parse_images() now filters image URLs
+  - pps/ai-service/src/tools/vector_product_search.py — image_url field filtered before return
 ## [2026-06-09] AI Service — Empty Reply After Vector Product Search (Agent Client Unavailable)
 - **Bug/Issue**: The AI agent returned `status: "error"` and empty reply even though vector/semantic product search ran successfully and returned products. The tool call appeared in the response but no LLM-generated reply was present.
 - **Cause**: Agent `agent_95qi23_24` had `model = 'deepseek-chat'` in the DB. `ensure_client()` tried to build an LLM client for `deepseek-chat`, found no API keys, and returned `None`. Both `execute_tools.py` and `handle_fallback.py` read `ctx.agent.client` for the reply LLM call — but since it was `None`, no reply was generated. `handle_fallback` set `ctx.early_return = {"status": "LLM_CLIENT_UNAVAILABLE"}` which mapped to `"status": "ERROR"` with a null error message in the API response.

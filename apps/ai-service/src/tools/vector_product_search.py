@@ -148,6 +148,12 @@ async def vector_product_search(
             logger.error("vector_search: fallback also failed", error=str(exc2))
             return []
 
+    # Filter to valid full URLs only (skip bare filenames)
+    for r in results:
+        url = r.get("image_url") or ""
+        if url and not (url.startswith("http://") or url.startswith("https://")):
+            r["image_url"] = ""
+
     # Deduplicate by product name (keep highest score per name)
     seen: dict[str, dict] = {}
     for r in results:
