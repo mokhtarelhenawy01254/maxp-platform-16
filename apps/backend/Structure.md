@@ -2696,4 +2696,14 @@ Manages AI agent chat sessions via Prisma (`aIChatSession`, `aIChatMessage` mode
   - `apps/frontend/src/pages/employee/MyRewards.tsx`
   - `apps/frontend/src/pages/hr/EmployeeDetails.tsx`
   - `apps/frontend/src/pages/hr/rewards/CreateEditReward.tsx`
-  - `apps/frontend/src/pages/hr/rewards/RewardsList.tsx`
+   - `apps/frontend/src/pages/hr/rewards/RewardsList.tsx`
+
+## [2026-06-10] Backend — ai-bridge product-search Listing Mode (list_all Support)
+- **Details**: Added listing mode to `POST /api/v1/ai-bridge/product-search`. When query is empty/whitespace, the route bypasses `UnifiedProductSearchOrchestrator` and fetches products directly from Prisma — returning all products for the company sorted by newest first.
+- **Architecture**:
+  - **Empty query detection**: `if (!query?.trim())` triggers the listing path, using `Prisma.product.findMany` with `{ companyId, deletedAt: null }`.
+  - **Non-empty query**: Goes through `UnifiedProductSearchOrchestrator.search()` with hybrid (vector + text) search as before.
+  - **Response format**: Same structure for both paths — `{ success, data: [...], meta: { query, count, searchMode } }`. Listing mode sets `searchMode: 'list'`.
+  - **Limit**: Increased max from 20 to 50 to accommodate full catalog listing.
+- **Files**:
+  - `apps/backend/routes/agentServiceBridgeRoutes.js`

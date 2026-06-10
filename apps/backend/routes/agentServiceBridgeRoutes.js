@@ -84,16 +84,56 @@ router.post('/approvals/draft', async (req, res) => {
 
 // ── Hybrid product search (embeddings/vector-based) ────────────────
 
+const { PrismaClient } = require('@prisma/client');
 const unifiedSearchOrchestrator = require('../legacy-ai-agent/aiAgent/utils/UnifiedProductSearchOrchestrator');
 
 router.post('/product-search', async (req, res) => {
   try {
     const { companyId, query, limit = 10, productSize, productColor, conversationId, useVector } = req.body || {};
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
-    if (!query?.trim()) return res.status(400).json({ success: false, error: 'query is required' });
 
-    const safeLimit = Math.min(Math.max(Number(limit), 1), 20);
+    const safeLimit = Math.min(Math.max(Number(limit), 1), 50);
     const vectorEnabled = useVector !== false;
+
+    // Empty query → listing mode: return all products for the company
+    if (!query?.trim()) {
+      const prisma = new PrismaClient();
+      const rows = await prisma.product.findMany({
+        where: { companyId, deletedAt: null },
+        take: safeLimit,
+        orderBy: { createdAt: 'desc' },
+      });
+      await prisma.$disconnect();
+
+      const products = rows.map((p) => ({
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        price: Number(p.price) || 0,
+        comparePrice: p.comparePrice ? Number(p.comparePrice) : null,
+        stock: p.stock ?? 0,
+        isFeatured: Boolean(p.isFeatured),
+        trackInventory: p.trackInventory !== false,
+        mainImage: p.mainImage || null,
+        images: Array.isArray(p.images) ? p.images : [],
+        category: p.category ? { name: p.category.name || p.category } : null,
+        searchScore: 1,
+      }));
+
+      return res.json({
+        success: true,
+        data: products,
+        meta: {
+          query: '',
+          count: products.length,
+          recoveryUsed: false,
+          recoveryStrategy: null,
+          latencyMs: 0,
+          didYouMean: null,
+          searchMode: 'list',
+        },
+      });
+    }
 
     const result = await unifiedSearchOrchestrator.search(companyId, query, {
       limit: safeLimit,

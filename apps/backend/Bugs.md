@@ -3660,6 +3660,13 @@ eq.user.id matches the createdBy field on the existing order. Otherwise, it thro
   - `apps/frontend/src/storefront/hooks/useStorefrontFacebookTracking.ts`
    - `apps/frontend/src/storefront/hooks/useStorefrontVisitTracking.ts`
 
+## [2026-06-10] Backend — product-search Empty Query Returns 400 (Blocks list_all Mode)
+- **Bug/Issue**: When the ai-service called `POST /api/v1/ai-bridge/product-search` with `query: ""` and `list_all: true`, the backend returned 400 `"query is required"`. The route strictly validated `if (!query?.trim())` without considering the listing use case.
+- **Root Cause**: The route handler was designed only for keyword search — it required a non-empty query string. The ai-service's `product_search` tool sends `query: ""` when `list_all: true` (to fetch all products), which hit the validation guard and errored.
+- **Fix**: Removed the strict `if (!query?.trim())` guard. When query is empty/whitespace, the route now fetches products directly via `Prisma.product.findMany` with `{ companyId, deletedAt: null }`, sorted by `createdAt desc`. Also increased `safeLimit` from 20 to 50.
+- **Affected Files**:
+  - `apps/backend/routes/agentServiceBridgeRoutes.js`
+
 ## [2026-06-10] HR Rewards Sidebar Label — `[object Object]` in Navigation
 - **Problem**: The HR rewards sidebar item rendered `[object Object]` instead of "المكافآت والحوافز". The search function in `Layout.tsx` crashed with `TypeError: Cannot read properties of undefined (reading 'toLowerCase')` on the rendered object.
 - **Root Cause**: `sidebar.ts` line 820 used `t('sidebar.rewards')` which returned the rewards i18n object `{title: "المكافآت والحوافز", ...}` instead of a plain string. When React renders an object, it displays `[object Object]`, and `item.label.toLowerCase()` in the search filter throws a TypeError.
