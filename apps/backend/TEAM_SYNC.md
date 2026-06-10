@@ -6,9 +6,10 @@
   - Integrated into `Layout.tsx` — single import, placed in the header utility row. No per-page edits needed.
   - Added full Arabic and English translations for all 15 section guides under the `guides` key.
   - Updated all 3 documentation files (Bugs.md, Structure.md, TEAM_SYNC.md).
+- **Bug Fix**: Initial implementation used `<DialogTrigger asChild>` which doesn't work with `@base-ui/react@^1.3.0` — the icon rendered but clicking did nothing. Fixed by using controlled state (`useState` + `open`/`onOpenChange` + `<Button onClick>`) instead of the `render` prop pattern.
 - **Files**:
   - `apps/frontend/src/config/sectionGuideRegistry.ts` (new)
-  - `apps/frontend/src/components/guides/SectionGuide.tsx` (new)
+  - `apps/frontend/src/components/guides/SectionGuide.tsx` (new → then updated with controlled state fix)
   - `apps/frontend/src/components/layout/Layout.tsx`
   - `apps/frontend/src/locales/{ar,en}/translation.json`
 

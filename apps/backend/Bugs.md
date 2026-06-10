@@ -1,3 +1,10 @@
+## [2026-06-10] Frontend — Section Guide Dialog Not Opening via asChild on @base-ui/react@^1.3.0
+- **Bug/Issue**: The `?` help icon rendered in the header (SectionGuide component) but clicking it did not open the dialog. The icon was purely decorative.
+- **Root Cause**: `SectionGuide.tsx` used `<DialogTrigger asChild>` with a `<Button>` child, passing it as the `render` prop to `@base-ui/react/dialog.Trigger`. However, `@base-ui/react@^1.3.0`'s `Trigger` requires `open` and `onOpenChange` controlled state — the `render` prop does not connect the click event to the dialog root in uncontrolled mode for this version.
+- **Fix**: Replaced `DialogTrigger asChild` with direct `<Button onClick={() => setOpen(true)}>` and added `open={open} onOpenChange={setOpen}` to `<Dialog>`. This matches the controlled state pattern used by all other dialogs in the app (e.g., Feedback.tsx, BroadcastDialog.tsx, ConfirmDialog.tsx).
+- **Affected Files**:
+  - `apps/frontend/src/components/guides/SectionGuide.tsx` — removed DialogTrigger import, added useState/onClick/open/onOpenChange
+
 ## [2026-06-10] Frontend — Section Guide Feature — Help Icon in Header
 - **Bug/Issue**: No in-app help/guide system existed for merchants — each section had no quick way to learn how to use it.
 - **Feature**: Added a `?` icon in the global header (utility row) that opens a dialog showing a step-by-step guide for the current section. Each guide includes numbered steps and an optional video player.
