@@ -1,3 +1,10 @@
+## [2026-06-10] Frontend — Product Edit Button Uses Full Page Reload Causing 404 (SPA Route Lost)
+- **Bug/Issue**: Clicking the edit (تعديل) icon on the products list page (`https://maxp.online/products`) navigated to `/products/{id}/edit` but showed a 404 error instead of the product editor. The console showed `"المسار /products/{id}edit غير موجود"`.
+- **Root Cause**: The edit button in `ProductTableRow.tsx` used `window.location.href` (full page hard navigation) instead of React Router's client-side routing. The Express backend does not serve `index.html` for arbitrary SPA routes — it only serves static assets and storefront routes. The catch-all `*` handler requires company context and falls through to the 404 JSON handler for dashboard paths.
+- **Fix**: Replaced `window.location.href = `/products/${product.id}/edit`` with `navigate(`/products/${product.id}/edit`)` using React Router's `useNavigate()` hook. Added `import { useNavigate } from "react-router-dom"` and `const navigate = useNavigate()` in the component body.
+- **Affected Files**:
+  - `apps/frontend/src/pages/products/components/ProductTableRow.tsx`
+
 ## [2026-06-10] AI Service — Bare Product Image Filenames Leaked as URLs to LLM (Model Rejects Image Input)
 - **Bug/Issue**: Product image fields (mainImage, images) in the DB sometimes store bare filenames (e.g. image.png) instead of full URLs. When the AI service returns these bare filenames inside tool results (product_search, inventory_check, vector_product_search), the LLM provider rejects them with Cannot read "image.png" (this model does not support image input).
 - **Root Cause**: product_tools.py:_parse_images() and ector_product_search.py returned raw DB values without validating they are valid full URLs (http/https). The LLM SDK treats string values from tool results with image-like extensions as image_url parts, causing the provider error.

@@ -1,3 +1,19 @@
+## [2026-06-10] Production Investigation — Flora Store 404, Product Edit Fix, and Git Sync [DONE]
+- **Objective**: Diagnose 404 errors and product editing issues on the Flora store, update documentation, perform git synchronization, and review deployment configuration.
+- **Accomplishments**:
+  - **Diagnosed original 404** (`/api/v1/store-pages/{companyId}/slug/products:1`): No store page with slug `products:1` exists — normal 404, no code bug.
+  - **Identified product edit issue**: Edit button used `window.location.href` causing full page reload → Express backend returned 404 (no SPA fallback for dashboard routes). Fixed by replacing with `useNavigate()`.
+  - **SSH production investigation**: Connected to `153.92.223.119`, queried production DB at `/var/www/backend2`:
+    - Product "Suit" (`cmq59l9iw4tbfjuea28suhg3v`) exists in DB with name "Suit", slug "suit", active, company "Flora"
+    - Company "Flora" (`cmlc7s6kh000iju40ei73ez36`) exists
+    - No store page with slug `products:1` — confirmed normal 404
+  - **Git pull from origin/main**: Fast-forward (18 files, `f34aaf52b..40ecc555c`), auto-merged translation files
+  - **Cleaned up temp query scripts**: Deleted 4 untracked `_check_*.js` files
+  - **Product image URL validation fix already deployed**: `_is_valid_image_url()` filter was in commit `f34aaf52b` (already on origin/main)
+- **Affected Files**:
+  - `apps/frontend/src/pages/products/components/ProductTableRow.tsx`
+  - `apps/backend/_check_db.js`, `_check_db2.js`, `_check_prod.js`, `_check_prod2.js` (deleted)
+
 ## [2026-06-10] AI Service — Product Image URL Validation [DONE]
 - **Objective**: Prevent bare filename image leaks from product tool results to the LLM. Product images stored in the DB as bare filenames (e.g. image.png) were causing LLM provider errors (Cannot read "image.png" — model does not support image input).
 - **Accomplishments**:

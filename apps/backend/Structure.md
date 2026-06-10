@@ -1,3 +1,13 @@
+## [2026-06-10] Frontend — Product Edit Button SPA Navigation Fix
+- **Details**: The product edit button in the products list used `window.location.href` (full page reload), which bypasses React Router and causes the Express backend to return 404 since it doesn't serve `index.html` for arbitrary SPA routes. Fixed by using `useNavigate()` from React Router for client-side navigation.
+- **Root Cause**: The Express backend's routing architecture:
+  - `createFrontendStaticFallback()` only serves static assets (`/assets/*`, `/vite.svg`, etc.)
+  - The catch-all `app.get("*")` routes to `storefrontHtmlController.handleStorefrontShell` which requires company context — dashboard paths like `/products/{id}/edit` have no company context and fall through to the 404 JSON handler
+  - There is no SPA fallback that serves `index.html` for dashboard routes
+- **Fix**: Replaced `window.location.href` with `useNavigate()` in `ProductTableRow.tsx`. The immediate fix is client-side navigation; long-term the backend should serve `index.html` for unknown GET routes that aren't API paths.
+- **Affected Files**:
+  - `apps/frontend/src/pages/products/components/ProductTableRow.tsx`
+
 ## [2026-06-10] AI Service — Product Image URL Validation in Tool Results
 - **Details**: Added image URL validation to ai-service tool results to prevent bare filenames (e.g. image.png) from being returned as product images. When product images are stored as bare filenames in the DB instead of full URLs, the LLM provider rejects them with image-input errors.
 - **Changes**:
