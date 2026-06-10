@@ -29,6 +29,7 @@ import { Progress } from "../../components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuthSimple";
 import api from "../../services/api";
 import { createStorageKey, getWithExpiry, setWithExpiry } from "../../utils/storage";
@@ -134,6 +135,7 @@ const DASHBOARD_CACHE_TTL_MS = 60 * 1000;
 
 const MyDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
@@ -543,7 +545,7 @@ const MyDashboard: React.FC = () => {
                   value="financial"
                   className="rounded-xl px-5 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-white transition-all font-bold"
                 >
-                  المالية والحوافز
+                  {t("sidebar.rewards.title")}
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -680,7 +682,7 @@ const MyDashboard: React.FC = () => {
                   <CardHeader>
                     <CardTitle className="text-md font-bold flex items-center gap-2">
                       <Award className="h-5 w-5 text-purple-600" />
-                      الحوافز والمكافآت
+                      {t("sidebar.rewards.title")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>

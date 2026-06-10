@@ -316,13 +316,13 @@ const EmployeeDetails: React.FC = () => {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-7 w-full max-w-3xl">
-          <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
-          <TabsTrigger value="personal">البيانات الشخصية</TabsTrigger>
-          <TabsTrigger value="attendance">الحضور</TabsTrigger>
-          <TabsTrigger value="leaves">الإجازات</TabsTrigger>
-          <TabsTrigger value="documents">المستندات</TabsTrigger>
-          <TabsTrigger value="salary">سجل الرواتب</TabsTrigger>
-          <TabsTrigger value="performance">الأداء</TabsTrigger>
+          <TabsTrigger value="overview">{t("hrDashboard.employeeDetails.overview")}</TabsTrigger>
+          <TabsTrigger value="personal">{t("hrDashboard.employeeDetails.personal")}</TabsTrigger>
+          <TabsTrigger value="attendance">{t("sidebar.attendance")}</TabsTrigger>
+          <TabsTrigger value="leaves">{t("sidebar.leaves")}</TabsTrigger>
+          <TabsTrigger value="documents">{t("hrDashboard.employeeDetails.documents")}</TabsTrigger>
+          <TabsTrigger value="salary">{t("hrDashboard.employeeDetails.salary")}</TabsTrigger>
+          <TabsTrigger value="performance">{t("hrDashboard.employeeDetails.performance")}</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}

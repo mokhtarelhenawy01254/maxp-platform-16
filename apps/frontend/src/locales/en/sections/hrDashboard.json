@@ -22,6 +22,7 @@
   "viewAll": "View All",
   "quickActions": "Quick Actions",
   "employees": "Employees",
+  "rewards": "Rewards & Incentives",
   "attendanceLabel": "Attendance",
   "leaves": "Leaves",
   "payroll": "Payroll",
@@ -43,5 +44,12 @@
   "totalWarnings": "Total Warnings",
   "bySeverity": "By Severity",
   "noWarningsRecord": "No warning records",
-  "acknowledgmentRate": "Acknowledgment Rate"
+  "acknowledgmentRate": "Acknowledgment Rate",
+  "employeeDetails": {
+    "overview": "Overview",
+    "personal": "Personal Info",
+    "documents": "Documents",
+    "salary": "Salary History",
+    "performance": "Performance"
+  }
 }

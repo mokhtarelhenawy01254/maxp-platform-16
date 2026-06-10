@@ -130,10 +130,10 @@ const MyRewards: React.FC = () => {
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
                         <Trophy className="h-10 w-10 text-yellow-500 ml-3 drop-shadow-md" />
-                        مكافآتي وحوافزي
+                        {t("rewards.myRewards")}
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-2 text-lg">
-                        سجل المكافآت المالية والحوافز التقديرية التي حصلت عليها
+                        {t("rewards.myRewardsDescription")}
                     </p>
                 </div>
 

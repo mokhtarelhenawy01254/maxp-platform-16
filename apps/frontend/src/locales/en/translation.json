@@ -2125,6 +2125,7 @@
     "viewAll": "View All",
     "quickActions": "Quick Actions",
     "employees": "Employees",
+    "rewards": "Rewards & Incentives",
     "attendanceLabel": "Attendance",
     "leaves": "Leaves",
     "payroll": "Payroll",
@@ -2146,7 +2147,14 @@
     "totalWarnings": "Total Warnings",
     "bySeverity": "By Severity",
     "noWarningsRecord": "No warning records",
-    "acknowledgmentRate": "Acknowledgment Rate"
+    "acknowledgmentRate": "Acknowledgment Rate",
+    "employeeDetails": {
+      "overview": "Overview",
+      "personal": "Personal Info",
+      "documents": "Documents",
+      "salary": "Salary History",
+      "performance": "Performance"
+    }
   },
   "inbox": {
     "tabs": {
@@ -3261,6 +3269,92 @@
     "topReturnedProducts": "Top Returned Products",
     "returnsCount": "Returns Count"
   },
+  "rewards": {
+    "title": "Rewards",
+    "pageTitle": "Rewards & Incentives System",
+    "pageDescription": "Manage rewards, incentives, and performance recognition.",
+    "myRewards": "My Rewards & Incentives",
+    "myRewardsDescription": "Record of financial rewards and appreciation incentives you have received",
+    "apply": "Apply Reward",
+    "types": "Reward Types",
+    "reports": "Reports",
+    "loading": "Loading...",
+    "category": {
+      "PERFORMANCE": "General Performance",
+      "TARGET_ACHIEVEMENT": "Target Achievement",
+      "TARGET_EXCEED": "Target Exceeded",
+      "PUNCTUALITY": "Punctuality",
+      "NO_ABSENCE": "No Absence",
+      "QUALITY": "Work Quality",
+      "EMPLOYEE_OF_MONTH": "Employee of the Month",
+      "INITIATIVE": "Outstanding Initiative",
+      "PROJECT_SUCCESS": "Successful Project",
+      "SALES": "Sales",
+      "ADMINISTRATIVE": "Administrative Reward",
+      "SEASONAL": "Seasonal",
+      "ACHIEVEMENT": "Other Achievement"
+    },
+    "calculationMethod": {
+      "FIXED_AMOUNT": "Fixed Amount",
+      "PERCENTAGE_SALARY": "Percentage of Salary",
+      "PERCENTAGE_SALES": "Percentage of Sales",
+      "PERCENTAGE_PROJECT_PROFIT": "Percentage of Project Profit",
+      "POINTS": "Points"
+    },
+    "form": {
+      "addNew": "Add New",
+      "editReward": "Edit Reward",
+      "addReward": "Add New Reward",
+      "name": "Reward Name",
+      "namePlaceholder": "e.g. Excellence Reward",
+      "category": "Category",
+      "calculationMethod": "Calculation Method",
+      "value": "Value",
+      "eligibilityConditions": "Eligibility Conditions",
+      "minTargetProgress": "Minimum Target Progress (%)",
+      "maxLatenessCount": "Max Allowed Lateness Count",
+      "maxAbsenceCount": "Max Allowed Absence Days",
+      "maxErrorRate": "Max Error Rate Allowed (%)",
+      "minProjectScore": "Minimum Project Score",
+      "minSalesAmount": "Minimum Sales Amount",
+      "requiresManagerNomination": "Manager Nomination",
+      "requiresHRApproval": "HR Approval",
+      "save": "Save",
+      "cancel": "Cancel",
+      "loading": "Saving...",
+      "success": "Saved successfully",
+      "error": "Error while saving"
+    },
+    "delete": {
+      "title": "Delete Reward",
+      "confirm": "Are you sure you want to delete this reward?",
+      "warning": "This action cannot be undone",
+      "cancel": "Cancel",
+      "confirmButton": "Delete",
+      "loading": "Deleting...",
+      "success": "Reward deleted successfully",
+      "error": "Error while deleting"
+    },
+    "toast": {
+      "approveSuccess": "Reward approved successfully",
+      "approveError": "Failed to approve reward",
+      "rejectSuccess": "Reward rejected",
+      "rejectError": "Failed to reject reward",
+      "deleteSuccess": "Reward deleted successfully",
+      "deleteError": "Failed to delete reward",
+      "createSuccess": "Reward created successfully",
+      "updateSuccess": "Reward updated successfully"
+    },
+    "table": {
+      "employee": "Employee",
+      "rewardName": "Reward Name",
+      "category": "Category",
+      "value": "Value",
+      "status": "Status",
+      "date": "Date",
+      "actions": "Actions"
+    }
+  },
   "settings": {
     "title": "Settings",
     "generalSettings": "General Settings",
@@ -3492,6 +3586,7 @@
     "recruitment": "Recruitment",
     "regionAnalytics": "Region Analytics",
     "reminders": "Reminders",
+    "reportingForms": "Reporting Forms",
     "reports": "Reports",
     "resignations": "Resignations",
     "returnAnalytics": "Return Analytics",
@@ -3553,7 +3648,6 @@
         "confirmTitle": "Delete Reward Type",
         "confirmDescription": "Are you sure you want to delete this reward type?",
         "confirmText": "Confirm Delete",
-        "tooltip": "Delete reward",
         "irreversible": "This action cannot be undone",
         "linkedRecords": "If the type is linked to existing records, the system will prevent deletion",
         "disableInstead": "You can disable the type instead to preserve existing records",

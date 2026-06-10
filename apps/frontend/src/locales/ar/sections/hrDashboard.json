@@ -22,6 +22,7 @@
   "viewAll": "عرض الكل",
   "quickActions": "إجراءات سريعة",
   "employees": "الموظفين",
+  "rewards": "المكافآت والحوافز",
   "attendanceLabel": "الحضور",
   "leaves": "الإجازات",
   "payroll": "الرواتب",
@@ -43,5 +44,12 @@
   "totalWarnings": "إجمالي الإنذارات",
   "bySeverity": "حسب الشدة",
   "noWarningsRecord": "لا توجد سجلات إنذارات",
-  "acknowledgmentRate": "نسبة الاعتراف بالإنذار"
+  "acknowledgmentRate": "نسبة الاعتراف بالإنذار",
+  "employeeDetails": {
+    "overview": "نظرة عامة",
+    "personal": "البيانات الشخصية",
+    "documents": "المستندات",
+    "salary": "سجل الرواتب",
+    "performance": "الأداء"
+  }
 }

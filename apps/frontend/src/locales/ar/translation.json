@@ -1103,13 +1103,6 @@
       "ordersLabel": "الطلبات",
       "empty": "لا توجد بيانات إيرادات للفترة المحددة"
     },
-    "orderStats": {
-      "title": "حالة الطلبات",
-      "newOrders": "الطلبات الجديدة",
-      "viewedOrders": "طلبات تمت مراجعتها",
-      "totalOrders": "إجمالي الطلبات",
-      "requiresAttention": "يحتاج متابعة"
-    },
     "loading": {
       "title": "جاري تحميل لوحة التحكم",
       "summary": "جلب أحدث بيانات الشركة..."
@@ -2126,6 +2119,7 @@
     "viewAll": "عرض الكل",
     "quickActions": "إجراءات سريعة",
     "employees": "الموظفين",
+    "rewards": "المكافآت والحوافز",
     "attendanceLabel": "الحضور",
     "leaves": "الإجازات",
     "payroll": "الرواتب",
@@ -2147,7 +2141,14 @@
     "totalWarnings": "إجمالي الإنذارات",
     "bySeverity": "حسب الشدة",
     "noWarningsRecord": "لا توجد سجلات إنذارات",
-    "acknowledgmentRate": "نسبة الاعتراف بالإنذار"
+    "acknowledgmentRate": "نسبة الاعتراف بالإنذار",
+    "employeeDetails": {
+      "overview": "نظرة عامة",
+      "personal": "البيانات الشخصية",
+      "documents": "المستندات",
+      "salary": "سجل الرواتب",
+      "performance": "الأداء"
+    }
   },
   "inbox": {
     "tabs": {
@@ -3279,6 +3280,92 @@
     "topReturnedProducts": "المنتجات الأكثر إرجاعاً",
     "returnsCount": "عدد المرتجعات"
   },
+  "rewards": {
+    "title": "المكافآت والحوافز",
+    "pageTitle": "نظام المكافآت والحوافز",
+    "pageDescription": "إدارة المكافآت، الحوافز، والتقدير الوظيفي.",
+    "myRewards": "مكافآتي وحوافزي",
+    "myRewardsDescription": "سجل المكافآت المالية والحوافز التقديرية التي حصلت عليها",
+    "apply": "صرف مكافأة",
+    "types": "أنواع المكافآت",
+    "reports": "التقارير",
+    "loading": "جاري التحميل...",
+    "category": {
+      "PERFORMANCE": "أداء عام",
+      "TARGET_ACHIEVEMENT": "تحقيق التارجت",
+      "TARGET_EXCEED": "تجاوز التارجت",
+      "PUNCTUALITY": "التزام بالمواعيد",
+      "NO_ABSENCE": "عدم غياب",
+      "QUALITY": "جودة العمل",
+      "EMPLOYEE_OF_MONTH": "موظف الشهر",
+      "INITIATIVE": "مبادرة مميزة",
+      "PROJECT_SUCCESS": "مشروع ناجح",
+      "SALES": "مبيعات",
+      "ADMINISTRATIVE": "مكافأة إدارية",
+      "SEASONAL": "موسمي",
+      "ACHIEVEMENT": "إنجاز آخر"
+    },
+    "calculationMethod": {
+      "FIXED_AMOUNT": "مبلغ ثابت",
+      "PERCENTAGE_SALARY": "نسبة من الراتب",
+      "PERCENTAGE_SALES": "نسبة من المبيعات",
+      "PERCENTAGE_PROJECT_PROFIT": "نسبة من أرباح المشروع",
+      "POINTS": "نقاط"
+    },
+    "form": {
+      "addNew": "إضافة جديد",
+      "editReward": "تعديل مكافأة",
+      "addReward": "إضافة مكافأة جديدة",
+      "name": "اسم المكافأة",
+      "namePlaceholder": "مثال: مكافأة التميز",
+      "category": "التصنيف",
+      "calculationMethod": "طريقة الحساب",
+      "value": "القيمة",
+      "eligibilityConditions": "شروط الاستحقاق",
+      "minTargetProgress": "الحد الأدنى لتحقيق التارجت (%)",
+      "maxLatenessCount": "أقصى عدد مرات تأخير مسموح",
+      "maxAbsenceCount": "أقصى عدد أيام غياب مسموح",
+      "maxErrorRate": "أقصى نسبة أخطاء مسموحة (%)",
+      "minProjectScore": "الحد الأدنى لتقييم المشروع",
+      "minSalesAmount": "الحد الأدنى لقيمة المبيعات",
+      "requiresManagerNomination": "ترشيح مدير",
+      "requiresHRApproval": "موافقة HR",
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "loading": "جاري الحفظ...",
+      "success": "تم الحفظ بنجاح",
+      "error": "حدث خطأ أثناء الحفظ"
+    },
+    "delete": {
+      "title": "حذف المكافأة",
+      "confirm": "هل أنت متأكد من حذف هذه المكافأة؟",
+      "warning": "لا يمكن التراجع عن هذا الإجراء",
+      "cancel": "إلغاء",
+      "confirmButton": "حذف",
+      "loading": "جاري الحذف...",
+      "success": "تم حذف المكافأة بنجاح",
+      "error": "حدث خطأ أثناء الحذف"
+    },
+    "toast": {
+      "approveSuccess": "تم اعتماد المكافأة بنجاح",
+      "approveError": "فشل في اعتماد المكافأة",
+      "rejectSuccess": "تم رفض المكافأة",
+      "rejectError": "فشل في رفض المكافأة",
+      "deleteSuccess": "تم حذف المكافأة بنجاح",
+      "deleteError": "فشل في حذف المكافأة",
+      "createSuccess": "تم إنشاء المكافأة بنجاح",
+      "updateSuccess": "تم تحديث المكافأة بنجاح"
+    },
+    "table": {
+      "employee": "الموظف",
+      "rewardName": "اسم المكافأة",
+      "category": "التصنيف",
+      "value": "القيمة",
+      "status": "الحالة",
+      "date": "التاريخ",
+      "actions": "الإجراءات"
+    }
+  },
   "settings": {
     "title": "الإعدادات",
     "generalSettings": "الإعدادات العامة",
@@ -3510,6 +3597,7 @@
     "recruitment": "التوظيف",
     "regionAnalytics": "تحليلات المناطق",
     "reminders": "التذكيرات",
+    "reportingForms": "فورمات التقارير",
     "reports": "التقارير",
     "resignations": "الاستقالات",
     "returnAnalytics": "تحليلات المرتجعات",
@@ -3571,7 +3659,6 @@
         "confirmTitle": "حذف نوع المكافأة",
         "confirmDescription": "هل تريد حذف هذا النوع من المكافآت؟",
         "confirmText": "تأكيد الحذف",
-        "tooltip": "حذف المكافأة",
         "irreversible": "هذا الإجراء لا يمكن التراجع عنه",
         "linkedRecords": "إذا كان النوع مرتبطاً بسجلات سابقة، سيمنع النظام الحذف",
         "disableInstead": "يمكنك تعطيل النوع بدلاً من حذفه للمحافظة على السجلات السابقة",

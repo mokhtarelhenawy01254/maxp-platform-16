@@ -812,12 +812,12 @@ export const getSidebarConfig = (
                 { to: '/hr/audit-logs', icon: ClipboardDocumentListIcon, label: t('sidebar.auditLogs') },
                 { to: '/hr/company-policy', icon: DocumentTextIcon, label: t('sidebar.companyPolicy') },
                 { to: '/hr/reports-hub', icon: DocumentTextIcon, label: t('sidebar.hrReports') },
-                { to: '/hr/reporting/forms', icon: ClipboardDocumentListIcon, label: 'فورمات التقارير' },
+                { to: '/hr/reporting/forms', icon: ClipboardDocumentListIcon, label: t('sidebar.reportingForms') },
                 { to: '/hr/assets', icon: ComputerDesktopIcon, label: t('sidebar.assets') },
                 { to: '/hr/recruitment', icon: UserGroupIcon, label: t('sidebar.recruitment') },
                 { to: '/hr/settings', icon: Cog6ToothIcon, label: t('sidebar.hrSettings') },
                 { to: '/whatsapp/templates?category=HR', icon: BellIcon, label: t('sidebar.whatsappNotifications') },
-                { to: '/hr/rewards', icon: StarIcon, label: t('sidebar.rewards') },
+                { to: '/hr/rewards', icon: StarIcon, label: t('sidebar.rewards.title') },
             ],
             // 🔒 إخفاء إذا كان غير مفعل
             hidden: !isAppActive('hr-basic')

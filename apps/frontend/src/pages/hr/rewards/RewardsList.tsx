@@ -360,10 +360,10 @@ const RewardsList: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Award className="w-8 h-8 text-blue-600" />
-            إدارة المكافآت
+            {t("rewards.pageTitle")}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            عرض وإدارة جميع مكافآت الموظفين
+            {t("rewards.pageDescription")}
           </p>
         </div>
         <button
@@ -371,7 +371,7 @@ const RewardsList: React.FC = () => {
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-5 h-5" />
-          إضافة مكافأة
+          {t("rewards.form.addReward")}
         </button>
       </div>
 
@@ -565,7 +565,7 @@ const RewardsList: React.FC = () => {
             onClick={() => navigate("/hr/rewards/create")}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            إضافة مكافأة جديدة
+            {t("rewards.form.addReward")}
           </button>
         </div>
       ) : (

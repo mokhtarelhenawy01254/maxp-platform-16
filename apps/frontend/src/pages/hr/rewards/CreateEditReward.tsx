@@ -334,7 +334,7 @@ const CreateEditReward: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Award className="w-8 h-8 text-blue-600" />
-            {isEdit ? "تعديل المكافأة" : "إضافة مكافأة جديدة"}
+            {isEdit ? t("rewards.form.editReward") : t("rewards.form.addReward")}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             {isEdit
