@@ -27,6 +27,7 @@ import { apiClient } from "../../services/apiClient";
 import type { ApiRequestConfig } from "../../services/apiClient";
 import ActiveUsersMonitor from "../ActiveUsersMonitor";
 import { SidebarSettingsProvider, useSidebarSettings } from "../../contexts/SidebarSettingsContext";
+import { SectionGuide } from "@/components/guides/SectionGuide";
 
 const SuperAdminLayout = React.lazy(() => import("./SuperAdminLayout"));
 const AppDashboardPage = React.lazy(() => import("./app-dashboard/AppDashboardPage"));
@@ -496,6 +497,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
               className="business-shell-language-switcher"
             />
             <NotificationDropdown className="business-shell-notification-slot" />
+            <SectionGuide />
             
             {isSuperAdmin && (
               <button

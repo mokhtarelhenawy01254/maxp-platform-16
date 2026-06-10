@@ -1,3 +1,17 @@
+## [2026-06-10] Section Guide Feature — Help Icon in Every Section [DONE]
+- **Objective**: Add a help icon (`?`) in the global header that opens a dialog showing a step-by-step guide with optional video for each admin section, so merchants can learn how to use each part of the dashboard without leaving the page.
+- **Accomplishments**:
+  - Created `sectionGuideRegistry.ts` — route-to-guide mapping with 15 entries: orders, products, customers, inbox, dashboard, categories, whatsapp, advertising, affiliates, hr, settings, tasks, reports, support, super-admin.
+  - Built `SectionGuide.tsx` component — renders as a `QuestionMarkCircleIcon` button in the header, opens a Dialog with numbered steps and optional video. Uses `useLocation()` to auto-detect the current section.
+  - Integrated into `Layout.tsx` — single import, placed in the header utility row. No per-page edits needed.
+  - Added full Arabic and English translations for all 15 section guides under the `guides` key.
+  - Updated all 3 documentation files (Bugs.md, Structure.md, TEAM_SYNC.md).
+- **Files**:
+  - `apps/frontend/src/config/sectionGuideRegistry.ts` (new)
+  - `apps/frontend/src/components/guides/SectionGuide.tsx` (new)
+  - `apps/frontend/src/components/layout/Layout.tsx`
+  - `apps/frontend/src/locales/{ar,en}/translation.json`
+
 ## [2026-06-10] Production Investigation — Flora Store 404, Product Edit Fix, and Git Sync [DONE]
 - **Objective**: Diagnose 404 errors and product editing issues on the Flora store, update documentation, perform git synchronization, and review deployment configuration.
 - **Accomplishments**:

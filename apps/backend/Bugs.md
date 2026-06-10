@@ -1,3 +1,13 @@
+## [2026-06-10] Frontend — Section Guide Feature — Help Icon in Header
+- **Bug/Issue**: No in-app help/guide system existed for merchants — each section had no quick way to learn how to use it.
+- **Feature**: Added a `?` icon in the global header (utility row) that opens a dialog showing a step-by-step guide for the current section. Each guide includes numbered steps and an optional video player.
+- **Affected Files**:
+  - `apps/frontend/src/config/sectionGuideRegistry.ts` (new)
+  - `apps/frontend/src/components/guides/SectionGuide.tsx` (new)
+  - `apps/frontend/src/components/layout/Layout.tsx` — added `<SectionGuide />` import + usage
+  - `apps/frontend/src/locales/ar/translation.json` — added `guides` keys
+  - `apps/frontend/src/locales/en/translation.json` — added `guides` keys
+
 ## [2026-06-10] Frontend — Product Edit Button Uses Full Page Reload Causing 404 (SPA Route Lost)
 - **Bug/Issue**: Clicking the edit (تعديل) icon on the products list page (`https://maxp.online/products`) navigated to `/products/{id}/edit` but showed a 404 error instead of the product editor. The console showed `"المسار /products/{id}edit غير موجود"`.
 - **Root Cause**: The edit button in `ProductTableRow.tsx` used `window.location.href` (full page hard navigation) instead of React Router's client-side routing. The Express backend does not serve `index.html` for arbitrary SPA routes — it only serves static assets and storefront routes. The catch-all `*` handler requires company context and falls through to the 404 JSON handler for dashboard paths.

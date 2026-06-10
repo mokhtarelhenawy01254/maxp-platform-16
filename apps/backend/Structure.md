@@ -1,3 +1,17 @@
+## [2026-06-10] Frontend — Section Guide Feature with Route-Based Registry
+- **Details**: Added a reusable Section Guide system that displays a help icon (`?`) in the global header utility row. When clicked, it opens a dialog showing a step-by-step guide for the current section, with numbered instructions and an optional video player. The system uses a route-based registry to resolve which guide to show for the current URL path.
+- **Architecture**:
+  - **Registry** (`apps/frontend/src/config/sectionGuideRegistry.ts`): Defines `SectionGuideEntry` type with `pathPrefix`, `titleKey`, `descriptionKey`, `stepKeys[]`, and optional `videoUrl`. Contains 15 section entries (orders, products, customers, inbox, dashboard, categories, whatsapp, advertising, affiliates, hr, settings, tasks, reports, support, super-admin). The `findGuideForPath()` function sorts by longest prefix first and finds the first match.
+  - **Component** (`apps/frontend/src/components/guides/SectionGuide.tsx`): Uses the existing `@/components/ui/dialog` (built on `@base-ui/react/dialog`) for the modal. Trigger is a `QuestionMarkCircleIcon` button with `variant="ghost" size="icon"`. Content includes: title (from i18n), description, numbered step list with `bg-primary/10` circular badges, and conditional HTML5 `<video>` element for embedded video guides. Uses `useLocation()` from react-router to detect the current route.
+  - **Integration** (`apps/frontend/src/components/layout/Layout.tsx`): Imported and placed `<SectionGuide />` inside the `business-shell-utility-row` div alongside ThemeToggle, LanguageSwitcher, and NotificationDropdown. No per-page editing required — single injection point in the Layout shell.
+  - **i18n** (`apps/frontend/src/locales/{ar,en}/translation.json`): Added `guides` top-level key with `help`, `videoNotSupported`, and all 15 section guides, each containing `title`, `description`, and 3–4 `step*` keys. Arabic and English fully translated.
+- **Design Decisions**: Route auto-detection via `findGuideForPath()` avoids editing every page manually. Dialog (not Sheet/drawer) chosen for focus and simplicity. Native `<video>` element keeps dependencies zero. Registry is declarative — adding a new section guide is one entry in the array + i18n keys.
+- **Files**:
+  - `apps/frontend/src/config/sectionGuideRegistry.ts` (new)
+  - `apps/frontend/src/components/guides/SectionGuide.tsx` (new)
+  - `apps/frontend/src/components/layout/Layout.tsx`
+  - `apps/frontend/src/locales/{ar,en}/translation.json`
+
 ## [2026-06-10] Frontend — Product Edit Button SPA Navigation Fix
 - **Details**: The product edit button in the products list used `window.location.href` (full page reload), which bypasses React Router and causes the Express backend to return 404 since it doesn't serve `index.html` for arbitrary SPA routes. Fixed by using `useNavigate()` from React Router for client-side navigation.
 - **Root Cause**: The Express backend's routing architecture:
