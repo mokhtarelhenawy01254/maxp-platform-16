@@ -13295,4 +13295,22 @@ POST /chat {"message": "مرحبا"}
   - `apps/frontend/src/storefront/StorefrontShell.tsx`
   - `apps/frontend/src/storefront/hooks/useProduct.ts`
   - `apps/frontend/src/storefront/hooks/useStorefrontFacebookTracking.ts`
-  - `apps/frontend/src/storefront/hooks/useStorefrontVisitTracking.ts`
+   - `apps/frontend/src/storefront/hooks/useStorefrontVisitTracking.ts`
+
+## [2026-06-10] HR Rewards i18n Unification & Sidebar Label Fix [COMPLETE]
+- **Problem**: The HR rewards sidebar item rendered `[object Object]` and crashed search because `t('sidebar.rewards')` returned an object instead of a string. Multiple HR pages had hardcoded Arabic strings violating i18n policy.
+- **Fix**:
+  - `sidebar.ts:820`: `t('sidebar.rewards')` → `t('sidebar.rewards.title')`
+  - `sidebar.ts:815`: Replaced hardcoded `'فورمات التقارير'` with `t('sidebar.reportingForms')`
+  - Created `rewards.json` (ar/en) with complete reward translation keys
+  - Added `rewards` + `employeeDetails` keys to `hrDashboard.json` (ar/en)
+  - Added `reportingForms` to `sidebar.json` (ar/en)
+  - Replaced hardcoded strings in 6 component files with `t()` calls
+  - Ran `i18n:merge` to regenerate `translation.json`
+- **Verification**:
+  - JSON validation passed on all 8 modified/new section files
+  - All string replacements verified in component files
+  - Sidebar now renders "المكافآت والحوافز" instead of `[object Object]`
+  - Search works without TypeError
+  - No backend, database, or permission changes
+- **Affected Files**: 14 frontend files (4 config, 8 locale, 4 page components)

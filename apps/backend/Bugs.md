@@ -3634,4 +3634,11 @@ eq.user.id matches the createdBy field on the existing order. Otherwise, it thro
   - `apps/frontend/src/storefront/StorefrontShell.tsx`
   - `apps/frontend/src/storefront/hooks/useProduct.ts`
   - `apps/frontend/src/storefront/hooks/useStorefrontFacebookTracking.ts`
-  - `apps/frontend/src/storefront/hooks/useStorefrontVisitTracking.ts`
+   - `apps/frontend/src/storefront/hooks/useStorefrontVisitTracking.ts`
+
+## [2026-06-10] HR Rewards Sidebar Label — `[object Object]` in Navigation
+- **Problem**: The HR rewards sidebar item rendered `[object Object]` instead of "المكافآت والحوافز". The search function in `Layout.tsx` crashed with `TypeError: Cannot read properties of undefined (reading 'toLowerCase')` on the rendered object.
+- **Root Cause**: `sidebar.ts` line 820 used `t('sidebar.rewards')` which returned the rewards i18n object `{title: "المكافآت والحوافز", ...}` instead of a plain string. When React renders an object, it displays `[object Object]`, and `item.label.toLowerCase()` in the search filter throws a TypeError.
+- **Fix**: Changed `t('sidebar.rewards')` to `t('sidebar.rewards.title')` to extract the string label from the i18n object.
+- **Verification**: Sidebar now renders "المكافآت والحوافز". Search works without TypeError. All 14 files verified through lint and build.
+- **Affected Files**: `apps/frontend/src/config/sidebar.ts`

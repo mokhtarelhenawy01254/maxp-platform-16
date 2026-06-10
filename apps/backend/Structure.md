@@ -2653,5 +2653,23 @@ Manages AI agent chat sessions via Prisma (`aIChatSession`, `aIChatMessage` mode
   - `apps/frontend/src/pages/products/utils/__tests__/productPreviewUrl.test.ts`
   - `apps/frontend/src/storefront/StorefrontShell.tsx`
   - `apps/frontend/src/storefront/hooks/useProduct.ts`
-  - `apps/frontend/src/storefront/hooks/useStorefrontFacebookTracking.ts`
-  - `apps/frontend/src/storefront/hooks/useStorefrontVisitTracking.ts`
+   - `apps/frontend/src/storefront/hooks/useStorefrontFacebookTracking.ts`
+   - `apps/frontend/src/storefront/hooks/useStorefrontVisitTracking.ts`
+
+## [2026-06-10] HR Rewards i18n Unification
+- **Details**: Replaced all hardcoded Arabic strings in HR rewards UI with i18n translation keys. Created new `rewards.json` section files (ar/en) to isolate reward translations from the auto-merged `translation.json`. Added missing keys: `hrDashboard.rewards`, `hrDashboard.employeeDetails` (7 tabs), `sidebar.reportingForms`.
+- **Architecture**:
+  - **Sidebar config** (`sidebar.ts`): Uses `t('sidebar.rewards.title')` to extract the string label from the i18n object, not `t('sidebar.rewards')` which returns an object.
+  - **Section file isolation**: Reward translations live in their own `rewards.json` section file so they survive `i18n:merge` without being edited in the generated `translation.json`.
+  - **EmployeeDetails tabs**: 7 tabs use `t("hrDashboard.employeeDetails.*")` / `t("sidebar.*")` instead of hardcoded Arabic names.
+- **Files**:
+  - `apps/frontend/src/config/sidebar.ts`
+  - `apps/frontend/src/locales/{ar,en}/sections/hrDashboard.json`
+  - `apps/frontend/src/locales/{ar,en}/sections/rewards.json` (NEW)
+  - `apps/frontend/src/locales/{ar,en}/sections/sidebar.json`
+  - `apps/frontend/src/locales/{ar,en}/translation.json` (regenerated)
+  - `apps/frontend/src/pages/employee/MyDashboard.tsx`
+  - `apps/frontend/src/pages/employee/MyRewards.tsx`
+  - `apps/frontend/src/pages/hr/EmployeeDetails.tsx`
+  - `apps/frontend/src/pages/hr/rewards/CreateEditReward.tsx`
+  - `apps/frontend/src/pages/hr/rewards/RewardsList.tsx`
