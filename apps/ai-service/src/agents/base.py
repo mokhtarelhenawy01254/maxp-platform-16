@@ -60,7 +60,7 @@ from src.llm.agent_client_factory import (
 )
 from src.llm.model_capabilities import route_for_modalities, supports_vision
 from src.mcp_integration.registry import get_mcp_registry
-from src.pipeline.context import PipelineContext
+from src.pipeline.context import DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL, PipelineContext
 from src.pipeline.runner import execute_pipeline
 from src.pipeline.stages.execute_tools import execute_tools
 from src.pipeline.stages.handle_fallback import handle_fallback
@@ -331,6 +331,7 @@ class BaseAgent:
                 tools=tools,
                 system_prompt=instructions,
                 company_id=self.company_id,
+                key_id=self.config.key_id,
             )
         else:
             self.client = await build_agent_client_async(
@@ -342,6 +343,10 @@ class BaseAgent:
             )
         # Fallback: if agent's preferred model has no keys, use gemini-2.5-flash
         if self.client is None:
+            if self.config.provider:
+                raise RuntimeError(
+                    f"Selected LLM provider unavailable: {self.config.provider}"
+                )
             logger.warning("agent_client_unavailable_falling_back", agent_id=self.id, model=self.model)
             self.client = await build_agent_client_async(
                 settings,
@@ -716,7 +721,7 @@ class BaseAgent:
             channel=str(task.get("channel") or task.get("source_channel") or "chat"),
             conversation_id=str(task.get("conversation_id") or thread_id),
             attachments=attachments,
-            external_memory_context=dict(task.get("memory_context") or {}),
+            external_memory_context=self._build_external_memory_context(task),
         )
         if vision_client_required and task_llm_client is None:
             ctx.early_return = {
@@ -923,7 +928,7 @@ class BaseAgent:
             channel=str(task.get("channel") or task.get("source_channel") or "chat"),
             conversation_id=str(task.get("conversation_id") or thread_id),
             attachments=attachments,
-            external_memory_context=dict(task.get("memory_context") or {}),
+            external_memory_context=self._build_external_memory_context(task),
         )
         if attachments and not supports_vision(self.model, self.config.provider) and task_llm_client is None:
             emitter.emit("run_error", {"error": "vision_model_unavailable"})
@@ -953,10 +958,12 @@ class BaseAgent:
 
             final_reply = ctx.final_reply or ""
             executed = ctx.executed_tools or []
+            response_attachments = list(ctx.response_attachments or [])
             emitter.emit(
                 "agent_reply",
                 {
                     "reply": final_reply,
+                    "response_attachments": response_attachments,
                     "is_incremental": False,
                     "model_used": self.model,
                 },
@@ -966,6 +973,7 @@ class BaseAgent:
                 {
                     "run_id": run_id,
                     "reply": final_reply,
+                    "response_attachments": response_attachments,
                     "tool_calls": [
                         {"name": t.get("tool"), "success": t.get("success", True)}
                         for t in executed
@@ -978,6 +986,13 @@ class BaseAgent:
 
         for ev in emitter.events():
             yield ev
+
+    def _build_external_memory_context(self, task: dict[str, Any]) -> dict[str, Any]:
+        memory_context = dict(task.get("memory_context") or {})
+        provider = str(self.config.provider or "").strip().upper()
+        if provider and provider != "GOOGLE":
+            memory_context.setdefault(DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL, True)
+        return memory_context
 
     # ------------------------------------------------------------------
     # Children / lifecycle
@@ -1061,6 +1076,7 @@ class BaseAgent:
             "result": {
                 "reply": reply,
                 "summary": reply,
+                "response_attachments": list(ctx.response_attachments or []),
                 "error": early_result.get("error"),
                 "errorCode": early_result.get("error_code"),
                 "providerStatusCode": early_result.get("provider_status_code"),

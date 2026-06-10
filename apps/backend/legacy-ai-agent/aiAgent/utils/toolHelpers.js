@@ -104,7 +104,9 @@ function parseVariantMetadata(variant = {}) {
 function getVariantAttribute(variant = {}, names = []) {
   const metadata = parseVariantMetadata(variant);
   const values = metadata.attributeValues || metadata.attributes || {};
-  const entries = Object.entries(values || {});
+  const directEntries = Object.entries(metadata || {})
+    .filter(([key]) => !['attributeValues', 'attributes'].includes(key));
+  const entries = [...Object.entries(values || {}), ...directEntries];
   for (const wantedName of names) {
     const wanted = normalizeComparableText(wantedName);
     const match = entries.find(([key]) => normalizeComparableText(key) === wanted);

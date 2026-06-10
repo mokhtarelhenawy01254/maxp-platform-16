@@ -1,4 +1,5 @@
 const mockFindFirst = jest.fn();
+const mockFindMany = jest.fn();
 const mockQueryRaw = jest.fn().mockResolvedValue([]);
 const mockQueryRawUnsafe = jest.fn();
 const mockExecuteRaw = jest.fn().mockResolvedValue(1);
@@ -8,6 +9,7 @@ jest.mock('../../services/sharedDatabase', () => ({
     product: {
       findFirst: mockFindFirst,
       findUnique: jest.fn().mockImplementation((args) => mockFindFirst(args)),
+      findMany: mockFindMany,
     },
     $queryRaw: mockQueryRaw,
     $queryRawUnsafe: mockQueryRawUnsafe,
@@ -27,6 +29,7 @@ const TEST_EMBEDDING = new Array(768).fill(0.01);
 describe('agent inventory.check tool', () => {
   beforeEach(() => {
     mockFindFirst.mockReset();
+    mockFindMany.mockReset().mockResolvedValue([]);
     mockQueryRaw.mockReset().mockResolvedValue([]);
     mockQueryRawUnsafe.mockReset().mockResolvedValue([
       { id: 'prod_123', name: 'Swan High Skotch', sku: 'SWAN-HIGH', price: 499 }
@@ -169,6 +172,38 @@ describe('agent inventory.check tool', () => {
       'https://cdn.example.test/swan-side.jpg',
       'https://cdn.example.test/swan-black.jpg',
     ]);
+  });
+
+  test('uses text-only search when vector search is disabled by the Python tool gateway', async () => {
+    mockFindMany.mockResolvedValueOnce([
+      { id: 'prod_123', name: 'Swan High Skotch', sku: 'SWAN-HIGH', price: 499, stock: 12, trackInventory: true },
+    ]);
+    mockFindFirst.mockResolvedValueOnce({
+      name: 'Swan High Skotch',
+      sku: 'SWAN-HIGH',
+      price: 499,
+      stock: 12,
+      trackInventory: true,
+      productVariants: [
+        { name: '42', type: 'size', sku: 'SWAN-HIGH-S42', stock: 3, trackInventory: true, isActive: true },
+      ],
+    });
+
+    const result = await executeTool('company_123456', 'inventory.check', {
+      productNameOrSku: 'Swan High Skotch',
+      productSize: '42',
+      useVector: false,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.result).toEqual(expect.objectContaining({
+      found: true,
+      productName: 'Swan High Skotch',
+      requestedSize: '42',
+    }));
+    expect(mockFindMany).toHaveBeenCalled();
+    expect(episodicMemoryService.generateEmbeddingAsync).not.toHaveBeenCalled();
+    expect(mockQueryRawUnsafe).not.toHaveBeenCalled();
   });
 
   test('returns public image URLs for Messenger replies when catalog images are relative', async () => {

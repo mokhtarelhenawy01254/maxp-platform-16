@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import get_settings
 from src.db.session import get_session
+from src.pipeline.context import DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL
 
 
 def _create_test_app(mock_session: AsyncMock) -> FastAPI:
@@ -96,6 +97,8 @@ def test_agent_chat_uses_selected_agent_config_when_db_agent_is_missing(monkeypa
                     "role": "FACEBOOK_SALES_SUPPORT",
                     "templateSlug": "facebook-sales-support-agent",
                     "model": "llama-3.3-70b-versatile",
+                    "provider": "NVIDIA",
+                    "keyId": "selected-nvidia-key",
                     "allowedTools": ["product.search"],
                     "allowedSkills": [],
                     "persona": {
@@ -116,10 +119,171 @@ def test_agent_chat_uses_selected_agent_config_when_db_agent_is_missing(monkeypa
     assert overrides["id"] == "agent_fb"
     assert overrides["name"] == "شيرين"
     assert overrides["role"] == "FACEBOOK_SALES_SUPPORT"
+    assert overrides["provider"] == "NVIDIA"
+    assert overrides["key_id"] == "selected-nvidia-key"
     assert overrides["instructions"]["soul"] == "اتكلمي بالعامية المصرية. اسمك شيرين."
     assert captured["task"]["channel"] == "facebook"
     assert captured["task"]["attachments"][0]["mime_type"] == "image/png"
     assert captured["task"]["attachments"][0]["detail"] == "low"
+    assert captured["task"]["memory_context"][DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL] is True
+
+
+def test_agent_chat_returns_response_attachments(monkeypatch):
+    mock_session = AsyncMock(spec=AsyncSession)
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = None
+    mock_result.mappings().one_or_none.return_value = None
+    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    class _Agent:
+        id = "agent_fb"
+        role = "FACEBOOK_SALES_SUPPORT"
+        _last_model_selection = None
+
+        async def ensure_client(self):
+            return object()
+
+        async def process_task(self, _task):
+            return {
+                "status": "SUCCESS",
+                "result": {
+                    "reply": "Here is the product image.",
+                    "tools": [],
+                    "response_attachments": [
+                        {
+                            "type": "image",
+                            "url": "https://img.example.test/nova.jpg",
+                            "source": "tool_result",
+                            "tool": "product.search",
+                        }
+                    ],
+                    "pipeline_trace": {},
+                },
+            }
+
+    async def fake_from_template(cls, template_slug, company_id, overrides=None, session=None):
+        return _Agent()
+
+    monkeypatch.setattr(
+        "src.api.admin.agents.BaseAgent.from_template",
+        classmethod(fake_from_template),
+    )
+
+    app = _create_test_app(mock_session)
+    with TestClient(app) as client:
+        response = client.post(
+            "/admin/agents/chat",
+            headers={"Authorization": "Bearer test-service-token"},
+            json={
+                "company_id": "comp_test",
+                "agent_id": "agent_fb",
+                "message": "send me a photo",
+                "thread_id": "thread_1",
+                "agent_config": {
+                    "id": "agent_fb",
+                    "role": "FACEBOOK_SALES_SUPPORT",
+                    "templateSlug": "facebook-sales-support-agent",
+                    "allowedTools": ["product.search"],
+                    "allowedSkills": [],
+                },
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.json()["response_attachments"] == [
+        {
+            "type": "image",
+            "url": "https://img.example.test/nova.jpg",
+            "source": "tool_result",
+            "tool": "product.search",
+        }
+    ]
+
+
+def test_agent_chat_creates_approval_draft_for_awaiting_tool(monkeypatch):
+    mock_session = AsyncMock(spec=AsyncSession)
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = None
+    mock_result.mappings().one_or_none.return_value = None
+    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    class _Agent:
+        id = "agent_fb"
+        role = "FACEBOOK_SALES_SUPPORT"
+        _last_model_selection = None
+
+        async def ensure_client(self):
+            return object()
+
+        async def process_task(self, _task):
+            return {
+                "status": "SUCCESS",
+                "result": {
+                    "reply": "pending review",
+                    "tools": [
+                        {
+                            "tool": "order.create_confirmed",
+                            "status": "awaiting_approval",
+                            "success": False,
+                            "action_type": "order_create_confirmed",
+                            "action_args": {
+                                "customer_name": "Ahmed",
+                                "customer_phone": "01001111111",
+                                "product_name": "Sprint X",
+                                "product_price": 1499,
+                                "product_size": "42",
+                                "product_color": "black",
+                            },
+                            "company_id": "comp_test",
+                        }
+                    ],
+                    "pipeline_trace": {},
+                },
+            }
+
+    async def fake_from_template(cls, template_slug, company_id, overrides=None, session=None):
+        return _Agent()
+
+    create_mock = AsyncMock(return_value={"draft_id": "draft_123", "status": "pending"})
+    thread_mock = AsyncMock(return_value="00000000-0000-0000-0000-000000000123")
+    monkeypatch.setattr(
+        "src.api.admin.agents.BaseAgent.from_template",
+        classmethod(fake_from_template),
+    )
+    monkeypatch.setattr("src.api.admin.agents._ensure_approval_thread_id", thread_mock)
+    monkeypatch.setattr("src.api.admin.agents.create_approval_draft", create_mock)
+
+    app = _create_test_app(mock_session)
+    with TestClient(app) as client:
+        response = client.post(
+            "/admin/agents/chat",
+            headers={"Authorization": "Bearer test-service-token"},
+            json={
+                "company_id": "comp_test",
+                "agent_id": "agent_fb",
+                "message": "confirm order",
+                "thread_id": "thread_approval",
+                "customer_id": "customer_1",
+                "channel": "facebook",
+                "agent_config": {
+                    "id": "agent_fb",
+                    "name": "sales",
+                    "role": "FACEBOOK_SALES_SUPPORT",
+                    "templateSlug": "facebook-sales-support-agent",
+                    "allowedTools": ["order.create_confirmed"],
+                    "allowedSkills": [],
+                },
+            },
+        )
+
+    body = response.json()
+    assert response.status_code == 200
+    assert body["status"] == "awaiting_approval"
+    assert body["draft_id"] == "draft_123"
+    assert body["tool_calls"][0]["draft_id"] == "draft_123"
+    create_mock.assert_awaited_once()
+    assert create_mock.await_args.kwargs["thread_id"] == "00000000-0000-0000-0000-000000000123"
+    assert create_mock.await_args.kwargs["channel"] == "facebook"
 
 
 def test_sandbox_evaluate_response_uses_python_llm_client(monkeypatch):

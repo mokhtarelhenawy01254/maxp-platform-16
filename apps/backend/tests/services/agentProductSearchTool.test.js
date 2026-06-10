@@ -99,6 +99,54 @@ describe('agent product.search tool', () => {
     expect(mockFindMany).not.toHaveBeenCalled();
   });
 
+  test('uses text-only search when vector search is disabled by the Python tool gateway', async () => {
+    mockFindMany
+      .mockResolvedValueOnce([
+        {
+          id: 'prod_123',
+          name: 'Platform Sneakers',
+          sku: 'PLATFORM-41',
+          price: 499,
+          stock: 12,
+          trackInventory: true,
+          isActive: true,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 'prod_123',
+          name: 'Platform Sneakers',
+          sku: 'PLATFORM-41',
+          price: 499,
+          comparePrice: null,
+          stock: 12,
+          trackInventory: true,
+          isActive: true,
+          isFeatured: false,
+          mainImage: null,
+          images: null,
+          tags: 'sneakers',
+          category: { name: 'Shoes' },
+          productVariants: [],
+        },
+      ]);
+
+    const result = await executeTool('company_123456', 'product.search', {
+      query: 'Platform Sneakers',
+      limit: 5,
+      useVector: false,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.result.products[0]).toEqual(expect.objectContaining({
+      name: 'Platform Sneakers',
+      sku: 'PLATFORM-41',
+    }));
+    expect(mockFindMany).toHaveBeenCalledTimes(2);
+    expect(episodicMemoryService.generateEmbeddingAsync).not.toHaveBeenCalled();
+    expect(mockQueryRawUnsafe).not.toHaveBeenCalled();
+  });
+
   test('passes previous-product references to the unified orchestrator', async () => {
     const workingMemoryService = require('../../legacy-ai-agent/aiAgent/workingMemoryService');
     await workingMemoryService.initSession('company_123456', 'conv_123');
@@ -183,20 +231,19 @@ describe('agent product.search tool', () => {
     expect(sqlQuery).toContain('product_variants pv');
     expect(sqlQuery).toContain('pv."productId" = products.id');
     expect(sqlQuery).toContain('pv."isActive" = true');
-    expect(sqlQuery).toContain('~* $6');
-    expect(sqlQuery).toContain('ILIKE $7');
+    expect(sqlQuery).toContain('~* $5');
+    expect(sqlQuery).toContain('ILIKE $6');
 
     // Verify parameter bindings
     const params = calls[0].slice(1);
-    // $1: embedding (array literal or mock string)
-    // $2: cleanQuery
-    // $3: likeQuery
-    // $4: companyId
-    // $5: limit
-    // $6: color (regex pattern containing synonyms like red, أحمر)
-    // $7: size (%42%)
-    expect(params[3]).toBe('company_123456');
-    expect(params[5]).toContain('أحمر');
-    expect(params[6]).toBe('%42%');
+    // $1: cleanQuery
+    // $2: likeQuery
+    // $3: companyId
+    // $4: limit
+    // $5: color (regex pattern containing synonyms like red, أحمر)
+    // $6: size (%42%)
+    expect(params[2]).toBe('company_123456');
+    expect(params[4]).toContain('أحمر');
+    expect(params[5]).toBe('%42%');
   });
 });

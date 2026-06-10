@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, ClassVar
 
@@ -45,8 +45,6 @@ def is_production_unsafe_model_name(model_name: str) -> bool:
 
 
 class ModelManagerError(Exception):
-    """Exception raised by ModelManager when no suitable key can be found."""
-
     def __init__(self, code: str, message: str, retry_after: float | None = None):
         self.code = code
         self.message = message
@@ -55,19 +53,7 @@ class ModelManagerError(Exception):
 
 
 @dataclass
-class ModelKey:
-    """Mutable state for a single AI API key stored in Redis."""
-    key_id: str
-    model: str
-    provider: str
-    cooldown_until: float = 0.0
-    status: str = "ACTIVE"  # ACTIVE | COOLDOWN | PERMANENTLY_DISABLED
-    failure_reason: str | None = None
-
-
-@dataclass
 class ModelLimit:
-    """Limits for a specific model, loaded from DB."""
     model_name: str
     rpm: int = 10
     rph: int = 600
@@ -78,40 +64,27 @@ class ModelLimit:
 
 @dataclass
 class RoutingResult:
-    """Result of key selection for a request."""
     key_id: str
     api_key: str
     model: str
     provider: str
     base_url: str | None = None
     key_name: str | None = None
-    selected_pool: str = "primary"  # primary | failover | manual
-    active_provider: str | None = None
-    manual_override: bool = False
 
 
 class ModelManager:
     """
-    Advanced AI Model Manager for key rotation, quota tracking, and circuit breaking.
-
-    Ports the core logic from Node.js modelManager.js (~3026 lines) into a
-    lean, async Python implementation.
+    Simplified AI Model Manager. Selects the first active CENTRAL key with a
+    matching enabled model. No round-robin, no cooldown, no circuit breaker.
     """
-
-    DEFAULT_COOLDOWN = 30  # seconds
-    PERMANENT_COOLDOWN = 86400  # 24 hours
-
-    CRITICAL_ERRORS: frozenset[str] = frozenset({
-        "LEAKED", "403_INVALID", "PERMISSION_DENIED", "INVALID_KEY"
-    })
 
     _model_limits_cache: ClassVar[dict[str, ModelLimit]] = {}
     _limits_last_loaded: float = 0
-    LIMITS_TTL_SECONDS = 5 * 60  # 5 minutes
+    LIMITS_TTL_SECONDS = 5 * 60
 
     _global_config_cache: ClassVar[dict | None] = None
     _global_config_last_loaded: float = 0
-    GLOBAL_CONFIG_TTL_MS = 30_000  # 30 seconds
+    GLOBAL_CONFIG_TTL_MS = 30_000
 
     _config_version: int = 0
     _config_version_last_checked: float = 0
@@ -121,7 +94,6 @@ class ModelManager:
         self.settings = get_settings()
         self.provider_priority = list(DEFAULT_PROVIDER_PRIORITY)
 
-        # Performance metrics
         self._metrics = {
             "total_requests": 0,
             "successful_requests": 0,
@@ -135,34 +107,13 @@ class ModelManager:
         self._error_counts: dict[str, int] = {}
         self._metrics_last_reset = time.time()
 
-        # Usage buffer for batched writes
         self._usage_buffer: dict[str, dict[str, int]] = {}
         self._usage_buffer_lock = asyncio.Lock()
 
-    # -------------------------------------------------------------------------
-    # Redis key state helpers
-    # -------------------------------------------------------------------------
-
-    async def _get_key_state(self, key_id: str) -> ModelKey | None:
-        state_json = await redis_client.get(f"mm:key_state:{key_id}")
-        if not state_json:
-            return None
-        data = json.loads(state_json)
-        return ModelKey(**data)
-
-    async def _set_key_state(self, key: ModelKey) -> None:
-        ttl = self.PERMANENT_COOLDOWN if key.status == "PERMANENTLY_DISABLED" else 3600
-        await redis_client.set(
-            f"mm:key_state:{key.key_id}",
-            json.dumps(asdict(key)),
-            ttl=ttl,
-        )
-
-    async def _get_round_robin_index(self, pool_name: str, pool_size: int) -> int:
-        if pool_size == 0:
-            return 0
-        idx = await redis_client.incr(f"mm:rr_idx:{pool_name}")
-        return ((idx or 0) - 1) % pool_size
+    def _clear_all_caches(self) -> None:
+        self._model_limits_cache.clear()
+        self._global_config_cache = None
+        logger.info("all_caches_cleared")
 
     # -------------------------------------------------------------------------
     # Model limits (loaded from DB, cached in-memory)
@@ -178,10 +129,8 @@ class ModelManager:
             return
 
         async with session.async_session() as db:
-            # ai_model_limits table may not exist; fall back gracefully
             try:
                 from sqlalchemy import text
-
                 limits_result = await db.execute(
                     text("SELECT model_name, rpm, rph, rpd, tpm, max_tokens FROM ai.ai_model_limits WHERE is_deprecated = false")
                 )
@@ -220,7 +169,6 @@ class ModelManager:
             return
 
         if session.async_session is None:
-            logger.debug("config_version_check_skipped_db_uninitialized")
             self._config_version_last_checked = now
             return
 
@@ -233,7 +181,6 @@ class ModelManager:
                 if config and config.updated_at:
                     current_version = int(config.updated_at.timestamp() * 1000)
                     if self._config_version > 0 and current_version > self._config_version:
-                        logger.info("config_updated_clearing_caches")
                         self._clear_all_caches()
                     self._config_version = current_version
         except Exception as e:
@@ -250,7 +197,6 @@ class ModelManager:
             return self._global_config_cache
 
         if session.async_session is None:
-            logger.debug("global_config_skipped_db_uninitialized")
             return None
 
         try:
@@ -302,11 +248,6 @@ class ModelManager:
 
         return ordered
 
-    def _clear_all_caches(self) -> None:
-        self._model_limits_cache.clear()
-        self._global_config_cache = None
-        logger.info("all_caches_cleared")
-
     # -------------------------------------------------------------------------
     # Health check / live key testing
     # -------------------------------------------------------------------------
@@ -316,7 +257,6 @@ class ModelManager:
         key_id: str,
         timeout_ms: int = 20_000,
     ) -> dict[str, Any]:
-        """Test a key by sending a minimal request. Returns test result dict."""
         started_at = time.time()
         tested_at = datetime.now(UTC).isoformat()
 
@@ -354,7 +294,6 @@ class ModelManager:
                 provider=key_record.provider,
             )
 
-        # Get the top-priority enabled model for this key
         try:
             async with session.async_session() as db_session:
                 model_result = await db_session.execute(
@@ -374,11 +313,15 @@ class ModelManager:
             else self._default_model_for_provider(provider)
         )
 
-        # Attempt a live call via the provider factory
         try:
             from src.llm.providers.factory import get_provider_factory
             factory = get_provider_factory()
-            client = await factory.get_provider(provider, model, key_id)
+            client = await factory.get_provider(
+                provider,
+                model,
+                key_record.company_id or "default",
+                key_id=key_id,
+            )
 
             if client is None:
                 return self._key_test_result(
@@ -485,7 +428,7 @@ class ModelManager:
         return defaults.get(provider, "gemini-2.5-flash")
 
     # -------------------------------------------------------------------------
-    # Core key selection
+    # Core key selection — simple first active key
     # -------------------------------------------------------------------------
 
     async def get_next_key(
@@ -493,13 +436,9 @@ class ModelManager:
         model_name: str,
         company_id: str,
         preferred_provider: str | None = None,
-        excluded_key_ids: set[str] | None = None,
         estimated_tokens: int = 0,
+        key_id: str | None = None,
     ) -> RoutingResult:
-        """
-        Select the next available API key using reactive round-robin with failover.
-        """
-        excluded_key_ids = excluded_key_ids or set()
 
         await self.check_config_version()
         global_config = await self.get_global_ui_config()
@@ -508,13 +447,6 @@ class ModelManager:
             global_config,
             preferred_provider=preferred_provider,
         )
-        enable_failover = (global_config or {}).get("enable_failover", True)
-
-        if not enable_failover:
-            provider_priority = provider_priority[:1]
-
-        all_keys: list[dict] = []
-        active_provider = provider_priority[0] if provider_priority else "GOOGLE"
 
         if session.async_session is None:
             raise ModelManagerError(
@@ -524,7 +456,7 @@ class ModelManager:
 
         async with session.async_session() as db:
             for provider_type in provider_priority:
-                result = await db.execute(
+                stmt = (
                     select(AiKey)
                     .join(AiModelConfig, AiModelConfig.key_id == AiKey.id)
                     .where(
@@ -534,114 +466,30 @@ class ModelManager:
                         AiModelConfig.is_enabled == True,  # noqa: E712
                     )
                 )
+                if key_id:
+                    stmt = stmt.where(AiKey.id == key_id)
+                result = await db.execute(stmt)
                 keys = result.scalars().all()
                 for key in keys:
                     if key.company_id and key.company_id != company_id and key.key_type != "CENTRAL":
                         continue
-                    all_keys.append({
-                        "id": key.id,
-                        "api_key": key.api_key,
-                        "name": key.name,
-                        "provider": key.provider,
-                        "base_url": key.base_url,
-                        "key_type": key.key_type,
-                    })
+                    # Return first matching key — no round-robin, no cooldown
+                    return RoutingResult(
+                        key_id=key.id,
+                        api_key=key.api_key,
+                        model=model_name,
+                        provider=key.provider,
+                        base_url=key.base_url,
+                        key_name=key.name,
+                    )
 
-        now = time.time()
-        available_keys: list[dict] = []
-
-        for key in all_keys:
-            if key["id"] in excluded_key_ids:
-                continue
-            state = await self._get_key_state(key["id"])
-            if state and (
-                state.status == "PERMANENTLY_DISABLED"
-                or state.cooldown_until > now
-            ):
-                continue
-
-            # Budget check
-            budget_ok, budget_reason = await self._check_key_budget(key, estimated_tokens)
-            if not budget_ok:
-                logger.debug("key_skipped_budget", key_id=key["id"], reason=budget_reason)
-                continue
-
-            available_keys.append(key)
-
-        if not available_keys:
-            raise ModelManagerError(
-                "ALL_KEYS_UNAVAILABLE",
-                "No available API keys for the requested model",
-            )
-
-        # Round-robin within pool
-        pool_name = f"{active_provider}:{model_name}"
-        idx = await self._get_round_robin_index(pool_name, len(available_keys))
-        selected = available_keys[idx]
-
-        # Company-wide budget check
-        budget_ok, budget_reason = await self._check_company_budget(company_id)
-        if not budget_ok:
-            raise ModelManagerError("BUDGET_EXCEEDED", budget_reason)
-
-        return RoutingResult(
-            key_id=selected["id"],
-            api_key=selected["api_key"],
-            model=model_name,
-            provider=selected["provider"],
-            base_url=selected.get("base_url"),
-            key_name=selected.get("name"),
-            selected_pool="primary",
-            active_provider=active_provider,
+        raise ModelManagerError(
+            "ALL_KEYS_UNAVAILABLE",
+            "No available API keys for the requested model",
         )
 
-    async def _check_key_budget(self, key_info: dict, estimated_tokens: int) -> tuple[bool, str]:
-        """Check if a specific key is within its rate limits. Returns (ok, reason)."""
-        try:
-            from src.billing.ledger import budget_ledger
-
-            selection = {
-                "id": key_info.get("id") or key_info.get("key_id"),
-                "keyId": key_info.get("id") or key_info.get("key_id"),
-                "provider": key_info.get("provider"),
-                "modelName": key_info.get("model"),
-                "apiKey": key_info.get("api_key"),
-                "routingLimits": key_info.get("routingLimits"),
-                "limits": key_info.get("limits"),
-                "maxRequestsPerDay": key_info.get("maxRequestsPerDay"),
-                "usage": key_info.get("usage"),
-                "modelUsage": key_info.get("modelUsage"),
-                "companyId": key_info.get("company_id"),
-            }
-
-            result = await budget_ledger.can_route(selection, {"estimatedTokens": estimated_tokens})
-            if result.allowed:
-                return True, ""
-            return False, result.reason or "BUDGET_LIMIT_EXCEEDED"
-        except Exception as e:
-            logger.warning("budget_check_failed", error=str(e))
-            return True, ""  # Fail open — don't block on budget check errors
-
-    async def _check_company_budget(self, company_id: str) -> tuple[bool, str]:
-        """Check if company has exceeded daily budget. Returns (ok, reason)."""
-        try:
-            from src.billing.ledger import budget_ledger
-
-            result = await budget_ledger.can_route(
-                {"companyId": company_id},
-                {"companyId": company_id},
-            )
-            if result.allowed:
-                return True, ""
-            return False, result.reason or "COMPANY_BUDGET_EXCEEDED"
-        except Exception as e:
-            logger.warning("company_budget_check_failed", error=str(e))
-            return True, ""  # Fail open
-        # TODO: integrate with billing ledger for company-level budget
-        return True, ""
-
     # -------------------------------------------------------------------------
-    # Usage recording and circuit breaker
+    # Usage recording (no circuit breaker)
     # -------------------------------------------------------------------------
 
     async def record_success(
@@ -650,7 +498,6 @@ class ModelManager:
         usage: dict[str, Any],
         response_time_ms: int | None = None,
     ) -> None:
-        """Record a successful request and reset circuit breaker."""
         self._metrics["successful_requests"] += 1
         self._metrics["total_requests"] += 1
 
@@ -665,19 +512,8 @@ class ModelManager:
                 await client.incrby(f"mm:usage:{key_id}:min:{minute_bucket}", total)
                 await client.incrby(f"mm:usage:{key_id}:day:{day_bucket}", total)
 
-        # Reset cooldown if key was cooling down
-        state = await self._get_key_state(key_id)
-        if state and state.status == "COOLDOWN":
-            state.status = "ACTIVE"
-            state.cooldown_until = 0.0
-            state.failure_reason = None
-            await self._set_key_state(state)
-            logger.info("key_circuit_reset", key_id=key_id)
-
-        # Update in-memory usage counter
         self._key_usage_counts[key_id] = self._key_usage_counts.get(key_id, 0) + 1
 
-        # Buffer usage for batch DB write
         async with self._usage_buffer_lock:
             current = self._usage_buffer.get(key_id, {"used": 0, "tpm": 0})
             self._usage_buffer[key_id] = {
@@ -691,55 +527,16 @@ class ModelManager:
         error_type: str,
         retry_after_ms: int | None = None,
     ) -> None:
-        """Trigger circuit breaker for a failed key."""
         self._metrics["failed_requests"] += 1
         self._metrics["total_requests"] += 1
 
-        state = await self._get_key_state(key_id) or ModelKey(
-            key_id=key_id,
-            model="",
-            provider="",
-        )
-
-        now = time.time()
-        cooldown = self.DEFAULT_COOLDOWN
-
-        if error_type in self.CRITICAL_ERRORS:
-            state.status = "PERMANENTLY_DISABLED"
-            cooldown = self.PERMANENT_COOLDOWN
-            logger.error("key_permanently_disabled", key_id=key_id, error=error_type)
-        elif error_type in ("429", "QUOTA"):
-            cooldown = (retry_after_ms // 1000) if retry_after_ms else 60
-            state.status = "COOLDOWN"
-        else:
-            state.status = "COOLDOWN"
-            cooldown = self.DEFAULT_COOLDOWN
-
-        state.cooldown_until = now + cooldown
-        state.failure_reason = error_type
-        await self._set_key_state(state)
-
-        logger.warning(
-            "key_tripped_circuit_breaker",
-            key_id=key_id,
-            error=error_type,
-            cooldown=cooldown,
-        )
+        self._error_counts[key_id] = self._error_counts.get(key_id, 0) + 1
+        logger.warning("key_failure_recorded", key_id=key_id, error=error_type)
 
     async def mark_key_exhausted(self, key_id: str, reason: str = "429") -> None:
-        """Mark a key as temporarily exhausted (429 / quota error)."""
-        await self.record_failure(key_id, reason)
+        logger.info("mark_key_exhausted is no-op", key_id=key_id, reason=reason)
 
     async def invalidate_key(self, key_id: str, reason: str = "INVALID_KEY") -> bool:
-        """Permanently invalidate a key in the database and Redis."""
-        state = await self._get_key_state(key_id) or ModelKey(
-            key_id=key_id, model="", provider=""
-        )
-        state.status = "PERMANENTLY_DISABLED"
-        state.failure_reason = reason
-        state.cooldown_until = time.time() + self.PERMANENT_COOLDOWN
-        await self._set_key_state(state)
-
         try:
             async with session.async_session() as db:
                 await db.execute(
@@ -759,34 +556,6 @@ class ModelManager:
     # -------------------------------------------------------------------------
 
     async def get_status(self) -> dict[str, Any]:
-        """Return current manager status including failed keys."""
-        # Collect active key states from Redis (limited scan)
-        failures = []
-        if redis_client.available and redis_client._client:
-            try:
-                cursor = 0
-                while True:
-                    cursor, keys = await redis_client._client.scan(
-                        cursor=cursor,
-                        match="mm:key_state:*",
-                        count=100,
-                    )
-                    for key in keys:
-                        data = await redis_client.get(key)
-                        if data:
-                            state = json.loads(data)
-                            if state.get("status") != "ACTIVE":
-                                failures.append({
-                                    "key_id": state.get("key_id"),
-                                    "status": state.get("status"),
-                                    "cooldown_until": state.get("cooldown_until"),
-                                    "failure_reason": state.get("failure_reason"),
-                                })
-                    if cursor == 0:
-                        break
-            except Exception as e:
-                logger.warning("get_status_scan_failed", error=str(e))
-
         return {
             "total_requests": self._metrics["total_requests"],
             "successful_requests": self._metrics["successful_requests"],
@@ -797,30 +566,14 @@ class ModelManager:
             "key_usage_counts": dict(self._key_usage_counts),
             "model_usage_counts": dict(self._model_usage_counts),
             "error_counts": dict(self._error_counts),
-            "failures": failures,
+            "failures": [],
             "model_limits_loaded": len(self._model_limits_cache),
             "config_version": self._config_version,
             "uptime_seconds": time.time() - self._metrics_last_reset,
         }
 
     async def clear_all_failures(self) -> None:
-        """Clear all circuit breaker states. Use after restart or manual reset."""
-        if redis_client.available and redis_client._client:
-            try:
-                cursor = 0
-                while True:
-                    cursor, keys = await redis_client._client.scan(
-                        cursor=cursor,
-                        match="mm:key_state:*",
-                        count=100,
-                    )
-                    for key in keys:
-                        await redis_client._client.delete(key)
-                    if cursor == 0:
-                        break
-            except Exception as e:
-                logger.warning("clear_all_failures_failed", error=str(e))
-        logger.info("all_key_failures_cleared")
+        logger.info("all_key_failures_cleared (no-op)")
 
     # -------------------------------------------------------------------------
     # Utility
@@ -830,15 +583,13 @@ class ModelManager:
         return RETIRED_GEMINI_MODEL_NAMES | UNSTABLE_GEMINI_MODEL_ALIAS_NAMES
 
     # -------------------------------------------------------------------------
-    # Backward compatibility / Migration validation wrappers
+    # Backward compatibility wrappers
     # -------------------------------------------------------------------------
 
     async def get_next_key_simple(self, model_name: str, company_id: str) -> RoutingResult:
-        """Wrapper around get_next_key for migration test compatibility."""
         return await self.get_next_key(model_name, company_id)
 
     def get_simple_routing_pools(self) -> dict:
-        """Return simple routing pools dictionary for migration test compatibility."""
         return {"primary": [], "failover": []}
 
     async def record_routing_success(
@@ -847,13 +598,10 @@ class ModelManager:
         model_name: str,
         response_time_ms: int | None = None,
     ) -> None:
-        """Wrapper around record_success for migration test compatibility."""
         await self.record_success(key_id, {"total_tokens": 0}, response_time_ms)
 
     def get_provider_priority_order(self) -> list[str]:
-        """Return provider priority order for migration test compatibility."""
         return list(self.provider_priority)
 
 
-# Singleton instance
 model_manager = ModelManager()

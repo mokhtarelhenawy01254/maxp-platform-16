@@ -280,6 +280,7 @@ async function _textOnlySearch(prisma, companyId, cleanQuery, likeQuery, weights
  * Native PL/pgSQL search using custom dot_product function with double precision[].
  */
 async function _nativeSearch(prisma, companyId, queryEmbedding, cleanQuery, likeQuery, weights, limit, extraWhere, dynamicParams = []) {
+  const remappedWhere = shiftSqlParameterIndexes(extraWhere, -1);
   const sql = `
     SELECT id, name, description, sku, price, "comparePrice", cost, images, "mainImage",
            stock, "trackInventory", tags, metadata, "companyId", "categoryId",
@@ -295,7 +296,7 @@ async function _nativeSearch(prisma, companyId, queryEmbedding, cleanQuery, like
     WHERE "companyId" = $3
       AND "isActive" = true
       AND "deletedAt" IS NULL
-      ${extraWhere}
+      ${remappedWhere}
     ORDER BY (
       ${weights.vector} * 0.0 +
       ${weights.text} * (

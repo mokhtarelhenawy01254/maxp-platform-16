@@ -122,6 +122,7 @@ class AgentChatResponse(BaseModel):
     status: Literal["ok", "awaiting_approval", "error"]
     thread_id: str
     reply: str | None = None
+    response_attachments: list[dict[str, Any]] = Field(default_factory=list)
     error: str | None = None
     error_code: str | None = None
     draft_id: str | None = None

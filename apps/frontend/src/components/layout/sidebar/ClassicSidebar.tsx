@@ -12,6 +12,7 @@ import { buildStoreUrl } from "../../../utils/storeUrl";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { envConfig } from "../../../config/environment";
 import { isSidebarPathActive } from "./matchSidebarPath";
+import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
 
 interface ClassicSidebarProps {
   isCollapsed: boolean;
@@ -41,6 +42,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const searchInputId = useId();
+  const prefetch = useRoutePrefetch();
 
   // Helper for navigation links
   const NavLink: React.FC<{
@@ -51,6 +53,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
     badge?: string;
   }> = ({ to, icon, children, external, badge }) => {
     const isActive = !external && isSidebarPathActive(currentPath, to);
+    const prefetch = useRoutePrefetch();
 
     if (external) {
       const slug = user?.company?.slug;
@@ -110,6 +113,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
             : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
           } `}
         title={isCollapsed ? (children as string) : undefined}
+        onMouseEnter={() => prefetch(to)}
       >
         <span
           className={`${isActive ? "text-white" : "text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300"} transition-colors ${isCollapsed ? "mr-0" : "mr-3"} `}
@@ -221,6 +225,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                                         to={child.to}
                                         className="business-sidebar-child-link"
                                         data-active={isSidebarPathActive(currentPath, child.to)}
+                                        onMouseEnter={() => prefetch(child.to)}
                                         onClick={() => toggleSidebar()}
                                       >
                                         {child.label}
@@ -255,6 +260,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                 <Link
                   to="/profile"
                   className="business-sidebar-mobile-profile-link"
+                  onMouseEnter={() => prefetch("/profile")}
                   onClick={() => toggleSidebar()}
                 >
                   {t("sidebar.profile")}
@@ -262,6 +268,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                 <Link
                   to="/settings"
                   className="business-sidebar-mobile-profile-link"
+                  onMouseEnter={() => prefetch("/settings")}
                   onClick={() => toggleSidebar()}
                 >
                   {t("sidebar.settings")}
@@ -293,7 +300,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
       <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
-            <Link to="/company-dashboard" className="flex items-center flex-1 no-underline">
+            <Link to="/company-dashboard" className="flex items-center flex-1 no-underline" onMouseEnter={() => prefetch("/company-dashboard")}>
               {user?.company?.logo ? (
                 <img
                   src={`${envConfig.backendUrl}${user.company.logo}`}
@@ -330,7 +337,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
           </button>
         </div>
         {isCollapsed && (
-          <Link to="/company-dashboard" className="mt-4 flex justify-center">
+          <Link to="/company-dashboard" className="mt-4 flex justify-center" onMouseEnter={() => prefetch("/company-dashboard")}>
             {user?.company?.logo ? (
               <img
                 src={`${envConfig.backendUrl}${user.company.logo}`}
@@ -436,6 +443,7 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
                                     <Link
                                       key={child.to}
                                       to={child.to}
+                                      onMouseEnter={() => prefetch(child.to)}
                                       className={`block px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${isChildActive
                                           ? "text-blue-600 bg-blue-50 dark:bg-blue-900/20"
                                           : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"

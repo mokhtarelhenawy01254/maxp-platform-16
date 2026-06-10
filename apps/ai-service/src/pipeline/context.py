@@ -3,6 +3,7 @@ from typing import Any
 
 # Default token budget for context window (calibrated for gemini-2.5-flash)
 TOKEN_BUDGET_DEFAULT = 12_000
+DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL = "disableExternalEmbeddingRetrieval"
 
 
 @dataclass
@@ -48,6 +49,7 @@ class PipelineContext:
     llm_result: Any = None
     llm_response: str = ""
     final_reply: str | None = None
+    response_attachments: list[dict[str, Any]] = field(default_factory=list)
     response_contract: Any = None  # AgentResponse Pydantic contract (SOTA 2026)
 
     # Metadata

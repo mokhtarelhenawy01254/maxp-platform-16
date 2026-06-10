@@ -13,6 +13,7 @@ import { useTheme } from "../../../hooks/useTheme";
 import { envConfig } from "../../../config/environment";
 import { buildStoreUrl } from "../../../utils/storeUrl";
 import { isSidebarPathActive } from "./matchSidebarPath";
+import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
 
 interface ThreeTierSidebarProps {
   isCollapsed: boolean;
@@ -43,6 +44,7 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
   const { derivedTheme } = useTheme();
   const navigate = useNavigate();
   const searchInputId = useId();
+  const prefetch = useRoutePrefetch();
   
   const visibleSectionsWithItems = useMemo(
     () =>
@@ -178,6 +180,7 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
     badge?: string;
   }> = ({ to, icon, children, external, badge }) => {
     const isActive = !external && isSidebarPathActive(currentPath, to);
+    const prefetch = useRoutePrefetch();
 
     if (external) {
       const slug = user?.company?.slug;
@@ -228,6 +231,7 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
         to={to}
         className="business-sidebar-nav-link"
         data-active={isActive}
+        onMouseEnter={() => prefetch(to)}
         onClick={() => {
           if (mobileMode) {
             toggleSidebar();
@@ -291,7 +295,7 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
       {!mobileMode ? (
         <div className="business-sidebar-rail">
           <div className="business-sidebar-brand-block">
-            <Link to="/company-dashboard" className="block">
+            <Link to="/company-dashboard" className="block" onMouseEnter={() => prefetch("/company-dashboard")}>
               {user?.company?.logo ? (
                 <img
                   src={`${envConfig.backendUrl}${user.company.logo}`}
@@ -354,7 +358,7 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
       >
         <div className="business-sidebar-panel-header">
           <div className="business-sidebar-company">
-            <Link to="/company-dashboard" className="flex items-center gap-3 no-underline">
+            <Link to="/company-dashboard" className="flex items-center gap-3 no-underline" onMouseEnter={() => prefetch("/company-dashboard")}>
               {user?.company?.logo ? (
                 <img
                   src={`${envConfig.backendUrl}${user.company.logo}`}
@@ -495,15 +499,16 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
                                   );
 
                                   return (
-                                    <Link
-                                      key={getSidebarChildKey(child)}
-                                      to={child.to}
-                                      className="business-sidebar-child-link"
-                                      data-active={isChildActive}
-                                      onClick={() => toggleSidebar()}
-                                    >
-                                      {child.label}
-                                    </Link>
+                                  <Link
+                                    key={getSidebarChildKey(child)}
+                                    to={child.to}
+                                    className="business-sidebar-child-link"
+                                    data-active={isChildActive}
+                                    onMouseEnter={() => prefetch(child.to)}
+                                    onClick={() => toggleSidebar()}
+                                  >
+                                    {child.label}
+                                  </Link>
                                   );
                                 })}
                             </div>
@@ -535,6 +540,7 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
                 <Link
                   to="/profile"
                   className="business-sidebar-mobile-profile-link"
+                  onMouseEnter={() => prefetch("/profile")}
                   onClick={() => toggleSidebar()}
                 >
                   {t("sidebar.profile")}
@@ -542,6 +548,7 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
                 <Link
                   to="/settings"
                   className="business-sidebar-mobile-profile-link"
+                  onMouseEnter={() => prefetch("/settings")}
                   onClick={() => toggleSidebar()}
                 >
                   {t("sidebar.settings")}
@@ -587,6 +594,7 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
                             to={child.to}
                             className="business-sidebar-child-link"
                             data-active={isChildActive}
+                            onMouseEnter={() => prefetch(child.to)}
                           >
                             {child.label}
                           </Link>

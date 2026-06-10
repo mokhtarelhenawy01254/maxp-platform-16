@@ -229,8 +229,7 @@ class GeminiStructuredOutputAdapter extends BaseStructuredOutputAdapter {
     const contents = this.convertToGeminiFormat(messages);
 
     try {
-      const model = this.model || 'gemini-3-flash-preview';
-      const url = `${this.baseUrl}/models/${model}:generateContent?key=${this.apiKey}`;
+      const url = `${this.baseUrl}/models/${this.model}:generateContent?key=${this.apiKey}`;
 
       const response = await fetch(url, {
         method: 'POST',

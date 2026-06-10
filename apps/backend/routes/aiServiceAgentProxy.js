@@ -20,8 +20,8 @@ router.get('/agents', async (req, res) => {
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
 
     const result = await aiServiceAdminClient.listAgents(companyId);
-    if (!result.ok) {
-      return res.status(result.status || 502).json({ success: false, error: result.data?.error || result.error || 'ai-service unreachable' });
+    if (!result) {
+      return res.status(502).json({ success: false, error: 'ai-service unreachable' });
     }
     return res.json(result.data);
   } catch (error) {

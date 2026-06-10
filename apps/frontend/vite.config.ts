@@ -480,6 +480,37 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             const normalizedId = id.replace(/\\/g, '/');
+
+            // Route-based chunk grouping for app source files
+            if (
+              !normalizedId.includes(NODE_MODULES_SEGMENT) &&
+              normalizedId.includes('/src/') &&
+              /\.tsx?$/.test(normalizedId)
+            ) {
+              if (normalizedId.includes('/src/pages/hr/')) return 'route-hr';
+              if (normalizedId.includes('/src/pages/orders/')) return 'route-orders';
+              if (normalizedId.includes('/src/pages/products/')) return 'route-products';
+              if (normalizedId.includes('/src/pages/customers/')) return 'route-customers';
+              if (normalizedId.includes('/src/pages/advertising/')) return 'route-advertising';
+              if (normalizedId.includes('/src/pages/affiliates/')) return 'route-affiliates';
+              if (normalizedId.includes('/src/pages/super-admin/')) return 'route-super-admin';
+              if (normalizedId.includes('/src/pages/settings/')) return 'route-settings';
+              if (normalizedId.includes('/src/pages/whatsapp/')) return 'route-whatsapp';
+              if (normalizedId.includes('/src/pages/facebook-inbox/') || normalizedId.includes('/src/pages/instagram-inbox/') || normalizedId.includes('/src/pages/unified-inbox/')) return 'route-inbox';
+              if (normalizedId.includes('/src/pages/tasks/')) return 'route-tasks';
+              if (normalizedId.includes('/src/pages/inventory/')) return 'route-inventory';
+              if (normalizedId.includes('/src/pages/analytics/') || normalizedId.includes('/src/pages/reports/')) return 'route-analytics';
+              if (normalizedId.includes('/src/pages/support/')) return 'route-support';
+              if (normalizedId.includes('/src/pages/telegram/')) return 'route-telegram';
+              if (normalizedId.includes('/src/pages/employee/')) return 'route-employee';
+              if (normalizedId.includes('/src/pages/procurement/')) return 'route-procurement';
+              if (normalizedId.includes('/src/pages/shipments/')) return 'route-shipments';
+              if (normalizedId.includes('/src/storefront/')) return 'route-storefront';
+              if (normalizedId.includes('/src/pages/profile/')) return 'route-profile';
+              if (normalizedId.includes('/src/pages/auth/')) return 'route-auth';
+              if (normalizedId.endsWith('/src/pages/LandingPage.tsx') || normalizedId.endsWith('/src/pages/PlatformLandingPage.tsx')) return 'route-landing';
+            }
+
             return getVendorChunkName(normalizedId);
           },
           chunkFileNames: 'assets/[name]-[hash].js',

@@ -17,12 +17,9 @@ const {
   toPublicUrlList,
 } = require('../utils/toolHelpers');
 const {
-  buildProductSearchWhere,
-  scoreProductMatch,
   parseImageList,
   getVariantImageList,
 } = require('../utils/productSearchQueryService');
-const { searchProducts } = require('../utils/productSemanticSearchService');
 const unifiedOrchestrator = require('../utils/UnifiedProductSearchOrchestrator');
 const workingMemoryService = require('../workingMemoryService');
 const { createToolFromFunction } = require('../utils/autoSchemaGenerator');
@@ -82,6 +79,7 @@ async function productSearchHandler(companyId, {
   productSize,
   productColor,
   referencesPreviousProduct,
+  useVector,
 }) {
   /** Search active catalog products by name, SKU, or list the full company catalog.
    * @param {string} [query] - Search text to find products by name or SKU. Use when the customer asks about a specific product.
@@ -93,6 +91,7 @@ async function productSearchHandler(companyId, {
    * @param {string} [productSize] - Optional size filter.
    * @param {string} [productColor] - Optional color filter.
    * @param {boolean} [referencesPreviousProduct] - True only when the model-classified turn refers to the previous shown product.
+   * @param {boolean} [useVector] - Enable semantic/vector search fallback.
    */
   const prisma = getSharedPrismaClient();
 
@@ -173,6 +172,8 @@ async function productSearchHandler(companyId, {
   const orchestratorResult = await unifiedOrchestrator.search(companyId, resolvedQuery || '', {
     limit: safeLimit,
     conversationId: safeConversationId || undefined,
+    disableEmbeddings: useVector === false,
+    skipRecovery: useVector === false,
     intentSlots: {
       productSize: productSize || undefined,
       productColor: productColor || undefined,

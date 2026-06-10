@@ -110,6 +110,51 @@ def _normalize_classifier_result(args: dict[str, Any]) -> ClassifierResult | Non
     )
 
 
+async def _classify_with_client(
+    client: Any,
+    *,
+    system_prompt: str,
+    message: str,
+    attachments: list[dict[str, Any]],
+    context_snapshot: dict[str, Any] | None = None,
+) -> ClassifierResult | None:
+    context_text = ""
+    if context_snapshot:
+        context_text = (
+            "[CONVERSATION_CONTEXT_START]\n"
+            f"{json.dumps(context_snapshot, ensure_ascii=False, default=str)}\n"
+            "[CONVERSATION_CONTEXT_END]\n"
+        )
+    response = await client.get_response(
+        messages=to_client_messages([
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": build_user_content(
+                    f"{context_text}[USER_INPUT_START]\n{message}\n[USER_INPUT_END]",
+                    attachments,
+                ),
+            },
+        ]),
+        options={
+            "temperature": 0,
+            "max_tokens": 1500,
+            "tools_enabled": False,
+            "output_schema": INTENT_CLASSIFICATION_SCHEMA,
+        },
+    )
+    raw_text = response.text if hasattr(response, "text") else str(response)
+    parsed = _parse_json_object(raw_text)
+    if parsed is None:
+        logger.warning("classifier returned unparseable JSON", raw=raw_text[:800])
+        return None
+    result = _normalize_classifier_result(parsed)
+    if result is None:
+        logger.warning("classifier returned invalid result", parsed=parsed)
+        return None
+    return result
+
+
 async def classify_intent(
     message: str,
     company_id: str,
@@ -119,10 +164,19 @@ async def classify_intent(
     ctx = context or {}
     available_tools = ctx.get("availableTools", [])
     attachments = list(ctx.get("attachments") or [])
-    _cls_model = 'gemini-2.5-flash'
+    external_memory_context = ctx.get("externalMemoryContext")
+    context_snapshot: dict[str, Any] = {}
+    if isinstance(external_memory_context, dict):
+        context_snapshot = {
+            "lastShownProductIds": external_memory_context.get("lastShownProductIds") or [],
+            "queriedProducts": external_memory_context.get("queriedProducts") or [],
+            "activeSearchFilters": external_memory_context.get("activeSearchFilters") or {},
+        }
+    preferred_model = ctx.get("preferredModel")
+    preferred_provider = ctx.get("preferredProvider") or "GOOGLE"
     model_route = route_for_modalities(
-        model=_cls_model,
-        provider=None,
+        model=preferred_model,
+        provider=preferred_provider,
         has_image_input=bool(attachments),
     )
 
@@ -147,10 +201,14 @@ async def classify_intent(
         "Use support exchange/refund/complaint only when the latest message asks for after-sale service "
         "such as replacement, return, refund, damage, complaint, or policy exception.\n"
         "Extract only values present in the latest message. Do not invent customer name, phone, address, price, or order number.\n"
+        "Use the conversation context only to resolve references and follow-up questions to previously shown products. "
+        "When the latest customer message asks about a size, color, price, image, or availability for the previous product, "
+        "choose inventory and set slots.referencesPreviousProduct to true instead of requiring a repeated product name.\n"
         "Do not classify by lexical shortcuts. Interpret the latest message semantically, including negation and corrections.\n"
         "For shipping-rate questions, set slots.governorate when the latest message contains a governorate or city destination.\n"
     )
 
+    fallback: LLMFallbackProvider | None = None
     if client is None:
         fallback = LLMFallbackProvider()
         client = await fallback.get_client(
@@ -162,36 +220,19 @@ async def classify_intent(
         logger.error("no LLM client available for intent classification")
         return None
 
+    result: ClassifierResult | None = None
     try:
-        response = await client.get_response(
-            messages=to_client_messages([
-                {"role": "system", "content": system_prompt},
-                {
-                    "role": "user",
-                    "content": build_user_content(
-                        f"[USER_INPUT_START]\n{message}\n[USER_INPUT_END]",
-                        attachments,
-                    ),
-                },
-            ]),
-            options={
-                "temperature": 0,
-                "max_tokens": 1500,
-                "tools_enabled": False,
-                "output_schema": INTENT_CLASSIFICATION_SCHEMA,
-            },
+        result = await _classify_with_client(
+            client,
+            system_prompt=system_prompt,
+            message=message,
+            attachments=attachments,
+            context_snapshot=context_snapshot,
         )
-        raw_text = response.text if hasattr(response, "text") else str(response)
-        parsed = _parse_json_object(raw_text)
-        if parsed is None:
-            logger.warning("classifier returned unparseable JSON", raw=raw_text[:800])
-            return None
-        result = _normalize_classifier_result(parsed)
-        if result is None:
-            logger.warning("classifier returned invalid result", parsed=parsed)
-            return None
-        logger.info("classifier result", intent=result.intent, confidence=result.confidence, slots=result.slots)
-        return result
     except Exception as exc:
-        logger.error("classifier LLM call failed", error=str(exc), message=message[:100])
+        logger.warning("classifier primary LLM call failed", error=str(exc), message=message[:100])
+
+    if result is None:
         return None
+    logger.info("classifier result", intent=result.intent, confidence=result.confidence, slots=result.slots)
+    return result

@@ -43,7 +43,6 @@ class PlanSynthesisEngine {
     const modelManager = this._modelManager;
 
     const keyInfo = await modelManager.getNextKeySimple(companyId || 'system', {
-      preferredModel: 'gemini-2.5-pro',
       estimatedTokens: 2000,
     });
 

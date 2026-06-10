@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from src.intent.schema import ToolPlan
-from src.pipeline.context import PipelineContext
+from src.pipeline.context import DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL, PipelineContext
 from src.pipeline.stages import route_to_tools as route_module
 from src.pipeline.stages.route_to_tools import route_to_tools
 
@@ -61,6 +61,62 @@ async def test_route_to_tools_accepts_dotted_allowed_tool_alias():
 
 
 @pytest.mark.asyncio
+async def test_route_to_tools_disables_product_search_vector_when_external_embeddings_disabled():
+    ctx = PipelineContext(
+        message="show me running shoes",
+        thread_id="thread-1",
+        company_id="comp1",
+        customer_id="cust1",
+        channel="facebook",
+        external_memory_context={DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL: True},
+    )
+    ctx.relevance_plan = ToolPlan(
+        intent="products",
+        requiresTool=True,
+        primaryTool="product.search",
+        allowedTools=["product.search"],
+        reason="classified by model",
+    )
+    ctx.native_tools = [{"name": "product_search"}]
+
+    result = await route_to_tools(ctx)
+
+    params = result.execution_plan["deterministicReadExecution"]["params"]
+    assert params["query"] == "show me running shoes"
+    assert params["use_vector"] is False
+
+
+@pytest.mark.asyncio
+async def test_route_to_tools_disables_inventory_vector_when_external_embeddings_disabled():
+    ctx = PipelineContext(
+        message="Sprint X size 42 black",
+        thread_id="thread-1",
+        company_id="comp1",
+        customer_id="cust1",
+        channel="facebook",
+        external_memory_context={DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL: True},
+    )
+    ctx.relevance_plan = ToolPlan(
+        intent="inventory",
+        requiresTool=True,
+        primaryTool="inventory.check",
+        allowedTools=["inventory.check"],
+        slots={"productName": "Sprint X", "productSize": "42", "productColor": "black"},
+        reason="classified by model",
+    )
+    ctx.native_tools = [{"name": "inventory_check"}]
+
+    result = await route_to_tools(ctx)
+
+    params = result.execution_plan["deterministicReadExecution"]["params"]
+    assert params["product_name_or_sku"] == "Sprint X"
+    assert params["product_size"] == "42"
+    assert params["product_color"] == "black"
+    assert params["conversation_id"] == "thread-1"
+    assert params["use_vector"] is False
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("primary_tool", "slots", "expected_params"),
     [
@@ -71,6 +127,7 @@ async def test_route_to_tools_accepts_dotted_allowed_tool_alias():
                 "product_name_or_sku": "black shoes",
                 "product_size": "42",
                 "product_color": "black",
+                "conversation_id": "thread-1",
             },
         ),
         (
@@ -116,6 +173,69 @@ async def test_route_to_tools_populates_read_tool_params_from_model_slots(primar
 
 
 @pytest.mark.asyncio
+async def test_route_to_tools_uses_previous_product_context_for_inventory_followup():
+    ctx = PipelineContext(
+        message="is size 42 available?",
+        thread_id="thread-1",
+        company_id="comp1",
+        customer_id="cust1",
+        channel="facebook",
+        external_memory_context={"lastShownProductIds": ["prod_1"]},
+    )
+    ctx.relevance_plan = ToolPlan(
+        intent="inventory",
+        requiresTool=True,
+        primaryTool="inventory.check",
+        allowedTools=["inventory.check"],
+        slots={"productSize": "42"},
+        reason="classified by model",
+    )
+    ctx.native_tools = [{"name": "inventory_check"}]
+
+    result = await route_to_tools(ctx)
+
+    execution = result.execution_plan["deterministicReadExecution"]
+    assert execution["nativeName"] == "inventory.check"
+    assert execution["params"] == {
+        "product_name_or_sku": "",
+        "product_size": "42",
+        "conversation_id": "thread-1",
+        "references_previous_product": True,
+    }
+
+
+@pytest.mark.asyncio
+async def test_route_to_tools_uses_previous_product_context_for_image_followup():
+    ctx = PipelineContext(
+        message="send me a product photo",
+        thread_id="thread-1",
+        company_id="comp1",
+        customer_id="cust1",
+        channel="facebook",
+        external_memory_context={"lastShownProductIds": ["prod_1"]},
+    )
+    ctx.relevance_plan = ToolPlan(
+        intent="inventory",
+        requiresTool=True,
+        primaryTool="inventory.check",
+        allowedTools=["inventory.check"],
+        slots={"requestedProductImage": True, "referencesPreviousProduct": True},
+        reason="classified by model",
+    )
+    ctx.native_tools = [{"name": "inventory_check"}]
+
+    result = await route_to_tools(ctx)
+
+    execution = result.execution_plan["deterministicReadExecution"]
+    assert execution["nativeName"] == "inventory.check"
+    assert execution["params"] == {
+        "product_name_or_sku": "",
+        "conversation_id": "thread-1",
+        "references_previous_product": True,
+    }
+
+
+@pytest.mark.asyncio
 async def test_route_to_tools_populates_write_tool_params_from_model_slots():
     from src.tools.registry import get_tool
 
@@ -135,6 +255,9 @@ async def test_route_to_tools_populates_write_tool_params_from_model_slots():
             "customerName": "Ahmed",
             "customerPhone": "01001111111",
             "productName": "black shoes",
+            "productPrice": 1200,
+            "productSize": "42",
+            "productColor": "black",
             "quantity": 2,
             "address": "Nasr City",
             "city": "Cairo",
@@ -151,9 +274,124 @@ async def test_route_to_tools_populates_write_tool_params_from_model_slots():
         "customer_name": "Ahmed",
         "customer_phone": "01001111111",
         "product_name": "black shoes",
+        "product_price": "1200",
+        "product_size": "42",
+        "product_color": "black",
         "quantity": "2",
         "address": "Nasr City",
         "city": "Cairo",
+    }
+
+
+@pytest.mark.asyncio
+async def test_route_to_tools_populates_confirmed_order_params_from_model_slots():
+    from src.tools.registry import get_tool
+
+    ctx = PipelineContext(
+        message="confirm order",
+        thread_id="thread-1",
+        company_id="comp1",
+        customer_id="cust1",
+        channel="facebook",
+    )
+    ctx.relevance_plan = ToolPlan(
+        intent="orders.create_confirmed",
+        requiresTool=True,
+        primaryTool="order.create_confirmed",
+        allowedTools=["order.create_confirmed"],
+        slots={
+            "customerName": "Ahmed",
+            "customerPhone": "01001111111",
+            "productName": "Sprint X Running Shoes",
+            "productPrice": 1499,
+            "productSize": "42",
+            "productColor": "black",
+            "quantity": 1,
+            "address": "Nasr City",
+            "city": "Cairo",
+            "confirmedByCustomer": True,
+        },
+        reason="classified by model",
+    )
+    ctx.native_tools = [get_tool("order_create_confirmed")]
+
+    result = await route_to_tools(ctx)
+
+    execution = result.execution_plan["deterministicActionExecution"]
+    assert execution["nativeName"] == "order.create_confirmed"
+    assert execution["params"] == {
+        "customer_name": "Ahmed",
+        "customer_phone": "01001111111",
+        "product_name": "Sprint X Running Shoes",
+        "product_price": "1499",
+        "product_size": "42",
+        "product_color": "black",
+        "quantity": "1",
+        "address": "Nasr City",
+        "city": "Cairo",
+        "confirmed_by_customer": True,
+    }
+
+
+@pytest.mark.asyncio
+async def test_route_to_tools_populates_confirmed_order_params_from_structured_memory():
+    from src.tools.registry import get_tool
+
+    ctx = PipelineContext(
+        message="confirm order",
+        thread_id="thread-1",
+        company_id="comp1",
+        customer_id="cust1",
+        channel="facebook",
+        external_memory_context={
+            "lastInventoryParams": {
+                "product_name_or_sku": "Sprint X",
+            },
+            "lastInventoryResult": {
+                "productId": "prod_1",
+                "price": {"amount": 1499, "currency": "EGP"},
+                "requestedSize": "42",
+                "requestedColor": "black",
+            },
+            "lastShippingResult": {
+                "city": "Nasr City",
+                "governorate": "Cairo",
+                "data": {"price": 35, "currency": "EGP"},
+            },
+        },
+    )
+    ctx.relevance_plan = ToolPlan(
+        intent="orders.create_confirmed",
+        requiresTool=True,
+        primaryTool="order.create_confirmed",
+        allowedTools=["order.create_confirmed"],
+        slots={
+            "customerName": "Ahmed",
+            "customerPhone": "01001111111",
+            "quantity": 1,
+            "address": "10 Test Street Nasr City Cairo",
+            "confirmedByCustomer": True,
+        },
+        reason="classified by model",
+    )
+    ctx.native_tools = [get_tool("order_create_confirmed")]
+
+    result = await route_to_tools(ctx)
+
+    execution = result.execution_plan["deterministicActionExecution"]
+    assert execution["nativeName"] == "order.create_confirmed"
+    assert execution["params"] == {
+        "customer_name": "Ahmed",
+        "customer_phone": "01001111111",
+        "product_name": "Sprint X",
+        "product_price": 1499,
+        "product_size": "42",
+        "product_color": "black",
+        "quantity": "1",
+        "address": "10 Test Street Nasr City Cairo",
+        "city": "Nasr City",
+        "shipping_amount": 35,
+        "confirmed_by_customer": True,
     }
 
 

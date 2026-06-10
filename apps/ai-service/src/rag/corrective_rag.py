@@ -8,6 +8,8 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.pipeline.context import DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL
+
 logger = structlog.get_logger(__name__)
 
 DEFAULT_SOURCE_ORDER = ["HYBRID_KNOWLEDGE", "FAQ_DB", "POLICY_DB", "VECTOR_STORE", "PRODUCT_DB", "WEB"]
@@ -148,6 +150,9 @@ class CorrectiveRAGEngine:
 
         # 4. VECTOR_STORE — semantic similarity via episodic memory service
         if source == "VECTOR_STORE":
+            if options.get("disableVectorStore") or options.get(DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL):
+                logger.debug("Vector memory source skipped for RAG", reason="disabled_by_options")
+                return []
             try:
                 from src.memory.episodic_memory import episodic_memory_service
 
@@ -222,6 +227,8 @@ class CorrectiveRAGEngine:
         options = options or {}
         current_query = query
         source_order = options.get("sourceOrder", DEFAULT_SOURCE_ORDER)
+        if options.get("disableVectorStore") or options.get(DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL):
+            source_order = [source for source in source_order if source != "VECTOR_STORE"]
         iterations = 0
         best_docs = []
         best_score = 0.0

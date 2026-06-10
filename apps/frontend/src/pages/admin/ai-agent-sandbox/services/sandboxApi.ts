@@ -1,6 +1,6 @@
 import { buildApiUrl } from "../../../../utils/urlHelper";
 import { tokenManager } from "../../../../utils/tokenManager";
-import type { ChatMessage, ToolCall, StreamEvent } from "../types/sandbox.types";
+import type { ChatMessage, MessageAttachment, ToolCall, StreamEvent } from "../types/sandbox.types";
 
 const getAuthHeaders = () => tokenManager.createAuthHeaders();
 
@@ -37,6 +37,7 @@ export interface SessionDetail extends SessionSummary {
     toolCalls: ToolCall[];
     timestamp: string;
     metadata?: any;
+    responseAttachments?: MessageAttachment[];
     runtime?: string;
   }>;
 }
@@ -62,6 +63,7 @@ export interface StreamChunk {
 export interface SendMessageResponse {
   success: boolean;
   reply: string;
+  responseAttachments?: MessageAttachment[];
   toolCalls: ToolCall[];
   tokens: { input: number; output: number; total: number };
   latencyMs: number;

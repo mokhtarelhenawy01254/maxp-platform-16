@@ -14,9 +14,13 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.context.assembler import ContextAssembler
-from src.pipeline.context import PipelineContext, TOKEN_BUDGET_DEFAULT
+from src.pipeline.context import (
+    DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL,
+    PipelineContext,
+    TOKEN_BUDGET_DEFAULT,
+)
 from src.pipeline.stages.retrieve_episodic import retrieve_episodic_memory, SIMILARITY_THRESHOLD
-from src.pipeline.stages.retrieve_knowledge import retrieve_knowledge
+from src.pipeline.stages.retrieve_knowledge import EMBEDDING_FREE_SOURCE_ORDER, retrieve_knowledge
 from src.pipeline.stages.route_to_tools import _scope_tools
 
 
@@ -59,6 +63,21 @@ async def test_retrieve_knowledge_handles_empty():
         result = await retrieve_knowledge(ctx)
 
     assert result.rag_evidence == ""
+
+
+@pytest.mark.asyncio
+async def test_retrieve_knowledge_disables_vector_store_when_external_embeddings_disabled():
+    ctx = _make_ctx(
+        external_memory_context={DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL: True},
+    )
+    with patch("src.pipeline.stages.retrieve_knowledge.get_knowledge_evidence", new_callable=AsyncMock) as mock_rag:
+        mock_rag.return_value = ""
+        await retrieve_knowledge(ctx)
+
+    options = mock_rag.await_args.kwargs["options"]
+    assert options["disableVectorStore"] is True
+    assert options["sourceOrder"] == EMBEDDING_FREE_SOURCE_ORDER
+    assert "VECTOR_STORE" not in options["sourceOrder"]
 
 
 @pytest.mark.asyncio
@@ -136,6 +155,22 @@ async def test_retrieve_episodic_memory_graceful_failure():
         result = await retrieve_episodic_memory(ctx)
 
     assert result.episodic_memories == []
+
+
+@pytest.mark.asyncio
+async def test_retrieve_episodic_memory_skips_when_external_embeddings_disabled():
+    """Selected non-Google providers should not trigger hidden embedding calls."""
+    ctx = _make_ctx(
+        session=AsyncMock(),
+        external_memory_context={DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL: True},
+    )
+
+    with patch("src.pipeline.stages.retrieve_episodic.episodic_memory_service") as mock_svc:
+        mock_svc.search_similar = AsyncMock(return_value=[])
+        result = await retrieve_episodic_memory(ctx)
+
+    assert result.episodic_memories == []
+    mock_svc.search_similar.assert_not_called()
 
 
 @pytest.mark.asyncio

@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-VISION_MODEL_DEFAULT = "gemini-2.5-flash"
-VISION_PROVIDER_DEFAULT = "GOOGLE"
+
 
 
 @dataclass(frozen=True)
@@ -40,7 +39,7 @@ def route_for_modalities(
     if supports_vision(model, provider):
         return ModelRoute(provider=provider, model=model, reason="selected_model_supports_vision")
     return ModelRoute(
-        provider=VISION_PROVIDER_DEFAULT,
-        model=VISION_MODEL_DEFAULT,
+        provider=None,
+        model=None,
         reason="image_input_requires_vision_model",
     )

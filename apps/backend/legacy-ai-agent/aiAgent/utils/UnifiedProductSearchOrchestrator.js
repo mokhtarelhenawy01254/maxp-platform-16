@@ -44,6 +44,7 @@ const PRODUCT_SEARCH_EMBEDDING_DIMENSION = 768;
  * @param {Buffer|string} [options.imageBytes] - Image buffer for multimodal search
  * @param {string} [options.mimeType] - Image mime type
  * @param {number} [options.limit] - Max results to return
+ * @param {boolean} [options.disableEmbeddings=false] - Use text-only search without query embeddings
  * @param {boolean} [options.skipRecovery=false] - Skip recovery on zero results
  * @param {boolean} [options.skipLogging=false] - Skip search log
  * @returns {Promise<SearchResult>}
@@ -108,8 +109,9 @@ async function search(companyId, queryText, options = {}) {
   let queryEmbedding = ZERO_VECTOR_768;
   const searchText = parsed.expandedQuery || parsed.cleanedQuery || mergedQuery;
   let imageIntent = null;
+  const embeddingsEnabled = options.disableEmbeddings !== true;
 
-  if (options.imageBytes) {
+  if (embeddingsEnabled && options.imageBytes) {
     try {
       imageIntent = await classifyImageIntent(options.imageBytes, options.mimeType);
       
@@ -170,7 +172,7 @@ async function search(companyId, queryText, options = {}) {
     }
   }
 
-  if ((!queryEmbedding || queryEmbedding === ZERO_VECTOR_768) && searchText) {
+  if (embeddingsEnabled && (!queryEmbedding || queryEmbedding === ZERO_VECTOR_768) && searchText) {
     try {
       queryEmbedding = await episodicMemoryService.generateEmbeddingAsync(searchText, {
         allowPseudoFallback: false,
@@ -199,11 +201,15 @@ async function search(companyId, queryText, options = {}) {
   }
 
   try {
-    rawResults = await hybridSearch(companyId, queryEmbedding, searchText, {
-      limit: MAX_RETRIEVAL,
-      weights,
-      filters: dbFilters,
-    });
+    if (embeddingsEnabled) {
+      rawResults = await hybridSearch(companyId, queryEmbedding, searchText, {
+        limit: MAX_RETRIEVAL,
+        weights,
+        filters: dbFilters,
+      });
+    } else {
+      rawResults = await _basicFallbackSearch(companyId, searchText, MAX_RETRIEVAL);
+    }
   } catch (e) {
     console.error('[SEARCH-ORCHESTRATOR] hybridSearch failed:', e.message);
     // Fall back to basic Prisma search

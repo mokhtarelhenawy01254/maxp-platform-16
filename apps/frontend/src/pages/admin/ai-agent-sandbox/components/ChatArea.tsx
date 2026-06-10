@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslation } from "react-i18next";
 import {
   Send,
   Bot,
@@ -60,6 +61,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   activeToolCalls,
   onSendMessage,
 }) => {
+  const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedImageUrl, setSelectedImageUrl] = useState("");
@@ -74,7 +76,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     return (
       <div className="flex-1 flex items-center justify-center p-6 text-slate-400">
         <span className="text-sm font-semibold select-none">
-          Select an agent to start chatting
+          {t("aiHub.sandbox.chat.selectAgent")}
         </span>
       </div>
     );
@@ -147,7 +149,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       {/* Scrollable Chat Message History */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.map((msg) => {
-          const { images, text } = parseMessageContent(msg.content);
+          const parsed = parseMessageContent(msg.content);
+          const attachmentImages = (msg.responseAttachments || [])
+            .filter((attachment) => attachment.type === "image" && attachment.url)
+            .map((attachment) => attachment.url);
+          const images = Array.from(new Set([...parsed.images, ...attachmentImages]));
+          const text = parsed.text;
           const isUser = msg.role === "user";
           return (
             <div
@@ -194,7 +201,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                   <button
                     onClick={() => copyToClipboard(msg.content, msg.id)}
                     className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded shadow-xs"
-                    title="Copy message text"
+                    title={t("aiHub.sandbox.chat.copyMessage")}
+                    aria-label={t("aiHub.sandbox.chat.copyMessage")}
                   >
                     {copiedId === msg.id ? (
                       <Check className="size-3 text-emerald-500" />
@@ -260,7 +268,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               <div className="flex items-center gap-2 text-slate-500">
                 <Loader2 className="size-3.5 animate-spin text-indigo-600" />
                 <span className="text-xs font-medium">
-                  {typingStage || (isStreaming ? "Generating..." : "Thinking...")}
+                  {typingStage || (isStreaming ? t("aiHub.sandbox.chat.generating") : t("aiHub.sandbox.chat.thinking"))}
                 </span>
               </div>
 
@@ -302,7 +310,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold text-slate-550 uppercase tracking-wider">
-              Image Attachment
+              {t("aiHub.sandbox.chat.imageAttachment")}
             </span>
             <Button
               size="icon"
@@ -311,6 +319,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 setShowAttachmentPanel(false);
                 setSelectedImageUrl("");
               }}
+              aria-label={t("aiHub.sandbox.chat.closeAttachmentPanel")}
+              title={t("aiHub.sandbox.chat.closeAttachmentPanel")}
               className="size-6 text-slate-450 hover:bg-slate-100 dark:hover:bg-slate-850"
             >
               <X className="size-4" />
@@ -319,14 +329,14 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
           <input
             type="text"
-            placeholder="Enter image URL..."
+            placeholder={t("aiHub.sandbox.chat.imageUrlPlaceholder")}
             value={selectedImageUrl}
             onChange={(e) => setSelectedImageUrl(e.target.value)}
             className="w-full text-xs rounded-md border border-slate-200 dark:border-slate-800 bg-background px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-650"
           />
 
           <div className="flex items-center gap-2 flex-wrap text-xs">
-            <span className="text-slate-450 font-medium">Quick Select:</span>
+            <span className="text-slate-450 font-medium">{t("aiHub.sandbox.chat.quickSelect")}</span>
             {TEST_IMAGES.map((img) => (
               <Badge
                 key={img.label}
@@ -353,6 +363,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               <button
                 onClick={() => setSelectedImageUrl("")}
                 className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-red-500 text-white flex items-center justify-center p-0 hover:bg-red-650 transition-colors shadow-xs"
+                aria-label={t("aiHub.sandbox.chat.clearImage")}
+                title={t("aiHub.sandbox.chat.clearImage")}
               >
                 <X className="size-3" />
               </button>
@@ -370,6 +382,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           variant={showAttachmentPanel || selectedImageUrl ? "default" : "ghost"}
           onClick={() => setShowAttachmentPanel(!showAttachmentPanel)}
           disabled={isLoading || !canSend}
+          aria-label={t("aiHub.sandbox.chat.attachImage")}
+          title={t("aiHub.sandbox.chat.attachImage")}
           className="size-9 rounded-xl flex-shrink-0 text-slate-450 hover:bg-slate-50 dark:hover:bg-slate-850"
         >
           <ImageIcon className="size-5" />
@@ -377,7 +391,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
         <div className="flex-1 min-w-0 relative">
           <Textarea
-            placeholder={canSend ? `Message ${agent.name}...` : "Select a central model to start chatting"}
+            placeholder={canSend
+              ? t("aiHub.sandbox.chat.messagePlaceholder", { agentName: agent.name })
+              : t("aiHub.sandbox.chat.selectCentralModel")}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -387,7 +403,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           />
           {!canSend && (
             <span className="absolute bottom-1 right-2 text-[9px] text-red-500 font-semibold select-none">
-              Configure your API key in the HeaderBar
+              {t("aiHub.sandbox.chat.configureApiKey")}
             </span>
           )}
         </div>
@@ -397,6 +413,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           variant="default"
           onClick={handleSend}
           disabled={(!input.trim() && !selectedImageUrl) || isLoading || !canSend}
+          aria-label={t("aiHub.sandbox.chat.sendMessage")}
+          title={t("aiHub.sandbox.chat.sendMessage")}
           className="size-9 rounded-xl flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
         >
           <Send className="size-4" />

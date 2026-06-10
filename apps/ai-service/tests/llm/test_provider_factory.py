@@ -31,43 +31,35 @@ async def test_provider_factory_uses_env_google_key_when_db_key_is_unavailable(m
 
 
 @pytest.mark.asyncio
-async def test_failover_provider_skips_provider_types(monkeypatch):
-    factory = ProviderFactory()
-    calls: list[dict[str, object]] = []
-
-    async def fake_get_provider(
-        provider_type: str,
-        model: str | None = None,
-        company_id: str | None = None,
-        excluded_key_ids: set[str] | None = None,
-    ):
-        calls.append(
-            {
-                "provider_type": provider_type,
-                "model": model,
-                "company_id": company_id,
-                "excluded_key_ids": excluded_key_ids,
-            }
-        )
-        if provider_type == "GOOGLE":
-            return GoogleProvider("env-google-key", "gemini-2.5-flash", provider_type="GOOGLE")
-        return None
-
-    monkeypatch.setattr(factory, "get_provider", fake_get_provider)
+async def test_provider_factory_routes_exact_selected_key_to_model_manager(monkeypatch):
+    get_next_key = AsyncMock(
+        return_value={
+            "key_id": "selected-groq-key",
+            "api_key": "test-groq-secret",
+            "base_url": "https://api.groq.com/openai/v1",
+            "model": "openai/gpt-oss-120b",
+            "provider": "GROQ",
+            "company_id": "comp1",
+        }
+    )
     monkeypatch.setattr(
-        "src.llm.providers.factory.model_manager.provider_priority",
-        ["GOOGLE", "GROQ", "OPENROUTER"],
+        "src.llm.providers.factory.model_manager.get_next_key",
+        get_next_key,
     )
 
-    provider = await factory.get_failover_provider(
-        current_provider_type="GROQ",
-        model="llama-3.3-70b-versatile",
+    provider = await ProviderFactory().get_provider(
+        "GROQ",
+        model="openai/gpt-oss-120b",
         company_id="comp1",
-        attempted_key_ids={"groq-key"},
-        skip_provider_types={"GROQ"},
+        key_id="selected-groq-key",
     )
 
-    assert isinstance(provider, GoogleProvider)
-    assert [call["provider_type"] for call in calls] == ["GOOGLE"]
-    assert calls[0]["model"] is None
-    assert calls[0]["excluded_key_ids"] == {"groq-key"}
+    assert provider is not None
+    assert provider.model == "openai/gpt-oss-120b"
+    assert provider.config["key_id"] == "selected-groq-key"
+    get_next_key.assert_awaited_once_with(
+        "openai/gpt-oss-120b",
+        "comp1",
+        preferred_provider="GROQ",
+        key_id="selected-groq-key",
+    )

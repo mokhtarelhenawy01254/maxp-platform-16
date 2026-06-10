@@ -132,19 +132,14 @@ class SystemManager {
           resourceUsage: 'high'
         }
       },
-      // ✅ نظام تبديل المفاتيح
+      // ✅ نظام المفاتيح - بدون تبديل تلقائي
       {
-        systemName: 'keyRotationStrategy',
-        displayName: 'Key Rotation Strategy',
-        description: 'استراتيجية تبديل المفاتيح - MODEL_FIRST أو KEY_FIRST',
+        systemName: 'keySelection',
+        displayName: 'Key Selection',
+        description: 'system.key_selection_desc',
         category: 'api_keys',
         defaultEnabled: true,
         config: {
-          strategy: 'MODEL_FIRST',
-          description: {
-            MODEL_FIRST: 'يجرب نفس النموذج على كل المفاتيح ثم ينتقل للنموذج التالي',
-            KEY_FIRST: 'يستهلك كل نماذج المفتاح ثم ينتقل للمفتاح التالي'
-          },
           aiCalls: 'none',
           resourceUsage: 'none'
         }
@@ -439,71 +434,18 @@ class SystemManager {
   }
 
   /**
-   * ✅ الحصول على استراتيجية تبديل المفاتيح
-   * @returns {Promise<string>} 'MODEL_FIRST' | 'KEY_FIRST'
+   * ✅ Key rotation strategy removed — system uses first active key only
    */
   async getKeyRotationStrategy() {
-    try {
-      const setting = await executeWithRetry(async () => {
-        return await this.prisma.systemSettings.findFirst({
-          where: { systemName: 'keyRotationStrategy' },
-          select: { config: true }
-        });
-      });
-
-      if (setting && setting.config) {
-        const config = JSON.parse(setting.config);
-        return config.strategy || 'MODEL_FIRST';
-      }
-      return 'MODEL_FIRST'; // Default
-    } catch (error) {
-      console.error('❌ [SystemManager] Error getting key rotation strategy:', error);
-      return 'MODEL_FIRST';
-    }
+    return 'SIMPLE';
   }
 
   /**
-   * ✅ تحديث استراتيجية تبديل المفاتيح
-   * @param {string} strategy - 'MODEL_FIRST' | 'KEY_FIRST'
+   * ✅ Key rotation strategy removed — no-op
    */
   async setKeyRotationStrategy(strategy) {
-    try {
-      if (!['MODEL_FIRST', 'KEY_FIRST'].includes(strategy)) {
-        throw new Error('Invalid strategy. Must be MODEL_FIRST or KEY_FIRST');
-      }
-
-      const currentSetting = await this.prisma.systemSettings.findFirst({
-        where: { systemName: 'keyRotationStrategy' }
-      });
-
-      if (currentSetting) {
-        const config = currentSetting.config ? JSON.parse(currentSetting.config) : {};
-        config.strategy = strategy;
-
-        await executeWithRetry(async () => {
-          await this.prisma.systemSettings.update({
-            where: { systemName: 'keyRotationStrategy' },
-            data: {
-              config: JSON.stringify(config),
-              updatedAt: new Date()
-            }
-          });
-        });
-      } else {
-        // إنشاء الإعداد إذا لم يكن موجوداً
-        await this.ensureSystemExists('keyRotationStrategy', this.systems.get('keyRotationStrategy'));
-      }
-
-      console.log(`🔄 [SystemManager] Key Rotation Strategy set to: ${strategy}`);
-
-      // إبطال الـ cache في ModelManager
-      clearModelManagerCaches();
-
-      return true;
-    } catch (error) {
-      console.error('❌ [SystemManager] Error setting key rotation strategy:', error);
-      return false;
-    }
+    console.log(`ℹ️ [SystemManager] Key rotation is disabled (SIMPLE mode). Ignoring strategy: ${strategy}`);
+    return true;
   }
 
   /**

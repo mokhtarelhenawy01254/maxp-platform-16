@@ -70,7 +70,7 @@ class BaseAgent {
     this.modelSource = config.modelSource || config.persona?.modelSource || (config.model ? 'explicit' : 'runtime-default');
     this._hasExplicitModel = Boolean(config.model)
       && !['policy-default', 'runtime-default'].includes(String(this.modelSource || '').toLowerCase());
-    this.model = config.model || 'gemini-2.5-flash';
+    this.model = config.model || null;
     this.persona = config.persona || {};
     this.policies = config.policies || {};
     this._instructions = config.instructions || {};
@@ -279,9 +279,7 @@ class BaseAgent {
             failedAt: new Date().toISOString(),
           };
           console.warn(`[BaseAgent] LLM generation failed for ${this.id}:`, error.message);
-          if (allowModelFallback && typeof this._modelManager.markKeyFailed === 'function' && keyInfo.keyId) {
-            await this._modelManager.markKeyFailed(keyInfo.keyId, error.code || error.status || 'MODEL_CALL_FAILED', 30_000).catch(err => console.warn('[BaseAgent] markKeyFailed failed:', err.message));
-          }
+          // markKeyFailed removed — no auto-rotation
         }
       }
 

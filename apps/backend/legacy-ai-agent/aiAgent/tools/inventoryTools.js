@@ -14,12 +14,9 @@ const {
   toPublicUrlList,
 } = require('../utils/toolHelpers');
 const {
-  buildProductSearchWhere,
   getVariantImageList,
   parseImageList,
-  scoreProductMatch,
 } = require('../utils/productSearchQueryService');
-const { searchProducts } = require('../utils/productSemanticSearchService');
 const unifiedOrchestrator = require('../utils/UnifiedProductSearchOrchestrator');
 const workingMemoryService = require('../workingMemoryService');
 const { createToolFromFunction } = require('../utils/autoSchemaGenerator');
@@ -36,6 +33,7 @@ async function inventoryCheckHandler(companyId, {
   productColor,
   conversationId,
   referencesPreviousProduct,
+  useVector,
 }) {
   /** Check product inventory and validate requested size or color against active variants.
    * @param {string} productNameOrSku - Product name or SKU to check inventory for.
@@ -45,6 +43,7 @@ async function inventoryCheckHandler(companyId, {
    * @param {string} [productColor] - Optional requested color.
    * @param {string} [conversationId] - Optional conversation ID for memory context.
    * @param {boolean} [referencesPreviousProduct] - True only when the model-classified turn refers to the previous shown product.
+   * @param {boolean} [useVector] - Enable semantic/vector search fallback.
    */
   const prisma = getSharedPrismaClient();
   const query = normalizeOptionalString(productNameOrSku)
@@ -76,6 +75,7 @@ async function inventoryCheckHandler(companyId, {
     }
   }
   const productSelect = {
+    id: true,
     name: true,
     sku: true,
     price: true,
@@ -104,6 +104,8 @@ async function inventoryCheckHandler(companyId, {
   const orchestratorResult = await unifiedOrchestrator.search(companyId, query || '', {
     limit: 1,
     conversationId: safeConversationId || undefined,
+    disableEmbeddings: useVector === false,
+    skipRecovery: useVector === false,
     intentSlots: {
       productSize: productSize || undefined,
       productColor: productColor || undefined,
@@ -112,20 +114,19 @@ async function inventoryCheckHandler(companyId, {
   });
 
   const searchResults = orchestratorResult.products;
+  const topSearchResult = searchResults[0] || null;
   const product = searchResults.length > 0
-    ? (searchResults[0].productVariants
-        ? searchResults[0]
-        : (typeof prisma.product.findUnique === 'function'
-            ? await prisma.product.findUnique({
-                where: { id: searchResults[0].id },
+    ? (typeof prisma.product.findUnique === 'function'
+        ? await prisma.product.findUnique({
+            where: { id: topSearchResult.id },
+            select: productSelect,
+          })
+        : (typeof prisma.product.findFirst === 'function'
+            ? await prisma.product.findFirst({
+                where: { id: topSearchResult.id },
                 select: productSelect,
               })
-            : (typeof prisma.product.findFirst === 'function'
-                ? await prisma.product.findFirst({
-                    where: { id: searchResults[0].id },
-                    select: productSelect,
-                  })
-                : null)))
+            : topSearchResult))
     : null;
 
   if (!product) {
@@ -186,6 +187,7 @@ async function inventoryCheckHandler(companyId, {
 
   return {
     found: true,
+    productId: product.id,
     productName: product.name,
     sku: product.sku,
     price: formatCurrency(product.price),

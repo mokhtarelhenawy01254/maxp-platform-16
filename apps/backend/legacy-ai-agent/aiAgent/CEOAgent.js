@@ -35,7 +35,7 @@ function buildCEOAgentConfig(companyId, config = {}) {
     return {
       name: config.name || (role === 'CEO' ? 'CEO Agent' : `${role} Agent`),
       role,
-      model: role === 'CEO' ? 'gemini-2.5-pro' : 'gemini-2.5-flash',
+      model: null,
       allowedTools: config.allowedTools || (role === 'CEO' ? [] : []),
       allowedSkills: [],
       persona: { tone: 'professional', language: 'arabic', authority: 'full', ...config.persona },

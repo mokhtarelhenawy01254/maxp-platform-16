@@ -517,6 +517,53 @@ class TestBuild:
         assert agent.client is framework_client
         build_async.assert_awaited_once()
 
+    @pytest.mark.asyncio
+    async def test_ensure_client_forwards_explicit_provider_key_id(self):
+        agent = BaseAgent(
+            BaseAgentConfig(
+                id="agent_key_001",
+                name="Keyed Agent",
+                role="SALES",
+                company_id="comp_001",
+                model="openai/gpt-oss-120b",
+                provider="GROQ",
+                key_id="selected-groq-key",
+            )
+        )
+        provider_client = MagicMock()
+
+        with patch("src.agents.base.build_provider_client_async", new=AsyncMock(return_value=provider_client)) as build_provider, \
+             patch.object(agent, "_resolve_tools", return_value=[]), \
+             patch.object(agent, "_get_system_prompt", return_value="system"):
+            client = await agent.ensure_client()
+
+        assert client is provider_client
+        build_provider.assert_awaited_once()
+        assert build_provider.await_args.kwargs["key_id"] == "selected-groq-key"
+
+    @pytest.mark.asyncio
+    async def test_ensure_client_does_not_fallback_for_explicit_provider(self):
+        agent = BaseAgent(
+            BaseAgentConfig(
+                id="agent_key_002",
+                name="Keyed Agent",
+                role="SALES",
+                company_id="comp_001",
+                model="openai/gpt-oss-120b",
+                provider="NVIDIA",
+                key_id="selected-nvidia-key",
+            )
+        )
+
+        with patch("src.agents.base.build_provider_client_async", new=AsyncMock(return_value=None)), \
+             patch("src.agents.base.build_agent_client_async", new=AsyncMock()) as build_default, \
+             patch.object(agent, "_resolve_tools", return_value=[]), \
+             patch.object(agent, "_get_system_prompt", return_value="system"):
+            with pytest.raises(RuntimeError, match="Selected LLM provider unavailable"):
+                await agent.ensure_client()
+
+        build_default.assert_not_awaited()
+
     def test_create_session_delegates_to_framework_agent(self, agent: BaseAgent):
         sdk_session = object()
         framework_agent = MagicMock()

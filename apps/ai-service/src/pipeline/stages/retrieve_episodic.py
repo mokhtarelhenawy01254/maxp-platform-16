@@ -3,7 +3,7 @@ from __future__ import annotations
 import structlog
 
 from src.memory.episodic_memory import episodic_memory_service
-from src.pipeline.context import PipelineContext
+from src.pipeline.context import DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL, PipelineContext
 
 logger = structlog.get_logger(__name__)
 
@@ -20,6 +20,14 @@ async def retrieve_episodic_memory(ctx: PipelineContext) -> PipelineContext:
     inject them as a <relevant_memories> block in the system prompt.
     """
     if not ctx.session or not ctx.customer_id or not ctx.company_id:
+        return ctx
+    if (ctx.external_memory_context or {}).get(DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL):
+        logger.debug(
+            "episodic_memory_retrieval_skipped",
+            company_id=ctx.company_id,
+            customer_id=ctx.customer_id,
+            reason=DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL,
+        )
         return ctx
 
     try:

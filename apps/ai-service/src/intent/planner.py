@@ -142,6 +142,172 @@ def _missing_core_tool_slots(tool_name: str | None, slots: dict[str, Any]) -> li
     return []
 
 
+def _has_previous_product_context(context: dict[str, Any] | None) -> bool:
+    if not isinstance(context, dict):
+        return False
+    memory_context = context.get("externalMemoryContext")
+    if not isinstance(memory_context, dict):
+        memory_context = context
+    return bool(
+        memory_context.get("lastShownProductIds")
+        or memory_context.get("queriedProducts")
+        or memory_context.get("activeSearchFilters")
+    )
+
+
+def _memory_context(context: dict[str, Any] | None) -> dict[str, Any]:
+    if not isinstance(context, dict):
+        return {}
+    memory_context = context.get("externalMemoryContext")
+    return memory_context if isinstance(memory_context, dict) else context
+
+
+def _as_dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _nested_value(value: Any, *paths: tuple[str, ...]) -> Any:
+    for path in paths:
+        current = value
+        for key in path:
+            if not isinstance(current, dict):
+                current = None
+                break
+            current = current.get(key)
+        if current is None:
+            continue
+        if isinstance(current, str) and not current.strip():
+            continue
+        return current
+    return None
+
+
+def _order_memory_has_product(context: dict[str, Any] | None) -> bool:
+    memory = _memory_context(context)
+    candidates = [
+        _as_dict(memory.get("lastInventoryParams")),
+        _as_dict(memory.get("lastInventoryResult")),
+        _as_dict(memory.get("lastProductResult")),
+        _as_dict(memory.get("selectedProduct")),
+        _as_dict(memory.get("lastOrderCandidate")),
+    ]
+    if memory.get("lastShownProductIds") or memory.get("queriedProducts"):
+        return True
+    return any(
+        _nested_value(
+            candidate,
+            ("productName",),
+            ("product_name",),
+            ("product_name_or_sku",),
+            ("productNameOrSku",),
+            ("name",),
+            ("sku",),
+            ("product", "name"),
+            ("product", "sku"),
+            ("id",),
+            ("productId",),
+        )
+        is not None
+        for candidate in candidates
+    )
+
+
+def _order_memory_has_price(context: dict[str, Any] | None) -> bool:
+    memory = _memory_context(context)
+    candidates = [
+        _as_dict(memory.get("lastInventoryResult")),
+        _as_dict(memory.get("lastProductResult")),
+        _as_dict(memory.get("selectedProduct")),
+        _as_dict(memory.get("lastOrderCandidate")),
+    ]
+    return any(
+        _nested_value(
+            candidate,
+            ("productPrice",),
+            ("product_price",),
+            ("price", "amount"),
+            ("price",),
+            ("product", "price", "amount"),
+            ("product", "price"),
+        )
+        is not None
+        for candidate in candidates
+    )
+
+
+def _order_memory_has_shipping_destination(context: dict[str, Any] | None) -> bool:
+    memory = _memory_context(context)
+    shipping = _as_dict(memory.get("lastShippingResult"))
+    candidate = _as_dict(memory.get("lastOrderCandidate"))
+    return (
+        _nested_value(shipping, ("city",), ("governorate",), ("destination",), ("area",)) is not None
+        or _nested_value(candidate, ("city",), ("governorate",)) is not None
+    )
+
+
+def _has_variant_followup_slots(tool_name: str | None, slots: dict[str, Any]) -> bool:
+    canonical = canonical_tool_name(tool_name or "")
+    if canonical != "inventory_check":
+        return False
+    return _has_any_slot(
+        slots,
+        (
+            "productSize",
+            "product_size",
+            "size",
+            "productColor",
+            "product_color",
+            "color",
+            "requestedProductImage",
+            "requested_product_image",
+            "referencesPreviousProduct",
+            "references_previous_product",
+        ),
+    )
+
+
+def _resolve_blocking_missing_slots(
+    *,
+    policy: dict[str, Any],
+    tool_name: str | None,
+    slots: dict[str, Any],
+    context: dict[str, Any] | None,
+) -> list[str]:
+    missing = _unique([
+        *_missing_required_slots(policy, slots),
+        *_missing_core_tool_slots(tool_name, slots),
+    ])
+    if (
+        "productPrice" in missing
+        and policy.get("nextState") == "create_confirmed_order"
+        and _has_any_slot(slots, ("productName", "product_name", "product", "sku", "query"))
+    ):
+        missing = [slot for slot in missing if slot != "productPrice"]
+    if (
+        "productName" in missing
+        and _has_variant_followup_slots(tool_name, slots)
+        and _has_previous_product_context(context)
+    ):
+        return [slot for slot in missing if slot != "productName"]
+    if policy.get("nextState") == "create_confirmed_order":
+        resolved_missing = list(missing)
+        if "productName" in resolved_missing and _order_memory_has_product(context):
+            resolved_missing = [slot for slot in resolved_missing if slot != "productName"]
+        if "productPrice" in resolved_missing and (
+            _order_memory_has_price(context)
+            or _has_any_slot(slots, ("productName", "product_name", "product", "sku", "query"))
+            or _order_memory_has_product(context)
+        ):
+            resolved_missing = [slot for slot in resolved_missing if slot != "productPrice"]
+        if "city" in resolved_missing and (
+            _has_any_slot(slots, ("address",))
+            or _order_memory_has_shipping_destination(context)
+        ):
+            resolved_missing = [slot for slot in resolved_missing if slot != "city"]
+        return resolved_missing
+    return missing
+
+
 def build_intent_contract(
     policy_plan: ToolPlan,
     available_tools: list[str],
@@ -226,10 +392,12 @@ async def build_intent_contract_async(
         logger.info("intent_routed", intent=policy_plan.intent, requiresTool=policy_plan.requiresTool, primaryTool=policy_plan.primaryTool, allowedTools=policy_plan.allowedTools)
         classifier_missing_slots = _unique(classifier_result.missingSlots or [])
         slots = dict(classifier_result.slots or {})
-        blocking_missing_slots = _unique([
-            *_missing_required_slots(policy, slots),
-            *_missing_core_tool_slots(policy_plan.primaryTool, slots),
-        ])
+        blocking_missing_slots = _resolve_blocking_missing_slots(
+            policy=policy,
+            tool_name=policy_plan.primaryTool,
+            slots=slots,
+            context=context,
+        )
         missing_slots = blocking_missing_slots
         policy_plan.slots = slots
         policy_plan.missingSlots = missing_slots
@@ -254,6 +422,7 @@ async def build_intent_contract_async(
             or (
                 tool_status == "needs_clarification"
                 and policy.get("actionType") in {"write", "workflow", "handoff"}
+                and blocking_missing_slots
             )
         ):
             _block_tool_execution(policy_plan, "NEEDS_CLARIFICATION")
@@ -412,6 +581,9 @@ def get_model_classified_write_tool_execution(
 ) -> dict[str, Any] | None:
     if not relevance_plan.requiresTool or not relevance_plan.primaryTool:
         return None
+    policy = get_policy(relevance_plan.intent)
+    if policy.get("actionType") not in {"write", "workflow"}:
+        return None
     primary = canonical_tool_name(relevance_plan.primaryTool)
     tool_obj = None
     for tool in native_tools:
@@ -425,7 +597,7 @@ def get_model_classified_write_tool_execution(
             tool_obj = get_tool(primary)
         except Exception:
             tool_obj = None
-    if getattr(tool_obj, "approval_mode", "never_require") != "always_require":
+    if tool_obj is None:
         return None
     return {
         "tool": relevance_plan.primaryTool,

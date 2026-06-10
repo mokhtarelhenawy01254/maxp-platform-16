@@ -51,6 +51,26 @@ type ActiveUsersResponse = {
   };
 };
 
+const ContentSkeleton: React.FC = () => (
+  <div className="space-y-6 animate-pulse">
+    <div className="space-y-2">
+      <div className="h-7 w-48 bg-gray-200 rounded" />
+      <div className="h-4 w-72 bg-gray-200 rounded" />
+    </div>
+    <div className="grid grid-cols-3 gap-4">
+      <div className="h-28 bg-gray-200 rounded-xl" />
+      <div className="h-28 bg-gray-200 rounded-xl" />
+      <div className="h-28 bg-gray-200 rounded-xl" />
+    </div>
+    <div className="h-60 bg-gray-200 rounded-xl" />
+    <div className="space-y-3">
+      <div className="h-10 bg-gray-200 rounded" />
+      <div className="h-10 bg-gray-200 rounded" />
+      <div className="h-10 bg-gray-200 rounded" />
+    </div>
+  </div>
+);
+
 const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
@@ -593,102 +613,106 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
                  shouldRemovePadding ? "p-0" : "p-4 md:p-6"
                } hr-theme`}
              >
-               {location.pathname === '/apps' ? (
-                 <AppDashboardPage
-                   userId={user?.id}
-                   companyId={user?.companyId || user?.company?.id}
-                   allSections={menuSections}
-                 />
-               ) : (
-                 <React.Fragment key={companyScopeKey}>{children}</React.Fragment>
-               )}
-             </main>
-          </div>
-        </div>
-      ) : (
-        <div className="flex w-full h-screen overflow-hidden">
-          <div className="hidden lg:block h-full">
-            <SidebarLayoutFactory
-              layout={currentLayout}
-              isCollapsed={isSidebarCollapsed}
-              mobileMode={false}
-              toggleSidebar={toggleSidebar}
-              sections={filteredSections}
-              collapsedSections={collapsedSections}
-              toggleSection={toggleSection}
-              currentPath={sidebarCurrentPath}
-              t={t}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-            />
-          </div>
+                {location.pathname === '/apps' ? (
+                  <AppDashboardPage
+                    userId={user?.id}
+                    companyId={user?.companyId || user?.company?.id}
+                    allSections={menuSections}
+                  />
+                ) : (
+                  <React.Suspense fallback={<ContentSkeleton />}>
+                    <React.Fragment key={companyScopeKey}>{children}</React.Fragment>
+                  </React.Suspense>
+                )}
+              </main>
+           </div>
+         </div>
+       ) : (
+         <div className="flex w-full h-screen overflow-hidden">
+           <div className="hidden lg:block h-full">
+             <SidebarLayoutFactory
+               layout={currentLayout}
+               isCollapsed={isSidebarCollapsed}
+               mobileMode={false}
+               toggleSidebar={toggleSidebar}
+               sections={filteredSections}
+               collapsedSections={collapsedSections}
+               toggleSection={toggleSection}
+               currentPath={sidebarCurrentPath}
+               t={t}
+               searchQuery={searchQuery}
+               setSearchQuery={setSearchQuery}
+             />
+           </div>
 
-          {/* Mobile drawer: always rendered when mobile, controlled via CSS transitions */}
-          {isMobile ? (
-            <div
-              className="business-mobile-overlay"
-              data-open={isMobileMenuOpen ? "true" : "false"}
-              dir={i18n.dir()}
-            >
-              <div
-                className="business-mobile-backdrop"
-                data-open={isMobileMenuOpen ? "true" : "false"}
-                onClick={() => setIsMobileMenuOpen(false)}
-              />
-              <div
-                className={`business-mobile-drawer ${
-                  i18n.dir() === "rtl" ? "right-0" : "left-0"
-                }`}
-                data-open={isMobileMenuOpen ? "true" : "false"}
-                role="dialog"
-                aria-modal="true"
-                aria-label={t("sidebar.navigation") || "Navigation"}
-              >
-                <SidebarLayoutFactory
-                  layout={currentLayout}
-                  isCollapsed={false}
-                  mobileMode={true}
-                  toggleSidebar={() => setIsMobileMenuOpen(false)}
-                  sections={filteredSections}
-                  collapsedSections={collapsedSections}
-                  toggleSection={toggleSection}
-                  currentPath={sidebarCurrentPath}
-                  t={t}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                />
-              </div>
-            </div>
-          ) : null}
-
-          <div className="flex-1 w-full flex flex-col overflow-hidden">
-            {isTrial ? (
-              <div className="business-trial-banner">
-                <SparklesIcon className="h-4 w-4" />
-                <span>{trialBannerText}</span>
-                <Link to="/subscription" className="business-trial-banner-link">
-                  {upgradeNowText}
-                </Link>
-              </div>
-            ) : null}
-
-            {headerBlock}
-
-             <main
-               className={`business-shell-main flex-1 overflow-y-auto ${
-                 shouldRemovePadding ? "p-0" : "p-4 md:p-6"
-               } hr-theme`}
+           {/* Mobile drawer: always rendered when mobile, controlled via CSS transitions */}
+           {isMobile ? (
+             <div
+               className="business-mobile-overlay"
+               data-open={isMobileMenuOpen ? "true" : "false"}
+               dir={i18n.dir()}
              >
-               {location.pathname === '/apps' ? (
-                 <AppDashboardPage
-                   userId={user?.id}
-                   companyId={user?.companyId || user?.company?.id}
-                   allSections={menuSections}
+               <div
+                 className="business-mobile-backdrop"
+                 data-open={isMobileMenuOpen ? "true" : "false"}
+                 onClick={() => setIsMobileMenuOpen(false)}
+               />
+               <div
+                 className={`business-mobile-drawer ${
+                   i18n.dir() === "rtl" ? "right-0" : "left-0"
+                 }`}
+                 data-open={isMobileMenuOpen ? "true" : "false"}
+                 role="dialog"
+                 aria-modal="true"
+                 aria-label={t("sidebar.navigation") || "Navigation"}
+               >
+                 <SidebarLayoutFactory
+                   layout={currentLayout}
+                   isCollapsed={false}
+                   mobileMode={true}
+                   toggleSidebar={() => setIsMobileMenuOpen(false)}
+                   sections={filteredSections}
+                   collapsedSections={collapsedSections}
+                   toggleSection={toggleSection}
+                   currentPath={sidebarCurrentPath}
+                   t={t}
+                   searchQuery={searchQuery}
+                   setSearchQuery={setSearchQuery}
                  />
-               ) : (
-                 <React.Fragment key={companyScopeKey}>{children}</React.Fragment>
-               )}
-             </main>
+               </div>
+             </div>
+           ) : null}
+
+           <div className="flex-1 w-full flex flex-col overflow-hidden">
+             {isTrial ? (
+               <div className="business-trial-banner">
+                 <SparklesIcon className="h-4 w-4" />
+                 <span>{trialBannerText}</span>
+                 <Link to="/subscription" className="business-trial-banner-link">
+                   {upgradeNowText}
+                 </Link>
+               </div>
+             ) : null}
+
+             {headerBlock}
+
+              <main
+                className={`business-shell-main flex-1 overflow-y-auto ${
+                  shouldRemovePadding ? "p-0" : "p-4 md:p-6"
+                } hr-theme`}
+              >
+                {location.pathname === '/apps' ? (
+                  <AppDashboardPage
+                    userId={user?.id}
+                    companyId={user?.companyId || user?.company?.id}
+                    allSections={menuSections}
+                  />
+                ) : (
+                  <React.Suspense fallback={<ContentSkeleton />}>
+                    <React.Fragment key={companyScopeKey}>{children}</React.Fragment>
+                  </React.Suspense>
+                )}
+              </main>
           </div>
         </div>
       )}

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from agent_framework import FunctionInvocationContext, FunctionTool
 from pydantic import BaseModel, Field
@@ -87,7 +87,7 @@ async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
     query = "" if input_data.list_all else (input_data.query or "")
     limit = input_data.limit if input_data.list_all else min(input_data.limit, 20)
     result = await product_tools.search_products(
-        input_data.company_id or "", query, limit=limit
+        input_data.company_id or "", query, limit=limit, use_vector=input_data.use_vector
     )
     products = result.get("products", [])
     if input_data.list_all:
@@ -202,6 +202,9 @@ class OrderCreateDraftInput(BaseModel):
     customer_name: str = Field(description="Customer name")
     customer_phone: str = Field(description="Customer phone number")
     product_name: str = Field(description="Product name or ID")
+    product_price: float | None = Field(default=None, description="Confirmed product unit price")
+    product_size: str | None = Field(default=None, description="Requested product size")
+    product_color: str | None = Field(default=None, description="Requested product color")
     quantity: int = Field(default=1, description="Quantity")
     total: float | None = Field(default=None, description="Order total")
     address: str | None = Field(default=None, description="Delivery address")
@@ -214,10 +217,15 @@ class OrderCreateConfirmedInput(BaseModel):
     customer_name: str = Field(description="Customer name")
     customer_phone: str = Field(description="Customer phone number")
     product_name: str = Field(description="Product name or ID")
+    product_price: float | None = Field(default=None, description="Confirmed product unit price")
+    product_size: str | None = Field(default=None, description="Confirmed product size")
+    product_color: str | None = Field(default=None, description="Confirmed product color")
     quantity: int = Field(default=1, description="Quantity")
     total: float | None = Field(default=None, description="Order total")
+    shipping_amount: float | None = Field(default=None, description="Confirmed shipping amount")
     address: str | None = Field(default=None, description="Delivery address")
     city: str | None = Field(default=None, description="City")
+    confirmed_by_customer: bool | None = Field(default=None, description="Whether the customer explicitly confirmed")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
@@ -256,6 +264,9 @@ async def order_create_draft(input_data: OrderCreateDraftInput) -> dict[str, Any
         "customerName": input_data.customer_name,
         "customerPhone": input_data.customer_phone,
         "productName": input_data.product_name,
+        "productPrice": input_data.product_price if input_data.product_price is not None else input_data.total,
+        "productSize": input_data.product_size,
+        "productColor": input_data.product_color,
         "quantity": input_data.quantity,
         "total": input_data.total,
         "address": input_data.address,
@@ -266,15 +277,22 @@ async def order_create_draft(input_data: OrderCreateDraftInput) -> dict[str, Any
 
 async def order_create_confirmed(input_data: OrderCreateConfirmedInput) -> dict[str, Any]:
     client = get_backend_client()
-    result = await client.create_order(input_data.company_id or "", {
+    order_payload = {
         "customerName": input_data.customer_name,
         "customerPhone": input_data.customer_phone,
         "productName": input_data.product_name,
+        "productPrice": input_data.product_price if input_data.product_price is not None else input_data.total,
+        "productSize": input_data.product_size,
+        "productColor": input_data.product_color,
         "quantity": input_data.quantity,
         "total": input_data.total,
+        "shippingAmount": input_data.shipping_amount,
         "address": input_data.address,
         "city": input_data.city,
-    })
+        "confirmedByCustomer": input_data.confirmed_by_customer,
+    }
+    order_payload = {key: value for key, value in order_payload.items() if value is not None}
+    result = await client.create_order(input_data.company_id or "", order_payload)
     return _executed_result("ORDER_CREATED", result)
 
 
@@ -325,7 +343,7 @@ order_create_draft_tool = FunctionTool(
 
 order_create_confirmed_tool = FunctionTool(
     name="order_create_confirmed",
-    description="Create a confirmed order directly. REQUIRES MERCHANT APPROVAL.",
+    description="Create a confirmed order directly after explicit customer confirmation and complete order details.",
     func=order_create_confirmed,
     input_model=OrderCreateConfirmedInput,
 )
@@ -409,6 +427,9 @@ class InventoryCheckInput(BaseModel):
     product_name_or_sku: str = Field(description="Product name or SKU to check inventory for")
     product_size: str | None = Field(default=None, description="Optional requested size")
     product_color: str | None = Field(default=None, description="Optional requested color")
+    conversation_id: str | None = Field(default=None, description="Optional conversation ID for previous-product context")
+    references_previous_product: bool | None = Field(default=None, description="True when the turn refers to the previous shown product")
+    use_vector: bool = Field(default=True, description="Enable semantic/vector search fallback")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
@@ -420,28 +441,31 @@ class InventoryAdjustInput(BaseModel):
 
 
 async def inventory_check(input_data: InventoryCheckInput) -> dict[str, Any]:
-    result = await product_tools.search_products(
-        input_data.company_id or "", input_data.product_name_or_sku, limit=1
-    )
-    products = result.get("products", [])
-    if not products:
-        return {
-            "found": False,
-            "code": "PRODUCT_NOT_FOUND",
+    client = get_backend_client()
+    bridge_input = {
+        key: value
+        for key, value in {
             "productNameOrSku": input_data.product_name_or_sku,
-        }
-    p = products[0]
-    return {
-        "found": True,
-        "productName": p.get("name"),
-        "sku": p.get("sku"),
-        "price": p.get("price"),
-        "stock": p.get("stock"),
-        "status": p.get("status"),
-        "images": p.get("images", []),
-        "availableSizes": p.get("availableSizes", []),
-        "availableColors": p.get("availableColors", []),
+            "productSize": input_data.product_size,
+            "productColor": input_data.product_color,
+            "conversationId": input_data.conversation_id,
+            "referencesPreviousProduct": input_data.references_previous_product,
+            "useVector": input_data.use_vector,
+        }.items()
+        if value is not None
     }
+    response = await client.execute_bridge_tool(
+        input_data.company_id or "",
+        "inventory.check",
+        bridge_input,
+        thread_id=input_data.conversation_id,
+    )
+    result = response.get("result", response)
+    if isinstance(result, dict) and result.get("success") is True and isinstance(result.get("output"), dict):
+        return result["output"]
+    if isinstance(result, dict) and result.get("success") is True and isinstance(result.get("result"), dict):
+        return result["result"]
+    return result
 
 
 async def inventory_adjust(input_data: InventoryAdjustInput) -> dict[str, Any]:
@@ -720,20 +744,29 @@ competitor_generate_report_tool = FunctionTool(
 
 class FacebookReplyInput(BaseModel):
     recipient_id: str = Field(description="The Facebook Page-Scoped ID (PSID) of the customer recipient")
-    message: str = Field(description="The text message content to send")
+    message: str | None = Field(default=None, description="The text message content to send")
     page_id: str = Field(description="The Facebook Page ID representing the sending page")
+    message_type: Literal["TEXT", "IMAGE"] = Field(default="TEXT", description="The Facebook message type to send")
+    media_url: str | None = Field(default=None, description="Media URL to send as a Messenger image attachment")
+    image_url: str | None = Field(default=None, description="Image URL to send as a Messenger image attachment")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
 async def facebook_reply(input_data: FacebookReplyInput) -> dict[str, Any]:
+    media_url = input_data.media_url or input_data.image_url
     return await governance_tools.send_facebook_reply(
-        input_data.company_id or "", input_data.recipient_id, input_data.message, input_data.page_id
+        input_data.company_id or "",
+        input_data.recipient_id,
+        input_data.message or "",
+        input_data.page_id,
+        message_type=input_data.message_type,
+        media_url=media_url,
     )
 
 
 facebook_reply_tool = FunctionTool(
     name="facebook_reply",
-    description="Send a direct Facebook Messenger message reply to a customer.",
+    description="Send a direct Facebook Messenger text or image reply to a customer.",
     func=facebook_reply,
     input_model=FacebookReplyInput,
 )
@@ -1016,12 +1049,11 @@ ADVANCED_TOOLS: list[FunctionTool] = [
 # All read-only tools
 READ_TOOLS: list[FunctionTool] = CORE_TOOLS + ADVANCED_TOOLS
 
-# All write tools (require approval)
+# All write tools that require merchant approval before execution.
 WRITE_TOOLS: list[FunctionTool] = [
     product_create_tool,
     product_update_price_tool,
     order_create_draft_tool,
-    order_create_confirmed_tool,
     order_cancel_tool,
     order_refund_tool,
     inventory_adjust_tool,
@@ -1040,8 +1072,15 @@ WRITE_TOOLS: list[FunctionTool] = [
 for _write_tool in WRITE_TOOLS:
     _write_tool.approval_mode = "always_require"
 
+DIRECT_WRITE_TOOLS: list[FunctionTool] = [
+    order_create_confirmed_tool,
+]
+
+for _direct_write_tool in DIRECT_WRITE_TOOLS:
+    _direct_write_tool.approval_mode = "never_require"
+
 # All tools (including manager tools for template resolution)
-ALL_TOOLS: dict[str, FunctionTool] = {t.name: t for t in READ_TOOLS + WRITE_TOOLS + [
+ALL_TOOLS: dict[str, FunctionTool] = {t.name: t for t in READ_TOOLS + WRITE_TOOLS + DIRECT_WRITE_TOOLS + [
     whatsapp_send_tool,
     facebook_reply_tool,
     agent_handoff_to_tool,

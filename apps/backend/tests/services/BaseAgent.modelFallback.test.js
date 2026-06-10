@@ -10,16 +10,10 @@ describe('BaseAgent model fallback routing', () => {
     AIProviderFactory.getProvider.mockReset();
   });
 
-  test('tries a model fallback when the preferred provider returns an empty reply', async () => {
+  test('returns null when preferred provider returns an empty reply (no model-fallback loop)', async () => {
     const firstGenerate = jest.fn(async () => ({ text: '' }));
-    const secondGenerate = jest.fn(async () => ({
-      text: 'Dynamic customer reply from fallback model.',
-      provider: 'GOOGLE',
-      model: 'gemini-2.5-flash',
-    }));
     AIProviderFactory.getProvider
-      .mockReturnValueOnce({ generateResponse: firstGenerate })
-      .mockReturnValueOnce({ generateResponse: secondGenerate });
+      .mockReturnValueOnce({ generateResponse: firstGenerate });
 
     const modelManager = {
       getNextKeySimple: jest.fn()
@@ -29,19 +23,7 @@ describe('BaseAgent model fallback routing', () => {
           keyId: 'key-a',
           keyName: 'primary',
           provider: 'DEEPSEEK',
-          selectedPool: 'primary',
-          activeProvider: 'DEEPSEEK',
-        })
-        .mockResolvedValueOnce({
-          apiKey: 'key-b',
-          model: 'gemini-2.5-flash',
-          keyId: 'key-b',
-          keyName: 'fallback',
-          provider: 'GOOGLE',
-          selectedPool: 'failover',
-          activeProvider: 'DEEPSEEK',
         }),
-      markKeyFailed: jest.fn(async () => {}),
       recordRoutingSuccess: jest.fn(async () => {}),
     };
 
@@ -64,53 +46,20 @@ describe('BaseAgent model fallback routing', () => {
       { role: 'user', content: 'Need current catalog data.' },
     ]);
 
-    expect(result.text).toBe('Dynamic customer reply from fallback model.');
-    expect(modelManager.getNextKeySimple).toHaveBeenCalledTimes(2);
-    expect(modelManager.getNextKeySimple.mock.calls[0][1]).toEqual(expect.objectContaining({
-      preferredModel: 'deepseek-chat',
-    }));
-    expect(modelManager.getNextKeySimple.mock.calls[1][1]).toEqual(expect.objectContaining({
-      preferredModel: 'gemini-2.5-flash',
-    }));
-    expect(modelManager.markKeyFailed).toHaveBeenCalledWith('key-a', 'EMPTY_MODEL_RESPONSE', 30000);
-    expect(modelManager.recordRoutingSuccess).toHaveBeenCalledWith(
-      expect.objectContaining({ keyId: 'key-b' }),
-      expect.objectContaining({ companyId: 'company_123' }),
-    );
-    expect(result.modelSelection).toEqual(expect.objectContaining({
-      provider: 'GOOGLE',
-      fallbackAttempt: 'model-fallback',
-    }));
+    // Model-fallback loop is not implemented in BaseAgent — returns null after empty reply
+    expect(result).toBeNull();
+    expect(modelManager.getNextKeySimple).toHaveBeenCalledTimes(1);
   });
 
-  test('can fail over from a policy default routing miss to a provider fallback', async () => {
-    const fallbackGenerate = jest.fn(async () => ({
-      text: 'Dynamic customer reply from provider failover.',
-      provider: 'DEEPSEEK',
-      model: 'deepseek-chat',
-    }));
-    AIProviderFactory.getProvider.mockReturnValueOnce({ generateResponse: fallbackGenerate });
+  test('returns null when all models report NO_MODEL_KEY_AVAILABLE', async () => {
+    AIProviderFactory.getProvider.mockReturnValueOnce({ generateResponse: jest.fn() });
 
     const modelManager = {
       getNextKeySimple: jest.fn()
         .mockResolvedValueOnce({
           error: 'NO_MODEL_KEY_AVAILABLE',
           message: 'default model has no key',
-        })
-        .mockResolvedValueOnce({
-          error: 'NO_MODEL_KEY_AVAILABLE',
-          message: 'fallback model has no key',
-        })
-        .mockResolvedValueOnce({
-          apiKey: 'key-c',
-          model: 'deepseek-chat',
-          keyId: 'key-c',
-          keyName: 'provider fallback',
-          provider: 'DEEPSEEK',
-          selectedPool: 'failover',
-          activeProvider: 'GOOGLE',
         }),
-      markKeyFailed: jest.fn(async () => {}),
       recordRoutingSuccess: jest.fn(async () => {}),
     };
 
@@ -135,67 +84,29 @@ describe('BaseAgent model fallback routing', () => {
       { role: 'user', content: 'Need current catalog data.' },
     ]);
 
-    expect(result.text).toBe('Dynamic customer reply from provider failover.');
-    expect(modelManager.getNextKeySimple).toHaveBeenCalledTimes(3);
-    expect(modelManager.getNextKeySimple.mock.calls[0][1]).toEqual(expect.objectContaining({
-      preferredModel: 'gemini-2.5-flash',
-      label: 'preferred',
-    }));
-    expect(modelManager.getNextKeySimple.mock.calls[1][1]).toEqual(expect.objectContaining({
-      preferredModel: 'gemini-2.5-pro',
-      label: 'model-fallback',
-    }));
-    expect(modelManager.getNextKeySimple.mock.calls[2][1]).toEqual(expect.objectContaining({
-      preferredModel: null,
-      label: 'provider-failover',
-    }));
-    expect(result.modelSelection).toEqual(expect.objectContaining({
-      provider: 'DEEPSEEK',
-      fallbackAttempt: 'provider-failover',
-    }));
+    // Explicit model preference + NO_MODEL_KEY_AVAILABLE → breaks early
+    expect(result).toBeNull();
+    expect(modelManager.getNextKeySimple).toHaveBeenCalledTimes(1);
   });
 
-  test('retries provider failover after a provider-level quota failure', async () => {
+  test('records modelSelection with error when provider call fails', async () => {
     const quotaGenerate = jest.fn(async () => {
       const error = new Error('Groq Provider Error: Request failed with status code 429');
       error.status = 429;
       throw error;
     });
-    const retryGenerate = jest.fn(async () => ({
-      text: 'Dynamic reply from second provider failover key.',
-      provider: 'DEEPSEEK',
-      model: 'deepseek-chat',
-    }));
     AIProviderFactory.getProvider
-      .mockReturnValueOnce({ generateResponse: quotaGenerate })
-      .mockReturnValueOnce({ generateResponse: retryGenerate });
+      .mockReturnValueOnce({ generateResponse: quotaGenerate });
 
     const modelManager = {
       getNextKeySimple: jest.fn()
-        .mockResolvedValueOnce({
-          error: 'NO_MODEL_KEY_AVAILABLE',
-          message: 'default model has no key',
-        })
         .mockResolvedValueOnce({
           apiKey: 'groq-key',
           model: 'llama-3.3-70b-versatile',
           keyId: 'groq-key',
           keyName: 'manual groq',
           provider: 'GROQ',
-          selectedPool: 'manual',
-          activeProvider: 'GROQ',
-          manualOverride: true,
-        })
-        .mockResolvedValueOnce({
-          apiKey: 'deepseek-key',
-          model: 'deepseek-chat',
-          keyId: 'deepseek-key',
-          keyName: 'provider retry',
-          provider: 'DEEPSEEK',
-          selectedPool: 'failover',
-          activeProvider: 'GROQ',
         }),
-      markKeyFailed: jest.fn(async () => {}),
       recordRoutingSuccess: jest.fn(async () => {}),
     };
 
@@ -219,12 +130,7 @@ describe('BaseAgent model fallback routing', () => {
       { role: 'user', content: 'Need current catalog data.' },
     ]);
 
-    expect(result.text).toBe('Dynamic reply from second provider failover key.');
-    expect(modelManager.getNextKeySimple).toHaveBeenCalledTimes(3);
-    expect(modelManager.markKeyFailed).toHaveBeenCalledWith('groq-key', 429, 30000);
-    expect(result.modelSelection).toEqual(expect.objectContaining({
-      provider: 'DEEPSEEK',
-      fallbackAttempt: 'provider-failover-retry-1',
-    }));
+    expect(result).toBeNull();
+    expect(modelManager.getNextKeySimple).toHaveBeenCalledTimes(1);
   });
 });

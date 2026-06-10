@@ -9,7 +9,6 @@ import structlog
 
 from src.llm.model_manager import model_manager
 from src.llm.providers.base import BaseProvider
-from src.llm.providers.factory import get_provider_factory
 
 _SAFE_TOOL_NAME_RE = re.compile(r"[^a-zA-Z0-9_-]")
 logger = structlog.get_logger(__name__)
@@ -22,6 +21,7 @@ class AdapterResponse:
     raw: Any = None
     usage: dict[str, Any] | None = None
     model: str = ""
+    provider_events: list[dict[str, Any]] = field(default_factory=list)
 
 
 class ProviderAdapter:
@@ -42,8 +42,6 @@ class ProviderAdapter:
         company_id: str | None = None,
         provider_type: str | None = None,
         key_id: str | None = None,
-        max_failover_attempts: int = 4,
-        allow_provider_failover: bool = True,
     ) -> None:
         self._provider = provider
         self._tools = tools
@@ -51,8 +49,6 @@ class ProviderAdapter:
         self._company_id = company_id or _provider_config(provider, "company_id")
         self._provider_type = provider_type or _provider_config(provider, "provider_type")
         self._key_id = key_id or _provider_config(provider, "key_id")
-        self._max_failover_attempts = max(1, max_failover_attempts)
-        self._allow_provider_failover = allow_provider_failover
         self._provider_tool_names: dict[str, str] = {}
         self._native_tool_names: dict[str, str] = {}
 
@@ -68,8 +64,6 @@ class ProviderAdapter:
             company_id=self._company_id,
             provider_type=self._provider_type,
             key_id=self._key_id,
-            max_failover_attempts=self._max_failover_attempts,
-            allow_provider_failover=self._allow_provider_failover,
         )
 
     async def get_response(
@@ -93,13 +87,14 @@ class ProviderAdapter:
                 if provider_tool is not None:
                     tool_dicts.append(provider_tool)
 
-        provider_response = await self._generate_response_with_failover(
+        provider_response = await self._generate(
             messages=messages,
             tools=tool_dicts,
             temperature=opts.get("temperature"),
             max_tokens=opts.get("max_tokens"),
             top_p=opts.get("top_p"),
             output_schema=output_schema,
+            tool_choice=opts.get("tool_choice"),
         )
 
         raw_tool_calls = []
@@ -132,7 +127,7 @@ class ProviderAdapter:
     async def aclose(self) -> None:
         pass
 
-    async def _generate_response_with_failover(
+    async def _generate(
         self,
         *,
         messages: list[dict[str, Any]],
@@ -141,67 +136,23 @@ class ProviderAdapter:
         max_tokens: Any,
         top_p: Any,
         output_schema: Any = None,
+        tool_choice: Any = None,
     ) -> Any:
-        provider = self._provider
-        attempted_key_ids: set[str] = set()
-        last_exc: Exception | None = None
-
-        for attempt in range(self._max_failover_attempts):
-            key_id = _provider_config(provider, "key_id") or self._key_id
-            provider_type = _provider_config(provider, "provider_type") or self._provider_type
-            company_id = _provider_config(provider, "company_id") or self._company_id
-            if key_id:
-                attempted_key_ids.add(key_id)
-
-            try:
-                response = await provider.generate_response(
-                    messages=messages,
-                    tools=tools,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    top_p=top_p,
-                    output_schema=output_schema,
-                )
-                await self._record_success(provider, response.usage)
-                self._provider = provider
-                self._company_id = company_id
-                self._provider_type = provider_type
-                self._key_id = key_id
-                return response
-            except Exception as exc:
-                last_exc = exc
-                await self._record_failure(provider, exc)
-                if not self._allow_provider_failover:
-                    raise
-                if not _is_failover_error(exc) or attempt >= self._max_failover_attempts - 1:
-                    raise
-
-                skip_provider_types = {provider_type} if _is_provider_quota_error(exc) and provider_type else set()
-                replacement = await get_provider_factory().get_failover_provider(
-                    current_provider_type=provider_type,
-                    model=provider.model,
-                    company_id=company_id,
-                    attempted_key_ids=attempted_key_ids,
-                    skip_provider_types=skip_provider_types,
-                )
-                if replacement is None:
-                    raise
-                replacement_key_id = _provider_config(replacement, "key_id")
-                if replacement_key_id and replacement_key_id in attempted_key_ids:
-                    raise
-                logger.warning(
-                    "llm_provider_failover",
-                    from_provider=provider_type,
-                    from_key_id=key_id,
-                    to_provider=_provider_config(replacement, "provider_type"),
-                    to_key_id=replacement_key_id,
-                    skipped_providers=sorted(skip_provider_types),
-                )
-                provider = replacement
-
-        if last_exc is not None:
-            raise last_exc
-        raise RuntimeError("LLM provider unavailable")
+        try:
+            response = await self._provider.generate_response(
+                messages=messages,
+                tools=tools,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                top_p=top_p,
+                output_schema=output_schema,
+                tool_choice=tool_choice,
+            )
+            await self._record_success(self._provider, response.usage)
+            return response
+        except Exception as exc:
+            await self._record_failure(self._provider, exc)
+            raise
 
     async def _record_success(self, provider: BaseProvider, usage: dict[str, Any] | None) -> None:
         key_id = _provider_config(provider, "key_id")
@@ -299,17 +250,12 @@ def _provider_config(provider: BaseProvider, key: str) -> Any:
     return getattr(provider, key, None)
 
 
-def _is_failover_error(exc: Exception) -> bool:
-    if not isinstance(exc, httpx.HTTPStatusError):
-        return False
-    status_code = exc.response.status_code
-    return status_code in {408, 409, 429, 500, 502, 503, 504}
-
-
 def _failure_type(exc: Exception) -> str:
     if isinstance(exc, httpx.HTTPStatusError):
         status_code = exc.response.status_code
         text = exc.response.text.upper()
+        if _is_provider_tool_use_error(exc):
+            return "TOOL_USE_FAILED"
         if _is_provider_quota_error(exc):
             return "QUOTA"
         if status_code == 429:
@@ -320,6 +266,15 @@ def _failure_type(exc: Exception) -> str:
             return "QUOTA"
         return str(status_code)
     return "GENERAL"
+
+
+def _is_provider_tool_use_error(exc: Exception) -> bool:
+    if not isinstance(exc, httpx.HTTPStatusError):
+        return False
+    if exc.response.status_code != 400:
+        return False
+    text = exc.response.text.lower()
+    return "tool_use_failed" in text or "tool choice is none" in text
 
 
 def _is_provider_quota_error(exc: Exception) -> bool:

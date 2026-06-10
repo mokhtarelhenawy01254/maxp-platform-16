@@ -7,6 +7,7 @@ from agent_framework import FunctionTool
 from pydantic import BaseModel
 
 from src.tools.gateway import ToolGateway
+from src.tools.registry import order_create_confirmed_tool
 
 
 class _WriteInput(BaseModel):
@@ -89,4 +90,42 @@ async def test_gateway_skips_approval_gate_when_sdk_approval_granted(monkeypatch
     )
 
     assert result == {"status": "success", "result": {"updated": True}}
+    tool_func.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_gateway_executes_confirmed_order_directly_without_merchant_approval(monkeypatch):
+    tool_func = AsyncMock(return_value={
+        "status": "success",
+        "code": "ORDER_CREATED",
+        "result": {"orderNumber": "ORD-1001"},
+    })
+    monkeypatch.setattr(order_create_confirmed_tool, "func", tool_func)
+    monkeypatch.setattr("src.tools.gateway.get_tool", lambda name: order_create_confirmed_tool)
+
+    result = await ToolGateway().execute(
+        tool_name="order_create_confirmed",
+        company_id="comp1",
+        agent_role="SALES",
+        allowed_tools=["order_create_confirmed"],
+        input_data={
+            "customer_name": "Test Customer",
+            "customer_phone": "01000000000",
+            "product_name": "Sprint X",
+            "product_price": 1499,
+            "quantity": 1,
+            "address": "10 Test Street",
+            "city": "Cairo",
+            "confirmed_by_customer": True,
+        },
+    )
+
+    assert result == {
+        "status": "success",
+        "result": {
+            "status": "success",
+            "code": "ORDER_CREATED",
+            "result": {"orderNumber": "ORD-1001"},
+        },
+    }
     tool_func.assert_awaited_once()

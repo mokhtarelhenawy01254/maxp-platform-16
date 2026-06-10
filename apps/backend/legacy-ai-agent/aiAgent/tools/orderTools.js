@@ -243,6 +243,7 @@ async function orderCreateConfirmedHandler(companyId, params = {}) {
    * @param {string} [productColor] - Optional confirmed product color.
    * @param {string} [productSize] - Optional confirmed product size.
    * @param {integer} [quantity] - Confirmed quantity.
+   * @param {number} [shippingAmount] - Confirmed shipping amount from shipping-rate lookup.
    * @param {string} [notes] - Additional notes.
    */
   const productName = normalizeOptionalString(params.productName);
@@ -291,6 +292,7 @@ async function orderCreateConfirmedHandler(companyId, params = {}) {
     productSize: normalizeOptionalString(params.productSize),
     productPrice,
     quantity,
+    shippingAmount: numericOrNull(params.shippingAmount),
     customerName,
     customerPhone,
     city,

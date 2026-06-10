@@ -88,15 +88,18 @@ const unifiedSearchOrchestrator = require('../legacy-ai-agent/aiAgent/utils/Unif
 
 router.post('/product-search', async (req, res) => {
   try {
-    const { companyId, query, limit = 10, productSize, productColor, conversationId } = req.body || {};
+    const { companyId, query, limit = 10, productSize, productColor, conversationId, useVector } = req.body || {};
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
     if (!query?.trim()) return res.status(400).json({ success: false, error: 'query is required' });
 
     const safeLimit = Math.min(Math.max(Number(limit), 1), 20);
+    const vectorEnabled = useVector !== false;
 
     const result = await unifiedSearchOrchestrator.search(companyId, query, {
       limit: safeLimit,
       conversationId: conversationId || undefined,
+      disableEmbeddings: !vectorEnabled,
+      skipRecovery: !vectorEnabled,
       intentSlots: {
         ...(productSize ? { productSize } : {}),
         ...(productColor ? { productColor } : {}),
@@ -128,6 +131,7 @@ router.post('/product-search', async (req, res) => {
         recoveryStrategy: result.recoveryStrategy || null,
         latencyMs: result.latencyMs || 0,
         didYouMean: result.didYouMean || null,
+        searchMode: vectorEnabled ? 'hybrid' : 'text',
       },
     });
   } catch (error) {

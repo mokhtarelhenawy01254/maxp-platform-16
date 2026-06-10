@@ -138,7 +138,7 @@ class AgentProfileLoaderService {
     }
 
     const hasRequestedModel = Boolean(options.model);
-    const model = options.model || profile?.modelPolicy?.default || (role === 'CEO' ? 'gemini-2.5-pro' : 'gemini-2.5-flash');
+    const model = options.model || profile?.modelPolicy?.default || null;
     const modelSource = hasRequestedModel
       ? 'explicit'
       : (profile?.modelPolicy?.default ? 'policy-default' : 'runtime-default');

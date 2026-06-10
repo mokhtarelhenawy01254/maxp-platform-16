@@ -300,6 +300,17 @@ INTENT_CONFIGURED_TOOLS: dict[str, dict[str, Any]] = {
         "primaryTool": "order_create_draft",
         "allowedTools": ["order_create_draft", "product_search", "customer_info"],
     },
+    "orders.create_confirmed": {
+        "primaryTool": "order_create_confirmed",
+        "allowedTools": [
+            "order_create_confirmed",
+            "order_create_draft",
+            "inventory_check",
+            "product_search",
+            "shipping_rates",
+            "customer_info",
+        ],
+    },
     "orders": {
         "primaryTool": "order_lookup",
         "allowedTools": ["order_lookup", "order_summary", "order_recent_list"],

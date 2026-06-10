@@ -11,6 +11,7 @@ import { buildStoreUrl } from "../../../utils/storeUrl";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { envConfig } from "../../../config/environment";
 import { isSidebarPathActive } from "./matchSidebarPath";
+import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
 
 interface MinimalSidebarProps {
   isCollapsed: boolean;
@@ -37,6 +38,7 @@ const MinimalSidebar: React.FC<MinimalSidebarProps> = ({
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
+  const prefetch = useRoutePrefetch();
 
   // Helper for navigation links
   const NavLink: React.FC<{
@@ -47,6 +49,7 @@ const MinimalSidebar: React.FC<MinimalSidebarProps> = ({
     badge?: string;
   }> = ({ to, icon, children, external, badge }) => {
     const isActive = !external && isSidebarPathActive(currentPath, to);
+    const prefetch = useRoutePrefetch();
 
     if (external) {
       const slug = user?.company?.slug;
@@ -91,6 +94,7 @@ const MinimalSidebar: React.FC<MinimalSidebarProps> = ({
             ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
             : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
           } `}
+        onMouseEnter={() => prefetch(to)}
         onClick={() => { if (mobileMode) toggleSidebar(); }}
       >
         <span
@@ -206,6 +210,7 @@ const MinimalSidebar: React.FC<MinimalSidebarProps> = ({
                                         to={child.to}
                                         className="business-sidebar-child-link"
                                         data-active={isSidebarPathActive(currentPath, child.to)}
+                                        onMouseEnter={() => prefetch(child.to)}
                                         onClick={() => toggleSidebar()}
                                       >
                                         {child.label}
@@ -239,6 +244,7 @@ const MinimalSidebar: React.FC<MinimalSidebarProps> = ({
                 <Link
                   to="/profile"
                   className="business-sidebar-mobile-profile-link"
+                  onMouseEnter={() => prefetch("/profile")}
                   onClick={() => toggleSidebar()}
                 >
                   {t("sidebar.profile")}
@@ -246,6 +252,7 @@ const MinimalSidebar: React.FC<MinimalSidebarProps> = ({
                 <Link
                   to="/settings"
                   className="business-sidebar-mobile-profile-link"
+                  onMouseEnter={() => prefetch("/settings")}
                   onClick={() => toggleSidebar()}
                 >
                   {t("sidebar.settings")}
@@ -270,7 +277,7 @@ const MinimalSidebar: React.FC<MinimalSidebarProps> = ({
   return (
     <div className="flex flex-col w-20 h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 py-4 shadow-xl z-30">
       {/* Company Logo */}
-      <Link to="/company-dashboard" className="flex items-center justify-center mb-6 no-underline">
+      <Link to="/company-dashboard" className="flex items-center justify-center mb-6 no-underline" onMouseEnter={() => prefetch("/company-dashboard")}>
         {user?.company?.logo ? (
           <img
             src={`${envConfig.backendUrl}${user.company.logo}`}
@@ -352,6 +359,7 @@ const MinimalSidebar: React.FC<MinimalSidebarProps> = ({
                                       <Link
                                         key={child.to}
                                         to={child.to}
+                                        onMouseEnter={() => prefetch(child.to)}
                                         className={`block px-2 py-1 text-[11px] font-medium rounded transition-all duration-200 ${isChildActive
                                             ? "text-blue-600 bg-blue-50 dark:bg-blue-900/20"
                                             : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"

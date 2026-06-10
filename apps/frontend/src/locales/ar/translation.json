@@ -154,6 +154,34 @@
       "proposalRejected": "تم رفض الاقتراح."
     }
   },
+  "aiCatalog": {
+    "title": "كتالوج منتجات البوت",
+    "subtitle": "إدارة منتجات البوت الذكي للتواصل مع العملاء",
+    "search": "بحث عن منتج...",
+    "addProduct": "إضافة منتج",
+    "editProduct": "تعديل المنتج",
+    "totalProducts": "إجمالي المنتجات",
+    "outOfStock": "نفذ من المخزون",
+    "avgPrice": "متوسط السعر",
+    "image": "الصورة",
+    "sku": "SKU",
+    "price": "السعر",
+    "stock": "المخزون",
+    "variants": "المتغيرات",
+    "empty": "لا توجد منتجات",
+    "deleteConfirm": "هل أنت متأكد من حذف هذا المنتج؟",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "successDelete": "تم حذف المنتج بنجاح",
+    "successDuplicate": "تم نسخ المنتج بنجاح",
+    "imageUpload": "رفع صورة",
+    "productName": "اسم المنتج *",
+    "description": "الوصف",
+    "addVariant": "إضافة متغير",
+    "addVariantDesc": "أضف متغيرات للمنتج مثل الألوان أو المقاسات",
+    "variantImage": "صورة المتغير",
+    "variantColor": "لون المتغير"
+  },
   "aiHub": {
     "title": "AI Hub",
     "subtitle": "مركز الوكلاء الذكي",
@@ -166,6 +194,22 @@
       "scheduler": "الجدولة"
     },
     "sandbox": {
+      "chat": {
+        "selectAgent": "اختر وكيلاً لبدء المحادثة",
+        "copyMessage": "نسخ نص الرسالة",
+        "generating": "جاري إنشاء الرد...",
+        "thinking": "جاري التفكير...",
+        "imageAttachment": "مرفق صورة",
+        "closeAttachmentPanel": "إغلاق لوحة المرفقات",
+        "imageUrlPlaceholder": "أدخل رابط الصورة...",
+        "quickSelect": "اختيار سريع:",
+        "clearImage": "إزالة الصورة",
+        "attachImage": "إرفاق صورة",
+        "messagePlaceholder": "رسالة {{agentName}}...",
+        "selectCentralModel": "اختر موديل مركزي لبدء المحادثة",
+        "configureApiKey": "اضبط مفتاح API من الشريط العلوي",
+        "sendMessage": "إرسال الرسالة"
+      },
       "trace": {
         "title": "مسار التشغيل",
         "pythonRuntime": "Python",
@@ -175,6 +219,9 @@
         "intent": "النية",
         "plannedTool": "الأداة المخططة",
         "executedTools": "الأدوات المنفذة",
+        "providerEvents": "أحداث المزوّد",
+        "providerRetry": "إعادة محاولة",
+        "providerFailover": "تحويل مزوّد",
         "none": "لا يوجد",
         "notAvailable": "غير متاح"
       }

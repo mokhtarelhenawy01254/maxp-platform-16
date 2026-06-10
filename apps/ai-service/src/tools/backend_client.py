@@ -63,14 +63,46 @@ class BackendClient:
 
     # ── Product APIs ──
 
+    async def execute_bridge_tool(
+        self,
+        company_id: str,
+        tool_name: str,
+        input_data: dict[str, Any],
+        thread_id: str | None = None,
+    ) -> dict[str, Any]:
+        return await self._request("POST", "/api/v1/ai-bridge/tools/execute", json_body={
+            "companyId": company_id,
+            "toolName": tool_name,
+            "input": input_data,
+            "threadId": thread_id,
+        })
+
     async def search_products(
-        self, company_id: str, query: str, limit: int = 10
+        self,
+        company_id: str,
+        query: str,
+        limit: int = 10,
+        product_size: str | None = None,
+        product_color: str | None = None,
+        conversation_id: str | None = None,
+        references_previous_product: bool | None = None,
+        use_vector: bool = True,
     ) -> list[dict[str, Any]]:
-        result = await self._request("POST", "/api/v1/ai-bridge/product-search", json_body={
+        body: dict[str, Any] = {
             "companyId": company_id,
             "query": query,
             "limit": limit,
-        })
+            "useVector": use_vector,
+        }
+        if product_size:
+            body["productSize"] = product_size
+        if product_color:
+            body["productColor"] = product_color
+        if conversation_id:
+            body["conversationId"] = conversation_id
+        if references_previous_product is not None:
+            body["referencesPreviousProduct"] = references_previous_product
+        result = await self._request("POST", "/api/v1/ai-bridge/product-search", json_body=body)
         return result.get("data", result.get("products", []))
 
     async def get_product(self, company_id: str, product_id: str) -> dict[str, Any] | None:
@@ -141,7 +173,17 @@ class BackendClient:
         self, company_id: str, order_data: dict[str, Any]
     ) -> dict[str, Any]:
         order_data.setdefault("companyId", company_id)
-        return await self._request("POST", "/api/v1/orders-v2/create-simple", json_body=order_data)
+        bridge_response = await self.execute_bridge_tool(
+            company_id,
+            "order.create_confirmed",
+            order_data,
+        )
+        tool_result = bridge_response.get("result", bridge_response)
+        if isinstance(tool_result, dict) and tool_result.get("success") is False:
+            raise RuntimeError(str(tool_result.get("error") or "order.create_confirmed failed"))
+        if isinstance(tool_result, dict) and isinstance(tool_result.get("output"), dict):
+            return tool_result["output"]
+        return tool_result if isinstance(tool_result, dict) else {"result": tool_result}
 
     async def update_order_status(
         self, company_id: str, order_number: str, status: str
@@ -287,18 +329,29 @@ class BackendClient:
     # ── Facebook/Messenger APIs ──
 
     async def send_facebook_message(
-        self, company_id: str, recipient_id: str, message: str, page_id: str
+        self,
+        company_id: str,
+        recipient_id: str,
+        message: str,
+        page_id: str,
+        message_type: str = "TEXT",
+        media_url: str | None = None,
     ) -> dict[str, Any]:
+        payload = {
+            "recipientId": recipient_id,
+            "message": message,
+            "pageId": page_id,
+            "companyId": company_id,
+            "messageType": message_type,
+        }
+        if media_url:
+            payload["mediaUrl"] = media_url
+
         result = await self._request(
             "POST", "/api/v1/facebook/status/test-message",
-            json_body={
-                "recipientId": recipient_id,
-                "message": message,
-                "pageId": page_id,
-                "companyId": company_id,
-            },
+            json_body=payload,
         )
-        return result.get("result", result)
+        return result.get("result", result.get("data", result))
 
     async def generate_competitor_report(
         self, company_id: str, competitor_id: str, report_type: str = "weekly"

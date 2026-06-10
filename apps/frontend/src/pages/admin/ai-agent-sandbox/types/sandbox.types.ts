@@ -60,6 +60,13 @@ export interface ToolCall {
   error?: string;
 }
 
+export interface MessageAttachment {
+  type: string;
+  url: string;
+  source?: string;
+  tool?: string;
+}
+
 export interface PipelineTrace {
   intentClassification?: {
     intent: string;
@@ -97,6 +104,7 @@ export interface ChatMessage {
   id: string;
   role: "user" | "assistant" | "system";
   content: string;
+  responseAttachments?: MessageAttachment[];
   timestamp: string;
   toolCalls?: ToolCall[];
   model?: string;
@@ -176,6 +184,7 @@ export interface StreamEvent {
   tool?: string;
   result?: unknown;
   reply?: string;
+  responseAttachments?: MessageAttachment[];
   /** When true, `reply` is a delta to append to the current message; when false/undefined, `reply` is the full message. */
   isIncremental?: boolean;
   modelUsed?: string;

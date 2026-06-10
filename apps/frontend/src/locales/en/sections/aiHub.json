@@ -10,6 +10,22 @@
     "scheduler": "Scheduler"
   },
   "sandbox": {
+    "chat": {
+      "selectAgent": "Select an agent to start chatting",
+      "copyMessage": "Copy message text",
+      "generating": "Generating...",
+      "thinking": "Thinking...",
+      "imageAttachment": "Image attachment",
+      "closeAttachmentPanel": "Close attachment panel",
+      "imageUrlPlaceholder": "Enter image URL...",
+      "quickSelect": "Quick select:",
+      "clearImage": "Remove image",
+      "attachImage": "Attach image",
+      "messagePlaceholder": "Message {{agentName}}...",
+      "selectCentralModel": "Select a central model to start chatting",
+      "configureApiKey": "Configure your API key in the HeaderBar",
+      "sendMessage": "Send message"
+    },
     "trace": {
       "title": "Run trace",
       "pythonRuntime": "Python",
@@ -19,6 +35,9 @@
       "intent": "Intent",
       "plannedTool": "Planned tool",
       "executedTools": "Executed tools",
+      "providerEvents": "Provider events",
+      "providerRetry": "Retry",
+      "providerFailover": "Provider failover",
       "none": "None",
       "notAvailable": "N/A"
     }

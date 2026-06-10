@@ -10,6 +10,22 @@
     "scheduler": "الجدولة"
   },
   "sandbox": {
+    "chat": {
+      "selectAgent": "اختر وكيلاً لبدء المحادثة",
+      "copyMessage": "نسخ نص الرسالة",
+      "generating": "جاري إنشاء الرد...",
+      "thinking": "جاري التفكير...",
+      "imageAttachment": "مرفق صورة",
+      "closeAttachmentPanel": "إغلاق لوحة المرفقات",
+      "imageUrlPlaceholder": "أدخل رابط الصورة...",
+      "quickSelect": "اختيار سريع:",
+      "clearImage": "إزالة الصورة",
+      "attachImage": "إرفاق صورة",
+      "messagePlaceholder": "رسالة {{agentName}}...",
+      "selectCentralModel": "اختر موديل مركزي لبدء المحادثة",
+      "configureApiKey": "اضبط مفتاح API من الشريط العلوي",
+      "sendMessage": "إرسال الرسالة"
+    },
     "trace": {
       "title": "مسار التشغيل",
       "pythonRuntime": "Python",
@@ -19,6 +35,9 @@
       "intent": "النية",
       "plannedTool": "الأداة المخططة",
       "executedTools": "الأدوات المنفذة",
+      "providerEvents": "أحداث المزوّد",
+      "providerRetry": "إعادة محاولة",
+      "providerFailover": "تحويل مزوّد",
       "none": "لا يوجد",
       "notAvailable": "غير متاح"
     }

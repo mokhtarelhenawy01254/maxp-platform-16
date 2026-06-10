@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { StorefrontTheme } from '../types/theme.types';
-import StorefrontStartupFallback from '../components/StorefrontStartupFallback';
+import StorefrontSkeleton from '../components/StorefrontSkeleton';
 import {
   extractStorefrontThemePresetId,
   resolveRuntimeStorefrontTheme,
@@ -261,7 +261,7 @@ export const StorefrontThemeProvider: React.FC<{
   }, [theme?.tokens?.typography?.headingFont, theme?.tokens?.typography?.bodyFont]);
 
   if (!theme) {
-    return <StorefrontStartupFallback />;
+    return <StorefrontSkeleton />;
   }
 
   return (

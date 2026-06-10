@@ -146,11 +146,17 @@ async def build_provider_client_async(
     tools: list[Any] | None = None,
     system_prompt: str | None = None,
     company_id: str | None = None,
+    key_id: str | None = None,
 ) -> Any:
     settings = get_settings()
     resolved_model = model or settings.default_model
     factory = get_provider_factory()
-    provider = await factory.get_provider(provider_type.upper(), resolved_model, company_id)
+    provider = await factory.get_provider(
+        provider_type.upper(),
+        resolved_model,
+        company_id,
+        key_id=key_id,
+    )
     if provider is None:
         raise ValueError(f"Provider '{provider_type}' is not configured")
     logger.info("agent_client.provider_client", provider=provider_type, model=resolved_model)
@@ -158,7 +164,7 @@ async def build_provider_client_async(
         provider,
         tools=tools,
         system_prompt=system_prompt,
-        allow_provider_failover=False,
+        key_id=key_id,
     )
 
 

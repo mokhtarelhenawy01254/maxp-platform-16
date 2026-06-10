@@ -2,22 +2,6 @@ jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
-const mockGetNextKey = jest.fn(async keys => keys[0] || null);
-const mockPeekNextKey = jest.fn(async keys => keys[0] || null);
-const mockGetAvailableKeys = jest.fn(async keys => keys || []);
-const mockRotator = {
-  getNextKey: mockGetNextKey,
-  peekNextKey: mockPeekNextKey,
-  getAvailableKeys: mockGetAvailableKeys,
-  getStatus: jest.fn(() => ({ totalFailed: 0, failures: [] })),
-  markFailed: jest.fn(),
-  clearAll: jest.fn(),
-};
-
-jest.mock('../../legacy-ai-agent/aiAgent/SimpleKeyRotator', () => ({
-  getSimpleKeyRotator: jest.fn(() => mockRotator),
-}));
-
 jest.mock('../../services/systemManager', () => ({}));
 jest.mock('../../legacy-ai-agent/aiAgent/stateManager', () => ({}));
 const mockGenerateResponse = jest.fn();
@@ -48,15 +32,31 @@ function createPrismaMock({ centralKeys = [], defaultProvider = 'GROQ', settings
       findMany: jest.fn().mockResolvedValue([]),
     },
     aiKey: {
-      findMany: jest.fn().mockImplementation(({ where }) => {
-        if (where?.companyId === null && where?.keyType === 'CENTRAL') {
-          return Promise.resolve(centralKeys);
+      findFirst: jest.fn().mockImplementation(({ where, include }) => {
+        if (where?.keyType === 'CENTRAL' && where?.companyId === null) {
+          const key = centralKeys[0] || null;
+          if (key && include?.aiModelConfigs?.where) {
+            // Simulate Prisma include filtering
+            const filteredModels = (key.aiModelConfigs || []).filter(m => {
+              if (include.aiModelConfigs.where.isEnabled === true && !m.isEnabled) return false;
+              if (include.aiModelConfigs.where.modelName && m.modelName !== include.aiModelConfigs.where.modelName) return false;
+              return true;
+            }).sort((a, b) => a.priority - b.priority).slice(0, include.aiModelConfigs.take || 1);
+            return Promise.resolve({ ...key, aiModelConfigs: filteredModels });
+          }
+          return Promise.resolve(key);
         }
-        return Promise.resolve([]);
+        return Promise.resolve(null);
       }),
       findUnique: jest.fn().mockResolvedValue({ usage: null }),
       update: jest.fn().mockResolvedValue({}),
     },
+    aiModelConfig: { findMany: jest.fn(async () => []) },
+    excludedModel: { findFirst: jest.fn(), findMany: jest.fn(async () => []), deleteMany: jest.fn() },
+    $transaction: jest.fn(async (cb) => {
+      if (typeof cb === 'function') return cb(createPrismaMock());
+      return cb;
+    }),
   };
 }
 
@@ -94,13 +94,6 @@ describe('ModelManager Groq provider defaults', () => {
       expect(result.provider).toBe('GROQ');
       expect(result.keyId).toBe('central-groq');
       expect(result.model).toBe('llama-3.3-70b-versatile');
-      expect(mockGetNextKey).toHaveBeenCalledWith([
-        expect.objectContaining({
-          id: 'central-groq',
-          provider: 'GROQ',
-          modelName: 'llama-3.3-70b-versatile',
-        }),
-      ]);
     } finally {
       cleanupManager(manager);
     }
@@ -130,13 +123,6 @@ describe('ModelManager Groq provider defaults', () => {
       expect(result.provider).toBe('NVIDIA');
       expect(result.keyId).toBe('central-nvidia');
       expect(result.model).toBe('openai/gpt-oss-120b');
-      expect(mockGetNextKey).toHaveBeenCalledWith([
-        expect.objectContaining({
-          id: 'central-nvidia',
-          provider: 'NVIDIA',
-          modelName: 'openai/gpt-oss-120b',
-        }),
-      ]);
     } finally {
       cleanupManager(manager);
     }
@@ -167,19 +153,6 @@ describe('ModelManager Groq provider defaults', () => {
       expect(result.provider).toBe('GOOGLE');
       expect(result.keyId).toBe('central-google');
       expect(result.model).toBe('gemini-2.5-flash');
-      expect(mockGetNextKey).toHaveBeenCalledWith([
-        expect.objectContaining({
-          id: 'central-google',
-          provider: 'GOOGLE',
-          modelName: 'gemini-2.5-flash',
-        }),
-      ]);
-      expect(prisma.aiKey.update).toHaveBeenCalledWith({
-        where: { id: 'central-google' },
-        data: {
-          usage: expect.stringContaining('"lastSelectedModel":"gemini-2.5-flash"'),
-        },
-      });
     } finally {
       cleanupManager(manager);
     }
@@ -224,14 +197,6 @@ describe('ModelManager Groq provider defaults', () => {
       expect(result.keyId).toBe('central-google-gemma');
       expect(result.model).toBe('gemma-4-31b-it');
       expect(result.modelId).toBe('gemma-model');
-      expect(mockGetNextKey).toHaveBeenCalledWith([
-        expect.objectContaining({
-          id: 'central-google-gemma',
-          provider: 'GOOGLE',
-          modelName: 'gemma-4-31b-it',
-          modelId: 'gemma-model',
-        }),
-      ]);
     } finally {
       cleanupManager(manager);
     }
@@ -270,65 +235,6 @@ describe('ModelManager Groq provider defaults', () => {
         },
       });
       expect(prisma.aiKey.update.mock.calls[0][0].data.usage).not.toContain('central-google-secret');
-    } finally {
-      cleanupManager(manager);
-    }
-  });
-
-  test('preferred key overrides round-robin for the active provider', async () => {
-    const centralGroqKey1 = {
-      id: 'central-groq-1',
-      name: 'Central Groq 1',
-      apiKey: 'central-groq-secret-1',
-      provider: 'GROQ',
-      keyType: 'CENTRAL',
-      companyId: null,
-      priority: 1,
-      baseUrl: 'https://api.groq.com/openai/v1',
-      aiModelConfigs: [],
-    };
-    const centralGroqKey2 = {
-      id: 'central-groq-2',
-      name: 'Central Groq 2',
-      apiKey: 'central-groq-secret-2',
-      provider: 'GROQ',
-      keyType: 'CENTRAL',
-      companyId: null,
-      priority: 2,
-      baseUrl: 'https://api.groq.com/openai/v1',
-      aiModelConfigs: [],
-    };
-    const prisma = createPrismaMock({
-      centralKeys: [centralGroqKey1, centralGroqKey2],
-      settings: JSON.stringify({
-        preferredAiKeyIds: {
-          GROQ: 'central-groq-2',
-        },
-      }),
-    });
-    getSharedPrismaClient.mockReturnValue(prisma);
-    const manager = new ModelManager({});
-
-    try {
-      const result = await manager.getNextKeySimple('company-1');
-
-      expect(result.provider).toBe('GROQ');
-      expect(result.keyId).toBe('central-groq-2');
-      expect(result.selectedPool).toBe('manual');
-      expect(result.manualOverride).toBe(true);
-      expect(result.preferredKeyId).toBe('central-groq-2');
-      expect(mockGetAvailableKeys).toHaveBeenCalledWith([
-        expect.objectContaining({
-          id: 'central-groq-2',
-          modelName: 'llama-3.3-70b-versatile',
-        }),
-      ]);
-      expect(prisma.aiKey.update).toHaveBeenCalledWith({
-        where: { id: 'central-groq-2' },
-        data: {
-          usage: expect.stringContaining('"lastSelectedPool":"manual"'),
-        },
-      });
     } finally {
       cleanupManager(manager);
     }

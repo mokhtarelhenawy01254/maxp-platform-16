@@ -243,17 +243,13 @@ router.get('/profiles', (req, res) => {
 router.get('/tools', async (req, res) => {
   try {
     const result = await aiServiceAdminClient.listTools();
-    if (!result.ok) {
-      return res.status(result.status || 502).json({
-        success: false,
-        error: result.data?.error || result.error || result.reason || 'ai-service tools catalog unavailable',
-        catalogSource: 'python_ai_service',
-      });
+    if (result && result.ok) {
+      return res.json(result.data);
     }
-    return res.json(result.data);
-  } catch (error) {
-    return res.status(500).json({ success: false, error: error.message });
-  }
+  } catch (_) {}
+  // Fallback: return tools from the local Node registry
+  const tools = toolRegistryService.listTools();
+  return res.json({ success: true, tools, count: tools.length, catalogSource: 'node_tool_registry' });
 });
 
 router.get('/skills', (req, res) => {

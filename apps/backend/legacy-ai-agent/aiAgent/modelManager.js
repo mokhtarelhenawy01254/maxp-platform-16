@@ -15,10 +15,8 @@ const AIProviderFactory = require('./providers/AIProviderFactory');
 const aiProviderLogService = require('./providerLogService');
 // const newQuotaService = require('./NewQuotaService'); // ✅ DEPRECATED: Logic merged here
 const systemManager = require('../../services/systemManager'); // ✅ Import System Manager
-const { getSimpleKeyRotator } = require('./SimpleKeyRotator'); // ✅ NEW: Simple Key Rotator
 const stateManager = require('./stateManager'); // ✅ Phase 3: Distributed State Manager (Redis)
 const providerBudgetLedgerService = require('./providerBudgetLedgerService');
-const { getModelCapabilities } = require('./agentModelCapabilityService');
 const {
   RETIRED_GEMINI_MODEL_NAMES,
   UNSTABLE_GEMINI_MODEL_ALIAS_NAMES,
@@ -62,6 +60,7 @@ class ModelManager {
     this.exhaustedModelsCache = new Set(); // ذاكرة مؤقتة للنماذج المستنفدة
     this.currentActiveModel = null; // النموذج النشط الحالي للجلسة
     this.quotaCache = new Map(); // Cache للكوتة الإجمالية مع TTL 30 ثانية
+    this.aggregatedModelsCache = new Map(); // Cache للنماذج المجمعة
     this.excludedModels = new Map(); // ذاكرة مؤقتة للنماذج المستثناة
     // ✅ PERFORMANCE: إضافة caches لتحسين الأداء
     this.activeModelCache = new Map(); // Cache: companyId → { model, timestamp }
@@ -246,34 +245,6 @@ class ModelManager {
     if (normalizedProvider === 'OPENROUTER') return 'openrouter/auto';
     if (normalizedProvider === 'NVIDIA') return 'openai/gpt-oss-120b';
     return 'gemini-2.5-flash';
-  }
-
-  toSimpleRotatorKey(key) {
-    const configuredModel = Array.isArray(key.aiModelConfigs)
-      ? (
-        key.aiModelConfigs.find(model => model?.isEnabled && model?.priority === 1)
-        || key.aiModelConfigs.find(model => model?.isEnabled)
-        || key.aiModelConfigs[0]
-      )
-      : null;
-
-    return {
-      id: key.id,
-      apiKey: key.apiKey,
-      name: key.name,
-      provider: key.provider,
-      baseUrl: key.baseUrl,
-      keyType: key.keyType,
-      usage: key.usage,
-      modelUsage: configuredModel?.usage || null,
-      maxRequestsPerDay: key.maxRequestsPerDay || null,
-      routingLimits: providerBudgetLedgerService.parseProviderLimits({
-        ...key,
-        modelUsage: configuredModel?.usage || null,
-      }),
-      modelName: configuredModel?.modelName || this.getSimpleDefaultModel(key.provider),
-      modelId: configuredModel?.id || null
-    };
   }
 
   parseAiKeyUsage(usageValue) {
@@ -666,144 +637,11 @@ class ModelManager {
     });
   }
 
-  async getSimpleRoutingPools(companyId, options = {}) {
-    const preferredModel = typeof options.preferredModel === 'string' && options.preferredModel.trim()
-      ? options.preferredModel.trim()
-      : null;
-    const keyInclude = {
-      aiModelConfigs: {
-        where: {
-          isEnabled: true,
-          ...(preferredModel ? { modelName: preferredModel } : {})
-        },
-        orderBy: { priority: 'asc' },
-        take: 1
-      }
-    };
-
-    const allKeys = await this.prisma.aiKey.findMany({
-      where: {
-        isActive: true,
-        keyType: 'CENTRAL',
-        companyId: null
-      },
-      include: keyInclude,
-      orderBy: { priority: 'asc' }
-    });
-
-    console.log(`🏛️ [SIMPLE-KEY] Using ${allKeys.length} CENTRAL key(s) for company: ${companyId}`);
-
-    const globalConfig = await this.getGlobalUIConfig();
-    const providerPriority = this.resolveProviderPriorityOrder(globalConfig, {
-      preferredProvider: options.preferredProvider,
-      includeAllSupported: false
-    });
-    const activeProvider = providerPriority[0] || 'GOOGLE';
-    const preferredAiKeyIds = this.getPreferredAiKeyIds(globalConfig?.settings);
-    const preferredKeyId = options.preferredKeyId || preferredAiKeyIds[activeProvider] || null;
-    console.log(`[SIMPLE-KEY] Provider: ${activeProvider} (no failover)`);
-
-    const providerRank = new Map([[activeProvider, 0]]);
-    const orderedKeys = [...allKeys].sort((a, b) => {
-      const providerDiff =
-        (providerRank.get(String(a.provider || 'GOOGLE').toUpperCase()) ?? 999)
-        - (providerRank.get(String(b.provider || 'GOOGLE').toUpperCase()) ?? 999);
-      if (providerDiff !== 0) return providerDiff;
-      return (a.priority || 0) - (b.priority || 0);
-    });
-    const toolSupportRejectedKeys = [];
-    
-    // Only use the first (primary) provider - NO FAILOVER
-    const primaryProviderKeys = orderedKeys
-      .filter(key => String(key.provider || 'GOOGLE').toUpperCase() === activeProvider)
-      .map(key => this.toSimpleRotatorKey(key))
-      .filter(key => {
-        if (!preferredModel) return true;
-        return key.modelName === preferredModel;
-      });
-
-    if (options.requireToolSupport) {
-      const filteredKeys = [];
-      for (const key of primaryProviderKeys) {
-        const agentSuitability = getModelCapabilities(key.provider, key.modelName);
-        if (agentSuitability.agentReady) {
-          filteredKeys.push(key);
-        } else {
-          toolSupportRejectedKeys.push({
-            id: key.id,
-            name: key.name,
-            provider: key.provider,
-            modelName: key.modelName,
-            modelId: key.modelId || null,
-            selectedPool: 'primary',
-            activeProvider,
-            preferredModel,
-            agentSuitability,
-          });
-        }
-      }
-      primaryProviderKeys.length = 0;
-      primaryProviderKeys.push(...filteredKeys);
-    }
-
-    const routedPools = primaryProviderKeys.length > 0 ? [{
-      provider: activeProvider,
-      rank: 1,
-      selectedPool: 'primary',
-      preferredKeyId: preferredKeyId,
-      keys: primaryProviderKeys
-    }] : [];
-
-    const primaryKeysWithModels = primaryProviderKeys;
-
-    console.log(`[SIMPLE-KEY] Provider routing pool: ${activeProvider}:${primaryProviderKeys.length} | no failover${preferredModel ? ` | model ${preferredModel}` : ''}`);
-
-    return {
-      allKeys,
-      activeProvider,
-      enableFailover: false,
-      providerPriority: [activeProvider],
-      preferredKeyId,
-      providerPoolsWithModels: routedPools,
-      primaryKeysWithModels,
-      failoverKeysWithModels: [],
-      toolSupportRejectedKeys
-    };
-  }
-
+  /**
+   * ✅ SIMPLE: Build model-not-agent-ready response — kept as no-op since rotation removed
+   */
   buildModelNotAgentReadyResponse(rejectedKeys = [], options = {}, activeProvider = null) {
-    if (!options.requireToolSupport || !Array.isArray(rejectedKeys) || rejectedKeys.length === 0) {
-      return null;
-    }
-
-    const preferredModel = typeof options.preferredModel === 'string' && options.preferredModel.trim()
-      ? options.preferredModel.trim()
-      : null;
-    const preferredProvider = typeof options.preferredProvider === 'string' && options.preferredProvider.trim()
-      ? options.preferredProvider.trim().toUpperCase()
-      : null;
-
-    const exactRejectedKey = rejectedKeys.find(key => (
-      (!preferredModel || key.modelName === preferredModel)
-      && (!preferredProvider || String(key.provider || '').toUpperCase() === preferredProvider)
-    )) || rejectedKeys.find(key => !preferredModel || key.modelName === preferredModel) || rejectedKeys[0];
-
-    if (!exactRejectedKey) return null;
-
-    return {
-      error: 'MODEL_NOT_AGENT_READY',
-      message: 'Selected model is available for direct chat diagnostics, but is not agent-ready for tool-calling agents.',
-      provider: exactRejectedKey.provider || preferredProvider || activeProvider || null,
-      model: exactRejectedKey.modelName || preferredModel || null,
-      keyId: exactRejectedKey.id || null,
-      keyName: exactRejectedKey.name || null,
-      modelId: exactRejectedKey.modelId || null,
-      activeProvider: exactRejectedKey.activeProvider || activeProvider || null,
-      selectedPool: exactRejectedKey.selectedPool || null,
-      agentSuitability: exactRejectedKey.agentSuitability || null,
-      rejectedKeyCount: rejectedKeys.length,
-      requireToolSupport: true,
-    };
+    return null;
   }
 
   /**
@@ -890,431 +728,88 @@ class ModelManager {
     };
   }
 
-  async filterKeysByProviderBudget(keys, context = {}) {
-    const eligibleKeys = [];
-    const skippedKeys = [];
 
-    for (const key of keys || []) {
-      const budgetStatus = await providerBudgetLedgerService.canRoute(key, {
-        estimatedTokens: context.estimatedTokens || 0,
-      });
-
-      if (budgetStatus.allowed) {
-        eligibleKeys.push({
-          ...key,
-          budgetStatus,
-        });
-      } else {
-        skippedKeys.push({
-          id: key.id,
-          name: key.name,
-          provider: key.provider,
-          modelName: key.modelName,
-          reason: budgetStatus.reason,
-          retryAfterSeconds: budgetStatus.retryAfterSeconds,
-          resetAt: budgetStatus.resetAt || null,
-        });
-      }
-    }
-
-    return { eligibleKeys, skippedKeys };
-  }
-
-  getBudgetRetryAfterSeconds(skippedKeys = []) {
-    const retryAfterValues = skippedKeys
-      .map(key => Number(key.retryAfterSeconds))
-      .filter(value => Number.isFinite(value) && value > 0);
-
-    if (retryAfterValues.length === 0) return 30;
-    return Math.max(1, Math.min(...retryAfterValues));
-  }
-
-  async recordProviderBudgetAttempt(keySelection, context = {}) {
-    try {
-      return await providerBudgetLedgerService.recordAttempt(keySelection, context);
-    } catch (error) {
-      console.warn(`⚠️ [PROVIDER-BUDGET] Failed to record attempt for key ${keySelection?.keyId || keySelection?.id}:`, error.message);
-      return { recorded: false, reason: 'LEDGER_ERROR' };
-    }
-  }
-
-  async recordProviderBudgetPenalty(keySelection, context = {}) {
-    try {
-      return await providerBudgetLedgerService.recordPenalty(keySelection, context);
-    } catch (error) {
-      console.warn(`⚠️ [PROVIDER-BUDGET] Failed to record penalty for key ${keySelection?.keyId || keySelection?.id}:`, error.message);
-      return { recorded: false, reason: 'LEDGER_ERROR' };
-    }
-  }
 
   /**
-   * ✅ NEW: Simple Key Selection using Reactive Round-Robin
-   * بديل بسيط لنظام الكوتا المعقد
+   * ✅ SIMPLE: Get first active key with first enabled model — no rotation, no fallback
    * @param {string} companyId - معرف الشركة
    * @param {Object} options - خيارات إضافية
-   * @returns {Promise<Object|null>} - { apiKey, model, keyId, keyName, provider }
+   * @returns {Promise<Object|null>}
    */
   async getNextKeySimple(companyId, options = {}) {
     try {
-      const rotator = getSimpleKeyRotator();
-      const {
-        allKeys,
-        activeProvider,
-        providerPoolsWithModels,
-        providerPriority,
-        toolSupportRejectedKeys
-      } = await this.getSimpleRoutingPools(companyId, options);
+      const preferredModel = typeof options.preferredModel === 'string' && options.preferredModel.trim()
+        ? options.preferredModel.trim()
+        : null;
 
-      if (!allKeys || allKeys.length === 0) {
-        console.warn('⚠️ [SIMPLE-KEY] No active keys found');
-        await aiProviderLogService.recordProviderEvent({
-          provider: activeProvider || 'UNKNOWN',
-          companyId,
-          action: 'routing_resolution',
-          status: 'failed',
-          message: 'No active AI keys found for runtime routing',
-          metadata: {
-            source: 'model_manager.get_next_key_simple',
-            providerPriority,
-          },
-        });
-        return null;
-      }
-
-      if (!providerPoolsWithModels || providerPoolsWithModels.length === 0) {
-        const modelNotAgentReady = this.buildModelNotAgentReadyResponse(toolSupportRejectedKeys, options, activeProvider);
-        if (modelNotAgentReady) {
-          console.warn(`[SIMPLE-KEY] Selected model is not agent-ready for tool routing: ${modelNotAgentReady.provider}/${modelNotAgentReady.model}`);
-          await aiProviderLogService.recordProviderEvent({
-            provider: modelNotAgentReady.provider || activeProvider || 'UNKNOWN',
-            keyId: modelNotAgentReady.keyId || null,
-            keyName: modelNotAgentReady.keyName || null,
-            companyId,
-            action: 'routing_resolution',
-            status: 'failed',
-            model: modelNotAgentReady.model || null,
-            message: modelNotAgentReady.message,
-            metadata: {
-              source: 'model_manager.get_next_key_simple',
-              providerPriority,
-              agentSuitability: modelNotAgentReady.agentSuitability || null,
-              rejectedKeyCount: modelNotAgentReady.rejectedKeyCount,
+      const key = await this.prisma.aiKey.findFirst({
+        where: {
+          isActive: true,
+          keyType: 'CENTRAL',
+          companyId: null,
+        },
+        include: {
+          aiModelConfigs: {
+            where: {
+              isEnabled: true,
+              ...(preferredModel ? { modelName: preferredModel } : {}),
             },
-          });
-          return modelNotAgentReady;
-        }
-
-        console.warn(`⚠️ [SIMPLE-KEY] No active keys found`);
-        await aiProviderLogService.recordProviderEvent({
-          provider: activeProvider || 'UNKNOWN',
-          companyId,
-          action: 'routing_resolution',
-          status: 'failed',
-          message: 'No provider routing pools had active keys',
-          metadata: {
-            source: 'model_manager.get_next_key_simple',
-            providerPriority,
+            orderBy: { priority: 'asc' },
+            take: 1,
           },
-        });
-        return null;
-      }
-
-      // 3. استخدام الـ rotator للاختيار (Async)
-      let selectedKey = null;
-      let selectedPool = 'primary';
-      let manualOverride = false;
-      let attemptedKeyCount = 0;
-      let selectedProviderRank = null;
-      let selectedPreferredKeyId = null;
-      const estimatedTokens = Number(options.estimatedTokens || options.predictedTokens || 0);
-      const budgetSkippedKeys = [];
-
-      for (const pool of providerPoolsWithModels) {
-        selectedPreferredKeyId = pool.preferredKeyId || null;
-        const preferredKey = selectedPreferredKeyId
-          ? pool.keys.find(key => key.id === selectedPreferredKeyId)
-          : null;
-
-        if (preferredKey) {
-          attemptedKeyCount += 1;
-          const preferredBudget = await providerBudgetLedgerService.canRoute(preferredKey, { estimatedTokens });
-          if (!preferredBudget.allowed) {
-            budgetSkippedKeys.push({
-              id: preferredKey.id,
-              name: preferredKey.name,
-              provider: preferredKey.provider,
-              modelName: preferredKey.modelName,
-              reason: preferredBudget.reason,
-              retryAfterSeconds: preferredBudget.retryAfterSeconds,
-              resetAt: preferredBudget.resetAt || null,
-            });
-            console.warn(`[PROVIDER-BUDGET] Preferred key ${selectedPreferredKeyId} for ${pool.provider} skipped (${preferredBudget.reason})`);
-          }
-          const availablePreferredKeys = preferredBudget.allowed
-            ? await rotator.getAvailableKeys([{ ...preferredKey, budgetStatus: preferredBudget }])
-            : [];
-          selectedKey = availablePreferredKeys[0] || null;
-          if (selectedKey) {
-            selectedPool = 'manual';
-            manualOverride = true;
-            selectedProviderRank = pool.rank;
-            console.log(`[SIMPLE-KEY] Manual preferred key selected for ${pool.provider}: ${selectedKey.name}`);
-            break;
-          }
-          console.warn(`[SIMPLE-KEY] Preferred key ${selectedPreferredKeyId} for ${pool.provider} is temporarily unavailable - falling back to provider rotation`);
-        }
-
-        attemptedKeyCount += pool.keys.length;
-        const budgetFilter = await this.filterKeysByProviderBudget(pool.keys, { estimatedTokens });
-        budgetSkippedKeys.push(...budgetFilter.skippedKeys);
-        if (budgetFilter.skippedKeys.length > 0) {
-          console.warn(`[PROVIDER-BUDGET] Skipped ${budgetFilter.skippedKeys.length}/${pool.keys.length} ${pool.provider} key(s) before routing`);
-        }
-
-        selectedKey = await rotator.getNextKey(budgetFilter.eligibleKeys);
-        if (selectedKey) {
-          selectedPool = pool.selectedPool;
-          selectedProviderRank = pool.rank;
-          selectedPreferredKeyId = pool.preferredKeyId || null;
-          break;
-        }
-
-        console.warn(`[SIMPLE-KEY] No available ${pool.provider} key - trying next provider in priority order`);
-      }
-
-      if (!selectedKey) {
-        // كل المفاتيح معطلة مؤقتاً
-        const status = rotator.getStatus();
-        console.error(`❌ [SIMPLE-KEY] All ${attemptedKeyCount} keys temporarily unavailable`, status);
-        await aiProviderLogService.recordProviderEvent({
-          provider: activeProvider || 'UNKNOWN',
-          companyId,
-          action: 'routing_resolution',
-          status: 'failed',
-          message: `All ${attemptedKeyCount} AI keys are temporarily unavailable`,
-          metadata: {
-            source: 'model_manager.get_next_key_simple',
-            attemptedKeyCount,
-            providerPriority,
-            budgetSkippedKeyCount: budgetSkippedKeys.length,
-            budgetSkips: budgetSkippedKeys.slice(0, 10),
-            rotatorStatus: status,
-          },
-        });
-        if (budgetSkippedKeys.length > 0 && budgetSkippedKeys.length >= attemptedKeyCount) {
-          const isCompanyBudget = budgetSkippedKeys.some(k => k.reason === 'BUDGET_EXCEEDED');
-          if (isCompanyBudget) {
-            return {
-              error: 'BUDGET_EXCEEDED',
-              message: 'تم تجاوز الحد المسموح به للاستهلاك اليومي للشركة للذكاء الاصطناعي',
-              retryAfter: this.getBudgetRetryAfterSeconds(budgetSkippedKeys),
-              budgetSkippedKeyCount: budgetSkippedKeys.length
-            };
-          }
-          return {
-            error: 'PROVIDER_BUDGET_EXHAUSTED',
-            message: 'تم الوصول لحدود مزودي الذكاء الاصطناعي مؤقتاً - يرجى المحاولة لاحقاً',
-            retryAfter: this.getBudgetRetryAfterSeconds(budgetSkippedKeys),
-            budgetSkippedKeyCount: budgetSkippedKeys.length
-          };
-        }
-        return {
-          error: 'ALL_KEYS_UNAVAILABLE',
-          message: 'جميع المفاتيح معطلة مؤقتاً - حاول مرة أخرى بعد قليل',
-          retryAfter: status.failures[0]?.remainingSeconds || 30
-        };
-      }
-
-      console.log(`✅ [SIMPLE-KEY] Selected: ${selectedKey.name} (${selectedKey.provider}) - Model: ${selectedKey.modelName} (${selectedPool})`);
-      await this.recordRoutingSelection(selectedKey, {
-        companyId,
-        activeProvider,
-        selectedPool,
-        budgetStatus: selectedKey.budgetStatus || null
+        },
+        orderBy: { priority: 'asc' },
       });
 
-      return {
-        apiKey: selectedKey.apiKey,
-        model: selectedKey.modelName,
-        keyId: selectedKey.id,
-        modelId: selectedKey.modelId,
-        keyName: selectedKey.name,
-        provider: selectedKey.provider,
-        baseUrl: selectedKey.baseUrl,
-        keyType: selectedKey.keyType,
-        selectedPool,
-        activeProvider,
-        preferredKeyId: selectedPreferredKeyId,
-        manualOverride,
-        providerPriority,
-        providerRank: selectedProviderRank,
-        budgetStatus: selectedKey.budgetStatus || null
-      };
+      if (!key) {
+        console.warn('⚠️ [SIMPLE-KEY] No active CENTRAL key found');
+        return { error: 'NO_ACTIVE_KEY', message: 'لا يوجد مفتاح نشط' };
+      }
 
+      const config = key.aiModelConfigs?.[0];
+      const model = config?.modelName || this.getSimpleDefaultModel(key.provider);
+
+      console.log(`✅ [SIMPLE-KEY] Selected: ${key.name} (${key.provider}) - Model: ${model}`);
+
+      return {
+        apiKey: key.apiKey,
+        model,
+        keyId: key.id,
+        modelId: config?.id || null,
+        keyName: key.name,
+        provider: key.provider,
+        baseUrl: key.baseUrl,
+        keyType: key.keyType,
+        selectedPool: 'primary',
+        activeProvider: key.provider,
+        preferredKeyId: null,
+        manualOverride: false,
+      };
     } catch (error) {
       console.error('❌ [SIMPLE-KEY] Error getting next key:', error);
-      await aiProviderLogService.recordProviderEvent({
-        provider: options.preferredProvider || 'UNKNOWN',
-        companyId,
-        action: 'routing_resolution',
-        status: 'failed',
-        message: error.message || 'Runtime routing failed',
-        metadata: {
-          source: 'model_manager.get_next_key_simple',
-        },
-      });
-      return null;
-    }
-  }
-
-  async previewNextKeySimple(companyId, options = {}) {
-    try {
-      const rotator = getSimpleKeyRotator();
-      const {
-        allKeys,
-        activeProvider,
-        providerPoolsWithModels,
-        providerPriority,
-        toolSupportRejectedKeys
-      } = await this.getSimpleRoutingPools(companyId, options);
-
-      if (!allKeys || allKeys.length === 0) {
-        console.warn('⚠️ [SIMPLE-KEY-PREVIEW] No active keys found');
-        return null;
-      }
-
-      if (!providerPoolsWithModels || providerPoolsWithModels.length === 0) {
-        const modelNotAgentReady = this.buildModelNotAgentReadyResponse(toolSupportRejectedKeys, options, activeProvider);
-        if (modelNotAgentReady) {
-          return {
-            ...modelNotAgentReady,
-            providerPriority,
-            dryRun: true,
-          };
-        }
-      }
-
-      let selectedKey = null;
-      let selectedPool = 'primary';
-      let manualOverride = false;
-      let attemptedKeyCount = 0;
-      let selectedProviderRank = null;
-      let selectedPreferredKeyId = null;
-      const estimatedTokens = Number(options.estimatedTokens || options.predictedTokens || 0);
-      const budgetSkippedKeys = [];
-
-      for (const pool of providerPoolsWithModels || []) {
-        selectedPreferredKeyId = pool.preferredKeyId || null;
-        const preferredKey = selectedPreferredKeyId
-          ? pool.keys.find(key => key.id === selectedPreferredKeyId)
-          : null;
-
-        if (preferredKey) {
-          attemptedKeyCount += 1;
-          const preferredBudget = await providerBudgetLedgerService.canRoute(preferredKey, { estimatedTokens });
-          const availablePreferredKeys = preferredBudget.allowed
-            ? await rotator.getAvailableKeys([{ ...preferredKey, budgetStatus: preferredBudget }])
-            : [];
-          if (!preferredBudget.allowed) {
-            budgetSkippedKeys.push({
-              id: preferredKey.id,
-              name: preferredKey.name,
-              provider: preferredKey.provider,
-              modelName: preferredKey.modelName,
-              reason: preferredBudget.reason,
-              retryAfterSeconds: preferredBudget.retryAfterSeconds,
-              resetAt: preferredBudget.resetAt || null,
-            });
-          }
-          selectedKey = availablePreferredKeys[0] || null;
-          if (selectedKey) {
-            selectedPool = 'manual';
-            manualOverride = true;
-            selectedProviderRank = pool.rank;
-            break;
-          }
-        }
-
-        attemptedKeyCount += pool.keys.length;
-        const budgetFilter = await this.filterKeysByProviderBudget(pool.keys, { estimatedTokens });
-        budgetSkippedKeys.push(...budgetFilter.skippedKeys);
-        selectedKey = await rotator.peekNextKey(budgetFilter.eligibleKeys);
-        if (selectedKey) {
-          selectedPool = pool.selectedPool;
-          selectedProviderRank = pool.rank;
-          selectedPreferredKeyId = pool.preferredKeyId || null;
-          break;
-        }
-      }
-
-      if (!selectedKey) {
-        const status = rotator.getStatus();
-        if (budgetSkippedKeys.length > 0 && budgetSkippedKeys.length >= attemptedKeyCount) {
-          return {
-            error: 'PROVIDER_BUDGET_EXHAUSTED',
-            message: 'تم الوصول لحدود مزودي الذكاء الاصطناعي مؤقتاً - يرجى المحاولة لاحقاً',
-            retryAfter: this.getBudgetRetryAfterSeconds(budgetSkippedKeys),
-            attemptedKeyCount,
-            budgetSkippedKeyCount: budgetSkippedKeys.length,
-            dryRun: true
-          };
-        }
-        return {
-          error: 'ALL_KEYS_UNAVAILABLE',
-          message: 'جميع المفاتيح معطلة مؤقتاً - حاول مرة أخرى بعد قليل',
-          retryAfter: status.failures[0]?.remainingSeconds || 30,
-          attemptedKeyCount
-        };
-      }
-
-      return {
-        model: selectedKey.modelName,
-        keyId: selectedKey.id,
-        modelId: selectedKey.modelId,
-        keyName: selectedKey.name,
-        provider: selectedKey.provider,
-        baseUrl: selectedKey.baseUrl,
-        keyType: selectedKey.keyType,
-        selectedPool,
-        activeProvider,
-        preferredKeyId: selectedPreferredKeyId,
-        manualOverride,
-        providerPriority,
-        providerRank: selectedProviderRank,
-        budgetStatus: selectedKey.budgetStatus || null,
-        dryRun: true
-      };
-    } catch (error) {
-      console.error('❌ [SIMPLE-KEY-PREVIEW] Error previewing next key:', error);
       return null;
     }
   }
 
   /**
-   * ✅ NEW: Mark key as failed (for use by responseGenerator)
-   * @param {string} keyId - Key ID
-   * @param {string} reason - Failure reason
-   * @param {number} retryAfterMs - Cooldown in milliseconds
+   * ✅ Mark key as failed — no-op since auto-rotation is removed
    */
   async markKeyFailed(keyId, reason = 'UNKNOWN', retryAfterMs = null) {
-    const rotator = getSimpleKeyRotator();
-    await rotator.markFailed(keyId, reason, retryAfterMs);
+    // No-op: key rotation/cooldown removed
   }
 
   /**
-   * ✅ NEW: Get simple rotator status
+   * ✅ Get simple rotator status — always empty
    */
   async getSimpleRotatorStatus() {
-    const rotator = getSimpleKeyRotator();
-    return await rotator.getStatus();
+    return { totalFailed: 0, failures: [] };
   }
 
   /**
-   * ✅ NEW: Clear all simple rotator failures
+   * ✅ Clear all simple rotator failures — no-op
    */
   async clearSimpleRotatorFailures() {
-    const rotator = getSimpleKeyRotator();
-    await rotator.clearAll();
+    // No-op
   }
 
   /**
@@ -1828,31 +1323,10 @@ class ModelManager {
    * @param {number} retryAfterMs - وقت الانتظار بالميلي ثانية (اختياري، يتم استخراجه من responseGenerator)
    */
   /**
-   * ❌ DEPRECATED: تم استبداله بـ SimpleKeyRotator
-   * الآن يستخدم SimpleKeyRotator فقط للتعليم المؤقت
+   * ❌ DEPRECATED: key rotation removed
    */
   async markModelAsExhaustedFrom429(modelName, quotaValue, companyId = null, modelId = null, errorMessage = '', retryAfterMs = null) {
-    // ✅ استخدام SimpleKeyRotator فقط
-    console.warn('⚠️ [DEPRECATED] markModelAsExhaustedFrom429 is deprecated - using SimpleKeyRotator instead');
-
-    // إذا كان هناك modelId، نحاول الحصول على keyId
-    if (modelId) {
-      try {
-        const modelRecord = await this.prisma.aiModelConfig.findUnique({
-          where: { id: modelId },
-          select: { keyId: true }
-        });
-        if (modelRecord?.keyId) {
-          await this.markKeyFailed(modelRecord.keyId, '429', retryAfterMs);
-          return;
-        }
-      } catch (e) {
-        console.error('❌ [DEPRECATED] Error in markModelAsExhaustedFrom429:', e);
-      }
-    }
-
-    // ✅ تم تبسيط الدالة - الآن تستخدم SimpleKeyRotator فقط
-    // الكود المعقد تم إزالته لأن SimpleKeyRotator يدير المفاتيح الفاشلة تلقائياً
+    // No-op: key rotation/cooldown removed
   }
 
   /**
@@ -2089,43 +1563,18 @@ class ModelManager {
    */
   async findActiveCentralKey() {
     try {
-      // البحث عن مفاتيح مركزية نشطة
-      const centralKeys = await this.prisma.aiKey.findMany({
-        where: {
-          isActive: true,
-          keyType: 'CENTRAL',
-          companyId: null // المفاتيح المركزية ليس لها شركة محددة
-        },
-        orderBy: { priority: 'asc' }
+      const key = await this.prisma.aiKey.findFirst({
+        where: { isActive: true, keyType: 'CENTRAL', companyId: null },
+        orderBy: { priority: 'asc' },
       });
 
-      if (centralKeys.length === 0) {
+      if (!key) {
         console.log('⚠️ [CENTRAL-KEY] لا توجد مفاتيح مركزية نشطة');
         return null;
       }
 
-      // ✅ FIX: Round-Robin: اختيار المفتاح التالي مع الالتفاف حول القائمة
-      let selectedKey = centralKeys[0];
-
-      const lastUsedGlobalKeyId = await this.stateStore.getLastUsedGlobalKeyId();
-      if (lastUsedGlobalKeyId && centralKeys.length > 0) {
-        const lastIndex = centralKeys.findIndex(k => k.id === lastUsedGlobalKeyId);
-        if (lastIndex !== -1) {
-          // إذا كان المفتاح الأخير هو الأخير في القائمة، نبدأ من الأول (wrap-around)
-          if (lastIndex < centralKeys.length - 1) {
-            selectedKey = centralKeys[lastIndex + 1];
-          } else {
-            selectedKey = centralKeys[0]; // wrap-around إلى الأول
-          }
-        }
-      }
-
-      // ✅ FIX: تحديث lastUsedGlobalKeyId
-      await this.stateStore.setLastUsedGlobalKeyId(selectedKey.id);
-
-      console.log(`🏆 [ROUND-ROBIN] اختيار المفتاح: ${selectedKey.name} (Priority: ${selectedKey.priority}, Index: ${centralKeys.indexOf(selectedKey)}/${centralKeys.length}) من ${centralKeys.length} مفاتيح`);
-
-      return selectedKey;
+      console.log(`🏆 [CENTRAL-KEY] اختيار المفتاح: ${key.name}`);
+      return key;
     } catch (error) {
       console.error('❌ [CENTRAL-KEY] خطأ في البحث عن مفتاح مركزي:', error);
       return null;
@@ -2168,139 +1617,10 @@ class ModelManager {
   }
 
   /**
-   * ✅ KEY-FIRST STRATEGY: استراتيجية تبديل المفاتيح الجديدة
-   * يستهلك كل نماذج المفتاح ثم ينتقل للمفتاح التالي
-   * @param {string} companyId - معرف الشركة
-   * @param {number} predictedTokens - عدد التوكنز التقديري
+   * ✅ KEY-FIRST STRATEGY — removed, uses getNextKeySimple instead
    */
   async findBestKeyFirst(companyId, predictedTokens = 500, options = {}) {
-    const { bypassCache = false } = options;
-    const startTime = Date.now();
-    console.log(`🔑 [KEY-FIRST] بدء البحث عن أفضل مفتاح/نموذج للشركة ${companyId}`);
-
-    try {
-      // الحصول على جميع المفاتيح المتاحة مرتبة حسب الأولوية
-      const keys = await this.prisma.aiKey.findMany({
-        where: {
-          isActive: true,
-          keyType: 'CENTRAL'
-        },
-        include: {
-          aiModelConfigs: {
-            where: { isEnabled: true },
-            orderBy: { priority: 'asc' }
-          }
-        },
-        orderBy: { priority: 'asc' }
-      });
-
-      if (keys.length === 0) {
-        console.log(`❌ [KEY-FIRST] لا توجد مفاتيح متاحة للشركة ${companyId}`);
-        return {
-          error: 'NO_KEYS_AVAILABLE',
-          message: 'لا توجد مفاتيح متاحة',
-          arabicMessage: 'لا توجد مفاتيح API متاحة. يرجى إضافة مفاتيح أو الاتصال بالدعم.'
-        };
-      }
-
-      console.log(`🔑 [KEY-FIRST] وجدت ${keys.length} مفتاح متاح`);
-
-      // ✅ Round-Robin على مستوى المفاتيح
-      const lastUsedKeyId = await this.stateStore.getLastUsedGlobalKeyId();
-      let startIndex = 0;
-
-      if (lastUsedKeyId) {
-        const lastIndex = keys.findIndex(k => k.id === lastUsedKeyId);
-        if (lastIndex !== -1) {
-          startIndex = (lastIndex + 1) % keys.length;
-        }
-      }
-
-      // البحث في المفاتيح بترتيب Round-Robin
-      for (let i = 0; i < keys.length; i++) {
-        const keyIndex = (startIndex + i) % keys.length;
-        const key = keys[keyIndex];
-
-        console.log(`🔑 [KEY-FIRST] [${i + 1}/${keys.length}] فحص المفتاح: ${key.name} (${key.aiModelConfigs.length} نموذج)`);
-
-        // البحث في نماذج هذا المفتاح
-        for (const modelRecord of key.aiModelConfigs) {
-          const modelName = modelRecord.modelName;
-
-          // فحص إذا كان النموذج مستنفد في هذا المفتاح
-          const isExhausted = await this.stateStore.isModelExhaustedInKey(key.id, modelName);
-          if (isExhausted) {
-            console.log(`⚠️ [KEY-FIRST] النموذج ${modelName} مستنفد في المفتاح ${key.name}`);
-            continue;
-          }
-
-          // فحص الاستثناءات في قاعدة البيانات
-          const exclusion = await this.prisma.excludedModel.findFirst({
-            where: {
-              modelName: modelName,
-              keyId: key.id,
-              retryAt: { gt: new Date() }
-            }
-          });
-
-          if (exclusion) {
-            console.log(`⚠️ [KEY-FIRST] النموذج ${modelName} مستثنى في المفتاح ${key.name}`);
-            continue;
-          }
-
-          // ✅ وجدنا نموذج متاح!
-          const result = {
-            apiKey: key.apiKey,
-            model: modelName,
-            keyId: key.id,
-            modelId: modelRecord.id,
-            keyName: key.name,
-            provider: key.provider, // ✅ NEW
-            baseUrl: key.baseUrl, // ✅ FIX: Include Base URL
-            priority: modelRecord.priority
-          };
-
-          // تحديث آخر مفتاح مستخدم
-          await this.stateStore.setLastUsedGlobalKeyId(key.id);
-          await this.stateStore.setLastUsedKeyForModel(modelName, key.id);
-
-          console.log(`✅ [KEY-FIRST] تم اختيار: ${modelName} (Key: ${key.name}) - الوقت: ${Date.now() - startTime}ms`);
-          return result;
-        }
-
-        console.log(`⚠️ [KEY-FIRST] جميع نماذج المفتاح ${key.name} مستنفدة - الانتقال للمفتاح التالي`);
-      }
-
-      // ✅ SMART WAIT: فحص أقرب وقت إعادة محاولة
-      console.log(`⏳ [KEY-FIRST] جميع المفاتيح والنماذج مستنفدة - فحص أقرب وقت إعادة محاولة...`);
-
-      await this.stateStore.cleanupExpired();
-
-      const earliestRetryAt = await this.stateStore.getEarliestRetryAt();
-
-      if (earliestRetryAt) {
-        const waitMs = earliestRetryAt - new Date();
-
-        if (waitMs > 0 && waitMs <= 30000) {
-          console.log(`⏳ [KEY-FIRST-WAIT] انتظار ${Math.round(waitMs / 1000)} ثانية...`);
-          await new Promise(resolve => setTimeout(resolve, waitMs + 1000));
-          return this.findBestKeyFirst(companyId, predictedTokens);
-        }
-      }
-
-      console.log(`❌ [KEY-FIRST] لم يتم العثور على نموذج متاح - الوقت: ${Date.now() - startTime}ms`);
-      return {
-        error: 'QUOTA_EXHAUSTED',
-        message: 'جميع الكوتات منتهية',
-        arabicMessage: 'جميع الكوتات منتهية. يرجى المحاولة لاحقاً.',
-        companyId: companyId,
-        nextRetryAt: earliestRetryAt?.toISOString() || null
-      };
-
-    } catch (error) {
-      console.error('❌ [KEY-FIRST] خطأ:', error);
-      return null;
-    }
+    return this.getNextKeySimple(companyId, options);
   }
 
   /**
@@ -2941,38 +2261,17 @@ class ModelManager {
    */
   async findNextAvailableKey(companyId) {
     try {
-      const keys = await this.prisma.aiKey.findMany({
+      const key = await this.prisma.aiKey.findFirst({
         where: {
           isActive: true,
           OR: [
             { companyId: companyId },
-            { keyType: 'CENTRAL' }  // ✅ FIX: إزالة شرط companyId: null
-          ]
+            { keyType: 'CENTRAL' },
+          ],
         },
-        orderBy: { priority: 'asc' }
+        orderBy: { priority: 'asc' },
       });
-
-      if (keys.length === 0) return null;
-
-      // ✅ FIX: Round-Robin: اختيار المفتاح التالي مع الالتفاف حول القائمة
-      let selectedKey = keys[0];
-      const lastUsedKeyId = await this.stateStore.getLastUsedGlobalKeyId();
-      if (lastUsedKeyId && keys.length > 0) {
-        const lastIndex = keys.findIndex(k => k.id === lastUsedKeyId);
-        if (lastIndex !== -1) {
-          // إذا كان المفتاح الأخير هو الأخير في القائمة، نبدأ من الأول (wrap-around)
-          if (lastIndex < keys.length - 1) {
-            selectedKey = keys[lastIndex + 1];
-          } else {
-            selectedKey = keys[0]; // wrap-around إلى الأول
-          }
-        }
-      }
-
-      // ✅ FIX: تحديث lastUsedGlobalKeyId
-      await this.stateStore.setLastUsedGlobalKeyId(selectedKey.id);
-
-      return selectedKey;
+      return key || null;
     } catch (error) {
       console.error('❌ [NEXT-KEY] خطأ في البحث عن المفتاح التالي:', error);
       return null;

@@ -38,6 +38,7 @@ async def create_approval_draft(
     thread_id: str,
     session: AsyncSession,
     sdk_approval_id: str | None = None,
+    channel: str = "chat",
 ) -> dict[str, Any]:
     """Create an approval draft in ai.approvals directly.
 
@@ -66,9 +67,10 @@ async def create_approval_draft(
         request_key=request_key,
         action_type=action_type,
         action_args=action_args,
+        channel=channel,
         metadata={"sdk_approval_id": sdk_approval_id} if sdk_approval_id else None,
     )
-    draft_id = str(approval.id) if approval.id else ""
+    draft_id = str(approval.draft_id or approval.id or "")
 
     return {"draft_id": draft_id, "status": "pending"}
 

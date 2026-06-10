@@ -18,8 +18,20 @@ async def send_whatsapp(
 
 
 async def send_facebook_reply(
-    company_id: str, recipient_id: str, message: str, page_id: str
+    company_id: str,
+    recipient_id: str,
+    message: str,
+    page_id: str,
+    message_type: str = "TEXT",
+    media_url: str | None = None,
 ) -> dict[str, Any]:
     """Send a Facebook Messenger reply to a customer."""
     client = get_backend_client()
-    return await client.send_facebook_message(company_id, recipient_id, message, page_id)
+    return await client.send_facebook_message(
+        company_id,
+        recipient_id,
+        message,
+        page_id,
+        message_type=message_type,
+        media_url=media_url,
+    )

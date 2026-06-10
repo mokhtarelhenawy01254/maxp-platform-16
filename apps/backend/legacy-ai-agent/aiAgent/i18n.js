@@ -137,6 +137,13 @@ const translations = {
     agent: {
       facebook_messenger_name: 'وكيل فيسبوك وماسنجر'
     },
+    system: {
+      key_rotation_removed: 'تم إزالة نظام تدوير المفاتيح التلقائي. يتم الآن استخدام أول مفتاح نشط.',
+      key_rotation_error: 'خطأ في استراتيجية تبديل المفاتيح',
+      key_selection_desc: 'اختيار أول مفتاح نشط - بدون تبديل تلقائي',
+      systems_fetched: 'تم جلب الأنظمة بنجاح',
+      fetch_error: 'خطأ في جلب الأنظمة'
+    },
     agentConfig: {
       saved: 'تم حفظ إعدادات الوكيل بنجاح',
       saveFailed: 'فشل حفظ الإعدادات'
@@ -295,6 +302,13 @@ const translations = {
     },
     agent: {
       facebook_messenger_name: 'Facebook & Messenger Agent'
+    },
+    system: {
+      key_rotation_removed: 'Key rotation system has been removed. The first active key is now used.',
+      key_rotation_error: 'Error in key rotation strategy',
+      key_selection_desc: 'Select first active key - no automatic rotation',
+      systems_fetched: 'Systems fetched successfully',
+      fetch_error: 'Error fetching systems'
     },
     agentConfig: {
       saved: 'Agent configuration saved successfully',

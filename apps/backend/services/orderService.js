@@ -1,3 +1,4 @@
+const { randomUUID } = require('crypto');
 const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
 const { getWooCommerceAutoExportService } = require('./wooCommerceAutoExportService');
 const WalletService = require('./walletService');
@@ -53,6 +54,11 @@ const createOrderStatusError = (message, statusCode = 400) => {
 };
 
 const isWorkflowConfigEnabled = (config) => Boolean(config?.enabled || config?.isEnabled);
+
+const toFiniteNumberOrNull = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
 
 class OrderService {
   constructor(companyId = null) {
@@ -193,6 +199,18 @@ class OrderService {
         throw error;
       }
 
+      const customer = await this.findOrCreateConversationCustomer({
+        companyId,
+        customerId,
+        customerName,
+        customerPhone,
+        customerEmail: data.customerEmail,
+      });
+      const resolvedCustomerId = customer?.id || customerId;
+      if (!resolvedCustomerId) {
+        throw createOrderStatusError('Customer is required to create an order');
+      }
+
       // إنشاء رقم طلب فريد
       const orderNumber = await this.generateOrderNumber(companyId);
 
@@ -203,7 +221,7 @@ class OrderService {
       let rewards = null;
       try {
         const loyaltyService = require('./hr/customerLoyaltyService');
-        rewards = await loyaltyService.getCustomerActiveRewards(companyId, customerId);
+        rewards = await loyaltyService.getCustomerActiveRewards(companyId, resolvedCustomerId);
       } catch (err) {
         console.error('⚠️ Loyalty Rewards Fetch Failed:', err.message);
       }
@@ -216,7 +234,10 @@ class OrderService {
         finalSubtotal = subtotal - appliedDiscount;
       }
 
-      const shipping = parseFloat(this.calculateShipping(city, subtotal, rewards));
+      const explicitShipping = toFiniteNumberOrNull(data.shippingAmount ?? data.shippingCost ?? data.shipping);
+      const shipping = explicitShipping !== null
+        ? explicitShipping
+        : parseFloat(this.calculateShipping(city, subtotal, rewards));
       const total = finalSubtotal + shipping;
 
       // فحص التكرار قبل الإنشاء
@@ -237,11 +258,10 @@ class OrderService {
       if (isDuplicate && duplicateSettings?.action === 'ignore') {
         const existingOrder = await safeQuery(async () => {
           return await this.getPrisma().order.findUnique({
-            where: { id: duplicateMatch.order.id },
-            include: { customer: true }
+            where: { id: duplicateMatch.order.id }
           });
         }, 3);
-        return existingOrder;
+        return existingOrder ? { ...existingOrder, customer } : existingOrder;
       }
 
       // إنشاء الطلب بدون items (سنضيفها لاحقاً)
@@ -250,13 +270,33 @@ class OrderService {
         throw createLimitExceededError(orderLimitCheck.payload);
       }
 
+      const productId = productName
+        ? await this.findOrCreateProduct(productName, companyId)
+        : null;
+
+      const orderItem = {
+        productId,
+        quantity,
+        price: parseFloat(Number(productPrice).toFixed(2)),
+        total: parseFloat(subtotal.toFixed(2)),
+        productName: productName || null,
+        productColor: productColor || null,
+        productSize: productSize || null,
+        extractionSource: 'ai',
+        confidence: 1,
+        metadata: JSON.stringify({
+          source: 'conversation_automation',
+          conversationId: conversationId || null,
+        }),
+      };
+
       const order = await safeQuery(async () => {
         const prisma = this.getPrisma();
         return await prisma.order.create({
           data: {
             orderNumber,
-            customerId,
-            companyId,
+            company: { connect: { id: companyId } },
+            customer: { connect: { id: resolvedCustomerId } },
             subtotal: parseFloat(subtotal.toFixed(2)),
             tax: 0,
             shipping: parseFloat(shipping.toFixed(2)),
@@ -267,24 +307,25 @@ class OrderService {
             status: isDuplicate ? 'DUPLICATE_ORDER' : 'PENDING',
             paymentStatus: 'PENDING',
             paymentMethod: 'CASH',
-            isViewed: false
+            isViewed: false,
+            customerName,
+            customerPhone,
+            customerEmail: data.customerEmail || null,
+            city,
+            governorate: data.governorate || null,
+            customerAddress: data.customerAddress || data.address || null,
+            shippingAddress: data.shippingAddress || data.address || null,
+            sourceType: data.sourceType || 'ai_conversation',
+            extractionMethod: data.extractionMethod || 'ai_tool',
+            orderItems: {
+              create: [orderItem],
+            },
           }
         });
       }, 5);
 
-      // جلب الطلب مع بيانات العميل
-      const orderWithCustomer = await safeQuery(async () => {
-        const prisma = this.getPrisma();
-        return await prisma.order.findUnique({
-          where: { id: order.id },
-          include: {
-            customer: true
-          }
-        });
-      }, 3);
-
       // تحديث إحصائيات العميل
-      await this.updateCustomerStats(customerId, parseFloat(total));
+      await this.updateCustomerStats(resolvedCustomerId, parseFloat(total));
 
       // 🛒 تصدير تلقائي لـ WooCommerce (في الخلفية) - تجاهل للطلبات المكررة
       if (!isDuplicate) {
@@ -315,12 +356,133 @@ class OrderService {
       }
 
       //console.log('✅ Order created successfully:', order.orderNumber);
-      return orderWithCustomer;
+      return { ...order, customer };
 
     } catch (error) {
       console.error('❌ Error creating order:', error);
       throw error;
     }
+  }
+
+  async findOrCreateConversationCustomer({
+    companyId,
+    customerId,
+    customerName,
+    customerPhone,
+    customerEmail,
+  }) {
+    const prisma = this.getPrisma();
+    const selectCustomerSql = (rows) => {
+      const row = Array.isArray(rows) ? rows[0] : null;
+      if (!row) return null;
+      return {
+        id: row.id,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        email: row.email,
+        phone: row.phone,
+        status: row.status,
+      };
+    };
+
+    if (customerId) {
+      const existingById = selectCustomerSql(await safeQuery(async () => {
+        return await prisma.$queryRaw`
+          SELECT id, "firstName", "lastName", email, phone, status
+          FROM customers
+          WHERE id = ${customerId} AND "companyId" = ${companyId}
+          LIMIT 1
+        `;
+      }, 3));
+      if (existingById) return existingById;
+    }
+
+    const phone = customerPhone ? String(customerPhone).trim() : '';
+    const normalizedPhone = this.normalizePhone(phone);
+    const phoneCandidates = [...new Set([phone, normalizedPhone].filter(Boolean))];
+    const email = customerEmail ? String(customerEmail).trim().toLowerCase() : '';
+    for (const phoneCandidate of phoneCandidates) {
+      const existingByPhone = selectCustomerSql(await safeQuery(async () => {
+        return await prisma.$queryRaw`
+          SELECT id, "firstName", "lastName", email, phone, status
+          FROM customers
+          WHERE "companyId" = ${companyId} AND phone = ${phoneCandidate}
+          LIMIT 1
+        `;
+      }, 3));
+      if (existingByPhone) return existingByPhone;
+    }
+
+    if (email) {
+      const existingByEmail = selectCustomerSql(await safeQuery(async () => {
+        return await prisma.$queryRaw`
+          SELECT id, "firstName", "lastName", email, phone, status
+          FROM customers
+          WHERE "companyId" = ${companyId} AND email = ${email}
+          LIMIT 1
+        `;
+      }, 3));
+      if (existingByEmail) return existingByEmail;
+    }
+
+    const displayName = String(customerName || phone || email || 'Customer').trim();
+    const nameParts = displayName.split(/\s+/).filter(Boolean);
+    const firstName = nameParts.shift() || displayName || 'Customer';
+    const lastName = nameParts.join(' ');
+
+    const id = `cust_${randomUUID()}`;
+    const metadata = JSON.stringify({
+      source: 'ai_conversation_order',
+    });
+
+    const insertedCustomer = selectCustomerSql(await safeQuery(async () => {
+      return await prisma.$queryRaw`
+        INSERT INTO customers (
+          id,
+          "firstName",
+          "lastName",
+          email,
+          phone,
+          status,
+          metadata,
+          "companyId",
+          "createdAt",
+          "updatedAt",
+          "customerRating",
+          "successScore",
+          "deliveryRate",
+          "totalDelivered",
+          "totalOrdersCount"
+        )
+        VALUES (
+          ${id},
+          ${firstName},
+          ${lastName},
+          ${email || null},
+          ${phone || null},
+          'LEAD'::customers_status,
+          ${metadata},
+          ${companyId},
+          NOW(),
+          NOW(),
+          'UNKNOWN'::"customers_customerRating",
+          0,
+          0,
+          0,
+          0
+        )
+        RETURNING id, "firstName", "lastName", email, phone, status
+      `;
+    }, 5));
+
+    return insertedCustomer || {
+      id,
+      firstName,
+      lastName,
+      email: email || null,
+      phone: phone || null,
+      status: 'LEAD',
+    };
   }
 
   // إنشاء رقم طلب فريد
@@ -569,27 +731,21 @@ class OrderService {
   // تحديث إحصائيات العميل
   async updateCustomerStats(customerId, orderTotal) {
     try {
-      // التحقق من وجود العميل أولاً
-      const customer = await safeQuery(async () => {
+      await safeQuery(async () => {
         const prisma = this.getPrisma();
-        return await prisma.customer.findUnique({
-          where: { id: customerId }
-        });
-      }, 3);
-
-      if (customer) {
-        await safeQuery(async () => {
-          const prisma = this.getPrisma();
-          return await prisma.customer.update({
-            where: { id: customerId },
-            data: {
-              status: customer.status === 'LEAD' ? 'ACTIVE' : undefined,
-              totalOrdersCount: { increment: 1 }
-            }
-          });
-        }, 5);
-        //console.log('📊 Customer stats updated');
-      }
+        return await prisma.$executeRaw`
+          UPDATE customers
+          SET
+            status = CASE
+              WHEN status = 'LEAD'::customers_status THEN 'ACTIVE'::customers_status
+              ELSE status
+            END,
+            "totalOrdersCount" = COALESCE("totalOrdersCount", 0) + 1,
+            "updatedAt" = NOW()
+          WHERE id = ${customerId}
+        `;
+      }, 5);
+      //console.log('📊 Customer stats updated');
     } catch (error) {
       console.error('❌ Error updating customer stats:', error);
     }

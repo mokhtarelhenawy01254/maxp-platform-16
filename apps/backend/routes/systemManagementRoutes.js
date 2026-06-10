@@ -8,6 +8,7 @@ const router = express.Router();
 const systemManager = require('../services/systemManager');
 const { authenticateToken, requireSuperAdmin } = require('../middleware/superAdminMiddleware');
 const { cacheMiddleware } = require('../middleware/performanceOptimization');
+const { t } = require('../legacy-ai-agent/aiAgent/i18n');
 
 /**
  * GET /api/v1/admin/systems
@@ -18,19 +19,25 @@ router.get('/systems', authenticateToken, requireSuperAdmin, async (req, res) =>
     const systems = await systemManager.getAllSystems();
     const stats = await systemManager.getSystemStats();
 
+    // Translate system descriptions for frontend
+    const translatedSystems = systems.map(system => ({
+      ...system,
+      description: t(system.description)
+    }));
+
     res.json({
       success: true,
       data: {
-        systems,
+        systems: translatedSystems,
         stats
       },
-      message: 'تم جلب الأنظمة بنجاح'
+      message: t('system.systems_fetched')
     });
   } catch (error) {
     console.error('❌ [SystemManagement] Error getting systems:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في جلب الأنظمة',
+      message: t('system.fetch_error'),
       error: error.message
     });
   }
@@ -401,7 +408,7 @@ router.get('/systems/keys-status', authenticateToken, requireSuperAdmin, async (
 
 /**
  * GET /api/v1/admin/systems/key-rotation-strategy
- * الحصول على استراتيجية تبديل المفاتيح الحالية
+ * ❌ DEPRECATED: Key rotation removed. Returns a fixed response.
  */
 router.get('/systems/key-rotation-strategy', authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
@@ -411,26 +418,14 @@ router.get('/systems/key-rotation-strategy', authenticateToken, requireSuperAdmi
       success: true,
       data: {
         strategy,
-        options: [
-          {
-            value: 'MODEL_FIRST',
-            label: 'Model-First (النظام الحالي)',
-            description: 'يجرب نفس النموذج على كل المفاتيح ثم ينتقل للنموذج التالي'
-          },
-          {
-            value: 'KEY_FIRST',
-            label: 'Key-First (النظام الجديد)',
-            description: 'يستهلك كل نماذج المفتاح ثم ينتقل للمفتاح التالي'
-          }
-        ]
-      },
-      message: 'تم جلب استراتيجية تبديل المفاتيح بنجاح'
+        message: t('system.key_rotation_removed')
+      }
     });
   } catch (error) {
     console.error('❌ [SystemManagement] Error getting key rotation strategy:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في جلب استراتيجية تبديل المفاتيح',
+      message: t('system.key_rotation_error'),
       error: error.message
     });
   }
@@ -438,38 +433,21 @@ router.get('/systems/key-rotation-strategy', authenticateToken, requireSuperAdmi
 
 /**
  * POST /api/v1/admin/systems/key-rotation-strategy
- * تحديث استراتيجية تبديل المفاتيح
+ * ❌ DEPRECATED: Key rotation removed. This endpoint is a no-op.
  */
 router.post('/systems/key-rotation-strategy', authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
-    const { strategy } = req.body;
+    await systemManager.setKeyRotationStrategy(req.body.strategy);
 
-    if (!strategy || !['MODEL_FIRST', 'KEY_FIRST'].includes(strategy)) {
-      return res.status(400).json({
-        success: false,
-        message: 'الاستراتيجية يجب أن تكون MODEL_FIRST أو KEY_FIRST'
-      });
-    }
-
-    const success = await systemManager.setKeyRotationStrategy(strategy);
-
-    if (success) {
-      res.json({
-        success: true,
-        data: { strategy },
-        message: `تم تحديث استراتيجية تبديل المفاتيح إلى ${strategy === 'KEY_FIRST' ? 'Key-First' : 'Model-First'} بنجاح`
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'فشل في تحديث استراتيجية تبديل المفاتيح'
-      });
-    }
+    res.json({
+      success: true,
+      message: t('system.key_rotation_removed')
+    });
   } catch (error) {
     console.error('❌ [SystemManagement] Error setting key rotation strategy:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في تحديث استراتيجية تبديل المفاتيح',
+      message: t('system.key_rotation_error'),
       error: error.message
     });
   }

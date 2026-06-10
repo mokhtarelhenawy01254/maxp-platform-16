@@ -1201,26 +1201,33 @@ const MyResignation = React.lazy(() =>
 );
 const MyTraining = React.lazy(() => import("./pages/employee/MyTraining"));
 
-const LoadingFallback = () => (
-  <div className="min-h-screen flex flex-col items-center justify-center bg-white">
-    <div className="relative flex items-center justify-center w-24 h-24">
-      {/* Outer spinning ring */}
-      <div className="absolute inset-0 border-4 border-gray-100 rounded-full"></div>
-      <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+import { PageSkeleton } from "./components/common/PageSkeleton";
 
-      {/* Inner pulsing core */}
-      <div className="w-12 h-12 bg-blue-600/10 rounded-full animate-pulse flex items-center justify-center">
-        <div className="w-6 h-6 bg-blue-600/20 rounded-full"></div>
-      </div>
-    </div>
+const LoadingFallback = () => <PageSkeleton />;
 
-    <div className="mt-8 text-center">
-      <p className="text-sm font-medium text-gray-400 tracking-widest uppercase animate-pulse">
-        جاري التحميل...
-      </p>
-    </div>
-  </div>
-);
+// Route prefetch registry — triggers dynamic imports on hover for instant navigation
+if (typeof window !== "undefined") {
+  const p = (window as any).__MAXP_ROUTE_PREFETCH__ = {};
+
+  p["/customers"] = () => import("./pages/customers/CustomerList");
+  p["/orders"] = () => import("./pages/orders/Orders");
+  p["/products"] = () => import("./pages/products/Products");
+  p["/advertising"] = () => import("./pages/advertising/FacebookAdsDashboard");
+  p["/affiliates"] = () => import("./pages/affiliates/AffiliateDashboard");
+  p["/hr"] = () => import("./pages/hr/HRDashboard");
+  p["/settings"] = () => import("./pages/settings/Settings");
+  p["/facebook-inbox"] = () => import("./pages/facebook-inbox/FacebookInbox");
+  p["/instagram-inbox"] = () => import("./pages/instagram-inbox/InstagramInbox");
+  p["/unified-inbox"] = () => import("./pages/unified-inbox/UnifiedInbox");
+  p["/tasks"] = () => import("./pages/tasks/Dashboard");
+  p["/inventory"] = () => import("./pages/inventory/Inventory");
+  p["/reports"] = () => import("./pages/reports/Reports");
+  p["/support"] = () => import("./pages/support/SupportCenter");
+  p["/profile"] = () => import("./pages/profile/Profile");
+  p["/marketplace"] = () => import("./pages/marketplace/Marketplace");
+  p["/subscription"] = () => import("./pages/subscription/MySubscription");
+  p["/broadcast"] = () => import("./pages/broadcast/BroadcastDashboard");
+}
 
 // Create a separate component that uses auth
 const AppContent = () => {

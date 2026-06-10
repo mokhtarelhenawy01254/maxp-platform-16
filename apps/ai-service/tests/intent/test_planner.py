@@ -85,6 +85,150 @@ async def test_classifier_missing_slots_disables_tool_execution(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_classifier_confirmed_order_routes_to_confirmed_order_tool(monkeypatch):
+    async def confirmed_order_classifier(**_kwargs):
+        return ClassifierResult(
+            intent="orders.create_confirmed",
+            confidence=0.98,
+            confidenceLevel="high",
+            slots={
+                "productName": "Sprint X Running Shoes",
+                "productPrice": 1499,
+                "quantity": 1,
+                "customerName": "Test Customer",
+                "customerPhone": "01000000000",
+                "city": "Cairo",
+                "address": "10 Test Street",
+                "confirmedByCustomer": True,
+            },
+        )
+
+    monkeypatch.setattr("src.intent.classifier.classify_intent", confirmed_order_classifier)
+
+    contract = await build_intent_contract_async(
+        message="confirm one Sprint X order for Test Customer",
+        available_tools=["order_create_confirmed", "order_create_draft", "product_search"],
+        context={
+            "availableTools": ["order_create_confirmed", "order_create_draft", "product_search"],
+            "externalMemoryContext": {"lastShownProductIds": ["prod_1"]},
+        },
+        company_id="comp1",
+    )
+    plan = to_tool_plan(contract, ["order_create_confirmed", "order_create_draft", "product_search"])
+
+    assert contract.decision == "execute_tool"
+    assert contract.requiresTool is True
+    assert contract.route["primaryTool"] == "order_create_confirmed"
+    assert plan.primaryTool == "order_create_confirmed"
+    assert plan.allowedTools == ["order_create_confirmed", "order_create_draft", "product_search"]
+
+
+@pytest.mark.asyncio
+async def test_confirmed_order_missing_price_can_be_resolved_by_tool(monkeypatch):
+    async def confirmed_order_classifier(**_kwargs):
+        return ClassifierResult(
+            intent="orders.create_confirmed",
+            confidence=0.97,
+            confidenceLevel="high",
+            slots={
+                "productName": "Sprint X Running Shoes",
+                "productPrice": None,
+                "quantity": 1,
+                "customerName": "Test Customer",
+                "customerPhone": "01000000000",
+                "city": "Cairo",
+                "address": "10 Test Street",
+                "confirmedByCustomer": True,
+            },
+            missingSlots=["productPrice"],
+            toolEligibility="needs_clarification",
+        )
+
+    monkeypatch.setattr("src.intent.classifier.classify_intent", confirmed_order_classifier)
+
+    available = [
+        "order_create_confirmed",
+        "order_create_draft",
+        "inventory_check",
+        "product_search",
+    ]
+    contract = await build_intent_contract_async(
+        message="confirm one Sprint X order for Test Customer",
+        available_tools=available,
+        context={"availableTools": available},
+        company_id="comp1",
+    )
+    plan = to_tool_plan(contract, available)
+
+    assert contract.decision == "execute_tool"
+    assert contract.requiresTool is True
+    assert contract.missingSlots == []
+    assert contract.route["primaryTool"] == "order_create_confirmed"
+    assert plan.blockedReason is None
+    assert plan.requiresTool is True
+
+
+@pytest.mark.asyncio
+async def test_confirmed_order_uses_structured_memory_for_previous_product_and_shipping(monkeypatch):
+    async def confirmed_order_classifier(**_kwargs):
+        return ClassifierResult(
+            intent="orders.create_confirmed",
+            confidence=0.96,
+            confidenceLevel="high",
+            slots={
+                "productName": None,
+                "productPrice": None,
+                "productSize": None,
+                "productColor": None,
+                "quantity": 1,
+                "customerName": "Test Customer",
+                "customerPhone": "01000000000",
+                "city": None,
+                "address": "10 Test Street Nasr City Cairo",
+                "confirmedByCustomer": True,
+            },
+        )
+
+    monkeypatch.setattr("src.intent.classifier.classify_intent", confirmed_order_classifier)
+
+    available = [
+        "order_create_confirmed",
+        "order_create_draft",
+        "inventory_check",
+        "product_search",
+        "shipping_rates",
+    ]
+    contract = await build_intent_contract_async(
+        message="confirm the order with my name, phone, address and quantity one",
+        available_tools=available,
+        context={
+            "availableTools": available,
+            "externalMemoryContext": {
+                "lastInventoryResult": {
+                    "productName": "Sprint X Running Shoes",
+                    "price": {"amount": 1499, "currency": "EGP"},
+                    "requestedSize": "42",
+                    "requestedColor": "black",
+                },
+                "lastShippingResult": {
+                    "governorate": "Cairo",
+                    "city": "Nasr City",
+                },
+            },
+        },
+        company_id="comp1",
+    )
+    plan = to_tool_plan(contract, available)
+
+    assert contract.decision == "execute_tool"
+    assert contract.requiresTool is True
+    assert contract.missingSlots == []
+    assert contract.route["primaryTool"] == "order_create_confirmed"
+    assert plan.blockedReason is None
+    assert plan.requiresTool is True
+
+
+@pytest.mark.asyncio
 async def test_classifier_optional_read_slots_do_not_disable_inventory_tool(monkeypatch):
     async def inventory_classifier(**_kwargs):
         return ClassifierResult(
@@ -113,6 +257,68 @@ async def test_classifier_optional_read_slots_do_not_disable_inventory_tool(monk
     assert plan.blockedReason is None
     assert plan.confidence == 0.88
     assert plan.classification["classifierMissingSlots"] == ["productSize", "quantity"]
+
+
+@pytest.mark.asyncio
+async def test_inventory_followup_can_use_previous_product_context(monkeypatch):
+    async def inventory_classifier(**_kwargs):
+        return ClassifierResult(
+            intent="inventory",
+            confidence=0.91,
+            slots={"productSize": "42"},
+            missingSlots=["productName"],
+            toolEligibility="eligible",
+        )
+
+    monkeypatch.setattr("src.intent.classifier.classify_intent", inventory_classifier)
+
+    contract = await build_intent_contract_async(
+        message="is size 42 available?",
+        available_tools=["inventory_check", "product_search"],
+        context={
+            "availableTools": ["inventory_check", "product_search"],
+            "externalMemoryContext": {"lastShownProductIds": ["prod_1"]},
+        },
+        company_id="comp1",
+    )
+    plan = to_tool_plan(contract, ["inventory_check", "product_search"])
+
+    assert contract.decision == "execute_tool"
+    assert contract.requiresTool is True
+    assert contract.missingSlots == []
+    assert plan.requiresTool is True
+    assert plan.blockedReason is None
+
+
+@pytest.mark.asyncio
+async def test_inventory_image_followup_can_use_previous_product_context(monkeypatch):
+    async def image_classifier(**_kwargs):
+        return ClassifierResult(
+            intent="inventory",
+            confidence=0.91,
+            slots={"requestedProductImage": True, "referencesPreviousProduct": True},
+            missingSlots=["productName"],
+            toolEligibility="allowed",
+        )
+
+    monkeypatch.setattr("src.intent.classifier.classify_intent", image_classifier)
+
+    contract = await build_intent_contract_async(
+        message="send me a photo of it",
+        available_tools=["inventory_check", "product_search"],
+        context={
+            "availableTools": ["inventory_check", "product_search"],
+            "externalMemoryContext": {"lastShownProductIds": ["prod_1"]},
+        },
+        company_id="comp1",
+    )
+    plan = to_tool_plan(contract, ["inventory_check", "product_search"])
+
+    assert contract.decision == "execute_tool"
+    assert contract.requiresTool is True
+    assert contract.missingSlots == []
+    assert plan.requiresTool is True
+    assert plan.blockedReason is None
 
 
 @pytest.mark.asyncio

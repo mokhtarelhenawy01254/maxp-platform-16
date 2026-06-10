@@ -220,12 +220,13 @@ async function runSelectedAgentInPython({
     status: data.status === 'awaiting_approval'
       ? 'PAUSED'
       : (data.status === 'ok' ? 'SUCCESS' : 'ERROR'),
-    error: data.error || null,
-    errorCode: data.error_code || null,
-    result: {
-      reply: data.reply || '',
-      summary: data.reply || '',
       error: data.error || null,
+      errorCode: data.error_code || null,
+      result: {
+        reply: data.reply || '',
+        summary: data.reply || '',
+        responseAttachments: Array.isArray(data.response_attachments) ? data.response_attachments : [],
+        error: data.error || null,
       errorCode: data.error_code || null,
       toolsUsed: tools.length > 0,
       toolRounds: tools.length > 0 ? 1 : 0,
@@ -269,6 +270,28 @@ function extractSandboxReply(taskResult) {
     taskResult?.result?.response ||
     ''
   );
+}
+
+function extractResponseAttachments(taskResult) {
+  const candidates = [
+    taskResult?.responseAttachments,
+    taskResult?.response_attachments,
+    taskResult?.result?.responseAttachments,
+    taskResult?.result?.response_attachments,
+    taskResult?.raw?.response_attachments,
+    taskResult?.result?.raw?.response_attachments,
+  ];
+  const found = candidates.find(Array.isArray);
+  if (!Array.isArray(found)) return [];
+  return found
+    .filter(item => item && typeof item === 'object' && typeof item.url === 'string' && item.url.trim())
+    .slice(0, MAX_SANDBOX_ATTACHMENTS)
+    .map(item => ({
+      type: String(item.type || 'image'),
+      url: item.url.trim(),
+      source: typeof item.source === 'string' ? item.source : undefined,
+      tool: typeof item.tool === 'string' ? item.tool : undefined,
+    }));
 }
 
 function extractSandboxModelSelection(taskResult, agentInfo = {}) {
@@ -342,21 +365,158 @@ function normalizeSandboxUsage(taskResult) {
 
 function mapSandboxToolsToToolCalls(tools = []) {
   if (!Array.isArray(tools)) return [];
-  return tools.slice(0, MAX_SANDBOX_TOOL_CALLS).map((tool, index) => ({
-    id: `${tool?.tool || tool?.name || 'tool'}-${index + 1}`,
-    name: tool?.tool || tool?.name || 'unknown',
-    input: tool?.params && typeof tool.params === 'object' ? tool.params : {},
-    output: tool?.result && typeof tool.result === 'object' ? tool.result : {},
-    status: tool?.success ? 'success' : 'error',
-    latencyMs: tool?.latencyMs || undefined,
-    timestamp: new Date().toISOString(),
-    error: tool?.error || undefined,
+  return tools.slice(0, MAX_SANDBOX_TOOL_CALLS).map((tool, index) => {
+    const input = tool?.params && typeof tool.params === 'object'
+      ? tool.params
+      : (tool?.action_args && typeof tool.action_args === 'object' ? tool.action_args : {});
+    const output = tool?.result && typeof tool.result === 'object'
+      ? tool.result
+      : (tool?.output && typeof tool.output === 'object' ? tool.output : {});
+    const outputStatus = typeof output?.status === 'string' ? output.status.trim() : '';
+    const structuredToolStatuses = new Set([
+      'awaiting_approval',
+      'success',
+      'error',
+      'failed',
+      'pending',
+      'completed',
+      'blocked',
+    ]);
+    const status = typeof tool?.status === 'string' && tool.status.trim()
+      ? tool.status.trim()
+      : (structuredToolStatuses.has(outputStatus.toLowerCase())
+        ? outputStatus
+        : (tool?.success ? 'success' : 'error'));
+    return {
+      id: `${tool?.tool || tool?.name || 'tool'}-${index + 1}`,
+      name: tool?.tool || tool?.name || 'unknown',
+      input,
+      output,
+      status,
+      latencyMs: tool?.latencyMs || undefined,
+      timestamp: new Date().toISOString(),
+      error: tool?.error || undefined,
+    };
+  });
+}
+
+function parseStoredJson(value, fallback = null) {
+  if (!value) return fallback;
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function getToolOutputProduct(toolCall) {
+  if (!toolCall || typeof toolCall !== 'object') return null;
+  const output = getToolOutputPayload(toolCall);
+  if (!output) return null;
+  if (output.product && typeof output.product === 'object') return output.product;
+  for (const key of ['products', 'items', 'matches', 'results']) {
+    if (Array.isArray(output[key]) && output[key][0] && typeof output[key][0] === 'object') {
+      return output[key][0];
+    }
+  }
+  return output;
+}
+
+function normalizeSandboxToolName(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const compact = raw.replace(/^agenttool__/, '').replace(/\./g, '_');
+  const map = {
+    product_search: 'product.search',
+    inventory_check: 'inventory.check',
+    shipping_rates: 'shipping.rates',
+    order_create_draft: 'order.create_draft',
+    order_create_confirmed: 'order.create_confirmed',
+  };
+  return map[compact] || raw;
+}
+
+function getToolInputPayload(toolCall) {
+  if (!toolCall || typeof toolCall !== 'object') return {};
+  for (const key of ['input', 'params', 'arguments', 'action_args', 'actionArgs']) {
+    const value = toolCall[key];
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      return value;
+    }
+  }
+  return {};
+}
+
+function getToolOutputPayload(toolCall) {
+  if (!toolCall || typeof toolCall !== 'object') return null;
+  for (const key of ['output', 'result']) {
+    const value = toolCall[key];
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      if (value.output && typeof value.output === 'object' && !Array.isArray(value.output)) {
+        return value.output;
+      }
+      if (value.result && typeof value.result === 'object' && !Array.isArray(value.result)) {
+        return value.result;
+      }
+      return value;
+    }
+  }
+  return null;
+}
+
+function mergeIfObject(...values) {
+  return values.reduce((acc, value) => (
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? { ...acc, ...value }
+      : acc
+  ), {});
+}
+
+function extractPipelineTraceToolCalls(metadata) {
+  const trace = metadata?.pipelineTrace && typeof metadata.pipelineTrace === 'object'
+    ? metadata.pipelineTrace
+    : null;
+  const executions = Array.isArray(trace?.toolExecutions) ? trace.toolExecutions : [];
+  return executions.map(execution => ({
+    name: execution.name || execution.tool,
+    input: execution.params || {},
+    output: execution.output || {},
+    status: execution.status,
+    success: execution.success,
   }));
+}
+
+function applySandboxToolMemory(toolMemory, toolCall) {
+  const toolName = normalizeSandboxToolName(toolCall?.name || toolCall?.tool);
+  const input = getToolInputPayload(toolCall);
+  const output = getToolOutputPayload(toolCall) || {};
+  const product = getToolOutputProduct(toolCall);
+
+  if (toolName === 'product.search') {
+    toolMemory.lastProductResult = product || output;
+    if (product) toolMemory.selectedProduct = product;
+  } else if (toolName === 'inventory.check') {
+    toolMemory.lastInventoryParams = input;
+    toolMemory.lastInventoryResult = output;
+    if (product) toolMemory.selectedProduct = product;
+  } else if (toolName === 'shipping.rates') {
+    toolMemory.lastShippingResult = mergeIfObject(input, output);
+  } else if (toolName === 'order.create_draft' || toolName === 'order.create_confirmed') {
+    toolMemory.lastOrderCandidate = mergeIfObject(input, output);
+  }
+}
+
+function mergeSandboxToolMemory(baseContext, toolMemory) {
+  const context = baseContext && typeof baseContext === 'object' ? baseContext : {};
+  const memory = toolMemory && typeof toolMemory === 'object' ? toolMemory : {};
+  return { ...context, ...memory };
 }
 
 async function hydrateSandboxWorkingMemory(companyId, conversationId, sessionMessages = []) {
   await workingMemoryService.clearSession(companyId, conversationId).catch(() => {});
   await workingMemoryService.initSession(companyId, conversationId);
+  const toolMemory = {};
 
   for (const message of sessionMessages) {
     if (!message || !['user', 'assistant'].includes(message.role)) continue;
@@ -366,9 +526,44 @@ async function hydrateSandboxWorkingMemory(companyId, conversationId, sessionMes
       role: message.role,
       content,
     });
+    if (message.role === 'assistant') {
+      const toolCalls = parseStoredJson(message.toolCalls, []);
+      const metadata = parseSandboxMessageMetadata(message.metadata);
+      const combinedToolCalls = [
+        ...(Array.isArray(toolCalls) ? toolCalls : []),
+        ...extractPipelineTraceToolCalls(metadata),
+      ];
+      for (const toolCall of combinedToolCalls) {
+        applySandboxToolMemory(toolMemory, toolCall);
+        const toolName = normalizeSandboxToolName(toolCall?.name || toolCall?.tool);
+        if (!['inventory.check', 'product.search'].includes(toolName)) continue;
+        const product = getToolOutputProduct(toolCall);
+        if (!product || product.found === false) continue;
+        const productId = product.productId || product.id;
+        const filters = {
+          size: product.requestedSize || undefined,
+          color: product.requestedColor || undefined,
+        };
+        if (productId) {
+          await workingMemoryService.updateSearchContext(companyId, conversationId, {
+            productIds: [productId],
+            filters,
+          });
+        }
+        if (product.productName || product.sku || productId) {
+          await workingMemoryService.addQueriedProduct(companyId, conversationId, {
+            id: productId || null,
+            name: product.productName || null,
+            sku: product.sku || null,
+            price: product.price || null,
+            status: product.status || null,
+          });
+        }
+      }
+    }
   }
 
-  return workingMemoryService.getContext(companyId, conversationId);
+  return toolMemory;
 }
 
 async function createSandboxRuntimeAgent(companyId, agentId, modelSelection) {
@@ -489,12 +684,15 @@ async function runSandboxChatTurn({
 
   const resolvedSessionId = sessionId || generateSandboxSessionId();
   const conversationId = buildSandboxConversationId(companyId, userId, resolvedSessionId);
-  await hydrateSandboxWorkingMemory(companyId, conversationId, existingSession?.messages || []);
+  const toolMemory = await hydrateSandboxWorkingMemory(companyId, conversationId, existingSession?.messages || []);
   await workingMemoryService.addMessage(companyId, conversationId, {
     role: 'user',
     content: messageText,
   });
-  const promptCtx = await workingMemoryService.getContext(companyId, conversationId);
+  const promptCtx = mergeSandboxToolMemory(
+    await workingMemoryService.getContext(companyId, conversationId),
+    toolMemory
+  );
   const agentBundle = await createSandboxRuntimeAgent(companyId, agentId, modelSelection);
   if (!agentBundle) {
     throw createHttpError('AGENT_NOT_FOUND', 400);
@@ -528,6 +726,7 @@ async function runSandboxChatTurn({
   }
 
   const toolCalls = mapSandboxToolsToToolCalls(taskResult?.result?.tools || []);
+  const responseAttachments = extractResponseAttachments(taskResult);
   const agentInfo = agentBundle.sandboxAgent.getInfo();
   const modelSelectionFromTask = extractSandboxModelSelection(taskResult, agentInfo);
   const pipelineTrace = taskResult?.result?.pipelineTrace || null;
@@ -577,11 +776,16 @@ async function runSandboxChatTurn({
     cost: sessionCost,
     toolCalls,
     toolCallCount: toolCalls.length,
-    metadata: pipelineTrace ? { pipelineTrace, runtime } : (runtime ? { runtime } : null),
+    metadata: {
+      ...(pipelineTrace ? { pipelineTrace } : {}),
+      ...(runtime ? { runtime } : {}),
+      ...(responseAttachments.length ? { responseAttachments } : {}),
+    },
   });
 
   return {
     reply,
+    responseAttachments,
     toolCalls,
     tokens: sessionTokens,
     latencyMs,
@@ -604,16 +808,34 @@ async function runSandboxChatTurn({
 }
 
 async function getPreferredAiKeyIdForProvider(provider) {
-  try {
-    const prisma = getSharedPrismaClient();
-    if (!prisma.globalAiConfig?.findFirst) return null;
-    const config = await prisma.globalAiConfig.findFirst({
-      select: { settings: true },
-    });
+  const providerName = String(provider || '').trim().toUpperCase();
+  if (!providerName) return null;
+
+  const getPreferredFromConfig = (config) => {
     const settings = parseJsonObject(config?.settings);
     const preferredAiKeyIds = parseJsonObject(settings.preferredAiKeyIds);
-    const keyId = preferredAiKeyIds[String(provider || '').trim().toUpperCase()];
+    const keyId = preferredAiKeyIds[providerName];
     return typeof keyId === 'string' && keyId.trim() ? keyId.trim() : null;
+  };
+
+  try {
+    const prisma = getSharedPrismaClient();
+    if (prisma.globalAiConfig?.findMany) {
+      const configs = await prisma.globalAiConfig.findMany({
+        select: { settings: true, updatedAt: true },
+        orderBy: { updatedAt: 'desc' },
+      });
+      for (const config of Array.isArray(configs) ? configs : []) {
+        const keyId = getPreferredFromConfig(config);
+        if (keyId) return keyId;
+      }
+    }
+
+    if (!prisma.globalAiConfig?.findFirst) return null;
+    return getPreferredFromConfig(await prisma.globalAiConfig.findFirst({
+      select: { settings: true },
+      orderBy: { updatedAt: 'desc' },
+    }));
   } catch {
     return null;
   }
@@ -994,6 +1216,7 @@ async function getSession(req, res) {
         toolCalls: m.toolCalls ? JSON.parse(m.toolCalls) : [],
         timestamp: m.createdAt,
         metadata,
+        responseAttachments: Array.isArray(metadata?.responseAttachments) ? metadata.responseAttachments : [],
         runtime: metadata?.runtime || (metadata?.pipelineTrace ? 'python-agent' : undefined),
       };
     });
@@ -1110,6 +1333,7 @@ async function sendChatMessage(req, res) {
     return res.json({
       success: true,
       reply: turnResult.reply,
+      responseAttachments: turnResult.responseAttachments,
       toolCalls: turnResult.toolCalls,
       tokens,
       latencyMs,
@@ -1155,7 +1379,7 @@ async function streamChatMessage(req, res) {
 
     const resolvedSessionId = safeSessionId || generateSandboxSessionId();
     const conversationId = buildSandboxConversationId(companyId, userId, resolvedSessionId);
-    await hydrateSandboxWorkingMemory(companyId, conversationId, existingSession?.messages || []);
+    const toolMemory = await hydrateSandboxWorkingMemory(companyId, conversationId, existingSession?.messages || []);
     await workingMemoryService.addMessage(companyId, conversationId, {
       role: 'user',
       content: messageText,
@@ -1187,7 +1411,10 @@ async function streamChatMessage(req, res) {
       messageText,
       threadId: resolvedSessionId,
       conversationId,
-      memoryContext: await workingMemoryService.getContext(companyId, conversationId),
+      memoryContext: mergeSandboxToolMemory(
+        await workingMemoryService.getContext(companyId, conversationId),
+        toolMemory
+      ),
       attachments: safeAttachments,
       modelSelection,
       channel: 'FACEBOOK',
@@ -1195,6 +1422,7 @@ async function streamChatMessage(req, res) {
 
     const finalReply = extractSandboxReply(taskResult);
     const toolCalls = mapSandboxToolsToToolCalls(taskResult?.result?.tools || []);
+    const responseAttachments = extractResponseAttachments(taskResult);
     const pipelineTrace = taskResult?.result?.pipelineTrace || null;
 
     const latencyMs = Date.now() - turnStartTime;
@@ -1213,6 +1441,7 @@ async function streamChatMessage(req, res) {
     res.write(`data: ${JSON.stringify({
       type: 'agent_reply',
       reply: finalReply,
+      responseAttachments,
       isIncremental: false,
       modelUsed: modelSelection.model,
       usedFallbackKey: modelSelection.usedFallbackKey ?? false,
@@ -1222,6 +1451,7 @@ async function streamChatMessage(req, res) {
       type: 'run_complete',
       runId: resolvedSessionId,
       reply: finalReply,
+      responseAttachments,
       toolCalls,
     })}\n\n`);
 
@@ -1268,7 +1498,11 @@ async function streamChatMessage(req, res) {
       cost: 0,
       toolCalls,
       toolCallCount: toolCalls.length,
-      metadata: pipelineTrace ? { pipelineTrace, runtime: streamRuntime } : (streamRuntime ? { runtime: streamRuntime } : null),
+      metadata: {
+        ...(pipelineTrace ? { pipelineTrace } : {}),
+        ...(streamRuntime ? { runtime: streamRuntime } : {}),
+        ...(responseAttachments.length ? { responseAttachments } : {}),
+      },
     });
 
     res.write(`data: ${JSON.stringify({
@@ -1282,6 +1516,7 @@ async function streamChatMessage(req, res) {
       cost: 0,
       sessionId: resolvedSessionId,
       runtime: streamRuntime,
+      responseAttachments,
       pipelineTrace,
     })}\n\n`);
 

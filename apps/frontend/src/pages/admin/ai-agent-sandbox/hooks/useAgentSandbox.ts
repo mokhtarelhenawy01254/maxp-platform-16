@@ -10,6 +10,7 @@ import type {
   EvalScore,
   SafetyCheck,
   ToolCall,
+  MessageAttachment,
 } from "../types/sandbox.types";
 import { sandboxApi, type SessionSummary, type SessionDetail, type SendMessageResponse } from "../services/sandboxApi";
 import { useOTelTracing } from "./useOTelTracing";
@@ -129,6 +130,19 @@ function normalizePipelineTrace(metadata: any) {
     : metadata;
 }
 
+function normalizeResponseAttachments(value: unknown): MessageAttachment[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object" && !Array.isArray(item))
+    .map((item) => ({
+      type: String(item.type || "image"),
+      url: String(item.url || "").trim(),
+      source: item.source ? String(item.source) : undefined,
+      tool: item.tool ? String(item.tool) : undefined,
+    }))
+    .filter((item) => item.url.length > 0);
+}
+
 function reconstructActivityLogFromMessages(messages: ChatMessage[]): ActivityLogEntry[] {
   const logs: ActivityLogEntry[] = [];
   for (const msg of messages) {
@@ -230,6 +244,7 @@ function mapSessionFromDetail(detail: SessionDetail): Session {
       id: m.id,
       role: m.role as "user" | "assistant",
       content: m.content,
+      responseAttachments: normalizeResponseAttachments(m.responseAttachments || m.metadata?.responseAttachments),
       timestamp: m.timestamp,
       toolCalls: m.toolCalls,
       model: m.model,
@@ -558,6 +573,7 @@ export function useAgentSandbox() {
 
       let streamingReply = "";
       let streamingTools: ToolCall[] = [];
+      let streamingResponseAttachments: MessageAttachment[] = [];
       let runError: string | null = null;
       let finalTokens = { input: 0, output: 0, total: 0 };
       let finalLatencyMs = 0;
@@ -711,6 +727,9 @@ export function useAgentSandbox() {
                   } else {
                     streamingReply = event.reply;
                   }
+                  if (event.responseAttachments) {
+                    streamingResponseAttachments = normalizeResponseAttachments(event.responseAttachments);
+                  }
                   if (event.usedFallbackKey) finalUsedFallbackKey = true;
                   setTypingStage(null);
                   addActivityLog({
@@ -728,7 +747,7 @@ export function useAgentSandbox() {
                         ...s,
                         messages: s.messages.map((m) =>
                           m.id === assistantId
-                            ? { ...m, content: streamingReply }
+                            ? { ...m, content: streamingReply, responseAttachments: streamingResponseAttachments }
                             : m
                         ),
                       };
@@ -749,6 +768,9 @@ export function useAgentSandbox() {
                     timestamp: tc.timestamp || new Date().toISOString(),
                     error: tc.error,
                   }));
+                }
+                if (event.responseAttachments) {
+                  streamingResponseAttachments = normalizeResponseAttachments(event.responseAttachments);
                 }
                 break;
 
@@ -777,6 +799,9 @@ export function useAgentSandbox() {
               if (event.error) runError = formatStreamError(event.error, event.reason);
               if (event.usedFallbackKey) finalUsedFallbackKey = true;
               if (event.runtime) finalRuntime = event.runtime;
+              if (event.responseAttachments) {
+                streamingResponseAttachments = normalizeResponseAttachments(event.responseAttachments);
+              }
               if (event.pipelineTrace) pipelineTrace = event.pipelineTrace;
             }
           }
@@ -830,6 +855,7 @@ export function useAgentSandbox() {
                 ? {
                     ...m,
                     content: streamingReply,
+                    responseAttachments: streamingResponseAttachments,
                     model: finalModel,
                     provider: finalProvider,
                     keyId: finalKeyId,

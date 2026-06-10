@@ -5,6 +5,7 @@ import { SidebarSection } from "../../../types/layout";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { buildStoreUrl } from "../../../utils/storeUrl";
 import { isSidebarPathActive } from "./matchSidebarPath";
+import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
 
 interface HorizontalNavProps {
   sections: SidebarSection[];
@@ -18,6 +19,7 @@ const HorizontalNav: React.FC<HorizontalNavProps> = ({
 }) => {
   const { user } = useAuth();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const prefetch = useRoutePrefetch();
   const navId = useId();
   const navRef = useRef<HTMLDivElement | null>(null);
 
@@ -55,6 +57,7 @@ const HorizontalNav: React.FC<HorizontalNavProps> = ({
     badge?: string;
   }> = ({ to, icon, children, external, badge }) => {
     const isActive = !external && isSidebarPathActive(currentPath, to);
+    const prefetch = useRoutePrefetch();
 
     if (external) {
       const slug = user?.company?.slug;
@@ -100,6 +103,7 @@ const HorizontalNav: React.FC<HorizontalNavProps> = ({
         to={to}
         className="business-horizontal-link"
         data-active={isActive}
+        onMouseEnter={() => prefetch(to)}
         role="menuitem"
       >
         <span className="business-horizontal-link-icon">
@@ -200,15 +204,16 @@ const HorizontalNav: React.FC<HorizontalNavProps> = ({
                                     );
 
                                     return (
-                                      <Link
-                                        key={child.to}
-                                        to={child.to}
-                                        className="business-sidebar-child-link"
-                                        data-active={isChildActive}
-                                        role="menuitem"
-                                      >
-                                        {child.label}
-                                      </Link>
+                                    <Link
+                                      key={child.to}
+                                      to={child.to}
+                                      className="business-sidebar-child-link"
+                                      data-active={isChildActive}
+                                      onMouseEnter={() => prefetch(child.to)}
+                                      role="menuitem"
+                                    >
+                                      {child.label}
+                                    </Link>
                                     );
                                   })}
                               </div>

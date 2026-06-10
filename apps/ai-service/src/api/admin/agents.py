@@ -27,8 +27,11 @@ from src.api.admin.agents_schemas import (
 )
 from src.db.models.agent import Agent as AgentModel
 from src.db.models.agent import AgentTemplate
+from src.db.models.thread import Thread
 from src.db.session import get_session
 from src.llm.agent_client_factory import build_provider_client_async
+from src.pipeline.context import DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL
+from src.workflows.approval import create_approval_draft
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -44,6 +47,58 @@ EVALUATION_FALLBACK_SCORES = {
     "safety": 85,
     "overall": 77,
 }
+
+
+async def _ensure_approval_thread_id(
+    *,
+    session: AsyncSession,
+    company_id: str,
+    customer_id: str,
+    channel: str,
+    requested_thread_id: str | None,
+) -> str:
+    normalized_customer_id = str(customer_id or "sandbox-user")
+    normalized_channel = str(channel or "facebook").strip().lower() or "facebook"
+    requested_uuid = None
+    if requested_thread_id:
+        try:
+            requested_uuid = uuid.UUID(str(requested_thread_id))
+            result = await session.execute(
+                select(Thread).where(
+                    Thread.id == requested_uuid,
+                    Thread.company_id == company_id,
+                    Thread.customer_id == normalized_customer_id,
+                    Thread.channel == normalized_channel,
+                )
+            )
+            existing = result.scalar_one_or_none()
+            if existing:
+                return str(existing.id)
+        except ValueError:
+            requested_uuid = None
+
+    result = await session.execute(
+        select(Thread).where(
+            Thread.company_id == company_id,
+            Thread.customer_id == normalized_customer_id,
+            Thread.channel == normalized_channel,
+        )
+    )
+    existing = result.scalar_one_or_none()
+    if existing:
+        return str(existing.id)
+
+    thread = Thread(
+        id=requested_uuid or uuid.uuid4(),
+        company_id=company_id,
+        customer_id=normalized_customer_id,
+        channel=normalized_channel,
+        status="active",
+    )
+    session.add(thread)
+    await session.commit()
+    await session.refresh(thread)
+    return str(thread.id)
 
 
 def _generate_agent_id() -> str:
@@ -137,6 +192,17 @@ def _normalize_agent_config(
         "version": _first_present(config, "version"),
         "parent_id": _first_present(config, "parent_id", "parentId"),
     }
+
+
+def _memory_context_with_provider_controls(
+    memory_context: dict[str, Any] | None,
+    provider: Any,
+) -> dict[str, Any]:
+    context = dict(memory_context or {})
+    normalized_provider = str(provider or "").strip().upper()
+    if normalized_provider and normalized_provider != "GOOGLE":
+        context.setdefault(DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL, True)
+    return context
 
 
 async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> BaseAgent:
@@ -395,6 +461,13 @@ async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentC
         raise HTTPException(status_code=502, detail=f"LLM client error: {e}")
 
     thread_id = body.thread_id or f"agent-chat-{uuid.uuid4()}"
+    requested_provider = getattr(getattr(agent, "config", None), "provider", None)
+    if not requested_provider:
+        requested_provider = _first_present(dict(body.agent_config or {}), "provider")
+    memory_context = _memory_context_with_provider_controls(
+        body.memory_context,
+        requested_provider,
+    )
     try:
         result = await agent.process_task(
             {
@@ -407,7 +480,7 @@ async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentC
                 "customer_id": body.customer_id or "sandbox-user",
                 "channel": body.channel or "facebook",
                 "source_channel": body.channel or "facebook",
-                "memory_context": body.memory_context or {},
+                "memory_context": memory_context,
                 "attachments": [item.model_dump(exclude_none=True) for item in body.attachments],
                 "_db_session": session,
                 "force_pipeline": True,
@@ -429,16 +502,37 @@ async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentC
         ),
         None,
     )
+    if awaiting and not awaiting.get("draft_id") and awaiting.get("action_type"):
+        approval_thread_id = await _ensure_approval_thread_id(
+            session=session,
+            company_id=body.company_id,
+            customer_id=body.customer_id or "sandbox-user",
+            channel=body.channel or "facebook",
+            requested_thread_id=thread_id,
+        )
+        draft_info = await create_approval_draft(
+            action_type=str(awaiting.get("action_type")),
+            action_args=dict(awaiting.get("action_args") or {}),
+            company_id=str(awaiting.get("company_id") or body.company_id),
+            customer_id=body.customer_id or "sandbox-user",
+            thread_id=approval_thread_id,
+            session=session,
+            sdk_approval_id=awaiting.get("sdk_approval_id"),
+            channel=body.channel or "facebook",
+        )
+        awaiting["draft_id"] = draft_info["draft_id"]
     status = "awaiting_approval" if awaiting else "ok"
     if result_data.get("status") == "ERROR":
         status = "error"
     error_code = payload.get("errorCode") or payload.get("error_code") or result_data.get("errorCode")
     error_message = payload.get("error") or result_data.get("error")
+    response_attachments = payload.get("response_attachments")
 
     return AgentChatResponse(
         status=status,
         thread_id=thread_id,
         reply=payload.get("reply") or payload.get("summary") or "",
+        response_attachments=response_attachments if isinstance(response_attachments, list) else [],
         error=error_message if status == "error" else None,
         error_code=error_code if status == "error" else None,
         draft_id=(awaiting or {}).get("draft_id") or payload.get("draft_id"),

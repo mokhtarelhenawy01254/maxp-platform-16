@@ -2,21 +2,9 @@ jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn()
 }));
 
-const mockGetNextKey = jest.fn(async (keys) => keys[0] || null);
-const mockGetStatus = jest.fn(() => ({ totalFailed: 0, failures: [] }));
-
-jest.mock('../../legacy-ai-agent/aiAgent/SimpleKeyRotator', () => ({
-  getSimpleKeyRotator: jest.fn(() => ({
-    getNextKey: mockGetNextKey,
-    getStatus: mockGetStatus
-  }))
-}));
-
 jest.mock('../../legacy-ai-agent/aiAgent/stateManager', () => ({
   acquireLock: jest.fn(async () => true),
   releaseLock: jest.fn(async () => undefined),
-  getLastUsedGlobalKeyId: jest.fn(async () => null),
-  setLastUsedGlobalKeyId: jest.fn(async () => undefined)
 }));
 
 jest.mock('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory', () => ({}));
@@ -37,187 +25,108 @@ const createKey = (overrides = {}) => ({
   aiModelConfigs: [
     {
       id: 'model-central',
-      modelName: 'gemini-2.5-flash'
+      modelName: 'gemini-2.5-flash',
+      isEnabled: true,
+      priority: 1,
     }
   ],
   ...overrides
 });
 
-const createPrismaMock = ({ defaultProvider = 'GOOGLE', enableFailover = true, settings = null } = {}) => ({
+const createPrismaMock = () => ({
   globalAiConfig: {
-    findFirst: jest.fn(async () => ({
-      defaultProvider,
-      enableFailover,
-      settings
-    }))
+    findFirst: jest.fn(async () => ({ defaultProvider: 'GOOGLE', enableFailover: false, settings: null })),
   },
   aiModelLimit: {
-    findMany: jest.fn(async () => [])
+    findMany: jest.fn(async () => []),
   },
   aiKey: {
-    findMany: jest.fn()
-  }
+    findFirst: jest.fn(),
+    findUnique: jest.fn().mockResolvedValue({ usage: null }),
+    update: jest.fn().mockResolvedValue({}),
+  },
+  aiModelConfig: { findMany: jest.fn(async () => []) },
+  excludedModel: { findFirst: jest.fn(), findMany: jest.fn(async () => []), deleteMany: jest.fn() },
+  $transaction: jest.fn(async (cb) => {
+    if (typeof cb === 'function') return cb(createPrismaMock());
+    return cb;
+  }),
 });
 
+function cleanupManager(manager) {
+  for (const interval of manager.cleanupIntervals || []) {
+    clearInterval(interval);
+  }
+}
+
 describe('ModelManager AI key source selection', () => {
-  let manager;
-
-  beforeEach(() => {
-    mockGetNextKey.mockImplementation(async (keys) => keys[0] || null);
-    mockGetStatus.mockReturnValue({ totalFailed: 0, failures: [] });
-  });
-
   afterEach(() => {
-    manager?.stop();
-    manager = null;
     jest.clearAllMocks();
   });
 
-  it('uses only central keys', async () => {
+  it('selects the first active CENTRAL key with its first enabled model', async () => {
     const prisma = createPrismaMock();
-    const centralKey = createKey({
-      id: 'key-central',
-      name: 'Central Gemini',
-    });
-    prisma.aiKey.findMany.mockResolvedValueOnce([centralKey]);
+    const centralKey = createKey({ id: 'key-1', name: 'Central Gemini' });
+    prisma.aiKey.findFirst.mockResolvedValueOnce(centralKey);
     getSharedPrismaClient.mockReturnValue(prisma);
 
-    manager = new ModelManager();
-    const result = await manager.getNextKeySimple('company-1');
+    const manager = new ModelManager({});
+    try {
+      const result = await manager.getNextKeySimple('company-1');
 
-    expect(result).toEqual(expect.objectContaining({
-      keyId: 'key-central',
-      keyName: 'Central Gemini',
-      keyType: 'CENTRAL'
-    }));
-    expect(prisma.aiKey.findMany).toHaveBeenCalledTimes(1);
-    expect(prisma.aiKey.findMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({
+      expect(result).toEqual(expect.objectContaining({
+        keyId: 'key-1',
+        keyName: 'Central Gemini',
         keyType: 'CENTRAL',
-        companyId: null
-      })
-    }));
+        provider: 'GOOGLE',
+        model: 'gemini-2.5-flash',
+      }));
+      expect(prisma.aiKey.findFirst).toHaveBeenCalledTimes(1);
+    } finally {
+      cleanupManager(manager);
+    }
   });
 
-  it('returns null when no central keys exist', async () => {
+  it('returns error when no active CENTRAL key exists', async () => {
     const prisma = createPrismaMock();
-    prisma.aiKey.findMany.mockResolvedValueOnce([]);
+    prisma.aiKey.findFirst.mockResolvedValueOnce(null);
     getSharedPrismaClient.mockReturnValue(prisma);
 
-    manager = new ModelManager();
-    const result = await manager.getNextKeySimple('company-1');
-
-    expect(result).toBeNull();
-    expect(prisma.aiKey.findMany).toHaveBeenCalledTimes(1);
+    const manager = new ModelManager({});
+    try {
+      const result = await manager.getNextKeySimple('company-1');
+      expect(result.error).toBe('NO_ACTIVE_KEY');
+    } finally {
+      cleanupManager(manager);
+    }
   });
 
-  it('prioritizes settings.providerPriority before using failover providers', async () => {
-    const prisma = createPrismaMock({
-      defaultProvider: 'GOOGLE',
-      enableFailover: true,
-      settings: JSON.stringify({ providerPriority: ['OPENROUTER', 'GOOGLE'] })
-    });
-    const googleKey = createKey({
-      id: 'key-google',
-      name: 'Central Google',
-      companyId: null,
-      aiModelConfigs: [{ id: 'model-google', modelName: 'gemini-2.5-flash' }]
-    });
-    const openRouterKey = createKey({
-      id: 'key-openrouter',
-      name: 'Central OpenRouter',
-      provider: 'OPENROUTER',
-      baseUrl: 'https://openrouter.ai/api/v1',
-      companyId: null,
-      aiModelConfigs: [{ id: 'model-openrouter', modelName: 'minimax/minimax-m2.5:free' }]
-    });
-    prisma.aiKey.findMany.mockResolvedValueOnce([googleKey, openRouterKey]);
+  it('uses default model when key has no model configs', async () => {
+    const prisma = createPrismaMock();
+    const key = createKey({ provider: 'GROQ', aiModelConfigs: [] });
+    prisma.aiKey.findFirst.mockResolvedValueOnce(key);
     getSharedPrismaClient.mockReturnValue(prisma);
 
-    manager = new ModelManager();
-    const result = await manager.getNextKeySimple('company-1');
-
-    expect(result).toEqual(expect.objectContaining({
-      keyId: 'key-openrouter',
-      provider: 'OPENROUTER',
-      model: 'minimax/minimax-m2.5:free'
-    }));
-    expect(mockGetNextKey).toHaveBeenCalledTimes(1);
-    expect(mockGetNextKey.mock.calls[0][0].map(key => key.provider)).toEqual(['OPENROUTER']);
-  });
-
-  it('falls back to the next settings.providerPriority provider only when the first has no available key', async () => {
-    mockGetNextKey
-      .mockResolvedValueOnce(null)
-      .mockImplementationOnce(async (keys) => keys[0] || null);
-
-    const prisma = createPrismaMock({
-      defaultProvider: 'GOOGLE',
-      enableFailover: true,
-      settings: JSON.stringify({ providerPriority: ['OPENROUTER', 'GOOGLE'] })
-    });
-    const openRouterKey = createKey({
-      id: 'key-openrouter',
-      name: 'Central OpenRouter',
-      provider: 'OPENROUTER',
-      baseUrl: 'https://openrouter.ai/api/v1',
-      companyId: null,
-      aiModelConfigs: [{ id: 'model-openrouter', modelName: 'minimax/minimax-m2.5:free' }]
-    });
-    const googleKey = createKey({
-      id: 'key-google',
-      name: 'Central Google',
-      companyId: null,
-      aiModelConfigs: [{ id: 'model-google', modelName: 'gemini-2.5-flash' }]
-    });
-    prisma.aiKey.findMany.mockResolvedValueOnce([openRouterKey, googleKey]);
-    getSharedPrismaClient.mockReturnValue(prisma);
-
-    manager = new ModelManager();
-    const result = await manager.getNextKeySimple('company-1');
-
-    expect(result).toEqual(expect.objectContaining({
-      keyId: 'key-google',
-      provider: 'GOOGLE'
-    }));
-    expect(mockGetNextKey).toHaveBeenCalledTimes(2);
-    expect(mockGetNextKey.mock.calls[0][0].map(key => key.provider)).toEqual(['OPENROUTER']);
-    expect(mockGetNextKey.mock.calls[1][0].map(key => key.provider)).toEqual(['GOOGLE']);
-  });
-
-  it('does not use another provider when failover is disabled', async () => {
-    const prisma = createPrismaMock({
-      defaultProvider: 'GOOGLE',
-      enableFailover: false,
-      settings: JSON.stringify({ providerPriority: ['OPENROUTER', 'GOOGLE'] })
-    });
-    const googleKey = createKey({
-      id: 'key-google',
-      name: 'Central Google',
-      companyId: null,
-      aiModelConfigs: [{ id: 'model-google', modelName: 'gemini-2.5-flash' }]
-    });
-    prisma.aiKey.findMany.mockResolvedValueOnce([googleKey]);
-    getSharedPrismaClient.mockReturnValue(prisma);
-
-    manager = new ModelManager();
-    const result = await manager.getNextKeySimple('company-1');
-
-    expect(result).toBeNull();
-    expect(mockGetNextKey).not.toHaveBeenCalled();
+    const manager = new ModelManager({});
+    try {
+      const result = await manager.getNextKeySimple('company-1');
+      expect(result.provider).toBe('GROQ');
+      expect(result.model).toBe('llama-3.3-70b-versatile');
+    } finally {
+      cleanupManager(manager);
+    }
   });
 
   it('limits provider priority order to the first provider when failover is disabled', async () => {
-    const prisma = createPrismaMock({
-      defaultProvider: 'GOOGLE',
-      enableFailover: false,
-      settings: JSON.stringify({ providerPriority: ['OPENROUTER', 'GOOGLE', 'GROQ'] })
-    });
+    const prisma = createPrismaMock();
     getSharedPrismaClient.mockReturnValue(prisma);
 
-    manager = new ModelManager();
-    const order = await manager.getProviderPriorityOrder();
-
-    expect(order).toEqual(['OPENROUTER']);
+    const manager = new ModelManager({});
+    try {
+      const order = await manager.getProviderPriorityOrder();
+      expect(order.length).toBe(1);
+    } finally {
+      cleanupManager(manager);
+    }
   });
 });

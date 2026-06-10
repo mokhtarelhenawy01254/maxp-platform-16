@@ -67,16 +67,39 @@ router.get('/facebook-status', async (req, res) => {
 // اختبار إرسال رسالة تجريبية
 router.post('/test-message', async (req, res) => {
   try {
-    const { recipientId, message, pageId } = req.body;
+    const {
+      recipientId,
+      message,
+      messageType = 'TEXT',
+      imageUrl,
+      mediaUrl,
+    } = req.body;
+    let { pageId } = req.body;
 
-    if (!recipientId || !message) {
+    const normalizedType = String(messageType || 'TEXT').toUpperCase();
+    if (!['TEXT', 'IMAGE'].includes(normalizedType)) {
       return res.status(400).json({
         success: false,
-        error: 'Recipient ID and message are required'
+        error: 'messageType must be TEXT or IMAGE'
       });
     }
 
-    console.log(`🧪 Testing message send to ${recipientId}: "${message}"`);
+    const hasMediaUrl = Boolean(imageUrl || mediaUrl);
+    const resolvedMessageType = hasMediaUrl || normalizedType === 'IMAGE' ? 'IMAGE' : 'TEXT';
+    const messageContent = resolvedMessageType === 'IMAGE'
+      ? imageUrl || mediaUrl || message
+      : message;
+
+    if (!recipientId || !messageContent) {
+      return res.status(400).json({
+        success: false,
+        error: resolvedMessageType === 'IMAGE'
+          ? 'Recipient ID and image URL are required'
+          : 'Recipient ID and message are required'
+      });
+    }
+
+    console.log(`🧪 Testing ${resolvedMessageType} send to ${recipientId}`);
 
     const { sendFacebookMessage } = require('../utils/allFunctions');
 
@@ -115,14 +138,17 @@ router.post('/test-message', async (req, res) => {
 
     const result = await sendFacebookMessage(
       recipientId,
-      message,
-      'TEXT',
+      messageContent,
+      resolvedMessageType,
       pageId
     );
 
     res.json({
       success: result.success,
-      data: result,
+      data: {
+        ...result,
+        messageType: resolvedMessageType,
+      },
       message: result.success ? 'Test message sent successfully' : 'Test message failed'
     });
 

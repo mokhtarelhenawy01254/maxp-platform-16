@@ -3,7 +3,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 
 import { queryClient } from "../config/queryClient";
-import StorefrontStartupFallback from "./components/StorefrontStartupFallback";
+import StorefrontSkeleton from "./components/StorefrontSkeleton";
 import {
   fetchStorefrontProduct,
   getStorefrontProductQueryKey,
@@ -417,7 +417,7 @@ const StorefrontBootstrap: React.FC = () => (
         v7_relativeSplatPath: true,
       }}
     >
-      <React.Suspense fallback={<StorefrontStartupFallback />}>
+      <React.Suspense fallback={<StorefrontSkeleton />}>
         <StorefrontShell />
       </React.Suspense>
       <StorefrontAppToaster />

@@ -123,7 +123,8 @@ class ProviderFactory:
         provider_type: str,
         model: str | None = None,
         company_id: str | None = None,
-        excluded_key_ids: set[str] | None = None,
+        *,
+        key_id: str | None = None,
     ) -> BaseProvider | None:
         provider_type = provider_type.upper()
         pdef = PROVIDER_DEFS.get(provider_type)
@@ -138,10 +139,20 @@ class ProviderFactory:
                 resolved_model,
                 company_id or "default",
                 preferred_provider=provider_type,
-                excluded_key_ids=excluded_key_ids,
+                key_id=key_id,
             )
         except ModelManagerError as e:
             import os
+            if key_id:
+                logger.error(
+                    "selected key is unavailable",
+                    error=e.message,
+                    code=e.code,
+                    provider=provider_type,
+                    model=resolved_model,
+                    key_id=key_id,
+                )
+                return None
             if os.getenv("PYTEST_CURRENT_TEST") or os.getenv("IS_TESTING") == "true":
                 key_info = self._env_key_info(provider_type, resolved_model, company_id, pdef)
                 if key_info is None:
@@ -158,6 +169,15 @@ class ProviderFactory:
                 return None
         except Exception as e:
             import os
+            if key_id:
+                logger.error(
+                    "selected key lookup failed",
+                    error=str(e),
+                    provider=provider_type,
+                    model=resolved_model,
+                    key_id=key_id,
+                )
+                return None
             if os.getenv("PYTEST_CURRENT_TEST") or os.getenv("IS_TESTING") == "true":
                 key_info = self._env_key_info(provider_type, resolved_model, company_id, pdef)
                 if key_info is None:
@@ -178,17 +198,17 @@ class ProviderFactory:
             from dataclasses import asdict as _asdict
             key_info = _asdict(key_info)
         api_key = key_info["api_key"]
-        print(f"DEBUG: Using provider {provider_type} with key starting with {api_key[:10] if api_key else 'None'} and length {len(api_key) if api_key else 0}")
         base_url = key_info.get("base_url") or pdef.get("base_url", "")
+        selected_key_id = key_info["key_id"]
 
-        cache_key = f"{provider_type}:{resolved_model}:{key_info['key_id']}"
+        cache_key = f"{provider_type}:{resolved_model}:{selected_key_id}"
         cached = self._instances.get(cache_key)
         if cached:
             return cached
 
         provider_config = {
             **pdef,
-            "key_id": key_info["key_id"],
+            "key_id": selected_key_id,
             "provider_type": provider_type,
             "company_id": company_id or "default",
         }
@@ -204,62 +224,13 @@ class ProviderFactory:
 
     async def get_active_provider(self, model: str | None = None, company_id: str | None = None) -> BaseProvider | None:
         settings = get_settings()
-
-        # The model_manager now handles priority-based failover internally in get_next_key
-        # but we need a provider_type to call get_provider.
-        # We'll let model_manager decide the provider.
-
-        # We can modify model_manager.get_next_key to return the provider_type too.
-        # For now, let's assume the manager returns the best key and its provider.
-
         try:
             resolved_model = model or settings.default_model
             key_info = await model_manager.get_next_key(resolved_model, company_id or "default")
             provider_type = key_info.provider if hasattr(key_info, "provider") else key_info["provider"]
             return await self.get_provider(provider_type, resolved_model, company_id)
         except ModelManagerError:
-            # Fallback to Google if all else fails
-            return await self.get_provider("GOOGLE", model, company_id)
-
-    async def get_failover_provider(
-        self,
-        *,
-        current_provider_type: str | None,
-        model: str | None,
-        company_id: str | None,
-        attempted_key_ids: set[str],
-        skip_provider_types: set[str] | None = None,
-    ) -> BaseProvider | None:
-        """Return the next provider/key after a runtime provider failure.
-
-        Try another key from the same provider first. When switching provider,
-        use that provider's configured default model instead of sending a
-        provider-specific model name to an incompatible API.
-        """
-        skip_provider_types = {provider.upper() for provider in (skip_provider_types or set())}
-        priority = list(model_manager.provider_priority)
-        current = (current_provider_type or "").upper() or None
-        candidates: list[str] = []
-        if current:
-            candidates.append(current)
-        candidates.extend(provider for provider in priority if provider not in candidates)
-
-        for provider_type in candidates:
-            if provider_type in skip_provider_types:
-                continue
-            pdef = PROVIDER_DEFS.get(provider_type)
-            if pdef is None:
-                continue
-            candidate_model = model if current and provider_type == current else None
-            provider = await self.get_provider(
-                provider_type,
-                candidate_model,
-                company_id,
-                excluded_key_ids=attempted_key_ids,
-            )
-            if provider is not None:
-                return provider
-        return None
+            return None
 
     def clear_cache(self) -> None:
         self._instances.clear()

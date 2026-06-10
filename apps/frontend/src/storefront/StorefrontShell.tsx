@@ -38,7 +38,7 @@ import { useClarityAnalytics } from "../hooks/useClarityAnalytics";
 import { useFacebookPixel } from "../hooks/useFacebookPixel";
 import { useCategories } from "./hooks/useCategories";
 import StorefrontProductImage from "./components/StorefrontProductImage";
-import StorefrontStartupFallback from "./components/StorefrontStartupFallback";
+import StorefrontSkeleton from "./components/StorefrontSkeleton";
 import { getProductImageCandidates } from "./utils/productImages";
 import MobileBottomNav from "./components/MobileBottomNav";
 import "./styles/conversion-animations.css";
@@ -8602,7 +8602,7 @@ const StorefrontShell: React.FC<StorefrontShellProps> = ({
   }
 
   if (isLoading) {
-    return <StorefrontStartupFallback />;
+    return <StorefrontSkeleton />;
   }
 
   if (error || !settings) {

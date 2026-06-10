@@ -103,6 +103,36 @@ class ProviderQuotaLimitedProvider(BaseProvider):
         raise httpx.HTTPStatusError("provider quota exhausted", request=request, response=response)
 
 
+class ToolUseFailedProvider(BaseProvider):
+    def __init__(self) -> None:
+        super().__init__(
+            "tool-use-failed-key",
+            "openai/gpt-oss-120b",
+            key_id="groq-tool-key",
+            provider_type="GROQ",
+            company_id="comp1",
+        )
+
+    async def generate_response(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        **options: Any,
+    ) -> ProviderResponse:
+        request = httpx.Request("POST", "https://api.groq.com/openai/v1/chat/completions")
+        response = httpx.Response(
+            400,
+            request=request,
+            json={
+                "error": {
+                    "message": "Tool choice is none, but model called a tool",
+                    "code": "tool_use_failed",
+                }
+            },
+        )
+        raise httpx.HTTPStatusError("tool_use_failed", request=request, response=response)
+
+
 class BackupProvider(BaseProvider):
     def __init__(self) -> None:
         super().__init__(
@@ -130,8 +160,7 @@ class BackupProvider(BaseProvider):
 
 
 class FakeProviderFactory:
-    def __init__(self, backup: BackupProvider) -> None:
-        self.backup = backup
+    def __init__(self) -> None:
         self.failover_calls: list[dict[str, Any]] = []
 
     async def get_provider(
@@ -139,28 +168,10 @@ class FakeProviderFactory:
         provider_type: str,
         model: str | None = None,
         company_id: str | None = None,
+        *,
+        key_id: str | None = None,
     ) -> BaseProvider | None:
         return None
-
-    async def get_failover_provider(
-        self,
-        *,
-        current_provider_type: str | None,
-        model: str | None,
-        company_id: str | None,
-        attempted_key_ids: set[str],
-        skip_provider_types: set[str] | None = None,
-    ) -> BaseProvider | None:
-        self.failover_calls.append(
-            {
-                "current_provider_type": current_provider_type,
-                "model": model,
-                "company_id": company_id,
-                "attempted_key_ids": attempted_key_ids,
-                "skip_provider_types": skip_provider_types,
-            }
-        )
-        return self.backup
 
 
 async def test_adapter_aliases_dotted_tool_names_and_maps_calls_back() -> None:
@@ -241,64 +252,28 @@ async def test_adapter_forwards_output_schema_to_provider() -> None:
     assert provider.calls[0]["options"]["output_schema"] == schema
 
 
-async def test_adapter_records_rate_limit_and_fails_over_to_another_provider(monkeypatch) -> None:
-    backup = BackupProvider()
-    factory = FakeProviderFactory(backup)
+async def test_adapter_records_rate_limit_and_raises(monkeypatch) -> None:
     record_failure = AsyncMock()
-    record_success = AsyncMock()
-
-    monkeypatch.setattr("src.llm.providers.adapter.get_provider_factory", lambda: factory)
     monkeypatch.setattr("src.llm.providers.adapter.model_manager.record_failure", record_failure)
-    monkeypatch.setattr("src.llm.providers.adapter.model_manager.record_success", record_success)
 
-    response = await ProviderAdapter(
-        RateLimitedProvider(),
-        company_id="comp1",
-        provider_type="GROQ",
-        key_id="groq-key",
-        max_failover_attempts=2,
-    ).get_response([{"role": "user", "content": "فاكر سألتك عن ايه؟"}])
+    try:
+        await ProviderAdapter(
+            RateLimitedProvider(),
+            company_id="comp1",
+            provider_type="GROQ",
+            key_id="groq-key",
+        ).get_response([{"role": "user", "content": "فاكر سألتك عن ايه؟"}])
+    except httpx.HTTPStatusError:
+        pass
+    else:
+        raise AssertionError("Expected HTTPStatusError to propagate")
 
-    assert response.text == "model generated memory reply"
     record_failure.assert_awaited_once_with("groq-key", "429", retry_after_ms=2000)
-    record_success.assert_awaited_once_with("google-key", {"total_tokens": 7})
-    assert backup.calls[0]["messages"][0]["content"] == "فاكر سألتك عن ايه؟"
-    assert factory.failover_calls[0]["company_id"] == "comp1"
-    assert factory.failover_calls[0]["skip_provider_types"] == set()
 
 
-async def test_adapter_skips_current_provider_when_provider_quota_is_exhausted(monkeypatch) -> None:
-    backup = BackupProvider()
-    factory = FakeProviderFactory(backup)
+async def test_adapter_records_provider_quota_and_raises(monkeypatch) -> None:
     record_failure = AsyncMock()
-    record_success = AsyncMock()
-
-    monkeypatch.setattr("src.llm.providers.adapter.get_provider_factory", lambda: factory)
     monkeypatch.setattr("src.llm.providers.adapter.model_manager.record_failure", record_failure)
-    monkeypatch.setattr("src.llm.providers.adapter.model_manager.record_success", record_success)
-
-    response = await ProviderAdapter(
-        ProviderQuotaLimitedProvider(),
-        company_id="comp1",
-        provider_type="GROQ",
-        key_id="groq-key",
-        max_failover_attempts=2,
-    ).get_response([{"role": "user", "content": "فاكر سألتك عن ايه؟"}])
-
-    assert response.text == "model generated memory reply"
-    record_failure.assert_awaited_once_with("groq-key", "QUOTA", retry_after_ms=None)
-    assert factory.failover_calls[0]["skip_provider_types"] == {"GROQ"}
-
-
-async def test_adapter_can_disable_cross_provider_failover_for_explicit_provider(monkeypatch) -> None:
-    backup = BackupProvider()
-    factory = FakeProviderFactory(backup)
-    record_failure = AsyncMock()
-    record_success = AsyncMock()
-
-    monkeypatch.setattr("src.llm.providers.adapter.get_provider_factory", lambda: factory)
-    monkeypatch.setattr("src.llm.providers.adapter.model_manager.record_failure", record_failure)
-    monkeypatch.setattr("src.llm.providers.adapter.model_manager.record_success", record_success)
 
     try:
         await ProviderAdapter(
@@ -306,34 +281,80 @@ async def test_adapter_can_disable_cross_provider_failover_for_explicit_provider
             company_id="comp1",
             provider_type="GROQ",
             key_id="groq-key",
-            max_failover_attempts=2,
-            allow_provider_failover=False,
+        ).get_response([{"role": "user", "content": "فاكر سألتك عن ايه؟"}])
+    except httpx.HTTPStatusError:
+        pass
+    else:
+        raise AssertionError("Expected HTTPStatusError to propagate")
+
+    record_failure.assert_awaited_once_with("groq-key", "QUOTA", retry_after_ms=None)
+
+
+async def test_adapter_records_tool_use_failure_and_raises(monkeypatch) -> None:
+    record_failure = AsyncMock()
+    monkeypatch.setattr("src.llm.providers.adapter.model_manager.record_failure", record_failure)
+
+    try:
+        await ProviderAdapter(
+            ToolUseFailedProvider(),
+            company_id="comp1",
+            provider_type="GROQ",
+            key_id="groq-tool-key",
+        ).get_response(
+            [{"role": "user", "content": "Generate a reply from tool results."}],
+            options={"tools_enabled": False},
+        )
+    except httpx.HTTPStatusError:
+        pass
+    else:
+        raise AssertionError("Expected HTTPStatusError to propagate")
+
+    record_failure.assert_awaited_once_with("groq-tool-key", "TOOL_USE_FAILED", retry_after_ms=None)
+
+
+async def test_adapter_propagates_provider_quota_error_directly(monkeypatch) -> None:
+    record_failure = AsyncMock()
+    monkeypatch.setattr("src.llm.providers.adapter.model_manager.record_failure", record_failure)
+
+    try:
+        await ProviderAdapter(
+            ProviderQuotaLimitedProvider(),
+            company_id="comp1",
+            provider_type="GROQ",
+            key_id="groq-key",
         ).get_response([{"role": "user", "content": "عندك جزمة سودا متاحة؟"}])
     except httpx.HTTPStatusError as exc:
         assert exc.response.status_code == 429
     else:
-        raise AssertionError("Expected explicit provider errors to surface without failover")
+        raise AssertionError("Expected HTTPStatusError to propagate directly")
 
     record_failure.assert_awaited_once_with("groq-key", "QUOTA", retry_after_ms=None)
-    record_success.assert_not_awaited()
-    assert factory.failover_calls == []
-    assert backup.calls == []
 
 
-async def test_explicit_provider_client_disables_cross_provider_failover(monkeypatch) -> None:
+async def test_explicit_provider_client_uses_selected_key(monkeypatch) -> None:
     provider = RecordingProvider()
     provider.config = {
         "provider_type": "GROQ",
-        "key_id": "groq-key",
+        "key_id": "selected-groq-key",
         "company_id": "comp1",
     }
-    factory = FakeProviderFactory(backup=BackupProvider())
+    factory = FakeProviderFactory()
     factory.get_provider = AsyncMock(return_value=provider)
 
     monkeypatch.setattr("src.llm.agent_client_factory.get_provider_factory", lambda: factory)
 
-    client = await build_provider_client_async("GROQ", model="test-model", company_id="comp1")
+    client = await build_provider_client_async(
+        "GROQ",
+        model="test-model",
+        company_id="comp1",
+        key_id="selected-groq-key",
+    )
 
     assert isinstance(client, ProviderAdapter)
-    assert client._allow_provider_failover is False
-    factory.get_provider.assert_awaited_once_with("GROQ", "test-model", "comp1")
+    assert client._key_id == "selected-groq-key"
+    factory.get_provider.assert_awaited_once_with(
+        "GROQ",
+        "test-model",
+        "comp1",
+        key_id="selected-groq-key",
+    )

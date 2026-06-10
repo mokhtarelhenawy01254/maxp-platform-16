@@ -21,6 +21,7 @@ const mockPrisma = {
   },
   globalAiConfig: {
     findFirst: jest.fn(),
+    findMany: jest.fn(),
   },
   companyAgent: {
     findMany: jest.fn(),
@@ -114,8 +115,30 @@ jest.mock('../../legacy-ai-agent/aiAgent/workingMemoryService', () => ({
       summary: null,
       recentMessages: session.messages || [],
       cart: {},
-      queriedProducts: [],
+      queriedProducts: session.queriedProducts || [],
+      lastShownProductIds: session.lastShownProductIds || [],
+      activeSearchFilters: session.activeSearchFilters || {},
     };
+  }),
+  updateSearchContext: jest.fn(async (companyId, conversationId, { productIds, filters } = {}) => {
+    const key = `${companyId}:${conversationId}`;
+    const session = mockWorkingMemoryStore.get(key) || { messages: [] };
+    if (Array.isArray(productIds) && productIds.length > 0) {
+      session.lastShownProductIds = productIds;
+    }
+    session.activeSearchFilters = { ...(session.activeSearchFilters || {}), ...(filters || {}) };
+    mockWorkingMemoryStore.set(key, session);
+    return {
+      lastShownProductIds: session.lastShownProductIds || [],
+      activeSearchFilters: session.activeSearchFilters || {},
+    };
+  }),
+  addQueriedProduct: jest.fn(async (companyId, conversationId, product) => {
+    const key = `${companyId}:${conversationId}`;
+    const session = mockWorkingMemoryStore.get(key) || { messages: [] };
+    session.queriedProducts = [...(session.queriedProducts || []), product];
+    mockWorkingMemoryStore.set(key, session);
+    return session.queriedProducts;
   }),
 }));
 
@@ -267,6 +290,7 @@ describe('AI sandbox route security', () => {
         priority: 1,
       },
     ]);
+    mockPrisma.globalAiConfig.findMany.mockResolvedValue(undefined);
     mockPrisma.globalAiConfig.findFirst.mockResolvedValue(null);
     mockPrisma.aiModelConfig.findMany.mockResolvedValue([
       {
@@ -417,6 +441,52 @@ describe('AI sandbox route security', () => {
     expect(JSON.stringify(response.body)).not.toContain('company_key');
     expect(JSON.stringify(response.body)).not.toContain('company-secret');
     expect(JSON.stringify(response.body)).not.toContain('central-secret');
+  });
+
+  test('marks the preferred central model even when an earlier global config row has empty settings', async () => {
+    mockPrisma.globalAiConfig.findMany.mockResolvedValue([
+      { settings: JSON.stringify({ preferredAiKeyIds: {} }), updatedAt: new Date('2026-01-02T00:00:00.000Z') },
+      { settings: JSON.stringify({ preferredAiKeyIds: { GOOGLE: 'preferred_key' } }), updatedAt: new Date('2026-01-01T00:00:00.000Z') },
+    ]);
+    mockPrisma.aiKey.findMany.mockResolvedValue([
+      {
+        id: 'default_key',
+        name: 'Default Gemini',
+        provider: 'GOOGLE',
+        keyType: 'CENTRAL',
+        companyId: null,
+        isActive: true,
+        apiKey: 'default-secret',
+        baseUrl: null,
+        priority: 1,
+      },
+      {
+        id: 'preferred_key',
+        name: 'Preferred Gemini',
+        provider: 'GOOGLE',
+        keyType: 'CENTRAL',
+        companyId: null,
+        isActive: true,
+        apiKey: 'preferred-secret',
+        baseUrl: null,
+        priority: 2,
+      },
+    ]);
+    mockPrisma.aiModelConfig.findMany.mockResolvedValue([
+      { keyId: 'default_key', modelName: 'gemini-2.5-flash', isEnabled: true, priority: 1 },
+      { keyId: 'preferred_key', modelName: 'gemini-2.5-flash', isEnabled: true, priority: 1 },
+    ]);
+
+    const response = await request(app).get('/ai-sandbox/models');
+
+    expect(response.status).toBe(200);
+    const models = response.body.providers[0].models;
+    expect(models.find((m) => m.keyId === 'default_key')).toEqual(expect.objectContaining({
+      isPreferred: false,
+    }));
+    expect(models.find((m) => m.keyId === 'preferred_key')).toEqual(expect.objectContaining({
+      isPreferred: true,
+    }));
   });
 
   test('shows inactive central keys for diagnostics but refuses to execute them', async () => {
@@ -623,13 +693,10 @@ describe('AI sandbox route security', () => {
   });
 
   test('routes sandbox chat through the configured preferred central provider key', async () => {
-    mockPrisma.globalAiConfig.findFirst.mockResolvedValue({
-      settings: JSON.stringify({
-        preferredAiKeyIds: {
-          GOOGLE: 'key_preferred',
-        },
-      }),
-    });
+    mockPrisma.globalAiConfig.findMany.mockResolvedValue([
+      { settings: JSON.stringify({ preferredAiKeyIds: {} }), updatedAt: new Date('2026-01-02T00:00:00.000Z') },
+      { settings: JSON.stringify({ preferredAiKeyIds: { GOOGLE: 'key_preferred' } }), updatedAt: new Date('2026-01-01T00:00:00.000Z') },
+    ]);
     mockPrisma.aiKey.findMany.mockResolvedValue([
       {
         id: 'key_default',
@@ -844,6 +911,209 @@ describe('AI sandbox route security', () => {
       .map(([arg]) => arg)
       .find(arg => arg.data.role === 'assistant');
     expect(assistantCreate.data.metadata.pipelineTrace.toolPlan.primaryTool).toBe('inventory_check');
+  });
+
+  test('preserves awaiting approval status from Python tool results in sandbox tool calls', async () => {
+    mockAiServiceChatResult = {
+      status: 'awaiting_approval',
+      reply: 'Pending approval',
+      runtime: 'python-agent',
+      tool_calls: [{
+        tool: 'order.create_confirmed',
+        success: false,
+        result: {
+          status: 'awaiting_approval',
+          action_type: 'order_create_confirmed',
+          action_args: {
+            product_name: 'Sprint X',
+            product_price: 1499,
+          },
+          company_id: 'company_1',
+        },
+      }],
+    };
+
+    const response = await request(app)
+      .post('/ai-sandbox/chat')
+      .send({
+        sessionId: 'session_1',
+        agentId: 'agent_sales',
+        provider: 'GOOGLE',
+        model: 'gemini-2.5-flash',
+        keyId: 'key_google',
+        message: 'Confirm order',
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.toolCalls[0]).toEqual(expect.objectContaining({
+      name: 'order.create_confirmed',
+      status: 'awaiting_approval',
+    }));
+    const assistantCreate = mockPrisma.aiSandboxMessage.create.mock.calls
+      .map(([arg]) => arg)
+      .find(arg => arg.data.role === 'assistant');
+    const storedToolCalls = JSON.parse(assistantCreate.data.toolCalls);
+    expect(storedToolCalls[0].status).toBe('awaiting_approval');
+  });
+
+  test('hydrates sandbox product memory from previous tool calls before Python chat', async () => {
+    const previousToolCalls = [{
+      name: 'inventory.check',
+      status: 'success',
+      input: { productNameOrSku: 'black shoes' },
+      output: {
+        found: true,
+        productId: 'prod_123',
+        productName: 'Black Shoes',
+        sku: 'SKU-BLK',
+        requestedColor: 'black',
+        price: { amount: 2199, currency: 'EGP' },
+      },
+    }];
+    mockPrisma.aiSandboxSession.findFirst.mockResolvedValueOnce({
+      id: 'session_1',
+      companyId: 'company_1',
+      userId: 'user_1',
+      title: 'Test 1',
+      agentId: 'agent_sales',
+      agentName: 'Sales Agent',
+      agentRole: 'SALES',
+      model: 'gemini-2.5-flash',
+      provider: 'GOOGLE',
+      keyId: 'key_google',
+      isDeleted: false,
+      messages: [
+        { role: 'user', content: 'Do you have black shoes?', toolCalls: null },
+        { role: 'assistant', content: 'Available.', toolCalls: JSON.stringify(previousToolCalls) },
+      ],
+    });
+
+    mockAiServiceChatResult = {
+      status: 'ok',
+      reply: 'Python reply',
+      tool_calls: [],
+      runtime: 'python-agent',
+    };
+
+    const response = await request(app)
+      .post('/ai-sandbox/chat')
+      .send({
+        sessionId: 'session_1',
+        agentId: 'agent_sales',
+        provider: 'GOOGLE',
+        model: 'gemini-2.5-flash',
+        keyId: 'key_google',
+        message: 'Is size 42 available?',
+      });
+
+    expect(response.status).toBe(200);
+    expect(require('../../legacy-ai-agent/aiAgent/workingMemoryService').updateSearchContext)
+      .toHaveBeenCalledWith(
+        'company_1',
+        expect.stringContaining('session_1'),
+        expect.objectContaining({
+          productIds: ['prod_123'],
+          filters: expect.objectContaining({ color: 'black' }),
+        })
+      );
+    expect(aiServiceAdminClient.chatWithAgent).toHaveBeenCalledWith(expect.objectContaining({
+      memoryContext: expect.objectContaining({
+        lastShownProductIds: ['prod_123'],
+        lastInventoryParams: expect.objectContaining({ productNameOrSku: 'black shoes' }),
+        lastInventoryResult: expect.objectContaining({
+          productId: 'prod_123',
+          productName: 'Black Shoes',
+          sku: 'SKU-BLK',
+        }),
+        selectedProduct: expect.objectContaining({ productId: 'prod_123', productName: 'Black Shoes' }),
+        queriedProducts: expect.arrayContaining([
+          expect.objectContaining({ id: 'prod_123', name: 'Black Shoes', sku: 'SKU-BLK' }),
+        ]),
+      }),
+    }));
+  });
+
+  test('hydrates structured sandbox tool memory from persisted Python pipeline traces', async () => {
+    mockPrisma.aiSandboxSession.findFirst.mockResolvedValueOnce({
+      id: 'session_1',
+      companyId: 'company_1',
+      userId: 'user_1',
+      title: 'Test 1',
+      agentId: 'agent_sales',
+      agentName: 'Sales Agent',
+      agentRole: 'SALES',
+      model: 'gemini-2.5-flash',
+      provider: 'GOOGLE',
+      keyId: 'key_google',
+      isDeleted: false,
+      messages: [{
+        role: 'assistant',
+        content: 'Tool-backed reply.',
+        toolCalls: null,
+        metadata: {
+          pipelineTrace: {
+            toolExecutions: [
+              {
+                name: 'shipping_rates',
+                params: { governorate: 'Cairo' },
+                output: { shippingFee: 50, currency: 'EGP' },
+                success: true,
+              },
+              {
+                name: 'order_create_confirmed',
+                params: {
+                  customer_name: 'Ahmed',
+                  customer_phone: '01000000000',
+                  product_name: 'Sprint X',
+                  product_price: 1499,
+                  city: 'Cairo',
+                },
+                output: { draft_id: 'draft_1', status: 'awaiting_approval' },
+                status: 'awaiting_approval',
+              },
+            ],
+          },
+        },
+      }],
+    });
+
+    mockAiServiceChatResult = {
+      status: 'ok',
+      reply: 'Python reply',
+      tool_calls: [],
+      runtime: 'python-agent',
+    };
+
+    const response = await request(app)
+      .post('/ai-sandbox/chat')
+      .send({
+        sessionId: 'session_1',
+        agentId: 'agent_sales',
+        provider: 'GOOGLE',
+        model: 'gemini-2.5-flash',
+        keyId: 'key_google',
+        message: 'Complete the order',
+      });
+
+    expect(response.status).toBe(200);
+    expect(aiServiceAdminClient.chatWithAgent).toHaveBeenCalledWith(expect.objectContaining({
+      memoryContext: expect.objectContaining({
+        lastShippingResult: expect.objectContaining({
+          governorate: 'Cairo',
+          shippingFee: 50,
+          currency: 'EGP',
+        }),
+        lastOrderCandidate: expect.objectContaining({
+          customer_name: 'Ahmed',
+          customer_phone: '01000000000',
+          product_name: 'Sprint X',
+          product_price: 1499,
+          city: 'Cairo',
+          draft_id: 'draft_1',
+          status: 'awaiting_approval',
+        }),
+      }),
+    }));
   });
 
   test('returns persisted Python trace metadata when loading a sandbox session', async () => {

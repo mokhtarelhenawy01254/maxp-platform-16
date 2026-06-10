@@ -81,13 +81,14 @@ async def resolve_intent(ctx: PipelineContext) -> PipelineContext:
         "preferredModel": getattr(ctx.agent, "model", None),
         "preferredProvider": getattr(getattr(ctx.agent, "config", None), "provider", None),
         "attachments": list(getattr(ctx, "attachments", []) or []),
+        "externalMemoryContext": dict(getattr(ctx, "external_memory_context", {}) or {}),
     }
     contract = await build_intent_contract_async(
         message=ctx.message,
         available_tools=available_tools,
         context=intent_context,
         company_id=ctx.company_id,
-        client=getattr(ctx.agent, "client", None),
+        client=None,
     )
 
     # 3. Build tool plan

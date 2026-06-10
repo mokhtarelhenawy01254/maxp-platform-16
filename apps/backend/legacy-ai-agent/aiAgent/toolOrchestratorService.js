@@ -190,6 +190,9 @@ class ToolOrchestratorService {
   async _recordRun(companyId, { agentId, toolName, status, output, error, latencyMs, modelUsed, traceId, taskId = null }) {
     try {
       const prisma = getSharedPrismaClient();
+      if (!prisma.aiAgentRun?.create || !prisma.aiAgentTask?.create) {
+        return;
+      }
       const runData = {
         companyId,
         agentId,
@@ -217,8 +220,26 @@ class ToolOrchestratorService {
             data: { ...runData, taskId: recentTask.id },
           });
         } else {
-          // Orphan run (no task context) — still recorded for observability
-          await prisma.aiAgentRun.create({ data: runData });
+          const task = await prisma.aiAgentTask.create({
+            data: {
+              companyId,
+              agentId,
+              title: toolName || 'unknown',
+              description: null,
+              status: 'COMPLETED',
+              priority: 'low',
+              completedAt: new Date(),
+              traceId: traceId || null,
+              metadata: {
+                source: 'tool_orchestrator',
+                synthetic: true,
+                toolName,
+              },
+            },
+          });
+          await prisma.aiAgentRun.create({
+            data: { ...runData, taskId: task.id },
+          });
         }
       }
     } catch (e) {

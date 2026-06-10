@@ -154,6 +154,34 @@
       "proposalRejected": "Proposal rejected."
     }
   },
+  "aiCatalog": {
+    "title": "AI Product Catalog",
+    "subtitle": "Manage products for the AI bot to use in customer conversations",
+    "search": "Search products...",
+    "addProduct": "Add Product",
+    "editProduct": "Edit Product",
+    "totalProducts": "Total Products",
+    "outOfStock": "Out of Stock",
+    "avgPrice": "Avg Price",
+    "image": "Image",
+    "sku": "SKU",
+    "price": "Price",
+    "stock": "Stock",
+    "variants": "Variants",
+    "empty": "No products found",
+    "deleteConfirm": "Are you sure you want to delete this product?",
+    "cancel": "Cancel",
+    "save": "Save",
+    "successDelete": "Product deleted successfully",
+    "successDuplicate": "Product duplicated successfully",
+    "imageUpload": "Upload Image",
+    "productName": "Product Name *",
+    "description": "Description",
+    "addVariant": "Add Variant",
+    "addVariantDesc": "Add variants to your product such as different colors or sizes",
+    "variantImage": "Variant Image",
+    "variantColor": "Variant Color"
+  },
   "aiHub": {
     "title": "AI Hub",
     "subtitle": "Intelligent Agents Center",
@@ -166,6 +194,22 @@
       "scheduler": "Scheduler"
     },
     "sandbox": {
+      "chat": {
+        "selectAgent": "Select an agent to start chatting",
+        "copyMessage": "Copy message text",
+        "generating": "Generating...",
+        "thinking": "Thinking...",
+        "imageAttachment": "Image attachment",
+        "closeAttachmentPanel": "Close attachment panel",
+        "imageUrlPlaceholder": "Enter image URL...",
+        "quickSelect": "Quick select:",
+        "clearImage": "Remove image",
+        "attachImage": "Attach image",
+        "messagePlaceholder": "Message {{agentName}}...",
+        "selectCentralModel": "Select a central model to start chatting",
+        "configureApiKey": "Configure your API key in the HeaderBar",
+        "sendMessage": "Send message"
+      },
       "trace": {
         "title": "Run trace",
         "pythonRuntime": "Python",
@@ -175,6 +219,9 @@
         "intent": "Intent",
         "plannedTool": "Planned tool",
         "executedTools": "Executed tools",
+        "providerEvents": "Provider events",
+        "providerRetry": "Retry",
+        "providerFailover": "Provider failover",
         "none": "None",
         "notAvailable": "N/A"
       }
