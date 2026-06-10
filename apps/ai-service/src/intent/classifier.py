@@ -194,7 +194,7 @@ async def classify_intent(
         f"Available tools: {', '.join(available_tools) if available_tools else 'none'}.\n"
         "For customer read-only catalog questions about price, availability, stock, images, size, color, SKU, or variants, "
         "choose inventory when a current stock/variant fact is requested; choose products only for broad catalog browsing.\n"
-        "Set slots.requestedProductImage to true when the latest message asks for product photos, an image, or an image link.\n"
+        "Set slots.requestedProductImage to true when the latest message semantically asks to SEE, VIEW, or VISUALLY INSPECT a product — any phrasing that indicates the customer wants to look at the product visually (e.g. asking for images, photos, pictures, wanting to \"see\" or \"view\" the product or \"how it looks\", \"its appearance\", \"شكله\", \"صورته\"). Set it to false only when the request is purely about price, stock count, size, or availability without any visual component.\n"
         "Set slots.listAll to true ONLY for READ-ONLY catalog browsing when the customer asks to see ALL products (intent must be products, not products.manage). products.manage is only for creating or editing products.\n"
         "If the customer says they are not ordering yet, that is still a read-only catalog/inventory question, "
         "not an order draft and not a support handoff.\n"

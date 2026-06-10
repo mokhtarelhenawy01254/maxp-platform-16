@@ -91,7 +91,7 @@ async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
     )
     products = result.get("products", [])
     if input_data.list_all:
-        products = [{"name": p.get("name"), "price": p.get("price"), "sku": p.get("sku"), "status": p.get("status")} for p in products]
+        products = [{"name": p.get("name"), "price": p.get("price"), "sku": p.get("sku"), "status": p.get("status"), "mainImage": p.get("mainImage")} for p in products]
 
     # Vector fallback: if text search returned no results and we have a query, use semantic search
     if not products and query and not input_data.list_all and input_data.use_vector:

@@ -2707,3 +2707,16 @@ Manages AI agent chat sessions via Prisma (`aIChatSession`, `aIChatMessage` mode
   - **Limit**: Increased max from 20 to 50 to accommodate full catalog listing.
 - **Files**:
   - `apps/backend/routes/agentServiceBridgeRoutes.js`
+
+## [2026-06-10] AI Service — Intent Classifier: Semantic requestedProductImage Detection
+- **Details**: Rewrote the `requestedProductImage` rule in the intent classifier system prompt to guide the LLM semantically rather than by keyword matching. The old rule only mentioned "photo, image, image link". The new rule describes the semantic concept: "when the latest message semantically asks to SEE, VIEW, or VISUALLY INSPECT a product — any phrasing that indicates the customer wants to look at the product visually".
+- **Architecture**: The classifier uses `gemini-2.5-flash` with a system prompt containing extraction rules. The rule at `classifier.py:197` now tells the model to interpret intent (wanting to see the product) rather than match keywords (صور/photo/image). This covers Arabic variants (اشوف، وريني، شكله، صورته، أظهر) and English variants (show me, see, view, picture).
+- **Verification**: Before the fix, 5/14 test phrases had `requestedProductImage: false` — after the fix, 14/14 correctly detected `requestedProductImage: true` for visual requests.
+- **Files**:
+  - `apps/ai-service/src/intent/classifier.py`
+
+## [2026-06-10] AI Service — product_search list_all Mode Retains mainImage
+- **Details**: When `product_search` runs with `list_all=True`, products were slimmed to `{name, price, sku, status}` — dropping the `mainImage` field entirely. This prevented any image display for catalog-browsing queries even when the customer asked for images.
+- **Architecture**: Added `"mainImage": p.get("mainImage")` to the slim mapping in `registry.py:94`. The list_all slim was originally introduced to reduce LLM token usage (product data can exceed 19k tokens), but `mainImage` is a single URL string (~100 chars) with negligible token impact — keeping it enables the LLM to include product images in replies.
+- **Files**:
+  - `apps/ai-service/src/tools/registry.py`

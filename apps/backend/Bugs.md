@@ -3667,6 +3667,18 @@ eq.user.id matches the createdBy field on the existing order. Otherwise, it thro
 - **Affected Files**:
   - `apps/backend/routes/agentServiceBridgeRoutes.js`
 
+## [2026-06-10] AI Service — requestedProductImage Slot Misses Arabic/English "See/View" Phrasing
+- **Bug/Issue**: The intent classifier often set `requestedProductImage: false` when customers asked to visually see a product using phrases like "عايز اشوف المنتج", "وريني الهودي", "show me the product", "عايز اشوف كوتشي لمسه", "عايز اشوف شكله". The image-request rule in the classifier prompt was too narrow — only mentioned "product photos, an image, or an image link".
+- **Root Cause**: The classifier prompt at `classifier.py:197` used keyword-listing phrasing that didn't guide the model to semantically understand that "see/view/inspect visually" implies a product image request. The LLM only triggered on explicit "photo/image" keywords and missed "اشوف" (I see), "وريني" (show me), "شكله" (its look), "show me", etc.
+- **Fix**: Rewrote the prompt rule to be semantically rich: "Set slots.requestedProductImage to true when the latest message semantically asks to SEE, VIEW, or VISUALLY INSPECT a product — any phrasing that indicates the customer wants to look at the product visually". This guides the LLM to classify by intent rather than keywords.
+- **Affected Files**: `apps/ai-service/src/intent/classifier.py`
+
+## [2026-06-10] AI Service — list_all Slim Mode Drops mainImage from Product Results
+- **Bug/Issue**: When `product_search` runs with `list_all=True`, products were slimmed to `{name, price, sku, status}` — dropping the `mainImage` field. If the customer asked for images while listing all products, no image URLs were available in the tool result.
+- **Root Cause**: `registry.py:94` mapped list_all products without including `mainImage` as a field.
+- **Fix**: Added `"mainImage": p.get("mainImage")` to the list_all slim mapping so image URLs persist when the customer requests product visuals during catalog browsing.
+- **Affected Files**: `apps/ai-service/src/tools/registry.py`
+
 ## [2026-06-10] HR Rewards Sidebar Label — `[object Object]` in Navigation
 - **Problem**: The HR rewards sidebar item rendered `[object Object]` instead of "المكافآت والحوافز". The search function in `Layout.tsx` crashed with `TypeError: Cannot read properties of undefined (reading 'toLowerCase')` on the rendered object.
 - **Root Cause**: `sidebar.ts` line 820 used `t('sidebar.rewards')` which returned the rewards i18n object `{title: "المكافآت والحوافز", ...}` instead of a plain string. When React renders an object, it displays `[object Object]`, and `item.label.toLowerCase()` in the search filter throws a TypeError.
