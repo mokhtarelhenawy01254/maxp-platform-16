@@ -48,6 +48,8 @@ const STOREFRONT_THEME_DEFAULTS_MODULE_PATTERN =
   /\/src\/storefront\/engine\/themeDefaults\.ts$/;
 const STOREFRONT_RUNTIME_THEME_MODULE_PATTERN =
   /\/src\/storefront\/themes\/(?:modern-minimal|khemet-luxe-eg)\.json(?:\?url)?$/;
+const APP_UI_PRIMITIVES_MODULE_PATTERN =
+  /\/src\/(?:components\/ui\/|lib\/utils\.ts$)/;
 
 const shouldFilterStorefrontPreloads = (
   filename: string,
@@ -173,7 +175,11 @@ const getVendorChunkName = (normalizedId: string): string | undefined => {
 
   // Keep tiny class-name helpers independent from MUI. Storefront sections use
   // cn(...) in the PDP critical path, so this must not pull the full MUI chunk.
-  if (packageName === 'clsx' || packageName === 'tailwind-merge') {
+  if (
+    packageName === 'class-variance-authority' ||
+    packageName === 'clsx' ||
+    packageName === 'tailwind-merge'
+  ) {
     return 'vendor-class-utils';
   }
 
@@ -480,6 +486,10 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             const normalizedId = id.replace(/\\/g, '/');
+
+            if (APP_UI_PRIMITIVES_MODULE_PATTERN.test(normalizedId)) {
+              return 'app-ui-primitives';
+            }
 
             // Route-based chunk grouping for app source files
             if (
