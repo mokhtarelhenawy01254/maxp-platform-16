@@ -312,20 +312,6 @@ class BackendClient:
         )
         return result.get("data", result.get("ads", []))
 
-    # ── WhatsApp APIs ──
-
-    async def send_whatsapp_message(
-        self, company_id: str, phone: str, message: str
-    ) -> dict[str, Any]:
-        return await self._request(
-            "POST", "/api/v1/whatsapp/whatsapp",
-            json_body={
-                "phone": phone,
-                "message": message,
-                "companyId": company_id,
-            },
-        )
-
     # ── Facebook/Messenger APIs ──
 
     async def send_facebook_message(

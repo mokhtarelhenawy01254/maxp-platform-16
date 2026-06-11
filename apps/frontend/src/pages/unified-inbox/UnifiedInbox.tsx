@@ -25,7 +25,7 @@ import { useTranslation } from "react-i18next";
 
 interface UnifiedConversation {
   id: string;
-  platform: "facebook" | "whatsapp" | "telegram";
+  platform: "facebook" | "telegram";
   platformIcon: string;
   contactName: string;
   contactAvatar: string | null;
@@ -84,7 +84,6 @@ interface CustomerProfile {
 interface PlatformCounts {
   all: number;
   facebook: number;
-  whatsapp: number;
   telegram: number;
   unreplied: number;
 }
@@ -95,7 +94,6 @@ interface PlatformCounts {
 
 const platformStyles: Record<string, { label: string; icon: string }> = {
   facebook: { label: "Messenger", icon: "💬" },
-  whatsapp: { label: "WhatsApp", icon: "📱" },
   telegram: { label: "Telegram", icon: "✈️" },
 };
 
@@ -117,7 +115,6 @@ const UnifiedInbox: React.FC = () => {
   const [counts, setCounts] = useState<PlatformCounts>({
     all: 0,
     facebook: 0,
-    whatsapp: 0,
     telegram: 0,
     unreplied: 0,
   });
@@ -178,7 +175,6 @@ const UnifiedInbox: React.FC = () => {
         params.set("sessionId", conv.metadata["sessionId"]);
       if (conv.metadata?.["jid"]) params.set("jid", conv.metadata["jid"]);
 
-      const realId = conv.id.startsWith("wa_") ? conv.id : conv.id;
       const response = await apiClient.get(
         `/api/v1/unified-inbox/conversations/${realId}/messages?${params.toString()}`,
       );
@@ -232,7 +228,7 @@ const UnifiedInbox: React.FC = () => {
     (conv: UnifiedConversation) => {
       setSelectedConversation(conv);
       loadMessages(conv);
-      if (conv.contactId && !conv.id.startsWith("wa_")) {
+      if (conv.contactId) {
         loadCustomerProfile(conv.contactId);
       } else {
         setCustomerProfile(null);
@@ -435,7 +431,6 @@ const UnifiedInbox: React.FC = () => {
                   count: counts.all,
                 },
                 { key: "facebook", label: "💬", count: counts.facebook },
-                { key: "whatsapp", label: "📱", count: counts.whatsapp },
                 { key: "telegram", label: "✈️", count: counts.telegram },
               ].map((tab) => (
                 <button
@@ -953,10 +948,6 @@ const UnifiedInbox: React.FC = () => {
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-2xl">💬</span>
                     <span className="text-xs">Messenger</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-1">
-                    <span className="text-2xl">📱</span>
-                    <span className="text-xs">WhatsApp</span>
                   </div>
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-2xl">✈️</span>

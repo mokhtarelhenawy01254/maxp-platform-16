@@ -1,6 +1,5 @@
 const cron = require('node-cron');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const whatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 
 /**
  * بدء خدمة التحقق من أعياد الميلاد
@@ -44,24 +43,13 @@ function startBirthdayScheduler() {
 
                 const bdate = new Date(emp.dateOfBirth);
                 if (bdate.getMonth() + 1 === currentMonth && bdate.getDate() === currentDay) {
-                    // إنه عيد ميلاد الموظف!
                     console.log(`🎂 [BIRTHDAY-CRON] Found birthday: ${emp.firstName} ${emp.lastName}`);
-
-                    // تجهيز كائن الموظف بالشكل المطلوب
-                    const employeeData = {
-                        id: emp.id,
-                        firstName: emp.firstName,
-                        name: `${emp.firstName} ${emp.lastName}`,
-                        phone: emp.phone || emp.mobile
-                    };
-
-                    await whatsAppNotificationService.sendBirthdayNotification(employeeData, emp.companyId);
                     count++;
                 }
             }
 
             if (count > 0) {
-                console.log(`✅ [BIRTHDAY-CRON] Processed birthdays. Sent: ${count} notifications`);
+                console.log(`✅ [BIRTHDAY-CRON] Processed birthdays. Found: ${count} employees`);
             } else {
                 console.log('ℹ️ [BIRTHDAY-CRON] No birthdays found today.');
             }

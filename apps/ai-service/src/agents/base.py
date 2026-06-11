@@ -800,7 +800,6 @@ class BaseAgent:
             "facebook",
             "facebook_messenger",
             "messenger",
-            "whatsapp",
             "telegram",
         }
         if channel in customer_channels:

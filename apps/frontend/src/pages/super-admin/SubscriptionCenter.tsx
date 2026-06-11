@@ -97,7 +97,7 @@ type PlatformPlanFeatures = {
   apiAccess: boolean;
   prioritySupport: boolean;
   customIntegrations: boolean;
-  whatsappBusiness: boolean;
+
   facebookMessenger: boolean;
   webChat: boolean;
   mobileApp: boolean;
@@ -212,7 +212,7 @@ type BooleanPlanFeatureKey =
   | "apiAccess"
   | "prioritySupport"
   | "customIntegrations"
-  | "whatsappBusiness"
+
   | "facebookMessenger"
   | "webChat"
   | "mobileApp"
@@ -264,7 +264,7 @@ const createDefaultPlanFeatures = (): PlatformPlanFeatures => ({
   apiAccess: false,
   prioritySupport: false,
   customIntegrations: false,
-  whatsappBusiness: true,
+
   facebookMessenger: true,
   webChat: true,
   mobileApp: false,
@@ -1074,9 +1074,6 @@ const PlatformPlansTab = ({
                       )}
                       {features.customIntegrations && (
                         <Chip label="تكاملات" size="small" />
-                      )}
-                      {features.whatsappBusiness && (
-                        <Chip label="واتساب" size="small" />
                       )}
                       {features.facebookMessenger && (
                         <Chip label="ماسنجر" size="small" />
@@ -4469,7 +4466,7 @@ const EditPlanDialog = ({
     { key: "apiAccess", label: "الوصول للـ API" },
     { key: "prioritySupport", label: "الدعم ذو الأولوية" },
     { key: "customIntegrations", label: "التكاملات المخصصة" },
-    { key: "whatsappBusiness", label: "واتساب بزنس" },
+
     { key: "facebookMessenger", label: "فيسبوك ماسنجر" },
     { key: "webChat", label: "الدردشة على الموقع" },
     { key: "mobileApp", label: "تطبيق الجوال" },

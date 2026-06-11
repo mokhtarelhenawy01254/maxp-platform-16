@@ -2131,65 +2131,6 @@ router.post('/', async (req, res) => {
     }
 
     if (createdOrder && !isDuplicateOrder) {
-    // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
-    try {
-      console.log('📱 [WHATSAPP] Preparing to send notification for order:', createdOrder.orderNumber);
-      console.log('📱 [WHATSAPP] Order data:', {
-        id: createdOrder.id,
-        customerPhone: createdOrder.customerPhone,
-        customerName: createdOrder.customerName,
-        companyId: company.id,
-        total: createdOrder.total
-      });
-
-      const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
-
-      // تجهيز بيانات الطلب للإشعار
-      const orderForNotification = {
-        id: createdOrder.id,
-        orderNumber: createdOrder.orderNumber,
-        companyId: company.id,
-        customerPhone: createdOrder.customerPhone,
-        customerName: createdOrder.customerName,
-        customer: {
-          firstName: createdOrder.customerName?.split(' ')[0] || createdOrder.customerName,
-          phone: createdOrder.customerPhone
-        },
-        total: parseFloat(createdOrder.total),
-        shipping: parseFloat(createdOrder.shipping),
-        currency: 'EGP',
-        items: createdOrder.orderItems || [] // ✅ Include items for WhatsApp notification
-      };
-
-      console.log('📱 [WHATSAPP] Calling sendOrderCreatedNotification with:', orderForNotification);
-
-      const result = await WhatsAppNotificationService.sendOrderCreatedNotification(orderForNotification);
-      console.log('✅ [WHATSAPP] Notification result:', result);
-
-      if (!result.success) {
-        console.error('❌ [WHATSAPP] Notification failed:', result.reason);
-        if (result.reason === 'disabled') {
-          console.error('⚠️ [WHATSAPP] WhatsApp notifications are disabled in settings. Check:');
-          console.error('   1. orderNotificationsEnabled must be true');
-          console.error('   2. orderCreatedEnabled must be true');
-        } else if (result.reason === 'no_phone') {
-          console.error('⚠️ [WHATSAPP] No customer phone number provided');
-        } else if (result.reason === 'no_session') {
-          console.error('⚠️ [WHATSAPP] No WhatsApp session available');
-        } else if (result.reason === 'session_not_connected') {
-          console.error('⚠️ [WHATSAPP] WhatsApp session is not connected');
-        } else if (result.reason === 'no_template') {
-          console.error('⚠️ [WHATSAPP] No notification template found for ORDER_CREATED');
-        }
-      } else {
-        console.log('✅ [WHATSAPP] Order notification sent successfully for:', createdOrder.orderNumber);
-      }
-    } catch (whatsappError) {
-      // لا نوقف العملية إذا فشل WhatsApp
-      console.error('❌ [WHATSAPP] Failed to send notification:', whatsappError.message);
-      console.error('❌ [WHATSAPP] Error stack:', whatsappError.stack);
-    }
-
     // 📧 إرسال إشعار البريد الإلكتروني تلقائياً
     try {
       if (createdOrder.customerEmail) {

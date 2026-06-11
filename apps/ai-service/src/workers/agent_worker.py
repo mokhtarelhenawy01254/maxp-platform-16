@@ -518,97 +518,6 @@ async def handle_facebook_read_receipt(job: dict[str, Any]) -> None:
         await session.commit()
 
 
-async def handle_whatsapp_message(job: dict[str, Any]) -> None:
-    """Background task: process an incoming WhatsApp message."""
-    payload = job.get("payload", {})
-    sender_id = payload.get("sender_id")
-    phone_number_id = payload.get("phone_number_id")
-    message_text = payload.get("text")
-    company_id = payload.get("company_id")
-    mid = payload.get("mid")
-
-    if not all([sender_id, phone_number_id, message_text, company_id]):
-        logger.warning("whatsapp message skipped: missing required fields", payload=payload)
-        return
-
-    logger.info("processing whatsapp message", sender_id=sender_id, company_id=company_id)
-
-    async with async_session() as session:
-        # 1. Get Page/Phone Token
-        page_row = await session.execute(
-            "SELECT page_access_token FROM facebook_pages WHERE page_id = :pid AND company_id = :cid",
-            {"pid": phone_number_id, "cid": company_id},
-        )
-        page_res = page_row.scalar_one_or_none()
-        if not page_res:
-            logger.error("whatsapp phone not found", pid=phone_number_id, cid=company_id)
-            return
-        token = page_res
-
-        # 2. Customer Lookup/Creation
-        cust_row = await session.execute(
-            "SELECT id FROM customers WHERE whatsapp_id = :sid AND company_id = :cid",
-            {"sid": sender_id, "cid": company_id},
-        )
-        customer_id = cust_row.scalar_one_or_none()
-        if not customer_id:
-            cust_id = _generate_id()
-            await session.execute(
-                "INSERT INTO customers (id, company_id, whatsapp_id, name) VALUES (:id, :cid, :sid, :name)",
-                {"id": cust_id, "cid": company_id, "sid": sender_id, "name": f"WA User {sender_id}"},
-            )
-            customer_id = cust_id
-
-        # 3. Manage Conversation (Thread)
-        thread_row = await session.execute(
-            "SELECT id FROM ai.threads WHERE customer_id = :cid AND company_id = :coid AND channel = 'whatsapp' AND status = 'active'",
-            {"cid": customer_id, "coid": company_id},
-        )
-        thread_id = thread_row.scalar_one_or_none()
-        if not thread_id:
-            thread_id = _generate_id()
-            await session.execute(
-                "INSERT INTO ai.threads (id, company_id, customer_id, channel, status) VALUES (:id, :coid, :cid, 'whatsapp', 'active')",
-                {"id": thread_id, "coid": company_id, "cid": customer_id},
-            )
-
-        # 4. Save Message (deduplicated)
-        try:
-            await session.execute(
-                "INSERT INTO messages (id, conversation_id, content, is_from_customer, created_at) VALUES (:id, :conv_id, :content, true, NOW())",
-                {"id": mid, "conv_id": thread_id, "content": message_text},
-            )
-        except Exception:
-            logger.debug("message already exists", mid=mid)
-
-        await session.commit()
-
-        # 5. AI Process
-        from src.agents.base import BaseAgent, BaseAgentConfig
-        agent = BaseAgent(BaseAgentConfig(
-            id=f"wa_agent_{phone_number_id[:8]}",
-            name=f"WA Agent {phone_number_id[:8]}",
-            role="SALES",
-            company_id=company_id,
-            allowed_tools=[],
-        ))
-
-        task_result = await agent.process_task({
-            "description": message_text,
-            "session_id": thread_id,
-            "user_id": customer_id,
-            "company_id": company_id,
-            "channel": "whatsapp",
-        })
-
-        reply = task_result.get("result", {}).get("reply")
-        if reply:
-            from src.tools.whatsapp_client import WhatsAppClient
-            async with WhatsAppClient(token, phone_number_id) as wa:
-                await wa.send_text(sender_id, reply)
-            logger.info("whatsapp reply sent", sender_id=sender_id, reply=reply)
-
-
 async def handle_telegram_message(job: dict[str, Any]) -> None:
     """Background task: process an incoming Telegram message."""
     payload = job.get("payload", {})
@@ -853,7 +762,6 @@ TASK_HANDLERS = {
     "facebook.message": handle_facebook_message,
     "facebook.comment": handle_facebook_comment,
     "facebook.read_receipt": handle_facebook_read_receipt,
-    "whatsapp.message": handle_whatsapp_message,
     "telegram.message": handle_telegram_message,
 }
 

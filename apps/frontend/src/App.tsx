@@ -47,16 +47,6 @@ const CustomerDetails = React.lazy(
   () => import("./pages/customers/CustomerDetails"),
 );
 const CustomerEdit = React.lazy(() => import("./pages/customers/CustomerEdit"));
-const CustomerWhatsAppNotify = React.lazy(
-  () => import("./pages/customers/CustomerWhatsAppNotify"),
-);
-const CustomerBirthdayWhatsAppNotify = React.lazy(
-  () => import("./pages/customers/CustomerBirthdayWhatsAppNotify"),
-);
-
-const CustomerOccasionsWhatsAppNotify = React.lazy(
-  () => import("./pages/customers/CustomerOccasionsWhatsAppNotify"),
-);
 const CommentsManagement = React.lazy(
   () => import("./pages/comments/CommentsManagement"),
 );
@@ -94,24 +84,6 @@ const FacebookPostCreator = React.lazy(
 );
 const UnifiedInbox = React.lazy(
   () => import("./pages/unified-inbox/UnifiedInbox"),
-);
-const InboxPage = React.lazy(
-  () => import("./pages/whatsapp-inbox/WhatsAppInboxHome"),
-);
-const InboxChat = React.lazy(
-  () => import("./pages/whatsapp-inbox/WhatsAppChat"),
-);
-const ModeratorDashboard = React.lazy(
-  () => import("./pages/whatsapp-inbox/ModeratorDashboard"),
-);
-const WhatsAppNumberSettings = React.lazy(
-  () => import("./pages/whatsapp-inbox/WhatsAppNumberSettings"),
-);
-const InboxSettingsPage = React.lazy(
-  () => import("./pages/whatsapp-inbox/InboxSettingsPage"),
-);
-const InboxNotifications = React.lazy(
-  () => import("./pages/whatsapp-inbox/InboxNotifications"),
 );
 const Products = React.lazy(() => import("./pages/products/Products"));
 const ProductsTrash = React.lazy(
@@ -704,30 +676,6 @@ const SuperAdminStaffCompanyAccess = React.lazy(
 );
 const Changelog = React.lazy(() => import("./pages/super-admin/Changelog"));
 const TeamPortal = React.lazy(() => import("./pages/super-admin/TeamPortal"));
-const SuperAdminWhatsAppOverview = React.lazy(
-  () => import("./pages/super-admin/SuperAdminWhatsAppOverview"),
-);
-const SuperAdminWhatsAppCompanies = React.lazy(
-  () => import("./pages/super-admin/SuperAdminWhatsAppCompanies"),
-);
-const SuperAdminWhatsAppCompanyWorkspace = React.lazy(
-  () => import("./pages/super-admin/SuperAdminWhatsAppCompanyWorkspace"),
-);
-const SuperAdminWhatsAppCompanySettings = React.lazy(
-  () => import("./pages/super-admin/SuperAdminWhatsAppCompanySettings"),
-);
-const SuperAdminWhatsAppCompanyNotifications = React.lazy(
-  () => import("./pages/super-admin/SuperAdminWhatsAppCompanyNotifications"),
-);
-const SuperAdminWhatsAppCompanyAnalytics = React.lazy(
-  () => import("./pages/super-admin/SuperAdminWhatsAppCompanyAnalytics"),
-);
-const SuperAdminWhatsAppLogs = React.lazy(
-  () => import("./pages/super-admin/SuperAdminWhatsAppLogs"),
-);
-const SuperAdminWhatsAppAutomations = React.lazy(
-  () => import("./pages/super-admin/SuperAdminWhatsAppAutomations"),
-);
 
 const SuperAdminServerUsage = React.lazy(
   () => import("./pages/super-admin/SuperAdminServerUsage"),
@@ -970,26 +918,6 @@ const FAQManagement = React.lazy(
 );
 const PolicyManagement = React.lazy(
   () => import("./components/Admin/PolicyManagement"),
-);
-
-// WhatsApp
-const WhatsAppSettings = React.lazy(() =>
-  import("./pages/whatsapp").then((m) => ({ default: m.WhatsAppSettings })),
-);
-const WhatsAppTemplates = React.lazy(() =>
-  import("./pages/whatsapp").then((m) => ({ default: m.WhatsAppTemplates })),
-);
-const WhatsAppChat = React.lazy(() =>
-  import("./pages/whatsapp").then((m) => ({ default: m.WhatsAppChat })),
-);
-const WhatsAppNotifications = React.lazy(
-  () => import("./pages/whatsapp/WhatsAppNotifications"),
-);
-const WhatsAppCustomerJourney = React.lazy(
-  () => import("./pages/whatsapp/WhatsAppCustomerJourney"),
-);
-const WhatsAppAnalytics = React.lazy(
-  () => import("./pages/whatsapp/WhatsAppAnalytics"),
 );
 
 // HR Module
@@ -1549,78 +1477,6 @@ const AppContent = () => {
               element={
                 <Layout>
                   <SuperAdminDashboard />
-                </Layout>
-              }
-            />
-            <Route
-              path="/super-admin/team-portal"
-              element={
-                <Layout>
-                  <TeamPortal />
-                </Layout>
-              }
-            />
-            <Route
-              path="/super-admin/whatsapp"
-              element={
-                <Layout>
-                  <SuperAdminWhatsAppOverview />
-                </Layout>
-              }
-            />
-            <Route
-              path="/super-admin/whatsapp/companies"
-              element={
-                <Layout>
-                  <SuperAdminWhatsAppCompanies />
-                </Layout>
-              }
-            />
-            <Route
-              path="/super-admin/whatsapp/companies/:companyId"
-              element={
-                <Layout>
-                  <SuperAdminWhatsAppCompanyWorkspace />
-                </Layout>
-              }
-            />
-            <Route
-              path="/super-admin/whatsapp/companies/:companyId/settings"
-              element={
-                <Layout>
-                  <SuperAdminWhatsAppCompanySettings />
-                </Layout>
-              }
-            />
-            <Route
-              path="/super-admin/whatsapp/companies/:companyId/notifications"
-              element={
-                <Layout>
-                  <SuperAdminWhatsAppCompanyNotifications />
-                </Layout>
-              }
-            />
-            <Route
-              path="/super-admin/whatsapp/companies/:companyId/analytics"
-              element={
-                <Layout>
-                  <SuperAdminWhatsAppCompanyAnalytics />
-                </Layout>
-              }
-            />
-            <Route
-              path="/super-admin/whatsapp/logs"
-              element={
-                <Layout>
-                  <SuperAdminWhatsAppLogs />
-                </Layout>
-              }
-            />
-            <Route
-              path="/super-admin/whatsapp/automations"
-              element={
-                <Layout>
-                  <SuperAdminWhatsAppAutomations />
                 </Layout>
               }
             />
@@ -2336,30 +2192,6 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/customers/whatsapp-notify"
-                  element={
-                    <Layout>
-                      <CustomerWhatsAppNotify />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/customers/birthday-whatsapp-notify"
-                  element={
-                    <Layout>
-                      <CustomerBirthdayWhatsAppNotify />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/customers/occasions-notify"
-                  element={
-                    <Layout>
-                      <CustomerOccasionsWhatsAppNotify />
-                    </Layout>
-                  }
-                />
-                <Route
                   path="/customers/:id"
                   element={
                     <Layout>
@@ -2448,64 +2280,8 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/whatsapp-inbox"
-                  element={
-                    <Layout fullWidth>
-                      <InboxPage />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/whatsapp-inbox/:sessionId"
-                  element={
-                    <Layout fullWidth>
-                      <InboxPage />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/whatsapp-chat/:conversationId"
-                  element={
-                    <Layout fullWidth>
-                      <InboxChat />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/moderator-dashboard"
-                  element={
-                    <Layout>
-                      <ModeratorDashboard />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/settings/whatsapp-numbers"
-                  element={
-                    <Layout>
-                      <WhatsAppNumberSettings />
-                    </Layout>
-                  }
-                />
-                <Route
                   path="/settings/roles"
                   element={<Navigate to="/roles" replace />}
-                />
-                <Route
-                  path="/settings/inbox"
-                  element={
-                    <Layout>
-                      <InboxSettingsPage />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/notifications/inbox"
-                  element={
-                    <Layout>
-                      <InboxNotifications />
-                    </Layout>
-                  }
                 />
                 <Route
                   path="/appointments"
@@ -3931,66 +3707,10 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/analytics/orders/regions"
+                  path="/unified-inbox"
                   element={
-                    <Layout>
-                      <RegionAnalytics />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/analytics/orders/returns"
-                  element={
-                    <Layout>
-                      <ReturnsAnalytics />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/analytics/orders/funnel"
-                  element={
-                    <Layout>
-                      <FunnelAnalytics />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/analytics/orders/conversion"
-                  element={
-                    <Layout>
-                      <ConversionRateAnalytics />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/analytics/orders/team-performance"
-                  element={
-                    <Layout>
-                      <TeamPerformanceAnalytics />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/analytics/orders/abandoned-cart"
-                  element={
-                    <Layout>
-                      <AbandonedCartAnalytics />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/inventory/reports"
-                  element={
-                    <Layout>
-                      <InventoryReports />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/coupons"
-                  element={
-                    <Layout>
-                      <Coupons />
+                    <Layout fullWidth>
+                      <UnifiedInbox />
                     </Layout>
                   }
                 />
@@ -5203,63 +4923,6 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
-                {/* WhatsApp Routes */}
-                <Route
-                  path="/whatsapp"
-                  element={
-                    <Layout>
-                      <WhatsAppChat />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/whatsapp/chat"
-                  element={
-                    <Layout>
-                      <WhatsAppChat />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/whatsapp/settings"
-                  element={
-                    <Layout>
-                      <WhatsAppSettings />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/whatsapp/notifications"
-                  element={
-                    <Layout>
-                      <WhatsAppNotifications />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/whatsapp/templates"
-                  element={
-                    <Layout>
-                      <WhatsAppTemplates />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/whatsapp/customer-journey"
-                  element={
-                    <Layout>
-                      <WhatsAppCustomerJourney />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/whatsapp/analytics"
-                  element={
-                    <Layout>
-                      <WhatsAppAnalytics />
-                    </Layout>
-                  }
-                />
                 {/* HR Routes */}
                 <Route
                   path="/hr"
@@ -6370,10 +6033,6 @@ const AppContent = () => {
                 {/* Gamification Public Route */}
                 <Route
                   path="/super-admin/dev-leaderboard"
-                  element={<Navigate to="/auth/login" replace />}
-                />
-                <Route
-                  path="/whatsapp/*"
                   element={<Navigate to="/auth/login" replace />}
                 />
                 <Route

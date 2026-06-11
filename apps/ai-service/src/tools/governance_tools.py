@@ -9,14 +9,6 @@ from src.tools.backend_client import get_backend_client
 logger = structlog.get_logger(__name__)
 
 
-async def send_whatsapp(
-    company_id: str, phone: str, message: str
-) -> dict[str, Any]:
-    """Send a WhatsApp message to a customer."""
-    client = get_backend_client()
-    return await client.send_whatsapp_message(company_id, phone, message)
-
-
 async def send_facebook_reply(
     company_id: str,
     recipient_id: str,

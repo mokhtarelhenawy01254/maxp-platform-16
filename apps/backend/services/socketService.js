@@ -348,18 +348,6 @@ class SocketService {
           users: companyUsers
         });
 
-        // 📡 Emit current WhatsApp session statuses to the newly joined user
-        try {
-          const WhatsAppManager = require('./whatsapp/WhatsAppManager');
-          if (typeof WhatsAppManager.emitSessionStatusesForCompany === 'function') {
-            WhatsAppManager.emitSessionStatusesForCompany(companyId);
-            console.log(`📡 [SOCKET] Emitted WhatsApp session statuses for company ${companyId} to newly joined user`);
-          }
-        } catch (waErr) {
-          // WhatsAppManager might not be loaded yet - that's OK
-          console.log(`⚠️ [SOCKET] Could not emit WhatsApp statuses: ${waErr.message}`);
-        }
-
     this.logSecurityEvent('user_joined', {
       socketId: socket.id,
       userId,

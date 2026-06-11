@@ -95,7 +95,6 @@ const createFrontendStaticFallback = () => {
 const telegramAlertService = require("./services/telegramAlertService");
 const {
   getReasonMessage,
-  isWhatsAppBaileysConnectionClosed,
 } = require("./utils/recoverableUnhandledRejection");
 
 
@@ -116,11 +115,6 @@ process.on("uncaughtException", async (error) => {
 
 process.on("unhandledRejection", async (reason, promise) => {
   const msg = getReasonMessage(reason);
-  if (isWhatsAppBaileysConnectionClosed(reason)) {
-    console.warn("⚠️ [SERVER] Recoverable WhatsApp socket rejection ignored:", msg);
-    return;
-  }
-
   console.error("🔥 FATAL UNHANDLED REJECTION:", reason);
   try {
     const stack = reason && reason.stack ? reason.stack : "";
@@ -167,7 +161,6 @@ const activityLogRoutes = require("./routes/activityLogRoutes");
 const adminAnalyticsRoutes = require("./routes/adminAnalyticsRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const adminCompanyRoutes = require("./routes/adminCompanyRoutes");
-const adminWhatsAppRoutes = require("./routes/adminWhatsAppRoutes");
 const adminPlansRoutes = require("./routes/adminPlansRoutes");
 const affiliateRoutes = require("./routes/affiliateRoutes");
 const affiliateSettingsRoutes = require("./routes/affiliateSettingsRoutes");
@@ -284,14 +277,9 @@ const turboWebhookRoutes = require("./routes/turboWebhook");
 const walletPaymentRoutes = require("./routes/walletPayment");
 const warehouseRoutes = require("./routes/warehouseRoutes");
 const webhookRoutes = require("./routes/webhookRoutes");
-const whatsappRoutes = require("./routes/whatsappRoutes");
-const whatsappMetaWebhookRoutes = require("./routes/whatsappMetaWebhookRoutes");
-const whatsappAutomationRoutes = require("./routes/whatsappAutomationRoutes");
 const unifiedInboxRoutes = require("./routes/unifiedInboxRoutes");
-const whatsappInboxRoutes = require("./routes/whatsappInboxRoutes");
 const moderatorDashboardRoutes = require("./routes/moderatorDashboardRoutes");
 const internalNotesRoutes = require("./routes/internalNotesRoutes");
-const whatsappNumberAssignmentRoutes = require("./routes/whatsappNumberAssignmentRoutes");
 const moderatorNotificationRoutes = require("./routes/moderatorNotificationRoutes");
 const rbacAdminRoutes = require("./routes/rbacAdminRoutes");
 const inboxSettingsRoutes = require("./routes/inboxSettingsRoutes");
@@ -322,13 +310,10 @@ const billingRoutes = require("./routes/billingRoutes");
 
 // Billing Cron Service
 const billingCronService = require("./services/billingCronService");
-const whatsappNotificationRoutes = require("./routes/whatsappNotificationRoutes");
-const WhatsAppNotificationService = require("./services/whatsapp/WhatsAppNotificationService");
 const errorRoutes = require("./routes/errorRoutes");
 
 // Services & Middleware
 const telegramBotService = require("./services/TelegramBotService");
-const WhatsAppManager = require("./services/whatsapp/WhatsAppManager");
 const { initializeSharedDatabase } = require("./services/sharedDatabase");
 const { initializePostgresDatabase } = require("./services/postgresDatabase");
 const {
@@ -424,8 +409,7 @@ const shouldCaptureRawJsonBody = (req) => {
   const requestPath = req.originalUrl?.split('?')[0] || req.path || '';
   return (
     requestPath.startsWith('/api/v1/webhook') ||
-    requestPath.startsWith('/api/v1/webhooks') ||
-    requestPath.startsWith('/api/v1/whatsapp-meta')
+    requestPath.startsWith('/api/v1/webhooks')
   );
 };
 
@@ -478,7 +462,6 @@ app.use(createFrontendStaticFallback());
 // `/api/v1/webhook` while newer internal code may use `/api/v1/webhooks`.
 app.use("/api/v1/webhook", webhookRoutes);
 app.use("/api/v1/webhooks", webhookRoutes);
-app.use("/api/v1/whatsapp-meta", whatsappMetaWebhookRoutes);
 app.use("/api/v1/turbo-webhook", turboWebhookRoutes);
 app.use("/api/v1/health", healthRoute);
 app.use("/api/geolocation", geolocationRoutes);
@@ -534,7 +517,9 @@ app.use("/uploads", async (req, res, next) => {
         error: "Asset Not Found",
         message: "الملف المطلوب غير موجود",
         path: `/uploads${req.path}`,
-      });
+});
+
+// Memory pressure monitor - warn when memory is critically low
     }
 
     const optimizedVariant = await resolveOptimizedUploadVariant({
@@ -608,20 +593,10 @@ app.use("/api/v1/agent-inbox", agentInboxRoutes);
 app.use("/api/v1/comments", commentRoutes);
 app.use("/api/v1/saved-replies", savedRepliesRoutes);
 app.use("/api/v1/unified-inbox", unifiedInboxRoutes);
-app.use("/api/v1/whatsapp", whatsappRoutes);
-app.use("/api/v1/whatsapp-automation", whatsappAutomationRoutes);
-app.use("/api/v1/whatsapp/automation", whatsappAutomationRoutes);
 app.use("/api/v1/telegram", telegramRoutes);
 app.use("/api/v1/telegram-advanced", telegramAdvancedRoutes);
 app.use("/api/v1/userbot", userbotRoutes);
-app.use("/api/v1/whatsapp-notifications", whatsappNotificationRoutes);
-
-// ─── WhatsApp Inbox CRM (Number-Based Permissions) ──────────────
-app.use("/api/v1/whatsapp-inbox", whatsappInboxRoutes);
-app.use("/api/v1/moderator-dashboard", moderatorDashboardRoutes);
-app.use("/api/v1/internal-notes", internalNotesRoutes);
-app.use("/api/v1/admin/whatsapp-numbers", whatsappNumberAssignmentRoutes);
-app.use("/api/v1/notifications/inbox", moderatorNotificationRoutes);
+app.use("/api/v1/telegram", telegramRoutes);
 app.use("/api/v1/admin/rbac", rbacAdminRoutes);
 app.use("/api/v1/inbox-settings", inboxSettingsRoutes);
 
@@ -698,7 +673,6 @@ app.use(
 );
 app.use("/api/v1/wallet-payment", walletPaymentRoutes);
 app.use("/api/v1/admin/companies", adminCompanyRoutes);
-app.use("/api/v1/admin/whatsapp", adminWhatsAppRoutes);
 app.use("/api/v1/admin/wallet", adminWalletRoutes);
 app.use("/api/v1/admin/payments", paymentRoutes);
 app.use("/api/v1/admin/invoices", invoiceRoutes);
@@ -835,17 +809,6 @@ try {
 } catch (error) {
   console.error(
     "❌ [ATTENDANCE-CRON] Failed to start Attendance Auto Checkout Service:",
-    error,
-  );
-}
-
-try {
-  const whatsappAssignmentEngineService = require("./services/whatsappAssignmentEngineService");
-  whatsappAssignmentEngineService.startBackgroundMonitor();
-  console.log("✅ [WHATSAPP-INBOX] Auto reassignment monitor started");
-} catch (error) {
-  console.error(
-    "❌ [WHATSAPP-INBOX] Failed to start auto reassignment monitor:",
     error,
   );
 }
@@ -1045,9 +1008,6 @@ async function startServer() {
     await telegramBotService.initialize();
     console.log("✅ [SERVER] Telegram Bot initialized");
 
-    await WhatsAppManager.restoreAllSessions();
-    console.log("✅ [SERVER] WhatsApp Sessions Restored");
-
     const { startTelegramScheduler } = require("./cron/telegramScheduler");
     startTelegramScheduler();
 
@@ -1061,10 +1021,6 @@ async function startServer() {
 }
 
 process.on("unhandledRejection", (reason, promise) => {
-  if (isWhatsAppBaileysConnectionClosed(reason)) {
-    return;
-  }
-
   const reasonStr = getReasonMessage(reason);
   const mem = process.memoryUsage();
   console.error(
