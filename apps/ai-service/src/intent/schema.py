@@ -35,6 +35,7 @@ class Intent(str, Enum):
     ORDERS = "orders"
     INVENTORY = "inventory"
     PRODUCTS = "products"
+    CATALOG_CATEGORIES = "catalog.categories"
     SHIPPING_RATES = "shipping.rates"
     SUPPORT_EXCHANGE = "support.exchange"
     SUPPORT_REFUND = "support.refund"
@@ -237,6 +238,13 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS],
     },
+    "catalog.categories": {
+        "actionType": "read",
+        "riskLevel": "low",
+        "nextState": "read_catalog_categories",
+        "requiredSlots": [],
+        "guardrails": [*DEFAULT_GUARDRAILS],
+    },
     "shipping.rates": {
         "actionType": "read",
         "riskLevel": "medium",
@@ -323,15 +331,24 @@ INTENT_CONFIGURED_TOOLS: dict[str, dict[str, Any]] = {
         "primaryTool": "product_search",
         "allowedTools": [
             "product_search",
+            "category_list",
             "product_low_stock",
             "product_top_selling",
             "inventory_check",
+        ],
+    },
+    "catalog.categories": {
+        "primaryTool": "category_list",
+        "allowedTools": [
+            "category_list",
+            "product_search",
         ],
     },
     "products.read": {
         "primaryTool": "product_search",
         "allowedTools": [
             "product_search",
+            "category_list",
             "product_low_stock",
             "product_top_selling",
             "inventory_check",

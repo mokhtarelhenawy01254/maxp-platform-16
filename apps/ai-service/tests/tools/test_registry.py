@@ -27,6 +27,7 @@ from src.tools.registry import (
     order_cancel,
     order_create_confirmed,
     order_create_confirmed_tool,
+    product_search,
     resolve_tools_from_names,
 )
 
@@ -98,6 +99,59 @@ def test_product_search_input():
     inp = ProductSearchInput(query="test query")
     assert inp.query == "test query"
     assert inp.company_id is None
+
+
+@pytest.mark.asyncio
+async def test_product_search_uses_image_embedding_when_image_is_provided(monkeypatch):
+    captured = {}
+
+    async def fake_vector_product_search(**kwargs):
+        captured.update(kwargs)
+        return [{"name": "Visual Match", "score": 0.91}]
+
+    monkeypatch.setattr("src.tools.registry.vector_product_search", fake_vector_product_search)
+
+    result = await product_search(ProductSearchInput(
+        query="do you have this?",
+        image_bytes="aGVsbG8=",
+        mime_type="image/png",
+        company_id="comp1",
+    ))
+
+    assert result["searchType"] == "image_semantic"
+    assert result["results"] == [{"name": "Visual Match", "score": 0.91}]
+    assert captured["company_id"] == "comp1"
+    assert captured["query"] == "do you have this?"
+    assert captured["image_bytes"] == b"hello"
+    assert captured["mime_type"] == "image/png"
+
+
+@pytest.mark.asyncio
+async def test_product_search_downloads_image_url_for_visual_search(monkeypatch):
+    captured = {}
+
+    async def fake_download_image_url(url: str):
+        captured["download_url"] = url
+        return b"image-bytes", "image/jpeg"
+
+    async def fake_vector_product_search(**kwargs):
+        captured.update(kwargs)
+        return [{"name": "URL Visual Match", "score": 0.88}]
+
+    monkeypatch.setattr("src.tools.registry._download_image_url", fake_download_image_url)
+    monkeypatch.setattr("src.tools.registry.vector_product_search", fake_vector_product_search)
+
+    result = await product_search(ProductSearchInput(
+        query="is this available?",
+        image_url="https://cdn.example.com/photo.jpg",
+        company_id="comp1",
+    ))
+
+    assert result["searchType"] == "image_semantic"
+    assert result["results"] == [{"name": "URL Visual Match", "score": 0.88}]
+    assert captured["download_url"] == "https://cdn.example.com/photo.jpg"
+    assert captured["image_bytes"] == b"image-bytes"
+    assert captured["mime_type"] == "image/jpeg"
 
 
 def test_order_lookup_input():

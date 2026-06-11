@@ -41,10 +41,10 @@ router.post('/agents/chat', async (req, res) => {
     if (!agentId) return res.status(400).json({ success: false, error: 'agentId is required' });
 
     const result = await aiServiceAdminClient.chatWithAgent({ companyId, agentId, message, threadId });
-    if (!result.ok) {
-      return res.status(result.status || 502).json({ success: false, error: result.data?.error || result.error || 'ai-service unreachable' });
+    if (!result) {
+      return res.status(502).json({ success: false, error: 'ai-service unreachable or returned an error' });
     }
-    return res.json(result.data);
+    return res.json(result);
   } catch (error) {
     console.error('[ai-proxy] agent chat failed:', error.message);
     return res.status(502).json({ success: false, error: error.message });

@@ -493,7 +493,7 @@ export function useAgentSandbox() {
   }, []);
 
   const sendMessage = useCallback(
-    async (message: string, attachments?: Array<{ type: string; url: string }>) => {
+    async (message: string, attachments?: Array<{ type: string; url: string; dataUrl?: string; base64Data?: string }>) => {
       const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
       if ((!message.trim() && !hasAttachments) || isLoading) return;
       if (!selectedModel || !selectedProvider || !selectedKeyId) {

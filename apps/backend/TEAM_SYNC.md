@@ -1,3 +1,37 @@
+## [2026-03-09] AI Service — Intent Classifier & Routing System Health [DONE]
+- **Objective**: Fix the classifier routing fallback loop that skipped the GOOGLE provider, align test expectations with current architecture (fallback chains, allowed tools during classifier unavailability, catalog.categories intent), and restore fallback mappings for order totals.
+- **Accomplishments**:
+  - **Classifier Provider Routing Bug**: Fixed `classifier.py`'s loop to construct the client at attempt index 0, restoring the primary GOOGLE provider as the default for text classification turns.
+  - **Planner Health**: Updated the planner to allow tool execution when the classifier is unavailable, giving the LLM conversational agent chance to call tools. Updated test assertions to check for `requiresTool is True` under this fallback scenario.
+  - **Prompt Safe-guarding**: Fixed fallback stage prompts to always inform the LLM when the classifier is offline, preventing hallucination.
+  - **Tool Parameter Mapping**: Restored order total fallback mappings in `route_to_tools.py` so order parameters populate correctly from product price slots.
+  - **Evaluation Suite Alignment**: Aligned `test_sprint1_migration.py` and evaluation cases with new dynamic intents like `catalog.categories`.
+- **Files**:
+  - `apps/ai-service/src/intent/classifier.py`
+  - `apps/ai-service/src/intent/planner.py`
+  - `apps/ai-service/src/pipeline/stages/handle_fallback.py`
+  - `apps/ai-service/src/pipeline/stages/route_to_tools.py`
+  - `apps/ai-service/tests/intent/test_classifier.py`
+  - `apps/ai-service/tests/intent/test_planner.py`
+  - `apps/ai-service/tests/pipeline/test_handle_fallback.py`
+  - `apps/ai-service/tests/evals/test_sprint1_migration.py`
+  - `apps/ai-service/tests/evals/test_intent_golden_cases.py`
+
+## [2026-03-09] AI Hub — Sandbox File Upload & Missing Image Embeddings Fix [DONE]
+- **Objective**: Implement drag & drop/file upload inside the AI Sandbox ChatArea, backfill missing product image embeddings for products with dead URLs, and improve pseudo-embedding logging.
+- **Accomplishments**:
+  - **Sandbox Drag & Drop / File Browser Upload**: Updated `ChatArea.tsx` to handle file selections and drag-and-drop. Auto-resizes selected files to max 800px on either dimension, compresses to JPEG 0.85, and sends them as `dataUrl` and `base64Data` attachments. Added localization keys to Arabic & English `translation.json` files and verified the UI loads properly using a Playwright browser test.
+  - **Backfilled Missing Product Image Embeddings**: Identified 7 products with missing image embeddings because their Unsplash URLs returned 404 (Not Found). Replaced the dead Unsplash URLs with working ones in the database and executed an index/embedding script. All active products now have correct Gemini Multimodal API image embeddings.
+  - **Observability for Pseudo-Embeddings**: Added explicit warning logs in python AI-service (`episodic_memory.py` and `vector_product_search.py`) whenever a pseudo-embedding fallback is triggered or utilized in semantic search queries.
+  - **Documentation Sync**: Updated `Bugs.md`, `Structure.md`, and `TEAM_SYNC.md` in `apps/backend`.
+- **Files**:
+  - `apps/frontend/src/pages/admin/ai-agent-sandbox/components/ChatArea.tsx`
+  - `apps/frontend/src/locales/en/translation.json`
+  - `apps/frontend/src/locales/ar/translation.json`
+  - `apps/ai-service/src/memory/episodic_memory.py`
+  - `apps/ai-service/src/tools/vector_product_search.py`
+  - Database: `products` table mainImage & embeddingImage columns updated for 7 IDs.
+
 ## [2026-06-10] Section Guide Feature — Help Icon in Every Section [DONE]
 - **Objective**: Add a help icon (`?`) in the global header that opens a dialog showing a step-by-step guide with optional video for each admin section, so merchants can learn how to use each part of the dashboard without leaving the page.
 - **Accomplishments**:

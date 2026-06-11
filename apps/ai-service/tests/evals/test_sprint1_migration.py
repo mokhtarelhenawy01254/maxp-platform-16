@@ -49,8 +49,8 @@ class TestIntentSchema:
         assert SCHEMA_VERSION == "1.0.0"
 
     def test_intent_enum_count(self):
-        """Should have 24 intents matching Node.js."""
-        assert len(INTENT_ENUM) == 24
+        """Should have 25 intents matching Node.js."""
+        assert len(INTENT_ENUM) == 25
         assert Intent.GENERAL_CHAT.value in INTENT_ENUM
         assert Intent.SUPPORT_REFUND.value in INTENT_ENUM
         assert Intent.ORDERS_CREATE_DRAFT.value in INTENT_ENUM
@@ -74,6 +74,7 @@ class TestIntentSchema:
             "orders",
             "inventory",
             "products",
+            "catalog.categories",
             "shipping.rates",
             "support.exchange",
             "support.refund",

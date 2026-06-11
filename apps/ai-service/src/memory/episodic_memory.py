@@ -80,21 +80,25 @@ class EpisodicMemoryService:
                 mime_type=mime_type,
             )
             if cached and cached.get("vector"):
+                cached_provider = cached.get("provider", EMBEDDING_PROVIDER_GEMINI)
                 return {
                     "vector": cached["vector"],
-                    "provider": cached.get("provider", EMBEDDING_PROVIDER_GEMINI),
+                    "provider": cached_provider,
                     "model": model_name,
                     "dimension": dimension,
                     "cached": True,
+                    "is_pseudo": cached_provider == EMBEDDING_PROVIDER_PSEUDO,
                 }
 
         if not api_key:
+            logger.warning("GenerativeLanguage API key not configured. Generating positional hash pseudo embedding fallback.")
             return {
                 "vector": self._generate_pseudo_embedding(cache_text, dimension),
                 "provider": EMBEDDING_PROVIDER_PSEUDO,
                 "model": model_name,
                 "dimension": dimension,
                 "cached": False,
+                "is_pseudo": True,
             }
 
         try:
@@ -137,9 +141,18 @@ class EpisodicMemoryService:
                         "model": model_name,
                         "dimension": dimension,
                         "cached": False,
+                        "is_pseudo": False,
                     }
+                else:
+                    logger.warning("GenerativeLanguage API response empty or invalid. Falling back to pseudo embedding.")
+            else:
+                logger.warning(
+                    "GenerativeLanguage API request failed. Falling back to pseudo embedding.",
+                    status_code=response.status_code,
+                    body=response.text[:500]
+                )
         except Exception as exc:
-            logger.warning("embedding API failed, falling back to pseudo", error=str(exc))
+            logger.warning("GenerativeLanguage embedding API call failed. Generating positional hash pseudo embedding fallback.", error=str(exc))
 
         return {
             "vector": self._generate_pseudo_embedding(cache_text, dimension),
@@ -147,6 +160,7 @@ class EpisodicMemoryService:
             "model": model_name,
             "dimension": dimension,
             "cached": False,
+            "is_pseudo": True,
         }
 
     def cosine_similarity(self, vec_a: list[float], vec_b: list[float]) -> float:

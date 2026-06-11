@@ -87,6 +87,133 @@ async def test_route_to_tools_disables_product_search_vector_when_external_embed
 
 
 @pytest.mark.asyncio
+async def test_route_to_tools_passes_customer_image_to_product_search():
+    ctx = PipelineContext(
+        message="do you have this?",
+        thread_id="thread-1",
+        company_id="comp1",
+        customer_id="cust1",
+        channel="facebook",
+        attachments=[{
+            "type": "image",
+            "base64_data": "aGVsbG8=",
+            "mime_type": "image/png",
+        }],
+    )
+    ctx.relevance_plan = ToolPlan(
+        intent="products",
+        requiresTool=True,
+        primaryTool="product.search",
+        allowedTools=["product.search"],
+        reason="classified by model",
+    )
+    ctx.native_tools = [{"name": "product_search"}]
+
+    result = await route_to_tools(ctx)
+
+    params = result.execution_plan["deterministicReadExecution"]["params"]
+    assert params["query"] == "do you have this?"
+    assert params["image_bytes"] == "aGVsbG8="
+    assert params["mime_type"] == "image/png"
+
+
+@pytest.mark.asyncio
+async def test_route_to_tools_passes_customer_image_url_to_product_search():
+    ctx = PipelineContext(
+        message="do you have this?",
+        thread_id="thread-1",
+        company_id="comp1",
+        customer_id="cust1",
+        channel="facebook",
+        attachments=[{
+            "type": "image",
+            "url": "https://cdn.example.com/photo.jpg",
+        }],
+    )
+    ctx.relevance_plan = ToolPlan(
+        intent="products",
+        requiresTool=True,
+        primaryTool="product.search",
+        allowedTools=["product.search"],
+        reason="classified by model",
+    )
+    ctx.native_tools = [{"name": "product_search"}]
+
+    result = await route_to_tools(ctx)
+
+    params = result.execution_plan["deterministicReadExecution"]["params"]
+    assert params["query"] == "do you have this?"
+    assert params["image_url"] == "https://cdn.example.com/photo.jpg"
+    assert params["mime_type"] == "image/jpeg"
+
+
+@pytest.mark.asyncio
+async def test_route_to_tools_keeps_image_search_when_external_embeddings_are_disabled():
+    ctx = PipelineContext(
+        message="do you have this?",
+        thread_id="thread-1",
+        company_id="comp1",
+        customer_id="cust1",
+        channel="facebook",
+        external_memory_context={DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL: True},
+        attachments=[{
+            "type": "image",
+            "url": "https://cdn.example.com/photo.jpg",
+        }],
+    )
+    ctx.relevance_plan = ToolPlan(
+        intent="products",
+        requiresTool=True,
+        primaryTool="product.search",
+        allowedTools=["product.search"],
+        reason="classified by model",
+    )
+    ctx.native_tools = [{"name": "product_search"}]
+
+    result = await route_to_tools(ctx)
+
+    params = result.execution_plan["deterministicReadExecution"]["params"]
+    assert params["query"] == "do you have this?"
+    assert params["image_url"] == "https://cdn.example.com/photo.jpg"
+    assert "use_vector" not in params
+
+
+@pytest.mark.asyncio
+async def test_route_to_tools_prefers_product_search_for_customer_image_when_inventory_is_primary():
+    ctx = PipelineContext(
+        message="do you have the product in this photo?",
+        thread_id="thread-1",
+        company_id="comp1",
+        customer_id="cust1",
+        channel="facebook",
+        external_memory_context={DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL: True},
+        attachments=[{
+            "type": "image",
+            "url": "https://cdn.example.com/photo.jpg",
+        }],
+    )
+    ctx.relevance_plan = ToolPlan(
+        intent="inventory",
+        requiresTool=True,
+        primaryTool="inventory.check",
+        allowedTools=["inventory.check", "product.search"],
+        slots={"productName": "vision model guess"},
+        reason="classified by model",
+    )
+    ctx.native_tools = [{"name": "inventory_check"}, {"name": "product_search"}]
+
+    result = await route_to_tools(ctx)
+
+    execution = result.execution_plan["deterministicReadExecution"]
+    assert execution["nativeName"] == "product.search"
+    params = execution["params"]
+    assert params["query"] == "do you have the product in this photo?"
+    assert params["image_url"] == "https://cdn.example.com/photo.jpg"
+    assert params["mime_type"] == "image/jpeg"
+    assert "use_vector" not in params
+
+
+@pytest.mark.asyncio
 async def test_route_to_tools_disables_inventory_vector_when_external_embeddings_disabled():
     ctx = PipelineContext(
         message="Sprint X size 42 black",
@@ -280,6 +407,7 @@ async def test_route_to_tools_populates_write_tool_params_from_model_slots():
         "quantity": "2",
         "address": "Nasr City",
         "city": "Cairo",
+        "total": "1200",
     }
 
 
@@ -330,6 +458,7 @@ async def test_route_to_tools_populates_confirmed_order_params_from_model_slots(
         "address": "Nasr City",
         "city": "Cairo",
         "confirmed_by_customer": True,
+        "total": "1499",
     }
 
 

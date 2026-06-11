@@ -8,13 +8,78 @@ from src.tools.backend_client import get_backend_client
 
 logger = structlog.get_logger(__name__)
 
+_VARIANT_SIZE_ALIASES = {"size", "Size", "مقاس", "المقاس"}
+_VARIANT_COLOR_ALIASES = {"color", "Color", "لون", "اللون"}
+
+
+def _aggregate_variants(
+    variants: list[dict[str, Any]], aliases: set[str],
+) -> list[dict[str, Any]]:
+    """Filter and map variants whose type matches one of the given aliases."""
+    result: list[dict[str, Any]] = []
+    for v in variants:
+        vtype = (v.get("type") or "").strip()
+        if vtype not in aliases:
+            continue
+        stock = v.get("stock", 0)
+        track = v.get("trackInventory", True)
+        if stock is None:
+            stock = 0
+        result.append({
+            "value": v.get("name", ""),
+            "sku": v.get("sku"),
+            "stock": stock,
+            "status": "AVAILABLE" if not track else (
+                "OUT_OF_STOCK" if stock <= 0 else (
+                    "LOW_STOCK" if 0 < stock <= 5 else "IN_STOCK"
+                )
+            ),
+        })
+    return result
+
+
+def _map_product(p: dict[str, Any]) -> dict[str, Any]:
+    """Map a single product dict from the bridge into the agent-facing format."""
+    variants = p.get("productVariants") or []
+    size_variants = _aggregate_variants(variants, _VARIANT_SIZE_ALIASES)
+    color_variants = _aggregate_variants(variants, _VARIANT_COLOR_ALIASES)
+
+    return {
+        "name": p.get("name"),
+        "sku": p.get("sku"),
+        "price": p.get("price"),
+        "comparePrice": p.get("comparePrice"),
+        "stock": p.get("stock"),
+        "status": _availability_status(p),
+        "categoryName": _nested(p, "category", "name"),
+        "featured": bool(p.get("isFeatured")),
+        "images": _parse_images(p),
+        "availableSizes": size_variants,
+        "availableColors": color_variants,
+    }
+
 
 async def search_products(
-    company_id: str, query: str, limit: int = 5, use_vector: bool = True
+    company_id: str,
+    query: str,
+    limit: int = 5,
+    use_vector: bool = True,
+    product_size: str | None = None,
+    product_color: str | None = None,
+    conversation_id: str | None = None,
+    references_previous_product: bool | None = None,
 ) -> dict[str, Any]:
     """Search active catalog products by name or SKU. Empty query returns all products."""
     client = get_backend_client()
-    products = await client.search_products(company_id, query, limit=limit, use_vector=use_vector)
+    products = await client.search_products(
+        company_id, query,
+        limit=limit,
+        use_vector=use_vector,
+        product_size=product_size,
+        product_color=product_color,
+        conversation_id=conversation_id,
+        references_previous_product=references_previous_product,
+    )
 
     if not products:
         return {
@@ -24,19 +89,7 @@ async def search_products(
             "products": [],
         }
 
-    mapped = []
-    for p in products:
-        mapped.append({
-            "name": p.get("name"),
-            "sku": p.get("sku"),
-            "price": p.get("price"),
-            "comparePrice": p.get("comparePrice"),
-            "stock": p.get("stock"),
-            "status": _availability_status(p),
-            "categoryName": _nested(p, "category", "name"),
-            "featured": bool(p.get("isFeatured")),
-            "images": _parse_images(p),
-        })
+    mapped = [_map_product(p) for p in products]
 
     return {
         "found": True,
@@ -90,6 +143,48 @@ async def top_selling_products(
         })
 
     return {"count": len(result), "products": result}
+
+
+async def list_categories(
+    company_id: str,
+    limit: int = 50,
+) -> dict[str, Any]:
+    """List all available product categories by scanning the catalog."""
+    mapped = await search_products(
+        company_id=company_id,
+        query="",
+        limit=limit,
+        use_vector=False,
+    )
+
+    categories: dict[str, list[dict[str, Any]]] = {}
+    products = mapped.get("products", [])
+    for p in products:
+        cat_name = p.get("categoryName")
+        if cat_name:
+            if cat_name not in categories:
+                categories[cat_name] = []
+            categories[cat_name].append({
+                "name": p.get("name"),
+                "sku": p.get("sku"),
+                "price": p.get("price"),
+                "stock": p.get("stock"),
+                "status": p.get("status"),
+            })
+
+    result = []
+    for cat_name, cat_products in sorted(categories.items()):
+        result.append({
+            "category": cat_name,
+            "productCount": len(cat_products),
+            "products": cat_products,
+        })
+
+    return {
+        "found": len(result) > 0,
+        "count": len(result),
+        "categories": result,
+    }
 
 
 def _availability_status(product: dict[str, Any]) -> str:

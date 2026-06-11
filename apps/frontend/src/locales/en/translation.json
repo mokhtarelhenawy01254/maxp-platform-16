@@ -208,7 +208,11 @@
         "messagePlaceholder": "Message {{agentName}}...",
         "selectCentralModel": "Select a central model to start chatting",
         "configureApiKey": "Configure your API key in the HeaderBar",
-        "sendMessage": "Send message"
+        "sendMessage": "Send message",
+        "dragDropImage": "Drag & drop an image here, or",
+        "browse": "browse",
+        "supportedFormats": "Supports JPEG, PNG, WebP (auto-resized under 1MB)",
+        "orPasteUrl": "Or paste url"
       },
       "trace": {
         "title": "Run trace",
@@ -5163,115 +5167,5 @@
     "errorPause": "Error pausing import",
     "errorResume": "Error resuming import",
     "errorCancel": "Error cancelling import"
-  },
-  "guides": {
-    "help": "Section guide",
-    "videoNotSupported": "Your browser does not support the video tag",
-    "dashboard": {
-      "title": "Dashboard",
-      "description": "Overview of your store's performance and quick stats",
-      "step1": "Browse key metrics: sales, orders, visitors at the top",
-      "step2": "Use charts to analyze daily/weekly trends",
-      "step3": "Click any metric to navigate to full details"
-    },
-    "orders": {
-      "title": "Order Management",
-      "description": "View and manage all store orders",
-      "step1": "Browse the order list with search and filter by status and date",
-      "step2": "Click any order to view full details and update status",
-      "step3": "Use bulk actions to process multiple orders at once",
-      "step4": "Track incomplete orders from the pending orders section"
-    },
-    "products": {
-      "title": "Product Management",
-      "description": "Add, edit, and manage all your products",
-      "step1": "Add a new product by clicking the + button at the top",
-      "step2": "Fill in product details: name, price, stock, images",
-      "step3": "Organize products into categories for easy browsing"
-    },
-    "customers": {
-      "title": "Customer Management",
-      "description": "Customer database and communication management",
-      "step1": "Browse customer list and search by name, email, or phone",
-      "step2": "Click a customer to view their orders and full activity",
-      "step3": "Use the export feature to backup customer data"
-    },
-    "inbox": {
-      "title": "Inbox",
-      "description": "Manage customer conversations from all channels in one place",
-      "step1": "Select a conversation from the sidebar to view messages",
-      "step2": "Type your reply in the text box at the bottom of the conversation",
-      "step3": "Use smart lists and quick replies to speed up responses"
-    },
-    "categories": {
-      "title": "Categories",
-      "description": "Organize products into categories and sections",
-      "step1": "Add a new main category or subcategory",
-      "step2": "Drag and drop categories to reorder by priority",
-      "step3": "Link each category with a featured image for the storefront"
-    },
-    "whatsapp": {
-      "title": "WhatsApp",
-      "description": "Manage WhatsApp conversations, templates, and settings",
-      "step1": "Link a WhatsApp number by scanning the QR code in settings",
-      "step2": "Create message templates for quick replies",
-      "step3": "Monitor WhatsApp analytics to measure conversation performance"
-    },
-    "advertising": {
-      "title": "Advertising & Marketing",
-      "description": "Manage ad campaigns and advertisements",
-      "step1": "Create a new campaign and select your target audience",
-      "step2": "Design your ad using available images and videos",
-      "step3": "Track campaign performance through the analytics dashboard"
-    },
-    "affiliates": {
-      "title": "Affiliate System",
-      "description": "Manage affiliates and commissions",
-      "step1": "Add new affiliates from the affiliate management section",
-      "step2": "Set commission rates for each product or category",
-      "step3": "Track commission reports and referred orders"
-    },
-    "hr": {
-      "title": "Human Resources",
-      "description": "Manage employees, attendance, and payroll",
-      "step1": "Add a new employee from the employees section",
-      "step2": "Record employee daily check-in and check-out times",
-      "step3": "Generate monthly payroll reports automatically"
-    },
-    "settings": {
-      "title": "Settings",
-      "description": "Store and company settings",
-      "step1": "Select the section you want to modify from the menu",
-      "step2": "Enter the required data in each section",
-      "step3": "Save changes before moving to another section"
-    },
-    "tasks": {
-      "title": "Tasks",
-      "description": "Manage tasks and projects",
-      "step1": "Create a new task and set its priority and due date",
-      "step2": "Drag and drop tasks between columns to update their status",
-      "step3": "Track tasks from the calendar view or Kanban board"
-    },
-    "reports": {
-      "title": "Reports",
-      "description": "Advanced store performance reports",
-      "step1": "Choose the report type from the menu (profit, shipping, advanced)",
-      "step2": "Set the required date range for analysis",
-      "step3": "Export reports as PDF or Excel for review"
-    },
-    "support": {
-      "title": "Support",
-      "description": "Help center and support tickets",
-      "step1": "Browse FAQs for quick answers",
-      "step2": "Create a new support ticket if you can't find an answer",
-      "step3": "Track your ticket status from the tickets dashboard"
-    },
-    "superAdmin": {
-      "title": "Super Admin",
-      "description": "Platform, company, and user management",
-      "step1": "Browse the list of registered companies on the platform",
-      "step2": "Monitor platform statistics from the dashboard",
-      "step3": "Add or edit AI providers from the settings"
-    }
   }
 }

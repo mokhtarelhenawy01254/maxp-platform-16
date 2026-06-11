@@ -84,7 +84,7 @@ router.post('/approvals/draft', async (req, res) => {
 
 // ── Hybrid product search (embeddings/vector-based) ────────────────
 
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('../prisma/generated/postgresql_v2');
 const unifiedSearchOrchestrator = require('../legacy-ai-agent/aiAgent/utils/UnifiedProductSearchOrchestrator');
 
 router.post('/product-search', async (req, res) => {
@@ -102,6 +102,17 @@ router.post('/product-search', async (req, res) => {
         where: { companyId, deletedAt: null },
         take: safeLimit,
         orderBy: { createdAt: 'desc' },
+        include: {
+          category: { select: { name: true } },
+          productVariants: {
+            where: { isActive: true },
+            orderBy: { sortOrder: 'asc' },
+            select: {
+              name: true, type: true, sku: true, images: true,
+              stock: true, trackInventory: true, isActive: true, metadata: true,
+            },
+          },
+        },
       });
       await prisma.$disconnect();
 
@@ -118,6 +129,14 @@ router.post('/product-search', async (req, res) => {
         images: Array.isArray(p.images) ? p.images : [],
         category: p.category ? { name: p.category.name || p.category } : null,
         searchScore: 1,
+        productVariants: (p.productVariants || []).map(v => ({
+          name: v.name,
+          type: v.type,
+          sku: v.sku,
+          stock: v.stock,
+          trackInventory: v.trackInventory,
+          isActive: v.isActive,
+        })),
       }));
 
       return res.json({
@@ -159,6 +178,14 @@ router.post('/product-search', async (req, res) => {
       images: Array.isArray(p.images) ? p.images : [],
       category: p.category ? { name: p.category.name || p.category } : null,
       searchScore: p.searchScore || 0,
+      productVariants: Array.isArray(p.productVariants) ? p.productVariants.map(v => ({
+        name: v.name,
+        type: v.type,
+        sku: v.sku,
+        stock: v.stock,
+        trackInventory: v.trackInventory,
+        isActive: v.isActive,
+      })) : [],
     }));
 
     return res.json({

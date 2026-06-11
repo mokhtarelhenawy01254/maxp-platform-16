@@ -47,7 +47,7 @@ describe('aiMessageProcessor - channel parameter', () => {
 
   test('Facebook channel routes to the dedicated sales/support agent profile', () => {
     expect(AIMessageProcessor.src).toMatch(/FACEBOOK_AGENT_ROLE\s*=\s*['"]FACEBOOK_SALES_SUPPORT['"]/);
-    expect(AIMessageProcessor.src).toMatch(/includeAllCeoTools:\s*false/);
+    expect(AIMessageProcessor.src).toMatch(/templateSlug:\s*['"]facebook-sales-support-agent['"]/);
     expect(AIMessageProcessor.src).toMatch(/facebook-sales-support-agent/);
   });
 
