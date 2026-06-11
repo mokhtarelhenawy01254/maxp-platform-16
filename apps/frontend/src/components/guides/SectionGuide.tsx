@@ -8,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -24,18 +23,17 @@ export function SectionGuide() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon"
-            className="business-icon-button"
-            aria-label={t("guides.help")}
-          >
-            <QuestionMarkCircleIcon className="h-5 w-5" />
-          </Button>
-        }
-      />
+      <Button
+        variant="ghost"
+        size="icon"
+        className="business-icon-button"
+        aria-label={t("guides.help")}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen(true)}
+      >
+        <QuestionMarkCircleIcon className="h-5 w-5" />
+      </Button>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t(guide.titleKey)}</DialogTitle>

@@ -1,3 +1,10 @@
+## [2026-06-11] Section Guide — DialogTrigger Fix [DONE]
+- **Objective**: Fix the non-functional `?` button — it rendered but clicking did nothing.
+- **Root Cause**: `DialogTrigger render={<Button>...</Button>}` is incompatible with `@base-ui/react@^1.3.0`. The `render` prop cannot merge onClick/ARIA props onto a React element.
+- **Fix**: Reverted to `<Button onClick={() => setOpen(true)}>` with manual ARIA attributes. This is the same controlled-state pattern used by every other dialog in the app.
+- **Files**:
+  - `apps/frontend/src/components/guides/SectionGuide.tsx`
+
 ## [2026-06-11] Section Guide — Accessibility, Performance, and Translation Fix [DONE]
 - **Objective**: Fix the SectionGuide feature to be fully accessible, performant, and properly displaying translations.
 - **Accomplishments**:

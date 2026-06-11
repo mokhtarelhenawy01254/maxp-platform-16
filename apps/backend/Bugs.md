@@ -1,3 +1,10 @@
+## [2026-06-11] Frontend — Section Guide Dialog Not Opening (DialogTrigger render prop incompatible with @base-ui/react@^1.3.0)
+- **Bug/Issue**: The `?` help button rendered in the header but clicking it did not open the dialog. The button was visually present but non-functional.
+- **Root Cause**: `DialogTrigger` with `render={<Button>...</Button>}` pattern does not work with `@base-ui/react@^1.3.0`'s Trigger component. The `render` prop expects a component type or render function, not a React element. When passed a React element, @base-ui cannot merge interactive props (onClick, ARIA attributes) onto it.
+- **Fix**: Reverted to direct `<Button onClick={() => setOpen(true)}>` with manual ARIA attributes (`aria-haspopup="dialog"`, `aria-expanded={open}`, `aria-label={t("guides.help")}`). This matches the controlled state pattern used by all other dialogs in the app and is compatible with @base-ui/react's Dialog component.
+- **Affected Files**:
+  - `apps/frontend/src/components/guides/SectionGuide.tsx` — removed DialogTrigger, added manual ARIA attributes
+
 ## [2026-06-11] Frontend — Section Guide Missing Accessibility & Translation Cleanup
 - **Bug/Issue**: The `?` help button lacked accessibility attributes — no `aria-label`, `aria-haspopup`, or `aria-expanded`, making it invisible to screen readers. Button used raw `onClick` instead of semantic `DialogTrigger`. Additionally, translation keys were rendering as raw text (`guides.orders.title`) instead of their translated values because the `guides` section had been inadvertently removed from both translation JSON files.
 - **Root Cause**: The previous fix (controlled-state workaround) used a plain `<Button onClick>` without `DialogTrigger`, missing the ARIA attributes that `@base-ui/react/dialog`'s Trigger provides. Translation files were restored from HEAD — the `guides` section was deleted from the working tree at some point after the initial feature commit.
