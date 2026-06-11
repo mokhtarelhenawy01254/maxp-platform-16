@@ -6,7 +6,28 @@ export interface SectionGuideEntry {
   videoUrl?: string;
 }
 
+export const defaultSectionGuide: SectionGuideEntry = {
+  pathPrefix: "*",
+  titleKey: "guides.general.title",
+  descriptionKey: "guides.general.description",
+  stepKeys: [
+    "guides.general.step1",
+    "guides.general.step2",
+    "guides.general.step3",
+  ],
+};
+
 export const sectionGuideRegistry: SectionGuideEntry[] = [
+  {
+    pathPrefix: "/company-dashboard",
+    titleKey: "guides.dashboard.title",
+    descriptionKey: "guides.dashboard.description",
+    stepKeys: [
+      "guides.dashboard.step1",
+      "guides.dashboard.step2",
+      "guides.dashboard.step3",
+    ],
+  },
   {
     pathPrefix: "/orders",
     titleKey: "guides.orders.title",
@@ -49,6 +70,36 @@ export const sectionGuideRegistry: SectionGuideEntry[] = [
     ],
   },
   {
+    pathPrefix: "/facebook-inbox",
+    titleKey: "guides.inbox.title",
+    descriptionKey: "guides.inbox.description",
+    stepKeys: [
+      "guides.inbox.step1",
+      "guides.inbox.step2",
+      "guides.inbox.step3",
+    ],
+  },
+  {
+    pathPrefix: "/instagram-inbox",
+    titleKey: "guides.inbox.title",
+    descriptionKey: "guides.inbox.description",
+    stepKeys: [
+      "guides.inbox.step1",
+      "guides.inbox.step2",
+      "guides.inbox.step3",
+    ],
+  },
+  {
+    pathPrefix: "/unified-inbox",
+    titleKey: "guides.inbox.title",
+    descriptionKey: "guides.inbox.description",
+    stepKeys: [
+      "guides.inbox.step1",
+      "guides.inbox.step2",
+      "guides.inbox.step3",
+    ],
+  },
+  {
     pathPrefix: "/dashboard",
     titleKey: "guides.dashboard.title",
     descriptionKey: "guides.dashboard.description",
@@ -70,6 +121,16 @@ export const sectionGuideRegistry: SectionGuideEntry[] = [
   },
   {
     pathPrefix: "/whatsapp",
+    titleKey: "guides.whatsapp.title",
+    descriptionKey: "guides.whatsapp.description",
+    stepKeys: [
+      "guides.whatsapp.step1",
+      "guides.whatsapp.step2",
+      "guides.whatsapp.step3",
+    ],
+  },
+  {
+    pathPrefix: "/whatsapp-inbox",
     titleKey: "guides.whatsapp.title",
     descriptionKey: "guides.whatsapp.description",
     stepKeys: [
@@ -151,8 +212,9 @@ export const sectionGuideRegistry: SectionGuideEntry[] = [
 ];
 
 export function findGuideForPath(pathname: string): SectionGuideEntry | undefined {
+  const normalizedPathname = pathname === "/" ? pathname : pathname.replace(/\/+$/, "");
   const sorted = [...sectionGuideRegistry].sort(
     (a, b) => b.pathPrefix.length - a.pathPrefix.length,
   );
-  return sorted.find((entry) => pathname.startsWith(entry.pathPrefix));
+  return sorted.find((entry) => normalizedPathname.startsWith(entry.pathPrefix));
 }

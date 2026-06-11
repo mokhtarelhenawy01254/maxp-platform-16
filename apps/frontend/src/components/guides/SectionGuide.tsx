@@ -11,15 +11,19 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { findGuideForPath } from "@/config/sectionGuideRegistry";
+import {
+  defaultSectionGuide,
+  findGuideForPath,
+} from "@/config/sectionGuideRegistry";
 
 export function SectionGuide() {
   const { t } = useTranslation();
   const location = useLocation();
-  const guide = useMemo(() => findGuideForPath(location.pathname), [location.pathname]);
+  const guide = useMemo(
+    () => findGuideForPath(location.pathname) ?? defaultSectionGuide,
+    [location.pathname],
+  );
   const [open, setOpen] = useState(false);
-
-  if (!guide) return null;
 
   return (
     <>
@@ -35,7 +39,7 @@ export function SectionGuide() {
         <QuestionMarkCircleIcon className="h-5 w-5" />
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg" closeLabel={t("common.close")}>
           <DialogHeader>
             <DialogTitle>{t(guide.titleKey)}</DialogTitle>
             <DialogDescription>{t(guide.descriptionKey)}</DialogDescription>

@@ -1,3 +1,28 @@
+## [2026-06-11] Backend — marketplaceController Leaks Internal Error Messages in Production Responses
+- **Bug/Issue**: All marketplace API error handlers exposed `error: error.message` in JSON responses, leaking internal SQL/stack details to production clients. The `logToFile` utility also ran in production, writing debug logs unnecessarily.
+- **Root Cause**: Error handlers passed the full `error.message` to the response body. `logToFile()` had no environment guard.
+- **Fix**:
+  1. Added `if (process.env.NODE_ENV === 'production') return;` to `logToFile()` — suppresses debug file logging in production.
+  2. Removed `error: error.message` from all 11 error handlers (`getAllApps`, `getAppDetails`, `getCategories`, `getFeaturedApps`, `getBundles`, `installApp`, `uninstallApp`, `addReview`, `getBundleDetails`, `subscribeToBundle`, `subscribeToUnlimited`).
+  3. Fixed garbled Arabic encoding in `installApp`, `uninstallApp`, `addReview` error messages (were showing Mojibake `Ø®Ø·Ø£...`).
+  4. Changed `installApp` error logic to use inline ternary instead of directly exposing `error.message` for `APP_ALREADY_INSTALLED` and `REQUIRED_APPS_MISSING` codes.
+- **Affected Files**:
+  - `apps/backend/controller/marketplaceController.js`
+
+## [2026-06-11] Frontend — SectionGuide defaultSectionGuide Fallback and closeLabel
+- **Bug/Issue**: The `?` help button rendered as a fragment-wrapper inside `SectionGuide.tsx`. When no guide matched the current path, the entire component returned `null` leaving the icon button hidden. On paths like `/company-dashboard`, no guide was matched because the registry lacked entry for that prefix. The dialog's close button also lacked an accessible `aria-label`.
+- **Root Cause**: Component early-returned `null` when `findGuideForPath` returned `undefined`. Path normalization was missing (trailing slashes). Registry lacked entries for dashboard, facebook-inbox, instagram-inbox, unified-inbox, and whatsapp-inbox. `DialogContent` had no `closeLabel` prop.
+- **Fix**:
+  1. Added `defaultSectionGuide` export in `sectionGuideRegistry.ts` — a catch-all entry with `pathPrefix: "*"` and `guides.general.*` keys.
+  2. Changed `const guide = useMemo(...)` to fallback to `defaultSectionGuide` via `??`.
+  3. Removed `if (!guide) return null` — component now always renders.
+  4. Added path normalization: trailing slashes are stripped before matching.
+  5. Added `closeLabel={t("common.close")}` to `DialogContent`.
+  6. Added 5 new registry entries: `/company-dashboard`, `/facebook-inbox`, `/instagram-inbox`, `/unified-inbox`, `/whatsapp-inbox`.
+- **Affected Files**:
+  - `apps/frontend/src/config/sectionGuideRegistry.ts`
+  - `apps/frontend/src/components/guides/SectionGuide.tsx`
+
 ## [2026-06-11] Frontend — Section Guide Dialog Not Opening (Button inside Dialog wrapper)
 - **Bug/Issue**: The `?` help button rendered but clicking it did not open the dialog. Third iteration of the fix.
 - **Root Cause**: The trigger `<Button>` was rendered as a child inside `<Dialog>`, alongside `<DialogContent>`. All working dialogs in the codebase (Feedback.tsx, ConfirmDialog.tsx, BroadcastDialog.tsx) place the trigger button OUTSIDE the `<Dialog>` wrapper — only `<DialogContent>` goes inside. `@base-ui/react/dialog`'s Root component expects the trigger to be outside or wrapped in `<DialogTrigger>`, not as a raw sibling of the popup.

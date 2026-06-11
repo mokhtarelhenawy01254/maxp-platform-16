@@ -885,7 +885,7 @@ export const getSidebarConfig = (
             icon: CubeIcon,
             items: [
                 { to: '/marketplace', icon: CubeIcon, label: t('sidebar.browseApps') },
-                { to: '/marketplace/themes', icon: SwatchIcon, label: 'قوالب المتجر' },
+                { to: '/marketplace/themes', icon: SwatchIcon, label: t('sidebar.storeThemes') },
                 { to: '/marketplace/feature-audit', icon: ClipboardDocumentCheckIcon, label: t('sidebar.featureAudit'), hidden: !isCompanyOperator },
                 { to: '/my-apps', icon: CheckCircleIcon, label: t('sidebar.activatedApps') },
                 { to: '/billing/wallet', icon: WalletIcon, label: t('sidebar.wallet') },

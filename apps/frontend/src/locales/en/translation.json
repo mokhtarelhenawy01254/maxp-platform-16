@@ -2133,6 +2133,116 @@
     "startedOrderHint": "Started orders include cart checkout and direct quick-order flows, not only the classic payment path.",
     "productViewsHint": "Product views can exceed 100% of visits because one visitor may browse multiple products."
   },
+  "guides": {
+    "help": "Open page guide",
+    "videoNotSupported": "Your browser does not support video playback.",
+    "general": {
+      "title": "Quick Guide For This Page",
+      "description": "Use this guide to understand the current page and its most common workflow.",
+      "step1": "Start with the page title and primary actions to understand the main purpose.",
+      "step2": "Check filters or tabs before taking action so you are working with the right data.",
+      "step3": "For advanced behavior, open the related settings section from the sidebar."
+    },
+    "orders": {
+      "title": "Orders Guide",
+      "description": "Track orders, update statuses, and open order details from one place.",
+      "step1": "Use search and filters to find orders by status, customer, or date.",
+      "step2": "Open an order to review products, customer details, and shipping before changing status.",
+      "step3": "Update the status only after confirming readiness or the reason for a delay.",
+      "step4": "Use reports or printing when you need operational review or shipment preparation."
+    },
+    "products": {
+      "title": "Products Guide",
+      "description": "Add products and manage pricing, stock, variants, and images.",
+      "step1": "Review the product name, price, and images because customers see these first.",
+      "step2": "Set stock and variants such as size or color before activating the product.",
+      "step3": "Use visibility and offer settings to improve the shopping and conversion experience."
+    },
+    "customers": {
+      "title": "Customers Guide",
+      "description": "Manage customer profiles, communication history, and marketing segments.",
+      "step1": "Search by name or phone before creating a new record to avoid duplicates.",
+      "step2": "Open the customer profile to review orders, notes, and conversation history.",
+      "step3": "Use tags or segments to make follow-up and campaigns easier later."
+    },
+    "inbox": {
+      "title": "Inbox Guide",
+      "description": "Manage customer conversations, replies, and team handoffs.",
+      "step1": "Start with open or unread conversations so customer replies are not delayed.",
+      "step2": "Review customer and order context before sending a reply or creating an order.",
+      "step3": "Use transfer or close when the conversation moves to another owner or follow-up ends."
+    },
+    "dashboard": {
+      "title": "Dashboard Guide",
+      "description": "Review company performance, alerts, and daily shortcuts.",
+      "step1": "Check key metrics to understand orders, sales, and important alerts.",
+      "step2": "Use shortcuts to reach the workflows you use most often.",
+      "step3": "Use date ranges or filters when you need to compare performance."
+    },
+    "categories": {
+      "title": "Categories Guide",
+      "description": "Organize products into clear storefront sections.",
+      "step1": "Use category names that customers can understand quickly.",
+      "step2": "Sort categories by sales priority or the most visited sections.",
+      "step3": "Attach products to the right category so filters and pages work correctly."
+    },
+    "whatsapp": {
+      "title": "WhatsApp Guide",
+      "description": "Manage WhatsApp connection, conversations, and related notifications.",
+      "step1": "Confirm connection status before relying on replies or notifications.",
+      "step2": "Review assignment and auto-reply settings so conversations reach the right person.",
+      "step3": "Check alerts and logs when sending or receiving stops."
+    },
+    "advertising": {
+      "title": "Advertising Guide",
+      "description": "Track campaigns, settings, and ad performance from one place.",
+      "step1": "Start by checking connected accounts and pixels before reading performance.",
+      "step2": "Use filters to compare campaigns or ad sets by date range.",
+      "step3": "Review profit and conversion metrics before increasing budget or changing campaigns."
+    },
+    "affiliates": {
+      "title": "Affiliates Guide",
+      "description": "Manage affiliates, commissions, and attributed orders.",
+      "step1": "Review affiliate status before approving or disabling an account.",
+      "step2": "Track orders and commissions to understand each affiliate's real performance.",
+      "step3": "Adjust commission and visibility rules according to company policy."
+    },
+    "hr": {
+      "title": "HR Guide",
+      "description": "Manage employees, attendance, leaves, and payroll from HR.",
+      "step1": "Choose the needed area such as attendance, leaves, or payroll from the menu.",
+      "step2": "Review the employee and date range before approving requests or deductions.",
+      "step3": "Use logs and reports when you need to audit a decision."
+    },
+    "settings": {
+      "title": "Settings Guide",
+      "description": "Configure company, storefront, and channel settings before daily operation.",
+      "step1": "Start with general company settings because they affect multiple screens.",
+      "step2": "Review storefront and channel settings before selling or receiving messages.",
+      "step3": "Save changes and test the related screen to confirm the result."
+    },
+    "tasks": {
+      "title": "Tasks Guide",
+      "description": "Track team work, deadlines, and progress inside the workspace.",
+      "step1": "Use status and priority to identify what needs urgent follow-up.",
+      "step2": "Open a task to review the owner, comments, and attachments before updating it.",
+      "step3": "Move tasks between statuses when progress changes so the team view stays accurate."
+    },
+    "reports": {
+      "title": "Reports Guide",
+      "description": "Analyze performance with filters, metrics, and export when needed.",
+      "step1": "Choose the date range first so numbers are comparable.",
+      "step2": "Use filters to break down results by channel, product, or team.",
+      "step3": "Export or share the report after confirming the data is up to date."
+    },
+    "support": {
+      "title": "Support Guide",
+      "description": "Track support tickets, FAQs, and resolution status.",
+      "step1": "Start with open or high-priority tickets.",
+      "step2": "Review ticket history before replying or changing status.",
+      "step3": "Use categories and FAQs to speed up future replies."
+    }
+  },
   "header": {
     "dashboard": "Dashboard",
     "customers": "Customers",
@@ -2262,6 +2372,99 @@
     "quantityIncreased": "Quantity Increased",
     "addedToCart": "Added to Cart",
     "productRemoved": "Product Removed"
+  },
+  "marketplace": {
+    "pageTitle": "Apps",
+    "pageSubtitle": "Find all available apps to improve your store, boost sales, or achieve specific functions your store needs.",
+    "allTools": "All Tools",
+    "allToolsDesc": "View all available growth tools.",
+    "coreTools": "Core Tools",
+    "coreToolsDesc": "Essential tools you can run directly with no extra requirements.",
+    "addOns": "Add-ons",
+    "addOnsDesc": "Add-ons that build on top of existing core tools.",
+    "free": "Free",
+    "freeDesc": "Free tools to start or try without any cost.",
+    "paid": "Paid",
+    "paidDesc": "Paid tools to boost performance, conversions, and scale.",
+    "allApps": "All Apps",
+    "browseApps": "Browse Apps",
+    "installedApps": "Installed Apps",
+    "discoverMore": "Discover More Apps",
+    "savingsBundles": "Savings Bundles",
+    "featuredBundles": "Featured Savings Bundles",
+    "addOn": "Add-on",
+    "coreApp": "Core Tool",
+    "freePrice": "Free",
+    "payPerUse": "Pay per use",
+    "perMonth": "/month",
+    "perUnit": "/ unit",
+    "contactUs": "Contact Us",
+    "includedInPlan": "Included in Plan",
+    "includedByUsage": "Included by Usage",
+    "unlimitedAccess": "Unlimited Access",
+    "unlimitedActive": "Unlimited Active",
+    "appCount": "{{count}} apps",
+    "installedCount": "{{count}} installed",
+    "yourSpecialty": "Your Specialty: {{name}}",
+    "savePercent": "Save {{percent}}%",
+    "bundlePrice": "{{price}} EGP",
+    "bundleDetails": "Bundle Details",
+    "noBundles": "No bundles available at the moment",
+    "noTools": "No tools available in this category yet",
+    "loadingTools": "Loading tools…",
+    "searchPlaceholder": "Search for a tool or feature…",
+    "sortLabel": "Sort",
+    "sortFeatured": "Most Featured",
+    "sortPopular": "Most Popular",
+    "sortNewest": "Newest",
+    "sortPriceLow": "Price: Low to High",
+    "activateAll": "Activate All",
+    "details": "Details",
+    "featured": "Featured",
+    "installed": "Installed",
+    "active": "Active",
+    "cancel": "Cancel",
+    "deactivate": "Deactivate",
+    "activating": "Deactivating...",
+    "confirmCancel": "Confirm Deactivation",
+    "activate": "Activate",
+    "activatingNow": "Activating...",
+    "allActivated": "All tools are already activated!",
+    "confirmBulkActivate": "Are you sure you want to activate {{count}} tools at once?",
+    "activatingProgress": "Activating {{name}}… {{progress}}%",
+    "activatedSuccess": "Activated {{count}} tools successfully!",
+    "activatedWithErrors": "Activated {{count}} tools, {{fail}} failed",
+    "bulkActivateError": "An error occurred during bulk activation",
+    "activatedWithReqs": "Activated {{name}} with requirements: {{reqs}}",
+    "activatedSingle": "Activated {{name}} successfully!",
+    "pleaseLogin": "Please log in first",
+    "activationError": "Error activating tool",
+    "requiresApps": "Requires activation: {{apps}}",
+    "needsApps": "This app needs: {{apps}}",
+    "deactivatedSuccess": "Deactivated {{name}}",
+    "deactivationError": "Error deactivating tool",
+    "unlimitedConfirm": "Are you sure you want to upgrade to \"Unlimited Access\"? {{price}} EGP will be deducted from your wallet.",
+    "processError": "An error occurred while processing your request",
+    "choosePricing": "Choose the payment plan that suits you",
+    "monthlySubscription": "Monthly Subscription",
+    "upgradeToMonthly": "Upgrade to Monthly Subscription",
+    "monthlyPrice": "{{price}} EGP/month",
+    "subscriptionDesc": "Pay a fixed monthly fee and enjoy all features without limits.",
+    "payPerUseLabel": "Pay Per Use",
+    "payPerUseDesc": "Pay only for what you actually use. Suitable for startups.",
+    "currentlyActive": "Currently Active",
+    "deactivateTitle": "Deactivate {{name}}",
+    "deactivateConfirm": "Are you sure you want to deactivate this tool?",
+    "deactivateWarning": "The service will be cancelled and you may lose some associated settings.",
+    "goBack": "Go Back",
+    "confirmDeactivation": "Confirm Deactivation",
+    "specialtyLabel": "Specialty",
+    "bundlesAvailable": "{{count}} bundles available to bundle tools at a clearer price.",
+    "appsAvailable": "{{count}} apps available to explore or activate.",
+    "installedCurrently": "{{count}} apps currently installed.",
+    "fetchError": "An error occurred while loading marketplace data. Please try again.",
+    "retry": "Retry",
+    "currencyUnit": "EGP"
   },
   "notifications": {
     "title": "Notifications",
@@ -3766,6 +3969,7 @@
     "smartReplies": "Smart Replies",
     "stockAnalytics": "Stock Analytics",
     "storeAnalytics": "Store Analytics",
+    "storeThemes": "Store Themes",
     "storePages": "Policy & Content Pages",
     "storeSettings": "Store Settings",
     "subscription": "Subscription & Plan",
@@ -3817,6 +4021,10 @@
     "whatsappRouting": "WhatsApp Routing",
     "whatsappSection": "WhatsApp",
     "whatsappSettings": "WhatsApp Settings",
+    "whatsappTemplates": "Templates",
+    "whatsappTemplatesOrders": "Orders Templates",
+    "whatsappTemplatesHR": "HR Templates",
+    "whatsappTemplatesSystem": "System Templates",
     "woocommerceSync": "WooCommerce Sync",
     "displayStudio": "Display Settings",
     "layoutStudio": "Page Layout",
@@ -5163,115 +5371,5 @@
     "errorPause": "Error pausing import",
     "errorResume": "Error resuming import",
     "errorCancel": "Error cancelling import"
-  },
-  "guides": {
-    "help": "Section guide",
-    "videoNotSupported": "Your browser does not support the video tag",
-    "dashboard": {
-      "title": "Dashboard",
-      "description": "Overview of your store's performance and quick stats",
-      "step1": "Browse key metrics: sales, orders, visitors at the top",
-      "step2": "Use charts to analyze daily/weekly trends",
-      "step3": "Click any metric to navigate to full details"
-    },
-    "orders": {
-      "title": "Order Management",
-      "description": "View and manage all store orders",
-      "step1": "Browse the order list with search and filter by status and date",
-      "step2": "Click any order to view full details and update status",
-      "step3": "Use bulk actions to process multiple orders at once",
-      "step4": "Track incomplete orders from the pending orders section"
-    },
-    "products": {
-      "title": "Product Management",
-      "description": "Add, edit, and manage all your products",
-      "step1": "Add a new product by clicking the + button at the top",
-      "step2": "Fill in product details: name, price, stock, images",
-      "step3": "Organize products into categories for easy browsing"
-    },
-    "customers": {
-      "title": "Customer Management",
-      "description": "Customer database and communication management",
-      "step1": "Browse customer list and search by name, email, or phone",
-      "step2": "Click a customer to view their orders and full activity",
-      "step3": "Use the export feature to backup customer data"
-    },
-    "inbox": {
-      "title": "Inbox",
-      "description": "Manage customer conversations from all channels in one place",
-      "step1": "Select a conversation from the sidebar to view messages",
-      "step2": "Type your reply in the text box at the bottom of the conversation",
-      "step3": "Use smart lists and quick replies to speed up responses"
-    },
-    "categories": {
-      "title": "Categories",
-      "description": "Organize products into categories and sections",
-      "step1": "Add a new main category or subcategory",
-      "step2": "Drag and drop categories to reorder by priority",
-      "step3": "Link each category with a featured image for the storefront"
-    },
-    "whatsapp": {
-      "title": "WhatsApp",
-      "description": "Manage WhatsApp conversations, templates, and settings",
-      "step1": "Link a WhatsApp number by scanning the QR code in settings",
-      "step2": "Create message templates for quick replies",
-      "step3": "Monitor WhatsApp analytics to measure conversation performance"
-    },
-    "advertising": {
-      "title": "Advertising & Marketing",
-      "description": "Manage ad campaigns and advertisements",
-      "step1": "Create a new campaign and select your target audience",
-      "step2": "Design your ad using available images and videos",
-      "step3": "Track campaign performance through the analytics dashboard"
-    },
-    "affiliates": {
-      "title": "Affiliate System",
-      "description": "Manage affiliates and commissions",
-      "step1": "Add new affiliates from the affiliate management section",
-      "step2": "Set commission rates for each product or category",
-      "step3": "Track commission reports and referred orders"
-    },
-    "hr": {
-      "title": "Human Resources",
-      "description": "Manage employees, attendance, and payroll",
-      "step1": "Add a new employee from the employees section",
-      "step2": "Record employee daily check-in and check-out times",
-      "step3": "Generate monthly payroll reports automatically"
-    },
-    "settings": {
-      "title": "Settings",
-      "description": "Store and company settings",
-      "step1": "Select the section you want to modify from the menu",
-      "step2": "Enter the required data in each section",
-      "step3": "Save changes before moving to another section"
-    },
-    "tasks": {
-      "title": "Tasks",
-      "description": "Manage tasks and projects",
-      "step1": "Create a new task and set its priority and due date",
-      "step2": "Drag and drop tasks between columns to update their status",
-      "step3": "Track tasks from the calendar view or Kanban board"
-    },
-    "reports": {
-      "title": "Reports",
-      "description": "Advanced store performance reports",
-      "step1": "Choose the report type from the menu (profit, shipping, advanced)",
-      "step2": "Set the required date range for analysis",
-      "step3": "Export reports as PDF or Excel for review"
-    },
-    "support": {
-      "title": "Support",
-      "description": "Help center and support tickets",
-      "step1": "Browse FAQs for quick answers",
-      "step2": "Create a new support ticket if you can't find an answer",
-      "step3": "Track your ticket status from the tickets dashboard"
-    },
-    "superAdmin": {
-      "title": "Super Admin",
-      "description": "Platform, company, and user management",
-      "step1": "Browse the list of registered companies on the platform",
-      "step2": "Monitor platform statistics from the dashboard",
-      "step3": "Add or edit AI providers from the settings"
-    }
   }
 }

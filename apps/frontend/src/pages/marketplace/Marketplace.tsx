@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "react-hot-toast";
 import {
@@ -119,6 +120,8 @@ interface MarketplaceApiError {
   };
 }
 
+const UNLIMITED_SUBSCRIPTION_PRICE = 999;
+
 type ToolCollectionId = "ALL" | "CORE" | "ADD_ONS" | "FREE" | "PAID";
 
 const MARKETPLACE_APPS_FETCH_LIMIT = 200;
@@ -142,43 +145,45 @@ function shouldUseTextIcon(icon?: string) {
   return Array.from(normalizedIcon).length <= 3 && !/^[a-z0-9_\-\s]+$/i.test(normalizedIcon);
 }
 
-const toolCollections: Array<{
+function useToolCollections(t: (key: string) => string): Array<{
   id: ToolCollectionId;
   label: string;
   description: string;
   icon: LucideIcon;
-}> = [
-  {
-    id: "ALL",
-    label: "كل الأدوات",
-    description: "عرض جميع أدوات النمو المتاحة.",
-    icon: Store,
-  },
-  {
-    id: "CORE",
-    label: "الأدوات الأساسية",
-    description: "أدوات أساسية يمكن تشغيلها مباشرة بدون متطلبات إضافية.",
-    icon: Zap,
-  },
-  {
-    id: "ADD_ONS",
-    label: "الإضافات",
-    description: "إضافات تبني فوق أدوات أساسية موجودة بالفعل.",
-    icon: Sparkles,
-  },
-  {
-    id: "FREE",
-    label: "المجانية",
-    description: "أدوات مجانية للبدء أو للتجربة بدون تكلفة.",
-    icon: CheckCircle2,
-  },
-  {
-    id: "PAID",
-    label: "المدفوعة",
-    description: "أدوات مدفوعة لرفع الأداء والتحويلات والتوسع.",
-    icon: Crown,
-  },
-];
+}> {
+  return [
+    {
+      id: "ALL",
+      label: t('marketplace.allTools'),
+      description: t('marketplace.allToolsDesc'),
+      icon: Store,
+    },
+    {
+      id: "CORE",
+      label: t('marketplace.coreTools'),
+      description: t('marketplace.coreToolsDesc'),
+      icon: Zap,
+    },
+    {
+      id: "ADD_ONS",
+      label: t('marketplace.addOns'),
+      description: t('marketplace.addOnsDesc'),
+      icon: Sparkles,
+    },
+    {
+      id: "FREE",
+      label: t('marketplace.free'),
+      description: t('marketplace.freeDesc'),
+      icon: CheckCircle2,
+    },
+    {
+      id: "PAID",
+      label: t('marketplace.paid'),
+      description: t('marketplace.paidDesc'),
+      icon: Crown,
+    },
+  ];
+}
 
 function normalizeRequiredApps(requiredApps: MarketplaceApp["requiredApps"]) {
   if (Array.isArray(requiredApps)) {
@@ -284,11 +289,12 @@ function matchesToolCollection(app: MarketplaceApp, collection: ToolCollectionId
   }
 }
 
-function getToolRoleLabel(app: MarketplaceApp) {
-  return isAddOnApp(app) ? "إضافة" : "أداة أساسية";
+function getToolRoleLabel(app: MarketplaceApp, t: (key: string) => string) {
+  return isAddOnApp(app) ? t('marketplace.addOn') : t('marketplace.coreApp');
 }
 
 export default function Marketplace() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [apps, setApps] = useState<MarketplaceApp[]>([]);
@@ -310,7 +316,7 @@ export default function Marketplace() {
   const [confirmUninstallApp, setConfirmUninstallApp] =
     useState<MarketplaceApp | null>(null);
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     const categoryParam = searchParams.get("category");
@@ -318,6 +324,21 @@ export default function Marketplace() {
       setSelectedCategory(categoryParam);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedCategory) params.set("category", selectedCategory);
+    if (searchQuery) params.set("q", searchQuery);
+    if (sortBy && sortBy !== "featured") params.set("sort", sortBy);
+    setSearchParams(params, { replace: true });
+  }, [selectedCategory, searchQuery, sortBy, setSearchParams]);
+
+  useEffect(() => {
+    const qParam = searchParams.get("q");
+    if (qParam) setSearchQuery(qParam);
+    const sortParam = searchParams.get("sort");
+    if (sortParam) setSortBy(sortParam);
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -342,10 +363,11 @@ export default function Marketplace() {
       setBundles(bundlesRes.data.data);
     } catch (error) {
       console.error("Error fetching marketplace data:", error);
+      toast.error(t('marketplace.fetchError'));
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, selectedCategory, sortBy]);
+  }, [searchQuery, selectedCategory, sortBy, t]);
 
   useEffect(() => {
     fetchData();
@@ -384,13 +406,13 @@ export default function Marketplace() {
     );
 
     if (uninstalledApps.length === 0) {
-      toast.success("جميع الأدوات مثبتة بالفعل! 🎉");
+      toast.success(t('marketplace.allActivated'));
       return;
     }
 
     if (
       !window.confirm(
-        `هل أنت متأكد من تفعيل ${uninstalledApps.length} أداة دفعة واحدة؟`,
+        t('marketplace.confirmBulkActivate', { count: uninstalledApps.length }),
       )
     ) {
       return;
@@ -400,7 +422,7 @@ export default function Marketplace() {
     let successCount = 0;
     let failCount = 0;
 
-    const toastId = toast.loading("جاري تفعيل الأدوات… 0%");
+    const toastId = toast.loading(t('marketplace.activatingProgress', { name: '', progress: 0 }));
 
     try {
       // Install sequentially to avoid overloading the server
@@ -411,7 +433,7 @@ export default function Marketplace() {
           if (!app) continue;
           // Update toast process
           const progress = Math.round(((i + 1) / uninstalledApps.length) * 100);
-          toast.loading(`جاري تفعيل ${app.name}… ${progress}%`, {
+          toast.loading(t('marketplace.activatingProgress', { name: app.name, progress }), {
             id: toastId,
           });
 
@@ -435,16 +457,16 @@ export default function Marketplace() {
       }
 
       if (failCount === 0) {
-        toast.success(`تم تفعيل ${successCount} أداة بنجاح! 🚀`, {
+        toast.success(t('marketplace.activatedSuccess', { count: successCount }), {
           id: toastId,
         });
       } else {
-        toast.success(`تم تفعيل ${successCount} أداة، وفشل ${failCount}`, {
+        toast.success(t('marketplace.activatedWithErrors', { count: successCount, fail: failCount }), {
           id: toastId,
         });
       }
     } catch (error) {
-      toast.error("حدث خطأ أثناء عملية التفعيل الجماعي", { id: toastId });
+      toast.error(t('marketplace.bulkActivateError'), { id: toastId });
     } finally {
       setIsInstallingAll(false);
     }
@@ -453,7 +475,7 @@ export default function Marketplace() {
   const handleSubscribeUnlimited = async () => {
     if (
       !window.confirm(
-        'هل أنت متأكد من رغبتك في الترقية لـ "الوصول الشامل"؟ سيتم خصم 999 ج من محفظتك.',
+        t('marketplace.unlimitedConfirm', { price: UNLIMITED_SUBSCRIPTION_PRICE }),
       )
     ) {
       return;
@@ -475,7 +497,7 @@ export default function Marketplace() {
         toast.error(res.message);
       }
     } catch (err) {
-      toast.error("حدث خطأ أثناء معالجة الطلب");
+      toast.error(t('marketplace.processError'));
     }
   };
 
@@ -512,8 +534,8 @@ export default function Marketplace() {
 
       toast.success(
         autoInstalledNames.length > 0
-          ? `تم تفعيل ${app.name} مع المتطلبات: ${autoInstalledNames.join("، ")}`
-          : `تم تفعيل ${app.name} بنجاح! 🎉`,
+          ? t('marketplace.activatedWithReqs', { name: app.name, reqs: autoInstalledNames.join("، ") })
+          : t('marketplace.activatedSingle', { name: app.name }),
       );
 
       markAppsInstalled([
@@ -524,23 +546,23 @@ export default function Marketplace() {
       const apiError = error as MarketplaceApiError;
 
       if (apiError.response?.status === 401) {
-        toast.error("يرجى تسجيل الدخول أولاً");
+        toast.error(t('marketplace.pleaseLogin'));
         navigate("/auth/login");
         return;
       }
 
-      const errorMsg = apiError.response?.data?.message || "خطأ في تفعيل الأداة";
+      const errorMsg = apiError.response?.data?.message || t('marketplace.activationError');
       toast.error(errorMsg);
 
       if (apiError.response?.data?.requiredApps) {
         const required = apiError.response.data.requiredApps;
         toast.error(
-          `يتطلب تفعيل: ${required.map((requiredApp) => requiredApp.name || requiredApp.slug).join("، ")}`,
+          t('marketplace.requiresApps', { apps: required.map((requiredApp: { name?: string; slug: string }) => requiredApp.name || requiredApp.slug).join("، ") }),
         );
       } else {
         const requiredNames = getRequiredAppNames(app);
         if (requiredNames.length > 0) {
-          toast(`هذا التطبيق يحتاج: ${requiredNames.join("، ")}`);
+          toast(t('marketplace.needsApps', { apps: requiredNames.join("، ") }));
         }
       }
     } finally {
@@ -556,7 +578,7 @@ export default function Marketplace() {
         `/marketplace/apps/${app.slug}/uninstall`,
       );
 
-      toast.success(response.data.message || `تم إلغاء تفعيل ${app.name}`);
+      toast.success(response.data.message || t('marketplace.deactivatedSuccess', { name: app.name }));
 
       setApps((prevApps) =>
         prevApps.map((a) =>
@@ -567,12 +589,12 @@ export default function Marketplace() {
       setConfirmUninstallApp(null);
     } catch (error: any) {
       if (error.response?.status === 401) {
-        toast.error("يرجى تسجيل الدخول أولاً");
+        toast.error(t('marketplace.pleaseLogin'));
         return;
       }
 
       const errorMsg =
-        error.response?.data?.message || "خطأ في إلغاء تفعيل الأداة";
+        error.response?.data?.message || t('marketplace.deactivationError');
       toast.error(errorMsg);
     } finally {
       setUninstallingApp(null);
@@ -581,17 +603,17 @@ export default function Marketplace() {
 
   const getPriceDisplay = (app: MarketplaceApp) => {
     if (app.pricingModel === "FREE") {
-      return "مجاني";
+      return t('marketplace.freePrice');
     }
     if (app.pricingModel === "PAY_PER_USE") {
       return app.unitPrice
-        ? `${app.unitPrice} ج / ${app.unitName || "وحدة"}`
-        : "حسب الاستخدام";
+        ? `${app.unitPrice} ${t('marketplace.currencyUnit')}${t('marketplace.perUnit')}`
+        : t('marketplace.payPerUse');
     }
     if (app.monthlyPrice) {
-      return `${app.monthlyPrice} ج/شهر`;
+      return `${app.monthlyPrice} ${t('marketplace.currencyUnit')}${t('marketplace.perMonth')}`;
     }
-    return "اتصل بنا";
+    return t('marketplace.contactUs');
   };
 
   const collectionApps = apps.filter((app) =>
@@ -609,18 +631,19 @@ export default function Marketplace() {
   const getDisplayedPrice = (app: MarketplaceApp) => {
     if (isEnterprise && app.pricingModel !== "FREE") {
       return app.pricingModel === "PAY_PER_USE"
-        ? "مشمول حسب الاستخدام"
-        : "مشمول في الباقة";
+        ? t('marketplace.includedByUsage')
+        : t('marketplace.includedInPlan');
     }
 
     return getPriceDisplay(app);
   };
+  const toolCollections = useToolCollections(t);
   const selectedCollectionMeta =
     toolCollections.find((collection) => collection.id === selectedCollection) ||
     {
       id: "ALL" as ToolCollectionId,
-      label: "كل الأدوات",
-      description: "عرض جميع أدوات النمو المتاحة.",
+      label: t('marketplace.allTools'),
+      description: t('marketplace.allToolsDesc'),
       icon: Store,
     };
   const selectedCategoryMeta = categories.find(
@@ -637,7 +660,7 @@ export default function Marketplace() {
                 {isEnterprise ? (
                   <span className="marketplace-soft-success inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-bold">
                     <Crown size={14} aria-hidden="true" />
-                    الوصول الشامل مفعل
+                    {t('marketplace.unlimitedActive')}
                   </span>
                 ) : (
                   <button
@@ -646,15 +669,15 @@ export default function Marketplace() {
                     className="marketplace-soft-primary inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-bold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                   >
                     <Crown size={14} aria-hidden="true" />
-                    الوصول الشامل
+                    {t('marketplace.unlimitedAccess')}
                   </button>
                 )}
-                <span className="whitespace-nowrap">{apps.length} تطبيق</span>
-                <span className="whitespace-nowrap">{installedAppsCount} مثبت</span>
+                <span className="whitespace-nowrap">{t('marketplace.appCount', { count: apps.length })}</span>
+                <span className="whitespace-nowrap">{t('marketplace.installedCount', { count: installedAppsCount })}</span>
                 {activeSpecialty && (
                   <span className="marketplace-soft-primary inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-bold">
                     <Layers3 size={14} aria-hidden="true" />
-                    تخصصك: {activeSpecialty.nameAr}
+                    {t('marketplace.yourSpecialty', { name: activeSpecialty.nameAr })}
                   </span>
                 )}
               </div>
@@ -662,10 +685,10 @@ export default function Marketplace() {
 
             <div className="order-1 lg:order-2">
               <h1 className="marketplace-strong text-3xl font-black leading-tight sm:text-4xl">
-                التطبيقات
+                {t('marketplace.pageTitle')}
               </h1>
               <p className="marketplace-muted mt-2 max-w-2xl text-sm font-semibold leading-6">
-                ستجد هنا كل التطبيقات المتاحة لتحسين متجرك أو زيادة المبيعات أو تحقيق وظيفة معينة يحتاجها متجرك.
+                {t('marketplace.pageSubtitle')}
               </p>
             </div>
           </div>
@@ -685,7 +708,7 @@ export default function Marketplace() {
                   : "marketplace-tab-idle"
               }`}
             >
-              تطبيقات مثبتة
+              {t('marketplace.installedApps')}
             </button>
             <button
               type="button"
@@ -701,7 +724,7 @@ export default function Marketplace() {
                   : "marketplace-tab-idle"
               }`}
             >
-              اكتشف تطبيقات أكثر
+              {t('marketplace.discoverMore')}
             </button>
             <button
               type="button"
@@ -716,7 +739,7 @@ export default function Marketplace() {
                   : "marketplace-tab-idle"
               }`}
             >
-              باقات التوفير
+              {t('marketplace.savingsBundles')}
             </button>
           </div>
         </header>
@@ -744,7 +767,7 @@ export default function Marketplace() {
                     : "marketplace-filter-idle"
                 }`}
               >
-                كل التطبيقات
+                {t('marketplace.allApps')}
               </button>
 
               {toolCollections
@@ -797,7 +820,7 @@ export default function Marketplace() {
                 to="/marketplace/themes"
                 className="marketplace-filter-idle block px-4 py-2.5 text-right text-sm font-black transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
               >
-                قوالب المتجر
+                {t('sidebar.storeThemes')}
               </Link>
             </div>
           </aside>
@@ -810,26 +833,26 @@ export default function Marketplace() {
                 <div className="min-w-0 text-right">
                   <h2 className="marketplace-strong text-lg font-black sm:text-xl">
                     {isBundlesTab
-                      ? "باقات التوفير المميزة"
+                      ? t('marketplace.featuredBundles')
                       : activeTab === "INSTALLED"
-                        ? "تطبيقات مثبتة"
+                        ? t('marketplace.installedApps')
                       : selectedCategoryMeta
                         ? `${selectedCollectionMeta.label} • ${selectedCategoryMeta.name}`
                         : selectedCollectionMeta.label}
                   </h2>
                   <p className="marketplace-muted mt-1 text-sm leading-6">
                     {isBundlesTab
-                      ? `${bundles.length} باقة متاحة لتجميع الأدوات بسعر أوضح.`
+                      ? t('marketplace.bundlesAvailable', { count: bundles.length })
                       : activeTab === "INSTALLED"
-                      ? `${installedAppsCount} تطبيق مثبت حالياً.`
-                      : `${discoverAppsCount} تطبيق متاح للاستكشاف أو التفعيل.`}
+                      ? t('marketplace.installedCurrently', { count: installedAppsCount })
+                      : t('marketplace.appsAvailable', { count: discoverAppsCount })}
                   </p>
                 </div>
 
                 {showAppFilters && (
                 <div className="marketplace-toolbar grid gap-2 xl:w-[680px]">
                   <label className="marketplace-toolbar-search relative block">
-                    <span className="sr-only">ابحث عن أداة أو ميزة</span>
+                    <span className="sr-only">{t('marketplace.searchPlaceholder')}</span>
                     <Search
                       className="marketplace-muted pointer-events-none absolute right-4 top-1/2 -translate-y-1/2"
                       size={17}
@@ -841,7 +864,7 @@ export default function Marketplace() {
                       type="search"
                       inputMode="search"
                       autoComplete="off"
-                      placeholder="ابحث عن أداة أو ميزة…"
+                      placeholder={t('marketplace.searchPlaceholder')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="marketplace-control marketplace-search-input h-10 w-full rounded-xl pr-11 pl-4 text-sm placeholder:text-[var(--color-muted-foreground)] transition-[border-color,box-shadow,background-color] duration-200 focus:outline-none"
@@ -849,17 +872,17 @@ export default function Marketplace() {
                   </label>
 
                   <label className="marketplace-control marketplace-sort-pill marketplace-muted flex h-10 items-center gap-3 rounded-xl px-4 text-sm">
-                    <span className="whitespace-nowrap font-bold">ترتيب</span>
+                    <span className="whitespace-nowrap font-bold">{t('marketplace.sortLabel')}</span>
                     <select
                       name="marketplaceSort"
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
                       className="theme-native-control h-full bg-transparent text-sm font-bold text-[var(--color-foreground)] focus:outline-none"
                     >
-                      <option value="featured">الأكثر تميزاً</option>
-                      <option value="popular">الأكثر شعبية</option>
-                      <option value="newest">الأحدث</option>
-                      <option value="price_low">السعر: الأقل</option>
+                      <option value="featured">{t('marketplace.sortFeatured')}</option>
+                      <option value="popular">{t('marketplace.sortPopular')}</option>
+                      <option value="newest">{t('marketplace.sortNewest')}</option>
+                      <option value="price_low">{t('marketplace.sortPriceLow')}</option>
                     </select>
                   </label>
 
@@ -878,7 +901,7 @@ export default function Marketplace() {
                     ) : (
                       <Zap size={16} className="fill-current" aria-hidden="true" />
                     )}
-                    تفعيل الظاهر
+                    {t('marketplace.activateAll')}
                   </button>
                 </div>
                 )}
@@ -901,7 +924,7 @@ export default function Marketplace() {
                         : "marketplace-chip"
                     }`}
                   >
-                    كل الأدوات
+                    {t('marketplace.allTools')}
                   </button>
                   <button
                     type="button"
@@ -916,7 +939,7 @@ export default function Marketplace() {
                         : "marketplace-chip"
                     }`}
                   >
-                    باقات التوفير
+                    {t('marketplace.savingsBundles')}
                   </button>
                   {toolCollections
                     .filter((collection) => collection.id !== "ALL")
@@ -984,24 +1007,24 @@ export default function Marketplace() {
                         </p>
                       </div>
                       <div className="marketplace-soft-success shrink-0 rounded-full border px-3 py-1 text-xs font-black">
-                        وفر {bundle.discount}%
+                        {t('marketplace.savePercent', { percent: bundle.discount })}
                       </div>
                     </div>
 
                     <div className="mt-4 flex items-center justify-between gap-3">
                       <div className="text-right">
                         <span className="marketplace-strong text-lg font-black">
-                          {bundle.monthlyPrice} ج
+                          {t('marketplace.bundlePrice', { price: bundle.monthlyPrice })}
                         </span>
                         <span className="marketplace-muted mr-1 text-xs">
-                          /شهر
+                          {t('marketplace.perMonth')}
                         </span>
                       </div>
                       <Link
                         to={`/marketplace/bundle/${bundle.slug}`}
                         className="marketplace-control inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-black transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                       >
-                        تفاصيل الباقة
+                        {t('marketplace.bundleDetails')}
                         <ChevronLeft size={16} aria-hidden="true" />
                       </Link>
                     </div>
@@ -1010,7 +1033,7 @@ export default function Marketplace() {
                 {bundles.length === 0 && (
                   <div className="marketplace-card col-span-full rounded-2xl border-dashed py-10 text-center">
                     <Package size={42} className="marketplace-muted mx-auto mb-4" aria-hidden="true" />
-                    <p className="marketplace-muted">لا توجد باقات متاحة حالياً</p>
+                    <p className="marketplace-muted">{t('marketplace.noBundles')}</p>
                   </div>
                 )}
               </div>
@@ -1018,15 +1041,15 @@ export default function Marketplace() {
               loading ? (
                 <div className="marketplace-card rounded-2xl py-16 text-center">
                   <div className="mx-auto h-10 w-10 animate-spin rounded-full border-b-2 border-[var(--color-primary)]"></div>
-                  <p className="marketplace-muted mt-4">
-                    جاري تحميل الأدوات…
+                    <p className="marketplace-muted mt-4">
+                    {t('marketplace.loadingTools')}
                   </p>
                 </div>
               ) : visibleApps.length === 0 ? (
                 <div className="marketplace-card rounded-2xl border-dashed py-16 text-center">
                   <Package size={42} className="marketplace-muted mx-auto mb-4" aria-hidden="true" />
                   <p className="marketplace-muted">
-                    لا توجد أدوات متاحة ضمن هذا التنظيم حالياً
+                    {t('marketplace.noTools')}
                   </p>
                 </div>
               ) : (
@@ -1047,7 +1070,7 @@ export default function Marketplace() {
                         <div className="flex items-start justify-between gap-3">
                           <Link
                             to={`/marketplace/${app.slug}`}
-                            aria-label={`تفاصيل ${app.name}`}
+                            aria-label={t('marketplace.details') + ' ' + app.name}
                             className="marketplace-muted rounded-lg p-1 transition-colors duration-200 hover:text-[var(--color-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                           >
                             <Settings size={17} aria-hidden="true" />
@@ -1080,20 +1103,20 @@ export default function Marketplace() {
                         <div className="mt-3 flex flex-wrap justify-end gap-1.5">
                           {app.isFeatured && (
                             <span className="marketplace-soft-warning rounded-full border px-2.5 py-1 text-[10px] font-black">
-                              مميز
+                              {t('marketplace.featured')}
                             </span>
                           )}
                           {app.isInstalled && (
                             <span className="marketplace-soft-success inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black">
                               <Check size={10} strokeWidth={3} aria-hidden="true" />
-                              مثبت
+                              {t('marketplace.installed')}
                             </span>
                           )}
                           <span className="marketplace-chip rounded-full px-2.5 py-1 text-[10px] font-black">
                             {getFeatureAccessLabel(accessKind)}
                           </span>
                           <span className="marketplace-chip rounded-full px-2.5 py-1 text-[10px] font-black">
-                            {getToolRoleLabel(app)}
+                            {getToolRoleLabel(app, t)}
                           </span>
                         </div>
 
@@ -1102,13 +1125,13 @@ export default function Marketplace() {
                             to={`/marketplace/${app.slug}`}
                             className="marketplace-muted text-xs font-black transition-colors duration-200 hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                           >
-                            تفاصيل
+                            {t('marketplace.details')}
                           </Link>
                           {app.isInstalled ? (
                             <div className="flex items-center gap-2">
                               <span className="inline-flex items-center gap-1 text-xs font-black text-[var(--color-success)]">
                                 <Check size={10} strokeWidth={3} />
-                                نشط
+                                {t('marketplace.active')}
                               </span>
                               <button
                                 type="button"
@@ -1124,7 +1147,7 @@ export default function Marketplace() {
                                 ) : (
                                   <X size={12} strokeWidth={3} />
                                 )}
-                                إلغاء
+                                {t('marketplace.deactivate')}
                               </button>
                             </div>
                           ) : (
@@ -1139,7 +1162,7 @@ export default function Marketplace() {
                               ) : (
                                 <Zap size={14} className="fill-current" aria-hidden="true" />
                               )}
-                              تفعيل
+                              {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
                             </button>
                           )}
                         </div>
@@ -1180,7 +1203,7 @@ export default function Marketplace() {
                       {showPricingDialog.name}
                     </h2>
                     <p className="marketplace-muted text-sm">
-                      اختر نظام الدفع المناسب لك
+                      {t('marketplace.choosePricing')}
                     </p>
                   </div>
                 </div>
@@ -1206,23 +1229,23 @@ export default function Marketplace() {
                     {showPricingDialog.isInstalled &&
                       showPricingDialog.activePricingModel === "SUBSCRIPTION" && (
                         <div className="marketplace-primary-action absolute top-0 left-0 text-[10px] px-2 py-0.5 rounded-br-lg font-bold">
-                          نشط حالياً
+                          {t('marketplace.currentlyActive')}
                         </div>
                       )}
                     <div className="flex items-center justify-between mb-1">
                       <span className="marketplace-strong font-bold">
                         {showPricingDialog.activePricingModel === "PAY_PER_USE"
-                          ? "ترقية لاشتراك شهري"
-                          : "اشتراك شهري كامل"}
+                          ? t('marketplace.upgradeToMonthly')
+                          : t('marketplace.monthlySubscription')}
                       </span>
                       <span className="font-bold text-[var(--color-primary)]">
                         {(showPricingDialog.monthlyPrice ?? 0) > 0
-                          ? `${showPricingDialog.monthlyPrice} ج/شهر`
-                          : "مجاني"}
+                          ? t('marketplace.monthlyPrice', { price: showPricingDialog.monthlyPrice })
+                          : t('marketplace.freePrice')}
                       </span>
                     </div>
                     <p className="marketplace-muted text-xs">
-                      ادفع مبلغ ثابت شهرياً واستمتع بجميع مميزات الأداة بلا حدود.
+                      {t('marketplace.subscriptionDesc')}
                     </p>
                   </button>
 
@@ -1243,24 +1266,24 @@ export default function Marketplace() {
                     : "marketplace-card hover:border-[var(--color-warning)]"
                     }`}
                 >
-                  {showPricingDialog.isInstalled &&
-                    showPricingDialog.activePricingModel === "PAY_PER_USE" && (
-                      <div className="absolute top-0 left-0 rounded-br-lg bg-[var(--color-warning)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-warning-foreground)]">
-                        نشط حالياً
-                      </div>
-                    )}
+                    {showPricingDialog.isInstalled &&
+                      showPricingDialog.activePricingModel === "PAY_PER_USE" && (
+                        <div className="absolute top-0 left-0 rounded-br-lg bg-[var(--color-warning)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-warning-foreground)]">
+                          {t('marketplace.currentlyActive')}
+                        </div>
+                      )}
                   <div className="flex items-center justify-between mb-1">
                     <span className="marketplace-strong flex items-center gap-1 font-bold">
-                      حسب الاستخدام
+                      {t('marketplace.payPerUseLabel')}
                       <Zap size={14} className="fill-current text-[var(--color-warning)]" aria-hidden="true" />
                     </span>
                     <span className="font-bold text-[var(--color-warning)]">
-                      {showPricingDialog.unitPrice || 0} ج /{" "}
-                      {showPricingDialog.unitName || "وحدة"}
+                      {showPricingDialog.unitPrice || 0} {t('marketplace.currencyUnit')} /{" "}
+                      {showPricingDialog.unitName || t('marketplace.perUnit')}
                     </span>
                   </div>
                   <p className="marketplace-muted text-xs">
-                    ادفع فقط مقابل ما تستهلكه فعلياً. مناسب للمشاريع المبتدئة.
+                    {t('marketplace.payPerUseDesc')}
                   </p>
                 </button>
                 </div>
@@ -1270,7 +1293,7 @@ export default function Marketplace() {
                   onClick={() => setShowPricingDialog(null)}
                   className="marketplace-control marketplace-muted mt-6 w-full rounded-xl py-3 text-sm font-medium transition-colors duration-200 hover:text-[var(--color-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                 >
-                  إلغاء
+                  {t('marketplace.cancel')}
                 </button>
               </div>
             </div>
@@ -1302,13 +1325,13 @@ export default function Marketplace() {
                   id="uninstall-dialog-title"
                   className="text-center text-xl font-black"
                 >
-                  إلغاء تفعيل {app.name}
+                  {t('marketplace.deactivateTitle', { name: app.name })}
                 </h2>
 
                 <p className="mt-3 text-center text-sm leading-6 text-[var(--color-muted-foreground)]">
-                  هل أنت متأكد من إلغاء تفعيل هذه الأداة؟
+                  {t('marketplace.deactivateConfirm')}
                   <br />
-                  سيتم إلغاء الخدمة وقد تفقد بعض الإعدادات المرتبطة بها.
+                  {t('marketplace.deactivateWarning')}
                 </p>
 
                 <div className="mt-6 flex gap-3">
@@ -1318,7 +1341,7 @@ export default function Marketplace() {
                     disabled={uninstallingApp === app.slug}
                     className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm font-black transition-colors duration-200 hover:bg-[var(--color-surface-hover)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                   >
-                    تراجع
+                    {t('marketplace.goBack')}
                   </button>
                   <button
                     type="button"
@@ -1329,10 +1352,10 @@ export default function Marketplace() {
                     {uninstallingApp === app.slug ? (
                       <span className="inline-flex items-center justify-center gap-2">
                         <Loader2 size={16} className="animate-spin" />
-                        جاري الإلغاء...
+                        {t('marketplace.activating')}
                       </span>
                     ) : (
-                      "تأكيد الإلغاء"
+                      t('marketplace.confirmDeactivation')
                     )}
                   </button>
                 </div>

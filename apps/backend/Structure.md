@@ -1,3 +1,50 @@
+## [2026-06-11] Frontend — Marketplace Complete i18n Migration
+- **Details**: Full i18n migration of `Marketplace.tsx` — all hardcoded Arabic and English UI strings replaced with `t()` calls via new `marketplace.json` locale files. The page now supports full Arabic/English switching without code changes.
+- **Architecture**:
+  - **Locale Files**: Created `apps/frontend/src/locales/{ar,en}/sections/marketplace.json` with 93 keys each covering: page titles, tool collections, pricing display, bulk activation, bundle display, search/sort, install/uninstall dialogs, unlimited subscription, error messages, and status labels.
+  - **useToolCollections Refactor**: Changed from top-level `const` array to `useToolCollections(t: Function)` hook so collection labels are localized reactively.
+  - **URL Search Params Sync**: Added `useEffect` to sync `selectedCategory`, `searchQuery`, and `sortBy` to URL query params (`category`, `q`, `sort`) via `setSearchParams`. On mount, reads initial params from URL. Enables shareable marketplace URLs.
+  - **Constants**: Extracted `UNLIMITED_SUBSCRIPTION_PRICE = 999` constant.
+  - **Price Display Localization**: All price strings (`Free`, `EGP/month`, `/unit`, etc.) use locale keys. Free/app pricing model labels localized.
+  - **Registration**: `i18n/index.ts` imports and registers `marketplace` namespace for both locales.
+  - **i18n-check Script Fix**: Path corrected from `../frontend` to `../apps/frontend` to match monorepo structure.
+- **Files**:
+  - `apps/frontend/src/pages/marketplace/Marketplace.tsx`
+  - `apps/frontend/src/locales/{ar,en}/sections/marketplace.json` (new)
+  - `apps/frontend/src/i18n/index.ts`
+  - `scripts/i18n-check.js`
+
+## [2026-06-11] Frontend — SectionGuide Registry Expansion and Default Guide
+- **Details**: Added `defaultSectionGuide` catch-all entry and 5 new path entries to `sectionGuideRegistry.ts`. The SectionGuide now always renders (never returns null). Paths normalized (trailing slashes stripped).
+- **Architecture**:
+  - **Default Guide**: `defaultSectionGuide` with `pathPrefix: "*"` uses `guides.general.*` keys — shows generic instructions for unmatched routes.
+  - **New Registry Entries**:
+    - `/company-dashboard` → `guides.dashboard.*`
+    - `/facebook-inbox`, `/instagram-inbox`, `/unified-inbox` → `guides.inbox.*`
+    - `/whatsapp-inbox` → `guides.whatsapp.*`
+  - **Path Normalization**: `findGuideForPath` now strips trailing slashes via `pathname.replace(/\/+$/, "")` before matching, preventing route mismatches from `/orders/` vs `/orders`.
+  - **Dialog Accessibility**: `DialogContent` now receives `closeLabel={t("common.close")}` for screen readers.
+- **Files**:
+  - `apps/frontend/src/config/sectionGuideRegistry.ts`
+  - `apps/frontend/src/components/guides/SectionGuide.tsx`
+
+## [2026-06-11] Frontend — Sidebar Hardcoded String to i18n
+- **Details**: Fixed a compliance violation — hardcoded Arabic sidebar label `'قوالب المتجر'` replaced with `t('sidebar.storeThemes')`. Added `storeThemes` key to sidebar locale files.
+- **Files**:
+  - `apps/frontend/src/config/sidebar.ts`
+  - `apps/frontend/src/locales/{ar,en}/sections/sidebar.json`
+
+## [2026-06-11] Frontend — Domain Reference Update (mokhtarelhenawy.online → maxp.online)
+- **Details**: Updated `index.html` OG/Twitter meta tags and preconnect/dns-prefetch URLs from `https://mokhtarelhenawy.online` to `https://maxp.online` — reflecting the production domain migration.
+- **Files**:
+  - `apps/frontend/index.html`
+
+## [2026-06-11] Backend — marketplaceController Security Hardening
+- **Details**: Removed `error: error.message` from all marketplace API error responses to prevent internal error details from leaking to clients. Suppressed `logToFile` in production. Fixed garbled Arabic characters in 3 error messages.
+- **Security Impact**: Prevents SQL query details, stack traces, and internal state from being exposed through marketplace API error responses.
+- **Files**:
+  - `apps/backend/controller/marketplaceController.js`
+
 ## [2026-06-11] Frontend — Section Guide DialogTrigger Fix
 - **Details**: The initial `DialogTrigger render={<Button>...</Button>}` approach failed because `@base-ui/react@^1.3.0`'s Trigger component cannot merge interactive props onto a React element passed via `render`. Reverted to direct `<Button onClick>` with manual ARIA attributes (`aria-haspopup`, `aria-expanded`, `aria-label`). This is the same controlled-state pattern used by all other dialogs in the app (Feedback.tsx, BroadcastDialog.tsx, ConfirmDialog.tsx).
 - **Files**:

@@ -1,3 +1,26 @@
+## [2026-06-11] Marketplace i18n Migration & SectionGuide Enhancements [DONE]
+- **Objective**: Complete i18n migration of the Marketplace page, enhance SectionGuide with fallback/coverage, harden marketplaceController security, fix domain references, and fix sidebar compliance.
+- **Accomplishments**:
+  - **Marketplace Full i18n Migration**: Replaced all hardcoded Arabic/English strings in `Marketplace.tsx` (~285 lines of changes) with `t()` calls via new `marketplace.json` locale files (93 keys per locale). Refactored `useToolCollections` from top-level const to reactive hook. Added URL search params sync (`category`, `q`, `sort`) for shareable URLs. Added `UNLIMITED_SUBSCRIPTION_PRICE` constant.
+  - **Marketplace Locale Registration**: Registered `marketplace` namespace in `i18n/index.ts` for both AR/EN.
+  - **SectionGuide Default & Coverage**: Added `defaultSectionGuide` catch-all (shows generic guide for unmatched paths). Added 5 new registry entries: `/company-dashboard`, `/facebook-inbox`, `/instagram-inbox`, `/unified-inbox`, `/whatsapp-inbox`. Added path normalization (trailing slash removal). Added `closeLabel` for dialog accessibility. Removed early-return `null` guard.
+  - **Sidebar i18n Compliance**: Replaced hardcoded Arabic `'قوالب المتجر'` with `t('sidebar.storeThemes')`. Added `storeThemes` to sidebar locale files.
+  - **Domain Reference Update**: Changed `index.html` OG/twitter/preconnect URLs from `mokhtarelhenawy.online` to `maxp.online`.
+  - **marketplaceController Security**: Removed `error: error.message` from all 11 error handlers. Suppressed `logToFile` in production. Fixed garbled Arabic encoding in 3 error messages.
+  - **i18n-check Script Fix**: Corrected path from `../frontend` to `../apps/frontend`.
+- **Files**:
+  - `apps/frontend/src/pages/marketplace/Marketplace.tsx`
+  - `apps/frontend/src/locales/{ar,en}/sections/marketplace.json` (new)
+  - `apps/frontend/src/i18n/index.ts`
+  - `apps/frontend/src/config/sectionGuideRegistry.ts`
+  - `apps/frontend/src/components/guides/SectionGuide.tsx`
+  - `apps/frontend/src/config/sidebar.ts`
+  - `apps/frontend/src/locales/{ar,en}/sections/sidebar.json`
+  - `apps/frontend/index.html`
+  - `apps/backend/controller/marketplaceController.js`
+  - `scripts/i18n-check.js`
+- **Next Steps**: Monitor marketplace page for locale switching. Verify SectionGuide renders on all dashboard routes.
+
 ## [2026-06-11] Section Guide — DialogTrigger Fix [DONE]
 - **Objective**: Fix the non-functional `?` button — it rendered but clicking did nothing.
 - **Root Cause**: `DialogTrigger render={<Button>...</Button>}` is incompatible with `@base-ui/react@^1.3.0`. The `render` prop cannot merge onClick/ARIA props onto a React element.

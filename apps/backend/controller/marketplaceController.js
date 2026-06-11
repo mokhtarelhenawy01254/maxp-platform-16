@@ -671,6 +671,7 @@ async function resolveBundleForWrite(slug) {
 }
 
 function logToFile(message, data = null) {
+  if (process.env.NODE_ENV === 'production') return;
   const timestamp = new Date().toISOString();
   const logEntry = `[${timestamp}] ${message} ${data ? JSON.stringify(data, null, 2) : ''}\n\n`;
   try {
@@ -897,8 +898,7 @@ exports.getAllApps = async (req, res) => {
     console.error('Error fetching marketplace apps:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في جلب الأدوات',
-      error: error.message
+      message: 'خطأ في جلب الأدوات'
     });
   }
 };
@@ -1092,8 +1092,7 @@ exports.getAppDetails = async (req, res) => {
     console.error('Error fetching app details:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch app details',
-      error: error.message
+      message: 'Failed to fetch app details'
     });
   }
 };
@@ -1189,8 +1188,7 @@ exports.getCategories = async (req, res) => {
     console.error('Error fetching categories:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في جلب الفئات',
-      error: error.message
+      message: 'خطأ في جلب الفئات'
     });
   }
 };
@@ -1228,8 +1226,7 @@ exports.getFeaturedApps = async (req, res) => {
     console.error('Error fetching featured apps:', error);
     res.status(500).json({
       success: false,
-      message: 'خطأ في جلب الأدوات المميزة',
-      error: error.message
+      message: 'خطأ في جلب الأدوات المميزة'
     });
   }
 };
@@ -1351,8 +1348,7 @@ exports.getBundles = async (req, res) => {
     console.error('Error message:', error.message);
     res.status(500).json({
       success: false,
-      message: 'خطأ في جلب الباقات',
-      error: error.message
+      message: 'خطأ في جلب الباقات'
     });
   }
 };
@@ -1447,7 +1443,7 @@ exports.installApp = async (req, res) => {
     if (error.code === 'APP_ALREADY_INSTALLED') {
       return res.status(400).json({
         success: false,
-        message: error.message,
+        message: error.code === 'APP_ALREADY_INSTALLED' ? 'التطبيق مثبت بالفعل' : error.message,
         data: error.existing
       });
     }
@@ -1455,7 +1451,7 @@ exports.installApp = async (req, res) => {
     if (error.code === 'REQUIRED_APPS_MISSING') {
       return res.status(400).json({
         success: false,
-        message: error.message,
+        message: error.code === 'REQUIRED_APPS_MISSING' ? 'التطبيقات المطلوبة غير مثبتة' : error.message,
         requiredApps: error.requiredApps
       });
     }
@@ -1463,8 +1459,7 @@ exports.installApp = async (req, res) => {
     console.error('Error installing app:', error);
     res.status(500).json({
       success: false,
-      message: 'Ø®Ø·Ø£ ÙÙŠ ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø£Ø¯Ø§Ø©',
-      error: error.message
+      message: 'خطأ في تفعيل الأداة'
     });
   }
 };
@@ -1527,8 +1522,7 @@ exports.uninstallApp = async (req, res) => {
     console.error('Error uninstalling app:', error);
     res.status(500).json({
       success: false,
-      message: 'Ø®Ø·Ø£ ÙÙŠ Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø£Ø¯Ø§Ø©',
-      error: error.message
+      message: 'خطأ في إلغاء الأداة'
     });
   }
 };
@@ -1622,8 +1616,7 @@ exports.addReview = async (req, res) => {
     console.error('Error adding review:', error);
     res.status(500).json({
       success: false,
-      message: 'Ø®Ø·Ø£ ÙÙŠ Ø¥Ø¶Ø§ÙØ© Ø§Ù„ØªÙ‚ÙŠÙŠÙ…',
-      error: error.message
+      message: 'خطأ في إضافة التقييم'
     });
   }
 };
@@ -1778,8 +1771,7 @@ exports.getBundleDetails = async (req, res) => {
     console.error('Error fetching bundle details:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to fetch bundle details',
-      error: error.message
+      message: 'Failed to fetch bundle details'
     });
   }
 };
@@ -1957,7 +1949,7 @@ exports.subscribeToBundle = async (req, res) => {
     console.error('Error subscribing to bundle:', error);
     res.status(400).json({
       success: false,
-      message: error.message || 'خطأ في الاشتراك في الباقة'
+      message: 'خطأ في الاشتراك في الباقة'
     });
   }
 };
@@ -2056,7 +2048,7 @@ exports.subscribeToUnlimited = async (req, res) => {
     console.error('Error subscribing to unlimited plan:', error);
     res.status(400).json({
       success: false,
-      message: error.message || 'خطأ في معالجة الاشتراك الشامل'
+      message: 'خطأ في معالجة الاشتراك الشامل'
     });
   }
 };
