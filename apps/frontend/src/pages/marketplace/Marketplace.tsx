@@ -534,7 +534,7 @@ export default function Marketplace() {
 
       toast.success(
         autoInstalledNames.length > 0
-          ? t('marketplace.activatedWithReqs', { name: app.name, reqs: autoInstalledNames.join("، ") })
+          ? t('marketplace.activatedWithReqs', { name: app.name, reqs: autoInstalledNames.join(", ") })
           : t('marketplace.activatedSingle', { name: app.name }),
       );
 
@@ -557,12 +557,12 @@ export default function Marketplace() {
       if (apiError.response?.data?.requiredApps) {
         const required = apiError.response.data.requiredApps;
         toast.error(
-          t('marketplace.requiresApps', { apps: required.map((requiredApp: { name?: string; slug: string }) => requiredApp.name || requiredApp.slug).join("، ") }),
+          t('marketplace.requiresApps', { apps: required.map((requiredApp: { name?: string; slug: string }) => requiredApp.name || requiredApp.slug).join(", ") }),
         );
       } else {
         const requiredNames = getRequiredAppNames(app);
         if (requiredNames.length > 0) {
-          toast(t('marketplace.needsApps', { apps: requiredNames.join("، ") }));
+          toast(t('marketplace.needsApps', { apps: requiredNames.join(", ") }));
         }
       }
     } finally {
