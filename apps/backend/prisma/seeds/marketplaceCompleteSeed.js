@@ -316,27 +316,6 @@ async function seedMarketplace() {
 
   const communicationApps = [
     {
-      slug: 'whatsapp-business',
-      name: 'WhatsApp Business API',
-      category: 'COMMUNICATION',
-      description: 'تكامل كامل مع WhatsApp Business API. إرسال واستقبال الرسائل والردود التلقائية.',
-      icon: '💬',
-      monthlyPrice: 199,
-      yearlyPrice: 1990,
-      trialDays: 14,
-      features: JSON.stringify([
-        'WhatsApp Business API',
-        'ردود سريعة',
-        'قوالب الرسائل',
-        'ردود تلقائية',
-        'تقارير الرسائل',
-        'إشعارات الطلبات'
-      ]),
-      isActive: true,
-      isFeatured: true,
-      isPopular: true
-    },
-    {
       slug: 'telegram-business',
       name: 'Telegram for Business',
       category: 'COMMUNICATION',
@@ -929,7 +908,7 @@ async function seedMarketplace() {
       slug: 'business-bundle',
       name: 'باقة الأعمال',
       description: 'باقة شاملة للشركات المتوسطة: المتجر الاحترافي + CRM + HR + AI + واتساب',
-      apps: ['store-pro', 'crm-loyalty', 'hr-core', 'hr-attendance-pro', 'ai-chat-basic', 'whatsapp-business', 'analytics-basic'],
+      apps: ['store-pro', 'crm-loyalty', 'hr-core', 'hr-attendance-pro', 'ai-chat-basic', 'analytics-basic'],
       monthlyPrice: 1299,
       yearlyPrice: 12990,
       discount: 35,
@@ -940,7 +919,7 @@ async function seedMarketplace() {
       slug: 'enterprise-bundle',
       name: 'باقة المؤسسات',
       description: 'باقة المؤسسات الكبيرة: كل التطبيقات مع خصم 40%',
-      apps: ['store-pro', 'inventory-pro', 'hr-core', 'hr-payroll', 'hr-assets', 'ai-chat-pro', 'ai-image-studio', 'whatsapp-business', 'telegram-business', 'crm-loyalty', 'opportunities-pipeline', 'turbo-analytics', 'facebook-ads-pro'],
+      apps: ['store-pro', 'inventory-pro', 'hr-core', 'hr-payroll', 'hr-assets', 'ai-chat-pro', 'ai-image-studio', 'telegram-business', 'crm-loyalty', 'opportunities-pipeline', 'turbo-analytics', 'facebook-ads-pro'],
       monthlyPrice: 2499,
       yearlyPrice: 24990,
       discount: 40,

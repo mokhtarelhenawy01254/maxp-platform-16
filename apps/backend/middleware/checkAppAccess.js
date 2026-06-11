@@ -1,7 +1,13 @@
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
 
 const LEGACY_APP_SLUG_ALIASES = {
-  'order-core': ['ecommerce-basic']
+  'order-core': ['ecommerce-basic'],
+  'whatsapp-inbox': ['whatsapp-integration'],
+  'whatsapp-routing': ['whatsapp-integration'],
+  'whatsapp-templates': ['whatsapp-integration'],
+  'whatsapp-notifications': ['whatsapp-integration'],
+  'whatsapp-analytics': ['whatsapp-integration'],
+  'whatsapp-settings': ['whatsapp-integration'],
 };
 
 const getCandidateAppSlugs = (appSlug) => {

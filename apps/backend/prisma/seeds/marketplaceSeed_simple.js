@@ -49,19 +49,6 @@ async function seedMarketplace() {
         isFeatured: true
       },
       {
-        slug: 'whatsapp-integration',
-        name: 'تكامل WhatsApp Business',
-        category: 'COMMUNICATION',
-        description: 'تكامل كامل مع WhatsApp Business API',
-        icon: '💬',
-        monthlyPrice: 199,
-        yearlyPrice: 1990,
-        trialDays: 14,
-        features: JSON.stringify(['WhatsApp Business API', 'ردود سريعة', 'قوالب الرسائل']),
-        isActive: true,
-        isPopular: true
-      },
-      {
         slug: 'crm-basic',
         name: 'CRM الأساسي',
         category: 'CRM',
@@ -114,7 +101,7 @@ async function seedMarketplace() {
         slug: 'business-bundle',
         name: 'باقة الأعمال',
         description: 'باقة شاملة للشركات المتوسطة: جميع الأدوات الأساسية',
-        appIds: JSON.stringify(['ecommerce-basic', 'crm-basic', 'hr-basic', 'ai-chat-basic', 'whatsapp-integration']),
+        appIds: JSON.stringify(['ecommerce-basic', 'crm-basic', 'hr-basic', 'ai-chat-basic']),
         monthlyPrice: 899,
         yearlyPrice: 8990,
         discount: 40,

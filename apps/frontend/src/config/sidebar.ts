@@ -208,15 +208,30 @@ export const getSidebarConfig = (
         console.log('🔍 [SIDEBAR-DEBUG] Active Apps List:', activeApps);
     }
 
+    // Legacy app slug aliases (maps old monolithic slugs to new granular apps)
+    // Companies with the old slug get access to all its split parts.
+    const APP_SLUG_ALIASES: Record<string, string[]> = {
+        'whatsapp-integration': ['whatsapp-inbox', 'whatsapp-routing', 'whatsapp-templates', 'whatsapp-notifications', 'whatsapp-analytics', 'whatsapp-settings'],
+        'telegram-integration': ['telegram-business'],
+    };
+
     const isAppActive = (slug: string) => {
         // Super Admin can see everything if we want, but for testing, let's keep it filtered
         // unless they are in a super company
         if (isSuperCompany) return true;
 
-        // Ensure activeApps is an array and check for the slug
-        return Array.isArray(activeApps) && activeApps.some(a =>
+        // Check direct match in activeApps
+        const hasDirect = Array.isArray(activeApps) && activeApps.some(a =>
             typeof a === 'string' && a.toLowerCase() === slug.toLowerCase()
         );
+        if (hasDirect) return true;
+
+        // Check legacy aliases: if any active app is a legacy alias for this slug
+        return Array.isArray(activeApps) && activeApps.some(a => {
+            if (typeof a !== 'string') return false;
+            const expanded = APP_SLUG_ALIASES[a.toLowerCase()];
+            return expanded?.includes(slug.toLowerCase());
+        });
     };
     const isAnyAppActive = (slugs: string[]) => slugs.some((slug) => isAppActive(slug));
     const canManageTaskIntegrations = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'].includes(user?.role || '');
@@ -442,31 +457,80 @@ export const getSidebarConfig = (
             hidden: user?.role === 'AFFILIATE' || !isAppActive('crm-basic'),
         },
 
-        // 2️⃣.5 واتساب
+        // 2️⃣.5.1 صندوق الوارد
         {
-            id: 'whatsapp',
-            title: t('sidebar.whatsappSection'),
+            id: 'whatsapp-inbox',
+            title: t('sidebar.whatsappInboxSection'),
             icon: ChatBubbleLeftRightIcon,
             items: [
                 { to: '/whatsapp', icon: ChatBubbleLeftRightIcon, label: t('sidebar.whatsapp') },
-                { to: '/whatsapp/notifications', icon: BellIcon, label: t('sidebar.whatsappNotifications') },
+            ],
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-inbox'),
+        },
+
+        // 2️⃣.5.2 توزيع المحادثات
+        {
+            id: 'whatsapp-routing',
+            title: t('sidebar.whatsappRoutingSection'),
+            icon: ArrowsRightLeftIcon,
+            items: [
+                { to: '/whatsapp-inbox', icon: ArrowsRightLeftIcon, label: t('sidebar.whatsappRouting') },
+                { to: '/settings/inbox', icon: Cog6ToothIcon, label: t('sidebar.whatsappInboxSettings') },
+            ],
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-routing'),
+        },
+
+        // 2️⃣.5.3 قوالب الرسائل
+        {
+            id: 'whatsapp-templates',
+            title: t('sidebar.whatsappTemplatesSection'),
+            icon: DocumentTextIcon,
+            items: [
                 { 
                     to: '/whatsapp/templates', 
                     icon: DocumentTextIcon, 
-                    label: i18n.language === 'ar' ? 'القوالب' : 'Templates',
+                    label: t('sidebar.whatsappTemplates'),
                     children: [
-                        { to: '/whatsapp/templates?category=ORDERS', label: i18n.language === 'ar' ? 'قوالب الطلبات' : 'Orders Templates' },
-                        { to: '/whatsapp/templates?category=HR', label: i18n.language === 'ar' ? 'قوالب الـ HR' : 'HR Templates' },
-                        { to: '/whatsapp/templates?category=SYSTEM', label: i18n.language === 'ar' ? 'قوالب النظام' : 'System Templates' },
+                        { to: '/whatsapp/templates?category=ORDERS', label: t('sidebar.whatsappOrdersTemplates') },
+                        { to: '/whatsapp/templates?category=HR', label: t('sidebar.whatsappHrTemplates') },
+                        { to: '/whatsapp/templates?category=SYSTEM', label: t('sidebar.whatsappSystemTemplates') },
                     ]
                 },
-                { to: '/whatsapp-inbox', icon: ArrowsRightLeftIcon, label: t('sidebar.whatsappRouting') },
-                { to: '/whatsapp/settings', icon: CogIcon, label: t('sidebar.whatsappSettings') },
-                { to: '/settings/inbox', icon: Cog6ToothIcon, label: t('sidebar.whatsappInboxSettings') },
+            ],
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-templates'),
+        },
+
+        // 2️⃣.5.4 إشعارات واتساب
+        {
+            id: 'whatsapp-notifications',
+            title: t('sidebar.whatsappNotificationsSection'),
+            icon: BellIcon,
+            items: [
+                { to: '/whatsapp/notifications', icon: BellIcon, label: t('sidebar.whatsappNotifications') },
+            ],
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-notifications'),
+        },
+
+        // 2️⃣.5.5 تحليلات واتساب
+        {
+            id: 'whatsapp-analytics',
+            title: t('sidebar.whatsappAnalyticsSection'),
+            icon: ChartBarIcon,
+            items: [
                 { to: '/whatsapp/analytics', icon: ChartBarIcon, label: t('sidebar.whatsappAnalytics') },
             ],
-            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-business'),
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-analytics'),
+        },
+
+        // 2️⃣.5.6 إعدادات واتساب
+        {
+            id: 'whatsapp-settings',
+            title: t('sidebar.whatsappSettingsSection'),
+            icon: CogIcon,
+            items: [
+                { to: '/whatsapp/settings', icon: CogIcon, label: t('sidebar.whatsappSettings') },
+            ],
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-settings'),
         },
 
         // 2️⃣.6 تليجرام

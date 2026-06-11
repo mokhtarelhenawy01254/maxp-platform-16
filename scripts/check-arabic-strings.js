@@ -60,6 +60,7 @@ const SKIP_PATTERNS = [
   /\.spec\./,
   /\.min\./,
   /seed/i,             // seed data files
+  /marketplaceFeatureMap/, // feature audit config file (contains documented Arabic audit notes)
   /migration/i,        // database migrations
   /scripts[/\\]scripts/, // utility/build scripts
   /\.uat\./,           // UAT test scripts

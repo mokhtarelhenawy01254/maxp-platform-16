@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/rbacMiddleware');
+const { checkAppAccess } = require('../middleware/checkAppAccess');
 const assignmentController = require('../controller/numberAssignmentController');
 
 router.use(requireAuth);
+router.use(checkAppAccess('whatsapp-routing'));
 
 // ─── Admin Routes ─────────────────────────────────────────────────
 
