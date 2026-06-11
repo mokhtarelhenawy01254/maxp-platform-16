@@ -32,7 +32,7 @@
   display: flex;
   min-height: 100vh;
   flex-direction: column;
-  background-color: var(--color-gray-50);
+  background-color: var(--color-background);
 }
 .app-dashboard-app-root {
   display: flex;
@@ -41,13 +41,8 @@
   min-height: 100vh;
   width: 100%;
   overflow: hidden;
-  background-color: var(--color-gray-50);
+  background-color: var(--color-background);
 }
-.dark .app-dashboard-root,
-.dark .app-dashboard-app-root {
-  background-color: var(--color-gray-900);
-}
-
 .app-shell-root {
   display: flex;
   flex: 1;
@@ -61,16 +56,12 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  border-inline-end: 1px solid var(--color-gray-200);
-  background-color: var(--color-white);
+  border-inline-end: 1px solid var(--color-border);
+  background-color: var(--color-card);
   width: 280px;
   min-width: 280px;
   transition: width 200ms ease, min-width 200ms ease;
   touch-action: manipulation;
-}
-.dark .app-shell-sidebar {
-  border-color: var(--color-gray-700);
-  background-color: var(--color-gray-800);
 }
 
 .app-shell-sidebar--collapsed {
@@ -83,44 +74,30 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--color-gray-200);
-  color: var(--color-gray-600);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-muted-foreground);
   cursor: pointer;
   user-select: none;
   transition: background-color 150ms ease, color 150ms ease;
   touch-action: manipulation;
 }
-.dark .app-shell-back-button {
-  border-color: var(--color-gray-700);
-  color: var(--color-gray-300);
-}
 .app-shell-back-button:hover {
-  background-color: var(--color-gray-50);
-  color: var(--color-indigo-600);
-}
-.dark .app-shell-back-button:hover {
-  background-color: rgba(55, 65, 81, 0.5);
-  color: var(--color-indigo-400);
+  background-color: var(--color-accent);
+  color: var(--color-accent-foreground);
 }
 
 .app-shell-sidebar-header {
   padding: 1rem 1rem;
-  border-bottom: 1px solid var(--color-gray-200);
-}
-.dark .app-shell-sidebar-header {
-  border-color: var(--color-gray-700);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .app-shell-sidebar-title {
   font-size: 1.125rem;
   font-weight: 700;
-  color: var(--color-gray-900);
+  color: var(--color-foreground);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.dark .app-shell-sidebar-title {
-  color: var(--color-white);
 }
 
 .app-shell-sidebar-content {
@@ -137,7 +114,7 @@
   padding: 0.625rem 1rem;
   margin: 0 0.5rem;
   border-radius: 0.5rem;
-  color: var(--color-gray-600);
+  color: var(--color-muted-foreground);
   cursor: pointer;
   user-select: none;
   transition: background-color 150ms ease, color 150ms ease;
@@ -145,50 +122,34 @@
 }
 .app-shell-sidebar-item:focus-visible,
 .app-shell-back-button:focus-visible {
-  outline: 2px solid var(--color-indigo-500);
+  outline: 2px solid var(--color-ring);
   outline-offset: 2px;
 }
-.dark .app-shell-sidebar-item {
-  color: var(--color-gray-300);
-}
 .app-shell-sidebar-item:hover {
-  background-color: var(--color-gray-100);
-}
-.dark .app-shell-sidebar-item:hover {
-  background-color: rgba(55, 65, 81, 0.5);
+  background-color: var(--color-accent);
+  color: var(--color-accent-foreground);
 }
 
 .app-shell-sidebar-item--active {
-  background-color: var(--color-indigo-50);
-  color: var(--color-indigo-600);
+  background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
   font-weight: 500;
 }
-.dark .app-shell-sidebar-item--active {
-  background-color: rgba(49, 46, 129, 0.2);
-  color: var(--color-indigo-400);
-}
 .app-shell-sidebar-item--active:hover {
-  background-color: var(--color-indigo-50);
-}
-.dark .app-shell-sidebar-item--active:hover {
-  background-color: rgba(49, 46, 129, 0.2);
+  background-color: color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
 .app-shell-sidebar-badge {
   margin-inline-start: auto;
   min-width: 1.25rem;
   border-radius: 9999px;
-  background-color: var(--color-indigo-100);
+  background-color: color-mix(in srgb, var(--color-primary) 14%, transparent);
   padding: 0.125rem 0.375rem;
   text-align: center;
   font-size: 0.6875rem;
   font-weight: 700;
   line-height: 1rem;
-  color: var(--color-indigo-700);
-}
-.dark .app-shell-sidebar-badge {
-  background-color: rgba(99, 102, 241, 0.2);
-  color: var(--color-indigo-200);
+  color: var(--color-primary);
 }
 
 .app-shell-sidebar-children {
@@ -204,33 +165,21 @@
   min-height: 2rem;
   border-radius: 0.375rem;
   padding: 0.375rem 0.75rem;
-  color: var(--color-gray-500);
+  color: var(--color-muted-foreground);
   font-size: 0.8125rem;
   line-height: 1.2;
   transition: background-color 150ms ease, color 150ms ease;
 }
-.dark .app-shell-sidebar-child {
-  color: var(--color-gray-400);
-}
 .app-shell-sidebar-child:hover,
 .app-shell-sidebar-child:focus-visible {
-  background-color: var(--color-gray-100);
-  color: var(--color-gray-800);
+  background-color: var(--color-accent);
+  color: var(--color-accent-foreground);
   outline: none;
 }
-.dark .app-shell-sidebar-child:hover,
-.dark .app-shell-sidebar-child:focus-visible {
-  background-color: rgba(55, 65, 81, 0.5);
-  color: var(--color-gray-100);
-}
 .app-shell-sidebar-child--active {
-  background-color: var(--color-indigo-50);
-  color: var(--color-indigo-600);
+  background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
   font-weight: 600;
-}
-.dark .app-shell-sidebar-child--active {
-  background-color: rgba(49, 46, 129, 0.2);
-  color: var(--color-indigo-300);
 }
 
 .app-shell-main {
@@ -247,12 +196,8 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1.5rem;
-  border-bottom: 1px solid var(--color-gray-200);
-  background-color: var(--color-white);
-}
-.dark .app-shell-header {
-  border-color: var(--color-gray-700);
-  background-color: var(--color-gray-800);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-card);
 }
 
 .app-shell-content {

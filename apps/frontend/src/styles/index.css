@@ -10,6 +10,25 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Smooth theme transitions */
+html,
+html *,
+html *::before,
+html *::after {
+  transition-property: background-color, border-color, color, box-shadow, background-image, opacity;
+  transition-duration: 200ms;
+  transition-timing-function: ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html,
+  html *,
+  html *::before,
+  html *::after {
+    transition: none !important;
+  }
+}
+
 /* Hide decorative overflow rails while preserving touch/trackpad scrolling. */
 .no-scrollbar {
   -ms-overflow-style: none;
@@ -314,6 +333,10 @@
   --color-warning-foreground: #ffffff;
   --color-success: #14b87a;
   --color-success-foreground: #ffffff;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f1b2d;
+  --color-accent: #dce6f1;
+  --color-accent-foreground: #0f1b2d;
   --color-info: #2f6bff;
   --color-info-foreground: #ffffff;
 
@@ -497,6 +520,10 @@
   --color-secondary-foreground: var(--color-secondary-foreground);
   --color-background: var(--color-background);
   --color-foreground: var(--color-foreground);
+  --color-card: var(--color-card);
+  --color-card-foreground: var(--color-card-foreground);
+  --color-accent: var(--color-accent);
+  --color-accent-foreground: var(--color-accent-foreground);
   --color-muted: var(--color-muted);
   --color-muted-foreground: var(--color-muted-foreground);
   --color-border: var(--color-border);
@@ -561,6 +588,10 @@
   --color-muted-foreground: #93abc7;
   --color-border: #22374f;
   --color-input: #0d192a;
+  --color-card: #0d1a2d;
+  --color-card-foreground: #edf4ff;
+  --color-accent: #15273f;
+  --color-accent-foreground: #edf4ff;
 
   --app-bg-gradient: linear-gradient(
     135deg,

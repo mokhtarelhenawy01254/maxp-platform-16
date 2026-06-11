@@ -29,9 +29,9 @@ export default function OrderStatsWidget({
       label: t("companyDashboard.orderStats.newOrders"),
       value: formatCount(newOrders),
       icon: ShoppingBagIcon,
-      color: "text-red-600 dark:text-red-400",
-      bgColor: "bg-red-50 dark:bg-red-900/20",
-      borderColor: "border-red-200 dark:border-red-800",
+      color: "text-destructive",
+      bgColor: "bg-destructive/10",
+      borderColor: "border-destructive/30",
       onClick: () => navigate("/orders?isViewed=false"),
       highlight: hasNewOrders,
     },
@@ -39,18 +39,18 @@ export default function OrderStatsWidget({
       label: t("companyDashboard.orderStats.viewedOrders"),
       value: formatCount(viewedOrders),
       icon: EyeIcon,
-      color: "text-emerald-600 dark:text-emerald-400",
-      bgColor: "bg-emerald-50 dark:bg-emerald-900/20",
-      borderColor: "border-emerald-200 dark:border-emerald-800",
+      color: "text-success",
+      bgColor: "bg-success/10",
+      borderColor: "border-success/30",
       onClick: () => navigate("/orders"),
     },
     {
       label: t("companyDashboard.orderStats.totalOrders"),
       value: formatCount(totalOrders),
       icon: ClipboardDocumentListIcon,
-      color: "text-indigo-600 dark:text-indigo-400",
-      bgColor: "bg-indigo-50 dark:bg-indigo-900/20",
-      borderColor: "border-indigo-200 dark:border-indigo-800",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+      borderColor: "border-primary/30",
       onClick: () => navigate("/orders"),
     },
   ];
@@ -58,12 +58,12 @@ export default function OrderStatsWidget({
   return (
     <DashboardSurfaceCard>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+        <h3 className="text-sm font-semibold text-foreground">
           {t("companyDashboard.orderStats.title")}
         </h3>
         {hasNewOrders && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30 animate-pulse">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-destructive-foreground bg-destructive/10 animate-pulse">
+            <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
             {t("companyDashboard.orderStats.requiresAttention")}
           </span>
         )}
@@ -78,7 +78,7 @@ export default function OrderStatsWidget({
               "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 hover:shadow-md",
               item.bgColor,
               item.borderColor,
-              item.highlight ? "ring-2 ring-red-300 dark:ring-red-700" : "",
+              item.highlight ? "ring-2 ring-destructive/50" : "",
             )}
           >
             <div className={cn("p-2 rounded-full mb-2", item.bgColor)}>
@@ -87,7 +87,7 @@ export default function OrderStatsWidget({
             <span className={cn("text-xl font-bold", item.color)}>
               {item.value}
             </span>
-            <span className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 text-center leading-tight">
+            <span className="text-[10px] text-muted-foreground mt-1 text-center leading-tight">
               {item.label}
             </span>
           </button>

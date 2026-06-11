@@ -97,7 +97,7 @@ export default function QuickStartChecklist({
         <ul className="mt-3 space-y-1.5 text-xs text-muted-foreground">
           {steps.map((step) => (
             <li key={step.key} className="flex items-center gap-2">
-              <span className={step.done ? "text-green-600" : ""}>
+              <span className={step.done ? "text-success dark:text-success-foreground" : ""}>
                 {step.done ? "✓" : "○"}
               </span>
               <span className="flex-1">
@@ -158,11 +158,11 @@ export default function QuickStartChecklist({
       <ul className="mt-3 space-y-1.5 text-xs text-muted-foreground">
         {steps.map((step) => (
           <li key={step.key} className="flex items-center gap-2">
-            <span className={step.done ? "text-green-600" : ""}>
-              {step.done ? "✓" : "○"}
-            </span>
-            <span className="flex-1">
-              {t(`companyDashboard.quickStart.steps.${step.key}.label`)}
+             <span className={step.done ? "text-success dark:text-success-foreground" : ""}>
+                {step.done ? "✓" : "○"}
+              </span>
+              <span className="flex-1">
+                {t(`companyDashboard.quickStart.steps.${step.key}.label`)}
             </span>
             {!step.done && (
               <Button

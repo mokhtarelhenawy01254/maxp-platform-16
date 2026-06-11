@@ -93,7 +93,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.4),
+    color-mix(in srgb, var(--color-foreground) 8%, transparent),
     transparent
   );
   transform: translateX(-100%);
@@ -160,7 +160,7 @@
   right: -2px;
   width: 8px;
   height: 8px;
-  background: #ef4444;
+  background: var(--color-destructive);
   border-radius: 50%;
   animation: pulse 2s infinite;
 }
@@ -191,8 +191,8 @@
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
+  background: var(--color-foreground);
+  color: var(--color-background);
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 12px;
@@ -210,7 +210,7 @@
   left: 50%;
   transform: translateX(-50%);
   border: 5px solid transparent;
-  border-top-color: rgba(0, 0, 0, 0.8);
+  border-top-color: var(--color-foreground);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s;
@@ -249,35 +249,37 @@
     0 10px 10px -5px rgba(0, 0, 0, 0.1);
 }
 
+.dark .gradient-text {
+  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* Custom Scrollbar for Dashboard */
 .dashboard-scroll::-webkit-scrollbar {
   width: 8px;
 }
 
 .dashboard-scroll::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--color-muted);
   border-radius: 4px;
 }
 
 .dashboard-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, color-mix(in srgb, var(--color-primary) 60%, var(--color-secondary)) 100%);
   border-radius: 4px;
 }
 
 .dashboard-scroll::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  background: linear-gradient(135deg, var(--color-primary) 100%, color-mix(in srgb, var(--color-primary) 80%, var(--color-secondary)) 100%);
 }
 
 /* Loading States */
 .skeleton-loading {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, var(--color-muted) 25%, var(--color-border) 50%, var(--color-muted) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
-}
-
-.dark .skeleton-loading {
-  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
-  background-size: 200% 100%;
 }
 
 /* Success States */

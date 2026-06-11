@@ -16,15 +16,15 @@ type Props = {
 };
 
 const toneStyles: Record<DashboardStatusStripTone, string> = {
-  primary: "bg-sky-50 border-sky-200",
-  success: "bg-green-50 border-green-200",
-  warning: "bg-amber-50 border-amber-200",
+  primary: "bg-primary/10 border-primary/20 dark:bg-primary/15 dark:border-primary/30",
+  success: "bg-success/10 border-success/20 dark:bg-success/15 dark:border-success/30",
+  warning: "bg-warning/10 border-warning/20 dark:bg-warning/15 dark:border-warning/30",
 };
 
 const badgeToneMap: Record<DashboardStatusStripTone, string> = {
-  primary: "bg-sky-100 text-sky-700 border-sky-300",
-  success: "bg-green-100 text-green-700 border-green-300",
-  warning: "bg-amber-100 text-amber-700 border-amber-300",
+  primary: "bg-primary/15 text-primary-foreground border-primary/30 dark:bg-primary/20 dark:text-primary-foreground dark:border-primary/40",
+  success: "bg-success/15 text-success-foreground border-success/30 dark:bg-success/20 dark:text-success-foreground dark:border-success/40",
+  warning: "bg-warning/15 text-warning-foreground border-warning/30 dark:bg-warning/20 dark:text-warning-foreground dark:border-warning/40",
 };
 
 export default function DashboardStatusStrip({
@@ -69,8 +69,8 @@ export default function DashboardStatusStrip({
           value={progressPct}
           className={cn(
             "h-1",
-            tone === "success" && "[&>div]:bg-green-500",
-            tone === "warning" && "[&>div]:bg-amber-500",
+            tone === "success" && "[&>div]:bg-success",
+            tone === "warning" && "[&>div]:bg-warning",
           )}
         />
       )}

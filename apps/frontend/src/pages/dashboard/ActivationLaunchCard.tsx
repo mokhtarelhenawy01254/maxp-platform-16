@@ -56,7 +56,7 @@ export default function ActivationLaunchCard({
           <li key={step.id} className="flex items-center gap-2">
             <span
               className={
-                step.done ? "text-green-600" : "text-muted-foreground"
+                step.done ? "text-success dark:text-success-foreground" : "text-muted-foreground"
               }
             >
               {step.done ? "✓" : "○"}

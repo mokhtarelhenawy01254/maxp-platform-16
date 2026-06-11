@@ -36,7 +36,7 @@ export default function RevenueTrendChart({
   if (chartData.length === 0) {
     return (
       <DashboardSurfaceCard>
-        <div className="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500">
+        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
           <svg
             className="w-12 h-12 mb-3 opacity-50"
             fill="none"
@@ -58,7 +58,7 @@ export default function RevenueTrendChart({
 
   return (
     <DashboardSurfaceCard>
-      <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">
+      <h3 className="text-base font-semibold text-foreground mb-4">
         {title}
       </h3>
       <div className="h-[280px]">
@@ -81,7 +81,9 @@ export default function RevenueTrendChart({
             <Tooltip
               contentStyle={{
                 borderRadius: "8px",
-                border: "1px solid #e5e7eb",
+                border: "1px solid var(--color-border)",
+                background: "var(--color-card)",
+                color: "var(--color-card-foreground)",
               }}
               formatter={(value: number, name: string) => [
                 name === revenueLabel
@@ -94,8 +96,8 @@ export default function RevenueTrendChart({
             <Area
               type="monotone"
               dataKey="revenue"
-              stroke="#10B981"
-              fill="#10B981"
+              stroke="var(--color-success)"
+              fill="var(--color-success)"
               fillOpacity={0.15}
               name={revenueLabel}
               strokeWidth={2}
@@ -104,8 +106,8 @@ export default function RevenueTrendChart({
               <Area
                 type="monotone"
                 dataKey="orders"
-                stroke="#6366F1"
-                fill="#6366F1"
+                stroke="var(--color-primary)"
+                fill="var(--color-primary)"
                 fillOpacity={0.1}
                 name={ordersLabel}
                 strokeWidth={2}

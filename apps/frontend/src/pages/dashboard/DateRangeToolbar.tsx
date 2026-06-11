@@ -30,7 +30,7 @@ export default function DateRangeToolbar({
   toLabel,
 }: DateRangeToolbarProps) {
   return (
-    <div className="flex flex-wrap items-end gap-4 rounded-lg bg-white p-4 shadow-sm">
+    <div className="flex flex-wrap items-end gap-4 rounded-lg bg-card text-card-foreground p-4 shadow-sm">
       <div className="flex flex-col gap-1">
         <Label className="text-xs text-muted-foreground">{rangeLabel}</Label>
         <Select value={selectedFilterId} onValueChange={onSelectFilter}>

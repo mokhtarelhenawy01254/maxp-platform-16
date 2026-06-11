@@ -18,7 +18,7 @@ export default function DashboardSurfaceCard({
   return (
     <Card
       className={cn(
-        "bg-white shadow-sm",
+        "bg-card text-card-foreground shadow-sm",
         bordered && "border",
         padded && "p-6",
         className,
