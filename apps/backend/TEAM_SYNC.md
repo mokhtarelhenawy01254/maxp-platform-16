@@ -1,3 +1,17 @@
+## [2026-06-11] Section Guide — Accessibility, Performance, and Translation Fix [DONE]
+- **Objective**: Fix the SectionGuide feature to be fully accessible, performant, and properly displaying translations.
+- **Accomplishments**:
+  - Replaced raw `<Button onClick>` trigger with `<DialogTrigger render={...}>` — restores semantic ARIA attributes (aria-haspopup, aria-expanded, aria-controls) from @base-ui/react.
+  - Added `aria-label={t("guides.help")}` on the icon-only button for screen reader support.
+  - Wrapped `findGuideForPath()` in `useMemo` to prevent unnecessary array sort on every render.
+  - Restored `guides` section in both `ar/translation.json` and `en/translation.json` from HEAD (had been deleted from working tree, causing all guide keys to render as raw text).
+  - Removed dead `/super-admin` entry from `sectionGuideRegistry.ts` (SuperAdminLayout uses a separate MUI-based shell without SectionGuide).
+  - Frontend build verified (1m 22s, no errors).
+- **Files**:
+  - `apps/frontend/src/components/guides/SectionGuide.tsx`
+  - `apps/frontend/src/config/sectionGuideRegistry.ts`
+  - `apps/frontend/src/locales/{ar,en}/translation.json` (restored)
+
 ## [2026-06-10] Section Guide Feature — Help Icon in Every Section [DONE]
 - **Objective**: Add a help icon (`?`) in the global header that opens a dialog showing a step-by-step guide with optional video for each admin section, so merchants can learn how to use each part of the dashboard without leaving the page.
 - **Accomplishments**:

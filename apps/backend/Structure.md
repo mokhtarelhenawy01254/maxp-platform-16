@@ -1,3 +1,10 @@
+## [2026-06-11] Frontend — Section Guide Accessibility & Performance Polish
+- **Details**: Refactored the SectionGuide trigger to use `<DialogTrigger render={...}>` (NOT `asChild` — the `render` prop pattern is compatible with `@base-ui/react@^1.3.0`). This provides semantic ARIA attributes (`aria-haspopup="dialog"`, `aria-expanded`, `aria-controls`) automatically via @base-ui. Added explicit `aria-label` on the icon-only button for screen readers. Wrapped `findGuideForPath()` in `useMemo` to avoid recreating the sorted registry array on every render. Removed unreachable `/super-admin` entry from the registry (SuperAdminLayout uses a separate MUI-based shell that doesn't include SectionGuide).
+- **Architecture Note**: The `DialogTrigger` `render` prop takes a React element (not a component). @base-ui clones the element and merges its interactive props (onClick, ARIA attributes) onto it. This replaces the previous raw `<Button onClick>` approach, which lacked all accessibility linkage.
+- **Files**:
+  - `apps/frontend/src/components/guides/SectionGuide.tsx`
+  - `apps/frontend/src/config/sectionGuideRegistry.ts`
+
 ## [2026-06-10] Frontend — Section Guide Feature with Route-Based Registry
 - **Details**: Added a reusable Section Guide system that displays a help icon (`?`) in the global header utility row. When clicked, it opens a dialog showing a step-by-step guide for the current section, with numbered instructions and an optional video player. The system uses a route-based registry to resolve which guide to show for the current URL path.
 - **Architecture**:

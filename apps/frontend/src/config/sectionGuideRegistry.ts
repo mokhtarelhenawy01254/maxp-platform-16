@@ -148,16 +148,6 @@ export const sectionGuideRegistry: SectionGuideEntry[] = [
       "guides.support.step3",
     ],
   },
-  {
-    pathPrefix: "/super-admin",
-    titleKey: "guides.superAdmin.title",
-    descriptionKey: "guides.superAdmin.description",
-    stepKeys: [
-      "guides.superAdmin.step1",
-      "guides.superAdmin.step2",
-      "guides.superAdmin.step3",
-    ],
-  },
 ];
 
 export function findGuideForPath(pathname: string): SectionGuideEntry | undefined {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,22 +17,25 @@ import { findGuideForPath } from "@/config/sectionGuideRegistry";
 export function SectionGuide() {
   const { t } = useTranslation();
   const location = useLocation();
-  const guide = findGuideForPath(location.pathname);
+  const guide = useMemo(() => findGuideForPath(location.pathname), [location.pathname]);
   const [open, setOpen] = useState(false);
 
   if (!guide) return null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="business-icon-button"
-        title={t("guides.help")}
-        onClick={() => setOpen(true)}
-      >
-        <QuestionMarkCircleIcon className="h-5 w-5" />
-      </Button>
+      <DialogTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="business-icon-button"
+            aria-label={t("guides.help")}
+          >
+            <QuestionMarkCircleIcon className="h-5 w-5" />
+          </Button>
+        }
+      />
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t(guide.titleKey)}</DialogTitle>

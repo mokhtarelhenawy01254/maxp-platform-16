@@ -1,3 +1,12 @@
+## [2026-06-11] Frontend — Section Guide Missing Accessibility & Translation Cleanup
+- **Bug/Issue**: The `?` help button lacked accessibility attributes — no `aria-label`, `aria-haspopup`, or `aria-expanded`, making it invisible to screen readers. Button used raw `onClick` instead of semantic `DialogTrigger`. Additionally, translation keys were rendering as raw text (`guides.orders.title`) instead of their translated values because the `guides` section had been inadvertently removed from both translation JSON files.
+- **Root Cause**: The previous fix (controlled-state workaround) used a plain `<Button onClick>` without `DialogTrigger`, missing the ARIA attributes that `@base-ui/react/dialog`'s Trigger provides. Translation files were restored from HEAD — the `guides` section was deleted from the working tree at some point after the initial feature commit.
+- **Fix**: Wrapped `<Button>` in `<DialogTrigger render={...}>` (not `asChild` — the `render` prop pattern works correctly with `@base-ui/react@^1.3.0`), added `aria-label={t("guides.help")}` directly on the Button inside render. Restored `guides` section in both `ar/translation.json` and `en/translation.json` from HEAD. Removed dead `/super-admin` registry entry (SuperAdminLayout uses a completely different MUI-based shell that doesn't include SectionGuide).
+- **Affected Files**:
+  - `apps/frontend/src/components/guides/SectionGuide.tsx` — DialogTrigger, aria-label, useMemo
+  - `apps/frontend/src/config/sectionGuideRegistry.ts` — removed unreachable super-admin entry
+  - `apps/frontend/src/locales/{ar,en}/translation.json` — guides section restored from HEAD
+
 ## [2026-06-10] Frontend — Section Guide Dialog Not Opening via asChild on @base-ui/react@^1.3.0
 - **Bug/Issue**: The `?` help icon rendered in the header (SectionGuide component) but clicking it did not open the dialog. The icon was purely decorative.
 - **Root Cause**: `SectionGuide.tsx` used `<DialogTrigger asChild>` with a `<Button>` child, passing it as the `render` prop to `@base-ui/react/dialog.Trigger`. However, `@base-ui/react@^1.3.0`'s `Trigger` requires `open` and `onOpenChange` controlled state — the `render` prop does not connect the click event to the dialog root in uncontrolled mode for this version.
