@@ -1,3 +1,10 @@
+## [2026-06-11] Backend — Require Crash on moderatorNotificationRoutes in server.js
+- **Bug/Issue**: The backend server crashed on startup with `Error: Cannot find module './routes/moderatorNotificationRoutes'` from `apps/backend/server.js` at line 283, preventing the application from starting and keeping the backend in a restart loop.
+- **Root Cause**: The route file `moderatorNotificationRoutes.js` had been deleted or was missing from the repository, but the import statement `require("./routes/moderatorNotificationRoutes")` was not removed from the main `server.js` file.
+- **Fix**: Removed the obsolete require statement from `server.js` to restore the backend's ability to initialize cleanly.
+- **Affected Files**:
+  - `apps/backend/server.js`
+
 ## [2026-06-11] Backend — SyntaxError in orderService.js Preventing Server Startup
 - **Bug/Issue**: The backend server crashed on startup with `SyntaxError: Missing catch or finally after try` in `apps/backend/services/orderService.js` at line 1218, preventing `maxp-backend` and its related processes from starting up or running.
 - **Root Cause**: In commit `3ee6caf` (which removed the WhatsApp Business integration), the inner `try` block was partially deleted but the `try` keyword itself on line 1205 remained. This mismatched the braces, leaving the outer `try` block on line 1150 without a matching `catch` or `finally` block.

@@ -1,3 +1,13 @@
+## [2026-06-11] Backend — Server Startup Crash Fix (moderatorNotificationRoutes) [DONE]
+- **Objective**: Fix a server crash on startup due to a missing/deleted module require in `server.js`.
+- **Accomplishments**:
+  - Identified that `server.js` was trying to require `./routes/moderatorNotificationRoutes` which had been deleted.
+  - Removed the obsolete require statement for `moderatorNotificationRoutes` in `apps/backend/server.js`.
+  - Backed up and corrected the file directly on the production server to resolve the boot loop immediately.
+  - Confirmed the server restarted successfully and is listening on port 3007.
+- **Files**:
+  - `apps/backend/server.js`
+
 ## [2026-06-11] Backend — OrderService Syntax Error Hotfix [DONE]
 - **Objective**: Fix a syntax error in `orderService.js` that was preventing the production server from starting up or running.
 - **Accomplishments**:
