@@ -453,11 +453,11 @@ export const getSidebarConfig = (
                 { 
                     to: '/whatsapp/templates', 
                     icon: DocumentTextIcon, 
-                    label: i18n.language === 'ar' ? 'القوالب' : 'Templates',
+                    label: t('sidebar.whatsappTemplates'),
                     children: [
-                        { to: '/whatsapp/templates?category=ORDERS', label: i18n.language === 'ar' ? 'قوالب الطلبات' : 'Orders Templates' },
-                        { to: '/whatsapp/templates?category=HR', label: i18n.language === 'ar' ? 'قوالب الـ HR' : 'HR Templates' },
-                        { to: '/whatsapp/templates?category=SYSTEM', label: i18n.language === 'ar' ? 'قوالب النظام' : 'System Templates' },
+                        { to: '/whatsapp/templates?category=ORDERS', label: t('sidebar.whatsappTemplatesOrders') },
+                        { to: '/whatsapp/templates?category=HR', label: t('sidebar.whatsappTemplatesHR') },
+                        { to: '/whatsapp/templates?category=SYSTEM', label: t('sidebar.whatsappTemplatesSystem') },
                     ]
                 },
                 { to: '/whatsapp-inbox', icon: ArrowsRightLeftIcon, label: t('sidebar.whatsappRouting') },
