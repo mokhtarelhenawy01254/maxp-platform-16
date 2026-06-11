@@ -51,7 +51,7 @@ class ServiceAuthMiddleware(BaseHTTPMiddleware):
         token = auth.removeprefix("Bearer ").strip()
 
         settings = get_settings()
-        print(f"DEBUG: Comparing token {token} with {settings.maxp_service_token}")
+        logger.debug("Service auth check", token_present=bool(token))
         if not token or token != settings.maxp_service_token:
             return JSONResponse(
                 status_code=401,

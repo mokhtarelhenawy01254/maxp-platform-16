@@ -45,6 +45,38 @@
   - `apps/frontend/src/components/guides/SectionGuide.tsx` — DialogTrigger, aria-label, useMemo
   - `apps/frontend/src/config/sectionGuideRegistry.ts` — removed unreachable super-admin entry
   - `apps/frontend/src/locales/{ar,en}/translation.json` — guides section restored from HEAD
+## [2026-06-11] AI Service — Intent Classifier Route Evaluation Skipping First Provider
+- **Issue**: The classifier fallback loop did not evaluate the first provider/model route when `client` was initially `None` because of a conditional check `if client is None and attempt_idx > 0`. This caused all text intent classification queries to bypass the primary `GOOGLE` provider and fall back immediately to `NVIDIA`.
+- **Fix**: Changed the client creation condition to `if client is None:` so that the client is correctly built for the first attempt as well.
+- **Affected Files**:
+  - `apps/ai-service/src/intent/classifier.py`
+
+## [2026-06-11] AI Service — Missing Product Price Fallbacks in Order Total Mapping
+- **Issue**: Creating a draft or confirmed order did not populate the `total` parameter when the classifier slot `productPrice` was present but explicit `total` slot was missing, causing tool parameter validation failures.
+- **Fix**: Restored `"productPrice"`, `"product_price"`, and `"price"` as fallback mappings for the `"total"` parameter in `route_to_tools.py`.
+- **Affected Files**:
+  - `apps/ai-service/src/pipeline/stages/route_to_tools.py`
+
+## [2026-06-11] AI Hub — Sandbox File Upload UI & Localized Copy
+- **Issue**: Sandbox chat area only allowed pasting image URLs, making visual/multimodal search testing from the browser inconvenient. Additionally, helper text was hardcoded.
+- **Fix**: Implemented drag & drop and file browser uploads directly in `ChatArea.tsx`. Auto-compresses images to JPEG 0.85 (max 800px dimension) and sends them as `dataUrl` / `base64Data` attachments. Added translation keys in both English and Arabic translations files (`translation.json`).
+- **Affected Files**:
+  - `apps/frontend/src/pages/admin/ai-agent-sandbox/components/ChatArea.tsx`
+  - `apps/frontend/src/locales/en/translation.json`
+  - `apps/frontend/src/locales/ar/translation.json`
+
+## [2026-06-11] Database & AI Service — Dead Unsplash URLs Causing Missing Image Embeddings
+- **Issue**: 7 products had empty `embeddingImage` records because their original Unsplash image URLs returned 404 (Not Found).
+- **Fix**: Replaced the dead Unsplash URLs in the `products` table with active ones and executed a script to generate and save Gemini image embeddings for these 7 products. All active products now have valid image embeddings.
+- **Affected Files**:
+  - Database table `products` updated for 7 IDs.
+
+## [2026-06-11] AI Service — Silent Pseudo-Embedding Fallback Lacks Observability
+- **Issue**: Gemini API failures or missing API keys resulted in pseudo-embeddings being silently generated, making visual/multimodal search failures hard to diagnose.
+- **Fix**: Added warning logs in `episodic_memory.py` when generating pseudo-embeddings and in `vector_product_search.py` when a search query uses pseudo-embeddings.
+- **Affected Files**:
+  - `apps/ai-service/src/memory/episodic_memory.py`
+  - `apps/ai-service/src/tools/vector_product_search.py`
 
 ## [2026-06-10] Frontend — Section Guide Dialog Not Opening via asChild on @base-ui/react@^1.3.0
 - **Bug/Issue**: The `?` help icon rendered in the header (SectionGuide component) but clicking it did not open the dialog. The icon was purely decorative.

@@ -14,7 +14,8 @@ import {
   Clock,
   Image as ImageIcon,
   X,
-  Loader2
+  Loader2,
+  Upload
 } from "lucide-react";
 import type { ChatMessage, AgentConfig, ModelConfig, ToolCall } from "../types/sandbox.types";
 
@@ -28,7 +29,10 @@ interface ChatAreaProps {
   canSend: boolean;
   typingStage?: string | null;
   activeToolCalls?: ToolCall[];
-  onSendMessage: (message: string, attachments?: Array<{ type: string; url: string }>) => void;
+  onSendMessage: (
+    message: string,
+    attachments?: Array<{ type: string; url: string; dataUrl?: string; base64Data?: string }>
+  ) => void;
 }
 
 const TEST_IMAGES = [
@@ -66,6 +70,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedImageUrl, setSelectedImageUrl] = useState("");
   const [showAttachmentPanel, setShowAttachmentPanel] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -82,12 +88,87 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     );
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processFile(file);
+    }
+  };
+
+  const processFile = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+        const MAX_DIM = 800;
+
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+          setSelectedImageUrl(dataUrl);
+        } else {
+          setSelectedImageUrl(event.target?.result as string);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processFile(file);
+    }
+  };
+
   const handleSend = () => {
     const trimmedInput = input.trim();
     const hasAttachments = Boolean(selectedImageUrl.trim());
     if ((!trimmedInput && !hasAttachments) || isLoading || !canSend) return;
 
-    const attachments = hasAttachments ? [{ type: "image", url: selectedImageUrl.trim() }] : undefined;
+    let attachments;
+    if (hasAttachments) {
+      const isDataUrl = selectedImageUrl.startsWith("data:");
+      attachments = [{
+        type: "image",
+        url: selectedImageUrl.trim(),
+        dataUrl: isDataUrl ? selectedImageUrl.trim() : undefined,
+        base64Data: isDataUrl ? selectedImageUrl.split(",")[1] : undefined
+      }];
+    }
+
     onSendMessage(trimmedInput, attachments);
     setInput("");
     setSelectedImageUrl("");
@@ -327,10 +408,48 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             </Button>
           </div>
 
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all duration-200 ${
+              isDragging
+                ? "border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20 shadow-inner scale-[0.99]"
+                : "border-slate-200 dark:border-slate-800 hover:border-slate-350 dark:hover:border-slate-700 bg-white dark:bg-slate-900"
+            }`}
+          >
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              className="hidden"
+            />
+            <Upload className="size-6 mx-auto text-slate-400 dark:text-slate-550 mb-1.5 animate-pulse" />
+            <span className="text-xs text-slate-600 dark:text-slate-300 block font-medium">
+              {t("aiHub.sandbox.chat.dragDropImage")}{" "}
+              <span className="text-indigo-650 dark:text-indigo-400 font-semibold hover:underline">
+                {t("aiHub.sandbox.chat.browse")}
+              </span>
+            </span>
+            <span className="text-[10px] text-slate-400 dark:text-slate-550 block mt-0.5">
+              {t("aiHub.sandbox.chat.supportedFormats")}
+            </span>
+          </div>
+
+          <div className="relative flex py-1 items-center">
+            <div className="flex-grow border-t border-slate-200 dark:border-slate-850"></div>
+            <span className="flex-shrink mx-4 text-[9px] text-slate-400 uppercase tracking-wider font-bold">
+              {t("aiHub.sandbox.chat.orPasteUrl")}
+            </span>
+            <div className="flex-grow border-t border-slate-200 dark:border-slate-850"></div>
+          </div>
+
           <input
             type="text"
             placeholder={t("aiHub.sandbox.chat.imageUrlPlaceholder")}
-            value={selectedImageUrl}
+            value={selectedImageUrl.startsWith("data:") ? "" : selectedImageUrl}
             onChange={(e) => setSelectedImageUrl(e.target.value)}
             className="w-full text-xs rounded-md border border-slate-200 dark:border-slate-800 bg-background px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-650"
           />

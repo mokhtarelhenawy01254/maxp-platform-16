@@ -1,7 +1,13 @@
 from __future__ import annotations
 
+import asyncio
+import base64
+import ipaddress
+import socket
 from typing import Any, Literal
+from urllib.parse import urlparse
 
+import httpx
 from agent_framework import FunctionInvocationContext, FunctionTool
 from pydantic import BaseModel, Field
 
@@ -39,15 +45,109 @@ def _executed_result(action: str, result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _is_public_image_url(url: str) -> bool:
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return False
+    hostname = parsed.hostname.strip().lower()
+    if hostname in {"localhost", "localhost.localdomain"}:
+        return False
+    try:
+        ip = ipaddress.ip_address(hostname)
+    except ValueError:
+        return True
+    return not (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_multicast
+        or ip.is_reserved
+        or ip.is_unspecified
+    )
+
+
+async def _host_resolves_to_public_ips(hostname: str) -> bool:
+    try:
+        infos = await asyncio.to_thread(
+            socket.getaddrinfo,
+            hostname,
+            None,
+            type=socket.SOCK_STREAM,
+        )
+    except OSError:
+        return False
+
+    addresses = {info[4][0] for info in infos}
+    if not addresses:
+        return False
+    for address in addresses:
+        try:
+            ip = ipaddress.ip_address(address)
+        except ValueError:
+            return False
+        if (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_multicast
+            or ip.is_reserved
+            or ip.is_unspecified
+        ):
+            return False
+    return True
+
+
+async def _download_image_url(url: str, max_bytes: int = 5 * 1024 * 1024) -> tuple[bytes, str] | None:
+    if not _is_public_image_url(url):
+        return None
+
+    try:
+        async with httpx.AsyncClient(timeout=8.0, follow_redirects=False, trust_env=False) as client:
+            current_url = url
+            for _ in range(3):
+                parsed = urlparse(current_url)
+                if not parsed.hostname or not await _host_resolves_to_public_ips(parsed.hostname):
+                    return None
+                async with client.stream("GET", current_url, headers={"Accept": "image/*"}) as response:
+                    if 300 <= response.status_code < 400:
+                        redirect_url = response.headers.get("location")
+                        if not redirect_url:
+                            return None
+                        current_url = str(httpx.URL(current_url).join(redirect_url))
+                        if not _is_public_image_url(current_url):
+                            return None
+                        continue
+                    response.raise_for_status()
+                    content_type = response.headers.get("content-type", "").split(";", 1)[0].strip()
+                    if not content_type.startswith("image/"):
+                        return None
+                    body = bytearray()
+                    async for chunk in response.aiter_bytes():
+                        body.extend(chunk)
+                        if len(body) > max_bytes:
+                            return None
+                    return bytes(body), content_type
+    except httpx.HTTPError:
+        return None
+    return None
+
+
 # ── Product Tools ────────────────────────────────────────────────────────────
 
 
 class ProductSearchInput(BaseModel):
-    query: str = Field(default="", description="Search query for products (name, SKU, or keyword). Leave empty when list_all is true.")
+    query: str = Field(default="", description="Product name, SKU, or keyword to search for. Leave empty or set list_all=true to browse the full catalog.")
     list_all: bool = Field(default=False, description="Set to true to return ALL available products without filtering. Use when the customer asks to see all products or the full catalog.")
     limit: int = Field(default=5, description="Maximum number of results. Default 5. Use 20+ when list_all is true.")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
     use_vector: bool = Field(default=True, description="Enable semantic/vector search fallback when text search returns no results")
+    image_bytes: str | None = Field(default=None, description="Optional base64-encoded product image for visual product matching.")
+    image_url: str | None = Field(default=None, description="Optional public product image URL for visual product matching.")
+    mime_type: str | None = Field(default=None, description="MIME type for image_bytes, e.g. image/jpeg or image/png.")
+    product_size: str | None = Field(default=None, description="Optional requested size to filter by.")
+    product_color: str | None = Field(default=None, description="Optional requested color to filter by.")
+    conversation_id: str | None = Field(default=None, description="Optional conversation ID for memory context.")
+    references_previous_product: bool | None = Field(default=None, description="True only when the model-classified turn refers to the previous shown product.")
 
 
 class ProductCreateInput(BaseModel):
@@ -83,15 +183,48 @@ class ProductPerformanceInput(BaseModel):
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
+class CategoryListInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+    limit: int = Field(default=50, description="Maximum products to scan for category discovery")
+
+
 async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
     query = "" if input_data.list_all else (input_data.query or "")
     limit = input_data.limit if input_data.list_all else min(input_data.limit, 20)
+    decoded_image: bytes | None = None
+    image_mime_type = input_data.mime_type
+    if input_data.use_vector and not input_data.list_all:
+        if input_data.image_bytes:
+            try:
+                decoded_image = base64.b64decode(input_data.image_bytes, validate=True)
+            except (ValueError, TypeError):
+                decoded_image = None
+        if not decoded_image and input_data.image_url:
+            downloaded = await _download_image_url(input_data.image_url)
+            if downloaded:
+                decoded_image, downloaded_mime_type = downloaded
+                image_mime_type = image_mime_type or downloaded_mime_type
+        if decoded_image:
+            vec_results = await vector_product_search(
+                company_id=input_data.company_id or "",
+                query=query,
+                limit=limit,
+                image_bytes=decoded_image,
+                mime_type=image_mime_type,
+            )
+            return {"results": vec_results, "count": len(vec_results), "listAll": False, "searchType": "image_semantic"}
+
     result = await product_tools.search_products(
-        input_data.company_id or "", query, limit=limit, use_vector=input_data.use_vector
+        input_data.company_id or "",
+        query,
+        limit=limit,
+        use_vector=input_data.use_vector,
+        product_size=input_data.product_size,
+        product_color=input_data.product_color,
+        conversation_id=input_data.conversation_id,
+        references_previous_product=input_data.references_previous_product,
     )
     products = result.get("products", [])
-    if input_data.list_all:
-        products = [{"name": p.get("name"), "price": p.get("price"), "sku": p.get("sku"), "status": p.get("status"), "mainImage": p.get("mainImage")} for p in products]
 
     # Vector fallback: if text search returned no results and we have a query, use semantic search
     if not products and query and not input_data.list_all and input_data.use_vector:
@@ -147,9 +280,19 @@ async def product_performance(input_data: ProductPerformanceInput) -> dict[str, 
     )
 
 
+async def category_list(input_data: CategoryListInput) -> dict[str, Any]:
+    """List all available product categories."""
+    if not input_data.company_id:
+        return {"found": False, "count": 0, "categories": [], "error": "Missing company_id"}
+    return await product_tools.list_categories(
+        company_id=input_data.company_id,
+        limit=input_data.limit,
+    )
+
+
 product_search_tool = FunctionTool(
     name="product_search",
-    description="Search for products by name, SKU, or keyword. Set list_all=true to browse the full catalog. Returns products with prices, stock, and availability.",
+    description="Search for products by name, SKU, or keyword. Set list_all=true to browse the full catalog. Returns products with prices, stock, variants, available sizes, available colors, and category info. Use inventory.check for detailed per-variant availability.",
     func=product_search,
     input_model=ProductSearchInput,
 )
@@ -187,6 +330,13 @@ product_performance_tool = FunctionTool(
     description="Get sales performance metrics for a specific product.",
     func=product_performance,
     input_model=ProductPerformanceInput,
+)
+
+category_list_tool = FunctionTool(
+    name="category_list",
+    description="List all available product categories with their product counts and sample products.",
+    func=category_list,
+    input_model=CategoryListInput,
 )
 
 
@@ -1002,6 +1152,7 @@ unlock_advanced_tools_tool = FunctionTool(
 
 CORE_TOOLS: list[FunctionTool] = [
     product_search_tool,
+    category_list_tool,
     order_lookup_tool,
     inventory_check_tool,
     customer_info_tool,
@@ -1027,7 +1178,9 @@ ADVANCED_TOOLS: list[FunctionTool] = [
 ]
 
 # All read-only tools
-READ_TOOLS: list[FunctionTool] = CORE_TOOLS + ADVANCED_TOOLS
+READ_TOOLS: list[FunctionTool] = CORE_TOOLS + ADVANCED_TOOLS + [
+    category_list_tool,
+]
 
 # All write tools that require merchant approval before execution.
 WRITE_TOOLS: list[FunctionTool] = [
@@ -1125,6 +1278,7 @@ ROLE_TOOLS: dict[str, list[str]] = {
     ],
     "FACEBOOK_SALES_SUPPORT": [
         "product_search",
+        "category_list",
         "inventory_check",
         "customer_info",
         "order_lookup",

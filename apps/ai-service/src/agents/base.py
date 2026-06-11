@@ -58,7 +58,12 @@ from src.llm.agent_client_factory import (
     build_agent_client_async,
     build_provider_client_async,
 )
-from src.llm.model_capabilities import route_for_modalities, supports_vision
+from src.llm.model_capabilities import (
+    DEFAULT_VISION_MODEL,
+    DEFAULT_VISION_PROVIDER,
+    route_for_modalities,
+    supports_vision,
+)
 from src.mcp_integration.registry import get_mcp_registry
 from src.pipeline.context import DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL, PipelineContext
 from src.pipeline.runner import execute_pipeline
@@ -376,10 +381,10 @@ class BaseAgent:
                 allowed_tools=[_tool_name(tool) for tool in base_set],
             )
 
+        from src.tools.registry import get_all_tools
         allowed = {name.lower() for name in self.allowed_tools}
-        # Filter core tools by allowed list, but always ensure unlock_advanced_tools is present
         scoped = [
-            t for t in base_set
+            t for t in get_all_tools()
             if _tool_name(t).lower() in allowed or _tool_name(t).replace("_", ".").lower() in allowed
         ]
 
@@ -416,6 +421,11 @@ class BaseAgent:
     def default_options(self) -> dict[str, Any]:
         """Expose the default options (model choice) for compatibility."""
         return {"model": self.model}
+
+    @property
+    def middleware(self) -> list[Any]:
+        """Expose the function and agent middleware."""
+        return build_maxp_function_middleware(self.company_id, self.role)
 
     def _load_skills_block(self) -> str:
         """Read SKILL.md from disk for each allowed skill and return a <skills> block."""
@@ -762,17 +772,9 @@ class BaseAgent:
         try:
             tools = self._resolve_tools()
             system_prompt = self._get_system_prompt()
-            if route.provider:
-                return await build_provider_client_async(
-                    route.provider,
-                    model=route.model,
-                    tools=tools,
-                    system_prompt=system_prompt,
-                    company_id=self.company_id,
-                )
-            return await build_agent_client_async(
-                get_settings(),
-                model=route.model,
+            return await build_provider_client_async(
+                route.provider or DEFAULT_VISION_PROVIDER,
+                model=route.model or DEFAULT_VISION_MODEL,
                 tools=tools,
                 system_prompt=system_prompt,
                 company_id=self.company_id,
@@ -957,7 +959,7 @@ class BaseAgent:
 
             final_reply = ctx.final_reply or ""
             executed = ctx.executed_tools or []
-            response_attachments = list(ctx.response_attachments or [])
+            response_attachments = list(getattr(ctx, "response_attachments", None) or [])
             emitter.emit(
                 "agent_reply",
                 {
@@ -1075,7 +1077,7 @@ class BaseAgent:
             "result": {
                 "reply": reply,
                 "summary": reply,
-                "response_attachments": list(ctx.response_attachments or []),
+                "response_attachments": list(getattr(ctx, "response_attachments", None) or []),
                 "error": early_result.get("error"),
                 "errorCode": early_result.get("error_code"),
                 "providerStatusCode": early_result.get("provider_status_code"),

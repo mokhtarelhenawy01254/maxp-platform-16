@@ -208,7 +208,11 @@
         "messagePlaceholder": "Message {{agentName}}...",
         "selectCentralModel": "Select a central model to start chatting",
         "configureApiKey": "Configure your API key in the HeaderBar",
-        "sendMessage": "Send message"
+        "sendMessage": "Send message",
+        "dragDropImage": "Drag & drop an image here, or",
+        "browse": "browse",
+        "supportedFormats": "Supports JPEG, PNG, WebP (auto-resized under 1MB)",
+        "orPasteUrl": "Or paste url"
       },
       "trace": {
         "title": "Run trace",

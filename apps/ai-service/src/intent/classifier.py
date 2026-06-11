@@ -9,7 +9,13 @@ import structlog
 from src.context.multimodal import build_user_content
 from src.intent.dynamic_registry import dynamic_intent_registry
 from src.intent.schema import INTENT_CLASSIFICATION_SCHEMA, ClassifierResult
-from src.llm.model_capabilities import route_for_modalities
+from src.llm.model_capabilities import (
+    DEFAULT_VISION_MODEL,
+    DEFAULT_VISION_PROVIDER,
+    ModelRoute,
+    default_model_for_provider,
+    route_for_modalities,
+)
 from src.observability.llm_fallback import LLMFallbackProvider
 from src.pipeline.llm_messages import to_client_messages
 
@@ -172,13 +178,19 @@ async def classify_intent(
             "queriedProducts": external_memory_context.get("queriedProducts") or [],
             "activeSearchFilters": external_memory_context.get("activeSearchFilters") or {},
         }
-    preferred_model = ctx.get("preferredModel")
-    preferred_provider = ctx.get("preferredProvider") or "GOOGLE"
+    preferred_provider = str(ctx.get("preferredProvider") or DEFAULT_VISION_PROVIDER).upper()
+    preferred_model = ctx.get("preferredModel") or default_model_for_provider(preferred_provider)
     model_route = route_for_modalities(
         model=preferred_model,
         provider=preferred_provider,
         has_image_input=bool(attachments),
     )
+    if attachments and (not model_route.provider or not model_route.model):
+        model_route = ModelRoute(
+            provider=DEFAULT_VISION_PROVIDER,
+            model=DEFAULT_VISION_MODEL,
+            reason="image_input_uses_default_vision_model",
+        )
 
     # Use dynamic intent registry (with static fallback if not loaded)
     intent_enum = dynamic_intent_registry.get_intent_enum()
@@ -196,6 +208,8 @@ async def classify_intent(
         "choose inventory when a current stock/variant fact is requested; choose products only for broad catalog browsing.\n"
         "Set slots.requestedProductImage to true when the latest message semantically asks to SEE, VIEW, or VISUALLY INSPECT a product — any phrasing that indicates the customer wants to look at the product visually (e.g. asking for images, photos, pictures, wanting to \"see\" or \"view\" the product or \"how it looks\", \"its appearance\", \"شكله\", \"صورته\"). Set it to false only when the request is purely about price, stock count, size, or availability without any visual component.\n"
         "Set slots.listAll to true ONLY for READ-ONLY catalog browsing when the customer asks to see ALL products (intent must be products, not products.manage). products.manage is only for creating or editing products.\n"
+        "Use catalog.categories ONLY when the customer explicitly asks about product categories, sections, types, or what the store carries (e.g. \"what categories do you have\", \"what are your sections\", \"اقسامكم ايه\", \"عندك اقسام ايه\", \"أنواع المنتجات\"). "
+        "catalog.categories lists available store categories with product counts.\n"
         "If the customer says they are not ordering yet, that is still a read-only catalog/inventory question, "
         "not an order draft and not a support handoff.\n"
         "Use support exchange/refund/complaint only when the latest message asks for after-sale service "
@@ -208,31 +222,48 @@ async def classify_intent(
         "For shipping-rate questions, set slots.governorate when the latest message contains a governorate or city destination.\n"
     )
 
-    fallback: LLMFallbackProvider | None = None
-    if client is None:
+    # Fallback chain: build list of (provider, model) combos to try
+    classifier_attempts: list[tuple[str | None, str]] = []
+    if client is not None:
+        classifier_attempts.append((None, None))  # Use the passed client
+    else:
         fallback = LLMFallbackProvider()
-        client = await fallback.get_client(
-            company_id=company_id,
-            model=model_route.model,
-            provider=model_route.provider,
-        )
-    if not client:
-        logger.error("no LLM client available for intent classification")
-        return None
+        fallback_provider = model_route.provider or ctx.get("preferredProvider")
+        fallback_model = model_route.model or preferred_model
+        classifier_attempts.append((fallback_provider, fallback_model))
+        # Fallback 2: NVIDIA with its default model
+        classifier_attempts.append(("NVIDIA", "openai/gpt-oss-120b"))
+        # Fallback 3: GROQ
+        classifier_attempts.append(("GROQ", "llama-3.3-70b-versatile"))
 
     result: ClassifierResult | None = None
-    try:
-        result = await _classify_with_client(
-            client,
-            system_prompt=system_prompt,
-            message=message,
-            attachments=attachments,
-            context_snapshot=context_snapshot,
-        )
-    except Exception as exc:
-        logger.warning("classifier primary LLM call failed", error=str(exc), message=message[:100])
+    for attempt_idx, (attempt_provider, attempt_model) in enumerate(classifier_attempts):
+        if client is None:
+            client = await fallback.get_client(
+                company_id=company_id,
+                model=attempt_model,
+                provider=attempt_provider,
+            )
+        if not client:
+            logger.warning("classifier fallback client unavailable", provider=attempt_provider, model=attempt_model)
+            continue
+        try:
+            result = await _classify_with_client(
+                client,
+                system_prompt=system_prompt,
+                message=message,
+                attachments=attachments,
+                context_snapshot=context_snapshot,
+            )
+        except Exception as exc:
+            logger.warning("classifier attempt failed", attempt=attempt_idx, provider=attempt_provider, model=attempt_model, error=str(exc))
+            client = None  # Force rebuild for next attempt
+            continue
+        if result is not None:
+            logger.info("classifier result", intent=result.intent, confidence=result.confidence, slots=result.slots, provider=attempt_provider, model=attempt_model)
+            return result
+        logger.warning("classifier attempt returned None", attempt=attempt_idx, provider=attempt_provider, model=attempt_model)
+        client = None
 
-    if result is None:
-        return None
-    logger.info("classifier result", intent=result.intent, confidence=result.confidence, slots=result.slots)
-    return result
+    logger.error("all classifier attempts exhausted", message=message[:100])
+    return None

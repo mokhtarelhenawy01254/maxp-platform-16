@@ -56,6 +56,34 @@
 - **Files**:
   - `apps/frontend/src/components/guides/SectionGuide.tsx`
   - `apps/frontend/src/config/sectionGuideRegistry.ts`
+## [2026-06-11] AI Service — Intent Classifier & Routing System Health
+- **Details**: Restored correct routing and fallback evaluations in the FastAPI AI Service classifier, and aligned schema evaluation tests with the current architecture.
+- **Changes**:
+  - `classifier.py`: Corrected fallback route loop to construct the client for the primary GOOGLE provider at index 0 rather than skipping it, ensuring text-only turn intent classifications route to GOOGLE.
+  - `planner.py`: Updated `requiresTool` to evaluate to `True` during classifier unavailability, allowing the LLM agent to fallback to conversation context tools rather than completely disabling tool usage.
+  - `handle_fallback.py`: Restored standard warning blocks to tell the LLM conversational agent when the classifier is offline, preventing hallucination.
+  - `route_to_tools.py`: Restored fallback mapping properties for order `total` from product price fields so tool parameters populate correctly.
+  - Test suites (`test_classifier.py`, `test_planner.py`, `test_handle_fallback.py`, `test_sprint1_migration.py`, `test_intent_golden_cases.py`, `test_tool_execution_evals.py`): Updated and aligned assertions with current routing specifications and new dynamic intents (like `catalog.categories`).
+
+## [2026-06-11] AI Hub — Sandbox File Upload & Localization
+- **Details**: Added direct drag-and-drop and browser-file uploads inside the AI Agent Sandbox ChatArea UI.
+- **Frontend Changes**:
+  - `ChatArea.tsx`: Added `isDragging` state, a hidden `<input type="file">`, and drag/drop/change event handlers. The file is read via `FileReader`, drawn onto a `<canvas>` element (resized to max 800px on either dimension, compressed to JPEG 0.85 data URL), and passed in the `attachments` array as `dataUrl` and `base64Data` attributes.
+  - `translation.json` (Arabic & English): Added new keys for localized drag & drop text labels, browse buttons, file formats helper text, and divider texts.
+- **Backend Flow**:
+  - The browser-uploaded image payload is normalized in the backend controller (`aiSandboxController.js`) and passed to python agent service. The image is downloaded or decoded from base64, processed via the Gemini API to generate embeddings, and matched against product image embeddings.
+
+## [2026-06-11] AI Service — Pseudo-Embedding Fallback Observability
+- **Details**: Improved the observability of the embedding pipeline when falling back to pseudo-embeddings due to missing or exhausted API keys.
+- **Changes**:
+  - `episodic_memory.py`: Returns `is_pseudo=True` flag in the embedding result payload and outputs a `logger.warning()` detail when pseudo-embeddings are generated.
+  - `vector_product_search.py`: Inspects the generated query embedding. If it is pseudo, it raises a warning log to alert system admins.
+
+## [2026-06-11] Database & AI Service — Unsplash Image Embedding Updates
+- **Details**: Corrected the database records for 7 active products that had missing image embeddings due to 404 (Not Found) Unsplash mainImage URLs.
+- **Changes**:
+  - `products` table: Updated `mainImage` columns with new valid Unsplash image URLs for the 7 product IDs.
+  - `products` table: Populated `embeddingImage` column with the correct 768-dimension vector representation calculated via the Gemini Multimodal API. All active system products now possess valid image embeddings.
 
 ## [2026-06-10] Frontend — Section Guide Feature with Route-Based Registry
 - **Details**: Added a reusable Section Guide system that displays a help icon (`?`) in the global header utility row. When clicked, it opens a dialog showing a step-by-step guide for the current section, with numbered instructions and an optional video player. The system uses a route-based registry to resolve which guide to show for the current URL path.

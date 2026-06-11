@@ -180,7 +180,7 @@ async def test_classifier_includes_previous_product_context_for_followups(monkey
 
 
 @pytest.mark.asyncio
-async def test_classifier_does_not_switch_routes_when_selected_route_unavailable(monkeypatch):
+async def test_classifier_exhausts_fallback_chain_when_all_routes_unavailable(monkeypatch):
     captured: dict[str, Any] = {"client_requests": []}
 
     class FakeFallback:
@@ -201,13 +201,16 @@ async def test_classifier_does_not_switch_routes_when_selected_route_unavailable
     )
 
     assert result is None
-    assert len(captured["client_requests"]) == 1
+    # Fallback chain: preferred (GROQ) → NVIDIA → GROQ
+    assert len(captured["client_requests"]) == 3
     assert captured["client_requests"][0]["provider"] == "GROQ"
     assert captured["client_requests"][0]["model"] == "openai/gpt-oss-120b"
+    assert captured["client_requests"][1]["provider"] == "NVIDIA"
+    assert captured["client_requests"][2]["provider"] == "GROQ"
 
 
 @pytest.mark.asyncio
-async def test_classifier_does_not_switch_routes_after_selected_route_exception(monkeypatch):
+async def test_classifier_exhausts_fallback_chain_after_route_exceptions(monkeypatch):
     captured: dict[str, Any] = {"client_requests": []}
 
     class FailingClient:
@@ -232,8 +235,11 @@ async def test_classifier_does_not_switch_routes_after_selected_route_exception(
     )
 
     assert result is None
-    assert len(captured["client_requests"]) == 1
+    # Fallback chain: preferred (GROQ) → NVIDIA → GROQ
+    assert len(captured["client_requests"]) == 3
     assert captured["client_requests"][0]["provider"] == "GROQ"
+    assert captured["client_requests"][1]["provider"] == "NVIDIA"
+    assert captured["client_requests"][2]["provider"] == "GROQ"
 
 
 @pytest.mark.asyncio

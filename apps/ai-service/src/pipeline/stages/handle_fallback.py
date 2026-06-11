@@ -107,10 +107,13 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
             ]
             requires_tool = bool(getattr(ctx.relevance_plan, "requiresTool", False))
             classifier_unavailable = _is_classifier_unavailable(ctx)
+            primary_tool = getattr(ctx.relevance_plan, "primaryTool", None)
             if (requires_tool and not ctx.tool_evidence) or classifier_unavailable:
                 voice_profile = _voice_profile(ctx)
                 evidence_status = (
-                    "The structured LLM intent classifier was unavailable for this turn, so tool execution was disabled."
+                    "The structured LLM intent classifier was unavailable for this turn, so tool execution was disabled. "
+                    "The conversation intent is unclear, so deterministic tool execution was skipped. Reply conversationally "
+                    "without inventing product, order, shipping, customer, price, stock, or action facts."
                     if classifier_unavailable
                     else "The model-classified plan requires a tool, but no tool result is available for this turn."
                 )
@@ -174,9 +177,10 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
                     Message(
                         role="user",
                         contents=[
-                            "Live system data was not available for this turn, so the agent cannot confirm facts. "
-                            "Write a short natural reply in the customer's language/dialect that asks to check or "
-                            "requests the missing detail without inventing availability, price, stock, order, or shipping facts.\n"
+                            "The customer asked a question about products or catalog, but the intent "
+                            "classifier was unavailable so no tools were called. "
+                            "Write a short natural reply in the customer's language saying you're having "
+                            "trouble looking up the information right now and ask them to try again.\n"
                             f"Customer message: {ctx.message}"
                         ],
                     ),

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import json
 from typing import Any
 
@@ -23,6 +24,25 @@ def _allowed_tools(ctx: PipelineContext) -> list[str] | None:
     if ctx.agent and hasattr(ctx.agent, "get_tools"):
         return list(ctx.agent.get_tools() or [])
     return None
+
+
+async def _tool_reply_client(ctx: PipelineContext):
+    """Prefer the selected agent client for replies after tool execution.
+
+    Image turns may use a temporary vision client for classification. Once tools
+    have returned structured evidence, reply synthesis should go back to the
+    explicitly selected model/key instead of continuing on the vision fallback.
+    """
+    agent = ctx.agent
+    agent_client = getattr(agent, "client", None) if agent else None
+    if agent_client is not None:
+        return agent_client
+
+    ensure_client = getattr(agent, "ensure_client", None) if agent else None
+    if callable(ensure_client) and inspect.iscoroutinefunction(ensure_client):
+        return await ensure_client()
+
+    return getattr(ctx, "llm_client", None) or agent_client
 
 
 def _append_tool_result(ctx: PipelineContext, planned: dict, result: dict) -> None:
@@ -433,8 +453,17 @@ async def execute_tools(ctx: PipelineContext) -> PipelineContext:
     if not ctx.tool_context:
         return ctx
 
-    # Call LLM to generate response using tool results
-    client = getattr(ctx, "llm_client", None) or (getattr(ctx.agent, "client", None) if ctx.agent else None)
+    # Call the selected agent client to generate the response from tool results.
+    # If an image turn used a temporary vision client, do not keep using it for
+    # final reply synthesis after tools have supplied structured evidence.
+    try:
+        client = await _tool_reply_client(ctx)
+    except Exception as exc:
+        ctx.early_return = {
+            "status": "PROVIDER_ERROR",
+            "result": provider_error_result(exc),
+        }
+        return ctx
     if client:
         messages = to_client_messages(ctx.messages)
         if ctx.tool_context:

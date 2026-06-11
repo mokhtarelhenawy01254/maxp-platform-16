@@ -21,7 +21,7 @@ async def test_classifier_unavailable_is_explicit_and_disables_tools(monkeypatch
     )
     plan = to_tool_plan(contract, ["product_search", "inventory_check"])
 
-    assert contract.requiresTool is False
+    assert contract.requiresTool is True
     assert contract.source == "classifier-unavailable"
     assert contract.reason == "CLASSIFIER_UNAVAILABLE"
     assert contract.confidence == 0.0

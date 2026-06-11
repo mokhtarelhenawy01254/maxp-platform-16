@@ -84,3 +84,10 @@ Customer chat channels (Facebook Messenger, WhatsApp, and similar live customer 
 ### Prevention tooling:
 - Run `npm run check:customer-intent` from `backend/` before committing customer-intent changes
 - The Jest architecture guard also runs this check to prevent future keyword/regex fallback regressions
+
+## Execution Log
+
+### 2026-06-11 — Python ai-service structlog crash fix
+- **Root cause**: `structlog.PrintLoggerFactory()` uses `print(message, file=f, flush=True)` — when stdout is redirected via PowerShell `-RedirectStandardOutput`, the pipe handle fails with `OSError: [Errno 22] Invalid argument`
+- **Fix**: Changed to `structlog.WriteLoggerFactory(file=open("logs/structlog.log", "a", encoding="utf-8"))` in `apps/ai-service/src/main.py:56`
+- **Verified**: Sandbox at `/admin/ai-hub?tab=sandbox` now successfully routes messages through Node.js backend → Python ai-service → LLM → product.search tool → Arabic response listing products with prices
