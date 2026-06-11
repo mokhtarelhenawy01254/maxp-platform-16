@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const verifyToken = require('../utils/verifyToken');
 const { getJwtSecret } = require('../utils/jwtSecret');
+const { t } = require('../legacy-ai-agent/aiAgent/i18n');
 
 router.get('/ping', (req, res) => res.json({ status: 'ok', time: new Date().toISOString(), version: 'v3' }));
 const ensureWallet = async (customerId, companyId) => {
@@ -427,14 +428,14 @@ router.post('/request-otp', getCompanyFromSubdomain, async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'تم إرسال كود التحقق',
+      message: t('otp.sent'),
       ...(process.env.NODE_ENV !== 'production' ? { debugCode: code } : {})
     });
   } catch (error) {
     console.error('❌ [PUBLIC-CUSTOMER] Error requesting OTP:', error);
     return res.status(400).json({
       success: false,
-      message: error.message || 'حدث خطأ أثناء إرسال كود التحقق'
+      message: error.message || t('otp.error')
     });
   }
 });

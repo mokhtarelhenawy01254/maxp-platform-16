@@ -61,6 +61,10 @@ const translations = {
       tip: 'تلميح',
       undefined: 'غير محدد'
     },
+    otp: {
+      sent: 'تم إرسال كود التحقق',
+      error: 'حدث خطأ أثناء إرسال كود التحقق'
+    },
     competitor: {
       list_failed: 'فشل في جلب المنافسين',
       get_failed: 'فشل في جلب المنافس',
@@ -226,6 +230,10 @@ const translations = {
       message: 'Message',
       tip: 'Tip',
       undefined: 'Undefined'
+    },
+    otp: {
+      sent: 'Verification code sent',
+      error: 'An error occurred while sending the verification code'
     },
     competitor: {
       list_failed: 'Failed to fetch competitors',
