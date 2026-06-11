@@ -280,7 +280,6 @@ const webhookRoutes = require("./routes/webhookRoutes");
 const unifiedInboxRoutes = require("./routes/unifiedInboxRoutes");
 const moderatorDashboardRoutes = require("./routes/moderatorDashboardRoutes");
 const internalNotesRoutes = require("./routes/internalNotesRoutes");
-const moderatorNotificationRoutes = require("./routes/moderatorNotificationRoutes");
 const rbacAdminRoutes = require("./routes/rbacAdminRoutes");
 const inboxSettingsRoutes = require("./routes/inboxSettingsRoutes");
 const googleSheetsRoutes = require("./routes/googleSheetsRoutes");
