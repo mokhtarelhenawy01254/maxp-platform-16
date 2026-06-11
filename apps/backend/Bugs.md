@@ -1,3 +1,10 @@
+## [2026-06-11] Frontend — Section Guide Dialog Not Opening (Button inside Dialog wrapper)
+- **Bug/Issue**: The `?` help button rendered but clicking it did not open the dialog. Third iteration of the fix.
+- **Root Cause**: The trigger `<Button>` was rendered as a child inside `<Dialog>`, alongside `<DialogContent>`. All working dialogs in the codebase (Feedback.tsx, ConfirmDialog.tsx, BroadcastDialog.tsx) place the trigger button OUTSIDE the `<Dialog>` wrapper — only `<DialogContent>` goes inside. `@base-ui/react/dialog`'s Root component expects the trigger to be outside or wrapped in `<DialogTrigger>`, not as a raw sibling of the popup.
+- **Fix**: Wrapped Button and Dialog in a React Fragment (`<>...</>`), with Button outside and Dialog containing only DialogContent. Button uses `onClick={() => setOpen(true)}` with manual ARIA attributes (`aria-haspopup="dialog"`, `aria-expanded={open}`, `aria-label`).
+- **Affected Files**:
+  - `apps/frontend/src/components/guides/SectionGuide.tsx`
+
 ## [2026-06-11] Frontend — Section Guide Dialog Not Opening (DialogTrigger render prop incompatible with @base-ui/react@^1.3.0)
 - **Bug/Issue**: The `?` help button rendered in the header but clicking it did not open the dialog. The button was visually present but non-functional.
 - **Root Cause**: `DialogTrigger` with `render={<Button>...</Button>}` pattern does not work with `@base-ui/react@^1.3.0`'s Trigger component. The `render` prop expects a component type or render function, not a React element. When passed a React element, @base-ui cannot merge interactive props (onClick, ARIA attributes) onto it.
