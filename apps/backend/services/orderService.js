@@ -1202,17 +1202,7 @@ class OrderService {
             }
           }
 
-          try {
-            let guestItems = [];
-            try {
-              guestItems = typeof updatedGuestOrder.items === 'string'
-                ? JSON.parse(updatedGuestOrder.items)
-                : (updatedGuestOrder.items || []);
-            } catch (error) {
-              guestItems = [];
-            }
-
-          } catch (backgroundError) {
+        } catch (backgroundError) {
           console.error('⚠️ [GUEST-ORDER-STATUS-BG-ERROR]:', backgroundError.message);
         }
       })();

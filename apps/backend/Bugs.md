@@ -1,3 +1,10 @@
+## [2026-06-11] Backend — SyntaxError in orderService.js Preventing Server Startup
+- **Bug/Issue**: The backend server crashed on startup with `SyntaxError: Missing catch or finally after try` in `apps/backend/services/orderService.js` at line 1218, preventing `maxp-backend` and its related processes from starting up or running.
+- **Root Cause**: In commit `3ee6caf` (which removed the WhatsApp Business integration), the inner `try` block was partially deleted but the `try` keyword itself on line 1205 remained. This mismatched the braces, leaving the outer `try` block on line 1150 without a matching `catch` or `finally` block.
+- **Fix**: Removed the dead/unused try-catch block that parsed `guestItems` (since it is no longer used after WhatsApp deletion) and correctly closed the outer try-catch block.
+- **Affected Files**:
+  - `apps/backend/services/orderService.js`
+
 ## [2026-06-11] Backend — marketplaceController Leaks Internal Error Messages in Production Responses
 - **Bug/Issue**: All marketplace API error handlers exposed `error: error.message` in JSON responses, leaking internal SQL/stack details to production clients. The `logToFile` utility also ran in production, writing debug logs unnecessarily.
 - **Root Cause**: Error handlers passed the full `error.message` to the response body. `logToFile()` had no environment guard.

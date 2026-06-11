@@ -1,3 +1,9 @@
+## [2026-06-11] Backend — OrderService Guest Order Status Syntax Error Fix
+- **Details**: Fixed a syntax error in `updateGuestOrderStatus` inside `orderService.js` that occurred due to mismatched braces after deleting WhatsApp notifications.
+- **Architecture**: Removed the unused, orphaned `try-catch` block that parsed `guestItems` from `updatedGuestOrder.items` (which was left over after WhatsApp removal and had no usage). Properly closed the outer `try-catch` block for background operations.
+- **Files**:
+  - `apps/backend/services/orderService.js`
+
 ## [2026-06-11] Frontend — Marketplace Complete i18n Migration
 - **Details**: Full i18n migration of `Marketplace.tsx` — all hardcoded Arabic and English UI strings replaced with `t()` calls via new `marketplace.json` locale files. The page now supports full Arabic/English switching without code changes.
 - **Architecture**:

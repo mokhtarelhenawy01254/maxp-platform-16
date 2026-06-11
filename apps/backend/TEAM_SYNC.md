@@ -1,3 +1,12 @@
+## [2026-06-11] Backend — OrderService Syntax Error Hotfix [DONE]
+- **Objective**: Fix a syntax error in `orderService.js` that was preventing the production server from starting up or running.
+- **Accomplishments**:
+  - Removed the dead/unused try-catch block parsing `guestItems` from `updatedGuestOrder.items` (no longer needed since WhatsApp integration was removed in a prior commit).
+  - Properly closed the outer try-catch block for background operations in the `updateGuestOrderStatus` method.
+  - Verified that syntax checks and test suite passed successfully.
+- **Files**:
+  - `apps/backend/services/orderService.js`
+
 ## [2026-06-11] Marketplace i18n Migration & SectionGuide Enhancements [DONE]
 - **Objective**: Complete i18n migration of the Marketplace page, enhance SectionGuide with fallback/coverage, harden marketplaceController security, fix domain references, and fix sidebar compliance.
 - **Accomplishments**:
