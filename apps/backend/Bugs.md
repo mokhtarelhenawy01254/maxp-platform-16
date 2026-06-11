@@ -2180,13 +2180,6 @@ eq.user.id matches the createdBy field on the existing order. Otherwise, it thro
 - **Fix**: Integrated `telegramAlertService` into `WhatsAppManager.js` to send an immediate Telegram alert when a session requires a fresh link and is not a manual logout. The alert includes Company ID, Phone Number, Reason, and Status Code.
 - **Affected Files**: `backend/services/whatsapp/WhatsAppManager.js`.
 
-## [2026-06-11] WhatsApp Monolithic App Split Into 6 Independent Marketplace Apps
-- **Change**: The single `whatsapp-integration` app was split into 6 independent marketplace apps: `whatsapp-inbox`, `whatsapp-routing`, `whatsapp-templates`, `whatsapp-notifications`, `whatsapp-analytics`, `whatsapp-settings`.
-- **Backend**: Each route group in `whatsappRoutes.js` now uses its own `checkAppAccess()` middleware. Added `LEGACY_APP_SLUG_ALIASES` in `checkAppAccess.js` so companies with `whatsapp-integration` retain full access. Added `checkAppAccess` to `whatsappNotificationRoutes.js`, `whatsappInboxRoutes.js`, `whatsappNumberAssignmentRoutes.js`, and `whatsappAutomationRoutes.js`.
-- **Frontend**: Replaced the single "واتساب" sidebar section with 6 independent sections, each gated by its own app slug. Added `APP_SLUG_ALIASES` to the frontend `isAppActive()` for legacy resolution. Updated `appRegistry.ts`, `marketplaceFeatureMap.ts`, `sidebar.json` (AR/EN), `appDashboard.json` (AR/EN), and sidebar tests.
-- **Seed**: Added 6 new app entries to `marketplaceSeed.js`.
-- **Affected Files**: 17 files across frontend and backend.
-
 ## [2026-05-18] Wofod AI Replies Still Looked Fixed And Lost Follow-up Product State
 - **Bug**: Production audit of the latest 100 Wofod conversations found the largest remaining intelligence defects were not price accuracy: 65 conversations showed over-questioning, 55 had `customer_question_enforcement` appending generic sales questions, 56 had generic/fixed-feeling replies, and 39 showed product-state loss signals such as asking for the product again after a short color/variant follow-up.
 - **Cause**: `customerReplyShapingService.ensureCustomerFacingQuestion()` appended deterministic follow-up questions after model replies even when `reply.aiFirstCustomerReplies=true`. `contextPreparationService` also disabled broad history fallback for attribute-only variant turns, which is safe against random guessing but could fail older/metadata-poor conversations where the previous assistant text clearly named a single product.

@@ -60,23 +60,8 @@
     "facebook": {
       "description": "إدارة صندوق الوارد وتعليقات فيسبوك"
     },
-    "whatsappInbox": {
-      "description": "محادثات واتساب المباشرة مع العملاء"
-    },
-    "whatsappRouting": {
-      "description": "توزيع المحادثات على فريق العمل"
-    },
-    "whatsappTemplates": {
-      "description": "إنشاء وإدارة قوالب رسائل واتساب"
-    },
-    "whatsappNotifications": {
-      "description": "إشعارات تلقائية للعملاء عبر واتساب"
-    },
-    "whatsappAnalytics": {
-      "description": "تقارير وإحصائيات أداء واتساب"
-    },
-    "whatsappSettings": {
-      "description": "إعدادات حساب واتساب والأرقام"
+    "whatsapp": {
+      "description": "إدارة واتساب والقوالب والتحليلات"
     },
     "telegram": {
       "description": "تليجرام برو والردود التلقائية"

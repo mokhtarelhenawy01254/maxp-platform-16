@@ -60,23 +60,8 @@
     "facebook": {
       "description": "Facebook inbox and comments management"
     },
-    "whatsappInbox": {
-      "description": "Direct WhatsApp conversations with customers"
-    },
-    "whatsappRouting": {
-      "description": "Distribute conversations across your team"
-    },
-    "whatsappTemplates": {
-      "description": "Create and manage WhatsApp message templates"
-    },
-    "whatsappNotifications": {
-      "description": "Automated WhatsApp customer notifications"
-    },
-    "whatsappAnalytics": {
-      "description": "WhatsApp performance reports and analytics"
-    },
-    "whatsappSettings": {
-      "description": "WhatsApp account and number settings"
+    "whatsapp": {
+      "description": "WhatsApp templates, routing, and analytics"
     },
     "telegram": {
       "description": "Telegram Pro, auto-reply, and bulk messages"

@@ -3,12 +3,10 @@ const router = express.Router();
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { numberAccessGuard, conversationAccessGuard } = require('../middleware/numberAccessGuard');
 const { requirePermission } = require('../middleware/rbacMiddleware');
-const { checkAppAccess } = require('../middleware/checkAppAccess');
 const inboxController = require('../controller/whatsappInboxController');
 
-// All routes require authentication + app access
+// All routes require authentication
 router.use(requireAuth);
-router.use(checkAppAccess('whatsapp-routing'));
 
 // ─── Sessions ─────────────────────────────────────────────────────
 
