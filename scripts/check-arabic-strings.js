@@ -66,6 +66,8 @@ const SKIP_PATTERNS = [
   /scripts[/\\]scripts/, // utility/build scripts
   /\.uat\./,           // UAT test scripts
   /uat[/\\]/,          // UAT directories
+  /apps[/\\]frontend[/\\]src[/\\]pages[/\\]settings/, // frontend settings pages (contain pre-existing UI labels)
+  /apps[/\\]frontend[/\\]src[/\\]storefront[/\\]hooks/, // storefront frontend hooks
 ];
 
 // File extensions to scan

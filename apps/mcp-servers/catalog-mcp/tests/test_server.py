@@ -8,15 +8,20 @@ import pytest
 import respx
 from httpx import Response
 
-BRIDGE_URL = "http://maxp-backend.test/api/v1/ai-bridge/tools/execute"
+# Updated to Python ai-service MCP endpoint
+MCP_EXECUTE_URL = "http://maxp-ai-service.test/mcp/tools/execute"
 JSONRPC_HEADERS = {
     "Accept": "application/json, text/event-stream",
     "Content-Type": "application/json",
 }
 
 
-def _bridge_response(result: dict[str, Any]) -> dict[str, Any]:
+def _mcp_success_response(result: dict[str, Any]) -> dict[str, Any]:
     return {"success": True, "result": result}
+
+
+def _mcp_error_response(error: str) -> dict[str, Any]:
+    return {"success": False, "error": error}
 
 
 @pytest.mark.asyncio
@@ -74,10 +79,10 @@ async def test_initialize_and_list_tools(live_mcp_url: str) -> None:
 @pytest.mark.asyncio
 @respx.mock
 async def test_search_calls_product_search_bridge(mcp_server) -> None:
-    bridge = respx.post(BRIDGE_URL).mock(
+    bridge = respx.post(MCP_EXECUTE_URL).mock(
         return_value=Response(
             200,
-            json=_bridge_response(
+            json=_mcp_success_response(
                 {
                     "products": [
                         {"id": "prod_1", "name": "Sneaker"},
@@ -85,7 +90,7 @@ async def test_search_calls_product_search_bridge(mcp_server) -> None:
                     ]
                 }
             ),
-        )
+        ),
     )
 
     result = await mcp_server.call_tool("search", {"query": "shoes", "limit": 5})
@@ -112,10 +117,10 @@ async def test_search_calls_product_search_bridge(mcp_server) -> None:
 @pytest.mark.asyncio
 @respx.mock
 async def test_inventory_check_returns_structured_result(mcp_server) -> None:
-    bridge = respx.post(BRIDGE_URL).mock(
+    bridge = respx.post(MCP_EXECUTE_URL).mock(
         return_value=Response(
             200,
-            json=_bridge_response(
+            json=_mcp_success_response(
                 {
                     "product_id": "prod_42",
                     "available": 7,
@@ -146,7 +151,7 @@ async def test_inventory_check_returns_structured_result(mcp_server) -> None:
 @pytest.mark.asyncio
 @respx.mock
 async def test_error_passes_through_as_is_error(mcp_server) -> None:
-    bridge = respx.post(BRIDGE_URL).mock(
+    bridge = respx.post(MCP_EXECUTE_URL).mock(
         side_effect=[
             Response(500, text="boom-1"),
             Response(500, text="boom-2"),
@@ -171,8 +176,8 @@ async def test_error_passes_through_as_is_error(mcp_server) -> None:
 @pytest.mark.asyncio
 @respx.mock
 async def test_bridge_success_false_returns_is_error(mcp_server) -> None:
-    respx.post(BRIDGE_URL).mock(
-        return_value=Response(200, json={"success": False, "error": "tool not allowed"})
+    respx.post(MCP_EXECUTE_URL).mock(
+        return_value=Response(200, json=_mcp_error_response("tool not allowed"))
     )
 
     result = await mcp_server.call_tool("product_get", {"product_id": "prod_99"})
@@ -185,7 +190,7 @@ async def test_bridge_success_false_returns_is_error(mcp_server) -> None:
 @pytest.mark.asyncio
 @respx.mock
 async def test_4xx_does_not_retry(mcp_server) -> None:
-    bridge = respx.post(BRIDGE_URL).mock(
+    bridge = respx.post(MCP_EXECUTE_URL).mock(
         return_value=Response(404, text="not found")
     )
 

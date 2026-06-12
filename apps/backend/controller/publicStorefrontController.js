@@ -4,6 +4,7 @@ const {
   storefrontThemeCatalogService,
 } = require('../services/storefrontThemeCatalogService');
 const { sanitizeMarketplaceAppSettings } = require('../utils/marketplaceAppSettings');
+const redisCacheService = require('../services/redisCacheService');
 
 const DEFAULT_THEME_ID = 'modern-minimal';
 const PUBLIC_MARKETPLACE_APP_SLUGS = [
@@ -366,6 +367,11 @@ const buildStorefrontConfig = ({
           productCardStyle: storefrontSettings.productCardStyle,
           gridAddToCartIcon: storefrontSettings.gridAddToCartIcon,
           gridDiscountBanner: storefrontSettings.gridDiscountBanner,
+          enabledPaymentMethods: storefrontSettings.enabledPaymentMethods
+            ? (typeof storefrontSettings.enabledPaymentMethods === 'string'
+                ? JSON.parse(storefrontSettings.enabledPaymentMethods)
+                : storefrontSettings.enabledPaymentMethods)
+            : ["cod"],
         }
       : {},
   };
@@ -384,6 +390,16 @@ exports.getStorefrontSettings = async (req, res) => {
         success: false,
         message: 'يجب تحديد المتجر'
       });
+    }
+
+    const cacheKey = `storefront_settings:${companyId}`;
+    try {
+      const cached = await redisCacheService.get(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
+    } catch (err) {
+      console.error('⚠️ [REDIS] error fetching storefront settings:', err);
     }
 
     const prisma = await getSharedPrismaClientAsync();
@@ -471,7 +487,7 @@ exports.getStorefrontSettings = async (req, res) => {
     });
     const parsedCompanySettings = parseCompanySettings(company.settings);
 
-    return res.json({
+    const responseData = {
       success: true,
       data: {
         company: {
@@ -488,7 +504,15 @@ exports.getStorefrontSettings = async (req, res) => {
         templateId: template?.id || null,
         lastUpdated: template?.updatedAt || company.updatedAt
       }
-    });
+    };
+
+    try {
+      await redisCacheService.set(cacheKey, responseData, 60); // Cache for 60 seconds
+    } catch (err) {
+      console.error('⚠️ [REDIS] error setting storefront settings cache:', err);
+    }
+
+    return res.json(responseData);
   } catch (error) {
     console.error('❌ [PUBLIC-STOREFRONT] Error fetching settings:', error);
     return res.status(500).json({

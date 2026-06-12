@@ -306,6 +306,13 @@ class BaseAgent:
         if skills_provider:
             context_providers.append(skills_provider)
 
+        # File-based skills provider for the SDK Agent Runtime path
+        if self.allowed_skills:
+            from src.skills.integration import create_skills_provider
+            file_skills_provider = create_skills_provider(self.allowed_skills)
+            if file_skills_provider:
+                context_providers.append(file_skills_provider)
+
         default_options: dict[str, Any] = {"model": self.model}
         if self.output_schema:
             default_options["output_schema"] = self.output_schema
@@ -367,11 +374,19 @@ class BaseAgent:
         
         By default, agents start with only CORE_TOOLS to implement Progressive Tool Exposure.
         Advanced tools are unlocked dynamically via the unlock_advanced_tools tool.
+        Agents with allowed_skills also get skill tools (load_skill, read_skill_resource)
+        for progressive-disclosure skill loading.
         """
-        from src.tools.registry import CORE_TOOLS
+        from src.tools.registry import CORE_TOOLS, SKILL_TOOLS
 
         # Base set is CORE_TOOLS for progressive exposure
-        base_set = CORE_TOOLS
+        base_set = list(CORE_TOOLS)
+
+        # Append skill tools for agents with skills
+        if self.allowed_skills:
+            for st in SKILL_TOOLS:
+                if st not in base_set:
+                    base_set.append(st)
 
         if not self.allowed_tools:
             return wrap_tools_for_gateway(
@@ -381,15 +396,21 @@ class BaseAgent:
                 allowed_tools=[_tool_name(tool) for tool in base_set],
             )
 
-        from src.tools.registry import get_all_tools
+        from src.tools.registry import get_all_tools, unlock_advanced_tools_tool
         allowed = {name.lower() for name in self.allowed_tools}
+
+        # Include skill tool names implicitly for agents with allowed_skills
+        if self.allowed_skills:
+            from src.skills.integration import get_skill_tool_names
+            for st_name in get_skill_tool_names():
+                allowed.add(st_name.lower())
+
         scoped = [
             t for t in get_all_tools()
             if _tool_name(t).lower() in allowed or _tool_name(t).replace("_", ".").lower() in allowed
         ]
 
         # Ensure unlock_advanced_tools is always available for agents that can unlock them
-        from src.tools.registry import unlock_advanced_tools_tool
         if unlock_advanced_tools_tool not in scoped:
             scoped.append(unlock_advanced_tools_tool)
 
@@ -509,10 +530,8 @@ class BaseAgent:
             )
             text = self._assemble_inline_prompt(variables)
 
-        skills_block = self._load_skills_block()
-        if skills_block:
-            text = text + "\n\n" + skills_block
-
+        # Skills are injected by ContextAssembler (pipeline) or SkillsProvider
+        # (SDK Agent Runtime). Do not inline them here to avoid duplication.
         self._system_prompt_cache = text
         self._system_prompt_cache_at = now
         return text
@@ -550,10 +569,8 @@ class BaseAgent:
                 + "\n[/AVAILABLE_TOOLS]"
             )
 
-        skills_block = self._load_skills_block()
-        if skills_block:
-            sections.append(skills_block)
-
+        # Skills are injected by ContextAssembler or SkillsProvider.
+        # Do not inline here to avoid duplication.
         return "\n\n".join(s for s in sections if s)
 
     def clear_prompt_cache(self) -> None:

@@ -1,3 +1,22 @@
+## [2026-06-12] Frontend — Dynamic Loading Screen and Synchronized Bootstrap
+- **Details**: Swapped the static storefront spinner with an inline CSS skeleton screen inside `index.html`, and synchronized loader dismissal to the dynamic bundle completion in `main.tsx`.
+- **Architecture**:
+  - **Inline Subdomain/Path Routing**: Implemented an inline JS script below the loading element in `index.html`. It detects if the request is destined for the storefront vs the merchant dashboard before any stylesheet or bundle is fetched.
+  - **CSS Skeleton Pulse Layout**: Added critical, inline CSS classes for `.storefront-loading` in `index.html`. If the route is a storefront visit, the script replaces the spinner HTML content with a skeletal representation (header, hero banner, product grid) containing pulse animation selectors.
+  - **React Bootstrap Synchronization**: Removed the blind 500ms loader removal delay in `main.tsx`. Bound `removeLoadingScreen()` to the resolution of the asynchronous `bootstrapApp()` promise to guarantee clean transition from HTML skeleton to React shell.
+- **Files**:
+  - `apps/frontend/index.html`
+  - `apps/frontend/src/main.tsx`
+
+## [2026-06-12] Backend — Public Orders Security Hardening and Test Cache Isolation
+- **Details**: Enforced a `403 Forbidden` response on public guest order status PATCH routes and bypassed settings caching in testing environments.
+- **Architecture**:
+  - **Security Guard**: Modified routes `/orders/:orderNumber/status` and `/payment-status` in `publicOrdersRoutes.js` to return `403 Forbidden`, blocking guest storefront users from altering order status and solving a security vulnerability.
+  - **Cache Bypass in Tests**: Modified `redisCacheService.js` to return `null` on `get()` when `process.env.NODE_ENV === 'test'`, resolving cross-test cache pollution and ensuring clean database assertions.
+- **Files**:
+  - `apps/backend/routes/publicOrdersRoutes.js`
+  - `apps/backend/services/redisCacheService.js`
+
 ## [2026-06-11] Backend — OrderService Guest Order Status Syntax Error Fix
 - **Details**: Fixed a syntax error in `updateGuestOrderStatus` inside `orderService.js` that occurred due to mismatched braces after deleting WhatsApp notifications.
 - **Architecture**: Removed the unused, orphaned `try-catch` block that parsed `guestItems` from `updatedGuestOrder.items` (which was left over after WhatsApp removal and had no usage). Properly closed the outer `try-catch` block for background operations.

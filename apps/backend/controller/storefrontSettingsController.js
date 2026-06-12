@@ -11,6 +11,7 @@ const {
 } = require('../services/storefrontThemeCatalogService');
 const FacebookConversionsService = require('../services/facebookConversionsService');
 const { getMetaGraphApiVersion } = require('../config/metaApi');
+const redisCacheService = require('../services/redisCacheService');
 
 const DEFAULT_THEME_ID = DEFAULT_STOREFRONT_THEME_ID || 'modern-minimal';
 const DEFAULT_SUPPORTED_LANGUAGES = 'ar,en';
@@ -174,7 +175,26 @@ const buildCreateDefaults = async (company) => {
       storeName: company.name,
       currency: company.currency || 'EGP',
     },
+    enabledPaymentMethods: '["cod"]',
   };
+};
+
+const maskGatewayConfig = (config) => {
+  if (!config || typeof config !== 'object') {
+    return null;
+  }
+
+  const masked = { ...config };
+
+  if (masked.apiKey) {
+    masked.apiKey = maskToken(masked.apiKey);
+  }
+
+  if (masked.secretKey) {
+    masked.secretKey = maskToken(masked.secretKey);
+  }
+
+  return masked;
 };
 
 const serializeStorefrontSettings = (settings, company) => {
@@ -191,6 +211,8 @@ const serializeStorefrontSettings = (settings, company) => {
       (typeof designTokens.themeId === 'string' && designTokens.themeId.trim()) ||
       DEFAULT_THEME_ID,
     designTokens,
+    paymentGatewayConfig: maskGatewayConfig(settings?.paymentGatewayConfig),
+    enabledPaymentMethods: settings?.enabledPaymentMethods || '["cod"]',
   };
 };
 
@@ -594,6 +616,12 @@ const updateSettings = async (req, res) => {
       })
     );
 
+    try {
+      await redisCacheService.del(`storefront_settings:${companyId}`);
+    } catch (err) {
+      console.error('⚠️ [REDIS] failed to invalidate settings cache:', err);
+    }
+
     return res.json({
       success: true,
       message: 'Storefront settings updated successfully',
@@ -640,6 +668,12 @@ const resetSettings = async (req, res) => {
         data: createDefaults,
       })
     );
+
+    try {
+      await redisCacheService.del(`storefront_settings:${companyId}`);
+    } catch (err) {
+      console.error('⚠️ [REDIS] failed to invalidate settings cache:', err);
+    }
 
     return res.json({
       success: true,

@@ -2540,127 +2540,18 @@ router.get('/:id', async (req, res) => {
 
 // Update guest order status
 router.patch('/orders/:orderNumber/status', async (req, res) => {
-  console.log('🔄 [UPDATE-GUEST-ORDER-STATUS] Route handler called!', req.params);
-  try {
-    const { company } = req;
-    const { orderNumber } = req.params;
-    const { status, notes } = req.body;
-
-    console.log('📦 [UPDATE-GUEST-ORDER-STATUS] Updating order:', {
-      orderNumber,
-      status,
-      companyId: company?.id
-    });
-
-    if (!status) {
-      return res.status(400).json({
-        success: false,
-        error: 'حالة الطلب مطلوبة'
-      });
-    }
-
-    const prisma = await getPrisma();
-
-    const existingOrder = await prisma.guestOrder.findFirst({
-      where: {
-        orderNumber,
-        companyId: company.id
-      }
-    });
-
-    if (!existingOrder) {
-      console.log('❌ [UPDATE-GUEST-ORDER-STATUS] Order not found');
-      return res.status(404).json({
-        success: false,
-        error: 'الطلب غير موجود'
-      });
-    }
-
-    const mergedNotes = notes ? `${existingOrder.notes || ''}\n${notes}`.trim() : existingOrder.notes;
-    const updatedOrder = await orderService.updateGuestOrderStatus(
-      existingOrder.id,
-      company.id,
-      status,
-      mergedNotes,
-      null,
-      'Public Storefront',
-      existingOrder,
-      { skipCallAttemptGuard: String(status || '').trim().toUpperCase() === 'CANCELLED' }
-    );
-
-    console.log('✅ [UPDATE-GUEST-ORDER-STATUS] Order status updated:', updatedOrder.orderNumber);
-    res.json({
-      success: true,
-      data: updatedOrder,
-      message: 'تم تحديث حالة الطلب بنجاح'
-    });
-  } catch (error) {
-    console.error('❌ [UPDATE-GUEST-ORDER-STATUS] Error updating order status:', error);
-    res.status(error.statusCode || 500).json({ success: false, error: error.message });
-  }
+  return res.status(403).json({
+    success: false,
+    message: 'Forbidden'
+  });
 });
 
 // Update guest order payment status
 router.patch('/orders/:orderNumber/payment-status', async (req, res) => {
-  console.log('💳 [UPDATE-GUEST-ORDER-PAYMENT] Route handler called!', req.params);
-  try {
-    const { company } = req;
-    const { orderNumber } = req.params;
-    const { paymentStatus, notes } = req.body;
-
-    console.log('📦 [UPDATE-GUEST-ORDER-PAYMENT] Updating order:', {
-      orderNumber,
-      paymentStatus,
-      companyId: company?.id
-    });
-
-    if (!paymentStatus) {
-      return res.status(400).json({
-        success: false,
-        error: 'حالة الدفع مطلوبة'
-      });
-    }
-
-    const prisma = await getPrisma();
-
-    // Find the guest order
-    const existingOrder = await prisma.guestOrder.findFirst({
-      where: {
-        orderNumber,
-        companyId: company.id
-      }
-    });
-
-    if (!existingOrder) {
-      console.log('❌ [UPDATE-GUEST-ORDER-PAYMENT] Order not found');
-      return res.status(404).json({
-        success: false,
-        error: 'الطلب غير موجود'
-      });
-    }
-
-    // Update the order payment status
-    const updatedOrder = await prisma.guestOrder.update({
-      where: {
-        id: existingOrder.id
-      },
-      data: {
-        paymentStatus: paymentStatus.toUpperCase(),
-        notes: notes ? `${existingOrder.notes || ''}\n${notes}` : existingOrder.notes,
-        updatedAt: new Date()
-      }
-    });
-
-    console.log('✅ [UPDATE-GUEST-ORDER-PAYMENT] Order payment status updated:', updatedOrder.orderNumber);
-    res.json({
-      success: true,
-      data: updatedOrder,
-      message: 'تم تحديث حالة الدفع بنجاح'
-    });
-  } catch (error) {
-    console.error('❌ [UPDATE-GUEST-ORDER-PAYMENT] Error updating payment status:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
+  return res.status(403).json({
+    success: false,
+    message: 'Forbidden'
+  });
 });
 
 module.exports = router;

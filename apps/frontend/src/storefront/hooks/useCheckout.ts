@@ -188,6 +188,41 @@ export const useCheckout = () => {
       setIsSubmitting(true);
       const pixelEventId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+      // Kashier card payment flow
+      if (data.paymentMethod === 'card') {
+        const payload = buildCheckoutOrderPayload(data, items, subtotal, companyId, pixelEventId);
+        const response = await storefrontApi.kashierCheckout(payload);
+
+        if (response.success && response.data?.sessionUrl) {
+          persistPurchaseTracking({
+            eventId: pixelEventId,
+            orderNumber: String(response.data.orderNumber || pixelEventId),
+            total: Number(payload.total),
+            phone: data.phone,
+            customerName: data.customerName,
+            paymentMethod: 'card',
+            items: items.map((item) => ({
+              id: item.id || buildCartItemId(item),
+              productId: item.productId,
+              variantId: item.variantId || undefined,
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price,
+              imageUrl: item.imageUrl,
+              attributes: item.attributes || {},
+              quantityOffer: item.quantityOffer || undefined,
+            })),
+          });
+          clearCart();
+          resetCheckout();
+          window.location.href = response.data.sessionUrl;
+        } else {
+          toast.error(response.error || 'فشل إنشاء جلسة الدفع.');
+        }
+        return response;
+      }
+
+      // COD / Wallet flow (existing)
       const payload = buildCheckoutOrderPayload(
         data,
         items,

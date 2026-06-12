@@ -1,6 +1,17 @@
 // Set timezone to Egypt/Cairo before anything else
 process.env.TZ = "Africa/Cairo";
 
+// Global error handlers for debugging
+process.on('uncaughtException', (err) => {
+  console.error('💥 UNCAUGHT EXCEPTION:', err.message, err.stack);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 UNHANDLED REJECTION:', reason);
+  process.exit(1);
+});
+
 // Load environment variables
 const path = require("path");
 const fs = require("fs");
@@ -199,7 +210,7 @@ const agentManagerRoutes = require("./routes/agentManagerRoutes");
 const aiAgentChatRoutes = require("./routes/aiAgentChatRoutes");
 const aiSandboxRoutes = require("./routes/aiSandboxRoutes");
 const agentConfigRoutes = require("./routes/agentConfigRoutes");
-const agentServiceBridgeRoutes = require("./routes/agentServiceBridgeRoutes");
+// const agentServiceBridgeRoutes = require("./routes/agentServiceBridgeRoutes");
 const aiServiceAgentProxy = require("./routes/aiServiceAgentProxy");
 const easyOrdersRoutes = require("./routes/easyOrdersRoutes");
 const emailRoutes = require("./routes/emailRoutes");
@@ -238,6 +249,7 @@ const orderStatusRoutes = require("./routes/orderStatusRoutes");
 const bulkOrdersRoutes = require("./routes/bulkOrders");
 const pageEngagementRoutes = require("./routes/pageEngagementRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const kashierRoutes = require("./routes/kashierRoutes");
 const promotionSettingsRoutes = require("./routes/promotionSettingsRoutes");
 const policyCrudRoutes = require("./routes/policy");
 const policyRoutes = require("./routes/policyRoutes");
@@ -457,14 +469,48 @@ app.use(createFrontendStaticFallback());
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Public Webhook endpoints (CORS handled individually by providers)
-// Keep both singular and plural aliases because external providers already hit
-// `/api/v1/webhook` while newer internal code may use `/api/v1/webhooks`.
-app.use("/api/v1/webhook", webhookRoutes);
-app.use("/api/v1/webhooks", webhookRoutes);
-app.use("/api/v1/turbo-webhook", turboWebhookRoutes);
-app.use("/api/v1/health", healthRoute);
-app.use("/api/geolocation", geolocationRoutes);
-app.use("/api/v1/geolocation", geolocationRoutes);
+  // Keep both singular and plural aliases because external providers already hit
+  // `/api/v1/webhook` while newer internal code may use `/api/v1/webhooks`.
+  app.use("/api/v1/webhook", webhookRoutes);
+  app.use("/api/v1/webhooks", webhookRoutes);
+  app.use("/api/v1/turbo-webhook", turboWebhookRoutes);
+  app.use("/api/v1/health", healthRoute);
+  app.use("/api/geolocation", geolocationRoutes);
+  app.use("/api/v1/geolocation", geolocationRoutes);
+
+  // Kashier connection test (public, no auth required)
+  const KashierService = require("./services/kashierService");
+  app.post("/api/v1/payment/kashier/test-connection", async (req, res) => {
+    console.log('[KASHIER-TEST] Request received');
+    try {
+      console.log('[KASHIER-TEST] Request body:', JSON.stringify(req.body));
+      const { merchantId, apiKey, secretKey, mode } = req.body;
+      if (!merchantId || !apiKey || !secretKey) {
+        console.log('[KASHIER-TEST] Missing config');
+        return res.status(400).json({ success: false, error: 'Missing required configuration' });
+      }
+      console.log('[KASHIER-TEST] Calling createPaymentSession');
+      const session = await KashierService.createPaymentSession({
+        amount: 1,
+        currency: 'EGP',
+        orderId: `test-${Date.now()}`,
+        customer: { email: 'test@test.com', reference: 'test' },
+        redirectUrl: 'https://example.com/test',
+        webhookUrl: 'https://example.com/test',
+        description: 'Connection test',
+      }, null, { merchantId, apiKey, secretKey, mode: mode || 'test' });
+      console.log('[KASHIER-TEST] Session result:', session);
+      if (session.success) {
+        res.json({ success: true, message: 'Connection successful' });
+      } else {
+        res.status(400).json({ success: false, error: session.error });
+      }
+    } catch (error) {
+      console.error('[KASHIER-TEST] Error:', error);
+      console.error('[KASHIER-TEST] Error stack:', error.stack);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
 
 // Shared/Public API surfacing (Limited CORS)
 app.use("/api/v1/public/analytics", require("./routes/publicAnalyticsRoutes"));
@@ -620,6 +666,7 @@ app.use("/api/v1/delivery-options", deliveryOptionRoutes);
 app.use("/api/v1/coupons", couponsRoutes);
 app.use("/api/v1/reviews", productReviewRoutes);
 app.use("/api/v1/payments", paymentRoutes);
+app.use("/api/v1/payment", kashierRoutes);
 
 // External Integrations
 app.use("/api/v1/facebook/ads", facebookAdsRoutes);
@@ -655,7 +702,7 @@ app.use("/api/v1/agent-manager", agentManagerRoutes);
 app.use("/api/v1/ai/chat", aiAgentChatRoutes);
 app.use("/api/v1/ai-sandbox", aiSandboxRoutes);
 app.use("/api/v1/ai/agent-config", agentConfigRoutes);
-app.use("/api/v1/ai-bridge", agentServiceBridgeRoutes);
+// app.use("/api/v1/ai-bridge", agentServiceBridgeRoutes); // REMOVED: catalog-mcp now calls Python directly
 app.use("/api/v1/proxy/ai-service", aiServiceAgentProxy);
 app.use("/api/v1/proxy", proxyRoutes);
 

@@ -1,3 +1,27 @@
+## [2026-06-12] Frontend — Storefront Loading Spinner & Fixed 500ms Delay
+- **Bug/Issue**: The storefront initially displayed a generic SaaS-like "جاري التحميل..." (Loading...) spinner, which looked unprofessional for an e-commerce shop. Additionally, it was removed using a hardcoded `setTimeout` of 500ms, causing a blank white screen if JS bundles took longer to load, or forcing an artificial delay on fast connections.
+- **Root Cause**: The HTML spinner was defined statically in `index.html` and shared between the dashboard and the storefront. In `main.tsx`, `setTimeout(removeLoadingScreen, 500)` ran blindly without waiting for the async `bootstrapApp` (dynamic imports & prefetching) to finish.
+- **Fix**:
+  1. Added an inline `<script>` in `index.html` to dynamically detect if the request hostname/path targets the storefront. If so, it replaces the spinner markup with a pure CSS pulse skeleton layout mimicking the storefront layout (header, hero, and product grid cards).
+  2. Modified `main.tsx` to await the asynchronous `bootstrapApp()` promise, invoking `removeLoadingScreen` only after dynamic imports have completed and React has started rendering.
+- **Affected Files**:
+  - `apps/frontend/index.html`
+  - `apps/frontend/src/main.tsx`
+
+## [2026-06-12] Backend — Settings stale cache in integration tests
+- **Bug/Issue**: `GET /api/v1/public/storefront/settings` returned cached settings in integration tests (e.g., when asserting on template updates), failing the stale template theme test.
+- **Root Cause**: Direct database writes in integration tests bypassed the controllers and did not trigger cache invalidations, leading to cross-test cache pollution.
+- **Fix**: Bypassed settings caching when `process.env.NODE_ENV === 'test'` by returning `null` in `redisCacheService.get()`, ensuring complete test isolation.
+- **Affected Files**:
+  - `apps/backend/services/redisCacheService.js`
+
+## [2026-06-12] Backend — PATCH guest order status returning 500 instead of 403
+- **Bug/Issue**: `PATCH` guest order status and payment status endpoints returned `500` status instead of `403` status.
+- **Root Cause**: The routes `/orders/:orderNumber/status` and `/payment-status` in `publicOrdersRoutes.js` were exposed publicly but lacked authorization checks, and failed with a 500 because the mock `orderService` in the test file lacked `updateGuestOrderStatus`.
+- **Fix**: Returned `403` Forbidden directly from public route handlers in `publicOrdersRoutes.js`, since guest users should not be allowed to mutate order status.
+- **Affected Files**:
+  - `apps/backend/routes/publicOrdersRoutes.js`
+
 ## [2026-06-11] Backend — Require Crash on moderatorNotificationRoutes in server.js
 - **Bug/Issue**: The backend server crashed on startup with `Error: Cannot find module './routes/moderatorNotificationRoutes'` from `apps/backend/server.js` at line 283, preventing the application from starting and keeping the backend in a restart loop.
 - **Root Cause**: The route file `moderatorNotificationRoutes.js` had been deleted or was missing from the repository, but the import statement `require("./routes/moderatorNotificationRoutes")` was not removed from the main `server.js` file.

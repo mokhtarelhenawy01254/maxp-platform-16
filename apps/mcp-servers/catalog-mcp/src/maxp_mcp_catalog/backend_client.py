@@ -21,7 +21,13 @@ class MaxPBackendClient:
         service_token: str | None = None,
         timeout: float = 30.0,
     ) -> None:
-        self._base_url = (base_url or os.environ.get("MAXP_API_URL") or "http://localhost:3007").rstrip("/")
+        # Default to Python ai-service (port 8000) instead of Node.js (port 3007)
+        self._base_url = (
+            base_url
+            or os.environ.get("MAXP_AI_SERVICE_URL")
+            or os.environ.get("MAXP_API_URL")
+            or "http://localhost:8000"
+        ).rstrip("/")
         self._service_token = service_token or os.environ.get("MAXP_SERVICE_TOKEN") or "test-service-token"
         self._timeout = timeout
         self._client: httpx.AsyncClient | None = None
@@ -61,8 +67,9 @@ class MaxPBackendClient:
 
         for attempt in range(2):
             try:
+                # Call Python ai-service MCP endpoint directly
                 response = await client.post(
-                    "/api/v1/ai-bridge/tools/execute",
+                    "/mcp/tools/execute",
                     json=body,
                 )
             except httpx.RequestError as exc:
@@ -93,11 +100,14 @@ class MaxPBackendClient:
             if not isinstance(data, dict):
                 raise BackendError(f"backend returned non-object body: {type(data).__name__}")
 
+            # New Python response format: {success: bool, result: dict, error: str}
             if data.get("success") is False:
                 error_message = str(data.get("error") or "backend reported failure")
                 raise BackendError(error_message, status_code=response.status_code)
 
             result = data.get("result")
+            if result is None:
+                return {}
             if not isinstance(result, dict):
                 return {"value": result}
             return result

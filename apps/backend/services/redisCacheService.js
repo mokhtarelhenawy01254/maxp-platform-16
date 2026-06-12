@@ -46,6 +46,9 @@ class RedisCacheService {
      * @returns {Promise<any|null>}
      */
     async get(key) {
+        if (process.env.NODE_ENV === 'test') {
+            return null;
+        }
         // 1. Try Redis first
         if (this.isConnected && this.client) {
             try {

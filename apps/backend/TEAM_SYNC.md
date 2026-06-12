@@ -1,3 +1,31 @@
+## [2026-06-12] Storefront Initial Loading Screen Performance & UX Polish [DONE]
+- **Objective**: Optimize the perceived speed and user experience of the storefront by swapping the generic spinner with an inline CSS skeleton layout and synchronizing loading screen dismissal.
+- **Accomplishments**:
+  - **Storefront Skeleton Screen**: Added inline critical CSS and HTML markup for a storefront skeleton layout (header, banner, and product grid) directly inside `index.html`.
+  - **Inline Hostname/Path Router**: Implemented a tiny routing check in `index.html` that runs instantly to dynamically show the skeleton for storefront requests while keeping the professional loading spinner for dashboard paths.
+  - **Bootstrap Lifecycle Integration**: Updated `main.tsx` to remove the hardcoded 500ms delay and sync loading screen removal with the resolution of the asynchronous `bootstrapApp` promise, ensuring smooth client transitions.
+  - **Verification**: Built the production frontend package (`npm run build`) and verified type safety. Ran the backend storefront integration tests successfully.
+- **Files**:
+  - `apps/frontend/index.html`
+  - `apps/frontend/src/main.tsx`
+
+## [2026-06-12] Storefront Backend Performance Optimizations & Security Hardening [DONE]
+- **Objective**: Optimize storefront speed (caching, query refactoring) and secure public guest order endpoints.
+- **Accomplishments**:
+  - **SQL-Level Filtering**: Optimized active product filters for guest carts and guest orders by moving item checks from memory-level JavaScript loops to database-level SQL filtering (`items: { contains: productId }`) in `publicProductsRoutes.js`.
+  - **Redis Caching**: Implemented a 60-second Redis cache for storefront settings (`publicStorefrontController.js`) and a 5-minute Redis cache for product demand signals (`publicProductsRoutes.js`).
+  - **Cache Invalidation**: Hooked up Redis cache invalidation triggers on settings update/reset (`storefrontSettingsController.js`) and theme activation (`storefrontThemeCatalogController.js`).
+  - **Test Cache Isolation**: Bypassed Redis cache gets in test environments (`process.env.NODE_ENV === 'test'`) in `redisCacheService.js` to ensure clean database validations and prevent cross-test pollution.
+  - **Security Hardening**: Protected public order status mutation routes (`/api/v1/public/orders/orders/:orderNumber/status` and `/payment-status`) in `publicOrdersRoutes.js` by returning `403 Forbidden` for public guest clients, closing a security vulnerability.
+  - **Verification**: Ran the integration test suite (`storefrontPublicRoutes.test.js`) and confirmed all 18 tests passed successfully.
+- **Files**:
+  - `apps/backend/routes/publicProductsRoutes.js`
+  - `apps/backend/controller/publicStorefrontController.js`
+  - `apps/backend/controller/storefrontSettingsController.js`
+  - `apps/backend/controller/storefrontThemeCatalogController.js`
+  - `apps/backend/services/redisCacheService.js`
+  - `apps/backend/routes/publicOrdersRoutes.js`
+
 ## [2026-06-11] Backend — Server Startup Crash Fix (moderatorNotificationRoutes) [DONE]
 - **Objective**: Fix a server crash on startup due to a missing/deleted module require in `server.js`.
 - **Accomplishments**:

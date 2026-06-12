@@ -75,6 +75,13 @@ export interface StorefrontSettings {
   sliderShowDots?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  enabledPaymentMethods?: string;
+  paymentGatewayConfig?: {
+    merchantId?: string;
+    apiKey?: string;
+    secretKey?: string;
+    mode?: string;
+  };
   [key: string]: any;
 }
 

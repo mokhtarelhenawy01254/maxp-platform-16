@@ -6,6 +6,7 @@ const tenantContext = require('../services/tenantContext');
 const {
   storefrontThemeCatalogService,
 } = require('../services/storefrontThemeCatalogService');
+const redisCacheService = require('../services/redisCacheService');
 
 const runWithoutTenantContext = (operation) =>
   tenantContext.run(null, operation);
@@ -223,6 +224,12 @@ const activateTheme = async (req, res) => {
         { companyId },
       )
     );
+
+    try {
+      await redisCacheService.del(`storefront_settings:${companyId}`);
+    } catch (err) {
+      console.error('⚠️ [REDIS] failed to invalidate settings cache:', err);
+    }
 
     return res.json({
       success: true,

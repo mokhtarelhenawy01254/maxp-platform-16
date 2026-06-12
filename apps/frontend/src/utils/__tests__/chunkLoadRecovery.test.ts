@@ -19,6 +19,14 @@ describe("chunkLoadRecovery", () => {
     expect(isChunkLoadError("Importing a module script failed.")).toBe(true);
   });
 
+  it("detects corrupted browser cache failures for Vite optimized deps", () => {
+    expect(
+      isChunkLoadError(
+        "Failed to load resource: net::ERR_CACHE_READ_FAILURE http://localhost:3001/node_modules/.vite/deps/chunk-AVDUTSVO.js",
+      ),
+    ).toBe(true);
+  });
+
   it("ignores unrelated runtime errors", () => {
     expect(isChunkLoadError(new Error("Cannot read properties of undefined"))).toBe(
       false,

@@ -1129,6 +1129,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
   const tabsWithCheckout = [
     ...tabs.slice(0, 2),
     { id: "checkout", label: "إعدادات الشيك أوت", icon: CreditCardIcon },
+    { id: "payment", label: "بوابات الدفع", icon: CreditCardIcon },
     ...tabs.slice(2),
   ];
 
@@ -1419,6 +1420,13 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
               <div className="bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
                 <PromotionSettings />
               </div>
+            ) : activeTab === "payment" ? (
+              <PaymentGatewaySettingsSection
+                settings={storefrontSettings}
+                onChange={setStorefrontSettings}
+                onSave={() => handleSavePaymentSettings()}
+                loading={loading}
+              />
             ) : null}
           </div>
         </main>
@@ -1453,6 +1461,288 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
           isEditing={!!editingShipping}
         />
       )}
+    </div>
+  );
+};
+
+const PaymentGatewaySettingsSection: React.FC<{
+  settings: StorefrontSettings;
+  onChange: (settings: Partial<StorefrontSettings>) => void;
+  onSave: () => void;
+  loading: boolean;
+}> = ({ settings, onChange, onSave, loading }) => {
+  const [gatewayConfig, setGatewayConfig] = useState<{
+    merchantId: string;
+    apiKey: string;
+    secretKey: string;
+    mode: "test" | "live";
+  }>({
+    merchantId: "",
+    apiKey: "",
+    secretKey: "",
+    mode: "test",
+  });
+
+  const [enabledMethods, setEnabledMethods] = useState<string[]>(
+    settings.enabledPaymentMethods
+      ? JSON.parse(settings.enabledPaymentMethods)
+      : ["cod"]
+  );
+
+  const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "testing">("disconnected");
+  const [testMessage, setTestMessage] = useState("");
+
+  const isConfigured = gatewayConfig.merchantId && gatewayConfig.apiKey && gatewayConfig.secretKey;
+
+  useEffect(() => {
+    if (settings.paymentGatewayConfig) {
+      const config = typeof settings.paymentGatewayConfig === "string"
+        ? JSON.parse(settings.paymentGatewayConfig)
+        : settings.paymentGatewayConfig;
+      setGatewayConfig({
+        merchantId: config.merchantId || "",
+        apiKey: config.apiKey || "",
+        secretKey: config.secretKey || "",
+        mode: config.mode || "test",
+      });
+    }
+    if (settings.enabledPaymentMethods) {
+      setEnabledMethods(
+        typeof settings.enabledPaymentMethods === "string"
+          ? JSON.parse(settings.enabledPaymentMethods)
+          : settings.enabledPaymentMethods
+      );
+    }
+    // Check connection status on load
+    setConnectionStatus(
+      isConfigured ? "connected" : "disconnected"
+    );
+  }, [settings]);
+
+  const handleConfigChange = (key: string, value: string) => {
+    setGatewayConfig((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleMethodToggle = (method: string) => {
+    setEnabledMethods((prev) =>
+      prev.includes(method)
+        ? prev.filter((m) => m !== method)
+        : [...prev, method]
+    );
+  };
+
+  const handleSave = async () => {
+    const configJson = JSON.stringify({
+      merchantId: gatewayConfig.merchantId,
+      apiKey: gatewayConfig.apiKey,
+      secretKey: gatewayConfig.secretKey,
+      mode: gatewayConfig.mode,
+    });
+
+    const updatedSettings = {
+      paymentGatewayConfig: configJson,
+      enabledPaymentMethods: JSON.stringify(enabledMethods),
+    };
+
+    onChange(updatedSettings);
+
+    try {
+      await storefrontSettingsService.updateSettings(updatedSettings);
+      toast.success("تم حفظ إعدادات بوابة الدفع بنجاح");
+    } catch (error) {
+      console.error("Failed to save payment gateway settings:", error);
+      toast.error("حدث خطأ أثناء الحفظ");
+    }
+  };
+
+  const testConnection = async () => {
+    if (!isConfigured) {
+      setTestMessage("أكمل البيانات أولاً");
+      return;
+    }
+
+    setConnectionStatus("testing");
+    setTestMessage("جاري الاختبار...");
+
+    try {
+      const response = await fetch("/api/v1/payment/kashier/test-connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(gatewayConfig),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setConnectionStatus("connected");
+        setTestMessage("✅ تم الاتصال بنجاح!");
+      } else {
+        setConnectionStatus("disconnected");
+        setTestMessage(`❌ ${data.error || "فشل الاتصال"}`);
+      }
+    } catch (error) {
+      setConnectionStatus("disconnected");
+      setTestMessage("❌ خطأ في الاتصال بالخادم");
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-gray-50/50 dark:bg-gray-900/30 rounded-2xl p-6 border border-gray-100 dark:border-gray-800">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              إعدادات بوابة الدفع - Kashier
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              أدخل مفاتيح Kashier لتفعيل الدفع بالبطاقات في متجرك.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
+              connectionStatus === "connected"
+                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                : connectionStatus === "testing"
+                ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+            }`}>
+              {connectionStatus === "connected" && (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                  متصل
+                </>
+              )}
+              {connectionStatus === "testing" && (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+                  جاري الاختبار...
+                </>
+              )}
+              {connectionStatus === "disconnected" && (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                  غير متصل
+                </>
+              )}
+            </span>
+            {isConfigured && connectionStatus !== "testing" && (
+              <button
+                onClick={testConnection}
+                disabled={connectionStatus === "testing" || loading}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-white text-indigo-600 border border-indigo-300 hover:bg-indigo-50 dark:bg-gray-800 dark:text-indigo-400 dark:border-indigo-700 disabled:opacity-50"
+              >
+                {connectionStatus === "testing" ? "جاري الاختبار..." : "اختبار الاتصال"}
+              </button>
+            )}
+          </div>
+        </div>
+        {testMessage && (
+          <p className={`mt-2 text-sm ${connectionStatus === "connected" ? "text-green-600 dark:text-green-400" : connectionStatus === "disconnected" ? "text-red-600 dark:text-red-400" : "text-yellow-600 dark:text-yellow-400"}`}>
+            {testMessage}
+          </p>
+        )}
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 space-y-4">
+        <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
+          بيانات الاعتماد (Credentials)
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Merchant ID
+            </label>
+            <input
+              type="text"
+              value={gatewayConfig.merchantId}
+              onChange={(e) => handleConfigChange("merchantId", e.target.value)}
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="MID-XXXX-XXX"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              API Key
+            </label>
+            <input
+              type="password"
+              value={gatewayConfig.apiKey}
+              onChange={(e) => handleConfigChange("apiKey", e.target.value)}
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Secret Key
+            </label>
+            <input
+              type="password"
+              value={gatewayConfig.secretKey}
+              onChange={(e) => handleConfigChange("secretKey", e.target.value)}
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              الوضع
+            </label>
+            <select
+              value={gatewayConfig.mode}
+              onChange={(e) => handleConfigChange("mode", e.target.value)}
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="test">Test (Sandbox)</option>
+              <option value="live">Live</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 space-y-4">
+        <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
+          طرق الدفع المفعّلة
+        </h4>
+        <div className="flex flex-wrap gap-3">
+          {["cod", "card", "wallet"].map((method) => (
+            <label
+              key={method}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 cursor-pointer transition-colors ${
+                enabledMethods.includes(method)
+                  ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
+                  : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-indigo-400"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={enabledMethods.includes(method)}
+                onChange={() => handleMethodToggle(method)}
+                className="sr-only"
+              />
+              <span className="text-sm font-medium">
+                {method === "cod" && "الدفع عند الاستلام"}
+                {method === "card" && "بطاقة ائتمان / خصم"}
+                {method === "wallet" && "محفظة إلكترونية"}
+              </span>
+            </label>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          اختر طرق الدفع التي تظهر للعملاء في صفحة الشيك أوت.
+        </p>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={handleSave}
+          disabled={loading}
+          className="px-6 py-3 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? "جاري الحفظ..." : "حفظ الإعدادات"}
+        </button>
+      </div>
     </div>
   );
 };

@@ -633,7 +633,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={className}
-      style={productCardStyles(style)}
+      style={{ ...productCardStyles(style), touchAction: 'manipulation' }}
     >
       {children}
     </Link>
