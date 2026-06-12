@@ -52,7 +52,6 @@ const SKIP_PATTERNS = [
   /\.next/,
   /dist/,
   /build/,
-  /apps[/\\]backend[/\\]legacy-ai-agent/, // legacy compatibility archive kept during AI service migration
   /locales/,           // translation files are expected to have Arabic
   /i18n\.js$/,         // i18n config files
   /i18n[/\\]index\.ts$/,
@@ -60,15 +59,9 @@ const SKIP_PATTERNS = [
   /\.spec\./,
   /\.min\./,
   /seed/i,             // seed data files
-  /marketplaceFeatureMap/, // feature audit config file (contains documented Arabic audit notes)
-  /marketplaceController/,  // backend API error messages (non-UI, pre-existing pattern)
-  /kashierRoutes/,          // backend payment gateway API responses (merchant-facing, non-chat)
   /migration/i,        // database migrations
-  /scripts[/\\]scripts/, // utility/build scripts
   /\.uat\./,           // UAT test scripts
   /uat[/\\]/,          // UAT directories
-  /apps[/\\]frontend[/\\]src[/\\]pages[/\\]settings/, // frontend settings pages (contain pre-existing UI labels)
-  /apps[/\\]frontend[/\\]src[/\\]storefront[/\\]hooks/, // storefront frontend hooks
 ];
 
 // File extensions to scan

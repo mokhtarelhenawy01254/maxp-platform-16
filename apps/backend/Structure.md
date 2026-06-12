@@ -1,3 +1,62 @@
+## [2026-06-12] Frontend — Storefront Build Chunk Splitting & esbuild Transpiler Settings
+- **Details**: Refactored the frontend's Vite chunking and esbuild configurations to split the storefront code and reduce memory footprint, preventing out-of-memory crashes on large production builds.
+- **Architecture**:
+  - **Manual Chunk Division**: Separated the single `route-storefront` chunk into modular chunks (`storefront-variants`, `storefront-sections`, `storefront-themes`, `storefront-blueprints`, `storefront-engine`, and `storefront-components`) in the Rollup config.
+  - **Esbuild Transpile Configuration**: Configured `esbuild` option in Vite config to disable intermediate sourcemap generation during TS/JSX transpile, saving compilation resources.
+- **Files**:
+  - `apps/frontend/vite.config.ts`
+
+## [2026-06-12] Backend & Frontend — Platform Subscriptions Kashier Payment & Admin Settings UI
+- **Details**: Implemented direct credit card checkout using Kashier for merchant platform subscriptions. Created Super Admin settings to configure platform-wide gateway credentials, integrated billing plans checkout, and added a public webhook to process checkout callback notifications.
+- **Architecture**:
+  - **Platform Billing Controller**: Created `/checkout` session endpoint and `/webhook` listener in `platformSubscriptionController.js`. The checkout creates a Kashier payment request for platform billing plans, while the webhook processes success responses by upgrading the merchant's subscription tier.
+  - **Super Admin Settings Controller**: Added settings handlers in `superAdminSettingsController.js` to manage the system setting `kashier_gateway_settings` which stores Merchant ID, API Key, Secret Key, and Mode (test/live).
+  - **Super Admin Payment Settings View**: Created `SuperAdminPaymentSettings.tsx` to display connection form, credential testing, and status.
+  - **Billing & Subscriptions Tabs**: Mounted `SuperAdminPaymentSettings` as a new tab index 5 (إعدادات الدفع) inside `SubscriptionCenter.tsx`, and updated `PlatformPlans.tsx` selection flow to allow checkout via cards.
+- **Files**:
+  - `apps/backend/controller/platformSubscriptionController.js`
+  - `apps/backend/routes/platformSubscriptionRoutes.js`
+  - `apps/backend/controller/superAdminSettingsController.js`
+  - `apps/backend/routes/superAdminPlatformRoutes.js`
+  - `apps/frontend/src/pages/super-admin/SuperAdminPaymentSettings.tsx`
+  - `apps/frontend/src/pages/super-admin/SubscriptionCenter.tsx`
+  - `apps/frontend/src/pages/subscription/PlatformPlans.tsx`
+
+## [2026-06-12] Backend — Public Checkout & Webhooks Route Mapping Fix
+- **Details**: Relocated Kashier payment routes before the global security middleware to ensure guest checkouts can proceed without encountering `401 Unauthorized` errors.
+- **Architecture**:
+  - Moved `app.use("/api/v1/payment", kashierRoutes);` to the public route registration section before `globalSecurity`.
+  - Fixed `/kashier/test-connection` endpoint in `kashierRoutes.js` to correctly pass the credentials body as the third argument (`overrideConfig`) to `createPaymentSession`.
+- **Files**:
+  - `apps/backend/server.js`
+  - `apps/backend/routes/kashierRoutes.js`
+
+## [2026-06-12] Backend — Public Storefront Settings Field Exposure
+- **Details**: Added `enabledPaymentMethods` to the fields retrieved and exposed by the public storefront settings query.
+- **Architecture**:
+  - Whitelisted `'enabledPaymentMethods'` in `PUBLIC_STOREFRONT_SETTINGS_FIELDS` array in `publicStorefrontController.js` so it is loaded by database select helper.
+- **Files**:
+  - `apps/backend/controller/publicStorefrontController.js`
+
+## [2026-06-12] Backend — Kashier Service Method Scoping Fix
+- **Details**: Resolved runtime method scoping errors in `KashierService` by invoking the module-level helper `getCompanyKashierConfig` directly.
+- **Architecture**:
+  - Bound helper references to direct module-level execution, avoiding class-context property resolution errors.
+  - Corrected Jest unit test masked API key format to match system-defined mask output.
+- **Files**:
+  - `apps/backend/services/kashierService.js`
+  - `apps/backend/tests/controller/storefrontSettingsController.test.js`
+
+## [2026-06-12] Backend & Frontend — Kashier Settings Save & Credentials Merge Architecture
+- **Details**: Hardened the storefront settings saving architecture by converting the payment gateway config payload from a stringified format to structured JSON, and added backend credential validation/merging to prevent active credentials corruption.
+- **Architecture**:
+  - **Structured JSON Config**: Updated `StoreSettings.tsx` to transmit `paymentGatewayConfig` as a parsed JSON object rather than a stringified JSON string. This aligns it with the Postgres JSON column mapping.
+  - **Credentials Merger**: Added `isMaskedToken` and `mergeGatewayConfig` helper functions to `storefrontSettingsController.js` to detect when a client submits masked API credentials (`apiKey`, `secretKey`). If masked keys are received, the controller automatically restores the original unmasked tokens from the database prior to database update/upsert.
+  - **Backward Compatibility**: Updated `maskGatewayConfig` to handle legacy stringified values in the database, parsing them dynamically before applying masking logic.
+- **Files**:
+  - `apps/frontend/src/pages/settings/StoreSettings.tsx`
+  - `apps/backend/controller/storefrontSettingsController.js`
+
 ## [2026-06-12] Integration — Kashier Payment Gateway Integration
 - **Details**: Built end-to-end support for Kashier payment gateway integration, including backend API routes, services, settings persistence, and frontend verification logic.
 - **Architecture**:

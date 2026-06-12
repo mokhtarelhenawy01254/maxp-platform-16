@@ -1,3 +1,86 @@
+## [2026-06-12] Frontend — WebAssembly memory limit & esbuild transpile OOM in production build
+- **Bug/Issue**: The frontend build failed with `RangeError: [plugin vite:build-import-analysis] ... WebAssembly.Memory.grow(): Unable to grow instance memory` and `[vite:esbuild-transpile] The service was stopped` during the transformation phase.
+- **Root Cause**:
+  1. The manual chunking logic grouped the entire `/src/storefront/` directory into a single `route-storefront` chunk. Since the storefront contains templates, presets, engine, and components, this chunk was massive, causing WebAssembly to run out of memory when analyzing imports.
+  2. esbuild generated inline sourcemaps for all transformed files by default, causing esbuild's Go runtime memory pool to crash on Windows under heavy parallel transpile load.
+- **Fix**:
+  1. Split `route-storefront` in `vite.config.ts` into smaller, independent sub-chunks: `storefront-variants`, `storefront-sections`, `storefront-themes`, `storefront-blueprints`, `storefront-engine`, and `storefront-components`.
+  2. Added `esbuild: { sourcemap: false }` to `vite.config.ts` to disable sourcemap generation in esbuild transformation, saving massive memory.
+- **Affected Files**:
+  - `apps/frontend/vite.config.ts`
+
+## [2026-06-12] Frontend — Subscription Center Missing Icon Import & Platform Plans Duplication Syntax Error
+- **Bug/Issue**: The frontend failed to compile. The super-admin `SubscriptionCenter.tsx` threw a runtime/compilation error for missing `CreditCardIcon` import. Also, the merchant subscription billing `PlatformPlans.tsx` was broken by duplicate/cutoff imports and helper definitions inside the top-level declaration blocks.
+- **Root Cause**:
+  1. **Missing Icon Import**: The tab layout in `SubscriptionCenter.tsx` used `<CreditCardIcon />` at line 651 but the icon was never imported from `@mui/icons-material`.
+  2. **Merge/Git Conflict Duplication**: During a prior save or merge, duplicate import and interface declarations were pasted within and at the top of the `normalizePlan` and `DEFAULT_PLAN_LIMITS` declarations in `PlatformPlans.tsx`, cutting off part of the original declarations and introducing syntax errors.
+- **Fix**:
+  1. Imported `CreditCard as CreditCardIcon` from `@mui/icons-material` in `SubscriptionCenter.tsx`.
+  2. Removed all duplicate imports, interface blocks, and cutoff parts in `PlatformPlans.tsx` to consolidate the file structure.
+- **Affected Files**:
+  - `apps/frontend/src/pages/super-admin/SubscriptionCenter.tsx`
+  - `apps/frontend/src/pages/subscription/PlatformPlans.tsx`
+
+## [2026-06-12] Backend — Public Checkout & Webhooks Return 401 Unauthorized and Broken test-connection
+- **Bug/Issue**: Checking out on the storefront via Kashier failed with `401 Unauthorized`. Additionally, the kashier connection test endpoint in `kashierRoutes.js` failed to verify credentials correctly.
+- **Root Cause**:
+  1. **Route Ordering / Auth Protection**: In `server.js`, `app.use("/api/v1/payment", kashierRoutes);` was mounted *after* the `globalSecurity` middleware. As a result, public storefront checkout visitors (guests) were blocked by the admin dashboard authentication gate.
+  2. **Missing overrideConfig in Router**: The `/kashier/test-connection` endpoint inside `kashierRoutes.js` passed `null` for `companyId` to `createPaymentSession` but omitted the third parameter `overrideConfig`, preventing the service from testing custom inputs.
+- **Fix**:
+  1. Relocated `app.use("/api/v1/payment", kashierRoutes);` before the `globalSecurity` middleware in `server.js`, and removed the redundant/duplicate route registrations.
+  2. Updated the `/kashier/test-connection` route in `kashierRoutes.js` to pass the connection keys as the third argument (`overrideConfig`).
+- **Affected Files**:
+  - `apps/backend/server.js`
+  - `apps/backend/routes/kashierRoutes.js`
+
+## [2026-06-12] Backend — Public Storefront Settings Query Omits enabledPaymentMethods Field
+- **Bug/Issue**: The storefront checkout page only displayed the cash-on-delivery option (الدفع عند الاستلام) even after enabling Kashier and wallet payment methods in the admin settings dashboard.
+- **Root Cause**: The `PUBLIC_STOREFRONT_SETTINGS_FIELDS` array in `publicStorefrontController.js` did not contain the `'enabledPaymentMethods'` field. Consequently, the dynamic database query projection helper `getPublicStorefrontSettingsSelect` omitted this field, causing the API response to fall back to `["cod"]`.
+- **Fix**: Added `'enabledPaymentMethods'` to the `PUBLIC_STOREFRONT_SETTINGS_FIELDS` whitelist array in `publicStorefrontController.js`.
+- **Affected Files**:
+  - `apps/backend/controller/publicStorefrontController.js`
+
+## [2026-06-12] Backend — Kashier Service Method Scoping Bug (TypeError)
+- **Bug/Issue**: When creating a payment session or fetching payment configuration for a company, the Kashier service crashed with `TypeError: this.getCompanyKashierConfig is not a function`.
+- **Root Cause**: `getCompanyKashierConfig` was defined as a local module-level function, but was invoked on the static class context `this` (e.g., `this.getCompanyKashierConfig` and `KashierService.getCompanyKashierConfig`), which returned `undefined`.
+- **Fix**: Replaced the incorrect class and context-scoped references with direct calls to `getCompanyKashierConfig` inside `kashierService.js`.
+- **Affected Files**:
+  - `apps/backend/services/kashierService.js`
+  - `apps/backend/tests/controller/storefrontSettingsController.test.js`
+
+## [2026-06-12] Frontend & Backend — Kashier Save Still Failing: Masked Token Cycle & Undefined Handler
+- **Bug/Issue**: After the initial Kashier fix, saving payment gateway settings still failed silently. Credentials appeared to save but were overwritten with masked values on subsequent saves, and the parent component called an undefined `handleSavePaymentSettings()` function.
+- **Root Cause**:
+  1. **Masked Response Overwrites State**: After a successful save, the frontend called `onChange(result.data)` with the server response, which contains masked API/secret keys (e.g. `d35c...0228`). This triggered a `useEffect` that replaced the local `gatewayConfig` state with the masked values. On the next save, these masked values were sent to the backend.
+  2. **Updater Function Type Mismatch**: `onChange(prev => ({ ...prev, ...updatedSettings }))` passed a function to `onChange`, but `onChange` is typed as `(settings: Partial<StorefrontSettings>) => void` — React's `setState` accepts updater functions but the abstraction hid this, causing unpredictable behavior.
+  3. **Undefined Parent Handler**: The parent component passed `onSave={() => handleSavePaymentSettings()}` but `handleSavePaymentSettings` was never defined, causing a `ReferenceError`.
+  4. **Overly Broad Mask Detection (Backend)**: `isMaskedToken` used `trimmed.includes('...')` which would match any user input containing `...`, not just our masked format.
+  5. **Stale Closure / State Update Lag**: The `useEffect` that runs when settings load called `setGatewayConfig` to store the credentials, and immediately checked `isConfigured ? "connected" : "disconnected"`. Since state updates are asynchronous, `isConfigured` (which depended on `gatewayConfig` state variables) evaluated to false using the previous empty state, causing the status to permanently show "غير متصل" (Not Connected / Red dot) on load.
+  6. **Obscured Configuration View**: There was no clear visual cue indicating that credentials were saved, nor was there a way to view, edit, or delete them cleanly. The password fields masked the stored tokens entirely, and removing the integration required manually clearing each input field.
+- **Fix**:
+  1. **Preserve Local Config on Save Response**: After save, the server response is merged with the un-masked config that was just sent, so the `useEffect` receives real values instead of masked ones.
+  2. **Removed Pre-Save onChange**: Eliminated the premature `onChange` call before the API request.
+  3. **Fixed Parent Handler**: Replaced undefined `handleSavePaymentSettings()` with a no-op since the component handles saving internally.
+  4. **Tightened Mask Detection**: Changed `isMaskedToken` regex to `/^.{4}\.\.\..{4}$/` to match only the exact `XXXX...XXXX` format produced by `maskToken()`.
+  5. **Direct Status Check on Load**: Updated the load effect to parse the settings payload directly and check if configuration exists, rather than using the stale `isConfigured` state reference.
+  6. **Read-Only / Edit / Delete UX Layout**: Designed a premium dashboard interface. If the gateway is configured, it renders a details card showing the Merchant ID, masked credentials in plain text, and Mode, alongside dedicated "تعديل البيانات" (Edit Credentials) and "إزالة الإعدادات" (Delete Integration) buttons.
+- **Affected Files**:
+  - `apps/frontend/src/pages/settings/StoreSettings.tsx`
+  - `apps/backend/controller/storefrontSettingsController.js`
+
+## [2026-06-12] Frontend & Backend — Kashier Settings Not Saving & Masked Key Overwrite Bug
+- **Bug/Issue**: When configuring the Kashier Payment Gateway under settings, saving the credentials appeared successful but the settings were not populated/saved in the dashboard or cleared out upon reload.
+- **Root Cause**:
+  1. **Stringification Mismatch**: The frontend sent `paymentGatewayConfig` as a stringified JSON string (`JSON.stringify(config)`). Since the database column is of type `Json`, Prisma wrote this string as a JSON string literal. When retrieved, `maskGatewayConfig` rejected the string format (expecting an object) and returned `null`, which the frontend then saved to its state, clearing the UI fields.
+  2. **Masked Keys Overwrite**: The backend had no merge/unmask logic. Saving settings sent the masked keys (`apiKey` and `secretKey`) back to the server, which blindly saved them to the DB, destroying the original active keys.
+- **Fix**:
+  1. **Frontend Payload Fix**: Modified `StoreSettings.tsx` to send `paymentGatewayConfig` as a structured JSON object instead of a stringified JSON string.
+  2. **Backend Parsing & Merging**: Updated `maskGatewayConfig` in `storefrontSettingsController.js` to parse stringified configs if they exist in the DB (resolving legacy data). Added `isMaskedToken` and `mergeGatewayConfig` to unmask and restore original API credentials from the database during setting updates.
+  3. **Data Migration**: Ran a migration script to clean up existing stringified configurations in the database.
+- **Affected Files**:
+  - `apps/frontend/src/pages/settings/StoreSettings.tsx`
+  - `apps/backend/controller/storefrontSettingsController.js`
+
 ## [2026-06-12] Integration — Kashier Payment Gateway & Reference Scope Bug
 - **Bug/Issue**: The Merchant Admin Dashboard needed support for testing and configuring the Kashier Payment Gateway. Additionally, in the initial implementation of the Kashier service, a `ReferenceError` was raised when generating a payment session if `overrideConfig` was provided because the `config` variable was referenced out of scope. In `server.js`, there was also a duplicate inline route definition `/api/v1/payment/kashier/test-connection`.
 - **Root Cause**:
