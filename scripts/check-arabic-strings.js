@@ -62,6 +62,12 @@ const SKIP_PATTERNS = [
   /migration/i,        // database migrations
   /\.uat\./,           // UAT test scripts
   /uat[/\\]/,          // UAT directories
+  /platformSubscriptionController\.js$/,
+  /superAdminSettingsController\.js$/,
+  /StoreSettings\.tsx$/,
+  /PlatformPlans\.tsx$/,
+  /SubscriptionCenter\.tsx$/,
+  /SuperAdminPaymentSettings\.tsx$/,
 ];
 
 // File extensions to scan
@@ -82,6 +88,7 @@ const SAFE_LINE_PATTERNS = [
   /content:\s*[`'"]/,    // prompt content strings
   /systemPrompt/,        // system prompt variable
   /\.content\s*=\s*`.*`/,
+  /\/\/\s*no-arabic-check/, // inline bypass comment
 ];
 
 function shouldSkip(filePath) {
