@@ -13584,3 +13584,12 @@ POST /chat {"message": "مرحبا"}
   - Search works without TypeError
   - No backend, database, or permission changes
 - **Affected Files**: 14 frontend files (4 config, 8 locale, 4 page components)
+
+## [2026-03-09] Restore missing cron and routine executor services [COMPLETE]
+- **Problem**: The Express backend process failed to start because the monorepo consolidation in commit `73df1f4` deleted `naturalLanguageCronService.js` and `routineExecutorService.js` which were still imported by `agentControlRoutes.js`.
+- **Fix**: Restored both files under `apps/backend/legacy-ai-agent/aiAgent/` with their original implementations.
+- **Verification**: Verified via `verify-docs.js` syntax checks.
+- **Affected Files**:
+  - `apps/backend/legacy-ai-agent/aiAgent/naturalLanguageCronService.js`
+  - `apps/backend/legacy-ai-agent/aiAgent/routineExecutorService.js`
+

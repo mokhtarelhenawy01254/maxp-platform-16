@@ -707,6 +707,26 @@ async def _ensure_agent_in_db(agent_id: str, session: AsyncSession) -> AgentMode
     return agent
 
 
+@router.get("/tools")
+async def list_tools() -> list[dict[str, Any]]:
+    """List all available tools from the tool registry."""
+    tools = get_all_tools()
+    result = []
+    for t in tools:
+        schema = None
+        if t.input_model is not None:
+            if hasattr(t.input_model, "model_json_schema"):
+                schema = t.input_model.model_json_schema()
+            elif isinstance(t.input_model, dict):
+                schema = t.input_model
+        result.append({
+            "name": t.name,
+            "description": t.description,
+            "input_schema": schema,
+        })
+    return result
+
+
 @router.get("/agents/{agent_id}", response_model=AgentRead)
 async def get_agent(agent_id: str, session: SessionDep) -> AgentRead:
     """Get a specific agent by ID."""

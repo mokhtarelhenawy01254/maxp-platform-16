@@ -2919,3 +2919,13 @@ Manages AI agent chat sessions via Prisma (`aIChatSession`, `aIChatMessage` mode
 - **Architecture**: Added `"mainImage": p.get("mainImage")` to the slim mapping in `registry.py:94`. The list_all slim was originally introduced to reduce LLM token usage (product data can exceed 19k tokens), but `mainImage` is a single URL string (~100 chars) with negligible token impact — keeping it enables the LLM to include product images in replies.
 - **Files**:
   - `apps/ai-service/src/tools/registry.py`
+
+## [2026-06-12] Backend — Restoration of legacy cron and routine executor services
+- **Details**: Restored `naturalLanguageCronService.js` and `routineExecutorService.js` under `apps/backend/legacy-ai-agent/aiAgent/` to prevent Express server startup crashes caused by missing module imports in `agentControlRoutes.js`.
+- **Architecture**:
+  - `naturalLanguageCronService.js`: Parses natural language text (English and Arabic) into standard cron expressions and manages/recovers scheduled agent jobs.
+  - `routineExecutorService.js`: Triggers scheduled routines, provisions specialist agents with model managers, and runs their tasks (e.g. follow-ups, reports, inventory checks) while logging executions to database.
+- **Files**:
+  - `apps/backend/legacy-ai-agent/aiAgent/naturalLanguageCronService.js`
+  - `apps/backend/legacy-ai-agent/aiAgent/routineExecutorService.js`
+

@@ -3913,3 +3913,12 @@ eq.user.id matches the createdBy field on the existing order. Otherwise, it thro
 - **Fix**: Changed `t('sidebar.rewards')` to `t('sidebar.rewards.title')` to extract the string label from the i18n object.
 - **Verification**: Sidebar now renders "المكافآت والحوافز". Search works without TypeError. All 14 files verified through lint and build.
 - **Affected Files**: `apps/frontend/src/config/sidebar.ts`
+
+## [2026-06-12] Backend — missing naturalLanguageCronService and routineExecutorService modules
+- **Bug/Issue**: The `maxp-backend` process failed to start on the remote server with the error `Cannot find module '../legacy-ai-agent/aiAgent/naturalLanguageCronService'`.
+- **Root Cause**: The repository consolidation and purge of legacy directories in commit `73df1f4` deleted the files `naturalLanguageCronService.js` and `routineExecutorService.js` from `apps/backend/legacy-ai-agent/aiAgent/`. However, they were still imported and used by the Express backend API routes `agentControlRoutes.js` and integration tests.
+- **Fix**: Restored both `naturalLanguageCronService.js` and `routineExecutorService.js` to their canonical paths under `apps/backend/legacy-ai-agent/aiAgent/`.
+- **Affected Files**:
+  - `apps/backend/legacy-ai-agent/aiAgent/naturalLanguageCronService.js`
+  - `apps/backend/legacy-ai-agent/aiAgent/routineExecutorService.js`
+

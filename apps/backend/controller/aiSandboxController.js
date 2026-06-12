@@ -1,14 +1,8 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const agentProvisioningService = require('../legacy-ai-agent/aiAgent/agentProvisioningService');
-const agentManagerService = require('../legacy-ai-agent/aiAgent/agentManagerService');
-const CEOAgent = require('../legacy-ai-agent/aiAgent/CEOAgent');
-const BaseAgent = require('../legacy-ai-agent/aiAgent/BaseAgent');
-const workingMemoryService = require('../legacy-ai-agent/aiAgent/workingMemoryService');
-const { normalizeAgentReply } = require('../legacy-ai-agent/aiAgent/agentReplyNormalizer');
+const sandboxBridge = require('../services/sandboxBridge');
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const aiSandboxService = require('../services/aiSandboxService');
 const { calculateCost, getModelCost } = require('../config/modelCosts');
-const agentProfileLoaderService = require('../legacy-ai-agent/aiAgent/agentProfileLoaderService');
 const MAX_SANDBOX_MESSAGE_CHARS = 12000;
 const MAX_SANDBOX_RESPONSE_CHARS = 12000;
 const MAX_SANDBOX_SESSION_ID_CHARS = 120;
@@ -16,6 +10,8 @@ const MAX_SANDBOX_TOOL_CALLS = 20;
 const MAX_SANDBOX_AGENT_INSTRUCTION_CHARS = 5000;
 const MAX_SANDBOX_ATTACHMENTS = 5;
 const MAX_SANDBOX_ATTACHMENT_DATA_CHARS = 12 * 1024 * 1024;
+
+const sandboxRunStates = new Map();
 
 function createHttpError(code, statusCode = 400) {
   const error = new Error(code);
@@ -260,10 +256,14 @@ function buildSandboxConversationId(companyId, userId, sessionId) {
   return `sandbox-chat:${companyId}:${userId || 'unknown'}:${sessionId}`;
 }
 
+function normalizeSandboxReply(text) {
+  return (text || '').replace(/<thought[^>]*>.*?<\/thought>/gs, '').replace(/<\/?thought[^>]*>/g, '').trim() || text;
+}
+
 function extractSandboxReply(taskResult) {
   if (!taskResult) return '';
-  if (typeof taskResult === 'string') return normalizeAgentReply(taskResult);
-  return normalizeAgentReply(
+  if (typeof taskResult === 'string') return normalizeSandboxReply(taskResult);
+  return normalizeSandboxReply(
     taskResult?.result?.reply ||
     taskResult?.result?.summary ||
     taskResult?.result?.response ||
@@ -512,82 +512,42 @@ function mergeSandboxToolMemory(baseContext, toolMemory) {
   return { ...context, ...memory };
 }
 
-async function hydrateSandboxWorkingMemory(companyId, conversationId, sessionMessages = []) {
-  await workingMemoryService.clearSession(companyId, conversationId).catch(() => {});
-  await workingMemoryService.initSession(companyId, conversationId);
+function hydrateSandboxWorkingMemory(companyId, conversationId, sessionMessages = []) {
   const toolMemory = {};
-
   for (const message of sessionMessages) {
-    if (!message || !['user', 'assistant'].includes(message.role)) continue;
-    const content = typeof message.content === 'string' ? message.content.trim() : '';
-    if (!content) continue;
-    await workingMemoryService.addMessage(companyId, conversationId, {
-      role: message.role,
-      content,
-    });
-    if (message.role === 'assistant') {
-      const toolCalls = parseStoredJson(message.toolCalls, []);
-      const metadata = parseSandboxMessageMetadata(message.metadata);
-      const combinedToolCalls = [
-        ...(Array.isArray(toolCalls) ? toolCalls : []),
-        ...extractPipelineTraceToolCalls(metadata),
-      ];
-      for (const toolCall of combinedToolCalls) {
-        applySandboxToolMemory(toolMemory, toolCall);
-        const toolName = normalizeSandboxToolName(toolCall?.name || toolCall?.tool);
-        if (!['inventory.check', 'product.search'].includes(toolName)) continue;
-        const product = getToolOutputProduct(toolCall);
-        if (!product || product.found === false) continue;
-        const productId = product.productId || product.id;
-        const filters = {
-          size: product.requestedSize || undefined,
-          color: product.requestedColor || undefined,
-        };
-        if (productId) {
-          await workingMemoryService.updateSearchContext(companyId, conversationId, {
-            productIds: [productId],
-            filters,
-          });
-        }
-        if (product.productName || product.sku || productId) {
-          await workingMemoryService.addQueriedProduct(companyId, conversationId, {
-            id: productId || null,
-            name: product.productName || null,
-            sku: product.sku || null,
-            price: product.price || null,
-            status: product.status || null,
-          });
-        }
-      }
+    if (!message || message.role !== 'assistant') continue;
+    const toolCalls = parseStoredJson(message.toolCalls, []);
+    const metadata = parseSandboxMessageMetadata(message.metadata);
+    const combinedToolCalls = [
+      ...(Array.isArray(toolCalls) ? toolCalls : []),
+      ...extractPipelineTraceToolCalls(metadata),
+    ];
+    for (const toolCall of combinedToolCalls) {
+      applySandboxToolMemory(toolMemory, toolCall);
     }
   }
-
   return toolMemory;
 }
 
 async function createSandboxRuntimeAgent(companyId, agentId, modelSelection) {
-  let runtimeAgent = agentProvisioningService.getAgent(companyId, agentId);
+  const agentConfig = await sandboxBridge.getAgentConfig(companyId, agentId);
+  let runtimeAgent = agentConfig;
   if (!runtimeAgent) {
     const prisma = getSharedPrismaClient();
     const row = await prisma.companyAgent.findUnique({ where: { id: agentId } });
-    if (row && row.companyId === companyId) {
-      const recoveredSkills = (() => { try { return JSON.parse(row.skills || '[]'); } catch { return []; } })();
-      agentProvisioningService._restoreAgent(companyId, {
-        id: row.id,
-        name: row.name,
-        role: row.role,
-        model: row.model,
-        templateSlug: row.templateSlug,
-        parentId: row.parentId,
-        allowedSkills: recoveredSkills,
-        soul: row.soul,
-        status: row.status,
-      });
-      runtimeAgent = agentProvisioningService.getAgent(companyId, agentId);
-    }
-  }
-  if (!runtimeAgent) {
-    return null;
+    if (!row || row.companyId !== companyId) return null;
+    runtimeAgent = {
+      id: row.id,
+      name: row.name,
+      role: row.role,
+      model: row.model,
+      templateSlug: row.templateSlug,
+      parentId: row.parentId,
+      allowedTools: normalizeStringList(row.allowedTools),
+      allowedSkills: (function() { try { return JSON.parse(row.skills || '[]'); } catch(e) { return []; } })(),
+      persona: { soulInstructions: row.soul || '' },
+      status: row.status,
+    };
   }
 
   const modelPolicy = {
@@ -598,43 +558,18 @@ async function createSandboxRuntimeAgent(companyId, agentId, modelSelection) {
     keyId: modelSelection.key.id,
   };
 
-  // Load template SOUL.md to ensure agent persona is authentic to its template
-  let templateSoul = '';
-  let templateAgentsMd = '';
-  let templateToolsMd = '';
-  try {
-    const templateSlug = runtimeAgent.templateSlug || agentProfileLoaderService.getTemplateSlugForRole(runtimeAgent.role);
-    if (templateSlug) {
-      const profile = agentProfileLoaderService.loadProfile(templateSlug);
-      templateSoul = profile.instructions?.soul || '';
-      templateAgentsMd = profile.instructions?.agents || '';
-      templateToolsMd = profile.instructions?.tools || '';
-    }
-  } catch (err) {
-    console.warn('[AI-SANDBOX] Failed to load template profile for sandbox agent:', err.message);
-  }
+  const templateSlug = runtimeAgent.templateSlug || runtimeAgent.role.toLowerCase().replace(/_/g, '-');
 
-  const soulInstructions = runtimeAgent.persona?.soulInstructions || templateSoul || '';
-  const agentInstructions = runtimeAgent.persona?.agentInstructions || templateAgentsMd || '';
-  const toolsInstructions = runtimeAgent.persona?.toolsInstructions || templateToolsMd || '';
-
-  const agentConfig = {
+  const sandboxConfig = {
     id: runtimeAgent.id,
     name: runtimeAgent.name,
     role: runtimeAgent.role,
     model: modelSelection.model,
-    allowedTools: typeof runtimeAgent.getTools === 'function'
-      ? runtimeAgent.getTools()
-      : normalizeStringList(runtimeAgent.allowedTools),
-    allowedSkills: typeof runtimeAgent.getSkills === 'function'
-      ? runtimeAgent.getSkills()
-      : normalizeStringList(runtimeAgent.allowedSkills),
+    allowedTools: normalizeStringList(runtimeAgent.allowedTools),
+    allowedSkills: normalizeStringList(runtimeAgent.allowedSkills),
     persona: {
       ...(runtimeAgent.persona || {}),
       modelPolicy,
-      soulInstructions,
-      agentInstructions,
-      toolsInstructions,
     },
     policies: {
       ...(runtimeAgent.policies || {}),
@@ -642,26 +577,17 @@ async function createSandboxRuntimeAgent(companyId, agentId, modelSelection) {
     },
   };
 
-  let sandboxAgent;
-  if (runtimeAgent.role === 'CEO') {
-    sandboxAgent = new CEOAgent(companyId, agentConfig);
-  } else {
-    const templateSlug = runtimeAgent.templateSlug 
-      || agentProfileLoaderService.getTemplateSlugForRole(runtimeAgent.role);
-    sandboxAgent = BaseAgent.fromTemplate(templateSlug, companyId, agentConfig);
-  }
-  sandboxAgent.setModelManager(null);
+  const sandboxAgent = sandboxBridge.createSandboxAgentMeta(
+    runtimeAgent.role === 'CEO' ? 'ceo' : templateSlug,
+    companyId,
+    sandboxConfig
+  );
 
-  // Sync runtime agent tools with sandbox-enforced canonical scope
-  // so the UI inspector shows the true allowed tool set.
   if (sandboxAgent.allowedTools && runtimeAgent.allowedTools) {
     runtimeAgent.allowedTools = sandboxAgent.allowedTools;
   }
 
-  return {
-    runtimeAgent,
-    sandboxAgent,
-  };
+  return { runtimeAgent, sandboxAgent };
 }
 
 async function runSandboxChatTurn({
@@ -683,15 +609,8 @@ async function runSandboxChatTurn({
 
   const resolvedSessionId = sessionId || generateSandboxSessionId();
   const conversationId = buildSandboxConversationId(companyId, userId, resolvedSessionId);
-  const toolMemory = await hydrateSandboxWorkingMemory(companyId, conversationId, existingSession?.messages || []);
-  await workingMemoryService.addMessage(companyId, conversationId, {
-    role: 'user',
-    content: messageText,
-  });
-  const promptCtx = mergeSandboxToolMemory(
-    await workingMemoryService.getContext(companyId, conversationId),
-    toolMemory
-  );
+  const toolMemory = hydrateSandboxWorkingMemory(companyId, conversationId, existingSession?.messages || []);
+  const promptCtx = mergeSandboxToolMemory({ messageText, sessionId: resolvedSessionId }, toolMemory);
   const agentBundle = await createSandboxRuntimeAgent(companyId, agentId, modelSelection);
   if (!agentBundle) {
     throw createHttpError('AGENT_NOT_FOUND', 400);
@@ -726,7 +645,7 @@ async function runSandboxChatTurn({
 
   const toolCalls = mapSandboxToolsToToolCalls(taskResult?.result?.tools || []);
   const responseAttachments = extractResponseAttachments(taskResult);
-  const agentInfo = agentBundle.sandboxAgent.getInfo();
+  const agentInfo = agentBundle.sandboxAgent;
   const modelSelectionFromTask = extractSandboxModelSelection(taskResult, agentInfo);
   const pipelineTrace = taskResult?.result?.pipelineTrace || null;
 
@@ -977,11 +896,6 @@ async function listAgents(req, res) {
     const companyId = req.user?.companyId || req.companyId;
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
 
-    await agentManagerService.getManagerAgent(companyId).catch(() => {});
-    await agentManagerService.ensureFacebookMessengerAgent(companyId).catch(() => {});
-
-    const context = await agentManagerService.getManagerContext(companyId);
-    const byId = new Map((context.agents || []).map(agent => [agent.id, agent]));
     const orgMetaById = await loadAgentOrgMetadata(companyId);
 
     const prisma = getSharedPrismaClient();
@@ -990,17 +904,17 @@ async function listAgents(req, res) {
       orderBy: { createdAt: 'asc' },
     });
 
+    const byId = new Map();
     for (const a of rows) {
       byId.set(a.id, {
-        ...(byId.get(a.id) || {}),
         id: a.id,
         name: a.name,
         role: a.role,
         icon: a.icon || '🤖',
         description: a.description || '',
         soul: a.soul || '',
-        rules: (() => { try { return JSON.parse(a.rules || '[]'); } catch { return []; } })(),
-        skills: (() => { try { return JSON.parse(a.skills || '[]'); } catch { return []; } })(),
+        rules: (function() { try { return JSON.parse(a.rules || '[]'); } catch(e) { return []; } })(),
+        skills: (function() { try { return JSON.parse(a.skills || '[]'); } catch(e) { return []; } })(),
         model: a.model || null,
         status: a.status,
         parentId: a.parentId || null,
@@ -1133,27 +1047,22 @@ function getModelLabel(provider, modelName) {
 }
 
 async function getAgentInfo(companyId, agentId) {
-  if (!agentId) {
-    return null;
-  }
+  if (!agentId) return null;
+  if (!companyId) return null;
 
-  if (companyId) {
-    await agentManagerService.getManagerAgent(companyId).catch(() => {});
-    await agentManagerService.ensureFacebookMessengerAgent(companyId).catch(() => {});
-    const runtimeAgent = agentProvisioningService.getAgent(companyId, agentId);
-    if (runtimeAgent) {
-      return {
-        name: runtimeAgent.name,
-        role: runtimeAgent.role,
-        description: compactPromptText(runtimeAgent.persona?.soulInstructions, 400) || runtimeAgent.role,
-        allowedTools: normalizeStringList(runtimeAgent.allowedTools),
-        instructions: {
-          agent: compactPromptText(runtimeAgent.persona?.agentInstructions),
-          soul: compactPromptText(runtimeAgent.persona?.soulInstructions),
-          tools: compactPromptText(runtimeAgent.persona?.toolsInstructions),
-        },
-      };
-    }
+  const agentConfig = await sandboxBridge.getAgentConfig(companyId, agentId);
+  if (agentConfig) {
+    return {
+      name: agentConfig.name,
+      role: agentConfig.role,
+      description: compactPromptText(agentConfig.persona?.soulInstructions, 400) || agentConfig.role,
+      allowedTools: normalizeStringList(agentConfig.allowedTools),
+      instructions: {
+        agent: compactPromptText(agentConfig.persona?.agentInstructions),
+        soul: compactPromptText(agentConfig.persona?.soulInstructions),
+        tools: compactPromptText(agentConfig.persona?.toolsInstructions),
+      },
+    };
   }
 
   return null;
@@ -1378,11 +1287,7 @@ async function streamChatMessage(req, res) {
 
     const resolvedSessionId = safeSessionId || generateSandboxSessionId();
     const conversationId = buildSandboxConversationId(companyId, userId, resolvedSessionId);
-    const toolMemory = await hydrateSandboxWorkingMemory(companyId, conversationId, existingSession?.messages || []);
-    await workingMemoryService.addMessage(companyId, conversationId, {
-      role: 'user',
-      content: messageText,
-    });
+    const toolMemory = hydrateSandboxWorkingMemory(companyId, conversationId, existingSession?.messages || []);
     const agentBundle = await createSandboxRuntimeAgent(companyId, agentId, modelSelection);
     if (!agentBundle) {
       throw createHttpError('AGENT_NOT_FOUND', 400);
@@ -1410,10 +1315,7 @@ async function streamChatMessage(req, res) {
       messageText,
       threadId: resolvedSessionId,
       conversationId,
-      memoryContext: mergeSandboxToolMemory(
-        await workingMemoryService.getContext(companyId, conversationId),
-        toolMemory
-      ),
+      memoryContext: mergeSandboxToolMemory({ messageText, sessionId: resolvedSessionId }, toolMemory),
       attachments: safeAttachments,
       modelSelection,
       channel: 'FACEBOOK',
@@ -1654,12 +1556,8 @@ async function exportSession(req, res) {
 
 async function listSandboxTools(req, res) {
   try {
-    const { TOOLS } = require('../legacy-ai-agent/aiAgent/agentToolRegistry');
-    const tools = Object.entries(TOOLS).map(([name, tool]) => ({
-      name,
-      description: tool.description || '',
-      sideEffect: tool.readOnly ? 'read' : 'write',
-    }));
+    const companyId = req.user?.companyId || req.companyId;
+    const tools = await sandboxBridge.listTools(companyId);
     return res.json({ success: true, tools });
   } catch (error) {
     console.error('[AI-SANDBOX] listSandboxTools error:', error);
@@ -1672,22 +1570,22 @@ async function listRuns(req, res) {
     const companyId = req.user?.companyId || req.companyId;
     const { agentId, state } = req.query;
 
-    const { getRunStateManager } = require('../legacy-ai-agent/aiAgent/RunStateManager');
-    const runManager = getRunStateManager();
-    const runs = runManager.listRuns({ companyId, agentId, state });
+    const runs = [];
+    for (const run of sandboxRunStates.values()) {
+      if (run.companyId !== companyId) continue;
+      if (agentId && run.agentId !== agentId) continue;
+      if (state && run.state !== state) continue;
+      runs.push({
+        id: run.id,
+        agentId: run.agentId,
+        state: run.state,
+        createdAt: run.createdAt,
+        updatedAt: run.updatedAt,
+        pendingApprovals: run.pendingApprovals,
+      });
+    }
 
-    return res.json({
-      success: true,
-      runs: runs.map(r => ({
-        id: r.id,
-        agentId: r.agentId,
-        state: r.state,
-        createdAt: r.createdAt,
-        updatedAt: r.updatedAt,
-        pendingApprovals: r.pendingApprovals,
-      })),
-      count: runs.length,
-    });
+    return res.json({ success: true, runs, count: runs.length });
   } catch (error) {
     console.error('[AI-SANDBOX] listRuns error:', error);
     return res.status(500).json({ success: false, error: 'LIST_RUNS_FAILED' });
@@ -1699,10 +1597,7 @@ async function getRun(req, res) {
     const companyId = req.user?.companyId || req.companyId;
     const { runId } = req.params;
 
-    const { getRunStateManager } = require('../legacy-ai-agent/aiAgent/RunStateManager');
-    const runManager = getRunStateManager();
-    const run = runManager.getRun(runId);
-
+    const run = sandboxRunStates.get(runId);
     if (!run) {
       return res.status(404).json({ success: false, error: 'RUN_NOT_FOUND' });
     }
@@ -1740,45 +1635,19 @@ async function resumeRun(req, res) {
     const { runId, decision } = req.body;
     const companyId = req.user?.companyId || req.companyId;
 
-    const { getRunStateManager } = require('../legacy-ai-agent/aiAgent/RunStateManager');
-    const runManager = getRunStateManager();
-
-    const run = runManager.getRun(runId);
+    const run = sandboxRunStates.get(runId);
     if (!run) {
       return res.status(404).json({ success: false, error: 'RUN_NOT_FOUND' });
     }
-
     if (run.companyId !== companyId) {
       return res.status(403).json({ success: false, error: 'UNAUTHORIZED' });
     }
-
-    runManager.resumeRun(runId, decision);
 
     if (decision?.approved && run.pendingApprovals?.length > 0) {
       const pendingApproval = run.pendingApprovals.find(a => a.status === 'PENDING');
       if (pendingApproval) {
         pendingApproval.status = 'APPROVED';
         pendingApproval.decision = decision;
-
-        // Re-execute the approved tool
-        const agentToolGatewayService = require('../legacy-ai-agent/aiAgent/agentToolGatewayService');
-        const agentProvisioningService = require('../legacy-ai-agent/aiAgent/agentProvisioningService');
-        const agent = agentProvisioningService.getAgent(run.companyId, run.agentId);
-
-        if (agent && agent.canUseTool(pendingApproval.toolName)) {
-          const toolResult = await agentToolGatewayService.execute({
-            companyId: run.companyId,
-            agent,
-            tool: pendingApproval.toolName,
-            params: pendingApproval.params,
-            traceId: agentToolGatewayService.newTraceId(),
-            source: 'human-approved-resume',
-            runId: run.id,
-          });
-          runManager.completeRun(runId, { approval: pendingApproval, toolResult });
-        } else {
-          runManager.failRun(runId, new Error(`Agent or tool not available for resumed execution: ${pendingApproval.toolName}`));
-        }
       }
     } else if (decision?.approved === false) {
       const pendingApproval = run.pendingApprovals?.find(a => a.status === 'PENDING');
@@ -1786,17 +1655,18 @@ async function resumeRun(req, res) {
         pendingApproval.status = 'REJECTED';
         pendingApproval.decision = decision;
       }
-      runManager.completeRun(runId, { approved: false, decision });
     }
 
-    const updatedRun = runManager.getRun(runId);
+    run.state = 'completed';
+    run.updatedAt = new Date().toISOString();
+
     return res.json({
       success: true,
       run: {
-        id: updatedRun.id,
-        state: updatedRun.state,
-        pendingApprovals: updatedRun.pendingApprovals,
-        result: updatedRun.result,
+        id: run.id,
+        state: run.state,
+        pendingApprovals: run.pendingApprovals,
+        result: run.result,
       },
     });
   } catch (error) {

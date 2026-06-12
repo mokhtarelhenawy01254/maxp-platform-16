@@ -125,6 +125,15 @@ async function setKeyStatus(id, isActive) {
  * @param {number} [params.timeoutMs]
  * @returns {Promise<{ok: boolean, reply: string, latency_ms: number, model: string, provider: string}>}
  */
+async function spawnAgent({ companyId, role, ...rest }) {
+  return request('POST', '/admin/agents/spawn', { company_id: companyId, role, ...rest });
+}
+
+async function getAgent(companyId, agentId) {
+  const qs = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
+  return request('GET', `/admin/agents/${encodeURIComponent(agentId)}${qs}`);
+}
+
 async function testProviderKey({ provider, apiKey, model, messages, prompt, timeoutMs }) {
   const body = { provider, api_key: apiKey };
   if (model) body.model = model;
@@ -145,4 +154,6 @@ module.exports = {
   deleteKey,
   setKeyStatus,
   testProviderKey,
+  spawnAgent,
+  getAgent,
 };
