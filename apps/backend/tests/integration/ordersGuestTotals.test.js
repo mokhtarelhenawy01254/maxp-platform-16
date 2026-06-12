@@ -403,6 +403,7 @@ describe('Orders routes guest totals', () => {
         permanent: true
       });
 
+    console.log("DEBUG BODY:", JSON.stringify(permanentDeleteRes.body, null, 2));
     expect(permanentDeleteRes.status).toBe(200);
     expect(permanentDeleteRes.body.success).toBe(true);
     expect(permanentDeleteRes.body.data.action).toBe('permanent_delete');

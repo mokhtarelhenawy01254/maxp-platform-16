@@ -8,6 +8,8 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env'), quiet: true });
 const tenantContext = require('./tenantContext');
 const { ensureLocalPostgres } = require('./ensureLocalPostgres');
+const { AsyncLocalStorage } = require('async_hooks');
+const transactionStorage = new AsyncLocalStorage();
 let PrismaClient = null;
 
 // Global shared instance

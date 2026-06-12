@@ -311,7 +311,6 @@ function buildEmbeddingHealth(rawEmbeddingSettings, keys = []) {
                 dimension: REQUIRED_EMBEDDING_DIMENSION,
                 contexts: ['product_search', 'product_search_multimodal'],
             });
-        }
     } catch (error) {
         console.warn('⚠️ [SUPER-ADMIN] Failed to read embedding failure snapshot:', sanitizeAiAdminErrorMessage(error?.message || 'Unknown error'));
     }

@@ -824,6 +824,8 @@ const permanentlyDeleteRegularOrder = async ({ orderIdentifier, companyId }) => 
   }
 
   await prisma.$transaction(async (tx) => {
+    console.log("TX TYPE:", typeof tx, tx?.constructor?.name);
+    console.log("orderNote:", !!tx?.orderNote, "affiliateReferral:", !!tx?.affiliateReferral, "walletTransaction:", !!tx?.walletTransaction);
     await tx.orderNote.deleteMany({ where: { orderId: order.id } });
 
     await tx.affiliateReferral.updateMany({
