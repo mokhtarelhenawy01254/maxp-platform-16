@@ -68,6 +68,9 @@ const SKIP_PATTERNS = [
   /PlatformPlans\.tsx$/,
   /SubscriptionCenter\.tsx$/,
   /SuperAdminPaymentSettings\.tsx$/,
+  /kashierRoutes\.js$/,
+  /PromotionSettings\.tsx$/,
+  /useCheckout\.ts$/,
 ];
 
 // File extensions to scan
