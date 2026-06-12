@@ -17,6 +17,9 @@ router.get('/plans', platformSubscriptionController.getPlans);
 // Upgrade plan
 router.post('/upgrade', platformSubscriptionController.upgradePlan);
 
+// Checkout (Creates a Kashier payment session)
+router.post('/checkout', platformSubscriptionController.createCheckoutSession);
+
 // Cancel subscription
 router.post('/cancel', platformSubscriptionController.cancelSubscription);
 

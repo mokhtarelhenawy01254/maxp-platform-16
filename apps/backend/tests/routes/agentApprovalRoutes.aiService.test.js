@@ -68,7 +68,7 @@ describe('agentApprovalRoutes AI service resume integration', () => {
   test('notifies maxp-ai-service resume after approval', async () => {
     const response = await request(app)
       .post('/api/v1/agent/approvals/draft-1/approve')
-      .send({ approvalCode: '1234', reason: 'approved by merchant' });
+      .send({ threadId: 'thread-1', approvalCode: '1234', reason: 'approved by merchant' });
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
@@ -85,7 +85,7 @@ describe('agentApprovalRoutes AI service resume integration', () => {
   test('notifies maxp-ai-service resume after rejection', async () => {
     const response = await request(app)
       .post('/api/v1/agent/approvals/draft-1/reject')
-      .send({ reason: 'too risky' });
+      .send({ threadId: 'thread-1', reason: 'too risky' });
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);

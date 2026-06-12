@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.agents.base import BaseAgent, BaseAgentConfig
 from src.agents.loader import get_template, list_templates, seed_templates
+from src.tools.registry import get_all_tools
 from src.api.admin.agents_schemas import (
     AgentChatRequest,
     AgentChatResponse,

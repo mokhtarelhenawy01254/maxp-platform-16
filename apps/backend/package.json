@@ -61,7 +61,6 @@
     "@socket.io/redis-emitter": "^5.1.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.0.0",
-    "@whiskeysockets/baileys": "^6.7.22",
     "array-flatten": "^3.0.0",
     "axios": "^1.10.0",
     "bcryptjs": "^3.0.2",

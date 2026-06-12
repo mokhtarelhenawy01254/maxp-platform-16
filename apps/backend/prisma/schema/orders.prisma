@@ -340,7 +340,6 @@ model Order {
   returnRequests          ReturnRequest[]
   walletTransactions      WalletTransaction[]
   notificationLogs        WhatsAppNotificationLog[]
-  customerJourneys        CustomerJourney[]
 
   @@unique([companyId, orderNumber])
   @@index([affiliateId])

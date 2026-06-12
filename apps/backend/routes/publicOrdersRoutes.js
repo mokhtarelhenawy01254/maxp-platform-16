@@ -2131,65 +2131,6 @@ router.post('/', async (req, res) => {
     }
 
     if (createdOrder && !isDuplicateOrder) {
-    // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
-    try {
-      console.log('📱 [WHATSAPP] Preparing to send notification for order:', createdOrder.orderNumber);
-      console.log('📱 [WHATSAPP] Order data:', {
-        id: createdOrder.id,
-        customerPhone: createdOrder.customerPhone,
-        customerName: createdOrder.customerName,
-        companyId: company.id,
-        total: createdOrder.total
-      });
-
-      const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
-
-      // تجهيز بيانات الطلب للإشعار
-      const orderForNotification = {
-        id: createdOrder.id,
-        orderNumber: createdOrder.orderNumber,
-        companyId: company.id,
-        customerPhone: createdOrder.customerPhone,
-        customerName: createdOrder.customerName,
-        customer: {
-          firstName: createdOrder.customerName?.split(' ')[0] || createdOrder.customerName,
-          phone: createdOrder.customerPhone
-        },
-        total: parseFloat(createdOrder.total),
-        shipping: parseFloat(createdOrder.shipping),
-        currency: 'EGP',
-        items: createdOrder.orderItems || [] // ✅ Include items for WhatsApp notification
-      };
-
-      console.log('📱 [WHATSAPP] Calling sendOrderCreatedNotification with:', orderForNotification);
-
-      const result = await WhatsAppNotificationService.sendOrderCreatedNotification(orderForNotification);
-      console.log('✅ [WHATSAPP] Notification result:', result);
-
-      if (!result.success) {
-        console.error('❌ [WHATSAPP] Notification failed:', result.reason);
-        if (result.reason === 'disabled') {
-          console.error('⚠️ [WHATSAPP] WhatsApp notifications are disabled in settings. Check:');
-          console.error('   1. orderNotificationsEnabled must be true');
-          console.error('   2. orderCreatedEnabled must be true');
-        } else if (result.reason === 'no_phone') {
-          console.error('⚠️ [WHATSAPP] No customer phone number provided');
-        } else if (result.reason === 'no_session') {
-          console.error('⚠️ [WHATSAPP] No WhatsApp session available');
-        } else if (result.reason === 'session_not_connected') {
-          console.error('⚠️ [WHATSAPP] WhatsApp session is not connected');
-        } else if (result.reason === 'no_template') {
-          console.error('⚠️ [WHATSAPP] No notification template found for ORDER_CREATED');
-        }
-      } else {
-        console.log('✅ [WHATSAPP] Order notification sent successfully for:', createdOrder.orderNumber);
-      }
-    } catch (whatsappError) {
-      // لا نوقف العملية إذا فشل WhatsApp
-      console.error('❌ [WHATSAPP] Failed to send notification:', whatsappError.message);
-      console.error('❌ [WHATSAPP] Error stack:', whatsappError.stack);
-    }
-
     // 📧 إرسال إشعار البريد الإلكتروني تلقائياً
     try {
       if (createdOrder.customerEmail) {
@@ -2599,127 +2540,18 @@ router.get('/:id', async (req, res) => {
 
 // Update guest order status
 router.patch('/orders/:orderNumber/status', async (req, res) => {
-  console.log('🔄 [UPDATE-GUEST-ORDER-STATUS] Route handler called!', req.params);
-  try {
-    const { company } = req;
-    const { orderNumber } = req.params;
-    const { status, notes } = req.body;
-
-    console.log('📦 [UPDATE-GUEST-ORDER-STATUS] Updating order:', {
-      orderNumber,
-      status,
-      companyId: company?.id
-    });
-
-    if (!status) {
-      return res.status(400).json({
-        success: false,
-        error: 'حالة الطلب مطلوبة'
-      });
-    }
-
-    const prisma = await getPrisma();
-
-    const existingOrder = await prisma.guestOrder.findFirst({
-      where: {
-        orderNumber,
-        companyId: company.id
-      }
-    });
-
-    if (!existingOrder) {
-      console.log('❌ [UPDATE-GUEST-ORDER-STATUS] Order not found');
-      return res.status(404).json({
-        success: false,
-        error: 'الطلب غير موجود'
-      });
-    }
-
-    const mergedNotes = notes ? `${existingOrder.notes || ''}\n${notes}`.trim() : existingOrder.notes;
-    const updatedOrder = await orderService.updateGuestOrderStatus(
-      existingOrder.id,
-      company.id,
-      status,
-      mergedNotes,
-      null,
-      'Public Storefront',
-      existingOrder,
-      { skipCallAttemptGuard: String(status || '').trim().toUpperCase() === 'CANCELLED' }
-    );
-
-    console.log('✅ [UPDATE-GUEST-ORDER-STATUS] Order status updated:', updatedOrder.orderNumber);
-    res.json({
-      success: true,
-      data: updatedOrder,
-      message: 'تم تحديث حالة الطلب بنجاح'
-    });
-  } catch (error) {
-    console.error('❌ [UPDATE-GUEST-ORDER-STATUS] Error updating order status:', error);
-    res.status(error.statusCode || 500).json({ success: false, error: error.message });
-  }
+  return res.status(403).json({
+    success: false,
+    message: 'Forbidden'
+  });
 });
 
 // Update guest order payment status
 router.patch('/orders/:orderNumber/payment-status', async (req, res) => {
-  console.log('💳 [UPDATE-GUEST-ORDER-PAYMENT] Route handler called!', req.params);
-  try {
-    const { company } = req;
-    const { orderNumber } = req.params;
-    const { paymentStatus, notes } = req.body;
-
-    console.log('📦 [UPDATE-GUEST-ORDER-PAYMENT] Updating order:', {
-      orderNumber,
-      paymentStatus,
-      companyId: company?.id
-    });
-
-    if (!paymentStatus) {
-      return res.status(400).json({
-        success: false,
-        error: 'حالة الدفع مطلوبة'
-      });
-    }
-
-    const prisma = await getPrisma();
-
-    // Find the guest order
-    const existingOrder = await prisma.guestOrder.findFirst({
-      where: {
-        orderNumber,
-        companyId: company.id
-      }
-    });
-
-    if (!existingOrder) {
-      console.log('❌ [UPDATE-GUEST-ORDER-PAYMENT] Order not found');
-      return res.status(404).json({
-        success: false,
-        error: 'الطلب غير موجود'
-      });
-    }
-
-    // Update the order payment status
-    const updatedOrder = await prisma.guestOrder.update({
-      where: {
-        id: existingOrder.id
-      },
-      data: {
-        paymentStatus: paymentStatus.toUpperCase(),
-        notes: notes ? `${existingOrder.notes || ''}\n${notes}` : existingOrder.notes,
-        updatedAt: new Date()
-      }
-    });
-
-    console.log('✅ [UPDATE-GUEST-ORDER-PAYMENT] Order payment status updated:', updatedOrder.orderNumber);
-    res.json({
-      success: true,
-      data: updatedOrder,
-      message: 'تم تحديث حالة الدفع بنجاح'
-    });
-  } catch (error) {
-    console.error('❌ [UPDATE-GUEST-ORDER-PAYMENT] Error updating payment status:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
+  return res.status(403).json({
+    success: false,
+    message: 'Forbidden'
+  });
 });
 
 module.exports = router;

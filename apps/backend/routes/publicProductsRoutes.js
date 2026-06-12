@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const { getSharedPrismaClientAsync } = require('../services/sharedDatabase');
+const redisCacheService = require('../services/redisCacheService');
 const {
   applyVolumeDiscount,
   getVolumeDiscountsFromMetadata,
@@ -920,6 +921,16 @@ function applyAffiliatePricing(response, affiliatePricing) {
 }
 
 async function getProductDemandSignals(prisma, { companyId, productId }) {
+  const cacheKey = `product_demand_signals:${productId}`;
+  try {
+    const cached = await redisCacheService.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  } catch (err) {
+    console.error('⚠️ [REDIS] error fetching product demand signals:', err);
+  }
+
   const socialProofSettings = await getConversionSuiteSocialProofSettings(prisma, companyId);
   const activeCartWindowStart = new Date(
     Date.now() - socialProofSettings.activeCartWindowHours * 60 * 60 * 1000,
@@ -950,6 +961,9 @@ async function getProductDemandSignals(prisma, { companyId, productId }) {
     prisma.guestCart.findMany({
       where: {
         companyId,
+        items: {
+          contains: productId,
+        },
         expiresAt: {
           gt: new Date(),
         },
@@ -967,6 +981,9 @@ async function getProductDemandSignals(prisma, { companyId, productId }) {
     prisma.guestOrder.findMany({
       where: {
         companyId,
+        items: {
+          contains: productId,
+        },
         createdAt: {
           gte: recentPurchaseWindowStart,
         },
@@ -1025,7 +1042,7 @@ async function getProductDemandSignals(prisma, { companyId, productId }) {
           ? Math.min(backInStockRequests, socialProofSettings.waitlistFallbackLimit)
           : 0;
 
-  return {
+  const result = {
     soldCount,
     orderCount,
     backInStockRequests,
@@ -1049,6 +1066,14 @@ async function getProductDemandSignals(prisma, { companyId, productId }) {
       waitlistFallbackLimit: socialProofSettings.waitlistFallbackLimit,
     },
   };
+
+  try {
+    await redisCacheService.set(cacheKey, result, 300); // Cache for 5 minutes
+  } catch (err) {
+    console.error('⚠️ [REDIS] error setting product demand signals cache:', err);
+  }
+
+  return result;
 }
 
 const RECOMMENDATION_REFERENCE_KEYS = Object.freeze({

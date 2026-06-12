@@ -1,5 +1,5 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const { t } = require('../legacy-ai-agent/aiAgent/i18n');
+const { t } = require('../services/i18n');
 const {
   AGENT_INBOX_API_SCOPES,
   AGENT_INBOX_DEFAULT_SCOPES,

@@ -28,7 +28,8 @@ async def test_spawn_wraps_tools_with_gateway(monkeypatch):
 
     tools = agent._resolve_tools()
     middleware = getattr(agent, "middleware", [])
-    result = await tools[0].func(
+    tool = next(t for t in tools if t.name == "product_create")
+    result = await tool.func(
         ProductCreateInput(
             name="Shoe",
             price=100,

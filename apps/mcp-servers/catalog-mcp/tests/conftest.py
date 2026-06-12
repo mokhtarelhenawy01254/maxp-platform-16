@@ -8,7 +8,7 @@ from collections.abc import Iterator
 
 import pytest
 
-os.environ.setdefault("MAXP_API_URL", "http://localhost:3007")
+os.environ.setdefault("MAXP_AI_SERVICE_URL", "http://maxp-ai-service.test")
 os.environ.setdefault("MAXP_SERVICE_TOKEN", "test-service-token")
 
 import logging
@@ -29,7 +29,7 @@ def _silence_uvicorn() -> Iterator[None]:
 @pytest.fixture
 def backend_client() -> MaxPBackendClient:
     return MaxPBackendClient(
-        base_url="http://maxp-backend.test",
+        base_url="http://maxp-ai-service.test",
         service_token="test-service-token",
     )
 

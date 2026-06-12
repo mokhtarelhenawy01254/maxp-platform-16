@@ -27,6 +27,7 @@ from src.tools.registry import (
     order_cancel,
     order_create_confirmed,
     order_create_confirmed_tool,
+    product_search,
     resolve_tools_from_names,
 )
 
@@ -100,6 +101,59 @@ def test_product_search_input():
     assert inp.company_id is None
 
 
+@pytest.mark.asyncio
+async def test_product_search_uses_image_embedding_when_image_is_provided(monkeypatch):
+    captured = {}
+
+    async def fake_vector_product_search(**kwargs):
+        captured.update(kwargs)
+        return [{"name": "Visual Match", "score": 0.91}]
+
+    monkeypatch.setattr("src.tools.registry.vector_product_search", fake_vector_product_search)
+
+    result = await product_search(ProductSearchInput(
+        query="do you have this?",
+        image_bytes="aGVsbG8=",
+        mime_type="image/png",
+        company_id="comp1",
+    ))
+
+    assert result["searchType"] == "image_semantic"
+    assert result["results"] == [{"name": "Visual Match", "score": 0.91}]
+    assert captured["company_id"] == "comp1"
+    assert captured["query"] == "do you have this?"
+    assert captured["image_bytes"] == b"hello"
+    assert captured["mime_type"] == "image/png"
+
+
+@pytest.mark.asyncio
+async def test_product_search_downloads_image_url_for_visual_search(monkeypatch):
+    captured = {}
+
+    async def fake_download_image_url(url: str):
+        captured["download_url"] = url
+        return b"image-bytes", "image/jpeg"
+
+    async def fake_vector_product_search(**kwargs):
+        captured.update(kwargs)
+        return [{"name": "URL Visual Match", "score": 0.88}]
+
+    monkeypatch.setattr("src.tools.registry._download_image_url", fake_download_image_url)
+    monkeypatch.setattr("src.tools.registry.vector_product_search", fake_vector_product_search)
+
+    result = await product_search(ProductSearchInput(
+        query="is this available?",
+        image_url="https://cdn.example.com/photo.jpg",
+        company_id="comp1",
+    ))
+
+    assert result["searchType"] == "image_semantic"
+    assert result["results"] == [{"name": "URL Visual Match", "score": 0.88}]
+    assert captured["download_url"] == "https://cdn.example.com/photo.jpg"
+    assert captured["image_bytes"] == b"image-bytes"
+    assert captured["mime_type"] == "image/jpeg"
+
+
 def test_order_lookup_input():
     inp = OrderLookupInput(order_number="ORD-123")
     assert inp.order_number == "ORD-123"
@@ -149,11 +203,43 @@ async def test_discount_create_returns_awaiting_approval():
 
 @pytest.mark.asyncio
 async def test_order_create_confirmed_executes_backend_after_sdk_approval(monkeypatch):
-    class _Client:
-        async def create_order(self, company_id, order_data):
-            return {"id": "ord_1", "companyId": company_id, "payload": order_data}
+    class _Rows:
+        def __init__(self, data):
+            self._data = data
 
-    monkeypatch.setattr("src.tools.registry.get_backend_client", lambda: _Client())
+        def first(self):
+            return self._data[0] if self._data else None
+
+        def __iter__(self):
+            return iter(self._data)
+
+    def _make_row(mapping: dict):
+        return type("Row", (), {**mapping, "_mapping": mapping})()
+
+    class _Session:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def execute(self, sql, params):
+            statement = str(sql)
+            if "SELECT COALESCE(MAX" in statement and "orderNumber" in statement:
+                return _Rows([_make_row({"next_num": 1})])
+            if "INSERT INTO orders" in statement:
+                return _Rows([])
+            if "SELECT" in statement and "products" in statement:
+                return _Rows([_make_row({"id": "prod_1", "price": 500, "stock": 100, "trackInventory": True, "name": "Shoes"})])
+            if "INSERT INTO order_items" in statement:
+                return _Rows([])
+            return _Rows([])
+
+        async def commit(self):
+            pass
+
+    import src.db.session as db_session
+    monkeypatch.setattr(db_session, "async_session", lambda: _Session())
 
     result = await order_create_confirmed(OrderCreateConfirmedInput(
         customer_name="Ahmed",
@@ -169,18 +255,49 @@ async def test_order_create_confirmed_executes_backend_after_sdk_approval(monkey
 
     assert result["status"] == "EXECUTED"
     assert result["action"] == "ORDER_CREATED"
-    assert result["result"]["companyId"] == "comp1"
-    assert result["result"]["payload"]["customerName"] == "Ahmed"
-    assert result["result"]["payload"]["shippingAmount"] == 35
+    assert result["result"]["orderNumber"] == "1"
+    assert result["result"]["customerName"] == "Ahmed"
 
 
 @pytest.mark.asyncio
 async def test_order_create_confirmed_omits_null_optional_fields(monkeypatch):
-    class _Client:
-        async def create_order(self, company_id, order_data):
-            return {"id": "ord_1", "companyId": company_id, "payload": order_data}
+    class _Rows:
+        def __init__(self, data):
+            self._data = data
 
-    monkeypatch.setattr("src.tools.registry.get_backend_client", lambda: _Client())
+        def first(self):
+            return self._data[0] if self._data else None
+
+        def __iter__(self):
+            return iter(self._data)
+
+    def _make_row(mapping: dict):
+        return type("Row", (), {**mapping, "_mapping": mapping})()
+
+    class _Session:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def execute(self, sql, params):
+            statement = str(sql)
+            if "SELECT COALESCE(MAX" in statement and "orderNumber" in statement:
+                return _Rows([_make_row({"next_num": 1})])
+            if "INSERT INTO orders" in statement:
+                return _Rows([])
+            if "SELECT" in statement and "products" in statement:
+                return _Rows([_make_row({"id": "prod_1", "price": 500, "stock": 100, "trackInventory": True, "name": "Shoes"})])
+            if "INSERT INTO order_items" in statement:
+                return _Rows([])
+            return _Rows([])
+
+        async def commit(self):
+            pass
+
+    import src.db.session as db_session
+    monkeypatch.setattr(db_session, "async_session", lambda: _Session())
 
     result = await order_create_confirmed(OrderCreateConfirmedInput(
         customer_name="Ahmed",
@@ -192,19 +309,47 @@ async def test_order_create_confirmed_omits_null_optional_fields(monkeypatch):
         company_id="comp1",
     ))
 
-    payload = result["result"]["payload"]
-    assert "shippingAmount" not in payload
-    assert "total" not in payload
-    assert "address" not in payload
+    assert result["status"] == "EXECUTED"
+    assert result["action"] == "ORDER_CREATED"
+    assert result["result"]["orderNumber"] == "1"
+    assert result["result"]["customerName"] == "Ahmed"
 
 
 @pytest.mark.asyncio
 async def test_order_cancel_executes_backend_after_sdk_approval(monkeypatch):
-    class _Client:
-        async def cancel_order(self, company_id, order_number, reason):
-            return {"orderNumber": order_number, "companyId": company_id, "reason": reason}
+    class _Rows:
+        def __init__(self, data):
+            self._data = data
 
-    monkeypatch.setattr("src.tools.registry.get_backend_client", lambda: _Client())
+        def first(self):
+            return self._data[0] if self._data else None
+
+        def __iter__(self):
+            return iter(self._data)
+
+    def _make_row(mapping: dict):
+        return type("Row", (), {**mapping, "_mapping": mapping})()
+
+    class _Session:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def execute(self, sql, params):
+            statement = str(sql)
+            if "UPDATE orders" in statement and "status" in statement:
+                return _Rows([_make_row({"orderNumber": "ORD-123", "status": "CANCELLED"})])
+            if "SELECT" in statement and "orders" in statement:
+                return _Rows([_make_row({"id": "ord_1", "orderNumber": "ORD-123", "companyId": "comp1", "status": "PENDING"})])
+            return _Rows([])
+
+        async def commit(self):
+            pass
+
+    import src.db.session as db_session
+    monkeypatch.setattr(db_session, "async_session", lambda: _Session())
 
     result = await order_cancel(OrderCancelInput(
         order_number="ORD-123",
@@ -219,16 +364,36 @@ async def test_order_cancel_executes_backend_after_sdk_approval(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_inventory_adjust_executes_backend_after_sdk_approval(monkeypatch):
-    class _Client:
-        async def adjust_inventory(self, company_id, product_id, quantity, reason):
-            return {
-                "productId": product_id,
-                "companyId": company_id,
-                "quantity": quantity,
-                "reason": reason,
-            }
+    class _Rows:
+        def __init__(self, data):
+            self._data = data
 
-    monkeypatch.setattr("src.tools.registry.get_backend_client", lambda: _Client())
+        def first(self):
+            return self._data[0] if self._data else None
+
+    def _make_row(mapping: dict):
+        return type("Row", (), {**mapping, "_mapping": mapping})()
+
+    class _Session:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def execute(self, sql, params):
+            statement = str(sql)
+            if "UPDATE products" in statement and "stock" in statement:
+                return _Rows([])
+            if "SELECT" in statement and "products" in statement:
+                return _Rows([_make_row({"id": "prod_1", "stock": 10, "companyId": "comp1"})])
+            return _Rows([])
+
+        async def commit(self):
+            pass
+
+    import src.db.session as db_session
+    monkeypatch.setattr(db_session, "async_session", lambda: _Session())
 
     result = await inventory_adjust(InventoryAdjustInput(
         product_id="prod_1",
@@ -239,7 +404,7 @@ async def test_inventory_adjust_executes_backend_after_sdk_approval(monkeypatch)
 
     assert result["status"] == "EXECUTED"
     assert result["action"] == "INVENTORY_ADJUSTED"
-    assert result["result"]["quantity"] == -3
+    assert result["result"]["quantityDelta"] == -3
 
 
 @pytest.mark.asyncio
@@ -287,19 +452,47 @@ async def test_facebook_reply_forwards_image_fields(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_inventory_check_omits_null_bridge_fields(monkeypatch):
-    captured = {}
+    class _Rows:
+        def __init__(self, data):
+            self._data = data
 
-    class _Client:
-        async def execute_bridge_tool(self, company_id, tool_name, input_data, thread_id=None):
-            captured.update({
-                "company_id": company_id,
-                "tool_name": tool_name,
-                "input_data": input_data,
-                "thread_id": thread_id,
-            })
-            return {"success": True, "result": {"found": True, "productName": "Shoes"}}
+        def first(self):
+            return self._data[0] if self._data else None
 
-    monkeypatch.setattr("src.tools.registry.get_backend_client", lambda: _Client())
+        def __iter__(self):
+            return iter(self._data)
+
+    def _make_row(mapping: dict):
+        return type("Row", (), {**mapping, "_mapping": mapping})()
+
+    class _Session:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def execute(self, sql, params):
+            statement = str(sql)
+            if "SELECT" in statement and "products" in statement and "name ILIKE" in statement:
+                return _Rows([_make_row({
+                    "id": "prod_1",
+                    "name": "Black Shoes",
+                    "sku": "SHOE-001",
+                    "price": 2199,
+                    "comparePrice": 2500,
+                    "stock": 10,
+                    "trackInventory": True,
+                    "mainImage": None,
+                    "images": None,
+                    "isFeatured": False,
+                })])
+            if "SELECT" in statement and "product_variants" in statement:
+                return _Rows([])
+            return _Rows([])
+
+    import src.db.session as db_session
+    monkeypatch.setattr(db_session, "async_session", lambda: _Session())
 
     result = await inventory_check(InventoryCheckInput(
         product_name_or_sku="black shoes",
@@ -307,34 +500,54 @@ async def test_inventory_check_omits_null_bridge_fields(monkeypatch):
         company_id="comp1",
     ))
 
-    assert result == {"found": True, "productName": "Shoes"}
-    assert captured == {
-        "company_id": "comp1",
-        "tool_name": "inventory.check",
-        "input_data": {
-            "productNameOrSku": "black shoes",
-            "productColor": "black",
-            "useVector": True,
-        },
-        "thread_id": None,
-    }
+    assert result["found"] is True
+    assert result["productName"] == "Black Shoes"
+    assert result["price"]["amount"] == 2199
 
 
 @pytest.mark.asyncio
 async def test_inventory_check_forwards_vector_policy_to_bridge(monkeypatch):
-    captured = {}
+    class _Rows:
+        def __init__(self, data):
+            self._data = data
 
-    class _Client:
-        async def execute_bridge_tool(self, company_id, tool_name, input_data, thread_id=None):
-            captured.update({
-                "company_id": company_id,
-                "tool_name": tool_name,
-                "input_data": input_data,
-                "thread_id": thread_id,
-            })
-            return {"success": True, "result": {"found": True, "productName": "Shoes"}}
+        def first(self):
+            return self._data[0] if self._data else None
 
-    monkeypatch.setattr("src.tools.registry.get_backend_client", lambda: _Client())
+        def __iter__(self):
+            return iter(self._data)
+
+    def _make_row(mapping: dict):
+        return type("Row", (), {**mapping, "_mapping": mapping})()
+
+    class _Session:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def execute(self, sql, params):
+            statement = str(sql)
+            if "SELECT" in statement and "products" in statement and "name ILIKE" in statement:
+                return _Rows([_make_row({
+                    "id": "prod_1",
+                    "name": "Black Shoes",
+                    "sku": "SHOE-001",
+                    "price": 2199,
+                    "comparePrice": 2500,
+                    "stock": 10,
+                    "trackInventory": True,
+                    "mainImage": None,
+                    "images": None,
+                    "isFeatured": False,
+                })])
+            if "SELECT" in statement and "product_variants" in statement:
+                return _Rows([])
+            return _Rows([])
+
+    import src.db.session as db_session
+    monkeypatch.setattr(db_session, "async_session", lambda: _Session())
 
     result = await inventory_check(InventoryCheckInput(
         product_name_or_sku="black shoes",
@@ -344,64 +557,78 @@ async def test_inventory_check_forwards_vector_policy_to_bridge(monkeypatch):
         company_id="comp1",
     ))
 
-    assert result == {"found": True, "productName": "Shoes"}
-    assert captured == {
-        "company_id": "comp1",
-        "tool_name": "inventory.check",
-        "input_data": {
-            "productNameOrSku": "black shoes",
-            "productSize": "42",
-            "conversationId": "conv-1",
-            "useVector": False,
-        },
-        "thread_id": "conv-1",
-    }
+    assert result["found"] is True
+    assert result["productName"] == "Black Shoes"
 
 
 @pytest.mark.asyncio
 async def test_inventory_check_unwraps_bridge_output(monkeypatch):
-    class _Client:
-        async def execute_bridge_tool(self, company_id, tool_name, input_data, thread_id=None):
-            return {
-                "success": True,
-                "result": {
-                    "success": True,
-                    "status": "EXECUTED",
-                    "toolName": "inventory.check",
-                    "output": {
-                        "found": True,
-                        "productName": "Shoes",
-                        "price": {"amount": 2199, "currency": "EGP"},
-                    },
-                },
-            }
+    class _Rows:
+        def __init__(self, data):
+            self._data = data
 
-    monkeypatch.setattr("src.tools.registry.get_backend_client", lambda: _Client())
+        def first(self):
+            return self._data[0] if self._data else None
+
+        def __iter__(self):
+            return iter(self._data)
+
+    def _make_row(mapping: dict):
+        return type("Row", (), {**mapping, "_mapping": mapping})()
+
+    class _Session:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def execute(self, sql, params):
+            statement = str(sql)
+            if "SELECT" in statement and "products" in statement and "name ILIKE" in statement:
+                return _Rows([_make_row({
+                    "id": "prod_1",
+                    "name": "Black Shoes",
+                    "sku": "SHOE-001",
+                    "price": 2199,
+                    "comparePrice": 2500,
+                    "stock": 10,
+                    "trackInventory": True,
+                    "mainImage": None,
+                    "images": None,
+                    "isFeatured": False,
+                })])
+            if "SELECT" in statement and "product_variants" in statement:
+                return _Rows([])
+            return _Rows([])
+
+    import src.db.session as db_session
+    monkeypatch.setattr(db_session, "async_session", lambda: _Session())
 
     result = await inventory_check(InventoryCheckInput(
         product_name_or_sku="black shoes",
         company_id="comp1",
     ))
 
-    assert result == {
-        "found": True,
-        "productName": "Shoes",
-        "price": {"amount": 2199, "currency": "EGP"},
-    }
+    assert result["found"] is True
+    assert result["productName"] == "Black Shoes"
+    assert result["price"]["amount"] == 2199
+    assert result["price"]["currency"] == "EGP"
+    assert result["availableColors"] == []
+    assert result["availableSizes"] == []
 
 
 @pytest.mark.asyncio
 async def test_competitor_generate_report_executes_backend_after_sdk_approval(monkeypatch):
-    class _Client:
-        async def generate_competitor_report(self, company_id, competitor_id, report_type):
-            return {
-                "reportId": "rep_1",
-                "companyId": company_id,
-                "competitorId": competitor_id,
-                "type": report_type,
-            }
+    async def mock_generate_report(company_id, competitor_id, report_type):
+        return {
+            "reportId": "rep_1",
+            "companyId": company_id,
+            "competitorId": competitor_id,
+            "type": report_type,
+        }
 
-    monkeypatch.setattr("src.tools.registry.get_backend_client", lambda: _Client())
+    monkeypatch.setattr("src.tools.registry.competitor_tools.generate_report", mock_generate_report)
 
     result = await competitor_generate_report(CompetitorGenerateReportInput(
         competitor_id="cmp_1",

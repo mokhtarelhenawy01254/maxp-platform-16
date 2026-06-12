@@ -293,6 +293,9 @@ export default defineConfig(({ mode }) => {
       'process.env': {},
       'global': 'window',
     },
+    esbuild: {
+      sourcemap: false,
+    },
     root: '.',
     // Path resolution
     resolve: {
@@ -515,6 +518,12 @@ export default defineConfig(({ mode }) => {
               if (normalizedId.includes('/src/pages/employee/')) return 'route-employee';
               if (normalizedId.includes('/src/pages/procurement/')) return 'route-procurement';
               if (normalizedId.includes('/src/pages/shipments/')) return 'route-shipments';
+              if (normalizedId.includes('/src/storefront/variants/')) return 'storefront-variants';
+              if (normalizedId.includes('/src/storefront/sections/')) return 'storefront-sections';
+              if (normalizedId.includes('/src/storefront/themes/')) return 'storefront-themes';
+              if (normalizedId.includes('/src/storefront/blueprints/')) return 'storefront-blueprints';
+              if (normalizedId.includes('/src/storefront/engine/')) return 'storefront-engine';
+              if (normalizedId.includes('/src/storefront/components/')) return 'storefront-components';
               if (normalizedId.includes('/src/storefront/')) return 'route-storefront';
               if (normalizedId.includes('/src/pages/profile/')) return 'route-profile';
               if (normalizedId.includes('/src/pages/auth/')) return 'route-auth';

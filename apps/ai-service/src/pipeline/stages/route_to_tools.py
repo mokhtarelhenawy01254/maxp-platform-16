@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from src.context.assembler import ContextAssembler
+from src.context.multimodal import DEFAULT_IMAGE_MIME, data_url_to_inline_data
 from src.intent.planner import (
     get_model_classified_handoff_execution,
     get_model_classified_read_tool_execution,
@@ -39,6 +40,71 @@ def _coerce_bool(value) -> bool:
         return bool(value)
     text = str(value or "").strip().lower()
     return text in {"1", "true", "yes", "y", "confirmed", "confirm"}
+
+
+def _first_image_attachment_payload(ctx: PipelineContext) -> dict[str, str] | None:
+    for attachment in getattr(ctx, "attachments", []) or []:
+        if not isinstance(attachment, dict):
+            continue
+        attachment_type = str(attachment.get("type") or "").strip().lower()
+        if attachment_type and "image" not in attachment_type:
+            continue
+        mime = str(
+            attachment.get("mime_type")
+            or attachment.get("mimeType")
+            or attachment.get("content_type")
+            or attachment.get("contentType")
+            or DEFAULT_IMAGE_MIME
+        ).strip() or DEFAULT_IMAGE_MIME
+        data_url = str(attachment.get("data_url") or attachment.get("dataUrl") or "").strip()
+        if data_url:
+            parsed = data_url_to_inline_data(data_url)
+            if parsed:
+                parsed_mime, parsed_data = parsed
+                return {"image_bytes": parsed_data, "mime_type": parsed_mime}
+        base64_data = str(
+            attachment.get("base64_data")
+            or attachment.get("base64Data")
+            or attachment.get("image_bytes")
+            or attachment.get("imageBytes")
+            or ""
+        ).strip()
+        if base64_data:
+            return {"image_bytes": base64_data, "mime_type": mime}
+        image_url = str(attachment.get("url") or attachment.get("image_url") or attachment.get("imageUrl") or "").strip()
+        if image_url:
+            return {"image_url": image_url, "mime_type": mime}
+    return None
+
+
+def _native_tool_available(ctx: PipelineContext, tool_name: str) -> bool:
+    canonical = canonical_tool_name(tool_name)
+    for tool in getattr(ctx, "native_tools", []) or []:
+        name = tool.get("name") if isinstance(tool, dict) else getattr(tool, "name", "")
+        if canonical_tool_name(name) == canonical:
+            return True
+    return False
+
+
+def _prefer_product_search_for_image_query(ctx: PipelineContext, read_exec: dict | None) -> dict | None:
+    if not read_exec:
+        return read_exec
+    if canonical_tool_name(read_exec.get("nativeName") or read_exec.get("tool") or "") != "inventory_check":
+        return read_exec
+    if not _first_image_attachment_payload(ctx):
+        return read_exec
+
+    allowed = canonical_tool_set(getattr(ctx.relevance_plan, "allowedTools", []) or [])
+    if allowed and "product_search" not in allowed:
+        return read_exec
+    if not _native_tool_available(ctx, "product_search"):
+        return read_exec
+
+    return {
+        "tool": "product.search",
+        "nativeName": "product.search",
+        "params": {"query": ctx.message},
+    }
 
 
 def _as_dict(value) -> dict:
@@ -121,8 +187,15 @@ def _populate_tool_params(ctx: PipelineContext, execution: dict | None) -> None:
         slots = {**dict(ctx.relevance_plan.classification.get("slots") or {}), **slots}
 
     if tool_name == "product_search":
-        if (ctx.external_memory_context or {}).get(DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL):
+        image_payload = _first_image_attachment_payload(ctx)
+        if not image_payload and (ctx.external_memory_context or {}).get(DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL):
             params["use_vector"] = False
+        if image_payload and params.get("use_vector") is not False:
+            if image_payload.get("image_bytes"):
+                params.setdefault("image_bytes", image_payload["image_bytes"])
+            if image_payload.get("image_url"):
+                params.setdefault("image_url", image_payload["image_url"])
+            params.setdefault("mime_type", image_payload["mime_type"])
         list_all = slots.get("listAll") or slots.get("list_all")
         if list_all:
             params["list_all"] = True
@@ -171,7 +244,7 @@ def _populate_tool_params(ctx: PipelineContext, execution: dict | None) -> None:
             "product_size": ("productSize", "product_size", "size"),
             "product_color": ("productColor", "product_color", "color"),
             "quantity": ("quantity",),
-            "total": ("total", "orderTotal", "totalAmount", "order_total", "total_amount"),
+            "total": ("total", "orderTotal", "totalAmount", "order_total", "total_amount", "productPrice", "product_price", "price"),
             "shipping_amount": ("shippingAmount", "shipping_amount", "shippingCost", "shipping_cost"),
             "address": ("address",),
             "city": ("city", "governorate"),
@@ -318,6 +391,7 @@ async def route_to_tools(ctx: PipelineContext) -> PipelineContext:
         relevance_plan,
         ctx.native_tools,
     )
+    read_exec = _prefer_product_search_for_image_query(ctx, read_exec)
 
     ctx.execution_plan = {
         "deterministicReadExecution": read_exec,

@@ -439,9 +439,11 @@ async def build_intent_contract_async(
             _block_tool_execution(policy_plan, "TOOL_NOT_AVAILABLE")
 
     if not classifier_result and not missing_slots:
-        policy_plan.requiresTool = False
+        # Don't block tools when classifier is unavailable — allow all available
+        # tools so the LLM can still respond based on conversation context.
+        policy_plan.requiresTool = True
         policy_plan.primaryTool = None
-        policy_plan.allowedTools = []
+        policy_plan.allowedTools = list(available_tools or [])
         policy_plan.blockedReason = "CLASSIFIER_UNAVAILABLE"
         policy_plan.reason = "CLASSIFIER_UNAVAILABLE"
         policy_plan.classification = {

@@ -11,6 +11,8 @@ const CHUNK_LOAD_ERROR_PATTERNS = [
   "loading chunk",
   "chunkloaderror",
   "vite:preloaderror",
+  "err_cache_read_failure",
+  "node_modules/.vite/deps/chunk-",
 ];
 
 type RecoverSource =

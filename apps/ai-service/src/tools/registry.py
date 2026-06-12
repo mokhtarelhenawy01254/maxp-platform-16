@@ -1,10 +1,19 @@
 from __future__ import annotations
 
+import asyncio
+import base64
+import ipaddress
+import socket
+from datetime import datetime, timedelta
 from typing import Any, Literal
+from urllib.parse import urlparse
 
+import httpx
 from agent_framework import FunctionInvocationContext, FunctionTool
 from pydantic import BaseModel, Field
+from sqlalchemy import text
 
+import src.db.session as _db_mod
 from src.mcp_integration.registry import get_mcp_registry
 from src.tools import (
     competitor_tools,
@@ -14,7 +23,6 @@ from src.tools import (
     product_tools,
     sales_tools,
 )
-from src.tools.backend_client import get_backend_client
 from src.tools.names import canonical_tool_name
 from src.tools.vector_product_search import vector_product_search
 
@@ -39,15 +47,125 @@ def _executed_result(action: str, result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _is_public_image_url(url: str) -> bool:
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return False
+    hostname = parsed.hostname.strip().lower()
+    if hostname in {"localhost", "localhost.localdomain"}:
+        return False
+    try:
+        ip = ipaddress.ip_address(hostname)
+    except ValueError:
+        return True
+    return not (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_multicast
+        or ip.is_reserved
+        or ip.is_unspecified
+    )
+
+
+def _period_start_date(period: str) -> datetime:
+    now = datetime.utcnow()
+    period = period.lower()
+    if period == "today":
+        return now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif period == "yesterday":
+        return (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    elif period == "week":
+        return now - timedelta(days=7)
+    elif period == "month":
+        return now - timedelta(days=30)
+    elif period == "all":
+        return datetime(2000, 1, 1)
+    return now - timedelta(days=30)
+
+
+async def _host_resolves_to_public_ips(hostname: str) -> bool:
+    try:
+        infos = await asyncio.to_thread(
+            socket.getaddrinfo,
+            hostname,
+            None,
+            type=socket.SOCK_STREAM,
+        )
+    except OSError:
+        return False
+
+    addresses = {info[4][0] for info in infos}
+    if not addresses:
+        return False
+    for address in addresses:
+        try:
+            ip = ipaddress.ip_address(address)
+        except ValueError:
+            return False
+        if (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_multicast
+            or ip.is_reserved
+            or ip.is_unspecified
+        ):
+            return False
+    return True
+
+
+async def _download_image_url(url: str, max_bytes: int = 5 * 1024 * 1024) -> tuple[bytes, str] | None:
+    if not _is_public_image_url(url):
+        return None
+
+    try:
+        async with httpx.AsyncClient(timeout=8.0, follow_redirects=False, trust_env=False) as client:
+            current_url = url
+            for _ in range(3):
+                parsed = urlparse(current_url)
+                if not parsed.hostname or not await _host_resolves_to_public_ips(parsed.hostname):
+                    return None
+                async with client.stream("GET", current_url, headers={"Accept": "image/*"}) as response:
+                    if 300 <= response.status_code < 400:
+                        redirect_url = response.headers.get("location")
+                        if not redirect_url:
+                            return None
+                        current_url = str(httpx.URL(current_url).join(redirect_url))
+                        if not _is_public_image_url(current_url):
+                            return None
+                        continue
+                    response.raise_for_status()
+                    content_type = response.headers.get("content-type", "").split(";", 1)[0].strip()
+                    if not content_type.startswith("image/"):
+                        return None
+                    body = bytearray()
+                    async for chunk in response.aiter_bytes():
+                        body.extend(chunk)
+                        if len(body) > max_bytes:
+                            return None
+                    return bytes(body), content_type
+    except httpx.HTTPError:
+        return None
+    return None
+
+
 # ── Product Tools ────────────────────────────────────────────────────────────
 
 
 class ProductSearchInput(BaseModel):
-    query: str = Field(default="", description="Search query for products (name, SKU, or keyword). Leave empty when list_all is true.")
+    query: str = Field(default="", description="Product name, SKU, or keyword to search for. Leave empty or set list_all=true to browse the full catalog.")
     list_all: bool = Field(default=False, description="Set to true to return ALL available products without filtering. Use when the customer asks to see all products or the full catalog.")
     limit: int = Field(default=5, description="Maximum number of results. Default 5. Use 20+ when list_all is true.")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
     use_vector: bool = Field(default=True, description="Enable semantic/vector search fallback when text search returns no results")
+    image_bytes: str | None = Field(default=None, description="Optional base64-encoded product image for visual product matching.")
+    image_url: str | None = Field(default=None, description="Optional public product image URL for visual product matching.")
+    mime_type: str | None = Field(default=None, description="MIME type for image_bytes, e.g. image/jpeg or image/png.")
+    product_size: str | None = Field(default=None, description="Optional requested size to filter by.")
+    product_color: str | None = Field(default=None, description="Optional requested color to filter by.")
+    conversation_id: str | None = Field(default=None, description="Optional conversation ID for memory context.")
+    references_previous_product: bool | None = Field(default=None, description="True only when the model-classified turn refers to the previous shown product.")
 
 
 class ProductCreateInput(BaseModel):
@@ -83,15 +201,48 @@ class ProductPerformanceInput(BaseModel):
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
+class CategoryListInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+    limit: int = Field(default=50, description="Maximum products to scan for category discovery")
+
+
 async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
     query = "" if input_data.list_all else (input_data.query or "")
     limit = input_data.limit if input_data.list_all else min(input_data.limit, 20)
+    decoded_image: bytes | None = None
+    image_mime_type = input_data.mime_type
+    if input_data.use_vector and not input_data.list_all:
+        if input_data.image_bytes:
+            try:
+                decoded_image = base64.b64decode(input_data.image_bytes, validate=True)
+            except (ValueError, TypeError):
+                decoded_image = None
+        if not decoded_image and input_data.image_url:
+            downloaded = await _download_image_url(input_data.image_url)
+            if downloaded:
+                decoded_image, downloaded_mime_type = downloaded
+                image_mime_type = image_mime_type or downloaded_mime_type
+        if decoded_image:
+            vec_results = await vector_product_search(
+                company_id=input_data.company_id or "",
+                query=query,
+                limit=limit,
+                image_bytes=decoded_image,
+                mime_type=image_mime_type,
+            )
+            return {"results": vec_results, "count": len(vec_results), "listAll": False, "searchType": "image_semantic"}
+
     result = await product_tools.search_products(
-        input_data.company_id or "", query, limit=limit, use_vector=input_data.use_vector
+        input_data.company_id or "",
+        query,
+        limit=limit,
+        use_vector=input_data.use_vector,
+        product_size=input_data.product_size,
+        product_color=input_data.product_color,
+        conversation_id=input_data.conversation_id,
+        references_previous_product=input_data.references_previous_product,
     )
     products = result.get("products", [])
-    if input_data.list_all:
-        products = [{"name": p.get("name"), "price": p.get("price"), "sku": p.get("sku"), "status": p.get("status"), "mainImage": p.get("mainImage")} for p in products]
 
     # Vector fallback: if text search returned no results and we have a query, use semantic search
     if not products and query and not input_data.list_all and input_data.use_vector:
@@ -139,17 +290,103 @@ async def product_update_price(input_data: ProductUpdatePriceInput) -> dict[str,
 
 
 async def product_performance(input_data: ProductPerformanceInput) -> dict[str, Any]:
-    client = get_backend_client()
-    return await client.get_product_performance(
-        input_data.company_id or "",
-        input_data.product_id,
-        period=input_data.period,
+    company_id = input_data.company_id or ""
+    product_id = input_data.product_id
+    period = input_data.period or "month"
+    start_date = _period_start_date(period)
+    end_date = datetime.utcnow()
+
+    if not company_id or not product_id:
+        return {"found": False, "error": "Missing company_id or product_id"}
+
+    sf = _db_mod.async_session
+
+    async with sf() as sess:
+        product_row = await sess.execute(text("""
+            SELECT id, name, price, images
+            FROM products WHERE id = :pid AND "companyId" = :cid
+        """), {"pid": product_id, "cid": company_id})
+        product_info = product_row.first()
+
+        if not product_info:
+            return {"found": False, "error": "Product not found"}
+
+        views_row = await sess.execute(text("""
+            SELECT COUNT(*) AS cnt FROM product_visits
+            WHERE "productId" = :pid AND "companyId" = :cid
+              AND "visitedAt" BETWEEN :start AND :end
+        """), {"pid": product_id, "cid": company_id, "start": start_date, "end": end_date})
+        _v_first = views_row.first()
+        views = _v_first.cnt if _v_first else 0
+
+        add_to_cart_row = await sess.execute(text("""
+            SELECT COUNT(*) AS cnt FROM conversion_events
+            WHERE "productId" = :pid AND "companyId" = :cid
+              AND "eventType" = 'add_to_cart'
+              AND "createdAt" BETWEEN :start AND :end
+        """), {"pid": product_id, "cid": company_id, "start": start_date, "end": end_date})
+        _a_first = add_to_cart_row.first()
+        add_to_carts = _a_first.cnt if _a_first else 0
+
+        purchase_row = await sess.execute(text("""
+            SELECT COUNT(*) AS cnt FROM conversion_events
+            WHERE "productId" = :pid AND "companyId" = :cid
+              AND "eventType" = 'purchase'
+              AND "createdAt" BETWEEN :start AND :end
+        """), {"pid": product_id, "cid": company_id, "start": start_date, "end": end_date})
+        _p_first = purchase_row.first()
+        purchases = _p_first.cnt if _p_first else 0
+
+        sales_row = await sess.execute(text("""
+            SELECT COALESCE(SUM(oi.quantity), 0)::int AS qty_sold,
+                   COALESCE(SUM(oi.total), 0) AS revenue
+            FROM order_items oi
+            JOIN orders o ON o.id = oi."orderId"
+            WHERE oi."productId" = :pid AND o."companyId" = :cid
+              AND o."createdAt" BETWEEN :start AND :end
+              AND o.status != 'CANCELLED'
+        """), {"pid": product_id, "cid": company_id, "start": start_date, "end": end_date})
+        _s_first = sales_row.first()
+        sales = dict(_s_first._mapping) if _s_first else {"qty_sold": 0, "revenue": 0}
+
+    info = dict(product_info._mapping)
+    view_to_cart = round(add_to_carts / views * 100, 2) if views > 0 else 0.0
+    cart_to_purchase = round(purchases / add_to_carts * 100, 2) if add_to_carts > 0 else 0.0
+    overall_conversion = round(purchases / views * 100, 2) if views > 0 else 0.0
+
+    return {
+        "productId": info["id"],
+        "productName": info["name"],
+        "price": str(info.get("price", 0)),
+        "period": period,
+        "views": views,
+        "addToCarts": add_to_carts,
+        "purchases": purchases,
+        "conversionRates": {
+            "viewToCart": view_to_cart,
+            "cartToPurchase": cart_to_purchase,
+            "overall": overall_conversion,
+        },
+        "salesMetrics": {
+            "quantitySold": sales["qty_sold"],
+            "revenue": str(sales["revenue"]),
+        },
+    }
+
+
+async def category_list(input_data: CategoryListInput) -> dict[str, Any]:
+    """List all available product categories."""
+    if not input_data.company_id:
+        return {"found": False, "count": 0, "categories": [], "error": "Missing company_id"}
+    return await product_tools.list_categories(
+        company_id=input_data.company_id,
+        limit=input_data.limit,
     )
 
 
 product_search_tool = FunctionTool(
     name="product_search",
-    description="Search for products by name, SKU, or keyword. Set list_all=true to browse the full catalog. Returns products with prices, stock, and availability.",
+    description="Search for products by name, SKU, or keyword. Set list_all=true to browse the full catalog. Returns products with prices, stock, variants, available sizes, available colors, and category info. Use inventory.check for detailed per-variant availability.",
     func=product_search,
     input_model=ProductSearchInput,
 )
@@ -189,6 +426,13 @@ product_performance_tool = FunctionTool(
     input_model=ProductPerformanceInput,
 )
 
+category_list_tool = FunctionTool(
+    name="category_list",
+    description="List all available product categories with their product counts and sample products.",
+    func=category_list,
+    input_model=CategoryListInput,
+)
+
 
 # ── Order Tools ──────────────────────────────────────────────────────────────
 
@@ -226,6 +470,7 @@ class OrderCreateConfirmedInput(BaseModel):
     address: str | None = Field(default=None, description="Delivery address")
     city: str | None = Field(default=None, description="City")
     confirmed_by_customer: bool | None = Field(default=None, description="Whether the customer explicitly confirmed")
+    notes: str | None = Field(default=None, description="Order notes")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
@@ -276,7 +521,6 @@ async def order_create_draft(input_data: OrderCreateDraftInput) -> dict[str, Any
 
 
 async def order_create_confirmed(input_data: OrderCreateConfirmedInput) -> dict[str, Any]:
-    client = get_backend_client()
     order_payload = {
         "customerName": input_data.customer_name,
         "customerPhone": input_data.customer_phone,
@@ -290,9 +534,10 @@ async def order_create_confirmed(input_data: OrderCreateConfirmedInput) -> dict[
         "address": input_data.address,
         "city": input_data.city,
         "confirmedByCustomer": input_data.confirmed_by_customer,
+        "notes": input_data.notes,
     }
     order_payload = {key: value for key, value in order_payload.items() if value is not None}
-    result = await client.create_order(input_data.company_id or "", order_payload)
+    result = await order_tools.create_order(input_data.company_id or "", order_payload)
     return _executed_result("ORDER_CREATED", result)
 
 
@@ -310,8 +555,7 @@ async def order_recent_list(input_data: OrderRecentListInput) -> dict[str, Any]:
 
 
 async def order_cancel(input_data: OrderCancelInput) -> dict[str, Any]:
-    client = get_backend_client()
-    result = await client.cancel_order(
+    result = await order_tools.cancel_order(
         input_data.company_id or "",
         input_data.order_number,
         input_data.reason,
@@ -393,8 +637,37 @@ class ShippingUpdateInput(BaseModel):
 
 
 async def shipping_rates(input_data: ShippingRatesInput) -> dict[str, Any]:
-    client = get_backend_client()
-    return await client.get_shipping_rates(input_data.company_id or "", input_data.governorate)
+    company_id = input_data.company_id or ""
+    governorate = input_data.governorate
+    if not company_id or not governorate:
+        return {"found": False, "error": "Missing company_id or governorate"}
+
+    gov_pattern = f"%{governorate}%"
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        row = await sess.execute(text("""
+            SELECT sz.name, sz.price, sz."deliveryTime", sz."freeShippingThreshold"
+            FROM shipping_zones sz
+            LEFT JOIN shipping_zone_governorates szg ON szg."shippingZoneId" = sz.id
+            LEFT JOIN governorates g ON g.id = szg."governorateId"
+            WHERE sz."companyId" = :cid
+              AND sz."isActive" = TRUE
+              AND (g."nameAr" ILIKE :gov OR g."nameEn" ILIKE :gov OR g.code ILIKE :gov
+                   OR sz.governorates ILIKE :gov)
+            LIMIT 1
+        """), {"cid": company_id, "gov": gov_pattern})
+        zone = row.first()
+
+    if not zone:
+        return {"found": False, "code": "SHIPPING_RATE_NOT_FOUND", "governorate": governorate}
+
+    return {
+        "found": True,
+        "governorate": governorate,
+        "price": str(zone.price),
+        "deliveryTime": zone.deliveryTime,
+        "isFlat": True,
+    }
 
 
 async def shipping_update(input_data: ShippingUpdateInput) -> dict[str, Any]:
@@ -440,43 +713,148 @@ class InventoryAdjustInput(BaseModel):
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
+async def _fetch_inventory_variants(product_id: str) -> list[dict[str, Any]]:
+    sql = text("""
+        SELECT name, type, sku, stock, "trackInventory", "isActive"
+        FROM product_variants
+        WHERE "productId" = :pid AND "isActive" = TRUE
+        ORDER BY "sortOrder" ASC
+    """)
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        rows = await sess.execute(sql, {"pid": product_id})
+        return [dict(r._mapping) for r in rows]
+
+
 async def inventory_check(input_data: InventoryCheckInput) -> dict[str, Any]:
-    client = get_backend_client()
-    bridge_input = {
-        key: value
-        for key, value in {
-            "productNameOrSku": input_data.product_name_or_sku,
-            "productSize": input_data.product_size,
-            "productColor": input_data.product_color,
-            "conversationId": input_data.conversation_id,
-            "referencesPreviousProduct": input_data.references_previous_product,
-            "useVector": input_data.use_vector,
-        }.items()
-        if value is not None
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"found": False, "code": "MISSING_COMPANY", "error": "Missing company_id"}
+
+    product_name = input_data.product_name_or_sku
+    if not product_name:
+        return {"found": False, "code": "MISSING_PRODUCT_NAME", "error": "No product name or SKU provided"}
+
+    pattern = f"%{product_name}%"
+    sql = text("""
+        SELECT id, name, sku, price, "comparePrice", stock, "trackInventory",
+               "mainImage", images, "isFeatured"
+        FROM products
+        WHERE "companyId" = :company_id
+          AND "deletedAt" IS NULL
+          AND "isActive" = TRUE
+          AND (name ILIKE :pattern OR sku ILIKE :pattern)
+        ORDER BY
+          CASE WHEN sku ILIKE :exact THEN 0 WHEN name ILIKE :exact THEN 1 ELSE 2 END,
+          "updatedAt" DESC
+        LIMIT 1
+    """)
+    exact_pattern = product_name
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        rows = await sess.execute(sql, {
+            "company_id": company_id,
+            "pattern": pattern,
+            "exact": exact_pattern,
+        })
+        product_row = rows.first()
+
+    if not product_row:
+        return {"found": False, "code": "PRODUCT_NOT_FOUND", "error": f"No product matching '{product_name}'"}
+
+    product = dict(product_row._mapping)
+    variants = await _fetch_inventory_variants(product["id"])
+
+    from src.tools.product_tools import (_VARIANT_COLOR_ALIASES,
+                                         _VARIANT_SIZE_ALIASES, _aggregate_variants,
+                                         _availability_status, _parse_images)
+
+    product["productVariants"] = variants
+    size_variants = _aggregate_variants(variants, _VARIANT_SIZE_ALIASES)
+    color_variants = _aggregate_variants(variants, _VARIANT_COLOR_ALIASES)
+    images = _parse_images(product)
+
+    result: dict[str, Any] = {
+        "found": True,
+        "productId": product["id"],
+        "productName": product["name"],
+        "sku": product["sku"],
+        "price": {"amount": float(product.get("price", 0)), "currency": "EGP"},
+        "stock": product.get("stock", 0),
+        "trackInventory": product.get("trackInventory", True),
+        "images": images,
+        "status": _availability_status(product),
+        "availableSizes": size_variants,
+        "availableColors": color_variants,
     }
-    response = await client.execute_bridge_tool(
-        input_data.company_id or "",
-        "inventory.check",
-        bridge_input,
-        thread_id=input_data.conversation_id,
-    )
-    result = response.get("result", response)
-    if isinstance(result, dict) and result.get("success") is True and isinstance(result.get("output"), dict):
-        return result["output"]
-    if isinstance(result, dict) and result.get("success") is True and isinstance(result.get("result"), dict):
-        return result["result"]
+
+    compare_price = product.get("comparePrice")
+    if compare_price is not None:
+        result["comparePrice"] = {"amount": float(compare_price), "currency": "EGP"}
+
+    req_size = input_data.product_size
+    req_color = input_data.product_color
+    if req_size or req_color:
+        constraint_details: dict[str, Any] = {"matched": [], "missing": []}
+        all_available = True
+
+        if req_size:
+            matched = [v for v in variants if v.get("type") in _VARIANT_SIZE_ALIASES and req_size.lower() in v.get("name", "").lower()]
+            if matched:
+                for v in matched:
+                    constraint_details["matched"].append({
+                        "type": "SIZE", "value": v["name"],
+                        "status": "IN_STOCK" if v.get("stock", 0) > 0 or not v.get("trackInventory", True) else "OUT_OF_STOCK",
+                        "stock": v.get("stock", 0),
+                    })
+            else:
+                constraint_details["missing"].append({"type": "SIZE", "requestedValue": req_size, "status": "NOT_FOUND"})
+                all_available = False
+
+        if req_color:
+            matched = [v for v in variants if v.get("type") in _VARIANT_COLOR_ALIASES and req_color.lower() in v.get("name", "").lower()]
+            if matched:
+                for v in matched:
+                    constraint_details["matched"].append({
+                        "type": "COLOR", "value": v["name"],
+                        "status": "IN_STOCK" if v.get("stock", 0) > 0 or not v.get("trackInventory", True) else "OUT_OF_STOCK",
+                        "stock": v.get("stock", 0),
+                    })
+            else:
+                constraint_details["missing"].append({"type": "COLOR", "requestedValue": req_color, "status": "NOT_FOUND"})
+                all_available = False
+
+        result["requestedSize"] = req_size
+        result["requestedColor"] = req_color
+        result["constraintAvailable"] = all_available if not any(m.get("status") == "OUT_OF_STOCK" for m in constraint_details["matched"]) else False
+        result["constraintDetails"] = constraint_details
+
     return result
 
 
 async def inventory_adjust(input_data: InventoryAdjustInput) -> dict[str, Any]:
-    client = get_backend_client()
-    result = await client.adjust_inventory(
-        input_data.company_id or "",
-        input_data.product_id,
-        input_data.quantity_delta,
-        input_data.reason,
-    )
-    return _executed_result("INVENTORY_ADJUSTED", result)
+    company_id = input_data.company_id or ""
+    product_id = input_data.product_id
+    delta = input_data.quantity_delta
+
+    if not company_id or not product_id:
+        return {"success": False, "error": "Missing company_id or product_id"}
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        await sess.execute(text("""
+            UPDATE products
+            SET stock = GREATEST(0, stock + :delta), "updatedAt" = NOW()
+            WHERE id = :pid AND "companyId" = :cid
+        """), {"delta": delta, "pid": product_id, "cid": company_id})
+        await sess.commit()
+
+    return _executed_result("INVENTORY_ADJUSTED", {
+        "productId": product_id,
+        "quantityDelta": delta,
+        "reason": input_data.reason,
+    })
 
 
 inventory_check_tool = FunctionTool(
@@ -559,12 +937,6 @@ class DiscountCreateInput(DiscountCreateDraftInput):
     """Backward-compatible input model for the existing discount.create action."""
 
 
-class WhatsappSendInput(BaseModel):
-    phone: str = Field(description="Customer phone number in international format")
-    message: str = Field(description="Message text to send")
-    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
-
-
 async def sales_revenue(input_data: SalesRevenueInput) -> dict[str, Any]:
     return await sales_tools.sales_revenue(
         input_data.company_id or "", period=input_data.period
@@ -589,12 +961,6 @@ async def discount_create(input_data: DiscountCreateInput) -> dict[str, Any]:
         "discountPercent": input_data.discount_percent,
         "reason": input_data.reason,
     }, input_data.company_id or "")
-
-
-async def whatsapp_send(input_data: WhatsappSendInput) -> dict[str, Any]:
-    return await governance_tools.send_whatsapp(
-        input_data.company_id or "", input_data.phone, input_data.message
-    )
 
 
 sales_revenue_tool = FunctionTool(
@@ -624,14 +990,6 @@ discount_create_tool = FunctionTool(
     func=discount_create,
     input_model=DiscountCreateInput,
 )
-
-whatsapp_send_tool = FunctionTool(
-    name="whatsapp_send",
-    description="Send a WhatsApp message to a customer.",
-    func=whatsapp_send,
-    input_model=WhatsappSendInput,
-)
-
 
 # ── Competitor Tools ─────────────────────────────────────────────────────────
 
@@ -694,8 +1052,7 @@ async def competitor_get_ads(input_data: CompetitorGetAdsInput) -> dict[str, Any
 
 
 async def competitor_generate_report(input_data: CompetitorGenerateReportInput) -> dict[str, Any]:
-    client = get_backend_client()
-    result = await client.generate_competitor_report(
+    result = await competitor_tools.generate_report(
         input_data.company_id or "",
         input_data.competitor_id,
         input_data.report_type,
@@ -949,12 +1306,19 @@ class AuditReadInput(BaseModel):
 
 
 async def audit_read(input_data: AuditReadInput) -> dict[str, Any]:
-    client = get_backend_client()
-    return await client.get_audit_trail(
-        input_data.company_id or "",
-        limit=input_data.limit,
-        agent_id=input_data.agent_id,
-    )
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"activities": []}
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        rows = await sess.execute(text("""
+            SELECT type, description, "createdAt", "userId"
+            FROM activities
+            WHERE "companyId" = :cid
+            ORDER BY "createdAt" DESC
+            LIMIT :lim
+        """), {"cid": company_id, "lim": min(input_data.limit or 5, 50)})
+        return {"activities": [dict(r._mapping) for r in rows]}
 
 
 audit_read_tool = FunctionTool(
@@ -1022,6 +1386,7 @@ unlock_advanced_tools_tool = FunctionTool(
 
 CORE_TOOLS: list[FunctionTool] = [
     product_search_tool,
+    category_list_tool,
     order_lookup_tool,
     inventory_check_tool,
     customer_info_tool,
@@ -1047,7 +1412,9 @@ ADVANCED_TOOLS: list[FunctionTool] = [
 ]
 
 # All read-only tools
-READ_TOOLS: list[FunctionTool] = CORE_TOOLS + ADVANCED_TOOLS
+READ_TOOLS: list[FunctionTool] = CORE_TOOLS + ADVANCED_TOOLS + [
+    category_list_tool,
+]
 
 # All write tools that require merchant approval before execution.
 WRITE_TOOLS: list[FunctionTool] = [
@@ -1079,9 +1446,11 @@ DIRECT_WRITE_TOOLS: list[FunctionTool] = [
 for _direct_write_tool in DIRECT_WRITE_TOOLS:
     _direct_write_tool.approval_mode = "never_require"
 
+# Skill tools (progressive disclosure — load_skill, read_skill_resource)
+from src.skills.integration import SKILL_TOOLS, get_skill_tool_names
+
 # All tools (including manager tools for template resolution)
-ALL_TOOLS: dict[str, FunctionTool] = {t.name: t for t in READ_TOOLS + WRITE_TOOLS + DIRECT_WRITE_TOOLS + [
-    whatsapp_send_tool,
+ALL_TOOLS: dict[str, FunctionTool] = {t.name: t for t in READ_TOOLS + WRITE_TOOLS + DIRECT_WRITE_TOOLS + SKILL_TOOLS + [
     facebook_reply_tool,
     agent_handoff_to_tool,
 ]}
@@ -1103,7 +1472,6 @@ ROLE_TOOLS: dict[str, list[str]] = {
         "customer_info",
         "shipping_rates",
         "shipping_update",
-        "whatsapp_send",
         "agent_handoff_to",
     ],
     "ORDER": [
@@ -1124,7 +1492,6 @@ ROLE_TOOLS: dict[str, list[str]] = {
         "order_create_draft",
         "order_create_confirmed",
         "discount_create_draft",
-        "whatsapp_send",
         "shipping_rates",
     ],
     "INVENTORY": [
@@ -1148,6 +1515,7 @@ ROLE_TOOLS: dict[str, list[str]] = {
     ],
     "FACEBOOK_SALES_SUPPORT": [
         "product_search",
+        "category_list",
         "inventory_check",
         "customer_info",
         "order_lookup",

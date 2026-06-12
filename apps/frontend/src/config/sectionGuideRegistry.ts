@@ -120,26 +120,6 @@ export const sectionGuideRegistry: SectionGuideEntry[] = [
     ],
   },
   {
-    pathPrefix: "/whatsapp",
-    titleKey: "guides.whatsapp.title",
-    descriptionKey: "guides.whatsapp.description",
-    stepKeys: [
-      "guides.whatsapp.step1",
-      "guides.whatsapp.step2",
-      "guides.whatsapp.step3",
-    ],
-  },
-  {
-    pathPrefix: "/whatsapp-inbox",
-    titleKey: "guides.whatsapp.title",
-    descriptionKey: "guides.whatsapp.description",
-    stepKeys: [
-      "guides.whatsapp.step1",
-      "guides.whatsapp.step2",
-      "guides.whatsapp.step3",
-    ],
-  },
-  {
     pathPrefix: "/advertising",
     titleKey: "guides.advertising.title",
     descriptionKey: "guides.advertising.description",

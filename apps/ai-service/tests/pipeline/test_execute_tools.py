@@ -452,3 +452,51 @@ async def test_execute_tools_collects_image_response_attachment_when_model_omits
             "tool": "product.search",
         }
     ]
+
+
+@pytest.mark.asyncio
+async def test_execute_tools_uses_selected_agent_client_after_vision_tool_turn(monkeypatch):
+    class _Gateway:
+        async def execute(self, **_kwargs):
+            return {
+                "status": "success",
+                "result": {
+                    "results": [{"name": "Nova Street Sneakers", "price": 1350}],
+                    "searchType": "image_semantic",
+                },
+            }
+
+    monkeypatch.setattr("src.pipeline.stages.execute_tools.ToolGateway", _Gateway)
+
+    selected_client = MagicMock()
+    selected_client.get_response = AsyncMock(return_value=MagicMock(text="موجود يا فندم."))
+    vision_client = MagicMock()
+    vision_client.get_response = AsyncMock(side_effect=RuntimeError("vision client should not synthesize tool replies"))
+    agent = MagicMock(client=selected_client)
+    agent.get_tools.return_value = ["product_search"]
+
+    ctx = PipelineContext(
+        message="عندكم المنتج اللي في الصورة دي؟",
+        thread_id="thread-1",
+        company_id="comp1",
+        customer_id="cust1",
+        agent=agent,
+        llm_client=vision_client,
+        attachments=[{"type": "image", "url": "https://cdn.example.test/sneaker.jpg"}],
+    )
+    ctx.execution_plan = {
+        "deterministicReadExecution": {
+            "tool": "product.search",
+            "nativeName": "product.search",
+            "params": {"query": "shoe", "image_url": "https://cdn.example.test/sneaker.jpg"},
+        },
+        "deterministicActionExecution": None,
+        "plannedExecutions": [],
+    }
+    ctx.messages = [{"role": "user", "content": ctx.message}]
+
+    await execute_tools(ctx)
+
+    assert ctx.llm_response == "موجود يا فندم."
+    selected_client.get_response.assert_awaited_once()
+    vision_client.get_response.assert_not_called()

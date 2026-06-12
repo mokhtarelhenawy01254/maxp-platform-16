@@ -74,25 +74,25 @@ const PROMOTION_TABS: Array<{
   {
     value: "promotion",
     label: "الشحن المجاني",
-    description: "الحد الأدنى للطلب وسعر الشحن الموحد",
+    description: "الحد الأدنى وسعر موحد",
     icon: Truck,
   },
   {
     value: "volume-discounts",
     label: "خصومات الكميات",
-    description: "إدارة خصومات الكميات من الصفحة المخصصة",
+    description: "صفحة مخصصة للخصومات",
     icon: BadgePercent,
   },
   {
     value: "delivery-options",
     label: "خيارات التوصيل",
-    description: "أنواع التوصيل وسرعات التنفيذ",
+    description: "أنواع وسرعات التوصيل",
     icon: PackageCheck,
   },
   {
     value: "recommendations",
     label: "المنتجات المقترحة",
-    description: "روابط البيع الإضافي والاقتراحات",
+    description: "بيع إضافي واقتراحات",
     icon: Wand2,
   },
 ];
@@ -264,11 +264,6 @@ const PromotionSettings: React.FC = () => {
               ? `${flatShippingSettings.flatShippingFee} ج.م`
               : "غير مفعل",
           },
-          {
-            label: "المسار الحالي",
-            value: "/settings/promotion",
-            valueDir: "ltr",
-          },
         ]}
       />
 
@@ -391,6 +386,7 @@ const PromotionSettings: React.FC = () => {
                       id="freeShippingThreshold"
                       type="number"
                       min={0}
+                      max={100000}
                       step={10}
                       value={freeShippingSettings.freeShippingThreshold}
                       onChange={(event) =>
@@ -400,11 +396,18 @@ const PromotionSettings: React.FC = () => {
                             getNumericValue(event.target.value),
                         }))
                       }
-                      disabled={!freeShippingSettings.freeShippingEnabled}
-                      className="h-11 rounded-xl bg-white/90"
+                      readOnly={!freeShippingSettings.freeShippingEnabled}
+                      className={cn(
+                        "h-11 rounded-xl bg-white/90",
+                        !freeShippingSettings.freeShippingEnabled &&
+                          "bg-slate-50/50 cursor-not-allowed",
+                      )}
                     />
                     <p className="text-xs leading-5 text-slate-500">
                       المبلغ الذي يجب أن يصل له الطلب حتى تظهر ميزة الشحن المجاني.
+                      <span className="text-emerald-600 ml-1">
+                        (الحد الأقصى 100,000 جنيه)
+                      </span>
                     </p>
                   </div>
 
@@ -422,8 +425,12 @@ const PromotionSettings: React.FC = () => {
                           freeShippingMessage: event.target.value,
                         }))
                       }
-                      disabled={!freeShippingSettings.freeShippingEnabled}
-                      className="min-h-[132px] rounded-xl border-slate-200 bg-white/90 text-sm text-slate-950"
+                      readOnly={!freeShippingSettings.freeShippingEnabled}
+                      className={cn(
+                        "min-h-[132px] rounded-xl border-slate-200 bg-white/90 text-sm text-slate-950",
+                        !freeShippingSettings.freeShippingEnabled &&
+                          "bg-slate-50/50 cursor-not-allowed",
+                      )}
                     />
                     <p className="text-xs leading-5 text-slate-500">
                       استخدم <span className="font-semibold">{`{amount}`}</span>{" "}
@@ -444,12 +451,26 @@ const PromotionSettings: React.FC = () => {
                     معاينة الرسالة
                   </p>
                   <p className="mt-2 text-sm font-semibold leading-7 text-slate-900">
-                    {freeShippingSettings.freeShippingEnabled
-                      ? previewMessage
-                      : "فعّل الشحن المجاني أولًا لعرض المعاينة الحية للرسالة."}
+                    {previewMessage}
                   </p>
+                  {!freeShippingSettings.freeShippingEnabled && (
+                    <p className="mt-2 text-xs text-slate-500">
+                      ستظهر هذه الرسالة للعملاء عند تفعيل الشحن المجاني.
+                    </p>
+                  )}
                 </div>
             </SettingsSection>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-dashed border-slate-200/60" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-slate-50/65 text-slate-400 font-medium">
+                  إعدادات التسعير الموحد
+                </span>
+              </div>
+            </div>
 
             <SettingsSection
               icon={Truck}
@@ -511,6 +532,7 @@ const PromotionSettings: React.FC = () => {
                       id="flatShippingFee"
                       type="number"
                       min={0}
+                      max={10000}
                       step={5}
                       value={flatShippingSettings.flatShippingFee}
                       onChange={(event) =>
@@ -519,11 +541,18 @@ const PromotionSettings: React.FC = () => {
                           flatShippingFee: getNumericValue(event.target.value),
                         }))
                       }
-                      disabled={!flatShippingSettings.flatShippingEnabled}
-                      className="h-11 rounded-xl bg-white/90"
+                      readOnly={!flatShippingSettings.flatShippingEnabled}
+                      className={cn(
+                        "h-11 rounded-xl bg-white/90",
+                        !flatShippingSettings.flatShippingEnabled &&
+                          "bg-slate-50/50 cursor-not-allowed",
+                      )}
                     />
                     <p className="text-xs leading-5 text-slate-500">
                       السعر الذي سيظهر بنفس القيمة لكل العملاء داخل صفحة الدفع.
+                      <span className="text-sky-600 ml-1">
+                        (الحد الأقصى 10,000 جنيه)
+                      </span>
                     </p>
                   </div>
 

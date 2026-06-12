@@ -816,9 +816,11 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
     },
   ];
 
-  const enabledMethods = Array.isArray(sectionSettings?.enabledMethods)
+  const dbEnabledMethods = storefrontSettings?.storefront?.storefrontFeatures?.enabledPaymentMethods;
+  const themeEnabledMethods = Array.isArray(sectionSettings?.enabledMethods)
     ? (sectionSettings?.enabledMethods as string[])
     : [];
+  const enabledMethods = (dbEnabledMethods && dbEnabledMethods.length > 0 ? dbEnabledMethods : themeEnabledMethods) || [];
   const enabledIds: string[] =
     enabledMethods.length > 0 ? enabledMethods : ['cod'];
 

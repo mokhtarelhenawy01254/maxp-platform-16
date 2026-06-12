@@ -611,6 +611,8 @@ model StorefrontSettings {
   gtmTrackPageView                Boolean               @default(true)
   gtmSuppressPixels               Boolean               @default(false)
   designTokens                     Json?
+  enabledPaymentMethods            String                @default("[\"cod\"]")
+  paymentGatewayConfig             Json?
   facebookPixelConfigs             FacebookPixelConfig[]
   company                          Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
 

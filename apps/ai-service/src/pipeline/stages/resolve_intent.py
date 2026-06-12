@@ -26,6 +26,20 @@ def _available_tools(ctx: PipelineContext) -> list[str]:
     tools = list(getattr(agent, "tools", []) or [])
     if not tools and hasattr(agent, "get_tools"):
         tools = [{"name": name} for name in (agent.get_tools() or [])]
+    elif not tools and hasattr(agent, "_resolve_tools"):
+        try:
+            resolved = agent._resolve_tools()
+            tools = [{"name": t.name} for t in resolved]
+        except Exception:
+            pass
+
+    # Append skill tool names for agents that have skills
+    if agent and hasattr(agent, "allowed_skills") and agent.allowed_skills:
+        from src.skills.integration import get_skill_tool_names
+        existing = {_tool_name(t) for t in tools}
+        for st_name in get_skill_tool_names():
+            if st_name not in existing:
+                tools.append({"name": st_name})
 
     ctx.native_tools = tools
     return [name for tool in tools if (name := _tool_name(tool))]

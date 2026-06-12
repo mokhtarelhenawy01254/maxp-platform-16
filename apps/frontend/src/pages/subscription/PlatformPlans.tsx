@@ -11,6 +11,10 @@ import {
   MessageSquare,
   TrendingUp,
   Shield,
+  CreditCard,
+  Wallet,
+  X,
+  Loader2,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
@@ -68,6 +72,11 @@ export default function PlatformPlans() {
   const [loading, setLoading] = useState(true);
   const [currentPlan, setCurrentPlan] = useState<string>("BASIC");
   const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [checkingOut, setCheckingOut] = useState<string | null>(null);
+
+  // Payment method modal
+  const [selectedPlan, setSelectedPlan] = useState<PlanLimit | null>(null);
+  const [showPayModal, setShowPayModal] = useState(false);
 
   useEffect(() => {
     fetchPlans();
@@ -111,30 +120,70 @@ export default function PlatformPlans() {
     } catch {}
   };
 
-  const handleUpgrade = async (planName: string) => {
+  // Open payment method modal
+  const handleSelectPlan = (plan: PlanLimit) => {
     const token = tokenManager.getAccessToken();
     if (!token) {
       toast.error("يرجى تسجيل الدخول أولاً");
       navigate("/auth/login");
       return;
     }
-
-    if (planName === currentPlan) {
+    if (plan.plan === currentPlan) {
       toast.error("أنت مشترك بالفعل في هذه الخطة");
       return;
     }
+    setSelectedPlan(plan);
+    setShowPayModal(true);
+  };
+
+  // Option A: Pay via Kashier (card/wallet redirect)
+  const handleKashierCheckout = async () => {
+    if (!selectedPlan) return;
+    const token = tokenManager.getAccessToken();
+    if (!token) return;
 
     try {
-      setUpgrading(planName);
+      setCheckingOut(selectedPlan.plan);
+      const response = await axios.post(
+        buildApiUrl("platform-subscription/checkout"),
+        { newPlan: selectedPlan.plan },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      if (response.data.success && response.data.data?.sessionUrl) {
+        toast.success("جاري تحويلك لبوابة الدفع...");
+        window.location.href = response.data.data.sessionUrl;
+      } else {
+        toast.error("فشل إنشاء جلسة الدفع");
+      }
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "خطأ في الاتصال ببوابة الدفع",
+      );
+    } finally {
+      setCheckingOut(null);
+      setShowPayModal(false);
+    }
+  };
+
+  // Option B: Immediate upgrade (balance deduction / admin)
+  const handleDirectUpgrade = async () => {
+    if (!selectedPlan) return;
+    const token = tokenManager.getAccessToken();
+    if (!token) return;
+
+    try {
+      setUpgrading(selectedPlan.plan);
       const response = await axios.post(
         buildApiUrl("platform-subscription/upgrade"),
-        { newPlan: planName },
+        { newPlan: selectedPlan.plan },
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
       if (response.data.success) {
         toast.success("تم ترقية الخطة بنجاح!");
-        setCurrentPlan(planName);
+        setCurrentPlan(selectedPlan.plan);
+        setShowPayModal(false);
         fetchCurrentSubscription();
       }
     } catch (error: any) {
@@ -191,7 +240,6 @@ export default function PlatformPlans() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {plans.map((plan) => {
             const isCurrentPlan = plan.plan === currentPlan;
-            const isUpgrading = upgrading === plan.plan;
 
             return (
               <div
@@ -274,21 +322,22 @@ export default function PlatformPlans() {
 
                   {/* Action Button */}
                   <button
-                    onClick={() => handleUpgrade(plan.plan)}
-                    disabled={isCurrentPlan || isUpgrading}
-                    className={`w-full mt-6 py-3 px-6 rounded-xl font-semibold transition-colors ${
+                    onClick={() => handleSelectPlan(plan)}
+                    disabled={isCurrentPlan}
+                    className={`w-full mt-6 py-3 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
                       isCurrentPlan
                         ? "bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed"
-                        : isUpgrading
-                          ? "bg-blue-400 text-white cursor-wait"
-                          : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+                        : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg shadow-blue-500/20"
                     }`}
                   >
-                    {isCurrentPlan
-                      ? "الخطة الحالية"
-                      : isUpgrading
-                        ? "جاري الترقية..."
-                        : "ترقية الآن"}
+                    {isCurrentPlan ? (
+                      "الخطة الحالية"
+                    ) : (
+                      <>
+                        <CreditCard size={18} />
+                        اشترك الآن
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -356,6 +405,96 @@ export default function PlatformPlans() {
           </div>
         </div>
       </div>
+
+      {/* Payment Method Modal */}
+      {showPayModal && selectedPlan && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                  اختر طريقة الدفع
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  الاشتراك في{" "}
+                  <span className="font-semibold text-blue-600">
+                    {selectedPlan.plan === "BASIC" && "الخطة الأساسية"}
+                    {selectedPlan.plan === "PRO" && "الخطة الاحترافية"}
+                    {selectedPlan.plan === "ENTERPRISE" && "خطة المؤسسات"}
+                  </span>{" "}
+                  مقابل{" "}
+                  <span className="font-bold text-gray-900 dark:text-white">
+                    {selectedPlan.monthlyFee} ج/شهر
+                  </span>
+                </p>
+              </div>
+              <button
+                onClick={() => setShowPayModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Payment Options */}
+            <div className="space-y-3">
+              {/* Kashier Card/Wallet */}
+              <button
+                onClick={handleKashierCheckout}
+                disabled={!!checkingOut || !!upgrading}
+                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all disabled:opacity-60 text-right"
+              >
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex-shrink-0">
+                  {checkingOut === selectedPlan.plan ? (
+                    <Loader2 size={24} className="text-blue-600 animate-spin" />
+                  ) : (
+                    <CreditCard size={24} className="text-blue-600" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-gray-900 dark:text-white">
+                    دفع بالبطاقة البنكية أو المحفظة
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    Visa / Mastercard / Fawry — عبر بوابة كاشير الآمنة
+                  </div>
+                </div>
+                <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full font-semibold">
+                  مباشر
+                </span>
+              </button>
+
+              {/* Wallet Balance / Admin Override */}
+              <button
+                onClick={handleDirectUpgrade}
+                disabled={!!upgrading || !!checkingOut}
+                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all disabled:opacity-60 text-right"
+              >
+                <div className="p-2 bg-gray-100 dark:bg-gray-600 rounded-lg flex-shrink-0">
+                  {upgrading === selectedPlan.plan ? (
+                    <Loader2 size={24} className="text-gray-600 animate-spin" />
+                  ) : (
+                    <Wallet size={24} className="text-gray-600 dark:text-gray-300" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-gray-900 dark:text-white">
+                    خصم من رصيد المنصة
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    ترقية فورية من رصيدك المتاح لدى MaxP
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            <p className="text-xs text-center text-gray-400 dark:text-gray-500 mt-5">
+              🔒 جميع معاملاتك محمية ومشفرة بالكامل
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

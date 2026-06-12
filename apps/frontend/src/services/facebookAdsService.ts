@@ -639,7 +639,6 @@ export interface FacebookAdsBudgetAlertLog {
   observedValue?: number | null;
   currency: string;
   recipientPhone: string;
-  whatsappNotificationLogId?: string | null;
   status: "SENT" | "FAILED" | "PENDING" | "SKIPPED" | string;
   message?: string | null;
   failureReason?: string | null;
@@ -1166,7 +1165,6 @@ export const CALL_TO_ACTION_TYPES = [
   { value: "SUBSCRIBE", label: "اشترك" },
   { value: "GET_OFFER", label: "احصل على العرض" },
   { value: "SEND_MESSAGE", label: "أرسل رسالة" },
-  { value: "WHATSAPP_MESSAGE", label: "راسلنا على واتساب" },
   { value: "CALL_NOW", label: "اتصل الآن" },
   { value: "APPLY_NOW", label: "قدم الآن" },
   { value: "BUY_NOW", label: "اشتري الآن" },

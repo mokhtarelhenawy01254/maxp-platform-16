@@ -1,7 +1,6 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const agentProvisioningService = require('../legacy-ai-agent/aiAgent/agentProvisioningService');
 const agentManagerService = require('../legacy-ai-agent/aiAgent/agentManagerService');
-const aiRuntimeService = require('../legacy-ai-agent/aiAgent/aiRuntimeService');
 const CEOAgent = require('../legacy-ai-agent/aiAgent/CEOAgent');
 const BaseAgent = require('../legacy-ai-agent/aiAgent/BaseAgent');
 const workingMemoryService = require('../legacy-ai-agent/aiAgent/workingMemoryService');
@@ -651,7 +650,7 @@ async function createSandboxRuntimeAgent(companyId, agentId, modelSelection) {
       || agentProfileLoaderService.getTemplateSlugForRole(runtimeAgent.role);
     sandboxAgent = BaseAgent.fromTemplate(templateSlug, companyId, agentConfig);
   }
-  sandboxAgent.setModelManager(aiRuntimeService.getModelManager());
+  sandboxAgent.setModelManager(null);
 
   // Sync runtime agent tools with sandbox-enforced canonical scope
   // so the UI inspector shows the true allowed tool set.

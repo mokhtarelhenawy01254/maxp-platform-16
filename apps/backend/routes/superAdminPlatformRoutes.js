@@ -5,6 +5,7 @@ const platformSiteHomepageController = require('../controller/platformSiteHomepa
 const platformSignupCouponController = require('../controller/platformSignupCouponController');
 const platformSiteMetaPixelController = require('../controller/platformSiteMetaPixelController');
 const platformOnboardingController = require('../controller/platformOnboardingController');
+const superAdminSettingsController = require('../controller/superAdminSettingsController');
 const { authenticateToken, requireSuperAdmin } = require('../middleware/superAdminMiddleware');
 const platformValidator = require('../middleware/superAdminPlatformValidation');
 
@@ -96,5 +97,10 @@ router.put(
   platformValidator.validate,
   superAdminPlatformController.updatePlanLimit
 );
+
+// Platform Central Settings
+router.get('/settings/kashier', superAdminSettingsController.getKashierSettings);
+router.put('/settings/kashier', superAdminSettingsController.updateKashierSettings);
+router.post('/settings/kashier/test-connection', superAdminSettingsController.testKashierConnection);
 
 module.exports = router;

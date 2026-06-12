@@ -12,7 +12,6 @@ const {
   serializeCompanySettings,
 } = require('../utils/companyOnboarding');
 const { recordCompanyFunnelEvent } = require('../utils/companyFunnelAnalytics');
-const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 const { getJwtSecret, getJwtRefreshSecret } = require('../utils/jwtSecret');
 const businessSpecialtyService = require('../services/businessSpecialtyService');
 const normalizeEmail = (value = '') => value.trim().toLowerCase();
@@ -338,54 +337,6 @@ const register = async (req, res) => {
       getJwtRefreshSecret(),
       { expiresIn: '7d' }
     );
-
-    const notificationTasks = [];
-
-    if (phone) {
-      notificationTasks.push(
-        WhatsAppNotificationService.sendNewSignupWelcomeNotification({
-          companyId: company.id,
-          recipientPhone: phone,
-          recipientName: `${firstName} ${lastName}`.trim(),
-          email: normalizedEmail,
-          signupType: 'platform_signup',
-          companyName: company.name,
-          deliveryStrategy: 'platform-only'
-        })
-      );
-    }
-
-    notificationTasks.push(
-      WhatsAppNotificationService.sendNewSignupAdminAlertNotification({
-        companyId: company.id,
-        recipientName: `${firstName} ${lastName}`.trim(),
-        recipientPhone: phone || '',
-        email: normalizedEmail,
-        signupType: 'platform_signup',
-        companyName: company.name,
-        audience: 'super-admins',
-        deliveryStrategy: 'platform-only'
-      })
-    );
-
-    if (phone && appliedSignupCoupon?.benefitSummary) {
-      notificationTasks.push(
-        WhatsAppNotificationService.sendBenefitGrantedNotification({
-          companyId: company.id,
-          recipientPhone: phone,
-          recipientName: `${firstName} ${lastName}`.trim(),
-          companyName: company.name,
-          benefitTitle: 'مزايا التسجيل',
-          benefitSummary: appliedSignupCoupon.benefitSummary,
-          couponCode: appliedSignupCoupon.code || '',
-          deliveryStrategy: 'platform-only'
-        })
-      );
-    }
-
-    Promise.allSettled(notificationTasks).catch((notificationError) => {
-      console.error('[REGISTER] Failed to queue WhatsApp registration notifications:', notificationError);
-    });
 
     const responseCompany = buildCompanyResponseWithOnboarding(
       {

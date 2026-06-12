@@ -160,6 +160,142 @@
       font-family: inherit;
       letter-spacing: 0;
     }
+
+    /* Storefront initial skeleton styles */
+    #initial-loading.storefront-loading {
+      display: block;
+      background-color: #ffffff;
+      color: #111827;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      padding: 0;
+      margin: 0;
+    }
+
+    .storefront-loading .skeleton-pulse {
+      animation: skeleton-pulse-anim 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      background-color: #f3f4f6;
+    }
+
+    @keyframes skeleton-pulse-anim {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: .4;
+      }
+    }
+
+    .storefront-loading .skeleton-header {
+      height: 80px;
+      width: 100%;
+      border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      box-sizing: border-box;
+    }
+
+    .storefront-loading .skeleton-logo {
+      height: 32px;
+      width: 120px;
+      border-radius: 4px;
+    }
+
+    .storefront-loading .skeleton-nav {
+      display: none;
+      gap: 16px;
+    }
+
+    @media (min-width: 768px) {
+      .storefront-loading .skeleton-nav {
+        display: flex;
+      }
+    }
+
+    .storefront-loading .skeleton-nav-item {
+      height: 16px;
+      width: 64px;
+      border-radius: 4px;
+    }
+
+    .storefront-loading .skeleton-actions {
+      display: flex;
+      gap: 16px;
+    }
+
+    .storefront-loading .skeleton-icon {
+      height: 32px;
+      width: 32px;
+      border-radius: 50%;
+    }
+
+    .storefront-loading .skeleton-main {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 80px);
+      overflow: hidden;
+    }
+
+    .storefront-loading .skeleton-hero {
+      height: 35vh;
+      min-height: 250px;
+      width: 100%;
+    }
+
+    .storefront-loading .skeleton-container {
+      padding: 32px 24px;
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+      box-sizing: border-box;
+    }
+
+    .storefront-loading .skeleton-title {
+      height: 24px;
+      width: 180px;
+      border-radius: 4px;
+      margin-bottom: 24px;
+    }
+
+    .storefront-loading .skeleton-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    @media (min-width: 768px) {
+      .storefront-loading .skeleton-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+      }
+    }
+
+    .storefront-loading .skeleton-card {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .storefront-loading .skeleton-card-media {
+      aspect-ratio: 3/4;
+      width: 100%;
+      border-radius: 8px;
+    }
+
+    .storefront-loading .skeleton-card-title {
+      height: 16px;
+      width: 75%;
+      border-radius: 4px;
+    }
+
+    .storefront-loading .skeleton-card-price {
+      height: 16px;
+      width: 50%;
+      border-radius: 4px;
+    }
   </style>
 </head>
 
@@ -173,6 +309,94 @@
     <div class="text">جاري التحميل...</div>
   </div>
 
+  <script>
+    (function () {
+      var hostname = window.location.hostname;
+      var pathname = window.location.pathname || "/";
+      var isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+      
+      var isStorefront = false;
+      if (
+        pathname === "/store" ||
+        pathname.indexOf("/store/") === 0 ||
+        pathname.indexOf("/product/") === 0 ||
+        pathname.indexOf("/products/") === 0 ||
+        pathname.indexOf("/shop/") === 0 ||
+        pathname.indexOf("/cart") === 0 ||
+        pathname.indexOf("/checkout") === 0 ||
+        pathname.indexOf("/thank-you") === 0 ||
+        pathname.indexOf("/collections/") === 0 ||
+        pathname.indexOf("/pages/") === 0
+      ) {
+        isStorefront = true;
+      } else if (
+        pathname === "/register/affiliate" ||
+        pathname === "/register/merchant" ||
+        pathname.indexOf("/affiliate-register") === 0
+      ) {
+        isStorefront = false;
+      } else if (isLocalhost) {
+        isStorefront = false;
+      } else if (hostname.slice(-10) === ".localhost") {
+        isStorefront = true;
+      } else {
+        var parts = hostname.split(".");
+        if (parts.length >= 3 && parts[0] !== "www") {
+          isStorefront = true;
+        }
+      }
+
+      if (isStorefront) {
+        var loadingEl = document.getElementById("initial-loading");
+        if (loadingEl) {
+          loadingEl.className = "storefront-loading";
+          loadingEl.innerHTML = `
+            <header class="skeleton-header">
+              <div class="skeleton-logo skeleton-pulse"></div>
+              <div class="skeleton-nav">
+                <div class="skeleton-nav-item skeleton-pulse"></div>
+                <div class="skeleton-nav-item skeleton-pulse"></div>
+                <div class="skeleton-nav-item skeleton-pulse"></div>
+              </div>
+              <div class="skeleton-actions">
+                <div class="skeleton-icon skeleton-pulse"></div>
+                <div class="skeleton-icon skeleton-pulse"></div>
+              </div>
+            </header>
+            <main class="skeleton-main">
+              <div class="skeleton-hero skeleton-pulse"></div>
+              <div class="skeleton-container">
+                <div class="skeleton-title skeleton-pulse"></div>
+                <div class="skeleton-grid">
+                  <div class="skeleton-card">
+                    <div class="skeleton-card-media skeleton-pulse"></div>
+                    <div class="skeleton-card-title skeleton-pulse"></div>
+                    <div class="skeleton-card-price skeleton-pulse"></div>
+                  </div>
+                  <div class="skeleton-card">
+                    <div class="skeleton-card-media skeleton-pulse"></div>
+                    <div class="skeleton-card-title skeleton-pulse"></div>
+                    <div class="skeleton-card-price skeleton-pulse"></div>
+                  </div>
+                  <div class="skeleton-card">
+                    <div class="skeleton-card-media skeleton-pulse"></div>
+                    <div class="skeleton-card-title skeleton-pulse"></div>
+                    <div class="skeleton-card-price skeleton-pulse"></div>
+                  </div>
+                  <div class="skeleton-card">
+                    <div class="skeleton-card-media skeleton-pulse"></div>
+                    <div class="skeleton-card-title skeleton-pulse"></div>
+                    <div class="skeleton-card-price skeleton-pulse"></div>
+                  </div>
+                </div>
+              </div>
+            </main>
+          `;
+        }
+      }
+    })();
+  </script>
+
   <!-- React app root -->
   <div id="root"></div>
 
@@ -183,10 +407,165 @@
     This avoids loading all 11 Google Fonts for every store visit.
   -->
 
+  <script id="maxp-early-chunk-recovery">
+    (function () {
+      var RECOVERY_ATTEMPT_KEY = "maxp:chunk-load-recovery:last-attempt";
+      var RECOVERY_SOURCE_KEY = "maxp:chunk-load-recovery:last-source";
+      var RECOVERY_GUARD_WINDOW_MS = 15000;
+      var RECOVERY_QUERY_KEY = "__maxp_cache_recovery";
+      var CHUNK_LOAD_ERROR_PATTERNS = [
+        "failed to fetch dynamically imported module",
+        "error loading dynamically imported module",
+        "importing a module script failed",
+        "failed to load module script",
+        "unable to preload css",
+        "loading chunk",
+        "chunkloaderror",
+        "vite:preloaderror",
+        "err_cache_read_failure",
+        "node_modules/.vite/deps/chunk-"
+      ];
+
+      var stringifyError = function (error) {
+        if (!error) {
+          return "";
+        }
+
+        if (typeof error === "string") {
+          return error;
+        }
+
+        if (error instanceof Error) {
+          return [error.name, error.message, error.stack].filter(Boolean).join(" ");
+        }
+
+        if (typeof error === "object") {
+          return [
+            "name" in error ? String(error.name) : "",
+            "message" in error ? String(error.message) : "",
+            "type" in error ? String(error.type) : ""
+          ].filter(Boolean).join(" ");
+        }
+
+        return String(error);
+      };
+
+      var isChunkLoadError = function (error) {
+        var normalizedMessage = stringifyError(error).toLowerCase();
+
+        return CHUNK_LOAD_ERROR_PATTERNS.some(function (pattern) {
+          return normalizedMessage.indexOf(pattern) !== -1;
+        });
+      };
+
+      var getRecentAttempt = function (now) {
+        try {
+          var lastAttempt = window.sessionStorage.getItem(RECOVERY_ATTEMPT_KEY);
+          var lastAttemptAt = lastAttempt ? Number(lastAttempt) : 0;
+
+          return (
+            Number.isFinite(lastAttemptAt) &&
+            now - lastAttemptAt < RECOVERY_GUARD_WINDOW_MS
+          );
+        } catch (_error) {
+          return false;
+        }
+      };
+
+      var markRecoveryAttempt = function (source, now) {
+        try {
+          window.sessionStorage.setItem(RECOVERY_ATTEMPT_KEY, String(now));
+          window.sessionStorage.setItem(RECOVERY_SOURCE_KEY, source);
+        } catch (_error) {
+          // Storage can be unavailable in private or locked-down browsers.
+        }
+      };
+
+      var resolveFailedResourceUrl = function (event, error) {
+        var target = event && event.target;
+        var directUrl = target && (target.src || target.href);
+
+        if (directUrl) {
+          return directUrl;
+        }
+
+        var match = stringifyError(error).match(/https?:\/\/[^\s"')]+/);
+        return match ? match[0] : "";
+      };
+
+      var refreshFailedResource = function (failedResourceUrl) {
+        if (!failedResourceUrl || typeof window.fetch !== "function") {
+          return Promise.resolve();
+        }
+
+        try {
+          var url = new URL(failedResourceUrl, window.location.href);
+
+          if (url.origin !== window.location.origin) {
+            return Promise.resolve();
+          }
+
+          return window.fetch(url.href, { cache: "reload" }).catch(function () {
+            return undefined;
+          });
+        } catch (_error) {
+          return Promise.resolve();
+        }
+      };
+
+      var reloadWithCacheBust = function () {
+        var url = new URL(window.location.href);
+        url.searchParams.set(RECOVERY_QUERY_KEY, String(Date.now()));
+        window.location.replace(url.toString());
+      };
+
+      var recoverFromChunkLoadError = function (source, error, event) {
+        var failedResourceUrl = resolveFailedResourceUrl(event, error);
+        var recoverySignal = [stringifyError(error), failedResourceUrl].join(" ");
+
+        if (!isChunkLoadError(recoverySignal)) {
+          return false;
+        }
+
+        var now = Date.now();
+
+        if (getRecentAttempt(now)) {
+          return false;
+        }
+
+        markRecoveryAttempt("early-" + source, now);
+        refreshFailedResource(failedResourceUrl).finally(function () {
+          window.setTimeout(reloadWithCacheBust, 0);
+        });
+
+        return true;
+      };
+
+      window.addEventListener("error", function (event) {
+        if (recoverFromChunkLoadError("error", event.error || event.message, event)) {
+          event.preventDefault();
+        }
+      }, true);
+
+      window.addEventListener("unhandledrejection", function (event) {
+        if (recoverFromChunkLoadError("unhandled-rejection", event.reason, event)) {
+          event.preventDefault();
+        }
+      });
+
+      window.addEventListener("vite:preloadError", function (event) {
+        var error = event.payload || event.reason || event.error || event.detail || event.message;
+
+        if (recoverFromChunkLoadError("vite-preload", error, event)) {
+          event.preventDefault();
+        }
+      });
+    })();
+  </script>
+
   <!-- Module script will be injected by Vite -->
   <script type="module" src="/src/main.tsx"></script>
 
 </body>
 
 </html>
-

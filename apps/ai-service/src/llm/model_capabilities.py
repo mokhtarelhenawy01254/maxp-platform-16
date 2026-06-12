@@ -12,6 +12,24 @@ class ModelRoute:
     reason: str
 
 
+DEFAULT_VISION_PROVIDER = "GOOGLE"
+DEFAULT_VISION_MODEL = "gemini-2.5-flash"
+
+DEFAULT_PROVIDER_MODELS = {
+    "GOOGLE": DEFAULT_VISION_MODEL,
+    "GROQ": "llama-3.3-70b-versatile",
+    "OPENROUTER": "openrouter/auto",
+    "DEEPSEEK": "deepseek-chat",
+    "NVIDIA": "openai/gpt-oss-120b",
+    "OLLAMA": "llama3",
+}
+
+
+def default_model_for_provider(provider: str | None) -> str:
+    provider_name = str(provider or DEFAULT_VISION_PROVIDER).strip().upper()
+    return DEFAULT_PROVIDER_MODELS.get(provider_name, DEFAULT_VISION_MODEL)
+
+
 def supports_vision(model: str | None, provider: str | None = None) -> bool:
     name = str(model or "").strip().lower()
     provider_name = str(provider or "").strip().upper()

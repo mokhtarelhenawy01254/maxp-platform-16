@@ -32,7 +32,6 @@
     "order.create_draft",
     "order.create_confirmed",
     "discount.create_draft",
-    "whatsapp.send",
     "agent.handoff"
   ],
   "allowedSkills": [
@@ -41,12 +40,12 @@
     "facebook-sales-conversion",
     "discount-proposal"
   ],
-  "channels": ["dashboard", "whatsapp", "messenger"],
+  "channels": ["dashboard", "messenger"],
   "humanApproval": {
     "mode": "ON_WRITE",
     "requiredTools": ["order.create_draft", "order.create_confirmed"],
     "approvalCode": true,
-    "merchantChannels": ["DASHBOARD", "WHATSAPP"]
+    "merchantChannels": ["DASHBOARD"]
   },
   "budget": {
     "dailyUsd": 2,

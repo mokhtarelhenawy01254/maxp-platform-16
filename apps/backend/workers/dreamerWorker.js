@@ -5,7 +5,7 @@
  */
 
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const aiRuntimeService = require('../legacy-ai-agent/aiAgent/aiRuntimeService');
+const aiSdkClient = require('../services/aiSdkClient');
 
 class DreamerWorker {
   constructor({ batchSize = 10 } = {}) {
@@ -134,14 +134,11 @@ class DreamerWorker {
     if (conversations.length === 0) return result;
 
     const prisma = this._getPrisma();
-    const modelManager = aiRuntimeService.getModelManager();
 
-    // 1. Get active AI Key info for routing consolidation LLM requests
-    const keyInfo = await modelManager.getNextKeySimple(companyId).catch(() => null);
-
+    // 1. Fetch messages for all conversations, filter empties
+    const payloads = [];
     for (const conv of conversations) {
       try {
-        // Fetch raw messages from db
         const messages = await prisma.message.findMany({
           where: { conversationId: conv.id },
           orderBy: { createdAt: 'asc' },
@@ -149,7 +146,6 @@ class DreamerWorker {
         });
 
         if (messages.length === 0) {
-          // Update metadata to show processed
           const existingMeta = conv.metadata ? (typeof conv.metadata === 'string' ? JSON.parse(conv.metadata) : conv.metadata) : {};
           await prisma.conversation.update({
             where: { id: conv.id },
@@ -159,97 +155,60 @@ class DreamerWorker {
           continue;
         }
 
+        payloads.push({
+          conv,
+          messages,
+          conversation_id: conv.id,
+          messages_payload: messages.map(m => ({
+            content: m.content,
+            is_from_customer: m.isFromCustomer,
+          })),
+        });
+      } catch (error) {
+        result.errors.push(`Conv ${conv.id}: ${error.message}`);
+      }
+    }
+
+    if (payloads.length === 0) return result;
+
+    // 2. Send all non-empty conversations to Python ai-service for LLM consolidation
+    let pythonResultsMap = new Map();
+    try {
+      const pyResponse = await aiSdkClient.consolidateDreamer({
+        companyId,
+        conversations: payloads.map(p => ({
+          conversation_id: p.conversation_id,
+          messages: p.messages_payload,
+        })),
+        consolidationType: 'fact_extraction',
+      });
+      if (pyResponse.results) {
+        for (const r of pyResponse.results) {
+          pythonResultsMap.set(r.conversation_id, r);
+        }
+      }
+    } catch (pyError) {
+      console.warn('[DreamerWorker] AI consolidation failed, falling back to heuristics:', pyError.message);
+    }
+
+    // 3. Process each conversation with Python results or deterministic fallback
+    for (const { conv, messages } of payloads) {
+      try {
         let facts = [];
         let summaryData = null;
         let usedLLM = false;
 
-        // Try utilizing AI Provider for memory consolidation
-        if (keyInfo && !keyInfo.error) {
-          try {
-            const AIProviderFactory = require('../legacy-ai-agent/aiAgent/providers/AIProviderFactory');
-            const providerClient = AIProviderFactory.getProvider(
-              keyInfo.provider,
-              keyInfo.apiKey,
-              keyInfo.baseUrl,
-              keyInfo.keyId
-            );
-
-            const messagesText = messages.map(m => `${m.isFromCustomer ? 'Customer' : 'Agent'}: ${m.content}`).join('\n');
-            const prompt = `You are the Dreamer background consolidation worker for an AI storefront agent.
-Review the following conversation history between the Customer and the Agent:
----
-${messagesText}
----
-
-Your task is to:
-1. Extract any concrete, explicit facts or long-term preferences about the customer (e.g. name, location, sizing preferences, preferred colors, interests, allergies).
-2. Generate a concise summary of the conversation (max 2 sentences).
-3. Identify the key topics discussed.
-4. Classify the customer's sentiment (POSITIVE, NEGATIVE, or NEUTRAL).
-
-Provide your output in valid JSON format only, matching this schema:
-{
-  "facts": [
-    {
-      "type": "FACT" | "PREFERENCE",
-      "content": "Specific factual detail (e.g. Customer name is Mokhtar)",
-      "confidence": 0.0 to 1.0,
-      "metadata": {
-        "source": "EXPLICIT_CHAT",
-        "field": "name" | "size" | "color" | "interest" | "other"
-      }
-    }
-  ],
-  "summary": "Short 1-2 sentence summary of interaction",
-  "keyTopics": ["topic1", "topic2"],
-  "sentiment": "POSITIVE" | "NEGATIVE" | "NEUTRAL"
-}
-Do not return any extra text, only the raw JSON.`;
-
-            const startedAt = Date.now();
-            const providerResult = await providerClient.generateResponse(prompt, {
-              model: keyInfo.model,
-              temperature: 0.2,
-              max_tokens: 500,
-              maxOutputTokens: 500
-            });
-
-            const reply = providerResult.text ? providerResult.text() : providerResult.content;
-            const latencyMs = Date.now() - startedAt;
-
-            // Extract JSON from reply
-            let jsonText = reply.trim();
-            if (jsonText.includes('```')) {
-              const matches = jsonText.match(/```(?:json)?([\s\S]+?)```/);
-              if (matches && matches[1]) {
-                jsonText = matches[1].trim();
-              }
-            }
-
-            const parsed = JSON.parse(jsonText);
-            if (parsed) {
-              facts = parsed.facts || [];
-              summaryData = {
-                summary: parsed.summary || '',
-                keyTopics: parsed.keyTopics || [],
-                sentiment: parsed.sentiment || 'NEUTRAL'
-              };
-              usedLLM = true;
-
-              // Record routing success in system metrics
-              await modelManager.recordRoutingSuccess(keyInfo, {
-                companyId,
-                model: keyInfo.model,
-                tokens: providerResult.usage?.totalTokens || 0,
-                latencyMs
-              }).catch(() => {});
-            }
-          } catch (llmError) {
-            console.warn('[DreamerWorker] AI consolidation failed, falling back to heuristics:', llmError.message);
-          }
+        const pyResult = pythonResultsMap.get(conv.id);
+        if (pyResult && pyResult.facts) {
+          facts = pyResult.facts || [];
+          summaryData = {
+            summary: pyResult.summary || '',
+            keyTopics: pyResult.keyTopics || [],
+            sentiment: pyResult.sentiment || 'NEUTRAL'
+          };
+          usedLLM = true;
         }
 
-        // Fallback to deterministic regex-based parser
         if (!usedLLM) {
           facts = this.extractFactsFromConversation({ messages });
           summaryData = this.generateConversationSummary(messages);

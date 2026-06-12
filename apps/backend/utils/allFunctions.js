@@ -1971,25 +1971,53 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
         setImmediate(async () => {
           try {
             console.log(`🤖 [AI-AUTOREPLY] Triggered AI auto-reply check for customer: ${customer.id}`);
-            const aiMessageProcessor = require('../legacy-ai-agent/aiAgent/aiMessageProcessor');
-            
-            // 1. Process the message through AI
-            const replyText = await aiMessageProcessor.processMessage({
+
+            // 1. Gate check: AI settings and working hours
+            const { getSharedPrismaClient } = require('../services/sharedDatabase');
+            const prisma = getSharedPrismaClient();
+            const aiSetting = await prisma.aiSetting.findUnique({ where: { companyId: customer.companyId } });
+            if (!aiSetting?.autoReplyEnabled) { console.log('🤖 [AI-AUTOREPLY] AI auto-reply disabled for company'); return; }
+            if (aiSetting.workingHoursEnabled && aiSetting.workingHours) {
+              try {
+                const hours = JSON.parse(typeof aiSetting.workingHours === 'string' ? aiSetting.workingHours : '{}');
+                const now = new Date();
+                const dayName = now.toLocaleString('en', { weekday: 'long', timeZone: 'Africa/Cairo' }).toLowerCase();
+                const today = hours[dayName];
+                if (today && !today.enabled) { console.log('🤖 [AI-AUTOREPLY] Outside working hours (day disabled)'); return; }
+                if (today && today.start && today.end) {
+                  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                  const [startH, startM] = today.start.split(':').map(Number);
+                  const [endH, endM] = today.end.split(':').map(Number);
+                  const startMin = startH * 60 + startM;
+                  const endMin = endH * 60 + endM;
+                  if (currentMinutes < startMin || currentMinutes > endMin) { console.log('🤖 [AI-AUTOREPLY] Outside working hours (time)'); return; }
+                }
+              } catch(e) { /* continue if parsing fails */ }
+            }
+
+            // 2. Process the message through Python AI service
+            const aiSdkClient = require('../services/aiSdkClient');
+            const workingMemoryService = require('../legacy-ai-agent/aiAgent/workingMemoryService');
+
+            const convKey = conversation.id;
+            await workingMemoryService.addMessage(customer.companyId, convKey, { role: 'user', content: aiCustomerContent });
+            const memoryContext = await workingMemoryService.getContext(customer.companyId, convKey);
+
+            const result = await aiSdkClient.sendChatMessage({
               companyId: customer.companyId,
-              sessionId: messagePageId, // Page ID acts as the session ID
-              conversationId: conversation.id,
               customerId: customer.id,
-              remoteJid: senderId,
-              content: aiCustomerContent,
-              channel: 'FACEBOOK'
+              message: aiCustomerContent,
+              threadId: conversation.id,
+              channel: 'FACEBOOK',
+              memoryContext
             });
+
+            const replyText = result.reply;
 
             if (replyText) {
               console.log(`🤖 [AI-AUTOREPLY] AI generated response: "${replyText.substring(0, 50)}..."`);
 
-              // 2. Save the AI reply message in the database (instant save)
-              const { getSharedPrismaClient } = require('../services/sharedDatabase');
-              const prisma = getSharedPrismaClient();
+              // 3. Save the AI reply message in the database (instant save)
               const replyId = require('crypto').randomUUID();
               
               const savedReply = await safeQuery(async () => {
@@ -2016,7 +2044,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
 
               console.log(`💾 [AI-AUTOREPLY] AI reply saved to DB: ${savedReply.id}`);
 
-              // 3. Emit the AI reply message to the company room via Socket.IO
+              // 4. Emit the AI reply message to the company room via Socket.IO
               const socketService = require('../services/socketService');
               const io = socketService.getIO();
               if (io) {
@@ -2043,7 +2071,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                 console.log(`⚡ [AI-AUTOREPLY] AI reply emitted to company socket room`);
               }
 
-              // 4. Update the conversation metadata and preview
+              // 5. Update the conversation metadata and preview
               await safeQuery(async () => {
                 return await prisma.conversation.update({
                   where: { id: conversation.id },
@@ -2057,7 +2085,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                 });
               }, 3);
 
-              // 5. Send the reply physically to Facebook Messenger
+              // 6. Send the reply physically to Facebook Messenger
               const latestPageData = await getPageToken(messagePageId);
               const accessToken = latestPageData?.pageAccessToken || pageData?.pageAccessToken;
               
@@ -2089,7 +2117,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                 console.error(`❌ [AI-AUTOREPLY] Missing Facebook Page Access Token for page: ${messagePageId}`);
               }
             } else {
-              console.log(`🤖 [AI-AUTOREPLY] AI processor decided not to reply (skipped or disabled).`);
+              console.log(`🤖 [AI-AUTOREPLY] AI service returned no reply (skipped or disabled).`);
             }
           } catch (aiError) {
             console.error('❌ [AI-AUTOREPLY] Error in Facebook AI auto-reply loop:', aiError);
@@ -2533,17 +2561,44 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
           console.log(`🤖 [IG-AI-AUTOREPLY] Triggered AI auto-reply for Instagram user: ${senderId}`);
           const { getSharedPrismaClient } = require('../services/sharedDatabase');
           const prisma = getSharedPrismaClient();
-          const aiMessageProcessor = require('../services/aiAgent/aiMessageProcessor');
+          const aiSetting = await prisma.aiSetting.findUnique({ where: { companyId: customer.companyId } });
+          if (!aiSetting?.autoReplyEnabled) { console.log('🤖 [IG-AI-AUTOREPLY] AI auto-reply disabled for company'); return; }
+          if (aiSetting.workingHoursEnabled && aiSetting.workingHours) {
+            try {
+              const hours = JSON.parse(typeof aiSetting.workingHours === 'string' ? aiSetting.workingHours : '{}');
+              const now = new Date();
+              const dayName = now.toLocaleString('en', { weekday: 'long', timeZone: 'Africa/Cairo' }).toLowerCase();
+              const today = hours[dayName];
+              if (today && !today.enabled) { console.log('🤖 [IG-AI-AUTOREPLY] Outside working hours (day disabled)'); return; }
+              if (today && today.start && today.end) {
+                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                const [startH, startM] = today.start.split(':').map(Number);
+                const [endH, endM] = today.end.split(':').map(Number);
+                const startMin = startH * 60 + startM;
+                const endMin = endH * 60 + endM;
+                if (currentMinutes < startMin || currentMinutes > endMin) { console.log('🤖 [IG-AI-AUTOREPLY] Outside working hours (time)'); return; }
+              }
+            } catch(e) { /* continue if parsing fails */ }
+          }
 
-          const replyText = await aiMessageProcessor.processMessage({
+          const aiSdkClient = require('../services/aiSdkClient');
+          const workingMemoryService = require('../legacy-ai-agent/aiAgent/workingMemoryService');
+
+          // Restore working memory from Redis
+          const convKey = conversation.id;
+          await workingMemoryService.addMessage(customer.companyId, convKey, { role: 'user', content: aiCustomerContent });
+          const memoryContext = await workingMemoryService.getContext(customer.companyId, convKey);
+
+          const result = await aiSdkClient.sendChatMessage({
             companyId: customer.companyId,
-            sessionId: facebookPage.instagramAccountId || facebookPage.pageId,
-            conversationId: conversation.id,
             customerId: customer.id,
-            remoteJid: senderId,
-            content: aiCustomerContent,
-            channel: 'INSTAGRAM'
+            message: aiCustomerContent,
+            threadId: conversation.id,
+            channel: 'INSTAGRAM',
+            memoryContext
           });
+
+          const replyText = result.reply;
 
           if (replyText) {
             console.log(`🤖 [IG-AI-AUTOREPLY] AI generated Instagram response: "${replyText.substring(0, 50)}..."`);

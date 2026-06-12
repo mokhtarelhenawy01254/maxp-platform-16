@@ -1737,20 +1737,15 @@ exports.testAIKeyChat = async (req, res) => {
             { role: 'user', content: `Company: ${company ? company.name : companySelector}.\nUser: ${message}` }
         ];
 
-        const providerClient = AIProviderFactory.getProvider(provider, key.apiKey, key.baseUrl, key.id);
-        const providerResult = await withTimeout(
-            providerClient.generateResponse(messages, {
-                model,
-                temperature: 0.2,
-                max_tokens: 220,
-                maxOutputTokens: 220,
-                timeoutMs
-            }),
-            timeoutMs + 1000,
-            `AI key chat timed out after ${timeoutMs}ms`
-        );
-        const reply = trimString(extractProviderText(providerResult));
-        const latencyMs = Date.now() - startedAt;
+        const testResult = await aiServiceAdminClient.testProviderKey({
+            provider,
+            apiKey: key.apiKey,
+            model,
+            messages,
+            timeoutMs,
+        });
+        const reply = trimString(testResult?.reply || '');
+        const latencyMs = testResult?.latency_ms || (Date.now() - startedAt);
         const ok = Boolean(reply);
 
         await aiProviderLogService.recordProviderEvent({
@@ -2502,22 +2497,18 @@ exports.playgroundChat = async (req, res) => {
         }
         messages.push({ role: 'user', content: prompt });
 
-        const providerClient = AIProviderFactory.getProvider(provider, key.apiKey, key.baseUrl, key.id);
-        const providerResult = await withTimeout(
-            providerClient.generateResponse(messages, {
-                model: resolvedModel,
-                temperature: temp,
-                max_tokens: maxTk,
-                maxOutputTokens: maxTk,
-            }),
-            60000,
-            `Playground request timed out after 60s`
-        );
+        const testResult = await aiServiceAdminClient.testProviderKey({
+            provider,
+            apiKey: key.apiKey,
+            model: resolvedModel,
+            messages,
+            timeoutMs: 60000,
+        });
 
-        const reply = trimString(extractProviderText(providerResult));
-        const latencyMs = Date.now() - startedAt;
-        const inputTokens = providerResult.usage?.prompt_tokens || providerResult.usageMetadata?.promptTokenCount || 0;
-        const outputTokens = providerResult.usage?.completion_tokens || providerResult.usageMetadata?.candidatesTokenCount || 0;
+        const reply = trimString(testResult?.reply || '');
+        const latencyMs = testResult?.latency_ms || (Date.now() - startedAt);
+        const inputTokens = testResult?.usage?.prompt_tokens || 0;
+        const outputTokens = testResult?.usage?.completion_tokens || 0;
 
         await aiProviderLogService.recordProviderEvent({
             provider,

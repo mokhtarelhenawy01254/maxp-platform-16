@@ -35,6 +35,8 @@ async def run_orchestration(
     customer_id: str,
     session: AsyncSession | None = None,
     is_merchant: bool = False,
+    channel: str | None = None,
+    memory_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     settings = get_settings()
 
@@ -46,6 +48,8 @@ async def run_orchestration(
 
     if not client:
         raise RuntimeError("No LLM provider available for orchestration")
+
+    effective_channel = channel or ("merchant" if is_merchant else "chat")
 
     # Try Magentic orchestration only for merchant/internal requests until the
     # Magentic path is wrapped with MaxP's customer intent, approval, and audit
@@ -125,7 +129,8 @@ async def run_orchestration(
             customer_id=customer_id,
             agent=ceo_agent,
             session=session,
-            channel="merchant" if is_merchant else "chat",
+            channel=effective_channel,
+            external_memory_context=memory_context or {},
         )
 
         pipeline_stages = [

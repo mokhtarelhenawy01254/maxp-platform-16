@@ -23,8 +23,6 @@ model Conversation {
   customer                  Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
   messages                  Message[]
   orders                    Order[]
-  notes                     ConversationModeratorNote[]
-  conversationTags          ConversationTag[]
 
   @@index([assignedUserId])
   @@index([companyId])
@@ -297,8 +295,6 @@ model WhatsAppSession {
   whatsAppMessages    WhatsAppMessage[]
   company             Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
   whatsAppStatuses    WhatsAppStatus[]
-  assignment          WhatsAppNumberAssignment?
-  moderatorNotifications ModeratorNotification[]
 
   @@index([companyId])
   @@index([phoneNumber])

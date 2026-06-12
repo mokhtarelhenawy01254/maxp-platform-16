@@ -137,9 +137,6 @@ router.get('/adsets/:adSetId/ads', facebookAdsController.getAds);
 // POST /api/v1/facebook-ads/adsets/:adSetId/ads - إنشاء إعلان جديد
 router.post('/adsets/:adSetId/ads', facebookAdsController.createAd);
 
-// POST /api/v1/facebook-ads/ads/whatsapp - إنشاء إعلان WhatsApp Click-to-Message
-router.post('/ads/whatsapp', facebookAdsController.createWhatsAppAd);
-
 // PUT /api/v1/facebook-ads/ads/:id - تحديث إعلان
 router.put('/ads/:id', facebookAdsController.updateAd);
 

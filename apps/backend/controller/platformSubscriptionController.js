@@ -8,6 +8,7 @@ const {
   getUsagePercentage,
 } = require("../services/platformSignupCouponService");
 const WhatsAppNotificationService = require("../services/whatsapp/WhatsAppNotificationService");
+const KashierService = require("../services/kashierService");
 
 const DEFAULT_PLAN_FEES = {
   BASIC: 99,
@@ -607,5 +608,237 @@ exports.getUsageStats = async (req, res) => {
       success: false,
       message: "خطأ في جلب إحصائيات الاستخدام",
     });
+  }
+};
+
+/**
+ * @route POST /api/v1/platform-subscription/checkout
+ * @desc Create direct Kashier payment checkout session for plan upgrade
+ * @access Protected (Merchant Admin)
+ */
+exports.createCheckoutSession = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { newPlan } = req.body;
+
+    if (!["BASIC", "PRO", "ENTERPRISE"].includes(newPlan)) {
+      return res.status(400).json({
+        success: false,
+        message: "خطة غير صالحة",
+      });
+    }
+
+    const monthlyFee = DEFAULT_PLAN_FEES[newPlan] || 99;
+    const prisma = getSharedPrismaClient();
+
+    // Create a pending billing history record
+    const billingRecord = await prisma.billingHistory.create({
+      data: {
+        companyId,
+        type: "PLATFORM_FEE",
+        amount: monthlyFee,
+        description: `طلب ترقية الباقة لـ ${newPlan} (دفع مباشر كاشير - معلق)`,
+        status: "PENDING"
+      }
+    });
+
+    const host = req.headers.host || "maxp.online";
+    // Redirect merchant back to billing screen on dashboard
+    const redirectUrl = `http://${host}/billing/wallet?status=success&billingId=${billingRecord.id}`;
+    const baseDomain = process.env.MAIN_DOMAIN || "maxp.online";
+    const webhookUrl = `https://${baseDomain}/api/v1/public/platform-subscription/webhook`;
+
+    // Create Kashier payment session (using NULL companyId for platform gateway keys)
+    const session = await KashierService.createPaymentSession(
+      {
+        amount: monthlyFee,
+        currency: "EGP",
+        orderId: `platform-sub-${billingRecord.id}`,
+        customer: { email: req.user.email, reference: req.user.phone || companyId },
+        redirectUrl,
+        webhookUrl,
+        description: `Direct subscription payment for plan ${newPlan}`,
+      },
+      null
+    );
+
+    if (!session.success) {
+      await prisma.billingHistory.update({
+        where: { id: billingRecord.id },
+        data: {
+          status: "FAILED",
+          description: `فشل إنشاء جلسة الدفع: ${session.error}`
+        }
+      });
+      return res.status(502).json({
+        success: false,
+        message: "فشل إنشاء جلسة الدفع في كاشير. يرجى المحاولة مرة أخرى."
+      });
+    }
+
+    // Save Kashier session ID in the referenceId
+    await prisma.billingHistory.update({
+      where: { id: billingRecord.id },
+      data: {
+        referenceId: session.sessionId,
+        description: `طلب ترقية الباقة لـ ${newPlan} (معرّف الجلسة: ${session.sessionId})`
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        billingId: billingRecord.id,
+        sessionUrl: session.sessionUrl,
+        sessionId: session.sessionId
+      }
+    });
+  } catch (error) {
+    console.error("[BILLING-CHECKOUT] Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "خطأ أثناء إنشاء عملية الدفع"
+    });
+  }
+};
+
+/**
+ * @route POST /api/v1/public/platform-subscription/webhook
+ * @desc Public webhook from Kashier to process merchant subscription payments
+ * @access Public
+ */
+exports.handleWebhook = async (req, res) => {
+  try {
+    const payload = req.body;
+    console.log("[KASHIER-PLATFORM-WEBHOOK] Received payload:", JSON.stringify(payload));
+
+    const orderId = payload.merchantOrderId || payload.orderId || payload.data?.merchantOrderId;
+    const status = payload.status || payload.data?.status;
+    const sessionId = payload._id || payload.sessionId || payload.data?.sessionId;
+
+    if (!orderId || !status) {
+      return res.status(400).json({ success: false, error: "Invalid payload parameters" });
+    }
+
+    // Extract billing history ID from merchantOrderId (formatted as platform-sub-xxxx)
+    if (!orderId.startsWith("platform-sub-")) {
+      return res.status(200).json({ success: true, message: "Ignored (non-platform order)" });
+    }
+
+    const billingId = orderId.replace("platform-sub-", "");
+    const prisma = getSharedPrismaClient();
+
+    const billingRecord = await prisma.billingHistory.findUnique({
+      where: { id: billingId },
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+            plan: true
+          }
+        }
+      }
+    });
+
+    if (!billingRecord) {
+      console.warn(`[KASHIER-PLATFORM-WEBHOOK] Billing record not found for ID: ${billingId}`);
+      return res.status(200).json({ success: true, message: "Billing record not found" });
+    }
+
+    if (billingRecord.status === "SUCCESS") {
+      return res.json({ success: true, message: "Already processed successfully" });
+    }
+
+    const paymentSuccessful = status === "CAPTURED" || status === "SUCCESS";
+    const newStatus = paymentSuccessful ? "SUCCESS" : "FAILED";
+
+    if (paymentSuccessful) {
+      // Upgrade subscription and update company plan
+      const planName = billingRecord.description.includes("PRO")
+        ? "PRO"
+        : billingRecord.description.includes("ENTERPRISE")
+          ? "ENTERPRISE"
+          : "BASIC";
+
+      const nextBillingDate = new Date();
+      nextBillingDate.setDate(nextBillingDate.getDate() + 30);
+
+      await prisma.$transaction(async (tx) => {
+        // Update billing history record
+        await tx.billingHistory.update({
+          where: { id: billingId },
+          data: {
+            status: "SUCCESS",
+            description: `تم سداد الاشتراك لـ ${planName} بنجاح عبر كاشير (تلقائي)`,
+            referenceId: sessionId || billingRecord.referenceId
+          }
+        });
+
+        // Update company's actual plan
+        await tx.company.update({
+          where: { id: billingRecord.companyId },
+          data: { plan: planName }
+        });
+
+        // Upsert platform subscription
+        await tx.platformSubscription.upsert({
+          where: { companyId: billingRecord.companyId },
+          update: {
+            plan: planName,
+            status: "ACTIVE",
+            monthlyFee: billingRecord.amount,
+            nextBillingDate,
+            failedAttempts: 0,
+            lastBillingDate: new Date()
+          },
+          create: {
+            companyId: billingRecord.companyId,
+            plan: planName,
+            status: "ACTIVE",
+            monthlyFee: billingRecord.amount,
+            nextBillingDate,
+            billingDay: new Date().getDate(),
+            failedAttempts: 0,
+            lastBillingDate: new Date()
+          }
+        });
+      });
+
+      console.log(`✅ [BILLING-WEBHOOK] Plan upgraded for company ${billingRecord.companyId} to ${planName}`);
+
+      // Async distribution of commissions
+      const platformPartnerService = require("../services/platformPartner.service");
+      platformPartnerService.distributeCommissions(billingId).catch((err) => {
+        console.error("❌ [BILLING-WEBHOOK] Partner commission failed:", err);
+      });
+
+      // Async WhatsApp notification
+      WhatsAppNotificationService.sendSubscriptionRenewedNotification({
+        companyId: billingRecord.companyId,
+        planName,
+        monthlyFee: Number(billingRecord.amount),
+        currency: "EGP",
+        billingCycle: "monthly",
+        nextBillingDate
+      }).catch((err) => {
+        console.error("❌ [BILLING-WEBHOOK] Notification failed:", err);
+      });
+
+    } else {
+      await prisma.billingHistory.update({
+        where: { id: billingId },
+        data: {
+          status: "FAILED",
+          description: `فشل الدفع عبر كاشير - حالة العملية: ${status}`
+        }
+      });
+      console.warn(`⚠️ [BILLING-WEBHOOK] Payment failed for transaction ${billingId}`);
+    }
+
+    res.json({ success: true, message: "Webhook processed successfully" });
+  } catch (error) {
+    console.error("[BILLING-WEBHOOK] Webhook error:", error);
+    res.status(500).json({ success: false, error: "Webhook processing failed" });
   }
 };

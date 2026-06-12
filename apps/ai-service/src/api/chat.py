@@ -28,6 +28,8 @@ THOUGHT_TAG_RE = re.compile(r"</?thought\b[^>]*>", re.IGNORECASE)
 class ChatRequest(BaseModel):
     message: str
     thread_id: str | None = None
+    channel: str | None = None
+    memory_context: dict[str, Any] | None = None
 
 
 class MerchantChatRequest(ChatRequest):
@@ -66,6 +68,7 @@ async def chat(
 
     company_id = get_company_id(request)
     customer_id = get_customer_id(request)
+    channel = body.channel or "chat"
 
     thread = None
     if body.thread_id:
@@ -75,7 +78,7 @@ async def chat(
                 Thread.id == thread_uuid,
                 Thread.company_id == company_id,
                 Thread.customer_id == customer_id,
-                Thread.channel == "chat",
+                Thread.channel == channel,
             )
             result = await session.execute(stmt)
             thread = result.scalar_one_or_none()
@@ -86,7 +89,7 @@ async def chat(
         stmt = select(Thread).where(
             Thread.company_id == company_id,
             Thread.customer_id == customer_id,
-            Thread.channel == "chat",
+            Thread.channel == channel,
         )
         result = await session.execute(stmt)
         thread = result.scalar_one_or_none()
@@ -100,7 +103,7 @@ async def chat(
             id=new_id,
             company_id=company_id,
             customer_id=customer_id,
-            channel="chat",
+            channel=channel,
             status="active",
         )
         session.add(thread)
@@ -116,6 +119,8 @@ async def chat(
             company_id=company_id,
             customer_id=customer_id,
             session=session,
+            channel=channel,
+            memory_context=body.memory_context,
         )
 
         reply = sanitize_model_reply(outcome.get("reply", ""))

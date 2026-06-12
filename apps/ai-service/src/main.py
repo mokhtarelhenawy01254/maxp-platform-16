@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -10,10 +11,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.agents.loader import seed_templates
 from src.api.admin import router as admin_router
+from src.api.approvals import router as approvals_router
 from src.api.billing import router as billing_router
-from src.api.channels.whatsapp import router as whatsapp_router
 from src.api.chat import router as chat_router
 from src.api.health import router as health_router
+from src.api.mcp import router as mcp_router
 from src.api.middleware import (
     RateLimitMiddleware,
     ServiceAuthMiddleware,
@@ -22,7 +24,8 @@ from src.api.middleware import (
 )
 from src.api.resume import router as resume_router
 from src.config import Settings, get_settings
-from src.db.session import async_session, close_db, get_session, init_db
+from src.db import session as db_session
+from src.db.session import close_db, get_session, init_db
 from src.mcp_integration.registry import get_mcp_registry
 from src.observability.errors import setup_error_handlers
 from src.observability.metrics import setup_metrics
@@ -41,6 +44,9 @@ def configure_logging(log_level: str) -> None:
         force=True,
         handlers=[logging.StreamHandler()],
     )
+    log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = open(os.path.join(log_dir, "structlog.log"), "a", encoding="utf-8")
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
@@ -51,7 +57,7 @@ def configure_logging(log_level: str) -> None:
             structlog.processors.JSONRenderer(),
         ],
         wrapper_class=structlog.make_filtering_bound_logger(level),
-        logger_factory=structlog.PrintLoggerFactory(),
+        logger_factory=structlog.WriteLoggerFactory(file=log_file),
         cache_logger_on_first_use=True,
     )
 
@@ -80,13 +86,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             log = structlog.get_logger()
             log.warning("MCP registration skipped", error=str(exc))
 
-        # Seed filesystem templates and skills before rebuilding the runtime registry.
-        async for session in get_session():
-            await seed_templates(session)
-            await seed_skills(session)
+        if os.getenv("PYTEST_CURRENT_TEST"):
+            log = structlog.get_logger()
+            log.info("Skipping startup template/skill seeding during pytest")
+        else:
+            # Seed filesystem templates and skills before rebuilding the runtime registry.
+            async for session in get_session():
+                await seed_templates(session)
+                await seed_skills(session)
 
-        if async_session:
-            await init_registry_from_db(async_session)
+            if db_session.async_session:
+                await init_registry_from_db(db_session.async_session)
 
         log = structlog.get_logger()
         log.info(
@@ -127,7 +137,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(billing_router)
     app.include_router(chat_router)
     app.include_router(resume_router)
-    app.include_router(whatsapp_router)
+    app.include_router(mcp_router)
+    app.include_router(approvals_router)
     app.include_router(admin_router, prefix="/admin")
 
     setup_error_handlers(app)

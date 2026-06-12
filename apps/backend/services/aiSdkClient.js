@@ -29,11 +29,13 @@ function normalizeAiServiceResponse(payload = {}) {
  * @param {string} params.customerId
  * @param {string} params.message
  * @param {string} [params.threadId]
+ * @param {string} [params.channel="chat"] - Chat channel (e.g. FACEBOOK, INSTAGRAM, WHATSAPP)
+ * @param {Object|null} [params.memoryContext=null] - Serialized working memory from Redis
  * @returns {Promise<{status: string, threadId: string, reply: string|null, draftId: string|null}>}
  */
-async function sendChatMessage({ companyId, customerId, message, threadId }) {
+async function sendChatMessage({ companyId, customerId, message, threadId, channel = "chat", memoryContext = null }) {
   const url = new URL('/chat', getAiServiceUrl());
-  const body = JSON.stringify({ message, thread_id: threadId || null });
+  const body = JSON.stringify({ message, thread_id: threadId || null, channel, memory_context: memoryContext });
   const token = getAiServiceToken();
 
   const response = await fetch(url.toString(), {
@@ -104,9 +106,72 @@ async function healthCheck() {
   return response.ok;
 }
 
+/**
+ * List pending approval drafts from Python AI service.
+ * @param {Object} params
+ * @param {string} params.companyId
+ * @param {string} [params.status="pending"]
+ * @returns {Promise<{approvals: Array, count: number}>}
+ */
+async function listApprovals({ companyId, status = "pending" }) {
+  const url = new URL(`/approvals?status=${encodeURIComponent(status)}`, getAiServiceUrl());
+  const token = getAiServiceToken();
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Company-Id': companyId,
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`AI service approvals error ${response.status}: ${text}`);
+  }
+
+  const data = await response.json();
+  return { approvals: data.approvals || [], count: data.count || 0 };
+}
+
+/**
+ * Consolidate dreamer memories via Python ai-service.
+ * @param {Object} params
+ * @param {string} params.companyId
+ * @param {Array} params.conversations - Array of { conversation_id, messages: [{ content, is_from_customer }] }
+ * @param {string} [params.consolidationType="fact_extraction"]
+ * @returns {Promise<{results: Array}>}
+ */
+async function consolidateDreamer({ companyId, conversations, consolidationType }) {
+  const url = new URL('/admin/dreamer/consolidate', getAiServiceUrl());
+  const body = JSON.stringify({
+    company_id: companyId,
+    conversations,
+    consolidation_type: consolidationType || 'fact_extraction',
+  });
+  const token = getAiServiceToken();
+  const response = await fetch(url.toString(), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Company-Id': companyId,
+      'Authorization': `Bearer ${token}`,
+    },
+    body,
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Dreamer service error ${response.status}: ${text}`);
+  }
+  return await response.json();
+}
+
 module.exports = {
   sendChatMessage,
   resumeWorkflow,
   healthCheck,
+  listApprovals,
+  consolidateDreamer,
   normalizeAiServiceResponse,
 };

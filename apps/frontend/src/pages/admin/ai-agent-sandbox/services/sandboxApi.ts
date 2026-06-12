@@ -169,7 +169,7 @@ export const sandboxApi = {
     model: string,
     provider: string,
     keyId?: string | null,
-    attachments?: Array<{ type: string; url: string }>
+    attachments?: Array<{ type: string; url: string; dataUrl?: string; base64Data?: string }>
   ): Promise<SendMessageResponse> {
     const response = await fetch(buildApiUrl("ai-sandbox/chat"), {
       method: "POST",
@@ -195,7 +195,7 @@ export const sandboxApi = {
     model: string,
     provider: string,
     keyId: string | null,
-    attachments?: Array<{ type: string; url: string }>,
+    attachments?: Array<{ type: string; url: string; dataUrl?: string; base64Data?: string }>,
     onEvent?: (event: StreamEvent) => void
   ): Promise<void> {
     const response = await fetch(buildApiUrl("ai-sandbox/chat/stream"), {

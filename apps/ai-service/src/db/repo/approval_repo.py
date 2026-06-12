@@ -122,6 +122,27 @@ class ApprovalRepository:
             logger.info("approval status updated", draft_id=draft_id, status=status)
         return approval
 
+    async def list_by_company(
+        self,
+        company_id: str,
+        status: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[Approval]:
+        """List approvals for a company, optionally filtered by status."""
+        where = [Approval.company_id == company_id]
+        if status:
+            where.append(Approval.status == status)
+        stmt = (
+            select(Approval)
+            .where(*where)
+            .order_by(Approval.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
     async def transition_status(
         self,
         draft_id: str,

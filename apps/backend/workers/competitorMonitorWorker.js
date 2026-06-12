@@ -1,6 +1,6 @@
 const Queue = require('bull');
 const { PrismaClient } = require('../prisma/generated/postgresql_v2');
-const { t } = require('../legacy-ai-agent/aiAgent/i18n');
+const { t } = require('../services/i18n');
 
 const prisma = new PrismaClient();
 

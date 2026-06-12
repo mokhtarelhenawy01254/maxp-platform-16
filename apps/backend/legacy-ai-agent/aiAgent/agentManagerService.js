@@ -13,7 +13,7 @@ const toolRegistryService = require('./toolRegistryService');
 const skillRegistryService = require('./skillRegistryService');
 const aiRuntimeService = require('../aiRuntimeService');
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
-const { t } = require('./i18n');
+const { t } = require('../../services/i18n');
 
 const FACEBOOK_MESSENGER_AGENT_ROLE = 'FACEBOOK_SALES_SUPPORT';
 const FACEBOOK_MESSENGER_AGENT_TEMPLATE = 'facebook-sales-support-agent';

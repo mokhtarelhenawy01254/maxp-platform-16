@@ -58,7 +58,12 @@ from src.llm.agent_client_factory import (
     build_agent_client_async,
     build_provider_client_async,
 )
-from src.llm.model_capabilities import route_for_modalities, supports_vision
+from src.llm.model_capabilities import (
+    DEFAULT_VISION_MODEL,
+    DEFAULT_VISION_PROVIDER,
+    route_for_modalities,
+    supports_vision,
+)
 from src.mcp_integration.registry import get_mcp_registry
 from src.pipeline.context import DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL, PipelineContext
 from src.pipeline.runner import execute_pipeline
@@ -301,6 +306,13 @@ class BaseAgent:
         if skills_provider:
             context_providers.append(skills_provider)
 
+        # File-based skills provider for the SDK Agent Runtime path
+        if self.allowed_skills:
+            from src.skills.integration import create_skills_provider
+            file_skills_provider = create_skills_provider(self.allowed_skills)
+            if file_skills_provider:
+                context_providers.append(file_skills_provider)
+
         default_options: dict[str, Any] = {"model": self.model}
         if self.output_schema:
             default_options["output_schema"] = self.output_schema
@@ -362,11 +374,19 @@ class BaseAgent:
         
         By default, agents start with only CORE_TOOLS to implement Progressive Tool Exposure.
         Advanced tools are unlocked dynamically via the unlock_advanced_tools tool.
+        Agents with allowed_skills also get skill tools (load_skill, read_skill_resource)
+        for progressive-disclosure skill loading.
         """
-        from src.tools.registry import CORE_TOOLS
+        from src.tools.registry import CORE_TOOLS, SKILL_TOOLS
 
         # Base set is CORE_TOOLS for progressive exposure
-        base_set = CORE_TOOLS
+        base_set = list(CORE_TOOLS)
+
+        # Append skill tools for agents with skills
+        if self.allowed_skills:
+            for st in SKILL_TOOLS:
+                if st not in base_set:
+                    base_set.append(st)
 
         if not self.allowed_tools:
             return wrap_tools_for_gateway(
@@ -376,15 +396,21 @@ class BaseAgent:
                 allowed_tools=[_tool_name(tool) for tool in base_set],
             )
 
+        from src.tools.registry import get_all_tools, unlock_advanced_tools_tool
         allowed = {name.lower() for name in self.allowed_tools}
-        # Filter core tools by allowed list, but always ensure unlock_advanced_tools is present
+
+        # Include skill tool names implicitly for agents with allowed_skills
+        if self.allowed_skills:
+            from src.skills.integration import get_skill_tool_names
+            for st_name in get_skill_tool_names():
+                allowed.add(st_name.lower())
+
         scoped = [
-            t for t in base_set
+            t for t in get_all_tools()
             if _tool_name(t).lower() in allowed or _tool_name(t).replace("_", ".").lower() in allowed
         ]
 
         # Ensure unlock_advanced_tools is always available for agents that can unlock them
-        from src.tools.registry import unlock_advanced_tools_tool
         if unlock_advanced_tools_tool not in scoped:
             scoped.append(unlock_advanced_tools_tool)
 
@@ -416,6 +442,11 @@ class BaseAgent:
     def default_options(self) -> dict[str, Any]:
         """Expose the default options (model choice) for compatibility."""
         return {"model": self.model}
+
+    @property
+    def middleware(self) -> list[Any]:
+        """Expose the function and agent middleware."""
+        return build_maxp_function_middleware(self.company_id, self.role)
 
     def _load_skills_block(self) -> str:
         """Read SKILL.md from disk for each allowed skill and return a <skills> block."""
@@ -499,10 +530,8 @@ class BaseAgent:
             )
             text = self._assemble_inline_prompt(variables)
 
-        skills_block = self._load_skills_block()
-        if skills_block:
-            text = text + "\n\n" + skills_block
-
+        # Skills are injected by ContextAssembler (pipeline) or SkillsProvider
+        # (SDK Agent Runtime). Do not inline them here to avoid duplication.
         self._system_prompt_cache = text
         self._system_prompt_cache_at = now
         return text
@@ -540,10 +569,8 @@ class BaseAgent:
                 + "\n[/AVAILABLE_TOOLS]"
             )
 
-        skills_block = self._load_skills_block()
-        if skills_block:
-            sections.append(skills_block)
-
+        # Skills are injected by ContextAssembler or SkillsProvider.
+        # Do not inline here to avoid duplication.
         return "\n\n".join(s for s in sections if s)
 
     def clear_prompt_cache(self) -> None:
@@ -762,17 +789,9 @@ class BaseAgent:
         try:
             tools = self._resolve_tools()
             system_prompt = self._get_system_prompt()
-            if route.provider:
-                return await build_provider_client_async(
-                    route.provider,
-                    model=route.model,
-                    tools=tools,
-                    system_prompt=system_prompt,
-                    company_id=self.company_id,
-                )
-            return await build_agent_client_async(
-                get_settings(),
-                model=route.model,
+            return await build_provider_client_async(
+                route.provider or DEFAULT_VISION_PROVIDER,
+                model=route.model or DEFAULT_VISION_MODEL,
                 tools=tools,
                 system_prompt=system_prompt,
                 company_id=self.company_id,
@@ -800,7 +819,6 @@ class BaseAgent:
             "facebook",
             "facebook_messenger",
             "messenger",
-            "whatsapp",
             "telegram",
         }
         if channel in customer_channels:
@@ -958,7 +976,7 @@ class BaseAgent:
 
             final_reply = ctx.final_reply or ""
             executed = ctx.executed_tools or []
-            response_attachments = list(ctx.response_attachments or [])
+            response_attachments = list(getattr(ctx, "response_attachments", None) or [])
             emitter.emit(
                 "agent_reply",
                 {
@@ -1076,7 +1094,7 @@ class BaseAgent:
             "result": {
                 "reply": reply,
                 "summary": reply,
-                "response_attachments": list(ctx.response_attachments or []),
+                "response_attachments": list(getattr(ctx, "response_attachments", None) or []),
                 "error": early_result.get("error"),
                 "errorCode": early_result.get("error_code"),
                 "providerStatusCode": early_result.get("provider_status_code"),

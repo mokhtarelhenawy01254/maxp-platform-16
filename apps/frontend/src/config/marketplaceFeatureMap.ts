@@ -192,7 +192,6 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     routes: [
       { path: "/customers", label: "العملاء" },
       { path: "/leads", label: "Leads" },
-      { path: "/whatsapp/customer-journey", label: "رحلة واتساب" },
       { path: "/customers/loyalty-programs", label: "برامج الولاء" },
       { path: "/customers/loyalty-members", label: "أعضاء الولاء" },
       { path: "/customers/points-center", label: "مركز النقاط" },
@@ -218,24 +217,6 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
       { path: "/settings/instagram", label: "إعدادات إنستجرام" },
     ],
     action: "مغطى حالياً، لكن يمكن فصل smart replies لاحقاً كتطبيق CRM مستقل.",
-  },
-  {
-    id: "whatsapp",
-    area: "communication",
-    label: "واتساب",
-    description: "واتساب، الإعدادات، التنبيهات، التحليلات، وإشعارات العملاء.",
-    status: "covered",
-    appSlug: "whatsapp-integration",
-    appLabel: "تكامل WhatsApp Business",
-    currentGate: "whatsapp-integration",
-    routes: [
-      { path: "/whatsapp", label: "واتساب" },
-      { path: "/whatsapp/settings", label: "إعدادات واتساب" },
-      { path: "/whatsapp/notifications", label: "تنبيهات واتساب" },
-      { path: "/whatsapp/analytics", label: "تحليلات واتساب" },
-      { path: "/orders/whatsapp-notifications", label: "تنبيهات الطلبات" },
-    ],
-    action: "مغطى، ويفضل توحيد whatsapp-business وwhatsapp-integration مستقبلاً لمنع ازدواجية التسعير.",
   },
   {
     id: "telegram",

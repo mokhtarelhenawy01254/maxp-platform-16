@@ -190,16 +190,18 @@ const bootstrapApp = async (): Promise<void> => {
     });
 };
 
-void bootstrapApp().catch((error) => {
-  if (recoverFromChunkLoadError(error, "bootstrap")) {
-    return;
-  }
+void bootstrapApp()
+  .then(() => {
+    // Remove loading screen after a tiny delay to let the initial React render paint
+    setTimeout(removeLoadingScreen, 50);
+  })
+  .catch((error) => {
+    if (recoverFromChunkLoadError(error, "bootstrap")) {
+      return;
+    }
 
-  renderBootstrapError(error);
-});
-
-// Remove loading screen after a short delay
-setTimeout(removeLoadingScreen, 500);
+    renderBootstrapError(error);
+  });
 
 // Performance monitoring
 if (import.meta.env.PROD) {

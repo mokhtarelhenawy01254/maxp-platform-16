@@ -4722,73 +4722,8 @@ class FacebookAdsService {
     }
   }
 
-  /**
-   * ============================================
-   * v22.0: WhatsApp Ads Support
-   * ============================================
-   */
-
-  /**
-   * إنشاء WhatsApp Click-to-Message Ad
-   */
-  async createWhatsAppAd(data) {
-    try {
-      const {
-        pageId,
-        whatsappBusinessAccountId,
-        creativeId,
-        adSetId,
-        name,
-        status = 'PAUSED'
-      } = data;
-
-      if (!whatsappBusinessAccountId) {
-        throw new Error('WhatsApp Business Account ID is required');
-      }
-
-      const accountId = this.getAccountId();
-
-      const adData = {
-        name: name || 'WhatsApp Click-to-Message Ad',
-        status,
-        adset_id: adSetId,
-        creative: {
-          creative_id: creativeId
-        },
-        // WhatsApp-specific fields
-        object_story_spec: {
-          page_id: pageId,
-          link_data: {
-            link: `https://wa.me/${whatsappBusinessAccountId}`,
-            call_to_action: {
-              type: 'MESSAGE_PAGE'
-            }
-          }
-        }
-      };
-
-      console.log('📤 Creating WhatsApp Ad:', JSON.stringify(adData, null, 2));
-
-      const response = await axios.post(
-        `${this.baseUrl}/${accountId}/ads`,
-        adData,
-        { params: { access_token: this.accessToken } }
-      );
-
-      console.log('✅ WhatsApp Ad created:', response.data.id);
-
-      return {
-        success: true,
-        adId: response.data.id,
-        data: response.data
-      };
-    } catch (error) {
-      console.error('❌ Error creating WhatsApp Ad:', error.response?.data || error.message);
-      return {
-        success: false,
-        error: error.response?.data?.error?.message || error.message
-      };
-    }
+  async createWhatsAppAd() {
+    return { success: false, error: 'WhatsApp ads are no longer supported' };
   }
 
   /**

@@ -525,6 +525,22 @@ export const storefrontApi = {
       },
     });
   },
+
+  kashierCheckout: async (payload: Record<string, unknown>) => {
+    const { headers } = buildStorefrontRequestContext();
+    const url = buildUrl(API_BASE, "/payment/kashier/checkout");
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    });
+    const data = await parseResponseBody(response);
+    if (!response.ok) {
+      throw createStorefrontError(response, data);
+    }
+    return data;
+  },
 };
 
 export default storefrontApi;

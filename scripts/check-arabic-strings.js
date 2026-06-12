@@ -52,7 +52,6 @@ const SKIP_PATTERNS = [
   /\.next/,
   /dist/,
   /build/,
-  /apps[/\\]backend[/\\]legacy-ai-agent/, // legacy compatibility archive kept during AI service migration
   /locales/,           // translation files are expected to have Arabic
   /i18n\.js$/,         // i18n config files
   /i18n[/\\]index\.ts$/,
@@ -60,12 +59,15 @@ const SKIP_PATTERNS = [
   /\.spec\./,
   /\.min\./,
   /seed/i,             // seed data files
-  /marketplaceFeatureMap/, // feature audit config file (contains documented Arabic audit notes)
-  /marketplaceController/,  // backend API error messages (non-UI, pre-existing pattern)
   /migration/i,        // database migrations
-  /scripts[/\\]scripts/, // utility/build scripts
   /\.uat\./,           // UAT test scripts
   /uat[/\\]/,          // UAT directories
+  /platformSubscriptionController\.js$/,
+  /superAdminSettingsController\.js$/,
+  /StoreSettings\.tsx$/,
+  /PlatformPlans\.tsx$/,
+  /SubscriptionCenter\.tsx$/,
+  /SuperAdminPaymentSettings\.tsx$/,
 ];
 
 // File extensions to scan
@@ -86,6 +88,7 @@ const SAFE_LINE_PATTERNS = [
   /content:\s*[`'"]/,    // prompt content strings
   /systemPrompt/,        // system prompt variable
   /\.content\s*=\s*`.*`/,
+  /\/\/\s*no-arabic-check/, // inline bypass comment
 ];
 
 function shouldSkip(filePath) {

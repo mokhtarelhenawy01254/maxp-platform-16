@@ -1,7 +1,6 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
-const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
 const { queueTaskWebhook } = require('./taskWebhookService');
-const { t } = require('../legacy-ai-agent/aiAgent/i18n');
+const { t } = require('./i18n');
 
 function getTaskStatusLabel(status) {
     const key = String(status || '').toUpperCase();
@@ -13,12 +12,6 @@ function getTaskPriorityLabel(priority) {
     const key = String(priority || '').toUpperCase();
     const result = t('task.priority.' + key);
     return result !== 'task.priority.' + key ? result : t('task.priority.fallback');
-}
-
-function getExecutionResponseLabel(response) {
-    const key = String(response || '');
-    const result = t('task.execution.' + key);
-    return result !== 'task.execution.' + key ? result : key;
 }
 
 function buildUserName(user, fallback) {
@@ -60,45 +53,6 @@ function buildTaskVariables(task, extra = {}) {
     };
 }
 
-function normalizePhoneForCompare(phone) {
-    if (!phone) return '';
-    let cleaned = String(phone).replace(/\D/g, '');
-    if (cleaned.startsWith('00')) cleaned = cleaned.slice(2);
-    if (cleaned.startsWith('0') && !cleaned.startsWith('00')) {
-        cleaned = `20${cleaned.slice(1)}`;
-    } else if (cleaned.length === 11 && cleaned.startsWith('1')) {
-        cleaned = `20${cleaned}`;
-    } else if (cleaned.length === 10 && !cleaned.startsWith('2')) {
-        cleaned = `20${cleaned}`;
-    }
-    return cleaned;
-}
-
-function phoneFromJid(remoteJid) {
-    return normalizePhoneForCompare(String(remoteJid || '').split('@')[0]);
-}
-
-async function findUserByWhatsAppJid(companyId, remoteJid) {
-    const normalizedPhone = phoneFromJid(remoteJid);
-    if (!normalizedPhone) return null;
-
-    const users = await getSharedPrismaClient().user.findMany({
-        where: {
-            companyId,
-            isActive: true,
-            phone: { not: null }
-        },
-        select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            phone: true
-        }
-    });
-
-    return users.find((user) => normalizePhoneForCompare(user.phone) === normalizedPhone) || null;
-}
-
 async function createTaskActivitySafe({ taskId, companyId, userId, action, field, oldValue, newValue, description }) {
     if (!taskId || !companyId || !userId) return null;
 
@@ -132,7 +86,6 @@ const taskNotificationService = {
      * @param {string} options.title - Notification title
      * @param {string} options.message - Notification message
      * @param {string} options.link - Link to the task
-     * @param {Object} options.whatsappData - Data for WhatsApp notification (optional)
      */
     notify: async (options) => {
         const {
@@ -143,7 +96,6 @@ const taskNotificationService = {
             title,
             message,
             link,
-            whatsappData,
             actorUserId,
             logActivity = false,
             activityDescription
@@ -151,7 +103,6 @@ const taskNotificationService = {
         const prisma = getSharedPrismaClient();
 
         try {
-            // 1. Create In-App Notification
             const notification = await prisma.taskNotification.create({
                 data: {
                     companyId,
@@ -165,45 +116,14 @@ const taskNotificationService = {
                 }
             });
 
-            // 2. Trigger WhatsApp Notification if requested and data provided
-            let whatsappResult = null;
-
-            if (whatsappData) {
-                // Fetch recipient user details (phone)
-                const recipient = await prisma.user.findUnique({
-                    where: { id: userId },
-                    select: { phone: true, firstName: true, lastName: true, email: true }
-                });
-
-                if (recipient && recipient.phone) {
-                    whatsappResult = await WhatsAppNotificationService.sendNotification({
-                        companyId,
-                        recipientPhone: recipient.phone,
-                        recipientName: buildUserName(recipient),
-                        recipientType: 'EMPLOYEE',
-                        category: 'TASKS',
-                        eventType: whatsappData.templateName || whatsappData.eventType || 'TASK_UPDATED',
-                        variables: {
-                            userName: recipient.firstName || buildUserName(recipient),
-                            taskTitle: whatsappData.taskTitle || 'مهمة جديدة',
-                            ...whatsappData.variables
-                        },
-                        contentOverride: whatsappData.contentOverride,
-                        buttons: whatsappData.buttons || null
-                    });
-                }
-            }
-
             if (logActivity && taskId) {
                 await createTaskActivitySafe({
                     taskId,
                     companyId,
                     userId: actorUserId || userId,
                     action: 'notification_sent',
-                    field: whatsappData ? 'whatsapp' : 'in_app',
-                    newValue: whatsappResult
-                        ? (whatsappResult.success ? 'sent' : whatsappResult.reason || 'failed')
-                        : 'created',
+                    field: 'in_app',
+                    newValue: 'created',
                     description: activityDescription || `تم إرسال إشعار "${title}" إلى مستخدم`
                 });
             }
@@ -211,7 +131,6 @@ const taskNotificationService = {
             return notification;
         } catch (error) {
             console.error('Error in taskNotificationService.notify:', error);
-            // We don't want to break the main flow if notification fails
             return null;
         }
     },
@@ -277,7 +196,6 @@ const taskNotificationService = {
             type,
             title,
             message,
-            whatsappData,
             link,
             includeAssignee = true,
             includeCreator = true,
@@ -316,7 +234,6 @@ const taskNotificationService = {
                 title,
                 message,
                 link: link || `/tasks/${taskRecord.id}`,
-                whatsappData,
                 actorUserId,
                 logActivity,
                 activityDescription
@@ -360,16 +277,6 @@ const taskNotificationService = {
             title: 'متابعة تنفيذ المهمة',
             message: `هل تم تنفيذ المهمة "${task.title}"؟`,
             link: `/tasks/${task.id}`,
-            whatsappData: {
-                templateName: 'TASK_EXECUTION_CHECK',
-                taskTitle: task.title,
-                variables: buildTaskVariables(task, { reason: reasonLabel }),
-                buttons: [
-                    { id: 'task_done_{taskId}', text: 'تم التنفيذ' },
-                    { id: 'task_not_done_{taskId}', text: 'لم يتم بعد' },
-                    { id: 'task_blocked_{taskId}', text: 'توجد مشكلة' }
-                ]
-            },
             actorUserId: actorUserId || task.assignedTo,
             logActivity: true,
             activityDescription: `تم إرسال سؤال متابعة التنفيذ إلى ${buildUserName(task.assignee)}`
@@ -384,133 +291,10 @@ const taskNotificationService = {
             message: `تم إرسال سؤال متابعة التنفيذ للمنفذ بخصوص المهمة "${task.title}"`,
             includeAssignee: false,
             includeCreator: true,
-            includeWatchers: true,
-            whatsappData: {
-                templateName: 'TASK_EXECUTION_CHECK_SENT',
-                taskTitle: task.title,
-                variables: buildTaskVariables(task, {
-                    assigneeName: buildUserName(task.assignee),
-                    reason: reasonLabel
-                })
-            }
+            includeWatchers: true
         });
 
         return { success: true, taskId: task.id, assigneeId: task.assignedTo };
-    },
-
-    handleExecutionResponse: async ({ companyId, taskId, remoteJid, response, source = 'whatsapp_button' }) => {
-        const prisma = getSharedPrismaClient();
-        const task = await prisma.task.findFirst({
-            where: { id: taskId, companyId },
-            include: {
-                assignee: { select: { id: true, firstName: true, lastName: true, phone: true } },
-                creator: { select: { id: true, firstName: true, lastName: true } },
-                taskWatchers: { select: { userId: true } }
-            }
-        });
-
-        if (!task) {
-            return { success: false, reason: 'task_not_found' };
-        }
-
-        const responder = await findUserByWhatsAppJid(companyId, remoteJid);
-        const remotePhone = phoneFromJid(remoteJid);
-        const assigneePhone = normalizePhoneForCompare(task.assignee?.phone);
-
-        if (responder && responder.id !== task.assignedTo) {
-            console.warn(`⚠️ [TASK-WA] Ignoring execution response for task ${task.id}: responder is not assignee`);
-            return { success: false, reason: 'responder_not_assignee' };
-        }
-
-        if (!responder && (!assigneePhone || remotePhone !== assigneePhone)) {
-            console.warn(`⚠️ [TASK-WA] Ignoring execution response for task ${task.id}: sender phone does not match assignee`);
-            return { success: false, reason: 'sender_not_assignee' };
-        }
-
-        const responderId = responder?.id || task.assignedTo;
-        const oldStatus = task.status;
-        let nextStatus = task.status;
-        let updateData = {};
-
-        if (response === 'done') {
-            nextStatus = 'COMPLETED';
-            updateData = {
-                status: nextStatus,
-                progress: 100,
-                completedDate: new Date()
-            };
-        } else if (response === 'blocked') {
-            nextStatus = 'ON_HOLD';
-            updateData = {
-                status: nextStatus
-            };
-        } else {
-            nextStatus = task.status === 'PENDING' ? 'IN_PROGRESS' : task.status;
-            updateData = {
-                status: nextStatus
-            };
-        }
-
-        const updatedTask = await prisma.task.update({
-            where: { id: task.id },
-            data: updateData,
-            include: {
-                assignee: { select: { id: true, firstName: true, lastName: true } },
-                creator: { select: { id: true, firstName: true, lastName: true } },
-                taskWatchers: { select: { userId: true } }
-            }
-        });
-
-        const responseLabel = getExecutionResponseLabel(response);
-        const responderName = buildUserName(responder || task.assignee, 'منفذ المهمة');
-
-        await createTaskActivitySafe({
-            taskId: task.id,
-            companyId,
-            userId: responderId,
-            action: 'whatsapp_execution_response',
-            field: 'status',
-            oldValue: oldStatus,
-            newValue: nextStatus,
-            description: `${responderName} رد على سؤال التنفيذ عبر واتساب: ${responseLabel}`
-        });
-
-        await taskNotificationService.notifyTaskStakeholders({
-            companyId,
-            task: updatedTask,
-            actorUserId: responderId,
-            type: 'execution_response',
-            title: 'رد منفذ المهمة',
-            message: `${responderName} رد على المهمة "${task.title}": ${responseLabel}`,
-            includeAssignee: false,
-            includeCreator: true,
-            includeWatchers: true,
-            whatsappData: {
-                templateName: 'TASK_EXECUTION_RESPONSE',
-                taskTitle: task.title,
-                variables: buildTaskVariables(updatedTask, {
-                    responderName,
-                    response: responseLabel,
-                    oldStatus: normalizeStatusLabel(oldStatus),
-                    newStatus: normalizeStatusLabel(nextStatus)
-                })
-            }
-        });
-
-        queueTaskWebhook('task.status_changed', {
-            companyId,
-            actorUserId: responderId,
-            task: updatedTask,
-            previousTask: task,
-            source
-        });
-
-        return {
-            success: true,
-            taskId: task.id,
-            response,
-            status: nextStatus
-        };
     },
 
     helpers: {

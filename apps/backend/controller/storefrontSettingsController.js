@@ -11,6 +11,7 @@ const {
 } = require('../services/storefrontThemeCatalogService');
 const FacebookConversionsService = require('../services/facebookConversionsService');
 const { getMetaGraphApiVersion } = require('../config/metaApi');
+const redisCacheService = require('../services/redisCacheService');
 
 const DEFAULT_THEME_ID = DEFAULT_STOREFRONT_THEME_ID || 'modern-minimal';
 const DEFAULT_SUPPORTED_LANGUAGES = 'ar,en';
@@ -174,7 +175,92 @@ const buildCreateDefaults = async (company) => {
       storeName: company.name,
       currency: company.currency || 'EGP',
     },
+    enabledPaymentMethods: '["cod"]',
   };
+};
+
+const isMaskedToken = (value) => {
+  if (typeof value !== 'string') {
+    return false;
+  }
+  const trimmed = value.trim();
+  // Match exact patterns produced by maskToken():
+  // - '********' for tokens <= 10 chars
+  // - 'XXXX...XXXX' (4 leading chars + '...' + 4 trailing chars = 11 chars total)
+  return trimmed === '********' || /^.{4}\.\.\..{4}$/.test(trimmed);
+};
+
+const mergeGatewayConfig = (incoming, existing) => {
+  if (!incoming) {
+    return null;
+  }
+
+  let parsedIncoming = incoming;
+  if (typeof incoming === 'string') {
+    try {
+      parsedIncoming = JSON.parse(incoming);
+    } catch (e) {
+      console.error('Failed to parse incoming paymentGatewayConfig:', e);
+      return null;
+    }
+  }
+
+  if (!parsedIncoming || typeof parsedIncoming !== 'object') {
+    return null;
+  }
+
+  let parsedExisting = existing;
+  if (typeof existing === 'string') {
+    try {
+      parsedExisting = JSON.parse(existing);
+    } catch (e) {
+      parsedExisting = null;
+    }
+  }
+
+  const merged = { ...parsedIncoming };
+
+  if (parsedExisting && typeof parsedExisting === 'object') {
+    if (merged.apiKey && isMaskedToken(merged.apiKey)) {
+      merged.apiKey = parsedExisting.apiKey || '';
+    }
+    if (merged.secretKey && isMaskedToken(merged.secretKey)) {
+      merged.secretKey = parsedExisting.secretKey || '';
+    }
+  }
+
+  return merged;
+};
+
+const maskGatewayConfig = (config) => {
+  if (!config) {
+    return null;
+  }
+
+  let parsed = config;
+  if (typeof config === 'string') {
+    try {
+      parsed = JSON.parse(config);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    return null;
+  }
+
+  const masked = { ...parsed };
+
+  if (masked.apiKey) {
+    masked.apiKey = maskToken(masked.apiKey);
+  }
+
+  if (masked.secretKey) {
+    masked.secretKey = maskToken(masked.secretKey);
+  }
+
+  return masked;
 };
 
 const serializeStorefrontSettings = (settings, company) => {
@@ -191,6 +277,8 @@ const serializeStorefrontSettings = (settings, company) => {
       (typeof designTokens.themeId === 'string' && designTokens.themeId.trim()) ||
       DEFAULT_THEME_ID,
     designTokens,
+    paymentGatewayConfig: maskGatewayConfig(settings?.paymentGatewayConfig),
+    enabledPaymentMethods: settings?.enabledPaymentMethods || '["cod"]',
   };
 };
 
@@ -534,6 +622,7 @@ const updateSettings = async (req, res) => {
         where: { companyId },
         select: {
           designTokens: true,
+          paymentGatewayConfig: true,
         },
       })
     );
@@ -553,6 +642,13 @@ const updateSettings = async (req, res) => {
           : DEFAULT_THEME_ID;
 
     const sanitizedInput = await sanitizeStorefrontSettingsInput(req.body || {});
+
+    if (sanitizedInput.paymentGatewayConfig !== undefined) {
+      sanitizedInput.paymentGatewayConfig = mergeGatewayConfig(
+        sanitizedInput.paymentGatewayConfig,
+        existingSettings?.paymentGatewayConfig
+      );
+    }
     const nextDesignTokens = sanitizeDesignTokens({
       ...currentDesignTokens,
       ...(isRecord(req.body?.designTokens) ? req.body.designTokens : {}),
@@ -593,6 +689,12 @@ const updateSettings = async (req, res) => {
         },
       })
     );
+
+    try {
+      await redisCacheService.del(`storefront_settings:${companyId}`);
+    } catch (err) {
+      console.error('⚠️ [REDIS] failed to invalidate settings cache:', err);
+    }
 
     return res.json({
       success: true,
@@ -640,6 +742,12 @@ const resetSettings = async (req, res) => {
         data: createDefaults,
       })
     );
+
+    try {
+      await redisCacheService.del(`storefront_settings:${companyId}`);
+    } catch (err) {
+      console.error('⚠️ [REDIS] failed to invalidate settings cache:', err);
+    }
 
     return res.json({
       success: true,

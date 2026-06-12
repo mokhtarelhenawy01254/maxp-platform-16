@@ -1,7 +1,7 @@
 /**
  * unifiedInboxController.js
  * وحدة التحكم الموحدة لصندوق الوارد - تجمع المحادثات من جميع المنصات
- * (Facebook, WhatsApp, Telegram) في واجهة واحدة
+ * (Facebook, Telegram) في واجهة واحدة
  */
 
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
@@ -24,7 +24,7 @@ const getUnifiedConversations = async (req, res) => {
         const {
             page = 1,
             limit = 30,
-            platform,      // 'all' | 'facebook' | 'whatsapp' | 'telegram'
+            platform,      // 'all' | 'facebook' | 'telegram'
             search,
             status,        // 'active' | 'pending' | 'resolved' | 'closed'
             unreadOnly,
@@ -46,7 +46,7 @@ const getUnifiedConversations = async (req, res) => {
         }
         // If no platform specified, include all channels except TEST
         if (!platform || platform === 'all') {
-            fbWhere.channel = { in: ['FACEBOOK', 'WHATSAPP', 'TELEGRAM'] };
+            fbWhere.channel = { in: ['FACEBOOK', 'TELEGRAM'] };
         }
 
         if (status) {
@@ -126,70 +126,8 @@ const getUnifiedConversations = async (req, res) => {
         ]);
 
         // ──────────────────────────────────────────────────────────
-        // 2. Also fetch WhatsApp contacts if platform includes whatsapp
         // ──────────────────────────────────────────────────────────
-        let whatsappContacts = [];
-        const shouldFetchWhatsApp = !platformFilter || platformFilter === 'ALL' || platformFilter === 'WHATSAPP';
-
-        if (shouldFetchWhatsApp) {
-            try {
-                const sessionIds = (await prisma.whatsAppSession.findMany({
-                    where: { companyId },
-                    select: { id: true }
-                })).map(s => s.id);
-
-                if (sessionIds.length > 0) {
-                    const waWhere = {
-                        sessionId: { in: sessionIds },
-                        isArchived: false
-                    };
-
-                    if (search) {
-                        waWhere.OR = [
-                            { name: { contains: search } },
-                            { pushName: { contains: search } },
-                            { phoneNumber: { contains: search } }
-                        ];
-                    }
-
-                    whatsappContacts = await prisma.whatsAppContact.findMany({
-                        where: waWhere,
-                        orderBy: [
-                            { isPinned: 'desc' },
-                            { lastMessageAt: 'desc' }
-                        ],
-                        skip: platformFilter === 'WHATSAPP' ? skip : 0,
-                        take: platformFilter === 'WHATSAPP' ? take : 20,
-                        select: {
-                            id: true,
-                            sessionId: true,
-                            jid: true,
-                            phoneNumber: true,
-                            name: true,
-                            pushName: true,
-                            profilePicUrl: true,
-                            isGroup: true,
-                            category: true,
-                            unreadCount: true,
-                            lastMessageAt: true,
-                            isPinned: true,
-                            isMuted: true,
-                            whatsAppSession: {
-                                select: { name: true, phoneNumber: true }
-                            },
-                            customer: {
-                                select: { firstName: true, lastName: true, status: true }
-                            }
-                        }
-                    });
-                }
-            } catch (waErr) {
-                console.error('⚠️ [UNIFIED] Error fetching WhatsApp contacts:', waErr.message);
-            }
-        }
-
-        // ──────────────────────────────────────────────────────────
-        // 3. Normalize all conversations into unified format
+        // 2. Normalize all conversations into unified format
         // ──────────────────────────────────────────────────────────
         const normalizedConversations = conversations.map(conv => {
             const lastMsg = conv.messages?.[0];
@@ -230,64 +168,25 @@ const getUnifiedConversations = async (req, res) => {
             };
         });
 
-        // Normalize WhatsApp contacts
-        const normalizedWhatsApp = whatsappContacts.map(contact => ({
-            id: `wa_${contact.id}`,
-            platform: 'whatsapp',
-            platformIcon: '📱',
-            contactName: contact.name || contact.pushName || contact.phoneNumber,
-            contactAvatar: contact.profilePicUrl || null,
-            contactId: contact.id,
-            contactEmail: null,
-            contactPhone: contact.phoneNumber,
-            lastMessage: '',
-            lastMessageType: 'TEXT',
-            lastMessageTime: contact.lastMessageAt,
-            lastMessageIsFromCustomer: false,
-            unreadCount: contact.unreadCount || 0,
-            status: 'active',
-            assignedTo: null,
-            isPinned: contact.isPinned,
-            isMuted: contact.isMuted,
-            tags: [],
-            metadata: {
-                sessionId: contact.sessionId,
-                jid: contact.jid,
-                sessionName: contact.whatsAppSession?.name,
-                isGroup: contact.isGroup,
-                category: contact.category,
-                channel: 'WHATSAPP'
-            }
-        }));
-
         // Merge and sort all conversations
-        let allConversations;
-        if (platformFilter === 'WHATSAPP') {
-            allConversations = normalizedWhatsApp;
-        } else if (platformFilter && platformFilter !== 'ALL') {
-            allConversations = normalizedConversations;
-        } else {
-            // Merge all, sort by lastMessageTime
-            allConversations = [...normalizedConversations, ...normalizedWhatsApp]
-                .sort((a, b) => {
-                    const dateA = new Date(a.lastMessageTime || 0);
-                    const dateB = new Date(b.lastMessageTime || 0);
-                    return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-                })
-                .slice(0, take);
-        }
+        let allConversations = normalizedConversations
+            .sort((a, b) => {
+                const dateA = new Date(a.lastMessageTime || 0);
+                const dateB = new Date(b.lastMessageTime || 0);
+                return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+            })
+            .slice(0, take);
 
         // ──────────────────────────────────────────────────────────
-        // 4. Get platform counts
+        // 3. Get platform counts
         // ──────────────────────────────────────────────────────────
-        const [fbCount, waCount, tgCount, unrepliedCount] = await Promise.all([
+        const [fbCount, tgCount, unrepliedCount] = await Promise.all([
             prisma.conversation.count({ where: { companyId, channel: 'FACEBOOK', status: { in: ['ACTIVE', 'PENDING'] } } }),
-            prisma.conversation.count({ where: { companyId, channel: 'WHATSAPP', status: { in: ['ACTIVE', 'PENDING'] } } }),
             prisma.conversation.count({ where: { companyId, channel: 'TELEGRAM', status: { in: ['ACTIVE', 'PENDING'] } } }),
             prisma.conversation.count({
                 where: {
                     companyId,
-                    channel: { in: ['FACEBOOK', 'WHATSAPP', 'TELEGRAM'] },
+                    channel: { in: ['FACEBOOK', 'TELEGRAM'] },
                     status: { in: ['ACTIVE', 'PENDING'] },
                     lastMessageIsFromCustomer: true
                 }
@@ -298,15 +197,14 @@ const getUnifiedConversations = async (req, res) => {
             success: true,
             data: allConversations,
             pagination: {
-                total: totalCount + whatsappContacts.length,
+                total: totalCount,
                 page: parseInt(page),
                 limit: parseInt(limit),
-                totalPages: Math.ceil((totalCount + whatsappContacts.length) / parseInt(limit))
+                totalPages: Math.ceil(totalCount / parseInt(limit))
             },
             counts: {
-                all: fbCount + waCount + tgCount,
+                all: fbCount + tgCount,
                 facebook: fbCount,
-                whatsapp: waCount,
                 telegram: tgCount,
                 unreplied: unrepliedCount
             }
@@ -339,87 +237,7 @@ const getConversationMessages = async (req, res) => {
         const take = parseInt(limit);
         const prisma = getSharedPrismaClient();
 
-        // Determine platform type from ID prefix or explicit parameter
-        const isWhatsAppContact = id.startsWith('wa_') || platform === 'whatsapp';
-
-        if (isWhatsAppContact) {
-            // WhatsApp messages - use WhatsAppMessage model
-            const contactId = id.replace('wa_', '');
-            const { sessionId, jid } = req.query;
-
-            if (!sessionId || !jid) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'sessionId and jid are required for WhatsApp conversations'
-                });
-            }
-
-            // Verify session ownership
-            const session = await prisma.whatsAppSession.findFirst({
-                where: { id: sessionId, companyId }
-            });
-
-            if (!session) {
-                return res.status(404).json({ success: false, message: 'Session not found' });
-            }
-
-            const [messages, total] = await Promise.all([
-                prisma.whatsAppMessage.findMany({
-                    where: { sessionId, remoteJid: jid },
-                    orderBy: { timestamp: 'desc' },
-                    skip,
-                    take,
-                    select: {
-                        id: true,
-                        messageId: true,
-                        fromMe: true,
-                        messageType: true,
-                        content: true,
-                        mediaUrl: true,
-                        mediaType: true,
-                        mediaFileName: true,
-                        quotedMessageId: true,
-                        quotedContent: true,
-                        status: true,
-                        timestamp: true,
-                        isAIResponse: true,
-                        interactiveData: true,
-                        participant: true
-                    }
-                }),
-                prisma.whatsAppMessage.count({ where: { sessionId, remoteJid: jid } })
-            ]);
-
-            // Normalize WhatsApp messages
-            const normalizedMessages = messages.map(msg => ({
-                id: msg.id,
-                platform: 'whatsapp',
-                messageId: msg.messageId,
-                content: msg.content || '',
-                type: msg.messageType?.toLowerCase() || 'text',
-                isFromCustomer: !msg.fromMe,
-                timestamp: msg.timestamp,
-                status: msg.status?.toLowerCase() || 'sent',
-                mediaUrl: msg.mediaUrl,
-                mediaType: msg.mediaType,
-                mediaFileName: msg.mediaFileName,
-                quotedMessage: msg.quotedContent ? {
-                    id: msg.quotedMessageId,
-                    content: msg.quotedContent
-                } : null,
-                isAIResponse: msg.isAIResponse,
-                sender: msg.fromMe ? 'agent' : (msg.participant || 'customer'),
-                interactiveData: msg.interactiveData ? JSON.parse(msg.interactiveData) : null
-            })).reverse(); // Reverse to show oldest first
-
-            return res.json({
-                success: true,
-                data: normalizedMessages,
-                pagination: { total, page: parseInt(page), limit: parseInt(limit) }
-            });
-        }
-
-        // Facebook/Telegram - use Conversation + Message models
+        // Use Conversation + Message models
         const conversation = await prisma.conversation.findFirst({
             where: { id, companyId },
             select: { id: true, channel: true, customerId: true }
@@ -521,46 +339,7 @@ const sendUnifiedMessage = async (req, res) => {
 
         const prisma = getSharedPrismaClient();
 
-        // Route to appropriate platform handler
-        if (platform === 'whatsapp' || id.startsWith('wa_')) {
-            // WhatsApp send
-            if (!sessionId || !jid) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'sessionId and jid are required for WhatsApp'
-                });
-            }
-
-            // Verify session
-            const session = await prisma.whatsAppSession.findFirst({
-                where: { id: sessionId, companyId }
-            });
-
-            if (!session) {
-                return res.status(404).json({ success: false, message: 'WhatsApp session not found' });
-            }
-
-            // Use WhatsApp service to send
-            const WhatsAppMessageHandler = require('../services/whatsapp/WhatsAppMessageHandler');
-            const message = await WhatsAppMessageHandler.sendText(sessionId, jid, content, {
-                quotedMessageId
-            });
-
-            return res.json({
-                success: true,
-                data: {
-                    id: message?.id || Date.now().toString(),
-                    platform: 'whatsapp',
-                    content,
-                    type: 'text',
-                    isFromCustomer: false,
-                    timestamp: new Date(),
-                    status: 'sent'
-                }
-            });
-        }
-
-        // Facebook/Telegram - send via Conversation model
+        // Send via Conversation model
         const conversation = await prisma.conversation.findFirst({
             where: { id, companyId },
             include: { customer: true }
@@ -663,48 +442,25 @@ const getUnifiedStats = async (req, res) => {
             totalActive,
             totalUnreplied,
             fbActive,
-            waActive,
             tgActive,
             totalResolved
         ] = await Promise.all([
             prisma.conversation.count({
-                where: { companyId, channel: { in: ['FACEBOOK', 'WHATSAPP', 'TELEGRAM'] }, status: { in: ['ACTIVE', 'PENDING'] } }
+                where: { companyId, channel: { in: ['FACEBOOK', 'TELEGRAM'] }, status: { in: ['ACTIVE', 'PENDING'] } }
             }),
             prisma.conversation.count({
-                where: { companyId, channel: { in: ['FACEBOOK', 'WHATSAPP', 'TELEGRAM'] }, status: { in: ['ACTIVE', 'PENDING'] }, lastMessageIsFromCustomer: true }
+                where: { companyId, channel: { in: ['FACEBOOK', 'TELEGRAM'] }, status: { in: ['ACTIVE', 'PENDING'] }, lastMessageIsFromCustomer: true }
             }),
             prisma.conversation.count({
                 where: { companyId, channel: 'FACEBOOK', status: { in: ['ACTIVE', 'PENDING'] } }
             }),
             prisma.conversation.count({
-                where: { companyId, channel: 'WHATSAPP', status: { in: ['ACTIVE', 'PENDING'] } }
-            }),
-            prisma.conversation.count({
                 where: { companyId, channel: 'TELEGRAM', status: { in: ['ACTIVE', 'PENDING'] } }
             }),
             prisma.conversation.count({
-                where: { companyId, channel: { in: ['FACEBOOK', 'WHATSAPP', 'TELEGRAM'] }, status: { in: ['RESOLVED', 'CLOSED'] } }
+                where: { companyId, channel: { in: ['FACEBOOK', 'TELEGRAM'] }, status: { in: ['RESOLVED', 'CLOSED'] } }
             })
         ]);
-
-        // Get WhatsApp total unread from contacts
-        let waUnread = 0;
-        try {
-            const sessions = await prisma.whatsAppSession.findMany({
-                where: { companyId },
-                select: { id: true }
-            });
-            if (sessions.length > 0) {
-                const result = await prisma.whatsAppContact.aggregate({
-                    where: {
-                        sessionId: { in: sessions.map(s => s.id) },
-                        unreadCount: { gt: 0 }
-                    },
-                    _sum: { unreadCount: true }
-                });
-                waUnread = result._sum.unreadCount || 0;
-            }
-        } catch (e) { }
 
         res.json({
             success: true,
@@ -714,7 +470,6 @@ const getUnifiedStats = async (req, res) => {
                 totalResolved,
                 platforms: {
                     facebook: { active: fbActive, icon: '💬' },
-                    whatsapp: { active: waActive, unread: waUnread, icon: '📱' },
                     telegram: { active: tgActive, icon: '✈️' }
                 }
             }
@@ -762,7 +517,7 @@ const getCustomerProfile = async (req, res) => {
                     }
                 },
                 conversations: {
-                    where: { channel: { in: ['FACEBOOK', 'WHATSAPP', 'TELEGRAM'] } },
+                    where: { channel: { in: ['FACEBOOK', 'TELEGRAM'] } },
                     orderBy: { lastMessageAt: 'desc' },
                     take: 5,
                     select: {
@@ -833,35 +588,8 @@ const getQuickReplies = async (req, res) => {
 
         const prisma = getSharedPrismaClient();
 
-        // Get WhatsApp quick replies
-        const waReplies = await prisma.whatsAppQuickReply.findMany({
-            where: { companyId, isActive: true },
-            orderBy: [
-                { usageCount: 'desc' },
-                { sortOrder: 'asc' }
-            ],
-            select: {
-                id: true,
-                title: true,
-                shortcut: true,
-                content: true,
-                category: true,
-                mediaUrl: true,
-                mediaType: true
-            }
-        });
-
-        // Normalize
-        const quickReplies = waReplies.map(r => ({
-            id: r.id,
-            title: r.title,
-            shortcut: r.shortcut,
-            content: r.content,
-            category: r.category,
-            platforms: ['whatsapp', 'facebook', 'telegram'],
-            mediaUrl: r.mediaUrl,
-            mediaType: r.mediaType
-        }));
+        // Get quick replies
+        const quickReplies = [];
 
         res.json({
             success: true,
@@ -892,15 +620,11 @@ const getSettings = async (req, res) => {
         const prisma = getSharedPrismaClient();
 
         // Check connected platforms
-        const [fbPages, waSessions, tgConfigs] = await Promise.all([
+        const [fbPages, tgConfigs] = await Promise.all([
             prisma.conversation.groupBy({
                 by: ['channel'],
                 where: { companyId, channel: 'FACEBOOK' },
                 _count: { id: true }
-            }),
-            prisma.whatsAppSession.findMany({
-                where: { companyId },
-                select: { id: true, name: true, phoneNumber: true, status: true }
             }),
             prisma.telegramConfig.findMany({
                 where: { companyId },
@@ -915,10 +639,6 @@ const getSettings = async (req, res) => {
                     facebook: {
                         connected: fbPages.length > 0,
                         count: fbPages[0]?._count?.id || 0
-                    },
-                    whatsapp: {
-                        connected: waSessions.length > 0,
-                        sessions: waSessions
                     },
                     telegram: {
                         connected: tgConfigs.some(c => c.isActive),
@@ -941,7 +661,6 @@ const getSettings = async (req, res) => {
 function getPlatformIcon(channel) {
     switch (channel?.toUpperCase()) {
         case 'FACEBOOK': return '💬';
-        case 'WHATSAPP': return '📱';
         case 'TELEGRAM': return '✈️';
         default: return '💬';
     }

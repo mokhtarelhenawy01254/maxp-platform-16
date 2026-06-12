@@ -11,7 +11,8 @@
 
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 const { isPermissionError, getPermissionErrorMessage } = require('../../utils/dbPermissionHelper');
-const AIProviderFactory = require('./providers/AIProviderFactory');
+let AIProviderFactory;
+try { AIProviderFactory = require('./providers/AIProviderFactory'); } catch { AIProviderFactory = null; }
 const aiProviderLogService = require('./providerLogService');
 // const newQuotaService = require('./NewQuotaService'); // ✅ DEPRECATED: Logic merged here
 const systemManager = require('../../services/systemManager'); // ✅ Import System Manager
