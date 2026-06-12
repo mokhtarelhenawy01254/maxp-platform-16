@@ -58,12 +58,14 @@ import {
   Search as SearchIcon,
   Archive as ArchiveIcon,
   Visibility as VisibilityIcon,
+  CreditCard as CreditCardIcon,
 } from "@mui/icons-material";
 import { buildApiUrl } from "../../utils/urlHelper";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import type { StorefrontThemeCatalogItem } from "../../services/storefrontThemeCatalogService";
 import tokenManager from "../../utils/tokenManager";
+import SuperAdminPaymentSettings from "./SuperAdminPaymentSettings";
 
 type SubscriptionCenterProps = {
   initialTab?: number;
@@ -646,6 +648,11 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
               iconPosition="start"
               label="قوالب المتجر"
             />
+            <Tab
+              icon={<CreditCardIcon />}
+              iconPosition="start"
+              label="إعدادات الدفع"
+            />
           </Tabs>
         </Paper>
       ) : null}
@@ -702,6 +709,11 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
           themes={storefrontThemes}
           onRefresh={fetchAllData}
         />
+      )}
+      {!storefrontThemesOnly && activeTab === 5 && (
+        <Box p={3}>
+          <SuperAdminPaymentSettings />
+        </Box>
       )}
 
       {/* Marketplace Item Dialog */}

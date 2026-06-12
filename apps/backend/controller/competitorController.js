@@ -1,6 +1,6 @@
 const CompetitorService = require('../services/competitorService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const { t } = require('../legacy-ai-agent/aiAgent/i18n');
+const { t } = require('../services/i18n');
 const getPrisma = () => getSharedPrismaClient();
 
 exports.list = async (req, res) => {

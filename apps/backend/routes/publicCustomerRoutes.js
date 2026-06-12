@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const verifyToken = require('../utils/verifyToken');
 const { getJwtSecret } = require('../utils/jwtSecret');
-const { t } = require('../legacy-ai-agent/aiAgent/i18n');
+const { t } = require('../services/i18n');
 
 router.get('/ping', (req, res) => res.json({ status: 'ok', time: new Date().toISOString(), version: 'v3' }));
 const ensureWallet = async (customerId, companyId) => {

@@ -1,6 +1,6 @@
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const { queueTaskWebhook } = require('./taskWebhookService');
-const { t } = require('../legacy-ai-agent/aiAgent/i18n');
+const { t } = require('./i18n');
 
 function getTaskStatusLabel(status) {
     const key = String(status || '').toUpperCase();

@@ -39,7 +39,9 @@ class PlanSynthesisEngine {
 
     const prompt = this._buildSynthesisPrompt(goal, inputs, constraints);
 
-    const AIProviderFactory = require('./providers/AIProviderFactory');
+    let AIProviderFactory;
+    try { AIProviderFactory = require('./providers/AIProviderFactory'); } catch { AIProviderFactory = null; }
+    if (!AIProviderFactory) { throw new Error('AIProviderFactory not available'); }
     const modelManager = this._modelManager;
 
     const keyInfo = await modelManager.getNextKeySimple(companyId || 'system', {

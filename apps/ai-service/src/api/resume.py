@@ -22,7 +22,7 @@ router = APIRouter()
 
 
 class ResumeRequest(BaseModel):
-    thread_id: str
+    thread_id: str | None = None
     draft_id: str
     approved: bool
     reason: str | None = None
@@ -53,6 +53,8 @@ async def resume(
     if approval.company_id != company_id:
         raise HTTPException(status_code=403, detail="Cross-tenant access denied")
 
+    resolved_thread_id = body.thread_id or str(approval.thread_id)
+
     if body.approved:
         await repo.update_status(
             draft_id=body.draft_id,
@@ -75,7 +77,7 @@ async def resume(
             sdk_result = await resume_sdk_approval_workflow(
                 draft_id=body.draft_id,
                 approved=True,
-                thread_id=body.thread_id,
+                thread_id=resolved_thread_id,
                 customer_id=str(getattr(approval, "customer_id", "") or ""),
                 session=session,
                 is_merchant=False,
@@ -85,7 +87,7 @@ async def resume(
                 return ResumeResponse(
                     status="ok",
                     reply=t("approval.executed", locale="ar"),
-                    thread_id=body.thread_id,
+                    thread_id=resolved_thread_id,
                 )
         except Exception as exc:
             logger.warning(
@@ -102,14 +104,14 @@ async def resume(
             return ResumeResponse(
                 status="ok",
                 reply=t("approval.executed", locale="ar"),
-                thread_id=body.thread_id,
+                thread_id=resolved_thread_id,
             )
         except Exception as e:
             logger.error("approval execution failed", draft_id=body.draft_id, error=str(e))
             return ResumeResponse(
                 status="error",
                 reply=t("approval.execution_failed", locale="ar"),
-                thread_id=body.thread_id,
+                thread_id=resolved_thread_id,
             )
     else:
         await repo.update_status(
@@ -132,7 +134,7 @@ async def resume(
             await resume_sdk_approval_workflow(
                 draft_id=body.draft_id,
                 approved=False,
-                thread_id=body.thread_id,
+                thread_id=resolved_thread_id,
                 customer_id=str(getattr(approval, "customer_id", "") or ""),
                 session=session,
                 is_merchant=False,
@@ -146,5 +148,5 @@ async def resume(
         return ResumeResponse(
             status="ok",
             reply=t("approval.rejected", locale="ar"),
-            thread_id=body.thread_id,
+            thread_id=resolved_thread_id,
         )

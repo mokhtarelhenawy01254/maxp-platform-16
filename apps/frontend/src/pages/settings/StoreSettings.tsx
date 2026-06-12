@@ -6,6 +6,8 @@ import {
   GiftIcon,
   DocumentTextIcon,
   CreditCardIcon,
+  PencilIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { apiClient } from "../../services/apiClient";
@@ -1424,7 +1426,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
               <PaymentGatewaySettingsSection
                 settings={storefrontSettings}
                 onChange={setStorefrontSettings}
-                onSave={() => handleSavePaymentSettings()}
+                onSave={() => { /* Save handled internally by the component */ }}
                 loading={loading}
               />
             ) : null}
@@ -1483,6 +1485,8 @@ const PaymentGatewaySettingsSection: React.FC<{
     mode: "test",
   });
 
+  const [isEditing, setIsEditing] = useState(false);
+
   const [enabledMethods, setEnabledMethods] = useState<string[]>(
     settings.enabledPaymentMethods
       ? JSON.parse(settings.enabledPaymentMethods)
@@ -1501,6 +1505,7 @@ const PaymentGatewaySettingsSection: React.FC<{
       configValue: settings.paymentGatewayConfig ? (typeof settings.paymentGatewayConfig === 'string' ? 'STRING' : 'OBJECT') : 'NONE',
       enabledMethods: settings.enabledPaymentMethods,
     });
+    let hasConfig = false;
     if (settings.paymentGatewayConfig) {
       const config = typeof settings.paymentGatewayConfig === "string"
         ? JSON.parse(settings.paymentGatewayConfig)
@@ -1511,6 +1516,7 @@ const PaymentGatewaySettingsSection: React.FC<{
         secretKey: config.secretKey || "",
         mode: config.mode || "test",
       });
+      hasConfig = Boolean(config.merchantId && config.apiKey && config.secretKey);
     }
     if (settings.enabledPaymentMethods) {
       setEnabledMethods(
@@ -1519,10 +1525,18 @@ const PaymentGatewaySettingsSection: React.FC<{
           : settings.enabledPaymentMethods
       );
     }
-    // Check connection status on load
+    // Check connection status on load using the parsed settings
+    const config = settings.paymentGatewayConfig
+      ? (typeof settings.paymentGatewayConfig === "string"
+        ? JSON.parse(settings.paymentGatewayConfig)
+        : settings.paymentGatewayConfig)
+      : null;
+    const hasConfigLoaded = config && config.merchantId && config.apiKey && config.secretKey;
     setConnectionStatus(
-      isConfigured ? "connected" : "disconnected"
+      hasConfigLoaded ? "connected" : "disconnected"
     );
+    // Default to read-only if configured, otherwise show edit inputs
+    setIsEditing(!hasConfigLoaded);
   }, [settings]);
 
   const handleConfigChange = (key: string, value: string) => {
@@ -1537,29 +1551,63 @@ const PaymentGatewaySettingsSection: React.FC<{
     );
   };
 
-  const handleSave = async () => {
-    const configJson = JSON.stringify({
-      merchantId: gatewayConfig.merchantId,
-      apiKey: gatewayConfig.apiKey,
-      secretKey: gatewayConfig.secretKey,
-      mode: gatewayConfig.mode,
-    });
+  const handleDelete = async () => {
+    if (!window.confirm("هل أنت متأكد من رغبتك في إزالة إعدادات بوابة الدفع؟ سيؤدي ذلك إلى تعطيل الدفع الإلكتروني.")) {
+      return;
+    }
 
     const updatedSettings = {
-      paymentGatewayConfig: configJson,
+      paymentGatewayConfig: null,
+      enabledPaymentMethods: JSON.stringify(enabledMethods.filter((m) => m === "cod")),
+    };
+
+    try {
+      const result = await storefrontSettingsService.updateSettings(updatedSettings);
+      if (result?.data) {
+        onChange(result.data);
+        setGatewayConfig({
+          merchantId: "",
+          apiKey: "",
+          secretKey: "",
+          mode: "test",
+        });
+        setEnabledMethods(["cod"]);
+        setIsEditing(true);
+      }
+      toast.success("تم إزالة إعدادات بوابة الدفع بنجاح");
+    } catch (error) {
+      console.error("[DELETE] Failed to delete settings:", error);
+      toast.error("حدث خطأ أثناء الحذف: " + (error?.message || "Unknown error"));
+    }
+  };
+
+  const handleSave = async () => {
+    const updatedSettings = {
+      paymentGatewayConfig: {
+        merchantId: gatewayConfig.merchantId,
+        apiKey: gatewayConfig.apiKey,
+        secretKey: gatewayConfig.secretKey,
+        mode: gatewayConfig.mode,
+      },
       enabledPaymentMethods: JSON.stringify(enabledMethods),
     };
 
     console.log('[SAVE] Sending settings:', { ...updatedSettings, paymentGatewayConfig: '***MASKED***' });
-    // Merge with existing settings instead of replacing
-    onChange(prev => ({ ...prev, ...updatedSettings }));
 
     try {
       const result = await storefrontSettingsService.updateSettings(updatedSettings);
       console.log('[SAVE] Result:', result);
-      // Update with full response from server
+      // Update parent state with server response, but preserve the local
+      // gatewayConfig values (the server returns masked keys which would
+      // overwrite our real values via the useEffect).
       if (result?.data) {
-        onChange(result.data);
+        onChange({
+          ...result.data,
+          // Keep the un-masked config we just sent so the useEffect
+          // doesn't replace our local state with masked tokens.
+          paymentGatewayConfig: updatedSettings.paymentGatewayConfig,
+        });
+        setIsEditing(false);
       }
       toast.success("تم حفظ إعدادات بوابة الدفع بنجاح");
     } catch (error) {
@@ -1668,62 +1716,134 @@ const PaymentGatewaySettingsSection: React.FC<{
         )}
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 space-y-4">
-        <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
-          بيانات الاعتماد (Credentials)
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Merchant ID
-            </label>
-            <input
-              type="text"
-              value={gatewayConfig.merchantId}
-              onChange={(e) => handleConfigChange("merchantId", e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="MID-XXXX-XXX"
-            />
+      {isEditing ? (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 space-y-4">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-base font-semibold text-gray-900 dark:text-white">
+              بيانات الاعتماد (Credentials)
+            </h4>
+            {isConfigured && (
+              <button
+                onClick={() => setIsEditing(false)}
+                className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                إلغاء التعديل
+              </button>
+            )}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              API Key
-            </label>
-            <input
-              type="password"
-              value={gatewayConfig.apiKey}
-              onChange={(e) => handleConfigChange("apiKey", e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Secret Key
-            </label>
-            <input
-              type="password"
-              value={gatewayConfig.secretKey}
-              onChange={(e) => handleConfigChange("secretKey", e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              الوضع
-            </label>
-            <select
-              value={gatewayConfig.mode}
-              onChange={(e) => handleConfigChange("mode", e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="test">Test (Sandbox)</option>
-              <option value="live">Live</option>
-            </select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Merchant ID
+              </label>
+              <input
+                type="text"
+                value={gatewayConfig.merchantId}
+                onChange={(e) => handleConfigChange("merchantId", e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="MID-XXXX-XXX"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                API Key
+              </label>
+              <input
+                type="password"
+                value={gatewayConfig.apiKey}
+                onChange={(e) => handleConfigChange("apiKey", e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Secret Key
+              </label>
+              <input
+                type="password"
+                value={gatewayConfig.secretKey}
+                onChange={(e) => handleConfigChange("secretKey", e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                الوضع
+              </label>
+              <select
+                value={gatewayConfig.mode}
+                onChange={(e) => handleConfigChange("mode", e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="test">Test (Sandbox)</option>
+                <option value="live">Live</option>
+              </select>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 space-y-6">
+          <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-4">
+            <div>
+              <h4 className="text-base font-semibold text-gray-900 dark:text-white">
+                بيانات الربط الحالية
+              </h4>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                تفاصيل الاتصال النشط ببوابة دفع Kashier.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-900/50 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-900"
+              >
+                <PencilIcon className="w-3.5 h-3.5" />
+                تعديل البيانات
+              </button>
+              <button
+                onClick={handleDelete}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 border border-red-100 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-950/30"
+              >
+                <TrashIcon className="w-3.5 h-3.5" />
+                إزالة الإعدادات
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-gray-400 dark:text-gray-500 block">Merchant ID</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white font-mono bg-gray-50 dark:bg-gray-900/50 px-2.5 py-1 rounded border border-gray-100 dark:border-gray-800/80 inline-block">
+                {gatewayConfig.merchantId}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-gray-400 dark:text-gray-500 block">الوضع (Mode)</span>
+              <span className={`text-xs font-semibold px-2.5 py-1 rounded inline-block uppercase ${
+                gatewayConfig.mode === "live"
+                  ? "bg-green-50 text-green-700 border border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/50"
+                  : "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50"
+              }`}>
+                {gatewayConfig.mode === "live" ? "Live" : "Test (Sandbox)"}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-gray-400 dark:text-gray-500 block">API Key</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white font-mono bg-gray-50 dark:bg-gray-900/50 px-2.5 py-1 rounded border border-gray-100 dark:border-gray-800/80 inline-block">
+                {gatewayConfig.apiKey}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-gray-400 dark:text-gray-500 block">Secret Key</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white font-mono bg-gray-50 dark:bg-gray-900/50 px-2.5 py-1 rounded border border-gray-100 dark:border-gray-800/80 inline-block">
+                {gatewayConfig.secretKey}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 space-y-4">
         <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
@@ -1758,7 +1878,15 @@ const PaymentGatewaySettingsSection: React.FC<{
         </p>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-3">
+        {isEditing && isConfigured && (
+          <button
+            onClick={() => setIsEditing(false)}
+            className="px-6 py-3 rounded-lg text-sm font-semibold bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700"
+          >
+            إلغاء
+          </button>
+        )}
         <button
           onClick={handleSave}
           disabled={loading}

@@ -13,6 +13,13 @@ import type {
   MessageAttachment,
 } from "../types/sandbox.types";
 import { sandboxApi, type SessionSummary, type SessionDetail, type SendMessageResponse } from "../services/sandboxApi";
+
+export interface SkillDefinition {
+  id: string;
+  name: string;
+  description: string;
+  allowedTools: string[];
+}
 import { useOTelTracing } from "./useOTelTracing";
 import { useCostTracker } from "./useCostTracker";
 
@@ -35,7 +42,8 @@ function mapAgentFromBackend(raw: Record<string, unknown>): AgentConfig {
     role: String(raw.role || "Agent"),
     description: String(raw.description || raw.soul || raw.role || "AI Agent"),
     defaultModel: String(raw.model || "gpt-4o"),
-    allowedTools: Array.isArray(raw.allowedTools) ? raw.allowedTools : Array.isArray(raw.skills) ? raw.skills : [],
+    allowedTools: Array.isArray(raw.allowedTools) ? raw.allowedTools : [],
+    allowedSkills: Array.isArray(raw.skills) ? raw.skills : [],
   };
 }
 
@@ -298,6 +306,7 @@ export function useAgentSandbox() {
   const [models, setModels] = useState<ModelConfig[]>([]);
   const [centralKeys, setCentralKeys] = useState<CentralKeyConfig[]>([]);
   const [toolsMetadata, setToolsMetadata] = useState<Array<{ name: string; description: string; sideEffect: "read" | "write" }>>([]);
+  const [skills, setSkills] = useState<SkillDefinition[]>([]);
   const [typingStage, setTypingStage] = useState<string | null>(null);
   const [activeToolCalls, setActiveToolCalls] = useState<ToolCall[]>([]);
 
@@ -338,6 +347,21 @@ export function useAgentSandbox() {
         if (agentsRes.status === "fulfilled" && agentsRes.value.agents?.length) {
           const mappedAgents = agentsRes.value.agents.map(mapAgentFromBackend);
           setAgents(mappedAgents);
+          
+          // Derive unique skills from all agents
+          const allSkills = new Set<string>();
+          mappedAgents.forEach(agent => {
+            agent.allowedSkills.forEach(skill => allSkills.add(skill));
+          });
+          // Create basic skill definitions from agent skills
+          const derivedSkills: SkillDefinition[] = Array.from(allSkills).map(skillId => ({
+            id: skillId,
+            name: skillId.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+            description: `Skill: ${skillId}`,
+            allowedTools: [],
+          }));
+          setSkills(derivedSkills);
+          
           const preferredAgent =
             mappedAgents.find((agent) => agent.role === "FACEBOOK_SALES_SUPPORT")
             || mappedAgents[0]
@@ -1040,6 +1064,7 @@ export function useAgentSandbox() {
     centralKeys,
     quickScenarios: localizedScenarios,
     toolsMetadata,
+    skills,
     costBreakdown: costTracker.breakdown,
     selectedAgent,
     typingStage,

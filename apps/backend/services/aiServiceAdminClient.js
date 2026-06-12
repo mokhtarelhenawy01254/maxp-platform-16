@@ -95,7 +95,7 @@ async function evaluateSandboxResponse({ companyId, message, response, toolCalls
 }
 
 async function updateGlobalConfig(config) {
-  return request('POST', '/admin/config', config);
+  return request('PATCH', '/admin/config', config);
 }
 
 async function setProviderPriority(providers) {
@@ -114,6 +114,26 @@ async function setKeyStatus(id, isActive) {
   return request('PATCH', `/admin/keys/${encodeURIComponent(id)}/status`, { is_active: isActive });
 }
 
+/**
+ * Test a provider API key via Python ai-service.
+ * @param {Object} params
+ * @param {string} params.provider
+ * @param {string} params.apiKey
+ * @param {string} [params.model]
+ * @param {Array} [params.messages] - Optional pre-constructed messages for chat test
+ * @param {string} [params.prompt] - Optional single prompt for completion test
+ * @param {number} [params.timeoutMs]
+ * @returns {Promise<{ok: boolean, reply: string, latency_ms: number, model: string, provider: string}>}
+ */
+async function testProviderKey({ provider, apiKey, model, messages, prompt, timeoutMs }) {
+  const body = { provider, api_key: apiKey };
+  if (model) body.model = model;
+  if (messages) body.messages = messages;
+  if (prompt) body.prompt = prompt;
+  if (timeoutMs) body.timeout_ms = timeoutMs;
+  return request('POST', '/admin/test', body);
+}
+
 module.exports = {
   listTools,
   listAgents,
@@ -124,4 +144,5 @@ module.exports = {
   createKey,
   deleteKey,
   setKeyStatus,
+  testProviderKey,
 };

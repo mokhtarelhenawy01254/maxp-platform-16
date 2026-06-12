@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from src.tools.names import canonical_tool_name
+
 import structlog
 from agent_framework import (
     FunctionTool,
@@ -62,11 +64,13 @@ def _skill_metadata_from_dir(skill_dir: Path) -> dict[str, Any] | None:
     content = _read_skill_md(skill_dir)
     if content is None:
         return None
+    raw_tools = config.get("allowedTools", [])
     return {
         "id": config.get("id", skill_dir.name),
         "name": config.get("displayName", skill_dir.name),
         "description": config.get("description", ""),
         "instructions": content,
+        "allowed_tools": [canonical_tool_name(t) for t in raw_tools],
     }
 
 
@@ -90,6 +94,9 @@ def get_skills_block(allowed_skills: set[str] | None) -> str:
         lines.append(f"<skill id=\"{meta['id']}\">")
         lines.append(f"<name>{meta['name']}</name>")
         lines.append(f"<description>{meta['description']}</description>")
+        allowed = meta.get("allowed_tools", [])
+        if allowed:
+            lines.append(f"<allowed_tools>{' '.join(allowed)}</allowed_tools>")
         lines.append(meta["instructions"])
         lines.append("</skill>")
     if not lines:
@@ -224,20 +231,19 @@ class MaxpSkillsSource(SkillsSource):
     async def get_skills(self) -> list[Skill]:
         skills: list[Skill] = []
         for skill_dir in _get_allowed_skill_dirs(self._allowed_skills):
-            config = _read_skill_json(skill_dir)
-            if config is None:
+            meta = _skill_metadata_from_dir(skill_dir)
+            if meta is None:
                 continue
-            content = _read_skill_md(skill_dir)
-            if content is None:
-                continue
+            allowed_tools_str = " ".join(meta.get("allowed_tools", []))
             frontmatter = SkillFrontmatter(
-                name=config.get("displayName", skill_dir.name),
-                description=config.get("description", ""),
+                name=meta["name"],
+                description=meta["description"],
+                allowed_tools=allowed_tools_str or None,
             )
             skills.append(
                 InlineSkill(
                     frontmatter=frontmatter,
-                    instructions=content,
+                    instructions=meta["instructions"],
                 )
             )
         return skills

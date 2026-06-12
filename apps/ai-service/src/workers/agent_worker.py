@@ -380,15 +380,18 @@ async def handle_facebook_message(job: dict[str, Any]) -> None:
 
         await session.commit()
 
-        # 6. AI Process
-        from src.agents.base import BaseAgent, BaseAgentConfig
-        agent = BaseAgent(BaseAgentConfig(
-            id=f"fb_agent_{page_id[:8]}",
-            name=f"FB Agent {page_id[:8]}",
-            role="SALES",
+        # 6. AI Process — load from template (2026 system-prompt-driven pattern)
+        from src.agents.base import BaseAgent
+        agent = await BaseAgent.from_template(
+            template_slug="facebook-sales-support-agent",
             company_id=company_id,
-            allowed_tools=[],
-        ))
+            overrides={
+                "id": f"fb_agent_{page_id[:8]}",
+                "name": f"FB Agent {page_id[:8]}",
+                "persona": {"channel": "facebook"},
+            },
+            session=session,
+        )
 
         start_time = datetime.utcnow()
         task_result = await agent.process_task({
@@ -472,15 +475,18 @@ async def handle_facebook_comment(job: dict[str, Any]) -> None:
         )
         await session.commit()
 
-    # AI Reply to comment
-    from src.agents.base import BaseAgent, BaseAgentConfig
-    agent = BaseAgent(BaseAgentConfig(
-        id=f"fb_comment_agent_{page_id[:8]}",
-        name="FB Comment Agent",
-        role="SALES",
+    # AI Reply to comment — load from template (2026 system-prompt-driven pattern)
+    from src.agents.base import BaseAgent
+    agent = await BaseAgent.from_template(
+        template_slug="facebook-sales-support-agent",
         company_id=company_id,
-        allowed_tools=[],
-    ))
+        overrides={
+            "id": f"fb_comment_agent_{page_id[:8]}",
+            "name": "FB Comment Agent",
+            "persona": {"channel": "facebook"},
+        },
+        session=session,
+    )
     task_result = await agent.process_task({
         "description": comment_text,
         "company_id": company_id,

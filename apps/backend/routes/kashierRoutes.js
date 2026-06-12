@@ -49,15 +49,27 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
     const orderNumber = await orderService.generateOrderNumber(companyId);
 
     // Prepare order items
-    const orderItemsData = (items || []).map((item) => ({
-      productId: item.productId,
-      variantId: item.variantId || null,
-      name: item.name || 'Product',
-      price: Number(item.price) || 0,
-      quantity: Number(item.quantity) || 1,
-      attributes: item.attributes || {},
-      image: item.image || item.productImage || null,
-    }));
+    const orderItemsData = (items || []).map((item) => {
+      const price = Number(item.price) || 0;
+      const quantity = Number(item.quantity) || 1;
+      const image = item.image || item.productImage || null;
+      return {
+        productId: item.productId || null,
+        variantId: item.variantId || null,
+        productName: item.name || 'Product',
+        productImage: image,
+        price,
+        quantity,
+        total: price * quantity,
+        productSku: item.sku || null,
+        productColor: item.color || item.attributes?.color || item.attributes?.Colour || null,
+        productSize: item.size || item.attributes?.size || null,
+        metadata: JSON.stringify({
+          attributes: item.attributes || {},
+          image,
+        }),
+      };
+    });
 
     const orderSubtotal = Number(subtotal) || orderItemsData.reduce((sum, i) => sum + i.price * i.quantity, 0);
     const orderShipping = Number(shippingCost) || 0;
@@ -215,7 +227,7 @@ router.post('/kashier/test-connection', async (req, res) => {
       redirectUrl: 'https://example.com/test',
       webhookUrl: 'https://example.com/test',
       description: 'Connection test',
-    }, null); // Pass null for companyId to use the provided config directly
+    }, null, { merchantId, apiKey, secretKey, mode: mode || 'test' });
 
     if (session.success) {
       res.json({ success: true, message: 'Connection successful' });

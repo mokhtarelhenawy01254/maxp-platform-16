@@ -1,3 +1,15 @@
+## [2026-06-12] Monorepo — Purged Legacy Folders & AI Agent Sandbox Synchronization
+- **Details**: Consolidating the repository by removing legacy/duplicate root folders (`backend/`, `frontend/`, and root `package.json`/`package-lock.json`) and migrating AI agent modules to the correct `apps/` layout. Synchronized the developer AI Agent sandbox in the frontend.
+- **Architecture**:
+  - **Clean Monorepo Consolidation**: Purged old root-level `backend/`, `frontend/`, and `testsprite_tests/` structures to ensure all active services run solely inside `/apps`.
+  - **AI Agent Sandbox UI**: Integrated `SkillModal.tsx` and `SkillSidebar.tsx` into `/apps/frontend/src/pages/admin/ai-agent-sandbox` to manage developer agent tools.
+  - **Controller/Router Consolidation**: Added `superAdminSettingsController.js` and consolidated `platformSubscriptionRoutes.js`, cleaning up legacy imports.
+- **Files**:
+  - [package.json](file:///h:/maxp-platform/package.json) [DELETE]
+  - [frontend/src/storefront/sections/ProductInfo.tsx](file:///h:/maxp-platform/frontend/src/storefront/sections/ProductInfo.tsx) [DELETE]
+  - [apps/frontend/src/pages/admin/ai-agent-sandbox/SkillModal.tsx](file:///h:/maxp-platform/apps/frontend/src/pages/admin/ai-agent-sandbox/SkillModal.tsx) [NEW]
+  - [apps/backend/controller/superAdminSettingsController.js](file:///h:/maxp-platform/apps/backend/controller/superAdminSettingsController.js) [NEW]
+
 ## [2026-06-12] Frontend — Storefront Build Chunk Splitting & esbuild Transpiler Settings
 - **Details**: Refactored the frontend's Vite chunking and esbuild configurations to split the storefront code and reduce memory footprint, preventing out-of-memory crashes on large production builds.
 - **Architecture**:

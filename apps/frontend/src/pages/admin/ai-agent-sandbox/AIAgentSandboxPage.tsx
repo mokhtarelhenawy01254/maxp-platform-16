@@ -10,7 +10,8 @@ import {
   Share2,
   MessageSquare,
   LayoutList,
-  Activity
+  Activity,
+  Sparkles
 } from "lucide-react";
 import { useAgentSandbox } from "./hooks/useAgentSandbox";
 import { SessionList } from "./components/SessionList";
@@ -19,7 +20,10 @@ import { InspectorPanel } from "./components/InspectorPanel";
 import { HeaderBar } from "./components/HeaderBar";
 import { StatusBar } from "./components/StatusBar";
 import { Button } from "@/components/ui/button";
+import SkillSidebar from "./SkillSidebar";
+import SkillModal from "./SkillModal";
 import type { SandboxTraceSummary, ToolDefinition } from "./types/sandbox.types";
+import type { SkillDefinition } from "./hooks/useAgentSandbox";
 
 const AIAgentSandboxPage: React.FC = () => {
   const {
@@ -58,12 +62,15 @@ const AIAgentSandboxPage: React.FC = () => {
     clearActivityLog,
     clearError,
     toolsMetadata,
+    skills,
   } = useAgentSandbox();
 
   // Media query states implemented directly via window check / resize listener or basic defaults
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
   const [inspectorOpen, setInspectorOpen] = useState<boolean>(true);
   const [activeMobilePanel, setActiveMobilePanel] = useState<'sessions' | 'chat' | 'inspector'>('chat');
+  const [skillModalOpen, setSkillModalOpen] = useState(false);
+  const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
 
 
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -218,27 +225,28 @@ const AIAgentSandboxPage: React.FC = () => {
            />
          </div>
  
-         {/* Inspector Panel Toggle Tab */}
-         <div className="hidden md:flex w-7 min-w-[28px] border-l border-r border-slate-200 dark:border-slate-800 flex-col justify-center items-center bg-white dark:bg-slate-900 select-none">
-           <button
-             onClick={() => setInspectorOpen((p) => !p)}
-             className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-650"
-             title={inspectorOpen ? "Hide inspector" : "Show inspector"}
-           >
-             {inspectorOpen ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
-           </button>
-         </div>
- 
-         {/* Right Inspector Log & Tools Pane */}
-         <div className={`transition-all duration-300 ${activeMobilePanel === 'inspector' ? 'flex' : 'hidden'} md:flex`}>
-           <InspectorPanel
-             tools={agentTools}
-             activityLog={activityLog}
-             traceSummary={latestTraceSummary}
-             onClearLog={clearActivityLog}
-             collapsed={!inspectorOpen}
-           />
-         </div>
+          {/* Inspector/Skills Panel Toggle Tab */}
+          <div className="hidden md:flex w-7 min-w-[28px] border-l border-r border-slate-200 dark:border-slate-800 flex-col justify-center items-center bg-white dark:bg-slate-900 select-none">
+            <button
+              onClick={() => setInspectorOpen((p) => !p)}
+              className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-650"
+              title={inspectorOpen ? "Hide skills panel" : "Show skills panel"}
+            >
+              {inspectorOpen ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+            </button>
+          </div>
+  
+          {/* Right Skills Pane */}
+          <div className={`transition-all duration-300 ${activeMobilePanel === 'inspector' ? 'flex' : 'hidden'} md:flex`}>
+            <SkillSidebar
+              selectedAgent={selectedAgent}
+              onSkillSelect={(skillId) => {
+                setSelectedSkillId(skillId);
+                setSkillModalOpen(true);
+              }}
+              skills={skills}
+            />
+          </div>
        </div>
 
        {/* Footer Stats status bar */}
@@ -261,14 +269,22 @@ const AIAgentSandboxPage: React.FC = () => {
            <MessageSquare className="size-5" />
            <span className="text-[10px] font-medium">Chat</span>
          </button>
-         <button 
-           onClick={() => setActiveMobilePanel('inspector')}
-           className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${activeMobilePanel === 'inspector' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 scale-105' : 'text-slate-500 opacity-70'}`}
-         >
-           <Activity className="size-5" />
-           <span className="text-[10px] font-medium">Inspector</span>
-         </button>
-       </div>
+          <button 
+            onClick={() => setActiveMobilePanel('inspector')}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${activeMobilePanel === 'inspector' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 scale-105' : 'text-slate-500 opacity-70'}`}
+          >
+            <Sparkles className="size-5" />
+            <span className="text-[10px] font-medium">Skills</span>
+          </button>
+        </div>
+
+      {/* Skill Details Modal */}
+      <SkillModal
+        open={skillModalOpen}
+        skillId={selectedSkillId}
+        onClose={() => setSkillModalOpen(false)}
+        skills={skills}
+      />
 
       {/* Export Session Modal overlay */}
       {exportDialogOpen && (

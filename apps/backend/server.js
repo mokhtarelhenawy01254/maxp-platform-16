@@ -513,39 +513,12 @@ app.use("/api/v1/public/promotion-settings", promotionSettingsRoutes);
 app.use("/api/v1/product-landings", productLandingPagesRoutes);
   console.log("✅ [DEBUG] Public Products, Orders & Storefront Routes Loaded");
 
-  // Kashier connection test (public, no auth required)
-  const KashierService = require("./services/kashierService");
-  app.post("/api/v1/payment/kashier/test-connection", async (req, res) => {
-    console.log('[KASHIER-TEST] Request received');
-    try {
-      console.log('[KASHIER-TEST] Request body:', JSON.stringify(req.body));
-      const { merchantId, apiKey, secretKey, mode } = req.body;
-      if (!merchantId || !apiKey || !secretKey) {
-        console.log('[KASHIER-TEST] Missing config');
-        return res.status(400).json({ success: false, error: 'Missing required configuration' });
-      }
-      console.log('[KASHIER-TEST] Calling createPaymentSession');
-      const session = await KashierService.createPaymentSession({
-        amount: 1,
-        currency: 'EGP',
-        orderId: `test-${Date.now()}`,
-        customer: { email: 'test@test.com', reference: 'test' },
-        redirectUrl: 'https://example.com/test',
-        webhookUrl: 'https://example.com/test',
-        description: 'Connection test',
-      }, null, { merchantId, apiKey, secretKey, mode: mode || 'test' });
-      console.log('[KASHIER-TEST] Session result:', session);
-      if (session.success) {
-        res.json({ success: true, message: 'Connection successful' });
-      } else {
-        res.status(400).json({ success: false, error: session.error });
-      }
-    } catch (error) {
-      console.error('[KASHIER-TEST] Error:', error);
-      console.error('[KASHIER-TEST] Error stack:', error.stack);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
+  // Public Kashier payment & checkout routes (no dashboard auth required)
+  app.use("/api/v1/payment", kashierRoutes);
+
+  // Public webhook for platform subscription payments (Kashier → MaxP platform billing)
+  const { handleWebhook: handlePlatformSubscriptionWebhook } = require("./controller/platformSubscriptionController");
+  app.post("/api/v1/public/platform-subscription/webhook", handlePlatformSubscriptionWebhook);
 
   // Public integration surfaces secured by their own API keys/signatures
   app.use("/api/v1/external/tasks", taskExternalRoutes);
@@ -667,7 +640,6 @@ app.use("/api/v1/delivery-options", deliveryOptionRoutes);
 app.use("/api/v1/coupons", couponsRoutes);
 app.use("/api/v1/reviews", productReviewRoutes);
 app.use("/api/v1/payments", paymentRoutes);
-app.use("/api/v1/payment", kashierRoutes);
 
 // External Integrations
 app.use("/api/v1/facebook/ads", facebookAdsRoutes);
@@ -898,12 +870,20 @@ try {
   );
 }
 
-// Start AI Provider Health Check Service (auto-disable dead keys)
+// AI Provider Health Check — delegated to Python ai-service
 if (!isAiServicePrimary) {
   try {
-    const providerHealthCheckService = require("./legacy-ai-agent/aiAgent/providerHealthCheckService");
-    providerHealthCheckService.start();
-    console.log("✅ [PROVIDER-HEALTH] AI Provider health check service started");
+    const { healthCheck } = require("./services/aiSdkClient");
+    healthCheck().then(
+      (ok) => {
+        if (ok) {
+          console.log("✅ [PROVIDER-HEALTH] Python ai-service health check passed");
+        } else {
+          console.warn("⚠️ [PROVIDER-HEALTH] Python ai-service health check returned non-OK");
+        }
+      },
+      (err) => console.error("❌ [PROVIDER-HEALTH] Python ai-service health check failed:", err?.message)
+    );
   } catch (error) {
     console.error(
       "❌ [PROVIDER-HEALTH] Failed to start provider health check:",

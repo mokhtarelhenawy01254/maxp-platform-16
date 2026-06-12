@@ -12,6 +12,7 @@ export interface AgentConfig {
   description: string;
   defaultModel: string;
   allowedTools: string[];
+  allowedSkills: string[];
 }
 
 export interface ModelConfig {

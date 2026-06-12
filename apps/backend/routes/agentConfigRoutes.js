@@ -15,16 +15,16 @@ const express = require('express');
 const router = express.Router();
 const verifyToken = require('../utils/verifyToken');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const { getTools } = require('../legacy-ai-agent/aiAgent/agentToolRegistry');
+const { TOOLS } = require('../legacy-ai-agent/aiAgent/agentToolRegistry');
 const { clearCache } = require('../legacy-ai-agent/aiAgent/agentSoulConfig');
-const { t } = require('../legacy-ai-agent/aiAgent/i18n');
+const { t } = require('../services/i18n');
 
 router.use(verifyToken.authenticateToken);
 
 const getCompanyId = (req) => req.user?.companyId || req.companyId;
 
 function getAllToolNames() {
-  return Object.keys(getTools());
+  return Object.keys(TOOLS);
 }
 
 function parseJson(val, fallback) {
@@ -55,7 +55,7 @@ router.get('/', async (req, res) => {
     }
 
     // ── Skills ───────────────────────────────────────────────────────────────
-    const tools = getTools();
+    const tools = TOOLS;
     const allToolNames = getAllToolNames();
     const modelSettings = parseJson(setting?.modelSettings, {});
     const storedSkills = modelSettings.agentSkills;

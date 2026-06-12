@@ -6,8 +6,8 @@ const devTaskIntegrationController = require("../controller/devTaskIntegrationCo
 const storePagesController = require("../controller/storePagesController");
 const docsController = require("../controller/docsController");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
-const { getTools } = require("../legacy-ai-agent/aiAgent/agentToolRegistry");
-const { t } = require("../legacy-ai-agent/aiAgent/i18n");
+const { TOOLS } = require("../legacy-ai-agent/aiAgent/agentToolRegistry");
+const { t } = require("../services/i18n");
 const { clearCache, clearAgentCache } = require("../legacy-ai-agent/aiAgent/agentSoulConfig");
 const {
   authenticateToken,
@@ -523,11 +523,11 @@ router.get(
 // All companies without custom config inherit from the matching AgentDefinition.
 
 function getAllToolNames() {
-  return Object.keys(getTools());
+  return Object.keys(TOOLS);
 }
 
 function buildSkillsList(enabledSkillNames) {
-  const tools = getTools();
+  const tools = TOOLS;
   return getAllToolNames().map(name => ({
     name,
     description: tools[name]?.description || '',

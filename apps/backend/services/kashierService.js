@@ -3,11 +3,17 @@ const axios = require('axios');
 const getPrisma = () => require('../services/sharedDatabase').getSharedPrismaClient();
 
 const KASHIER_MODE = () => process.env.KASHIER_MODE || 'test';
-const KASHIER_BASE_URL = () => KASHIER_MODE() === 'test' 
-  ? (process.env.KASHIER_TEST_BASE_URL || 'https://test-api.kashier.io')
-  : (process.env.KASHIER_BASE_URL || 'https://api.kashier.io');
+const KASHIER_BASE_URL = () => getBaseUrlForMode(KASHIER_MODE());
 const KASHIER_PAYMENT_URL = () => process.env.KASHIER_PAYMENT_URL || 'https://payments.kashier.io';
 const WEBHOOK_BASE_URL = () => process.env.WEBHOOK_BASE_URL || '';
+
+/** Return the correct Kashier API base URL for the given mode (test/live). */
+const getBaseUrlForMode = (mode) => {
+  if (mode === 'live') {
+    return process.env.KASHIER_BASE_URL || 'https://api.kashier.io';
+  }
+  return process.env.KASHIER_TEST_BASE_URL || 'https://test-api.kashier.io';
+};
 
 const getCompanyKashierConfig = async (companyId) => {
   const prisma = getPrisma();
@@ -60,7 +66,51 @@ const getCompanyKashierConfig = async (companyId) => {
   };
 };
 
+const getPlatformKashierConfig = async () => {
+  const prisma = getPrisma();
+  try {
+    const setting = await prisma.systemSettings.findUnique({
+      where: { systemName: 'kashier_gateway_settings' }
+    });
+
+    if (!setting || !setting.config) {
+      return {
+        merchantId: process.env.KASHIER_MERCHANT_ID || null,
+        apiKey: process.env.KASHIER_API_KEY || null,
+        secretKey: process.env.KASHIER_SECRET_KEY || null,
+        mode: process.env.KASHIER_MODE || 'test',
+        enabledPaymentMethods: ['card', 'wallet']
+      };
+    }
+
+    const config = typeof setting.config === 'string'
+      ? JSON.parse(setting.config)
+      : setting.config;
+
+    return {
+      merchantId: config.merchantId || null,
+      apiKey: config.apiKey || null,
+      secretKey: config.secretKey || null,
+      mode: config.mode || 'test',
+      enabledPaymentMethods: Array.isArray(config.enabledPaymentMethods) ? config.enabledPaymentMethods : ['card', 'wallet']
+    };
+  } catch (error) {
+    console.error('[KASHIER] Error fetching platform kashier config:', error);
+    return {
+      merchantId: process.env.KASHIER_MERCHANT_ID || null,
+      apiKey: process.env.KASHIER_API_KEY || null,
+      secretKey: process.env.KASHIER_SECRET_KEY || null,
+      mode: process.env.KASHIER_MODE || 'test',
+      enabledPaymentMethods: ['card', 'wallet']
+    };
+  }
+};
+
 class KashierService {
+  static async getPlatformConfig() {
+    return getPlatformKashierConfig();
+  }
+
   static async getHeaders(companyId = null, overrideConfig = null) {
     let apiKey = process.env.KASHIER_API_KEY;
     let secretKey = process.env.KASHIER_SECRET_KEY;
@@ -69,9 +119,13 @@ class KashierService {
       apiKey = overrideConfig.apiKey;
       secretKey = overrideConfig.secretKey;
     } else if (companyId) {
-      const { config } = await KashierService.getCompanyKashierConfig(companyId);
+      const { config } = await getCompanyKashierConfig(companyId);
       apiKey = config?.apiKey || apiKey;
       secretKey = config?.secretKey || secretKey;
+    } else {
+      const platformConfig = await getPlatformKashierConfig();
+      apiKey = platformConfig.apiKey || apiKey;
+      secretKey = platformConfig.secretKey || secretKey;
     }
 
     return {
@@ -89,12 +143,18 @@ class KashierService {
       apiKey = overrideConfig.apiKey;
       secretKey = overrideConfig.secretKey;
       mode = overrideConfig.mode;
-    } else {
-      const { config } = await this.getCompanyKashierConfig(companyId);
+    } else if (companyId) {
+      const { config } = await getCompanyKashierConfig(companyId);
       merchantId = config?.merchantId || process.env.KASHIER_MERCHANT_ID;
       apiKey = config?.apiKey || process.env.KASHIER_API_KEY;
       secretKey = config?.secretKey || process.env.KASHIER_SECRET_KEY;
       mode = config?.mode || KASHIER_MODE();
+    } else {
+      const platformConfig = await getPlatformKashierConfig();
+      merchantId = platformConfig.merchantId || process.env.KASHIER_MERCHANT_ID;
+      apiKey = platformConfig.apiKey || process.env.KASHIER_API_KEY;
+      secretKey = platformConfig.secretKey || process.env.KASHIER_SECRET_KEY;
+      mode = platformConfig.mode || KASHIER_MODE();
     }
 
     if (!merchantId || !apiKey || !secretKey) {
@@ -127,8 +187,11 @@ class KashierService {
 
     try {
       const headers = await this.getHeaders(companyId, overrideConfig);
+      const effectiveMode = mode || KASHIER_MODE();
+      const baseUrl = getBaseUrlForMode(effectiveMode);
+      console.log(`[KASHIER] Creating session — mode: ${effectiveMode}, baseUrl: ${baseUrl}`);
       const { data } = await axios.post(
-        `${KASHIER_BASE_URL()}/v3/payment/sessions`,
+        `${baseUrl}/v3/payment/sessions`,
         body,
         { headers },
       );
@@ -178,7 +241,7 @@ class KashierService {
   }
 
   static async getCompanyPaymentConfig(companyId) {
-    const { config, enabledPaymentMethods, hasConfig } = await this.getCompanyKashierConfig(companyId);
+    const { config, enabledPaymentMethods, hasConfig } = await getCompanyKashierConfig(companyId);
     return {
       enabledPaymentMethods,
       hasConfig,

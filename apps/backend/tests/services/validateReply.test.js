@@ -37,6 +37,8 @@ describe('validateReply', () => {
       companyId: 'company-1',
       _failedReply: jest.fn((code, reason, meta) => ({ status: 'FAILED', errorCode: code, error: reason, ...meta })),
       generateWithLLMResult: jest.fn(async () => ({ text: 'repaired reply' })),
+      runInputGuardrails: jest.fn(async () => ({ allowed: true, violations: [] })),
+      runOutputGuardrails: jest.fn(async () => ({ allowed: true, violations: [] })),
     },
     traceId: 'trace-1',
     executedTools: [],

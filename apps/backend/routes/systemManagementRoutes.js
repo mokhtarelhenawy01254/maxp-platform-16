@@ -8,7 +8,7 @@ const router = express.Router();
 const systemManager = require('../services/systemManager');
 const { authenticateToken, requireSuperAdmin } = require('../middleware/superAdminMiddleware');
 const { cacheMiddleware } = require('../middleware/performanceOptimization');
-const { t } = require('../legacy-ai-agent/aiAgent/i18n');
+const { t } = require('../services/i18n');
 
 /**
  * GET /api/v1/admin/systems

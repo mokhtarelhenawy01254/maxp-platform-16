@@ -23,34 +23,18 @@
 
 const NATIVE_TOOL_PREFIX = 'agenttool__';
 
-// Domain-scoped tools
+// Domain-scoped tools (remaining Node.js tools without full Python equivalents)
 const managerTools = require('./tools/managerTools');
-const hrTools = require('./tools/hrTools');
-const orderTools = require('./tools/orderTools');
-const productTools = require('./tools/productTools');
-const customerTools = require('./tools/customerTools');
-const inventoryTools = require('./tools/inventoryTools');
-const salesTools = require('./tools/salesTools');
 const competitorTools = require('./tools/competitorTools');
 const facebookTools = require('./tools/facebookTools');
 const googleSheetsTools = require('./tools/googleSheetsTools');
-const governanceTools = require('./tools/governanceTools');
-const HANDOFF_TOOL = require('./tools/handoffTool');
 
 // Dynamic aggregation of all tools
 const TOOLS = {
   ...managerTools,
-  ...hrTools,
-  ...orderTools,
-  ...productTools,
-  ...customerTools,
-  ...inventoryTools,
-  ...salesTools,
   ...competitorTools,
   ...facebookTools,
   ...googleSheetsTools,
-  ...governanceTools,
-  'agent.handoff_to': HANDOFF_TOOL,
 };
 
 function toNativeToolName(toolName = '') {

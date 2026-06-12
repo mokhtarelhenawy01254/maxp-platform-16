@@ -14,8 +14,7 @@ const MAX_TASK_LOG_ENTRIES = 500;
 
 const axios = require('axios');
 
-// Pipeline
-const pipeline = require('./pipeline');
+// Pipeline stages
 const resolveIntent = require('./pipeline/stages/resolveIntent');
 const routeToTools = require('./pipeline/stages/routeToTools');
 const executeTools = require('./pipeline/stages/executeTools');
@@ -230,7 +229,9 @@ class BaseAgent {
 
         try {
           attemptedProviderCall = true;
-          const AIProviderFactory = require('./providers/AIProviderFactory');
+          let AIProviderFactory;
+          try { AIProviderFactory = require('./providers/AIProviderFactory'); } catch { AIProviderFactory = null; }
+          if (!AIProviderFactory) { throw new Error('AIProviderFactory not available'); }
           const provider = AIProviderFactory.getProvider(keyInfo.provider, keyInfo.apiKey, keyInfo.baseUrl, keyInfo.keyId);
           const providerRequest = provider.generateResponse(prompt, {
             model: keyInfo.model,
@@ -450,6 +451,13 @@ class BaseAgent {
 
   addOutputGuardrail(guardrail) {
     this.outputGuardrails.push(guardrail);
+  }
+
+  /**
+   * Generate a structured failed-reply result. Overridden by CEOAgent.
+   */
+  _failedReply(errorCode, reason, metadata = {}) {
+    return { status: 'FAILED', errorCode, error: reason, ...metadata };
   }
 
   async runInputGuardrails(context, input) {

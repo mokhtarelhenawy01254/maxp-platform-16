@@ -62,17 +62,6 @@ jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(() => mockPrisma),
 }));
 
-jest.mock('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory', () => ({
-  getProvider: jest.fn(() => mockProviderClient),
-  getActiveProvider: jest.fn(() => mockProviderClient),
-}));
-
-jest.mock('../../legacy-ai-agent/aiAgent/aiRuntimeService', () => ({
-  getModelManager: jest.fn(() => ({
-    getNextKeySimple: jest.fn(),
-  })),
-}));
-
 jest.mock('../../services/aiServiceAdminClient', () => ({
   chatWithAgent: jest.fn(async () => mockAiServiceChatResult || {
     status: 'ok',
@@ -251,7 +240,7 @@ jest.mock('../../legacy-ai-agent/aiAgent/agentManagerService', () => ({
   }),
 }));
 
-const AIProviderFactory = require('../../legacy-ai-agent/aiAgent/providers/AIProviderFactory');
+const AIProviderFactory = { getProvider: jest.fn(() => mockProviderClient), getActiveProvider: jest.fn(() => mockProviderClient) };
 const aiServiceAdminClient = require('../../services/aiServiceAdminClient');
 
 const createApp = () => {
