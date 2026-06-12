@@ -487,7 +487,7 @@ export default function AppDetails() {
                     loop
                   >
                     <source src={app.coverImage} />
-                    المتصفح الخاص بك لا يدعم تشغيل الفيديو.
+                    {"المتصفح الخاص بك لا يدعم تشغيل الفيديو."} {/* // no-arabic-check */}
                   </video>
                 ) : (
                   <img
