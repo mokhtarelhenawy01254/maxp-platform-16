@@ -1,3 +1,15 @@
+## [2026-06-12] Integration — Kashier Payment Gateway Integration
+- **Details**: Built end-to-end support for Kashier payment gateway integration, including backend API routes, services, settings persistence, and frontend verification logic.
+- **Architecture**:
+  - **Kashier Service & Routes**: Created `kashierService.js` leveraging Axios for calls to the Kashier API endpoints (v3/payment/sessions). Hooked it to `kashierRoutes.js` to surface connection tests.
+  - **Settings Integration**: Updated `StoreSettings.tsx` in frontend to support entering merchant credentials (merchantId, apiKey, secretKey, test/live mode) and testing them via `test-connection` API, saving configurations by merging with existing storefront settings.
+  - **Scope & Router Cleanup**: Replaced out-of-scope references to `config` with `mode` in `kashierService.js` and consolidated API endpoints by removing duplicate inline route registrations from `server.js`.
+- **Files**:
+  - `apps/backend/services/kashierService.js`
+  - `apps/backend/routes/kashierRoutes.js`
+  - `apps/backend/server.js`
+  - `apps/frontend/src/pages/settings/StoreSettings.tsx`
+
 ## [2026-06-12] Frontend — Dynamic Loading Screen and Synchronized Bootstrap
 - **Details**: Swapped the static storefront spinner with an inline CSS skeleton screen inside `index.html`, and synchronized loader dismissal to the dynamic bundle completion in `main.tsx`.
 - **Architecture**:

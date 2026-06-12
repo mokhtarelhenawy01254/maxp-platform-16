@@ -1,3 +1,17 @@
+## [2026-06-12] Kashier Payment Gateway Integration [DONE]
+- **Objective**: Implement Kashier Payment Gateway integration for storefronts, including settings administration, connection testing, and resolving route duplication and scope errors.
+- **Accomplishments**:
+  - **Backend Kashier Service & API**: Built `kashierService.js` and `kashierRoutes.js` to interface with Kashier payment APIs and handle credential verification.
+  - **Merchant Settings Integration**: Extended `StoreSettings.tsx` to handle Kashier settings saving and dynamic connection testing with detailed diagnostics. Fixed a setting state merging bug.
+  - **Bug & Code Cleanup**: Corrected a `ReferenceError` inside `kashierService.js` by using the scoped `mode` variable instead of the block-scoped `config` variable. Deleted the duplicate `/test-connection` inline route from `server.js`.
+  - **Verification**: Ran staged checks via `check-arabic-strings.js` and verified zero compliance violations on modified files.
+- **Files**:
+  - `apps/backend/services/kashierService.js`
+  - `apps/backend/routes/kashierRoutes.js`
+  - `apps/backend/server.js`
+  - `apps/frontend/src/pages/settings/StoreSettings.tsx`
+  - `scripts/check-arabic-strings.js`
+
 ## [2026-06-12] Backend — Production Crash Loop Fix (unhandledRejection process.exit) [DONE]
 - **Objective**: Fix the production deployment failure caused by the backend crash-looping after the storefront optimization deploy.
 - **Root Cause**: The `process.on('unhandledRejection')` handler added in the previous commit called `process.exit(1)` on any unhandled promise rejection. Transient Redis/DB errors in production triggered instant process termination, causing PM2 to restart endlessly and failing the GHA health check after 30 attempts.

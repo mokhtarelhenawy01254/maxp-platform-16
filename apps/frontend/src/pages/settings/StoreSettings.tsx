@@ -1495,6 +1495,12 @@ const PaymentGatewaySettingsSection: React.FC<{
   const isConfigured = gatewayConfig.merchantId && gatewayConfig.apiKey && gatewayConfig.secretKey;
 
   useEffect(() => {
+    console.log('[LOAD] Settings received:', {
+      hasPaymentConfig: !!settings.paymentGatewayConfig,
+      configType: typeof settings.paymentGatewayConfig,
+      configValue: settings.paymentGatewayConfig ? (typeof settings.paymentGatewayConfig === 'string' ? 'STRING' : 'OBJECT') : 'NONE',
+      enabledMethods: settings.enabledPaymentMethods,
+    });
     if (settings.paymentGatewayConfig) {
       const config = typeof settings.paymentGatewayConfig === "string"
         ? JSON.parse(settings.paymentGatewayConfig)
@@ -1544,14 +1550,21 @@ const PaymentGatewaySettingsSection: React.FC<{
       enabledPaymentMethods: JSON.stringify(enabledMethods),
     };
 
-    onChange(updatedSettings);
+    console.log('[SAVE] Sending settings:', { ...updatedSettings, paymentGatewayConfig: '***MASKED***' });
+    // Merge with existing settings instead of replacing
+    onChange(prev => ({ ...prev, ...updatedSettings }));
 
     try {
-      await storefrontSettingsService.updateSettings(updatedSettings);
+      const result = await storefrontSettingsService.updateSettings(updatedSettings);
+      console.log('[SAVE] Result:', result);
+      // Update with full response from server
+      if (result?.data) {
+        onChange(result.data);
+      }
       toast.success("تم حفظ إعدادات بوابة الدفع بنجاح");
     } catch (error) {
-      console.error("Failed to save payment gateway settings:", error);
-      toast.error("حدث خطأ أثناء الحفظ");
+      console.error("[SAVE] Failed to save payment gateway settings:", error);
+      toast.error("حدث خطأ أثناء الحفظ: " + (error?.message || error?.response?.data?.message || "Unknown error"));
     }
   };
 
@@ -1565,6 +1578,7 @@ const PaymentGatewaySettingsSection: React.FC<{
     setTestMessage("جاري الاختبار...");
 
     try {
+      console.log('[TEST] Sending config:', { ...gatewayConfig, secretKey: '***' });
       const response = await fetch("/api/v1/payment/kashier/test-connection", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1572,18 +1586,28 @@ const PaymentGatewaySettingsSection: React.FC<{
         body: JSON.stringify(gatewayConfig),
       });
 
-      const data = await response.json();
+      console.log('[TEST] Response status:', response.status);
+      const responseText = await response.text();
+      console.log('[TEST] Response text:', responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        data = { error: 'Invalid JSON response' };
+      }
 
-      if (data.success) {
+      if (response.ok && data.success) {
         setConnectionStatus("connected");
         setTestMessage("✅ تم الاتصال بنجاح!");
       } else {
         setConnectionStatus("disconnected");
-        setTestMessage(`❌ ${data.error || "فشل الاتصال"}`);
+        setTestMessage(`❌ ${data.error || data.message || responseText || "فشل الاتصال"}`);
       }
     } catch (error) {
+      console.error('[TEST] Error:', error);
       setConnectionStatus("disconnected");
-      setTestMessage("❌ خطأ في الاتصال بالخادم");
+      setTestMessage(`❌ خطأ: ${error.message}`);
     }
   };
 

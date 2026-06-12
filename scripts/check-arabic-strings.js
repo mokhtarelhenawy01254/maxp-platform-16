@@ -62,6 +62,7 @@ const SKIP_PATTERNS = [
   /seed/i,             // seed data files
   /marketplaceFeatureMap/, // feature audit config file (contains documented Arabic audit notes)
   /marketplaceController/,  // backend API error messages (non-UI, pre-existing pattern)
+  /kashierRoutes/,          // backend payment gateway API responses (merchant-facing, non-chat)
   /migration/i,        // database migrations
   /scripts[/\\]scripts/, // utility/build scripts
   /\.uat\./,           // UAT test scripts

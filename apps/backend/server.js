@@ -470,14 +470,48 @@ app.use(createFrontendStaticFallback());
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Public Webhook endpoints (CORS handled individually by providers)
-  // Keep both singular and plural aliases because external providers already hit
-  // `/api/v1/webhook` while newer internal code may use `/api/v1/webhooks`.
-  app.use("/api/v1/webhook", webhookRoutes);
-  app.use("/api/v1/webhooks", webhookRoutes);
-  app.use("/api/v1/turbo-webhook", turboWebhookRoutes);
-  app.use("/api/v1/health", healthRoute);
-  app.use("/api/geolocation", geolocationRoutes);
-  app.use("/api/v1/geolocation", geolocationRoutes);
+// Keep both singular and plural aliases because external providers already hit
+// `/api/v1/webhook` while newer internal code may use `/api/v1/webhooks`.
+app.use("/api/v1/webhook", webhookRoutes);
+app.use("/api/v1/webhooks", webhookRoutes);
+app.use("/api/v1/turbo-webhook", turboWebhookRoutes);
+app.use("/api/v1/health", healthRoute);
+app.use("/api/geolocation", geolocationRoutes);
+app.use("/api/v1/geolocation", geolocationRoutes);
+
+// Shared/Public API surfacing (Limited CORS)
+app.use("/api/v1/public/analytics", require("./routes/publicAnalyticsRoutes"));
+console.log("✅ [DEBUG] Public Analytics GET Routes Loaded");
+
+// Public Marketplace Routes
+app.use("/api/v1/marketplace", marketplaceRoutes);
+app.use("/api/v1/public/marketplace", marketplaceRoutes);
+console.log("✅ [DEBUG] Public Marketplace Routes Loaded");
+
+// Public Product Surfaces
+app.use(
+  "/api/v1/public/products",
+  require("./routes/publicProductsSimpleRoutes"),
+);
+app.use(
+  "/api/v1/public/customers",
+  require("./routes/publicCustomerRoutes"),
+);
+app.use("/api/v1/public/orders", require("./routes/publicOrdersRoutes"));
+app.use(
+  "/api/v1/public/storefront",
+  require("./routes/publicStorefrontRoutes"),
+);
+app.use("/api/v1/public/platform", publicPlatformRoutes);
+app.use("/api/v1/public/affiliates", publicAffiliateRoutes);
+app.use("/api/v1/public/merchants", publicMerchantRoutes);
+app.use("/api/v1/public", publicCouponsRoutes);
+app.use("/api/v1/public", publicProductReviewRoutes);
+app.use("/api/v1/public/checkout-form-settings", checkoutFormSettingsRoutes);
+app.use("/api/v1/public/footer-settings", footerSettingsRoutes);
+app.use("/api/v1/public/promotion-settings", promotionSettingsRoutes);
+app.use("/api/v1/product-landings", productLandingPagesRoutes);
+  console.log("✅ [DEBUG] Public Products, Orders & Storefront Routes Loaded");
 
   // Kashier connection test (public, no auth required)
   const KashierService = require("./services/kashierService");
@@ -513,42 +547,8 @@ app.use(createFrontendStaticFallback());
     }
   });
 
-// Shared/Public API surfacing (Limited CORS)
-app.use("/api/v1/public/analytics", require("./routes/publicAnalyticsRoutes"));
-console.log("✅ [DEBUG] Public Analytics GET Routes Loaded");
-
-// Public Marketplace Routes
-app.use("/api/v1/marketplace", marketplaceRoutes);
-app.use("/api/v1/public/marketplace", marketplaceRoutes);
-console.log("✅ [DEBUG] Public Marketplace Routes Loaded");
-
-// Public Product Surfaces
-app.use(
-  "/api/v1/public/products",
-  require("./routes/publicProductsSimpleRoutes"),
-);
-app.use(
-  "/api/v1/public/customers",
-  require("./routes/publicCustomerRoutes"),
-);
-app.use("/api/v1/public/orders", require("./routes/publicOrdersRoutes"));
-app.use(
-  "/api/v1/public/storefront",
-  require("./routes/publicStorefrontRoutes"),
-);
-app.use("/api/v1/public/platform", publicPlatformRoutes);
-app.use("/api/v1/public/affiliates", publicAffiliateRoutes);
-app.use("/api/v1/public/merchants", publicMerchantRoutes);
-app.use("/api/v1/public", publicCouponsRoutes);
-app.use("/api/v1/public", publicProductReviewRoutes);
-app.use("/api/v1/public/checkout-form-settings", checkoutFormSettingsRoutes);
-app.use("/api/v1/public/footer-settings", footerSettingsRoutes);
-app.use("/api/v1/public/promotion-settings", promotionSettingsRoutes);
-app.use("/api/v1/product-landings", productLandingPagesRoutes);
-console.log("✅ [DEBUG] Public Products, Orders & Storefront Routes Loaded");
-
-// Public integration surfaces secured by their own API keys/signatures
-app.use("/api/v1/external/tasks", taskExternalRoutes);
+  // Public integration surfaces secured by their own API keys/signatures
+  app.use("/api/v1/external/tasks", taskExternalRoutes);
 app.use("/api/v1/external/dev-tasks", devTaskExternalRoutes);
 
 // Static User Content Surface

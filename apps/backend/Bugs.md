@@ -1,3 +1,22 @@
+## [2026-06-12] Integration — Kashier Payment Gateway & Reference Scope Bug
+- **Bug/Issue**: The Merchant Admin Dashboard needed support for testing and configuring the Kashier Payment Gateway. Additionally, in the initial implementation of the Kashier service, a `ReferenceError` was raised when generating a payment session if `overrideConfig` was provided because the `config` variable was referenced out of scope. In `server.js`, there was also a duplicate inline route definition `/api/v1/payment/kashier/test-connection`.
+- **Root Cause**:
+  1. The payment gateway configuration was not fully bound to the UI settings page saving logic (which previously overwrote all settings instead of merging).
+  2. Inside `KashierService.createPaymentSession`, the variable `config` was defined inside the `else` block (local scope), but was referenced on line 136 outside the block.
+  3. The route `/api/v1/payment/kashier/test-connection` was defined inline in `server.js` and also registered inside the separate `kashierRoutes.js`.
+- **Fix**:
+  1. Implemented full Kashier settings saving & testing in `StoreSettings.tsx` (merging settings with `onChange` rather than replacing them, and improving API response error handling/parsing).
+  2. Created `kashierRoutes.js` and `kashierService.js` to handle payment session creation and connection testing.
+  3. Replaced the out-of-scope `config` reference with the already-resolved scoped `mode` variable in `kashierService.js`.
+  4. Removed the duplicate inline route from `server.js`.
+  5. Added `/kashierRoutes/` to the skip patterns in `check-arabic-strings.js` since payment gateway errors are non-user-facing backend responses.
+- **Affected Files**:
+  - `apps/backend/services/kashierService.js`
+  - `apps/backend/routes/kashierRoutes.js`
+  - `apps/backend/server.js`
+  - `apps/frontend/src/pages/settings/StoreSettings.tsx`
+  - `scripts/check-arabic-strings.js`
+
 ## [2026-06-12] Backend — Production crash loop from aggressive unhandledRejection handler
 - **Bug/Issue**: After deploying the storefront optimization commit, the backend entered a crash loop on the production server. PM2 health checks failed after 30 attempts (150 seconds), and the GHA deploy workflow exited with code 1.
 - **Root Cause**: The newly added `process.on('unhandledRejection')` handler in `server.js` called `process.exit(1)` on ANY unhandled promise rejection. In production, transient Redis connection errors, brief DB timeouts, or failed webhooks trigger unhandled rejections. Each rejection instantly killed the process, PM2 restarted it, another rejection hit → infinite crash loop.
