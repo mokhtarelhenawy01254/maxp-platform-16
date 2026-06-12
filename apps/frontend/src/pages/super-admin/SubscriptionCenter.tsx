@@ -157,6 +157,7 @@ type MarketplaceManagementItem = {
   isAutoInstall?: boolean;
   logo?: string;
   icon?: string;
+  coverImage?: string;
   mainRoute?: string;
   adminRoute?: string;
   pricingModel?: PricingModel;
@@ -358,6 +359,7 @@ const createDefaultMarketplaceFormData = (
   isAutoInstall: false,
   logo: "",
   icon: "",
+  coverImage: "",
   mainRoute: "",
   adminRoute: "",
   pricingModel: "SUBSCRIPTION",
@@ -4123,6 +4125,16 @@ const MarketplaceItemDialog = ({
                   name="logo"
                   value={formData.logo ?? ""}
                   onChange={handleChange}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  fullWidth
+                  label="رابط الميديا (صورة أو فيديو URL)"
+                  name="coverImage"
+                  value={formData.coverImage ?? ""}
+                  onChange={handleChange}
+                  placeholder="رابط مباشر للصورة أو يوتيوب/فيديو"
                 />
               </Grid>
 

@@ -975,6 +975,8 @@ exports.getAppDetails = async (req, res) => {
           app = {
             ...app,
             id: dbApp.id,
+            coverImage: dbApp.coverImage || app.coverImage,
+            logo: dbApp.logo || app.logo,
             installCount,
             rating,
             reviewCount,
