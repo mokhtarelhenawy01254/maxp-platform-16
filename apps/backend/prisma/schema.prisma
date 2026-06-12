@@ -7236,6 +7236,7 @@ model MarketplaceApp {
   description  String
   logo         String?
   images       Json?
+  coverImage   String?
   monthlyPrice Decimal      @db.Decimal(10, 2)
   yearlyPrice  Decimal      @db.Decimal(10, 2)
   pricingModel PricingModel @default(SUBSCRIPTION)

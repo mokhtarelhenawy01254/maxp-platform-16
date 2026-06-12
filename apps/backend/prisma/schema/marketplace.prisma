@@ -30,6 +30,7 @@ model MarketplaceApp {
   // Phase 5: Hardening
   engineCompatibility String?
   icon          String?
+  coverImage    String?
   pricingRules  AppPricingRule[]
   reviews       AppReview[]
   installations CompanyApp[]

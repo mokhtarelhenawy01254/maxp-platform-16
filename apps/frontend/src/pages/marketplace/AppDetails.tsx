@@ -155,6 +155,15 @@ function getPricingSummary(app: MarketplaceApp, isEnterprise: boolean) {
   };
 }
 
+function getEmbedUrl(url: string | undefined | null): string | null {
+  if (!url) return null;
+  const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+  if (ytMatch) {
+    return `https://www.youtube.com/embed/${ytMatch[1]}`;
+  }
+  return null;
+}
+
 export default function AppDetails() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -459,6 +468,37 @@ export default function AppDetails() {
 
         <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
           <main className="min-w-0 space-y-5">
+            {app.coverImage && (
+              <section className="marketplace-card overflow-hidden rounded-2xl">
+                {getEmbedUrl(app.coverImage) ? (
+                  <iframe
+                    className="aspect-video w-full"
+                    src={getEmbedUrl(app.coverImage) as string}
+                    title={`${app.name} video`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : app.coverImage.match(/\.(mp4|webm|ogg)$/i) ? (
+                  <video
+                    className="aspect-video w-full bg-black object-contain"
+                    controls
+                    autoPlay
+                    muted
+                    loop
+                  >
+                    <source src={app.coverImage} />
+                    المتصفح الخاص بك لا يدعم تشغيل الفيديو.
+                  </video>
+                ) : (
+                  <img
+                    src={app.coverImage}
+                    alt={`${app.name} cover`}
+                    className="aspect-[2/1] w-full object-cover sm:aspect-[21/9]"
+                  />
+                )}
+              </section>
+            )}
+
             <section className="marketplace-card rounded-2xl p-5 text-right">
               <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>

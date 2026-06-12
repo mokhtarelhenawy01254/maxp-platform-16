@@ -13593,3 +13593,20 @@ POST /chat {"message": "مرحبا"}
   - `apps/backend/legacy-ai-agent/aiAgent/naturalLanguageCronService.js`
   - `apps/backend/legacy-ai-agent/aiAgent/routineExecutorService.js`
 
+
+## [2026-06-12] Marketplace - App Cover Media Display [COMPLETE]
+- **Objective**: Allow Super Admin to set a media cover (Image or Video URL) for marketplace apps, which displays natively on the storefront app details page.
+- **Accomplishments**:
+  - **Prisma Schema Update**: Added `coverImage String?` to the `MarketplaceApp` schema and pushed changes with `npx prisma db push --accept-data-loss`.
+  - **Super Admin UI**: Added a text field in `SubscriptionCenter.tsx` (`MarketplaceItemDialog`) to accept "رابط الميديا (صورة أو فيديو URL)" alongside the logo field.
+  - **Storefront Display Integration**:
+    - Created `getEmbedUrl` in `AppDetails.tsx` to handle parsing YouTube links into embeddable iframe URLs.
+    - Updated `AppDetails.tsx` to render the `coverImage` right above the features section.
+    - Added responsive rendering for YouTube iframes, raw HTML5 video (mp4, webm, ogg), and fallback img tags.
+  - **Backend API Fix (Hybrid Mode)**: Updated `marketplaceController.js` `getAppDetails` endpoint. In Hybrid mode, the catalog JSON object is now correctly merged with the `coverImage` fetched directly from the database `dbApp`, ensuring immediate visibility on the storefront without waiting for catalog sync.
+- **Affected Files**:
+  - `apps/backend/prisma/schema/marketplace.prisma`
+  - `apps/backend/prisma/schema.prisma`
+  - `apps/frontend/src/pages/super-admin/SubscriptionCenter.tsx`
+  - `apps/frontend/src/pages/marketplace/AppDetails.tsx`
+  - `apps/backend/controller/marketplaceController.js`
