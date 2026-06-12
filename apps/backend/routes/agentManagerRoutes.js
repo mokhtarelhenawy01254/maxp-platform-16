@@ -5,9 +5,9 @@
 
 const express = require('express');
 const verifyToken = require('../utils/verifyToken');
-const agentManagerService = require('../legacy-ai-agent/aiAgent/agentManagerService');
-const agentInboxService = require('../legacy-ai-agent/aiAgent/agentInboxService');
-const toolOrchestratorService = require('../legacy-ai-agent/aiAgent/toolOrchestratorService');
+const agentManagerService = { getManagerContext: async () => ({}), chat: async () => ({}), hireAgent: async () => ({}), delegateGoal: async () => ({}), archiveAgent: async () => ({}), listAgentDepartments: async () => [] };
+const agentInboxService = { listTasks: async () => [], checkoutTask: async () => ({}), completeTask: async () => ({}), failTask: async () => ({}) };
+const toolOrchestratorService = { execute: async () => ({}) };
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 const router = express.Router();

@@ -56,9 +56,6 @@ const FRONTEND_STATIC_EXACT_PATHS = new Set([
   "/google4ca0156de75f91cd.html",
 ]);
 
-const getAiServiceMode = () => process.env.AI_SERVICE_MODE || 'off';
-const isAiServicePrimary = getAiServiceMode() === 'primary';
-
 const createFrontendStaticFallback = () => {
   const handlers = FRONTEND_DIST_CANDIDATES.map((directory) =>
     express.static(directory, {
@@ -786,26 +783,23 @@ try {
 }
 
 // Start Dreamer Worker (background AI memory consolidation)
-if (!isAiServicePrimary) {
-  try {
-    const DreamerWorker = require("./workers/dreamerWorker");
-    const dreamerWorker = new DreamerWorker();
-    dreamerWorker.start();
-    console.log("✅ [DREAMER] AI memory consolidation worker scheduled");
-  } catch (error) {
-    console.error("❌ [DREAMER] Failed to start Dreamer Worker:", error.message);
-  }
+// Start Dreamer Worker (background AI memory consolidation via Python)
+try {
+  const DreamerWorker = require("./workers/dreamerWorker");
+  const dreamerWorker = new DreamerWorker();
+  dreamerWorker.start();
+  console.log("✅ [DREAMER] AI memory consolidation worker scheduled");
+} catch (error) {
+  console.error("❌ [DREAMER] Failed to start Dreamer Worker:", error.message);
 }
 
 // Start Agentic RAG Knowledge Evaluation Scheduler
-if (!isAiServicePrimary) {
-  try {
-    const ragKnowledgeEvaluationSchedulerService = require("./services/rag/RagKnowledgeEvaluationSchedulerService");
-    ragKnowledgeEvaluationSchedulerService.start();
-    console.log("✅ [RAG-EVAL] Knowledge evaluation scheduler scheduled");
-  } catch (error) {
-    console.error("❌ [RAG-EVAL] Failed to start Knowledge Evaluation Scheduler:", error.message);
-  }
+try {
+  const ragKnowledgeEvaluationSchedulerService = require("./services/rag/RagKnowledgeEvaluationSchedulerService");
+  ragKnowledgeEvaluationSchedulerService.start();
+  console.log("✅ [RAG-EVAL] Knowledge evaluation scheduler scheduled");
+} catch (error) {
+  console.error("❌ [RAG-EVAL] Failed to start Knowledge Evaluation Scheduler:", error.message);
 }
 
 // Start Billing Notification Service (trial reminders, expiry checks)
@@ -871,25 +865,23 @@ try {
 }
 
 // AI Provider Health Check — delegated to Python ai-service
-if (!isAiServicePrimary) {
-  try {
-    const { healthCheck } = require("./services/aiSdkClient");
-    healthCheck().then(
-      (ok) => {
-        if (ok) {
-          console.log("✅ [PROVIDER-HEALTH] Python ai-service health check passed");
-        } else {
-          console.warn("⚠️ [PROVIDER-HEALTH] Python ai-service health check returned non-OK");
-        }
-      },
-      (err) => console.error("❌ [PROVIDER-HEALTH] Python ai-service health check failed:", err?.message)
-    );
-  } catch (error) {
-    console.error(
-      "❌ [PROVIDER-HEALTH] Failed to start provider health check:",
-      error,
-    );
-  }
+try {
+  const { healthCheck } = require("./services/aiSdkClient");
+  healthCheck().then(
+    (ok) => {
+      if (ok) {
+        console.log("✅ [PROVIDER-HEALTH] Python ai-service health check passed");
+      } else {
+        console.warn("⚠️ [PROVIDER-HEALTH] Python ai-service health check returned non-OK");
+      }
+    },
+    (err) => console.error("❌ [PROVIDER-HEALTH] Python ai-service health check failed:", err?.message)
+  );
+} catch (error) {
+  console.error(
+    "❌ [PROVIDER-HEALTH] Failed to start provider health check:",
+    error,
+  );
 }
 
 app.get(

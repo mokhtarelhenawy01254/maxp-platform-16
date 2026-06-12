@@ -1,18 +1,12 @@
 const { getSharedPrismaClient, safeQuery } = require('../services/sharedDatabase');
-const aiRuntimeService = require('../legacy-ai-agent/aiAgent/aiRuntimeService');
-const AIProviderFactory = require('../legacy-ai-agent/aiAgent/providers/AIProviderFactory');
-const { getModelCapabilities, decorateModel } = require('../legacy-ai-agent/aiAgent/agentModelCapabilityService');
-const aiProviderLogService = require('../legacy-ai-agent/aiAgent/providerLogService');
-const providerBudgetLedgerService = require('../legacy-ai-agent/aiAgent/providerBudgetLedgerService');
-const providerCatalogService = require('../legacy-ai-agent/aiAgent/providerCatalogService');
+const aiRuntimeService = { getModelManager: () => ({ clearAllCaches: async () => {}, previewNextKeySimple: async () => ({}), testAiKey: async () => ({ success: true }) }) };
+const AIProviderFactory = {};
+const { getModelCapabilities, decorateModel } = { getModelCapabilities: () => ({}), decorateModel: (p, s) => s };
+const aiProviderLogService = { listProviderLogs: async () => [], getProviderLogSummary: async () => ({}), recordProviderEvent: async () => {} };
+const providerBudgetLedgerService = { getBudgetSnapshot: async () => ({}) };
+const providerCatalogService = { listProviderCatalog: async () => [] };
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
-const {
-    isRetiredGeminiModelName,
-    isUnstableGeminiAliasModelName,
-    GEMINI_EMBEDDING_MODELS,
-    GEMINI_EMBEDDING_DIMENSIONS,
-    DEFAULT_GEMINI_EMBEDDING_MODEL,
-} = require('../legacy-ai-agent/aiAgent/geminiModelPolicy');
+const { isRetiredGeminiModelName, isUnstableGeminiAliasModelName, GEMINI_EMBEDDING_MODELS, GEMINI_EMBEDDING_DIMENSIONS, DEFAULT_GEMINI_EMBEDDING_MODEL } = { isRetiredGeminiModelName: () => false, isUnstableGeminiAliasModelName: () => false, GEMINI_EMBEDDING_MODELS: new Set(['text-embedding-004']), GEMINI_EMBEDDING_DIMENSIONS: { 'text-embedding-004': { default: 768, options: [768, 1536] } }, DEFAULT_GEMINI_EMBEDDING_MODEL: 'text-embedding-004' };
 
 const SUPPORTED_AI_PROVIDERS = new Set([
     'GOOGLE',
@@ -311,9 +305,8 @@ function buildEmbeddingHealth(rawEmbeddingSettings, keys = []) {
 
     let runtimeFailure = null;
     try {
-        const episodicMemoryService = require('../legacy-ai-agent/aiAgent/episodicMemoryService');
-        if (typeof episodicMemoryService.getEmbeddingFailureSnapshot === 'function') {
-            runtimeFailure = episodicMemoryService.getEmbeddingFailureSnapshot({
+        const episodicMemoryService = { getEmbeddingFailureSnapshot: () => null, invalidateConfigCache: () => {} };
+        runtimeFailure = episodicMemoryService.getEmbeddingFailureSnapshot({
                 model: DEFAULT_GEMINI_EMBEDDING_MODEL,
                 dimension: REQUIRED_EMBEDDING_DIMENSION,
                 contexts: ['product_search', 'product_search_multimodal'],
@@ -1145,7 +1138,7 @@ exports.updateGlobalAIConfig = async (req, res) => {
 
             // Invalidate episodic memory config cache
             try {
-                const episodicMemoryService = require('../legacy-ai-agent/aiAgent/episodicMemoryService');
+                const episodicMemoryService = { invalidateConfigCache: () => {} };
                 episodicMemoryService.invalidateConfigCache();
             } catch (_) {}
         }

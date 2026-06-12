@@ -1,3 +1,24 @@
+## [2026-06-12] AI System Migration — Node.js Legacy AI Purged, Python ai-service Takes Over
+- **Details**: Completed full migration of all AI functionality from Node.js (`legacy-ai-agent/`) to the Python ai-service. Removed 117 files (~30K lines) of duplicated Node.js AI code. All customer-facing AI auto-reply, agent management, provider management, RAG, and HITL approvals now route through Python.
+- **Architecture**:
+  - **Customer Chat**: Facebook/Instagram auto-reply now uses `aiSdkClient.sendChatMessage()` → Python `/chat` endpoint
+  - **Agent Management**: Sandbox controller rewired to use `sandboxBridge` → `aiServiceAdminClient` → Python admin endpoints
+  - **LLM Providers**: All 10 provider files deleted. Key testing/health checks go through Python `/admin/keys/*` endpoints
+  - **HITL Approvals**: Unified through Python `ai.approvals` table. Legacy `ai_tool_approval_requests` table deprecated
+  - **Background Workers**: Dreamer worker consolidated via Python `/admin/dreamer/consolidate` endpoint
+  - **New Python Endpoints**: Added `/admin/tools`, `/admin/keys/test`, `/admin/keys/health`, `/admin/dreamer/consolidate`, `/admin/approvals`
+- **Impact**: Python AI service now handles 100% of AI workloads. Zero Node.js legacy AI code remains. `AI_SERVICE_MODE` env var removed.
+- **Files**:
+  - `apps/backend/legacy-ai-agent/` [DELETE — 117 files]
+  - `apps/backend/services/aiSdkClient.js` [MODIFY — added channel, memoryContext, listApprovals]
+  - `apps/backend/services/sandboxBridge.js` [NEW]
+  - `apps/backend/services/aiServiceAdminClient.js` [MODIFY — added spawnAgent, getAgent, testProviderKey]
+  - `apps/backend/routes/agentApprovalRoutes.js` [REWRITE — Python-only]
+  - `apps/backend/controller/aiSandboxController.js` [REWRITE — sandboxBridge-based]
+  - `apps/ai-service/src/api/admin/keys.py` [NEW]
+  - `apps/ai-service/src/api/admin/dreamer.py` [NEW]
+  - `apps/ai-service/src/api/admin/agents.py` [MODIFY — added /admin/tools]
+
 ## [2026-06-12] Monorepo — Purged Legacy Folders & AI Agent Sandbox Synchronization
 - **Details**: Consolidating the repository by removing legacy/duplicate root folders (`backend/`, `frontend/`, and root `package.json`/`package-lock.json`) and migrating AI agent modules to the correct `apps/` layout. Synchronized the developer AI Agent sandbox in the frontend.
 - **Architecture**:

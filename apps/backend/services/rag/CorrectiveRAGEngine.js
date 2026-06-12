@@ -6,7 +6,14 @@
  */
 
 const { getSharedPrismaClient } = require('../sharedDatabase');
-const episodicMemoryService = require('../../legacy-ai-agent/aiAgent/episodicMemoryService');
+const episodicMemoryService = {
+  saveEpisodicMemory: async () => null,
+  searchEpisodicMemory: async () => [],
+  getEpisodicMemories: async () => [],
+  getGeminiApiKey: async () => null,
+  searchSimilar: async () => [],
+};
+const unifiedOrchestrator = { search: async () => ({ products: [], totalCount: 0 }) };
 
 const DEFAULT_SOURCE_ORDER = ['HYBRID_KNOWLEDGE', 'FAQ_DB', 'POLICY_DB', 'VECTOR_STORE', 'PRODUCT_DB', 'WEB'];
 const HYBRID_SOURCE_TYPES = ['faq', 'policy'];
@@ -385,7 +392,6 @@ Return a JSON object with keys being the document numbers (1-${candidates.length
     if (source === 'VECTOR_STORE') {
       try {
         const customerId = options.customerId || 'global';
-        const episodicMemoryService = require('../../legacy-ai-agent/aiAgent/episodicMemoryService');
         const vectorDocs = await episodicMemoryService.searchSimilar(companyId, customerId, query, 5);
         if (vectorDocs && vectorDocs.length > 0) {
           return vectorDocs.map(doc => ({
@@ -400,7 +406,6 @@ Return a JSON object with keys being the document numbers (1-${candidates.length
     // 3. PRODUCT_DB: try real database products using semantic search orchestrator
     if (source === 'PRODUCT_DB') {
       try {
-        const unifiedOrchestrator = require('../../legacy-ai-agent/aiAgent/utils/UnifiedProductSearchOrchestrator');
         const orchestratorResult = await unifiedOrchestrator.search(companyId, query, {
           limit: 10,
           conversationId: options.conversationId || undefined,

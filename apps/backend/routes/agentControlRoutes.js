@@ -7,16 +7,16 @@
 const express = require('express');
 const verifyToken = require('../utils/verifyToken');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const agentProvisioningService = require('../legacy-ai-agent/aiAgent/agentProvisioningService');
-const agentManagerService = require('../legacy-ai-agent/aiAgent/agentManagerService');
-const agentProfileLoaderService = require('../legacy-ai-agent/aiAgent/agentProfileLoaderService');
-const toolRegistryService = require('../legacy-ai-agent/aiAgent/toolRegistryService');
-const skillRegistryService = require('../legacy-ai-agent/aiAgent/skillRegistryService');
-const { getModelCapabilities } = require('../legacy-ai-agent/aiAgent/agentModelCapabilityService');
-const naturalLanguageCronService = require('../legacy-ai-agent/aiAgent/naturalLanguageCronService');
-const routineExecutorService = require('../legacy-ai-agent/aiAgent/routineExecutorService');
-const agentAuditTrailService = require('../legacy-ai-agent/aiAgent/agentAuditTrailService');
-const aiRuntimeService = require('../legacy-ai-agent/aiAgent/aiRuntimeService');
+const agentProvisioningService = { listAgents: () => [], spawn: async () => ({}), getAgent: () => ({}), updateAgent: async () => {} };
+const agentManagerService = { getManagerAgent: async () => ({}), ensureFacebookMessengerAgent: async () => {}, archiveAgent: async () => ({}), updateAgentProfile: async () => ({}), runAgentTask: async () => ({}) };
+const agentProfileLoaderService = { loadProfile: () => null, listProfiles: () => [] };
+const toolRegistryService = { getTool: () => null, listTools: () => [] };
+const skillRegistryService = { getSkillsForIds: () => [], listSkills: () => [] };
+const { getModelCapabilities } = { getModelCapabilities: () => ({}) };
+const naturalLanguageCronService = { getJobs: () => [], scheduleJob: async () => ({}), cancelJob: async () => {} };
+const routineExecutorService = { executeRoutine: async () => ({}) };
+const agentAuditTrailService = { getDecisionLog: async () => [], getCostSummary: async () => ({}) };
+const aiRuntimeService = { getModelManager: () => ({}) };
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 
 const router = express.Router();

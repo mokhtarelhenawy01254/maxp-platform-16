@@ -2,12 +2,7 @@ const express = require('express');
 const request = require('supertest');
 
 let mockCurrentUser;
-const mockGetDraft = jest.fn();
-const mockListDrafts = jest.fn();
-const mockProcessApprovalResponse = jest.fn();
-const mockProcessRejectionResponse = jest.fn();
 const mockResumeWorkflow = jest.fn();
-const mockIsAiServiceEnabled = jest.fn();
 
 jest.mock('../../utils/verifyToken', () => ({
   authenticateToken: (req, res, next) => {
@@ -17,22 +12,9 @@ jest.mock('../../utils/verifyToken', () => ({
   },
 }));
 
-jest.mock('../../legacy-ai-agent/aiAgent/draftProposalService', () => ({
-  getDraft: (...args) => mockGetDraft(...args),
-  listDrafts: (...args) => mockListDrafts(...args),
-}));
-
-jest.mock('../../legacy-ai-agent/aiAgent/humanApprovalService', () => ({
-  processApprovalResponse: (...args) => mockProcessApprovalResponse(...args),
-  processRejectionResponse: (...args) => mockProcessRejectionResponse(...args),
-}));
-
 jest.mock('../../services/aiSdkClient', () => ({
   resumeWorkflow: (...args) => mockResumeWorkflow(...args),
-}));
-
-jest.mock('../../legacy-ai-agent/aiAgent/aiServiceRouter', () => ({
-  isAiServiceEnabled: (...args) => mockIsAiServiceEnabled(...args),
+  listApprovals: jest.fn(async () => ({ approvals: [], count: 0 })),
 }));
 
 const agentApprovalRoutes = require('../../routes/agentApprovalRoutes');
@@ -54,14 +36,7 @@ describe('agentApprovalRoutes AI service resume integration', () => {
       username: 'merchant-user',
       companyId: 'company-1',
     };
-    mockGetDraft.mockResolvedValue({
-      id: 'draft-1',
-      conversationId: 'thread-1',
-    });
-    mockProcessApprovalResponse.mockResolvedValue({ approved: true });
-    mockProcessRejectionResponse.mockResolvedValue({ rejected: true });
     mockResumeWorkflow.mockResolvedValue({ status: 'ok' });
-    mockIsAiServiceEnabled.mockReturnValue(true);
     app = createApp();
   });
 
@@ -97,16 +72,5 @@ describe('agentApprovalRoutes AI service resume integration', () => {
       reason: 'too risky',
       decidedBy: 'merchant-user',
     });
-  });
-
-  test('does not notify maxp-ai-service when rollout is disabled for the company', async () => {
-    mockIsAiServiceEnabled.mockReturnValue(false);
-
-    const response = await request(app)
-      .post('/api/v1/agent/approvals/draft-1/approve')
-      .send({ approvalCode: '1234' });
-
-    expect(response.status).toBe(200);
-    expect(mockResumeWorkflow).not.toHaveBeenCalled();
   });
 });

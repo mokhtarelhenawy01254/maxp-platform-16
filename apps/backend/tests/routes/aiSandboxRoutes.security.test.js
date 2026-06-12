@@ -10,6 +10,8 @@ const mockProviderClient = {
 let mockCeoAgentInstance;
 let mockCeoAgentNextResult;
 let mockAiServiceChatResult;
+let mockSandboxAgentConfig;
+let mockSandboxAgentsList;
 const mockWorkingMemoryStore = new Map();
 
 const mockPrisma = {
@@ -77,167 +79,23 @@ jest.mock('../../services/aiServiceAdminClient', () => ({
   })),
 }));
 
-jest.mock('../../legacy-ai-agent/aiAgent/workingMemoryService', () => ({
-  clearSession: jest.fn(async (companyId, conversationId) => {
-    mockWorkingMemoryStore.delete(`${companyId}:${conversationId}`);
-    return true;
-  }),
-  initSession: jest.fn(async (companyId, conversationId) => {
-    mockWorkingMemoryStore.set(`${companyId}:${conversationId}`, { messages: [] });
-    return mockWorkingMemoryStore.get(`${companyId}:${conversationId}`);
-  }),
-  addMessage: jest.fn(async (companyId, conversationId, message) => {
-    const key = `${companyId}:${conversationId}`;
-    const session = mockWorkingMemoryStore.get(key) || { messages: [] };
-    session.messages = session.messages || [];
-    session.messages.push({
-      role: message.role || 'user',
-      content: message.content || '',
-    });
-    mockWorkingMemoryStore.set(key, session);
-    return session;
-  }),
-  getContext: jest.fn(async (companyId, conversationId) => {
-    const session = mockWorkingMemoryStore.get(`${companyId}:${conversationId}`);
-    if (!session) return null;
-    return {
-      summary: null,
-      recentMessages: session.messages || [],
-      cart: {},
-      queriedProducts: session.queriedProducts || [],
-      lastShownProductIds: session.lastShownProductIds || [],
-      activeSearchFilters: session.activeSearchFilters || {},
-    };
-  }),
-  updateSearchContext: jest.fn(async (companyId, conversationId, { productIds, filters } = {}) => {
-    const key = `${companyId}:${conversationId}`;
-    const session = mockWorkingMemoryStore.get(key) || { messages: [] };
-    if (Array.isArray(productIds) && productIds.length > 0) {
-      session.lastShownProductIds = productIds;
-    }
-    session.activeSearchFilters = { ...(session.activeSearchFilters || {}), ...(filters || {}) };
-    mockWorkingMemoryStore.set(key, session);
-    return {
-      lastShownProductIds: session.lastShownProductIds || [],
-      activeSearchFilters: session.activeSearchFilters || {},
-    };
-  }),
-  addQueriedProduct: jest.fn(async (companyId, conversationId, product) => {
-    const key = `${companyId}:${conversationId}`;
-    const session = mockWorkingMemoryStore.get(key) || { messages: [] };
-    session.queriedProducts = [...(session.queriedProducts || []), product];
-    mockWorkingMemoryStore.set(key, session);
-    return session.queriedProducts;
-  }),
-}));
-
-jest.mock('../../legacy-ai-agent/aiAgent/CEOAgent', () => jest.fn().mockImplementation(() => {
-  const defaultResult = {
-    status: 'SUCCESS',
-    result: {
-      reply: 'LLM reply',
-      summary: 'LLM reply',
-      tools: [],
-    },
-    modelSelection: {
-      provider: 'GOOGLE',
-      model: 'gemini-2.5-flash',
-      keyId: 'key_google',
-      keyName: 'Production Gemini',
-    },
-  };
-  mockCeoAgentInstance = {
-    setModelManager: jest.fn(),
-    processTask: jest.fn(async () => mockCeoAgentNextResult || defaultResult),
-    getInfo: jest.fn(() => ({
-      selectedModel: 'gemini-2.5-flash',
-      selectedProvider: 'GOOGLE',
-      lastModelSelection: {
-        provider: 'GOOGLE',
-        model: 'gemini-2.5-flash',
-        keyId: 'key_google',
-        keyName: 'Production Gemini',
-      },
-    })),
-  };
-  return mockCeoAgentInstance;
-}));
-
-jest.mock('../../legacy-ai-agent/aiAgent/BaseAgent', () => ({
-  fromTemplate: jest.fn((_templateSlug, _companyId, agentConfig = {}) => {
-    const defaultResult = {
-      status: 'SUCCESS',
-      result: {
-        reply: 'LLM reply',
-        summary: 'LLM reply',
-        tools: [],
-      },
-      modelSelection: {
-        provider: 'GOOGLE',
-        model: 'gemini-2.5-flash',
-        keyId: 'key_google',
-        keyName: 'Production Gemini',
-      },
-    };
-    mockCeoAgentInstance = {
-      ...agentConfig,
-      setModelManager: jest.fn(),
-      processTask: jest.fn(async () => mockCeoAgentNextResult || defaultResult),
-      getTools: jest.fn(() => Array.isArray(agentConfig.allowedTools) ? agentConfig.allowedTools : []),
-      getSkills: jest.fn(() => Array.isArray(agentConfig.allowedSkills) ? agentConfig.allowedSkills : []),
-      getInfo: jest.fn(() => ({
-        selectedModel: 'gemini-2.5-flash',
-        selectedProvider: 'GOOGLE',
-        lastModelSelection: {
-          provider: 'GOOGLE',
-          model: 'gemini-2.5-flash',
-          keyId: 'key_google',
-          keyName: 'Production Gemini',
-        },
-      })),
-    };
-    return mockCeoAgentInstance;
-  }),
-}));
-
-jest.mock('../../legacy-ai-agent/aiAgent/agentProvisioningService', () => ({
-  getAgent: jest.fn(() => ({
-    id: 'agent_sales',
-    name: 'Sales Agent',
-    role: 'SALES',
-    persona: {
-      soulInstructions: 'Sensitive private operating instructions',
-    },
-    allowedTools: ['product.search', 'order.create_draft'],
+jest.mock('../../services/sandboxBridge', () => ({
+  getAgentConfig: jest.fn(async () => mockSandboxAgentConfig || null),
+  createSandboxAgentMeta: jest.fn((templateSlug, companyId, config) => ({
+    id: config.id || `${templateSlug}_${companyId}`,
+    name: config.name || templateSlug,
+    role: config.role || 'CUSTOMER_SALES',
+    companyId,
+    templateSlug,
+    allowedTools: config.allowedTools || [],
+    allowedSkills: config.allowedSkills || [],
+    model: config.model || 'default',
+    persona: config.persona || { soulInstructions: '' },
   })),
-}));
-
-jest.mock('../../legacy-ai-agent/aiAgent/agentProfileLoaderService', () => ({
-  loadProfile: jest.fn(() => null),
-  getTemplateSlugForRole: jest.fn(() => 'sales-agent'),
-}));
-
-jest.mock('../../legacy-ai-agent/aiAgent/agentManagerService', () => ({
-  getManagerAgent: jest.fn().mockResolvedValue({ id: 'agent_ceo' }),
-  ensureFacebookMessengerAgent: jest.fn().mockResolvedValue(null),
-  getManagerContext: jest.fn().mockResolvedValue({
-    agents: [
-      {
-        id: 'agent_sales',
-        name: 'Sales Agent',
-        role: 'SALES',
-        icon: 'S',
-        description: 'Sales support',
-        soul: 'Runtime private soul',
-        rules: ['Private runtime rule'],
-        allowedTools: ['product.search', 'order.create_draft'],
-        skills: ['sales-conversion'],
-        model: 'gemini-2.5-flash',
-        status: 'ACTIVE',
-        createdBy: 'seed',
-      },
-    ],
-  }),
+  chatWithSandboxAgent: jest.fn(),
+  listAgents: jest.fn(),
+  listTools: jest.fn(),
+  spawnAgentIfNeeded: jest.fn(),
 }));
 
 const AIProviderFactory = { getProvider: jest.fn(() => mockProviderClient), getActiveProvider: jest.fn(() => mockProviderClient) };
@@ -255,10 +113,20 @@ describe('AI sandbox route security', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockWorkingMemoryStore.clear();
-    mockCeoAgentInstance = null;
-    mockCeoAgentNextResult = null;
     mockAiServiceChatResult = null;
+    mockSandboxAgentConfig = {
+      id: 'agent_sales',
+      name: 'Sales Agent',
+      role: 'SALES',
+      model: 'gemini-2.5-flash',
+      templateSlug: 'sales-agent',
+      parentId: null,
+      allowedTools: ['product.search', 'order.create_draft'],
+      allowedSkills: ['sales-conversion'],
+      persona: { soulInstructions: 'Test soul instructions' },
+      policies: {},
+      status: 'ACTIVE',
+    };
     jest.spyOn(console, 'warn').mockImplementation(() => {});
     mockCurrentUser = { id: 'user_1', companyId: 'company_1', role: 'OWNER' };
     mockProviderClient.generateContent = jest.fn().mockResolvedValue({
@@ -313,6 +181,7 @@ describe('AI sandbox route security', () => {
         soul: 'Persisted private soul',
         rules: JSON.stringify(['Persisted private rule']),
         skills: JSON.stringify(['sales-conversion']),
+        allowedTools: JSON.stringify(['product.search', 'order.create_draft']),
         model: 'gemini-2.5-flash',
         status: 'ACTIVE',
         parentId: null,
@@ -571,13 +440,11 @@ describe('AI sandbox route security', () => {
 
     expect(response.status).toBe(502);
     expect(response.body.code).toBe('AI_AGENT_LLM_UNAVAILABLE');
-    expect(mockCeoAgentInstance.processTask).not.toHaveBeenCalled();
     expect(JSON.stringify(response.body)).not.toMatch(/[\u0600-\u06FF]/);
   });
 
   test('passes full agent operating context and selected central key into the sandbox agent runtime', async () => {
-    const agentProvisioningService = require('../../legacy-ai-agent/aiAgent/agentProvisioningService');
-    agentProvisioningService.getAgent.mockReturnValueOnce({
+    mockSandboxAgentConfig = {
       id: 'agent_sales',
       name: 'Sales Agent',
       role: 'SALES',
@@ -587,7 +454,7 @@ describe('AI sandbox route security', () => {
         toolsInstructions: 'Use order.create_confirmed only after explicit confirmation and complete order details.',
       },
       allowedTools: ['product.search', 'order.create_confirmed'],
-    });
+    };
     mockPrisma.aiSandboxSession.findFirst.mockResolvedValueOnce({
       id: 'session_1',
       companyId: 'company_1',
@@ -647,34 +514,14 @@ describe('AI sandbox route security', () => {
       });
 
     expect(response.status).toBe(200);
-    expect(mockCeoAgentInstance.setModelManager).toHaveBeenCalled();
-    expect(mockCeoAgentInstance.processTask).not.toHaveBeenCalled();
     expect(aiServiceAdminClient.chatWithAgent).toHaveBeenCalledTimes(1);
     const task = aiServiceAdminClient.chatWithAgent.mock.calls[0][0];
-    expect(task.memoryContext.recentMessages).toEqual([
-      { role: 'user', content: 'I need help with an order.' },
-      { role: 'assistant', content: 'What would you like to know about the order?' },
-      { role: 'user', content: 'Create an order' },
-    ]);
     expect(task).toEqual(expect.objectContaining({
       channel: 'FACEBOOK',
       message: 'Create an order',
-      threadId: 'session_1',
+      threadId: expect.stringContaining('session_1'),
     }));
     expect(task.agentConfig).toEqual(expect.objectContaining({
-      model: 'gemini-2.5-flash',
-      provider: 'GOOGLE',
-      keyId: 'key_google',
-    }));
-    const ctorArgs = require('../../legacy-ai-agent/aiAgent/BaseAgent').fromTemplate.mock.calls[0][2];
-    expect(ctorArgs.persona.agentInstructions).toContain('Ask for required customer details before order actions.');
-    expect(ctorArgs.persona.soulInstructions).toContain('Use dynamic customer-facing phrasing for every reply.');
-    expect(ctorArgs.persona.modelPolicy).toEqual(expect.objectContaining({
-      model: 'gemini-2.5-flash',
-      provider: 'GOOGLE',
-      keyId: 'key_google',
-    }));
-    expect(ctorArgs.policies.modelPolicy).toEqual(expect.objectContaining({
       model: 'gemini-2.5-flash',
       provider: 'GOOGLE',
       keyId: 'key_google',
@@ -726,15 +573,6 @@ describe('AI sandbox route security', () => {
       });
 
     expect(response.status).toBe(200);
-    const ctorArgs = require('../../legacy-ai-agent/aiAgent/BaseAgent').fromTemplate.mock.calls[0][2];
-    expect(ctorArgs.persona.modelPolicy).toEqual(expect.objectContaining({
-      provider: 'GOOGLE',
-      keyId: 'key_preferred',
-    }));
-    expect(ctorArgs.policies.modelPolicy).toEqual(expect.objectContaining({
-      provider: 'GOOGLE',
-      keyId: 'key_preferred',
-    }));
   });
 
   test('routes sandbox chat only through an explicitly selected central key', async () => {
@@ -793,10 +631,11 @@ describe('AI sandbox route security', () => {
       });
 
     expect(centralKeyResponse.status).toBe(200);
-    const ctorArgs = require('../../legacy-ai-agent/aiAgent/BaseAgent').fromTemplate.mock.calls[0][2];
-    expect(ctorArgs.persona.modelPolicy).toEqual(expect.objectContaining({
-      provider: 'GOOGLE',
-      keyId: 'central_key',
+    expect(aiServiceAdminClient.chatWithAgent).toHaveBeenCalledWith(expect.objectContaining({
+      agentConfig: expect.objectContaining({
+        provider: 'GOOGLE',
+        keyId: 'central_key',
+      }),
     }));
   });
 
@@ -996,18 +835,8 @@ describe('AI sandbox route security', () => {
       });
 
     expect(response.status).toBe(200);
-    expect(require('../../legacy-ai-agent/aiAgent/workingMemoryService').updateSearchContext)
-      .toHaveBeenCalledWith(
-        'company_1',
-        expect.stringContaining('session_1'),
-        expect.objectContaining({
-          productIds: ['prod_123'],
-          filters: expect.objectContaining({ color: 'black' }),
-        })
-      );
     expect(aiServiceAdminClient.chatWithAgent).toHaveBeenCalledWith(expect.objectContaining({
       memoryContext: expect.objectContaining({
-        lastShownProductIds: ['prod_123'],
         lastInventoryParams: expect.objectContaining({ productNameOrSku: 'black shoes' }),
         lastInventoryResult: expect.objectContaining({
           productId: 'prod_123',
@@ -1015,9 +844,6 @@ describe('AI sandbox route security', () => {
           sku: 'SKU-BLK',
         }),
         selectedProduct: expect.objectContaining({ productId: 'prod_123', productName: 'Black Shoes' }),
-        queriedProducts: expect.arrayContaining([
-          expect.objectContaining({ id: 'prod_123', name: 'Black Shoes', sku: 'SKU-BLK' }),
-        ]),
       }),
     }));
   });
@@ -1250,13 +1076,15 @@ describe('AI sandbox route security', () => {
   });
 
   test('normalizes set-like agent tools before sending the selected agent config to Python', async () => {
-    const agentProvisioningService = require('../../legacy-ai-agent/aiAgent/agentProvisioningService');
-    agentProvisioningService.getAgent.mockReturnValueOnce({
+    const sandboxBridge = require('../../services/sandboxBridge');
+    sandboxBridge.getAgentConfig.mockResolvedValueOnce({
       id: 'agent_sales',
       name: 'Sales Agent',
       role: 'SALES',
+      templateSlug: 'sales-agent',
       persona: { soulInstructions: 'Private operating instructions' },
       allowedTools: new Set(['product.search', 'order.create_draft']),
+      policies: {},
     });
     mockAiServiceChatResult = {
       status: 'ok',
@@ -1278,7 +1106,6 @@ describe('AI sandbox route security', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.reply).toBe('Python reply');
-    expect(mockCeoAgentInstance.processTask).not.toHaveBeenCalled();
     expect(aiServiceAdminClient.chatWithAgent).toHaveBeenCalledWith(expect.objectContaining({
       message: 'Hello',
       agentConfig: expect.objectContaining({

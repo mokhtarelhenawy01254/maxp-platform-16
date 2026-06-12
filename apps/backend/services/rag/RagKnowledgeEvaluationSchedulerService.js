@@ -5,7 +5,8 @@
 
 const cron = require('node-cron');
 const { getSharedPrismaClient } = require('../sharedDatabase');
-const { recordProviderEvent, listProviderLogs } = require('../../legacy-ai-agent/aiAgent/providerLogService');
+const recordProviderEvent = async () => null;
+const listProviderLogs = async () => [];
 const telegramAlertService = require('../telegramAlertService');
 const RagKnowledgeMaintenanceService = require('./RagKnowledgeMaintenanceService');
 

@@ -3651,7 +3651,7 @@ const getProductVariants = async (req, res) => {
   }
 };
 
-const episodicMemoryService = require('../legacy-ai-agent/aiAgent/episodicMemoryService');
+const episodicMemoryService = { generateMultimodalEmbeddingAsync: async () => null };
 
 const visualSearchProduct = async (req, res) => {
   try {

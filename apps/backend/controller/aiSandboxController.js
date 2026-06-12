@@ -915,6 +915,7 @@ async function listAgents(req, res) {
         soul: a.soul || '',
         rules: (function() { try { return JSON.parse(a.rules || '[]'); } catch(e) { return []; } })(),
         skills: (function() { try { return JSON.parse(a.skills || '[]'); } catch(e) { return []; } })(),
+        allowedTools: (function() { const v = a.allowedTools; if (Array.isArray(v)) return v; try { return JSON.parse(v || '[]'); } catch(e) { return []; } })(),
         model: a.model || null,
         status: a.status,
         parentId: a.parentId || null,

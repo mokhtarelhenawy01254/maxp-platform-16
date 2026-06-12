@@ -1,5 +1,5 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const episodicMemoryService = require('../legacy-ai-agent/aiAgent/episodicMemoryService');
+const episodicMemoryService = { generateEmbeddingAsync: async () => null };
 const getPrisma = () => getSharedPrismaClient();
 
 function _buildFaqEmbeddingText(faq) {

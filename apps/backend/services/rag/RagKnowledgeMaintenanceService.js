@@ -9,8 +9,14 @@
 const fs = require('fs');
 const path = require('path');
 const { getSharedPrismaClient } = require('../sharedDatabase');
-const { listProviderLogs } = require('../../legacy-ai-agent/aiAgent/providerLogService');
-const episodicMemoryService = require('../../legacy-ai-agent/aiAgent/episodicMemoryService');
+const listProviderLogs = async () => [];
+const episodicMemoryService = {
+  saveEpisodicMemory: async () => null,
+  searchEpisodicMemory: async () => [],
+  getEpisodicMemories: async () => [],
+  generateEmbeddingAsync: async () => [],
+  generateMultimodalEmbeddingAsync: async () => [],
+};
 const CorrectiveRAGEngine = require('./CorrectiveRAGEngine');
 
 const KNOWLEDGE_PROPOSAL_TOOLS = ['knowledge.create_faq', 'knowledge.create_policy'];

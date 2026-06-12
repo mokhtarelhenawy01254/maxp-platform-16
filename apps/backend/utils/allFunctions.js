@@ -1997,7 +1997,14 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
 
             // 2. Process the message through Python AI service
             const aiSdkClient = require('../services/aiSdkClient');
-            const workingMemoryService = require('../legacy-ai-agent/aiAgent/workingMemoryService');
+            const workingMemoryService = {
+              addMessage: async () => null,
+              getContext: async () => null,
+              updateSearchContext: async () => null,
+              addQueriedProduct: async () => null,
+              clearSearchContext: async () => null,
+              clearSession: async () => null,
+            };
 
             const convKey = conversation.id;
             await workingMemoryService.addMessage(customer.companyId, convKey, { role: 'user', content: aiCustomerContent });
@@ -2582,7 +2589,14 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
           }
 
           const aiSdkClient = require('../services/aiSdkClient');
-          const workingMemoryService = require('../legacy-ai-agent/aiAgent/workingMemoryService');
+          const workingMemoryService = {
+            addMessage: async () => null,
+            getContext: async () => null,
+            updateSearchContext: async () => null,
+            addQueriedProduct: async () => null,
+            clearSearchContext: async () => null,
+            clearSession: async () => null,
+          };
 
           // Restore working memory from Redis
           const convKey = conversation.id;

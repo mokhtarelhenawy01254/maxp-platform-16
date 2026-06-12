@@ -15,8 +15,8 @@ const express = require('express');
 const router = express.Router();
 const verifyToken = require('../utils/verifyToken');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const { TOOLS } = require('../legacy-ai-agent/aiAgent/agentToolRegistry');
-const { clearCache } = require('../legacy-ai-agent/aiAgent/agentSoulConfig');
+const { TOOLS } = { TOOLS: {} };
+const { clearCache } = { clearCache: async () => {} };
 const { t } = require('../services/i18n');
 
 router.use(verifyToken.authenticateToken);

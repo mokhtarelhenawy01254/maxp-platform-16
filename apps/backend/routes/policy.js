@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const episodicMemoryService = require('../legacy-ai-agent/aiAgent/episodicMemoryService');
+const episodicMemoryService = { generateEmbeddingAsync: async () => null };
 const { requireAuth } = require('../middleware/auth');
 
 const getPrisma = () => getSharedPrismaClient();
