@@ -1,15 +1,16 @@
 // Set timezone to Egypt/Cairo before anything else
 process.env.TZ = "Africa/Cairo";
 
-// Global error handlers for debugging
+// Global error handlers — log but do NOT crash on transient rejections
 process.on('uncaughtException', (err) => {
   console.error('💥 UNCAUGHT EXCEPTION:', err.message, err.stack);
-  process.exit(1);
+  // Graceful shutdown: allow open connections to drain
+  setTimeout(() => process.exit(1), 3000);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('💥 UNHANDLED REJECTION:', reason);
-  process.exit(1);
+  // Log only — transient Redis/DB rejections must NOT crash the server
+  console.error('⚠️ UNHANDLED REJECTION (non-fatal):', reason);
 });
 
 // Load environment variables

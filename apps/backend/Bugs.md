@@ -1,3 +1,11 @@
+## [2026-06-12] Backend — Production crash loop from aggressive unhandledRejection handler
+- **Bug/Issue**: After deploying the storefront optimization commit, the backend entered a crash loop on the production server. PM2 health checks failed after 30 attempts (150 seconds), and the GHA deploy workflow exited with code 1.
+- **Root Cause**: The newly added `process.on('unhandledRejection')` handler in `server.js` called `process.exit(1)` on ANY unhandled promise rejection. In production, transient Redis connection errors, brief DB timeouts, or failed webhooks trigger unhandled rejections. Each rejection instantly killed the process, PM2 restarted it, another rejection hit → infinite crash loop.
+- **Fix**: Changed `unhandledRejection` to log-only (`console.error`) without calling `process.exit()`. Kept `uncaughtException` with `process.exit(1)` but added a 3-second graceful shutdown delay to allow open connections to drain.
+- **Key Learning**: Never call `process.exit(1)` in `unhandledRejection` in production Node.js servers. Transient network errors are expected and should be logged, not fatal.
+- **Affected Files**:
+  - `apps/backend/server.js`
+
 ## [2026-06-12] Frontend — Storefront Loading Spinner & Fixed 500ms Delay
 - **Bug/Issue**: The storefront initially displayed a generic SaaS-like "جاري التحميل..." (Loading...) spinner, which looked unprofessional for an e-commerce shop. Additionally, it was removed using a hardcoded `setTimeout` of 500ms, causing a blank white screen if JS bundles took longer to load, or forcing an artificial delay on fast connections.
 - **Root Cause**: The HTML spinner was defined statically in `index.html` and shared between the dashboard and the storefront. In `main.tsx`, `setTimeout(removeLoadingScreen, 500)` ran blindly without waiting for the async `bootstrapApp` (dynamic imports & prefetching) to finish.

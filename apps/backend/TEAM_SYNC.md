@@ -1,3 +1,10 @@
+## [2026-06-12] Backend — Production Crash Loop Fix (unhandledRejection process.exit) [DONE]
+- **Objective**: Fix the production deployment failure caused by the backend crash-looping after the storefront optimization deploy.
+- **Root Cause**: The `process.on('unhandledRejection')` handler added in the previous commit called `process.exit(1)` on any unhandled promise rejection. Transient Redis/DB errors in production triggered instant process termination, causing PM2 to restart endlessly and failing the GHA health check after 30 attempts.
+- **Fix**: Changed `unhandledRejection` to log-only without process exit. Kept `uncaughtException` with a 3-second graceful shutdown delay.
+- **Files**:
+  - `apps/backend/server.js`
+
 ## [2026-06-12] Storefront Initial Loading Screen Performance & UX Polish [DONE]
 - **Objective**: Optimize the perceived speed and user experience of the storefront by swapping the generic spinner with an inline CSS skeleton layout and synchronizing loading screen dismissal.
 - **Accomplishments**:
