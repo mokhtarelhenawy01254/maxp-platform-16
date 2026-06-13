@@ -15,6 +15,7 @@ class CompetitorService {
       getPrisma().competitor.findMany({
         where,
         include: {
+          socialProfiles: { select: { id: true, platform: true, profileUrl: true } },
           _count: { select: { products: true, ads: true, reports: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -34,6 +35,7 @@ class CompetitorService {
     const competitor = await getPrisma().competitor.findFirst({
       where: { id, companyId },
       include: {
+        socialProfiles: { select: { id: true, platform: true, profileUrl: true } },
         products: {
           orderBy: { lastSeen: 'desc' },
           include: {
@@ -49,7 +51,7 @@ class CompetitorService {
   }
 
   static async create(companyId, data) {
-    const { name, url, platform, logo, description, notes, socialProfiles } = data;
+    const { name, url, platform, logo, description, notes, activityType, location, targetMarket, foundedYear, employeeCount, strengths, weaknesses, socialProfiles } = data;
     const slug = data.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     // Transaction to create competitor and related social profiles
     const createdCompetitor = await getSharedPrismaClient().$transaction(async (tx) => {
@@ -62,6 +64,13 @@ class CompetitorService {
           logo,
           description,
           notes,
+          activityType,
+          location,
+          targetMarket,
+          foundedYear: foundedYear ? parseInt(foundedYear) : undefined,
+          employeeCount,
+          strengths,
+          weaknesses,
           companyId,
         },
       });
@@ -102,6 +111,13 @@ class CompetitorService {
         logo: data.logo,
         description: data.description,
         notes: data.notes,
+        activityType: data.activityType,
+        location: data.location,
+        targetMarket: data.targetMarket,
+        foundedYear: data.foundedYear ? parseInt(data.foundedYear) : undefined,
+        employeeCount: data.employeeCount,
+        strengths: data.strengths,
+        weaknesses: data.weaknesses,
         isActive: data.isActive,
       },
     });

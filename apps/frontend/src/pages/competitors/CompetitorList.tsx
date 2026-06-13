@@ -4,16 +4,42 @@ import { useNavigate } from 'react-router-dom';
 import { Search, RefreshCw, Plus, Pencil, Trash2, X, AlertTriangle, ExternalLink, Eye } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 
+interface SocialProfile {
+  id: string;
+  platform: string;
+  profileUrl: string;
+}
+
 interface Competitor {
   id: string;
   name: string;
   url: string | null;
   platform: string;
   logo: string | null;
+  activityType: string | null;
+  location: string | null;
+  targetMarket: string | null;
+  foundedYear: number | null;
+  employeeCount: string | null;
+  strengths: string | null;
+  weaknesses: string | null;
   isActive: boolean;
   createdAt: string;
+  socialProfiles: SocialProfile[];
   _count: { products: number; ads: number; reports: number };
 }
+
+const SOCIAL_PLATFORMS = [
+  { key: 'instagram', label: 'Instagram', icon: '📸' },
+  { key: 'facebook', label: 'Facebook', icon: '📘' },
+  { key: 'twitter', label: 'Twitter / X', icon: '🐦' },
+  { key: 'tiktok', label: 'TikTok', icon: '🎵' },
+  { key: 'linkedin', label: 'LinkedIn', icon: '💼' },
+  { key: 'youtube', label: 'YouTube', icon: '▶️' },
+  { key: 'snapchat', label: 'Snapchat', icon: '👻' },
+  { key: 'telegram', label: 'Telegram', icon: '✈️' },
+  { key: 'whatsapp', label: 'WhatsApp', icon: '💬' },
+];
 
 const CompetitorList: React.FC = () => {
   const { t } = useTranslation();
@@ -23,7 +49,15 @@ const CompetitorList: React.FC = () => {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', url: '', platform: 'manual', description: '', notes: '' });
+  const [formData, setFormData] = useState({
+    name: '', url: '', platform: 'manual', description: '', notes: '',
+    activityType: '', location: '', targetMarket: '',
+    foundedYear: '', employeeCount: '', strengths: '', weaknesses: '',
+  });
+  const [socialLinks, setSocialLinks] = useState<Record<string, string>>(
+    Object.fromEntries(SOCIAL_PLATFORMS.map(p => [p.key, '']))
+  );
+  const [showSocialSection, setShowSocialSection] = useState(false);
   const [formError, setFormError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
@@ -45,14 +79,27 @@ const CompetitorList: React.FC = () => {
 
   const openCreate = () => {
     setEditingId(null);
-    setFormData({ name: '', url: '', platform: 'manual', description: '', notes: '' });
+    setFormData({ name: '', url: '', platform: 'manual', description: '', notes: '', activityType: '', location: '', targetMarket: '', foundedYear: '', employeeCount: '', strengths: '', weaknesses: '' });
+    setSocialLinks(Object.fromEntries(SOCIAL_PLATFORMS.map(p => [p.key, ''])));
+    setShowSocialSection(false);
     setFormError('');
     setShowModal(true);
   };
 
   const openEdit = (c: Competitor) => {
     setEditingId(c.id);
-    setFormData({ name: c.name, url: c.url || '', platform: c.platform, description: '', notes: '' });
+    setFormData({
+      name: c.name, url: c.url || '', platform: c.platform, description: '', notes: '',
+      activityType: c.activityType || '', location: c.location || '',
+      targetMarket: c.targetMarket || '', foundedYear: c.foundedYear?.toString() || '',
+      employeeCount: c.employeeCount || '', strengths: c.strengths || '', weaknesses: c.weaknesses || '',
+    });
+    const links: Record<string, string> = Object.fromEntries(SOCIAL_PLATFORMS.map(p => [p.key, '']));
+    if (c.socialProfiles) {
+      c.socialProfiles.forEach(sp => { if (links.hasOwnProperty(sp.platform)) links[sp.platform] = sp.profileUrl; });
+    }
+    setSocialLinks(links);
+    setShowSocialSection(c.socialProfiles?.length > 0);
     setFormError('');
     setShowModal(true);
   };
@@ -63,11 +110,14 @@ const CompetitorList: React.FC = () => {
       setFormError(t('competitors.errors.nameRequired'));
       return;
     }
+    const socialProfiles = Object.entries(socialLinks)
+      .filter(([, url]) => url && url.trim())
+      .map(([platform, url]) => ({ platform, url: url.trim() }));
     try {
       if (editingId) {
-        await apiClient.put(`/competitors/${editingId}`, formData);
+        await apiClient.put(`/competitors/${editingId}`, { ...formData, socialProfiles });
       } else {
-        await apiClient.post('/competitors', formData);
+        await apiClient.post('/competitors', { ...formData, socialProfiles });
       }
       setShowModal(false);
       fetchCompetitors();
@@ -131,9 +181,19 @@ const CompetitorList: React.FC = () => {
                   )}
                   <div>
                     <h3 className="font-semibold">{c.name}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${c.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-500'}`}>
-                      {c.isActive ? t('competitors.active') : t('competitors.inactive')}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1 mt-1">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${c.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-500'}`}>
+                        {c.isActive ? t('competitors.active') : t('competitors.inactive')}
+                      </span>
+                      {c.activityType && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                          {t(`competitors.activityTypes.${c.activityType}`)}
+                        </span>
+                      )}
+                      {c.location && (
+                        <span className="text-xs text-gray-400">📍 {c.location}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-1">
@@ -154,6 +214,26 @@ const CompetitorList: React.FC = () => {
                   {c.url.replace(/^https?:\/\//, '').slice(0, 40)}
                 </a>
               )}
+              {c.socialProfiles && c.socialProfiles.length > 0 && (
+                <div className="flex items-center gap-2 mt-2">
+                  {c.socialProfiles.map(sp => {
+                    const platform = SOCIAL_PLATFORMS.find(p => p.key === sp.platform);
+                    if (!platform) return null;
+                    return (
+                      <a
+                        key={sp.id || sp.platform}
+                        href={sp.profileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={platform.label}
+                        className="text-sm hover:opacity-70 transition-opacity"
+                      >
+                        {platform.icon}
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
               <div className="flex gap-4 mt-3 text-sm text-gray-500">
                 <span>{c._count.products} {t('competitors.products')}</span>
                 <span>{c._count.ads} {t('competitors.ads')}</span>
@@ -173,7 +253,8 @@ const CompetitorList: React.FC = () => {
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 max-h-[60vh] overflow-y-auto">
+              {/* Basic Info */}
               <div>
                 <label className="block text-sm font-medium mb-1">{t('competitors.competitorName')} *</label>
                 <input
@@ -209,13 +290,152 @@ const CompetitorList: React.FC = () => {
                   <option value="other">أخرى</option>
                 </select>
               </div>
+
+              {/* Business Details */}
+              <div className="border-t pt-4">
+                <h3 className="text-sm font-bold mb-3 text-gray-600 dark:text-gray-400">{t('competitors.description')}</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">{t('competitors.activityType')}</label>
+                    <select
+                      value={formData.activityType}
+                      onChange={e => setFormData(p => ({ ...p, activityType: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
+                    >
+                      <option value="">{t('competitors.activityTypePlaceholder')}</option>
+                      <option value="ecommerce">{t('competitors.activityTypes.ecommerce')}</option>
+                      <option value="services">{t('competitors.activityTypes.services')}</option>
+                      <option value="import_export">{t('competitors.activityTypes.import_export')}</option>
+                      <option value="manufacturing">{t('competitors.activityTypes.manufacturing')}</option>
+                      <option value="software">{t('competitors.activityTypes.software')}</option>
+                      <option value="education">{t('competitors.activityTypes.education')}</option>
+                      <option value="healthcare">{t('competitors.activityTypes.healthcare')}</option>
+                      <option value="realestate">{t('competitors.activityTypes.realestate')}</option>
+                      <option value="tourism">{t('competitors.activityTypes.tourism')}</option>
+                      <option value="other">{t('competitors.activityTypes.other')}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">{t('competitors.location')}</label>
+                    <input
+                      type="text"
+                      value={formData.location}
+                      onChange={e => setFormData(p => ({ ...p, location: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
+                      placeholder={t('competitors.locationPlaceholder')}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">{t('competitors.targetMarket')}</label>
+                    <select
+                      value={formData.targetMarket}
+                      onChange={e => setFormData(p => ({ ...p, targetMarket: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
+                    >
+                      <option value="">{t('competitors.targetMarketPlaceholder')}</option>
+                      <option value="b2b">{t('competitors.targetMarkets.b2b')}</option>
+                      <option value="b2c">{t('competitors.targetMarkets.b2c')}</option>
+                      <option value="b2b_b2c">{t('competitors.targetMarkets.b2b_b2c')}</option>
+                      <option value="government">{t('competitors.targetMarkets.government')}</option>
+                      <option value="all">{t('competitors.targetMarkets.all')}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">{t('competitors.foundedYear')}</label>
+                    <input
+                      type="number"
+                      value={formData.foundedYear}
+                      onChange={e => setFormData(p => ({ ...p, foundedYear: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
+                      placeholder={t('competitors.foundedYearPlaceholder')}
+                      min="1900"
+                      max={new Date().getFullYear()}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium mb-1">{t('competitors.employeeCount')}</label>
+                    <select
+                      value={formData.employeeCount}
+                      onChange={e => setFormData(p => ({ ...p, employeeCount: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
+                    >
+                      <option value="">{t('competitors.employeeCountPlaceholder')}</option>
+                      <option value="1_10">{t('competitors.employeeCounts.1_10')}</option>
+                      <option value="11_50">{t('competitors.employeeCounts.11_50')}</option>
+                      <option value="51_200">{t('competitors.employeeCounts.51_200')}</option>
+                      <option value="200_plus">{t('competitors.employeeCounts.200_plus')}</option>
+                      <option value="500_plus">{t('competitors.employeeCounts.500_plus')}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Social Media Links */}
+              <div className="border-t pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowSocialSection(!showSocialSection)}
+                  className="flex items-center justify-between w-full text-sm font-bold mb-3 text-gray-600 dark:text-gray-400"
+                >
+                  <span>{t('competitors.socialLinks')}</span>
+                  <span className="text-xs">{showSocialSection ? '▲' : '▼'}</span>
+                </button>
+                {showSocialSection && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-400 mb-2">{t('competitors.socialLinksDesc')}</p>
+                    <div className="grid grid-cols-1 gap-2">
+                      {SOCIAL_PLATFORMS.map(sp => (
+                        <div key={sp.key} className="flex items-center gap-2">
+                          <span className="text-base w-6 text-center">{sp.icon}</span>
+                          <span className="text-xs font-medium w-20 text-gray-500">{sp.label}</span>
+                          <input
+                            type="url"
+                            value={socialLinks[sp.key] || ''}
+                            onChange={e => setSocialLinks(prev => ({ ...prev, [sp.key]: e.target.value }))}
+                            className="flex-1 px-3 py-1.5 text-sm border rounded-lg dark:bg-gray-800 dark:border-gray-700"
+                            placeholder={`https://${sp.key}.com/...`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Analysis */}
+              <div className="border-t pt-4">
+                <h3 className="text-sm font-bold mb-3 text-gray-600 dark:text-gray-400">{t('competitors.notes')}</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">{t('competitors.strengths')}</label>
+                    <textarea
+                      value={formData.strengths}
+                      onChange={e => setFormData(p => ({ ...p, strengths: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 text-sm"
+                      rows={2}
+                      placeholder={t('competitors.strengthsPlaceholder')}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">{t('competitors.weaknesses')}</label>
+                    <textarea
+                      value={formData.weaknesses}
+                      onChange={e => setFormData(p => ({ ...p, weaknesses: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 text-sm"
+                      rows={2}
+                      placeholder={t('competitors.weaknessesPlaceholder')}
+                    />
+                  </div>
+                </div>
+              </div>
+
               {formError && (
                 <div className="flex items-center gap-2 text-red-500 text-sm">
                   <AlertTriangle size={16} />
                   {formError}
                 </div>
               )}
-              <div className="flex gap-2 justify-end">
+              <div className="flex gap-2 justify-end pt-2 border-t">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
                   {t('common.cancel')}
                 </button>

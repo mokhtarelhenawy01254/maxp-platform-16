@@ -36,6 +36,13 @@ exports.create = async (req, res) => {
       logo,
       description,
       notes,
+      activityType,
+      location,
+      targetMarket,
+      foundedYear,
+      employeeCount,
+      strengths,
+      weaknesses,
       socialProfiles,
     } = req.body;
 
@@ -52,7 +59,7 @@ exports.create = async (req, res) => {
       if (socialProfiles.length > 5) {
         return res.status(400).json({ success: false, message: 'Maximum of 5 social profiles allowed' });
       }
-      const allowedPlatforms = ['instagram', 'facebook', 'tiktok'];
+      const allowedPlatforms = ['instagram', 'facebook', 'twitter', 'tiktok', 'linkedin', 'youtube', 'snapchat', 'telegram', 'whatsapp'];
       const urlRegex = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
       for (const profile of socialProfiles) {
         if (!profile.platform || !allowedPlatforms.includes(profile.platform)) {
@@ -75,6 +82,13 @@ exports.create = async (req, res) => {
           logo,
           description,
           notes,
+          activityType,
+          location,
+          targetMarket,
+          foundedYear: foundedYear ? parseInt(foundedYear) : undefined,
+          employeeCount,
+          strengths,
+          weaknesses,
           companyId,
         },
       });

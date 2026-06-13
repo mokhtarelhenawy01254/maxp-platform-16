@@ -7,6 +7,13 @@ model Competitor {
   logo            String?
   description     String?
   notes           String?
+  activityType    String?
+  location        String?
+  targetMarket    String?
+  foundedYear     Int?
+  employeeCount   String?
+  strengths       String?              @db.Text
+  weaknesses      String?              @db.Text
   isActive        Boolean              @default(true)
   metadata        Json?
   companyId       String
