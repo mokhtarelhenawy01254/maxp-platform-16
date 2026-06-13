@@ -75,6 +75,11 @@ const PERMISSIONS = {
   'bulkOrders.export': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER'],
 };
 
+const {
+  ROUTING_MODES,
+  getAssignmentRoutingUserIds,
+  normalizeRoutingMode
+} = require('../services/whatsappConversationRoutingService');
 
 const ROLES_HIERARCHY = {
   SUPER_ADMIN: Infinity,
@@ -215,12 +220,22 @@ const canViewConversation = async (prisma, userId, companyId, conversationId) =>
 
   if (!assignment) return false;
 
+  const routingUserIds = getAssignmentRoutingUserIds(assignment);
   const teamMembers = assignment.team?.members || [];
 
   const hasNumberAccess =
+    routingUserIds.includes(userId) ||
     teamMembers.some((member) => member.userId === userId);
 
   if (!hasNumberAccess) return false;
+
+  if (
+    normalizeRoutingMode(assignment.routingMode) === ROUTING_MODES.ROUND_ROBIN &&
+    conversation.assignedUserId &&
+    conversation.assignedUserId !== userId
+  ) {
+    return false;
+  }
 
   return true;
 };

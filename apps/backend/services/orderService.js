@@ -9,6 +9,40 @@ const {
   createLimitExceededError,
 } = require('../utils/planLimitPayloads');
 
+const normalizeWhatsAppOrderStatus = (status) => {
+  const normalizedStatus = String(status || '').trim().toUpperCase();
+  if (!normalizedStatus) {
+    return null;
+  }
+
+  const statusAliases = {
+    PREPARING: 'PICKING',
+    PACKAGED: 'PACKED'
+  };
+
+  return statusAliases[normalizedStatus] || normalizedStatus;
+};
+
+const getWhatsAppOrderEventType = (status) => {
+  const normalizedStatus = normalizeWhatsAppOrderStatus(status);
+  if (!normalizedStatus) {
+    return null;
+  }
+
+  const mappedEventTypes = {
+    CONFIRMED: 'ORDER_CONFIRMED',
+    PROCESSING: 'ORDER_PROCESSING',
+    PICKING: 'PICKING',
+    PACKED: 'PACKED',
+    SHIPPED: 'ORDER_SHIPPED',
+    OUT_FOR_DELIVERY: 'ORDER_OUT_FOR_DELIVERY',
+    DELIVERED: 'ORDER_DELIVERED',
+    CANCELLED: 'ORDER_CANCELLED'
+  };
+
+  return mappedEventTypes[normalizedStatus] || null;
+};
+
 const FAILURE_STATUSES_REQUIRING_CALLS = new Set(['DELIVERY_FAILED', 'NO_ANSWER']);
 
 const normalizeOrderStatusCode = (status) => String(status || '').trim().toUpperCase();
@@ -1060,6 +1094,37 @@ class OrderService {
             console.log(`✅ [LOYALTY-BG] Applied for order ${orderNumber}`);
           }
 
+          // 📱 WhatsApp Notification (with duplicate check)
+          try {
+            const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
+
+            const notificationStatus = normalizeWhatsAppOrderStatus(status);
+            const eventType = getWhatsAppOrderEventType(status);
+
+            if (!notificationStatus || !eventType) {
+              console.log(`ℹ️ [WHATSAPP-STATUS] Skipping unsupported notification status for Order: ${order.orderNumber}, Status: ${status}`);
+            } else {
+              // ✅ Check for duplicate notification in last 10 seconds
+              const prisma = this.getPrisma();
+              const recentNotification = await prisma.whatsAppNotificationLog.findFirst({
+                where: {
+                  orderId: order.id,
+                  eventType,
+                  createdAt: { gte: new Date(Date.now() - 10000) } // Last 10 seconds
+                }
+              });
+
+              if (recentNotification) {
+                console.log(`⚠️ [WHATSAPP-STATUS] Duplicate notification blocked for Order: ${order.orderNumber}, Status: ${notificationStatus}`);
+              } else {
+                await WhatsAppNotificationService.sendOrderStatusNotification(order, notificationStatus);
+                console.log(`✅ [WHATSAPP-STATUS] Background notification sent for Order: ${order.orderNumber}, Status: ${notificationStatus}`);
+              }
+            }
+          } catch (whatsappError) {
+            console.error('⚠️ [WHATSAPP-STATUS-ERROR] Background notification failed:', whatsappError.message);
+          }
+
         } catch (backgroundError) {
           console.error('⚠️ [ORDER-STATUS-BG-ERROR]:', backgroundError.message);
         }
@@ -1202,6 +1267,63 @@ class OrderService {
             }
           }
 
+          try {
+            let guestItems = [];
+            try {
+              guestItems = typeof updatedGuestOrder.items === 'string'
+                ? JSON.parse(updatedGuestOrder.items)
+                : (updatedGuestOrder.items || []);
+            } catch (error) {
+              guestItems = [];
+            }
+
+            const notificationOrder = {
+              ...updatedGuestOrder,
+              customerPhone: updatedGuestOrder.guestPhone,
+              customerName: updatedGuestOrder.guestName,
+              items: guestItems,
+              currency: 'EGP'
+            };
+
+            if (!notificationOrder.customerPhone) {
+              console.log(`ℹ️ [WHATSAPP] Guest order ${orderNumber} has no phone number for status notifications.`);
+              return;
+            }
+
+            const notificationStatus = normalizeWhatsAppOrderStatus(status);
+            const eventType = getWhatsAppOrderEventType(status);
+
+            if (!notificationStatus || !eventType) {
+              console.log(`ℹ️ [WHATSAPP] Skipping unsupported notification status for guest order: ${orderNumber}, Status: ${status}`);
+              return;
+            }
+
+            const prisma = this.getPrisma();
+            const recentNotification = await prisma.whatsAppNotificationLog.findFirst({
+              where: {
+                recipientPhone: notificationOrder.customerPhone,
+                eventType,
+                createdAt: { gte: new Date(Date.now() - 10000) }
+              },
+              select: { id: true }
+            });
+
+            if (recentNotification) {
+              console.log(`⚠️ [WHATSAPP] Duplicate notification blocked for guest order: ${orderNumber}, Status: ${notificationStatus}`);
+              return;
+            }
+
+            const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
+            const notificationResult = await WhatsAppNotificationService.sendOrderStatusNotification(notificationOrder, notificationStatus);
+
+            if (notificationResult?.success === false) {
+              console.log(`ℹ️ [WHATSAPP] Guest order notification skipped for ${orderNumber}: ${notificationResult.reason || 'unknown_reason'}`);
+            } else {
+              console.log(`✅ [WHATSAPP] Notification sent for guest order direct update: ${orderNumber}`);
+            }
+          } catch (waError) {
+            console.error(`⚠️ [WHATSAPP] Failed to send notification for guest order: ${waError.message}`);
+          }
         } catch (backgroundError) {
           console.error('⚠️ [GUEST-ORDER-STATUS-BG-ERROR]:', backgroundError.message);
         }

@@ -32,6 +32,7 @@
     "order.create_confirmed",
     "order.cancel",
     "order.refund",
+    "whatsapp.send",
     "agent.handoff"
   ],
   "allowedSkills": [
@@ -39,12 +40,12 @@
     "order-support",
     "handoff-to-human"
   ],
-  "channels": ["dashboard", "messenger"],
+  "channels": ["dashboard", "whatsapp", "messenger"],
   "humanApproval": {
     "mode": "ON_WRITE",
     "requiredTools": ["order.confirm", "order.cancel", "order.refund", "shipping.update"],
     "approvalCode": true,
-    "merchantChannels": ["DASHBOARD"]
+    "merchantChannels": ["DASHBOARD", "WHATSAPP"]
   },
   "budget": {
     "dailyUsd": 2,

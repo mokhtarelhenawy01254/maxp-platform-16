@@ -13,6 +13,7 @@ from src.agents.loader import seed_templates
 from src.api.admin import router as admin_router
 from src.api.approvals import router as approvals_router
 from src.api.billing import router as billing_router
+from src.api.channels.whatsapp import router as whatsapp_router
 from src.api.chat import router as chat_router
 from src.api.health import router as health_router
 from src.api.mcp import router as mcp_router
@@ -139,6 +140,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(resume_router)
     app.include_router(mcp_router)
     app.include_router(approvals_router)
+    app.include_router(whatsapp_router)
     app.include_router(admin_router, prefix="/admin")
 
     setup_error_handlers(app)

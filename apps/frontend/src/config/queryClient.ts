@@ -4,6 +4,7 @@ import { QueryClient } from "@tanstack/react-query";
  * TanStack Query Client Configuration
  *
  * Configured for large-scale data (10K+ conversations)
+ * Optimized for WhatsApp Chat performance
  *
  * Note: IndexedDB persistence will be handled at the query level
  * using custom hooks that implement persistence logic

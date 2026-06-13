@@ -8385,9 +8385,45 @@ module.exports = {
     }
   },
 
-  // v22.0: WhatsApp Ads (removed - no longer supported)
+  // v22.0: WhatsApp Ads
   createWhatsAppAd: async (req, res) => {
-    res.status(410).json({ success: false, error: 'WhatsApp ads are no longer supported' });
+    try {
+      const companyId = req.user?.companyId;
+      const accessToken = await getCompanyAdsAccessToken(companyId);
+
+      if (!accessToken) {
+        return res.status(400).json({
+          success: false,
+          error: "Facebook Ads Access Token not found.",
+        });
+      }
+
+      const adAccount =
+        await getSharedPrismaClient().facebookAdAccount.findFirst({
+          where: { companyId, isActive: true },
+        });
+
+      if (!adAccount) {
+        return res.status(404).json({
+          success: false,
+          error: "No active Facebook Ad Account found.",
+        });
+      }
+
+      const adsService = new FacebookAdsService(
+        accessToken,
+        adAccount.accountId,
+      );
+      const result = await adsService.createWhatsAppAd(req.body);
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error creating WhatsApp Ad:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
   },
 
   // v22.0: Ad Quality Metrics

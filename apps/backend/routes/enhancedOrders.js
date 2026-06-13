@@ -490,7 +490,7 @@ router.post('/', async (req, res) => {
         phone: req.body?.customerPhone,
         email: req.body?.customerEmail,
         facebookId: req.body?.facebookId || possibleFacebookId,
-
+        whatsappId: req.body?.whatsappId,
         source: 'manual',
         userRole: req.user.role,
         paymentMethod: req.body?.paymentMethod,
@@ -623,6 +623,31 @@ router.post('/', async (req, res) => {
     await enhancedOrderService.disconnect();
 
     if (result.success) {
+      // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
+      try {
+        const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
+
+        const orderForNotification = {
+          id: result.order.id,
+          orderNumber: result.order.orderNumber,
+          companyId: req.user.companyId,
+          customerPhone: result.order.customerPhone,
+          customerName: result.order.customerName,
+          customer: {
+            firstName: result.order.customerName?.split(' ')[0] || result.order.customerName,
+            phone: result.order.customerPhone
+          },
+          total: result.order.total,
+          currency: 'EGP',
+          items: result.order.items || [] // ✅ Include items for WhatsApp notification
+        };
+
+        await WhatsAppNotificationService.sendOrderCreatedNotification(orderForNotification);
+        console.log('✅ [WHATSAPP] Order notification sent for:', result.order.orderNumber);
+      } catch (whatsappError) {
+        console.log('⚠️ [WHATSAPP] Failed to send notification:', whatsappError.message);
+      }
+
       res.status(201).json(result);
     } else {
       console.log('❌ [ENHANCED-ORDERS] Order creation failed:', {

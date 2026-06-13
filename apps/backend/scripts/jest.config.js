@@ -11,7 +11,9 @@ module.exports = {
   moduleFileExtensions: ['js', 'json', 'node'],
   verbose: true,
   transform: {},
-  transformIgnorePatterns: [],
+  transformIgnorePatterns: [
+    'node_modules/(?!(@whiskeysockets/baileys)/)'
+  ],
   testTimeout: 30000,
   detectOpenHandles: true,
   forceExit: true,

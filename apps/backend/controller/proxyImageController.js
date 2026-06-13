@@ -41,6 +41,7 @@ const FALLBACK_AVATAR_SVG = `
   <circle cx="48" cy="36" r="18" fill="#c7d2e0"/>
   <path d="M18 82c4-15 16-24 30-24s26 9 30 24" fill="#c7d2e0"/>
 </svg>`.trim();
+let whatsAppSessionColumnSetPromise = null;
 
 const parseJsonSafely = (value, fallback = null) => {
   if (!value || typeof value !== "string") {
@@ -346,7 +347,38 @@ const getStoredMessageMediaUrl = (message) => {
   return null;
 };
 
+const resolveWhatsAppMetaMediaConfig = (session) => {
+  const accessToken = session?.metaAccessToken || process.env.META_WA_ACCESS_TOKEN;
+  if (!accessToken) {
+    return null;
+  }
 
+  return {
+    accessToken,
+    apiVersion:
+      session?.metaApiVersion ||
+      process.env.META_GRAPH_API_VERSION ||
+      META_CLOUD_GRAPH_API_VERSION,
+  };
+};
+
+const getWhatsAppSessionColumnSet = async (prisma) => {
+  if (!whatsAppSessionColumnSetPromise) {
+    whatsAppSessionColumnSetPromise = prisma
+      .$queryRawUnsafe(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'whatsapp_sessions'
+      `)
+      .then((rows) => new Set(rows.map((row) => row.column_name)))
+      .catch((error) => {
+        whatsAppSessionColumnSetPromise = null;
+        throw error;
+      });
+  }
+
+  return whatsAppSessionColumnSetPromise;
+};
 
 const getMetaConfigValueFromMetadata = (metadata, key) => {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
@@ -357,6 +389,7 @@ const getMetaConfigValueFromMetadata = (metadata, key) => {
     metadata,
     metadata.meta,
     metadata.metaCloud,
+    metadata.whatsappMeta,
     metadata.providerConfig,
   ];
 
@@ -375,7 +408,47 @@ const getMetaConfigValueFromMetadata = (metadata, key) => {
   return null;
 };
 
+const resolveLegacyWhatsAppSessionMetaConfig = async (prisma, sessionId) => {
+  if (!sessionId) {
+    return null;
+  }
 
+  const columnSet = await getWhatsAppSessionColumnSet(prisma);
+  const selectColumns = ["metadata"];
+
+  if (columnSet.has("metaAccessToken")) {
+    selectColumns.push("metaAccessToken");
+  }
+
+  if (columnSet.has("metaApiVersion")) {
+    selectColumns.push("metaApiVersion");
+  }
+
+  const sql = `
+    SELECT ${selectColumns.map(quoteSqlIdentifier).join(", ")}
+    FROM ${quoteSqlIdentifier("whatsapp_sessions")}
+    WHERE ${quoteSqlIdentifier("id")} = '${escapeSqlLiteral(sessionId)}'
+    LIMIT 1
+  `;
+  const rows = await prisma.$queryRawUnsafe(sql);
+  const sessionRow = Array.isArray(rows) ? rows[0] : null;
+
+  if (!sessionRow) {
+    return null;
+  }
+
+  const metadata = parseJsonSafely(sessionRow.metadata, {});
+  return {
+    metaAccessToken:
+      sessionRow.metaAccessToken ||
+      getMetaConfigValueFromMetadata(metadata, "metaAccessToken") ||
+      getMetaConfigValueFromMetadata(metadata, "accessToken"),
+    metaApiVersion:
+      sessionRow.metaApiVersion ||
+      getMetaConfigValueFromMetadata(metadata, "metaApiVersion") ||
+      getMetaConfigValueFromMetadata(metadata, "apiVersion"),
+  };
+};
 
 const findPageTokenForConversation = async (prisma, conversation) => {
   const metadata = parseJsonSafely(conversation?.metadata, {});
@@ -539,7 +612,118 @@ const resolveFreshCustomerAvatarUrl = async (prisma, customerId) => {
   return graphPayload?.profile_pic || null;
 };
 
+const resolveWhatsAppMessageMedia = async (prisma, whatsAppMessageId) => {
+  if (!whatsAppMessageId) {
+    return null;
+  }
 
+  const message = await prisma.whatsAppMessage.findUnique({
+    where: { id: whatsAppMessageId },
+    select: {
+      id: true,
+      mediaUrl: true,
+      sessionId: true,
+    },
+  });
+
+  const storedMediaUrl =
+    typeof message?.mediaUrl === "string" ? message.mediaUrl.trim() : "";
+  if (!storedMediaUrl) {
+    return null;
+  }
+
+  const metaMediaId = parseMetaMediaReference(storedMediaUrl);
+  if (!metaMediaId) {
+    return { url: storedMediaUrl };
+  }
+
+  const sessionMetaConfig = await resolveLegacyWhatsAppSessionMetaConfig(
+    prisma,
+    message.sessionId,
+  );
+  const metaConfig = resolveWhatsAppMetaMediaConfig(sessionMetaConfig);
+  if (!metaConfig) {
+    console.warn(
+      "⚠️ [IMAGE-PROXY] Missing Meta Cloud credentials for WhatsApp media proxy:",
+      {
+        whatsAppMessageId,
+      },
+    );
+    return {
+      status: 404,
+      details: "Missing Meta Cloud credentials for WhatsApp media",
+    };
+  }
+
+  const graphResponse = await fetch(
+    `${META_GRAPH_API_BASE_URL}/${metaConfig.apiVersion}/${metaMediaId}`,
+    {
+      method: "GET",
+      headers: getMetaGraphHeaders(metaConfig.accessToken),
+      redirect: "follow",
+    },
+  );
+
+  if (!graphResponse.ok) {
+    const failureText = await extractRemoteFailureDetails(graphResponse);
+    console.warn(
+      "⚠️ [IMAGE-PROXY] Meta Graph media lookup failed for WhatsApp message:",
+      {
+        whatsAppMessageId,
+        metaMediaId,
+        status: graphResponse.status,
+        failureText,
+      },
+    );
+    return {
+      status: graphResponse.status || 502,
+      details: failureText || "Meta media lookup failed",
+    };
+  }
+
+  const graphPayload = await graphResponse.json();
+  const downloadUrl =
+    typeof graphPayload?.url === "string" ? graphPayload.url.trim() : "";
+
+  if (!downloadUrl) {
+    console.warn(
+      "⚠️ [IMAGE-PROXY] Meta Graph response missing download URL for WhatsApp message:",
+      {
+        whatsAppMessageId,
+        metaMediaId,
+      },
+    );
+    return {
+      status: 502,
+      details: "Meta media response missing download URL",
+    };
+  }
+
+  const mediaResponse = await fetch(downloadUrl, {
+    method: "GET",
+    headers: getMetaGraphHeaders(metaConfig.accessToken, "*/*"),
+    redirect: "follow",
+  });
+
+  if (!mediaResponse.ok) {
+    const failureText = await extractRemoteFailureDetails(mediaResponse);
+    console.warn(
+      "⚠️ [IMAGE-PROXY] Meta media download failed for WhatsApp message:",
+      {
+        whatsAppMessageId,
+        metaMediaId,
+        status: mediaResponse.status,
+        failureText,
+      },
+    );
+    return {
+      status: mediaResponse.status || 502,
+      details: failureText || "Meta media download failed",
+    };
+  }
+
+  return { response: mediaResponse };
+};
 
 const proxyImage = async (req, res) => {
   try {
@@ -555,17 +739,22 @@ const proxyImage = async (req, res) => {
       typeof req.query.customerId === "string" && req.query.customerId.trim()
         ? req.query.customerId.trim()
         : "";
+    const whatsAppMessageId =
+      typeof req.query.whatsAppMessageId === "string" &&
+      req.query.whatsAppMessageId.trim()
+        ? req.query.whatsAppMessageId.trim()
+        : "";
     const transformOptions = normalizeImageTransformOptions(req.query);
 
-    if (!targetUrl && !messageId && !customerId) {
+    if (!targetUrl && !messageId && !customerId && !whatsAppMessageId) {
       return res.status(400).json({
         error:
-          "At least one of url, messageId, or customerId is required",
+          "At least one of url, messageId, customerId, or whatsAppMessageId is required",
       });
     }
 
     const prisma =
-      messageId || customerId ? getSharedPrismaClient() : null;
+      messageId || customerId || whatsAppMessageId ? getSharedPrismaClient() : null;
     const candidateUrls = [];
     const seenUrls = new Set();
     let lastFailureStatus = 502;
@@ -593,6 +782,29 @@ const proxyImage = async (req, res) => {
 
     if (customerId) {
       addCandidateUrl(await resolveFreshCustomerAvatarUrl(prisma, customerId));
+    }
+
+    if (whatsAppMessageId) {
+      const whatsAppMediaResult = await resolveWhatsAppMessageMedia(
+        prisma,
+        whatsAppMessageId,
+      );
+
+      if (whatsAppMediaResult?.response) {
+        return sendRemoteResponse(
+          req,
+          res,
+          whatsAppMediaResult.response,
+          transformOptions,
+        );
+      }
+
+      addCandidateUrl(whatsAppMediaResult?.url);
+
+      if (whatsAppMediaResult?.status) {
+        lastFailureStatus = whatsAppMediaResult.status;
+        lastFailureText = whatsAppMediaResult.details || "";
+      }
     }
 
     if (candidateUrls.length === 0) {

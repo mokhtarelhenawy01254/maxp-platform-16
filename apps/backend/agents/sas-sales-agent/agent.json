@@ -46,7 +46,7 @@
     "mode": "ON_WRITE",
     "requiredTools": ["order.create_draft", "order.create_confirmed"],
     "approvalCode": true,
-    "merchantChannels": ["DASHBOARD"]
+    "merchantChannels": ["DASHBOARD", "WHATSAPP"]
   },
   "budget": {
     "dailyUsd": 2,

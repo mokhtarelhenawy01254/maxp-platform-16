@@ -442,7 +442,32 @@ export const getSidebarConfig = (
             hidden: user?.role === 'AFFILIATE' || !isAppActive('crm-basic'),
         },
 
-
+        // 2️⃣.5 واتساب
+        {
+            id: 'whatsapp',
+            title: t('sidebar.whatsappSection'),
+            icon: ChatBubbleLeftRightIcon,
+            items: [
+                { to: '/whatsapp', icon: ChatBubbleLeftRightIcon, label: t('sidebar.whatsapp') },
+                { to: '/whatsapp/notifications', icon: BellIcon, label: t('sidebar.whatsappNotifications') },
+                { 
+                    to: '/whatsapp/templates', 
+                    icon: DocumentTextIcon, 
+                    label: t('sidebar.whatsappTemplates'),
+                    children: [
+                        { to: '/whatsapp/templates?category=ORDERS', label: t('sidebar.whatsappTemplatesOrders') },
+                        { to: '/whatsapp/templates?category=HR', label: t('sidebar.whatsappTemplatesHR') },
+                        { to: '/whatsapp/templates?category=SYSTEM', label: t('sidebar.whatsappTemplatesSystem') },
+                    ]
+                },
+                { to: '/whatsapp-inbox', icon: ArrowsRightLeftIcon, label: t('sidebar.whatsappRouting') },
+                { to: '/whatsapp/settings', icon: CogIcon, label: t('sidebar.whatsappSettings') },
+                { to: '/settings/inbox', icon: Cog6ToothIcon, label: t('sidebar.whatsappInboxSettings') },
+                { to: '/whatsapp/analytics', icon: ChartBarIcon, label: t('sidebar.whatsappAnalytics') },
+            ],
+            // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-business'),
+        },
 
         // 2️⃣.6 تليجرام
         {
@@ -489,6 +514,7 @@ export const getSidebarConfig = (
                 { to: '/orders/analytics', icon: ChartBarIcon, label: t('sidebar.orderAnalytics') },
                 { to: '/returns/settings', icon: CogIcon, label: t('sidebar.returnSettings') },
                 { to: '/platform-integrations', icon: BoltIcon, label: t('sidebar.platformIntegrations') },
+                { to: '/whatsapp/templates?category=ORDERS', icon: BellIcon, label: t('sidebar.whatsappNotifications') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAppActive('ecommerce-basic')
@@ -597,7 +623,11 @@ export const getSidebarConfig = (
             items: [
                 { to: '/customers', icon: UsersIcon, label: t('sidebar.customers') },
                 { to: '/leads', icon: UserPlusIcon, label: t('sidebar.leads') },
+                { to: '/customers/whatsapp-notify', icon: MegaphoneIcon, label: t('sidebar.whatsappNotifications') },
+
                 { to: '/customers/occasions-notify', icon: CalendarIcon, label: t('sidebar.customersOccasions') },
+                { to: '/customers/birthday-whatsapp-notify', icon: GiftIcon, label: t('sidebar.customersBirthday') },
+                { to: '/whatsapp/customer-journey', icon: SparklesIcon, label: t('sidebar.whatsappJourney') },
                 ...(user?.role === 'CUSTOMER' ? [{ to: '/wallet', icon: WalletIcon, label: t('sidebar.wallet') }] : []),
                 { to: '/customers/loyalty-programs', icon: GiftIcon, label: t('sidebar.loyaltyPrograms') },
                 { to: '/customers/loyalty-tiers', icon: StarIcon, label: t('sidebar.loyaltyTiers') },
@@ -786,6 +816,7 @@ export const getSidebarConfig = (
                 { to: '/hr/assets', icon: ComputerDesktopIcon, label: t('sidebar.assets') },
                 { to: '/hr/recruitment', icon: UserGroupIcon, label: t('sidebar.recruitment') },
                 { to: '/hr/settings', icon: Cog6ToothIcon, label: t('sidebar.hrSettings') },
+                { to: '/whatsapp/templates?category=HR', icon: BellIcon, label: t('sidebar.whatsappNotifications') },
                 { to: '/hr/rewards', icon: StarIcon, label: t('sidebar.rewards.title') },
             ],
             // 🔒 إخفاء إذا كان غير مفعل

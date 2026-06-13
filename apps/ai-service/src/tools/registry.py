@@ -937,6 +937,12 @@ class DiscountCreateInput(DiscountCreateDraftInput):
     """Backward-compatible input model for the existing discount.create action."""
 
 
+class WhatsappSendInput(BaseModel):
+    phone: str = Field(description="Customer phone number in international format")
+    message: str = Field(description="Message text to send")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
 async def sales_revenue(input_data: SalesRevenueInput) -> dict[str, Any]:
     return await sales_tools.sales_revenue(
         input_data.company_id or "", period=input_data.period
@@ -961,6 +967,12 @@ async def discount_create(input_data: DiscountCreateInput) -> dict[str, Any]:
         "discountPercent": input_data.discount_percent,
         "reason": input_data.reason,
     }, input_data.company_id or "")
+
+
+async def whatsapp_send(input_data: WhatsappSendInput) -> dict[str, Any]:
+    return await governance_tools.send_whatsapp(
+        input_data.company_id or "", input_data.phone, input_data.message
+    )
 
 
 sales_revenue_tool = FunctionTool(
@@ -990,6 +1002,14 @@ discount_create_tool = FunctionTool(
     func=discount_create,
     input_model=DiscountCreateInput,
 )
+
+whatsapp_send_tool = FunctionTool(
+    name="whatsapp_send",
+    description="Send a WhatsApp message to a customer.",
+    func=whatsapp_send,
+    input_model=WhatsappSendInput,
+)
+
 
 # ── Competitor Tools ─────────────────────────────────────────────────────────
 
@@ -1451,6 +1471,7 @@ from src.skills.integration import SKILL_TOOLS, get_skill_tool_names
 
 # All tools (including manager tools for template resolution)
 ALL_TOOLS: dict[str, FunctionTool] = {t.name: t for t in READ_TOOLS + WRITE_TOOLS + DIRECT_WRITE_TOOLS + SKILL_TOOLS + [
+    whatsapp_send_tool,
     facebook_reply_tool,
     agent_handoff_to_tool,
 ]}
@@ -1472,6 +1493,7 @@ ROLE_TOOLS: dict[str, list[str]] = {
         "customer_info",
         "shipping_rates",
         "shipping_update",
+        "whatsapp_send",
         "agent_handoff_to",
     ],
     "ORDER": [
@@ -1492,6 +1514,7 @@ ROLE_TOOLS: dict[str, list[str]] = {
         "order_create_draft",
         "order_create_confirmed",
         "discount_create_draft",
+        "whatsapp_send",
         "shipping_rates",
     ],
     "INVENTORY": [

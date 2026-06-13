@@ -833,6 +833,11 @@ const permanentlyDeleteRegularOrder = async ({ orderIdentifier, companyId }) => 
       data: { orderId: null }
     });
 
+    await tx.whatsAppNotificationLog.updateMany({
+      where: { orderId: order.id },
+      data: { orderId: null }
+    });
+
     await tx.walletTransaction.updateMany({
       where: { orderId: order.id },
       data: { orderId: null }
@@ -4231,6 +4236,31 @@ router.post('/create-simple', requireAuth, async (req, res) => {
     // حفظ الطلب في ملف
     await simpleOrderService.saveOrderToFile(result.order);
 
+    // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
+    try {
+      const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
+
+      const orderForNotification = {
+        id: result.order.id,
+        orderNumber: result.order.orderNumber,
+        companyId: req.user.companyId,
+        customerPhone: result.order.customerPhone,
+        customerName: result.order.customerName,
+        customer: {
+          firstName: result.order.customerName?.split(' ')[0] || result.order.customerName,
+          phone: result.order.customerPhone
+        },
+        total: result.order.total,
+        currency: 'EGP',
+        items: result.order.items || result.order.orderItems || [] // ✅ Include items for WhatsApp notification
+      };
+
+      await WhatsAppNotificationService.sendOrderCreatedNotification(orderForNotification);
+      console.log('✅ [WHATSAPP] Order notification sent for:', result.order.orderNumber);
+    } catch (whatsappError) {
+      console.log('⚠️ [WHATSAPP] Failed to send notification:', whatsappError.message);
+    }
+
     res.status(201, {
       success: true,
       message: 'تم إنشاء الطلب بنجاح',
@@ -4264,6 +4294,31 @@ router.post('/create', requireAuth, async (req, res) => {
     }
 
     const order = await orderService.createOrderFromConversation(orderData);
+
+    // 📱 إرسال إشعار WhatsApp تلقائي للطلب الجديد
+    try {
+      const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
+
+      const orderForNotification = {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        companyId: req.user.companyId,
+        customerPhone: order.customerPhone,
+        customerName: order.customerName,
+        customer: {
+          firstName: order.customerName?.split(' ')[0] || order.customerName,
+          phone: order.customerPhone
+        },
+        total: order.total,
+        currency: 'EGP',
+        items: order.items || order.orderItems || [] // ✅ Include items for WhatsApp notification
+      };
+
+      await WhatsAppNotificationService.sendOrderCreatedNotification(orderForNotification);
+      console.log('✅ [WHATSAPP] Order notification sent for:', order.orderNumber);
+    } catch (whatsappError) {
+      console.log('⚠️ [WHATSAPP] Failed to send notification:', whatsappError.message);
+    }
 
     res.status(201).json({
       success: true,

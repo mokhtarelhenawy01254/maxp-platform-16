@@ -1,6 +1,7 @@
 const express = require('express');
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
 const { authenticateToken, requireSuperAdmin } = require('../middleware/superAdminMiddleware');
+const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 
 const router = express.Router();
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
@@ -279,6 +280,18 @@ router.post('/', authenticateToken, requireSuperAdmin, async (req, res) => {
       data: subscription
     });
 
+    WhatsAppNotificationService.sendSubscriptionCreatedNotification({
+      companyId,
+      companyName: subscription.company?.name || '',
+      planName: subscription.planType,
+      monthlyFee: subscription.price,
+      currency: subscription.currency,
+      billingCycle: subscription.billingCycle,
+      nextBillingDate: subscription.nextBillingDate,
+      trialDays
+    }).catch((notificationError) => {
+      console.error('Error sending subscription created notification:', notificationError);
+    });
 
   } catch (error) {
     console.error('Error creating subscription:', error);
@@ -509,6 +522,17 @@ router.post('/:id/renew', authenticateToken, requireSuperAdmin, async (req, res)
       }
     });
 
+    WhatsAppNotificationService.sendSubscriptionRenewedNotification({
+      companyId: subscription.companyId,
+      companyName: subscription.company?.name || '',
+      planName: planType || subscription.planType,
+      monthlyFee: price || subscription.price,
+      currency: subscription.currency,
+      billingCycle: billingCycle || subscription.billingCycle,
+      nextBillingDate: finalNextBillingDate
+    }).catch((notificationError) => {
+      console.error('Error sending subscription renewed notification:', notificationError);
+    });
 
   } catch (error) {
     console.error('Error renewing subscription:', error);
@@ -580,6 +604,15 @@ router.post('/:id/cancel', authenticateToken, requireSuperAdmin, async (req, res
       data: updatedSubscription
     });
 
+    WhatsAppNotificationService.sendSubscriptionCancelledNotification({
+      companyId: subscription.companyId,
+      companyName: subscription.company?.name || '',
+      planName: subscription.planType,
+      reason: reason || 'إلغاء من السوبر أدمن',
+      endDate: updateData.endDate || updateData.cancelledAt
+    }).catch((notificationError) => {
+      console.error('Error sending subscription cancelled notification:', notificationError);
+    });
 
   } catch (error) {
     console.error('Error cancelling subscription:', error);
@@ -650,6 +683,17 @@ router.post('/:id/renew', authenticateToken, requireSuperAdmin, async (req, res)
       data: updatedSubscription
     });
 
+    WhatsAppNotificationService.sendSubscriptionRenewedNotification({
+      companyId: subscription.companyId,
+      companyName: subscription.company?.name || '',
+      planName: subscription.planType,
+      monthlyFee: subscription.price,
+      currency: subscription.currency,
+      billingCycle: billingCycle || subscription.billingCycle,
+      nextBillingDate
+    }).catch((notificationError) => {
+      console.error('Error sending duplicate renew notification:', notificationError);
+    });
 
   } catch (error) {
     console.error('Error renewing subscription:', error);

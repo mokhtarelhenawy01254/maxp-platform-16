@@ -31,7 +31,7 @@
     "agent.handoff"
   ],
   "allowedSkills": [],
-  "channels": ["chat", "messenger"],
+  "channels": ["chat", "whatsapp", "messenger"],
   "budget": {
     "dailyUsd": 2,
     "maxToolCallsPerRun": 5

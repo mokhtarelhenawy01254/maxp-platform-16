@@ -5,6 +5,9 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const WalletService = require('../services/walletService');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const WhatsAppManager = require('../services/whatsapp/WhatsAppManager');
+const WhatsAppMessageHandler = require('../services/whatsapp/WhatsAppMessageHandler');
+const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 const verifyToken = require('../utils/verifyToken');
 const { getJwtSecret } = require('../utils/jwtSecret');
 const { t } = require('../services/i18n');
@@ -51,13 +54,25 @@ const safeParseJson = (value) => {
   }
 };
 
-
+const formatPhoneForWhatsApp = (phone) => {
+  if (!phone) return null;
+  let cleaned = String(phone).replace(/\D/g, '');
+  if (!cleaned) return null;
+  if (cleaned.startsWith('0')) {
+    cleaned = `20${cleaned.substring(1)}`;
+  } else if (!cleaned.startsWith('20') && cleaned.length === 10) {
+    cleaned = `20${cleaned}`;
+  }
+  return cleaned;
+};
 
 const getOtpCode = () => String(Math.floor(1000 + Math.random() * 9000));
 
 const hashOtp = (code, salt) => {
   return crypto.createHash('sha256').update(`${code}:${salt}`).digest('hex');
 };
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const cleanLeadText = (value, maxLength = 500) => {
   if (typeof value !== 'string') return '';
@@ -102,6 +117,20 @@ const mergeLeadTags = (rawTags, incomingTags = []) => {
   return [...new Set([...baseTags, ...incomingTags.filter(Boolean)])];
 };
 
+const queueNotificationTasks = (tasks, label) => {
+  const pendingTasks = tasks.filter(Boolean);
+  if (!pendingTasks.length) return;
+
+  Promise.allSettled(pendingTasks).then((results) => {
+    const failedTasks = results.filter((result) => result.status === 'rejected');
+    if (failedTasks.length > 0) {
+      console.error(`❌ [PUBLIC-CUSTOMER] ${label} notifications had ${failedTasks.length} failed tasks`);
+    }
+  }).catch((notificationError) => {
+    console.error(`❌ [PUBLIC-CUSTOMER] Failed to queue ${label} notifications:`, notificationError);
+  });
+};
+
 const maybeTrackLandingConversion = async (prisma, companyId, pageSlug) => {
   const cleanSlug = cleanLeadText(pageSlug, 120);
   if (!cleanSlug) return;
@@ -123,7 +152,103 @@ const maybeTrackLandingConversion = async (prisma, companyId, pageSlug) => {
   });
 };
 
+const sendOtpViaWhatsApp = async ({ companyId, phone, code }) => {
+  const prisma = getSharedPrismaClient();
 
+  const settings = await prisma.whatsAppNotificationSettings.findUnique({
+    where: { companyId },
+    select: { defaultSessionId: true, isEnabled: true }
+  });
+
+  if (settings && settings.isEnabled === false) {
+    return { success: false, reason: 'notifications_disabled' };
+  }
+
+  let sessionId = settings.defaultSessionId;
+  if (!sessionId) {
+    const connected = await prisma.whatsAppSession.findFirst({
+      where: {
+        companyId,
+        status: 'CONNECTED'
+      },
+      select: { id: true },
+      orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' }]
+    });
+
+    if (connected?.id) {
+      sessionId = connected.id;
+      console.log(`ℹ️ [PUBLIC-CUSTOMER] Using fallback connected session for company ${companyId}: ${sessionId}`);
+    }
+  }
+
+  if (!sessionId) {
+    return { success: false, reason: 'no_session' };
+  }
+
+  let session = WhatsAppManager.getSession(sessionId);
+  if (!session || session.status !== 'connected') {
+    try {
+      await WhatsAppManager.createSession(sessionId, companyId);
+      await delay(1500);
+      session = WhatsAppManager.getSession(sessionId);
+    } catch (e) {
+      // ignore and continue fallbacks
+    }
+
+    // Try one more fallback: pick any CONNECTED session from DB and see if runtime is connected
+    const connected = await prisma.whatsAppSession.findFirst({
+      where: {
+        companyId,
+        status: 'CONNECTED',
+        id: { not: sessionId }
+      },
+      select: { id: true },
+      orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' }]
+    });
+
+    if (connected?.id) {
+      const fallbackId = connected.id;
+      let fallbackSession = WhatsAppManager.getSession(fallbackId);
+      if (!fallbackSession || fallbackSession.status !== 'connected') {
+        try {
+          await WhatsAppManager.createSession(fallbackId, companyId);
+          await delay(1500);
+          fallbackSession = WhatsAppManager.getSession(fallbackId);
+        } catch (e) {
+          // ignore
+        }
+      }
+      if (fallbackSession && fallbackSession.status === 'connected') {
+        sessionId = fallbackId;
+        session = fallbackSession;
+        console.log(`ℹ️ [PUBLIC-CUSTOMER] Using fallback runtime-connected session for company ${companyId}: ${sessionId}`);
+      }
+    }
+  }
+
+  if (!session || session.status !== 'connected') {
+    return { success: false, reason: 'session_not_connected' };
+  }
+
+  const formatted = formatPhoneForWhatsApp(phone);
+  if (!formatted) {
+    return { success: false, reason: 'invalid_phone' };
+  }
+
+  const jid = `${formatted}@s.whatsapp.net`;
+  try {
+    const result = await WhatsAppMessageHandler.sendText(sessionId, jid, `كود الدخول: ${code}`);
+    return { success: true, sessionId, formattedPhone: formatted, jid, messageId: result?.messageId || result?.key?.id || null };
+  } catch (e) {
+    console.error('❌ [PUBLIC-CUSTOMER] WhatsApp sendText failed:', {
+      companyId,
+      sessionId,
+      jid,
+      error: e?.message || e
+    });
+    return { success: false, reason: 'send_failed' };
+  }
+};
 
 router.post('/register', getCompanyFromSubdomain, async (req, res) => {
   try {
@@ -175,6 +300,23 @@ router.post('/register', getCompanyFromSubdomain, async (req, res) => {
     });
 
     await ensureWallet(customer.id, companyId);
+
+    queueNotificationTasks([
+      WhatsAppNotificationService.sendNewSignupWelcomeNotification({
+        companyId,
+        recipientPhone: customer.phone,
+        recipientName: `${customer.firstName} ${customer.lastName}`.trim(),
+        customerId: customer.id,
+        signupType: 'storefront_customer'
+      }),
+      WhatsAppNotificationService.sendNewSignupAdminAlertNotification({
+        companyId,
+        recipientName: `${customer.firstName} ${customer.lastName}`.trim(),
+        recipientPhone: customer.phone,
+        signupType: 'storefront_customer',
+        audience: 'company-admins'
+      })
+    ], 'public-register');
 
     return res.status(201).json({
       success: true,
@@ -339,6 +481,29 @@ router.post('/lead-capture', getCompanyFromSubdomain, async (req, res) => {
     await ensureWallet(customer.id, companyId);
     await maybeTrackLandingConversion(prisma, companyId, pageSlug);
 
+    if (createdNewCustomer) {
+      queueNotificationTasks([
+        customer.phone
+          ? WhatsAppNotificationService.sendNewSignupWelcomeNotification({
+              companyId,
+              recipientPhone: customer.phone,
+              recipientName: `${customer.firstName} ${customer.lastName}`.trim(),
+              email: customer.email || '',
+              customerId: customer.id,
+              signupType: 'landing_lead'
+            })
+          : null,
+        WhatsAppNotificationService.sendNewSignupAdminAlertNotification({
+          companyId,
+          recipientName: `${customer.firstName} ${customer.lastName}`.trim(),
+          recipientPhone: customer.phone || '',
+          email: customer.email || '',
+          signupType: 'landing_lead',
+          audience: 'company-admins'
+        })
+      ], 'lead-capture');
+    }
+
     return res.status(createdNewCustomer ? 201 : 200).json({
       success: true,
       message: 'تم استلام بياناتك بنجاح وسيتم التواصل معك قريباً',
@@ -426,11 +591,31 @@ router.post('/request-otp', getCompanyFromSubdomain, async (req, res) => {
       await ensureWallet(customerId, companyId);
     }
 
-    return res.json({
+    const sendResult = await sendOtpViaWhatsApp({ companyId, phone, code });
+    if (!sendResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: sendResult.reason === 'no_session'
+          ? 'تعذر إرسال كود واتساب: يرجى تفعيل إشعارات واتساب للشركة وتحديد جلسة واتساب افتراضية (Default Session) أولاً'
+          : sendResult.reason === 'notifications_disabled'
+            ? 'تعذر إرسال كود واتساب: إشعارات واتساب معطلة للشركة. يرجى تفعيل إشعارات واتساب من إعدادات الشركة'
+            : sendResult.reason === 'session_not_connected'
+              ? 'واتساب غير متصل حالياً. يرجى ربط واتساب من إعدادات الشركة أولاً'
+              : sendResult.reason === 'invalid_phone'
+                ? 'رقم الهاتف غير صالح'
+                : sendResult.reason === 'send_failed'
+                  ? 'تعذر إرسال كود واتساب: فشل إرسال الرسالة من جلسة واتساب الحالية (راجع اتصال الجلسة وصحة الرقم ووجود واتساب عليه)'
+                  : 'تعذر إرسال كود واتساب'
+      });
+    }
+
+    const response = {
       success: true,
       message: t('otp.sent'),
       ...(process.env.NODE_ENV !== 'production' ? { debugCode: code } : {})
-    });
+    };
+
+    return res.json(response);
   } catch (error) {
     console.error('❌ [PUBLIC-CUSTOMER] Error requesting OTP:', error);
     return res.status(400).json({

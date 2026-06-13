@@ -88,6 +88,17 @@ export const APP_REGISTRY: AppDefinition[] = [
     requiredApps: ['crm-basic'],
   },
   {
+    id: 'whatsapp',
+    nameKey: 'sidebar.whatsappSection',
+    descriptionKey: 'appDashboard.app.whatsapp.description',
+    icon: ChatBubbleLeftRightIcon,
+    color: 'green',
+    bgGradient: 'from-green-500 to-emerald-600',
+    sectionIds: ['whatsapp'],
+    category: 'communication',
+    requiredApps: ['whatsapp-integration'],
+  },
+  {
     id: 'telegram',
     nameKey: 'sidebar.telegramSection',
     descriptionKey: 'appDashboard.app.telegram.description',
