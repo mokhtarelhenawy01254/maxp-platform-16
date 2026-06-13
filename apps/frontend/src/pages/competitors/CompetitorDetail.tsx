@@ -41,7 +41,7 @@ const CompetitorDetail: React.FC = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'overview' | 'products' | 'ads' | 'reports'>('overview');
+  const [tab, setTab] = useState<string>('overview');
   const [competitor, setCompetitor] = useState<any>(null);
   const [products, setProducts] = useState<CompetitorProduct[]>([]);
   const [ads, setAds] = useState<CompetitorAd[]>([]);
@@ -234,6 +234,26 @@ const CompetitorDetail: React.FC = () => {
               <p className="text-gray-600 dark:text-gray-400">{competitor.notes}</p>
             </div>
           )}
+          {competitor.strengths && (
+            <div className="border rounded-lg p-4 dark:border-gray-700">
+              <h3 className="font-semibold mb-2">{t('competitors.strengths')}</h3>
+              <div className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                {competitor.strengths.split('\n').map((line: string, i: number) => (
+                  <p key={i} className={line.startsWith('-') || line.startsWith('•') ? 'mr-2' : ''}>{line}</p>
+                ))}
+              </div>
+            </div>
+          )}
+          {competitor.weaknesses && (
+            <div className="border rounded-lg p-4 dark:border-gray-700">
+              <h3 className="font-semibold mb-2">{t('competitors.weaknesses')}</h3>
+              <div className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                {competitor.weaknesses.split('\n').map((line: string, i: number) => (
+                  <p key={i} className={line.startsWith('-') || line.startsWith('•') ? 'mr-2' : ''}>{line}</p>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="border rounded-lg p-4 dark:border-gray-700">
             <h3 className="font-semibold mb-2">{t('competitors.priceComparison')}</h3>
             {products.length > 0 ? (
@@ -317,6 +337,30 @@ const CompetitorDetail: React.FC = () => {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {tab === 'social' && (
+        <div className="text-center py-12 text-gray-500">
+          <p>{t('competitors.social.noSocialProfiles')}</p>
+          <button
+            onClick={() => navigate(`/competitors/${id}/social`)}
+            className="mt-2 text-blue-500 hover:underline text-sm"
+          >
+            {t('competitors.social.overview')}
+          </button>
+        </div>
+      )}
+
+      {tab === 'platforms' && (
+        <div className="text-center py-12 text-gray-500">
+          <p>{t('competitors.platforms.noPlatformData')}</p>
+          <button
+            onClick={() => navigate(`/competitors/${id}/platforms`)}
+            className="mt-2 text-blue-500 hover:underline text-sm"
+          >
+            {t('competitors.platforms.techStack')}
+          </button>
         </div>
       )}
 

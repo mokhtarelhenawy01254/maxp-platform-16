@@ -1,3 +1,11 @@
+## [2026-06-13] Frontend — Competitor Detail Page Missing Strengths/Weaknesses, Social & Platform Tabs Crash
+- **Bug/Issue**: The competitor detail page (`/competitors/:id`) had a narrow tab union type that excluded new tab IDs, causing TypeScript errors when adding tabs. Sections for strengths, weaknesses, social, and platforms were missing, so users couldn't view competitor analysis data beyond the basic overview/products/ads/reports tabs.
+- **Root Cause**: The tab state was typed as `'overview' | 'products' | 'ads' | 'reports'` which rejected any new tab value. The page had no UI to render strengths/weaknesses text, social tab fallback, or platforms tab fallback.
+- **Fix**: Changed tab type to `string` to allow dynamic tab values. Added strengths and weaknesses display sections with line-splitting for bullet lists. Added social and platforms tab placeholders with navigation to dedicated pages.
+- **Verification**: Frontend builds successfully with `npm run build`.
+- **Affected Files**:
+  - `apps/frontend/src/pages/competitors/CompetitorDetail.tsx`
+
 ## [2026-06-13] Super Admin Key Diagnostics — Diagnostic Chat Returns "Empty Response" Despite Working Key
 - **Bug/Issue**: The diagnostic chat on `/super-admin/ai-providers/keys/:id` always showed "Empty response" even when the key was working (the "Test key" button succeeded). The Node.js controller called `POST /admin/test` on the Python AI service, but the Python endpoint ignored the `messages` field and always generated a hardcoded "Hi" prompt with `max_tokens=5`. The response model (`KeyTestResponse`) had no `reply` field, so `testResult?.reply` was `undefined`, producing an empty string in the controller and "Empty response" in the frontend.
 - **Root Cause**: The Python endpoint `test_key_raw` in `apps/ai-service/src/api/admin/keys.py` used a strict `KeyTestRequest` model with only `provider`, `api_key`, and `model` — it discarded `messages`, `prompt`, and `timeout_ms`. The `KeyTestResponse` lacked a `reply` field. The Node.js controller `testAIKeyChat` in `superAdminAiController.js` expected `testResult.reply` but always received `undefined`.
