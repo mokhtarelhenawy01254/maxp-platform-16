@@ -781,8 +781,12 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
               setEditingItem(null);
               await fetchAllData();
             } catch (err) {
-              console.error("Marketplace save error:", err);
-              toast.error("خطأ في الحفظ");
+              const axiosErr = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
+              const serverMsg = axiosErr?.response?.data?.message || "";
+              const serverErrors = axiosErr?.response?.data?.errors;
+              console.error("Marketplace save error:", err, "Server response:", axiosErr?.response?.data);
+              toast.error(serverMsg || "خطأ في الحفظ");
+              if (serverErrors) console.error("Validation errors:", serverErrors);
             }
           }}
         />

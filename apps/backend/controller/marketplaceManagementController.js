@@ -494,7 +494,20 @@ exports.installCompanyCoverageApp = async (req, res) => {
  */
 exports.createApp = async (req, res) => {
   try {
-    const appData = req.body;
+    const body = req.body;
+
+    // Only pick fields that exist in the Prisma MarketplaceApp model
+    const ALLOWED_FIELDS = [
+      'slug', 'name', 'description', 'logo', 'images',
+      'monthlyPrice', 'yearlyPrice', 'pricingModel', 'unitPrice', 'unitName',
+      'features', 'isActive', 'isPublic', 'isFeatured', 'isPopular',
+      'requiredApps', 'trialDays', 'mainRoute', 'adminRoute',
+      'category', 'icon', 'coverImage', 'engineCompatibility',
+    ];
+    const appData = {};
+    for (const key of ALLOWED_FIELDS) {
+      if (key in body) appData[key] = body[key];
+    }
 
     // Generate slug from name if not provided
     if (!appData.slug && appData.name) {
@@ -506,9 +519,9 @@ exports.createApp = async (req, res) => {
     }
 
     // Ensure numeric fields are correctly typed
-    if (appData.monthlyPrice) appData.monthlyPrice = parseFloat(appData.monthlyPrice);
-    if (appData.yearlyPrice) appData.yearlyPrice = parseFloat(appData.yearlyPrice);
-    if (appData.trialDays) appData.trialDays = parseInt(appData.trialDays);
+    if (appData.monthlyPrice != null) appData.monthlyPrice = parseFloat(appData.monthlyPrice);
+    if (appData.yearlyPrice != null) appData.yearlyPrice = parseFloat(appData.yearlyPrice);
+    if (appData.trialDays != null) appData.trialDays = parseInt(appData.trialDays);
 
     const app = await executeWithRetry(async () => {
       return await getSharedPrismaClient().marketplaceApp.create({
@@ -539,15 +552,30 @@ exports.createApp = async (req, res) => {
 exports.updateApp = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const body = req.body;
+
+    // Only pick fields that exist in the Prisma MarketplaceApp model
+    const ALLOWED_FIELDS = [
+      'slug', 'name', 'description', 'logo', 'images',
+      'monthlyPrice', 'yearlyPrice', 'pricingModel', 'unitPrice', 'unitName',
+      'features', 'isActive', 'isPublic', 'isFeatured', 'isPopular',
+      'requiredApps', 'trialDays', 'mainRoute', 'adminRoute',
+      'category', 'icon', 'coverImage', 'engineCompatibility',
+    ];
+    const updateData = {};
+    for (const key of ALLOWED_FIELDS) {
+      if (key in body) updateData[key] = body[key];
+    }
 
     // Ensure numeric fields are correctly typed
-    if (updateData.monthlyPrice) updateData.monthlyPrice = parseFloat(updateData.monthlyPrice);
-    if (updateData.yearlyPrice) updateData.yearlyPrice = parseFloat(updateData.yearlyPrice);
-    if (updateData.trialDays) updateData.trialDays = parseInt(updateData.trialDays);
+    if (updateData.monthlyPrice != null) updateData.monthlyPrice = parseFloat(updateData.monthlyPrice);
+    if (updateData.yearlyPrice != null) updateData.yearlyPrice = parseFloat(updateData.yearlyPrice);
+    if (updateData.trialDays != null) updateData.trialDays = parseInt(updateData.trialDays);
 
-    // Prevent id and slug from being updated if they shouldn't be
-    delete updateData.id;
+    // Convert features array to JSON string if needed
+    if (Array.isArray(updateData.features)) {
+      updateData.features = updateData.features;
+    }
 
     const app = await executeWithRetry(async () => {
       return await getSharedPrismaClient().marketplaceApp.update({
