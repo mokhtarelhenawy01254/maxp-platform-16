@@ -1,3 +1,10 @@
+## [2026-06-13] Backend — appExplanations `/by-route` Returns 500 on Missing DB Table
+- **Bug/Issue**: Every page load triggered `Error fetching explanations by route: TypeError: Cannot read properties of undefined (reading 'filter')` → HTTP 500, visible in frontend as `[خطأ 500] ⚠️ خطأ في جلب البيانات`.
+- **Root Cause**: `prisma.appExplanation.findMany()` returns `undefined` on the server because the `app_explanations` table migration was never run in production. The code called `.filter()` directly on the return value with no null guard.
+- **Fix**: Changed `explanations.filter(...)` → `(explanations || []).filter(...)` in `appExplanationsRoutes.js`. Endpoint now returns `{ success: true, explanations: [] }` when the table is absent instead of crashing.
+- **Affected Files**:
+  - `apps/backend/routes/appExplanationsRoutes.js`
+
 ## [2026-06-13] Backend — Skills `allowedTools` Empty in Agent Profile Endpoint
 - **Bug/Issue**: `GET /ai-sandbox/agents/:agentId/profile` returned `skills[*].allowedTools = []` for all skills — the skills had no tool metadata.
 - **Root Cause**: The endpoint loaded skill details exclusively from the `companySkill` table, but that table is either empty or not populated for most companies. The real skill definitions (`displayName`, `allowedTools`, `requiresHumanApproval`) live in `apps/ai-service/skills/{id}/skill.json` on the server at `/var/www/ai-service/skills/`.

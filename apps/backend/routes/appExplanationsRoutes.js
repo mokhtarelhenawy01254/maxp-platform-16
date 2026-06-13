@@ -44,7 +44,7 @@ router.get("/by-route", async (req, res) => {
     });
 
     // Filter: match if the current route starts with the targetRoute
-    const filtered = explanations.filter((exp) => {
+    const filtered = (explanations || []).filter((exp) => {
       const target = exp.targetRoute.replace(/\/+$/, "");
       const current = route.replace(/\/+$/, "");
       return current === target || current.startsWith(target + "/");

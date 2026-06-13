@@ -25,31 +25,35 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: |
-            frontend/package-lock.json
-            backend/package-lock.json
+            apps/frontend/package-lock.json
+            apps/backend/package-lock.json
+
+      - name: Install Backend Dependencies
+        working-directory: ./apps/backend
+        run: npm ci
 
       - name: Backend Syntax Check
-        working-directory: ./backend
+        working-directory: ./apps/backend
         run: npm run check:syntax
 
       - name: Backend Template Validation
-        working-directory: ./backend
+        working-directory: ./apps/backend
         run: npm run templates:validate -- --fail-on-critical-warnings
 
       - name: Install Frontend Dependencies
-        working-directory: ./frontend
+        working-directory: ./apps/frontend
         run: npm ci
 
       - name: Frontend Storefront Theme Validation
-        working-directory: ./frontend
+        working-directory: ./apps/frontend
         run: npm run validate:themes
 
       - name: Install Playwright Chromium
-        working-directory: ./frontend
+        working-directory: ./apps/frontend
         run: npx playwright install --with-deps chromium
 
       - name: Start Frontend Preview Server
-        working-directory: ./frontend
+        working-directory: ./apps/frontend
         run: |
           nohup npm run dev -- --host 127.0.0.1 --port 3001 > /tmp/storefront-preview.log 2>&1 &
           echo $! > /tmp/storefront-preview.pid
@@ -67,19 +71,19 @@ jobs:
           exit 1
 
       - name: Frontend Storefront Routing Test
-        working-directory: ./frontend
+        working-directory: ./apps/frontend
         run: npm run test:storefront-routing
 
       - name: Frontend Storefront Centering Audit (390px)
-        working-directory: ./frontend
+        working-directory: ./apps/frontend
         run: npm run audit:storefront-centering -- --widths 390 --base-url http://127.0.0.1:3001
 
       - name: Frontend Storefront Centering Audit (1440px)
-        working-directory: ./frontend
+        working-directory: ./apps/frontend
         run: npm run audit:storefront-centering -- --widths 1440 --base-url http://127.0.0.1:3001
 
       - name: Frontend Storefront Centering Audit (2200px)
-        working-directory: ./frontend
+        working-directory: ./apps/frontend
         run: npm run audit:storefront-centering -- --widths 2200 --base-url http://127.0.0.1:3001
 
       - name: Stop Frontend Preview Server
