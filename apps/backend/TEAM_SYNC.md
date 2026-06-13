@@ -1,3 +1,36 @@
+## [2026-06-13] AI Service — Agent Refactor, Gateway Hardening, Skills Validation, Memory Router, Eval Worker [DONE]
+- **Objective**: Refactor agent base for polymorphic types, harden tool execution with typed error boundaries, add skills validation pipeline, introduce memory routing and async eval worker, and delete legacy Node.js agent skills.
+- **Accomplishments**:
+  - **Agent Base Polymorphism**: `base.py` supports `CEO`, `SPECIALIST`, `SDK` agent types with different instruction resolution, tool scopes, and lifecycle hooks.
+  - **Tool Gateway Error Boundaries**: `gateway.py` wraps tool calls in `ToolResult(success/failure, error)` with per-tool timeouts via `asyncio.wait_for`.
+  - **Skills Validation Pipeline**: Created `validation.py` for skill JSON schema validation before registration. Failed skills are skipped without crashing.
+  - **Memory Router**: `memory_router.py` centralizes reads/writes to episodic, semantic, and working memory stores.
+  - **Agent Feedback & Eval Worker**: `agent_feedback.py` for per-turn feedback storage; `eval_worker.py` for async response quality scoring.
+  - **Manager Tools**: Extended with sub-agent lifecycle tools (spawn, pause, resume, terminate) and cross-agent context sharing.
+  - **Deleted Legacy Node.js Skills**: Removed `apps/backend/agents/_shared/` — 14 Node.js skills and TOOLS.md. All handled by Python ai-service now.
+  - **Test Coverage**: New tests in `tests/tools/test_gateway.py` and `tests/skills/`.
+- **Files**: AI service (base.py, assembler.py, context.py, execute_tools.py, skills/*, gateway.py, manager_tools.py, agent_feedback.py, memory_router.py, eval_worker.py, orchestration_flow.py), backend agents/_shared/ (deleted).
+
+## [2026-06-13] Backend — Platform Subscription Refinements [DONE]
+- **Objective**: Fix error handling gaps in platform subscription checkout and clean up route/seed definitions.
+- **Accomplishments**:
+  - Better error boundaries for Kashier checkout sessions (400 vs 500 responses).
+  - Cleaned up route middleware in platformSubscriptionRoutes.js.
+  - Updated marketplaceSeed_simple.js to match current plan pricing/features.
+- **Files**: `platformSubscriptionController.js`, `platformSubscriptionRoutes.js`, `marketplaceSeed_simple.js`.
+
+## [2026-06-13] Frontend — Messaging Landing Page, Payment Pages, Auth Polish, i18n Expansion [DONE]
+- **Objective**: Launch messaging product landing page, add payment checkout pages, polish auth/registration flows, and expand i18n coverage.
+- **Accomplishments**:
+  - **MessagingLanding.tsx**: New premium landing page showcasing unified inbox, WhatsApp, Facebook, Instagram integrations.
+  - **Payment Pages**: New `/payment/*` pages for Kashier subscription checkout callbacks with status display and retry flows.
+  - **Auth Polish**: Improved AuthSurface error/loading states; Register form updated with messaging preference fields.
+  - **Meta Pixel**: Extended tracking to messaging landing and payment pages.
+  - **Sidebar**: Added new routes, cleaned unused entries.
+  - **i18n**: 816 new keys in both AR/EN translation files covering landing page, payment flows, auth fixes.
+  - **OG Image**: New `og-messaging.svg` for social sharing.
+- **Files**: AuthSurface.tsx, Register.tsx, MessagingLanding.tsx, payment/ (new), usePlatformSiteMetaPixel.ts, sidebar.ts, translation.json (AR/EN), og-messaging.svg (new).
+
 ## [2026-06-12] / [2026-03-09] Monorepo — Legacy Folders Purge & AI Agent Sandbox [DONE]
 - **Objective**: Consolidate the monorepo structure by purging duplicate root-level folders (`backend/`, `frontend/`, `testsprite_tests/`) and synchronize developer sandbox interfaces.
 - **Accomplishments**:

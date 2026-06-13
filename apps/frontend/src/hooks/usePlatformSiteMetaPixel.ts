@@ -31,10 +31,12 @@ const scheduleIdleTask = (callback: () => void): (() => void) => {
 
 export const isPlatformSitePixelPath = (pathname: string): boolean =>
   pathname === "/" ||
+  pathname.startsWith("/lp/") ||
   pathname.startsWith("/auth/") ||
   pathname.startsWith("/register/") ||
   pathname.startsWith("/affiliate-register") ||
-  pathname.startsWith("/apply/");
+  pathname.startsWith("/apply/") ||
+  pathname.startsWith("/for-merchants");
 
 export const usePlatformSiteMetaPixel = () => {
   const location = useLocation();

@@ -230,11 +230,12 @@ class ContextAssembler:
                 memories_xml = "\n<relevant_memories>\n" + "\n".join(memory_lines) + "\n</relevant_memories>"
                 sections.append(("relevant_memories", memories_xml))
 
-        # 5. Skills (full instructions for customer pipeline)
+        # 5. Skills (L1 progressive disclosure — name + description only)
+        #    The LLM calls load_skill('<skill_id>') to get full instructions on demand.
         agent = ctx.agent
         if agent and hasattr(agent, "allowed_skills") and agent.allowed_skills:
-            from src.skills.integration import get_skills_block
-            skills_block = get_skills_block(agent.allowed_skills)
+            from src.skills.integration import get_l1_skills_block
+            skills_block = get_l1_skills_block(agent.allowed_skills)
             if skills_block:
                 sections.append(("skills_available", skills_block))
 
@@ -288,7 +289,7 @@ class ContextAssembler:
         # Strategy 2: Drop low-priority sections from system prompt
         droppable_tags = [
             ("relevant_memories", "<relevant_memories>", "</relevant_memories>"),
-            ("skills_available", "<skills>", "</skills>"),
+            ("skills_available", "<skills_available>", "</skills_available>"),
             ("conversation_summary", "<conversation_summary>", "</conversation_summary>"),
             ("company_knowledge", "<company_knowledge>", "</company_knowledge>"),
             ("session_state", "<session_state>", "</session_state>"),

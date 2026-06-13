@@ -23,6 +23,8 @@ from src.pipeline.stages.validate_reply import validate_reply
 from src.services.agent_manager_service import get_agent_manager_service
 from src.services.agent_registry import get_agent_registry
 from src.services.a2a_bridge import AGENT_CARD_META
+from src.services.agent_feedback import AgentFeedbackTracker
+from src.services.memory_router import get_ceo_lessons
 from src.services.run_state_manager import RunStateManager
 from src.tools.registry import get_tool_names_for_role
 from src.workflows.magentic_orchestration import MagenticOrchestrator
@@ -142,6 +144,18 @@ async def run_orchestration(
                     "tool_results": saved.executed_tools,
                 }
 
+        external_context = dict(memory_context or {})
+
+        ceo_lessons = ""
+        if session:
+            try:
+                ceo_lessons = await get_ceo_lessons(company_id, session, message)
+            except Exception:
+                pass
+        if ceo_lessons:
+            existing = external_context.get("ceo_lessons", "")
+            external_context["ceo_lessons"] = existing + ceo_lessons
+
         ctx = PipelineContext(
             message=message,
             thread_id=thread_id,
@@ -150,7 +164,7 @@ async def run_orchestration(
             agent=ceo_agent,
             session=session,
             channel=effective_channel,
-            external_memory_context=memory_context or {},
+            external_memory_context=external_context,
         )
 
         pipeline_stages = [
@@ -167,6 +181,18 @@ async def run_orchestration(
             pipeline_stages,
             checkpointer=checkpointer,
             checkpoint_storage=checkpoint_storage,
+        )
+
+        feedback = AgentFeedbackTracker(
+            company_id=company_id,
+            agent_role="CEO",
+            agent_name="CEO Orchestrator",
+            thread_id=thread_id,
+        )
+        await feedback.record_outcome(
+            status=final_ctx.early_return.get("status", "SUCCESS") if final_ctx.early_return else "SUCCESS",
+            executed_tools=final_ctx.executed_tools,
+            context_message=message,
         )
 
         if state_manager:

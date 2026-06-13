@@ -1,9 +1,0 @@
-{
-  "id": "low-stock-watch",
-  "displayName": "Low Stock Watch",
-  "version": "1.0.0",
-  "description": "Find low-stock products and recommend action.",
-  "allowedTools": ["inventory.check", "product.search"],
-  "requiresHumanApproval": false,
-  "maxToolCount": 2
-}

@@ -14,6 +14,7 @@ const DEFAULT_PLAN_FEES = {
   BASIC: 99,
   PRO: 199,
   ENTERPRISE: 499,
+  MESSAGING: 999,
 };
 
 const getDefaultMonthlyFee = (plan) =>
@@ -703,6 +704,72 @@ exports.createCheckoutSession = async (req, res) => {
 };
 
 /**
+ * @route POST /api/v1/platform-subscription/messaging-checkout
+ * @desc Create Kashier checkout session for the Messaging Package (999 EGP)
+ * @access Protected
+ */
+exports.messagingCheckout = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const amount = 999;
+    const planName = "MESSAGING";
+    const prisma = getSharedPrismaClient();
+
+    const billingRecord = await prisma.billingHistory.create({
+      data: {
+        companyId,
+        type: "PLATFORM_FEE",
+        amount,
+        description: `طلب اشتراك باقة المراسلة (Messaging) - معلق`,
+        status: "PENDING"
+      }
+    });
+
+    const host = req.headers.host || "maxp.online";
+    const redirectUrl = `http://${host}/billing/wallet?status=success&billingId=${billingRecord.id}`;
+    const baseDomain = process.env.MAIN_DOMAIN || "maxp.online";
+    const webhookUrl = `https://${baseDomain}/api/v1/public/platform-subscription/webhook`;
+
+    const session = await KashierService.createPaymentSession(
+      {
+        amount,
+        currency: "EGP",
+        orderId: `messaging-${billingRecord.id}`,
+        customer: { email: req.user.email, reference: req.user.phone || companyId },
+        redirectUrl,
+        webhookUrl,
+        description: `Messaging Package subscription - 999 EGP`,
+      },
+      null
+    );
+
+    if (!session.success) {
+      await prisma.billingHistory.update({
+        where: { id: billingRecord.id },
+        data: { status: "FAILED", description: `فشل إنشاء جلسة الدفع: ${session.error}` }
+      });
+      return res.status(502).json({ success: false, message: "فشل إنشاء جلسة الدفع في كاشير." });
+    }
+
+    await prisma.billingHistory.update({
+      where: { id: billingRecord.id },
+      data: {
+        referenceId: session.sessionId,
+        description: `طلب اشتراك باقة المراسلة (معرّف الجلسة: ${session.sessionId})`
+      }
+    });
+
+    res.json({
+      success: true,
+      data: { billingId: billingRecord.id, sessionUrl: session.sessionUrl, sessionId: session.sessionId }
+    });
+  } catch (error) {
+    console.error("[MESSAGING-CHECKOUT] Error:", error);
+    res.status(500).json({ success: false, message: "خطأ أثناء إنشاء عملية الدفع" });
+  }
+};
+
+/**
  * @route POST /api/v1/public/platform-subscription/webhook
  * @desc Public webhook from Kashier to process merchant subscription payments
  * @access Public
@@ -720,12 +787,13 @@ exports.handleWebhook = async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid payload parameters" });
     }
 
-    // Extract billing history ID from merchantOrderId (formatted as platform-sub-xxxx)
-    if (!orderId.startsWith("platform-sub-")) {
+    // Extract billing history ID from merchantOrderId (formatted as platform-sub-xxxx or messaging-xxxx)
+    if (!orderId.startsWith("platform-sub-") && !orderId.startsWith("messaging-")) {
       return res.status(200).json({ success: true, message: "Ignored (non-platform order)" });
     }
 
-    const billingId = orderId.replace("platform-sub-", "");
+    const isMessaging = orderId.startsWith("messaging-");
+    const billingId = isMessaging ? orderId.replace("messaging-", "") : orderId.replace("platform-sub-", "");
     const prisma = getSharedPrismaClient();
 
     const billingRecord = await prisma.billingHistory.findUnique({
@@ -755,11 +823,13 @@ exports.handleWebhook = async (req, res) => {
 
     if (paymentSuccessful) {
       // Upgrade subscription and update company plan
-      const planName = billingRecord.description.includes("PRO")
-        ? "PRO"
-        : billingRecord.description.includes("ENTERPRISE")
-          ? "ENTERPRISE"
-          : "BASIC";
+      const planName = isMessaging
+        ? "MESSAGING"
+        : billingRecord.description.includes("PRO")
+          ? "PRO"
+          : billingRecord.description.includes("ENTERPRISE")
+            ? "ENTERPRISE"
+            : "BASIC";
 
       const nextBillingDate = new Date();
       nextBillingDate.setDate(nextBillingDate.getDate() + 30);
@@ -803,6 +873,21 @@ exports.handleWebhook = async (req, res) => {
             lastBillingDate: new Date()
           }
         });
+
+        // Install messaging apps for messaging package subscribers
+        if (isMessaging) {
+          const messagingApps = await tx.marketplaceApp.findMany({
+            where: { slug: { in: ['crm-basic', 'whatsapp-business', 'telegram-business'] } },
+            select: { id: true, slug: true }
+          });
+          for (const app of messagingApps) {
+            await tx.companyApp.upsert({
+              where: { companyId_appId: { companyId: billingRecord.companyId, appId: app.id } },
+              update: { status: 'ACTIVE' },
+              create: { companyId: billingRecord.companyId, appId: app.id, status: 'ACTIVE' }
+            });
+          }
+        }
       });
 
       console.log(`✅ [BILLING-WEBHOOK] Plan upgraded for company ${billingRecord.companyId} to ${planName}`);

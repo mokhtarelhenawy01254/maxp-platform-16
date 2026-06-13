@@ -60,3 +60,7 @@ class PipelineContext:
     # Checkpoint tracking
     last_checkpoint_id: str | None = None
     resumed_from_checkpoint: bool = False
+
+    # Skill enforcement (per-turn)
+    tool_call_index: int = 0
+    active_skill_context: dict[str, Any] | None = None

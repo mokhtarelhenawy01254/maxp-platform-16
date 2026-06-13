@@ -1,3 +1,26 @@
+## [2026-06-13] AI Service — Tool Gateway & Skills Integration Error Handling
+- **Bug/Issue**: The tool gateway in `gateway.py` had incomplete error boundaries around async tool execution, causing unhandled exceptions to crash the agent pipeline instead of returning structured error responses. Skills integration pipeline in `integration.py` also lacked proper error propagation from external skill calls.
+- **Root Cause**: `execute_tools.py` did not wrap individual tool calls in try/except with typed error responses. `skills/integration.py` called external skill endpoints without timeout or error boundary, causing the entire pipeline to fail on a single skill failure.
+- **Fix**:
+  1. Added structured error wrapping in `gateway.py` — each tool call returns `ToolResult(success=False, error=...)` instead of throwing.
+  2. Added per-tool timeout in `execute_tools.py` with graceful fallback.
+  3. Added error boundary in `skills/integration.py` — failed skills are skipped with a warning log instead of crashing the pipeline.
+  4. Added partial failure handling in `context/assembler.py` so context assembly continues even if some providers fail.
+- **Affected Files**:
+  - `apps/ai-service/src/tools/gateway.py`
+  - `apps/ai-service/src/pipeline/stages/execute_tools.py`
+  - `apps/ai-service/src/skills/integration.py`
+  - `apps/ai-service/src/context/assembler.py`
+
+## [2026-06-13] AI Service — Memory Router & Agent Feedback Missing Service Stubs
+- **Bug/Issue**: The orchestration flow referenced `memory_router.py` and `agent_feedback.py` services that did not exist yet, causing `ModuleNotFoundError` at import time.
+- **Root Cause**: The new orchestration pipeline was written expecting these services to be available, but they were never created in the initial refactor.
+- **Fix**: Created `memory_router.py` (routes memory operations to the correct store - episodic, semantic, or working) and `agent_feedback.py` (collects and stores agent performance feedback). Added `eval_worker.py` for async evaluation of agent responses.
+- **Affected Files**:
+  - `apps/ai-service/src/services/memory_router.py` (new)
+  - `apps/ai-service/src/services/agent_feedback.py` (new)
+  - `apps/ai-service/src/workers/eval_worker.py` (new)
+
 ## [2026-06-12] Frontend — WebAssembly memory limit & esbuild transpile OOM in production build
 - **Bug/Issue**: The frontend build failed with `RangeError: [plugin vite:build-import-analysis] ... WebAssembly.Memory.grow(): Unable to grow instance memory` and `[vite:esbuild-transpile] The service was stopped` during the transformation phase.
 - **Root Cause**:

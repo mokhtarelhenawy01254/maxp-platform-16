@@ -1,9 +1,0 @@
-{
-  "id": "order-support",
-  "displayName": "Order Support",
-  "version": "1.0.0",
-  "description": "Resolve order and shipping support questions safely.",
-  "allowedTools": ["order.lookup", "shipping.rates", "agent.handoff"],
-  "requiresHumanApproval": false,
-  "maxToolCount": 3
-}

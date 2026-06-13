@@ -1,9 +1,0 @@
-{
-  "id": "delegate-goal",
-  "displayName": "Delegate Goal",
-  "version": "1.0.0",
-  "description": "Break a merchant goal into specialist tasks and assign them.",
-  "allowedTools": ["agent.list_agents", "agent.assign_task", "agent.handoff"],
-  "requiresHumanApproval": false,
-  "maxToolCount": 3
-}

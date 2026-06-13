@@ -100,6 +100,7 @@ class ToolGateway:
         input_data: dict[str, Any] | None = None,
         approval_granted: bool = False,
         ctx: FunctionInvocationContext | None = None,
+        skill_context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Execute a tool with permission checks.
 
@@ -110,6 +111,10 @@ class ToolGateway:
             allowed_tools: List of tools the agent is allowed to use
             input_data: Input parameters for the tool
             ctx: Optional SDK FunctionInvocationContext for tools that need it (e.g. unlock_advanced_tools)
+            skill_context: Optional dict with skill-level constraints:
+                - requires_human_approval (bool): force approval for every call
+                - max_tool_count (int): max calls allowed (0 = unlimited)
+                - tool_call_index (int): zero-based index of this call
 
         Returns:
             Execution result with status
@@ -132,7 +137,30 @@ class ToolGateway:
                 "error": f"Tool '{tool_name}' not found",
             }
 
-        requires_approval = getattr(tool, "approval_mode", "never_require") == "always_require"
+        # ── Skill-level constraints ──────────────────────────────────
+        skill_max_count = (skill_context or {}).get("max_tool_count", 0)
+        skill_tool_index = (skill_context or {}).get("tool_call_index", 0)
+        skill_requires_approval = (skill_context or {}).get("requires_human_approval", False)
+
+        if skill_max_count > 0 and skill_tool_index >= skill_max_count:
+            self._log.warning(
+                "skill max tool count exceeded",
+                tool_name=tool_name,
+                tool_call_index=skill_tool_index,
+                max_tool_count=skill_max_count,
+            )
+            return {
+                "status": ToolResultStatus.FORBIDDEN,
+                "error": (
+                    f"Skill max tool count ({skill_max_count}) exceeded "
+                    f"at call index {skill_tool_index}"
+                ),
+            }
+
+        requires_approval = (
+            skill_requires_approval
+            or getattr(tool, "approval_mode", "never_require") == "always_require"
+        )
 
         allowed_tool_names = canonical_tool_set(allowed_tools)
         if allowed_tools is not None and agent_role and tool.name not in allowed_tool_names:

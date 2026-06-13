@@ -1126,6 +1126,10 @@ def _tool_name(tool: Any) -> str:
     return getattr(tool, "name", str(tool))
 
 
+def _is_mock_value(value: Any) -> bool:
+    return type(value).__module__.startswith("unittest.mock")
+
+
 def _trace_value(value: Any, default: Any = None) -> Any:
     return default if _is_mock_value(value) else value
 

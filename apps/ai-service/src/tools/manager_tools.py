@@ -77,6 +77,8 @@ class SkillManageInput(BaseModel):
     channels: list[str] = Field(default_factory=list, description="Channels where this skill is active")
     priority: int = Field(default=0, description="Priority of the skill")
     enabled: bool = Field(default=True, description="Is the skill active?")
+    requires_human_approval: bool = Field(default=False, description="Whether every tool call from this skill requires human approval")
+    max_tool_count: int = Field(default=0, description="Maximum number of tool calls allowed per turn (0 = unlimited)")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
@@ -203,18 +205,35 @@ async def agent_update_profile_handler(input_data: AgentUpdateProfileInput) -> d
 
 
 async def skill_manage_handler(input_data: SkillManageInput) -> dict[str, Any]:
+    # Validate allowed_tools against the tool registry
+    from src.skills.validation import log_validation, validate_allowed_tools
+    tool_errors = validate_allowed_tools(input_data.name, input_data.allowed_tools)
+    log_validation(input_data.name, tool_errors, [])
+    if tool_errors:
+        return {
+            "success": False,
+            "skill_name": input_data.name,
+            "status": "rejected",
+            "errors": tool_errors,
+            "note": "Fix the invalid tool names and try again.",
+        }
+
+    from src.skills.integration import clear_skills_cache
     from src.db.session import get_session
     async for session in get_session():
         await session.execute(
-            "INSERT INTO ai.skills (id, company_id, name, instructions, allowed_tools, trigger_phrases, channels, priority, enabled) "
-            "VALUES (:id, :cid, :name, :instr, :tools, :trig, :chan, :prio, :en) "
+            "INSERT INTO ai.skills "
+            "(id, company_id, name, instructions, allowed_tools, trigger_phrases, channels, priority, enabled, requires_human_approval, max_tool_count) "
+            "VALUES (:id, :cid, :name, :instr, :tools, :trig, :chan, :prio, :en, :rha, :mtc) "
             "ON CONFLICT (company_id, name) DO UPDATE SET "
             "instructions = EXCLUDED.instructions, "
             "allowed_tools = EXCLUDED.allowed_tools, "
             "trigger_phrases = EXCLUDED.trigger_phrases, "
             "channels = EXCLUDED.channels, "
             "priority = EXCLUDED.priority, "
-            "enabled = EXCLUDED.enabled",
+            "enabled = EXCLUDED.enabled, "
+            "requires_human_approval = EXCLUDED.requires_human_approval, "
+            "max_tool_count = EXCLUDED.max_tool_count",
             {
                 "id": input_data.name,
                 "cid": input_data.company_id or "",
@@ -225,9 +244,12 @@ async def skill_manage_handler(input_data: SkillManageInput) -> dict[str, Any]:
                 "chan": input_data.channels,
                 "prio": input_data.priority,
                 "en": input_data.enabled,
+                "rha": input_data.requires_human_approval,
+                "mtc": input_data.max_tool_count,
             },
         )
         await session.commit()
+        clear_skills_cache(input_data.name)
         return {
             "success": True,
             "skill_name": input_data.name,

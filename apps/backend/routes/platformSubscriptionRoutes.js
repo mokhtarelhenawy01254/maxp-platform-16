@@ -4,8 +4,12 @@ const platformSubscriptionController = require('../controller/platformSubscripti
 const { requireAuth } = require('../middleware/auth');
 const { checkSubscription } = require('../middleware/checkSubscription');
 
-// جميع الـ routes محمية بـ authentication + subscription check
+// جميع الـ routes محمية بـ authentication
 router.use(requireAuth);
+
+// Messaging package checkout — before subscription check so new users can pay
+router.post('/messaging-checkout', platformSubscriptionController.messagingCheckout);
+
 router.use(checkSubscription);
 
 // Get current subscription

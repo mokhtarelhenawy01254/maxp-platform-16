@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
+import time
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -17,32 +20,89 @@ from agent_framework import (
 )
 
 _SKILLS_ROOT = Path(__file__).resolve().parent.parent.parent / "skills"
+_SKILL_CACHE_TTL: int = int(os.environ.get("MAXP_SKILL_CACHE_TTL", "300"))  # 5 min default
 
 logger = structlog.get_logger(__name__)
+
+
+# ── TTL Cache ────────────────────────────────────────────────────────────────
+
+
+_skill_meta_cache: dict[str, tuple[float, dict[str, Any] | None]] = {}
+_skill_json_cache: dict[str, tuple[float, dict[str, Any] | None]] = {}
+_skill_md_cache: dict[str, tuple[float, str | None]] = {}
+
+
+def _cache_get(
+    cache: dict[str, tuple[float, Any]],
+    key: str,
+    ttl: int | None = None,
+) -> Any | None:
+    """Get from TTL cache. Returns None if missing or expired."""
+    ttl = ttl if ttl is not None else _SKILL_CACHE_TTL
+    entry = cache.get(key)
+    if entry and (time.monotonic() - entry[0]) < ttl:
+        return entry[1]
+    return None
+
+
+def _cache_set(cache: dict[str, tuple[float, Any]], key: str, value: Any) -> None:
+    """Set in TTL cache."""
+    cache[key] = (time.monotonic(), value)
+
+
+def clear_skills_cache(skill_id: str | None = None) -> None:
+    """Clear all skill caches. If skill_id is set, clear only that skill."""
+    targets = [skill_id] if skill_id else list(_skill_meta_cache.keys())
+    for sid in targets:
+        _skill_meta_cache.pop(sid, None)
+        _skill_json_cache.pop(sid, None)
+        _skill_md_cache.pop(sid, None)
+    if skill_id is None:
+        _skill_meta_cache.clear()
+        _skill_json_cache.clear()
+        _skill_md_cache.clear()
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 
 def _read_skill_json(skill_dir: Path) -> dict[str, Any] | None:
-    """Read skill.json from a skill directory."""
+    """Read skill.json from a skill directory (with TTL cache)."""
+    skill_id = skill_dir.name
+    cached = _cache_get(_skill_json_cache, skill_id)
+    if cached is not None:
+        return cached
+
     try:
-        return json.loads((skill_dir / "skill.json").read_text(encoding="utf-8"))
+        data = json.loads((skill_dir / "skill.json").read_text(encoding="utf-8"))
+        _cache_set(_skill_json_cache, skill_id, data)
+        return data
     except (FileNotFoundError, json.JSONDecodeError, OSError) as exc:
         logger.warning("skill_json_read_failed", path=str(skill_dir), error=str(exc))
+        _cache_set(_skill_json_cache, skill_id, None)
         return None
 
 
 def _read_skill_md(skill_dir: Path) -> str | None:
-    """Read SKILL.md from a skill directory."""
+    """Read SKILL.md from a skill directory (with TTL cache)."""
+    skill_id = skill_dir.name
+    cached = _cache_get(_skill_md_cache, skill_id)
+    if cached is not None:
+        return cached
+
     path = skill_dir / "SKILL.md"
     if not path.exists():
         logger.warning("skill_md_not_found", path=str(path))
+        _cache_set(_skill_md_cache, skill_id, None)
         return None
     try:
-        return path.read_text(encoding="utf-8")
+        content = path.read_text(encoding="utf-8")
+        _cache_set(_skill_md_cache, skill_id, content)
+        return content
     except OSError as exc:
         logger.warning("skill_md_read_failed", path=str(path), error=str(exc))
+        _cache_set(_skill_md_cache, skill_id, None)
         return None
 
 
@@ -57,21 +117,56 @@ def _get_allowed_skill_dirs(allowed_skills: set[str]) -> list[Path]:
 
 
 def _skill_metadata_from_dir(skill_dir: Path) -> dict[str, Any] | None:
-    """Extract skill metadata from skill.json + SKILL.md in a skill directory."""
+    """Extract skill metadata from skill.json + SKILL.md in a skill directory (with TTL cache)."""
+    skill_id = skill_dir.name
+    cached = _cache_get(_skill_meta_cache, skill_id)
+    if cached is not None:
+        return cached
+
     config = _read_skill_json(skill_dir)
     if not config:
+        _cache_set(_skill_meta_cache, skill_id, None)
         return None
     content = _read_skill_md(skill_dir)
     if content is None:
+        _cache_set(_skill_meta_cache, skill_id, None)
         return None
     raw_tools = config.get("allowedTools", [])
-    return {
+    meta = {
         "id": config.get("id", skill_dir.name),
         "name": config.get("displayName", skill_dir.name),
         "description": config.get("description", ""),
         "instructions": content,
         "allowed_tools": [canonical_tool_name(t) for t in raw_tools],
+        "requires_human_approval": bool(config.get("requiresHumanApproval", False)),
+        "max_tool_count": int(config.get("maxToolCount", 0) or 0),
     }
+    _cache_set(_skill_meta_cache, skill_id, meta)
+    return meta
+
+
+def resolve_skill_context(
+    planned_tool_names: set[str],
+    agent_allowed_skills: set[str],
+) -> dict[str, Any] | None:
+    """Match planned tool names against agent skills and return the first match's constraints.
+
+    Returns a skill_context dict for ``ToolGateway.execute(skill_context=...)``, or None.
+    """
+    if not planned_tool_names or not agent_allowed_skills:
+        return None
+    for skill_dir in _get_allowed_skill_dirs(agent_allowed_skills):
+        meta = _skill_metadata_from_dir(skill_dir)
+        if meta is None:
+            continue
+        skill_tools = {canonical_tool_name(t) for t in meta.get("allowed_tools", [])}
+        if planned_tool_names & skill_tools:
+            return {
+                "skill_id": meta["id"],
+                "requires_human_approval": meta["requires_human_approval"],
+                "max_tool_count": meta["max_tool_count"],
+            }
+    return None
 
 
 # ── Skills Block (for pipeline system prompt) ────────────────────────────────

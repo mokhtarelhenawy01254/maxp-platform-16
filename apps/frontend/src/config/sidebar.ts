@@ -661,6 +661,7 @@ export const getSidebarConfig = (
             id: 'affiliate',
             title: t('sidebar.affiliateSection'),
             icon: CurrencyDollarIcon,
+            hidden: !isAppActive('affiliate-program'),
             items: [
                 ...(user?.role === 'OWNER' || user?.role === 'COMPANY_ADMIN' || user?.role === 'SUPER_ADMIN' ? [
                     { to: '/affiliates/management', icon: UserGroupIcon, label: t('sidebar.affiliateManagement') },
@@ -686,7 +687,7 @@ export const getSidebarConfig = (
             items: [
                 { to: '/partner-dashboard', icon: UserGroupIcon, label: t('sidebar.partnerDashboard') },
             ],
-            // 🔓 متاح للجميع للاشتراك
+            hidden: !isAppActive('partner-program'),
         },
 
         // 4️⃣.5 المخزون
@@ -739,7 +740,7 @@ export const getSidebarConfig = (
                 { to: '/competitors/reports', icon: ClipboardDocumentListIcon, label: t('sidebar.competitorReports') },
                 { to: '/competitors/settings', icon: Cog6ToothIcon, label: t('sidebar.competitorSettings') },
             ],
-            hidden: user?.role === 'AFFILIATE'
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('competitor-analysis')
         },
 
         // 6️⃣ حسابي (للموظف)
@@ -828,6 +829,7 @@ export const getSidebarConfig = (
             id: 'business',
             title: t('sidebar.businessSection'),
             icon: CalendarIcon,
+            hidden: !isAppActive('business-tools'),
             items: [
                 { to: '/appointments', icon: CalendarIcon, label: t('sidebar.appointments') },
                 {

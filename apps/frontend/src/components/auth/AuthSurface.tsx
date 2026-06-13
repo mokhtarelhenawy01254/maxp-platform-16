@@ -3,6 +3,16 @@ import { Link } from "react-router-dom";
 import { cn } from "../../lib/utils";
 import "../../pages/auth/authRedesign.css";
 
+const THEME_OVERRIDES: Record<string, Record<string, string>> = {
+  messaging: {
+    "--auth-accent": "#0d9488",
+    "--auth-accent-dark": "#0f766e",
+    "--auth-accent-glow": "rgba(13, 148, 136, 0.25)",
+    "--auth-accent-soft": "rgba(13, 148, 136, 0.1)",
+    "--auth-accent-border": "rgba(13, 148, 136, 0.2)",
+  },
+};
+
 interface AuthSurfaceProps {
   children: React.ReactNode;
   title: string;
@@ -12,6 +22,7 @@ interface AuthSurfaceProps {
   footer?: React.ReactNode;
   wide?: boolean;
   className?: string;
+  theme?: string;
   // New props for the visual side
   visualTitle?: React.ReactNode;
   visualDescription?: string;
@@ -35,14 +46,16 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
   footer,
   wide = false,
   className,
+  theme,
   visualTitle,
   visualDescription,
   visualBadge,
   visualStats,
   dir = "rtl",
 }) => {
+  const themeStyle = theme ? THEME_OVERRIDES[theme] : undefined;
   return (
-    <div className={cn("elite-auth-container", wide && "elite-auth-container--wide")} dir={dir}>
+    <div className={cn("elite-auth-container", wide && "elite-auth-container--wide")} dir={dir} style={themeStyle as React.CSSProperties}>
       {/* Visual Side */}
       <div className="elite-auth-visual">
         <div className="visual-content animate-fade-up">

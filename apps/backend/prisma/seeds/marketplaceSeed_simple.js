@@ -84,7 +84,12 @@ async function seedMarketplace() {
         trialDays: 14,
         features: JSON.stringify(['تحليلات متقدمة', 'تقارير مخصصة', 'تصدير البيانات']),
         isActive: true
-      }
+      },
+      // تطبيقات التحكم في الظهور بالـ sidebar
+      { slug: 'business-tools', name: 'المهام والمواعيد', description: 'إدارة المهام والمواعيد وجدولة الأعمال', category: 'PRODUCTIVITY', monthlyPrice: 0, yearlyPrice: 0, features: JSON.stringify(['إدارة المهام', 'المواعيد']), isActive: true, isPublic: true },
+      { slug: 'competitor-analysis', name: 'تحليل المنافسين', description: 'تحليل السوق والمنافسين وتقارير المقارنة', category: 'ANALYTICS', monthlyPrice: 0, yearlyPrice: 0, features: JSON.stringify(['تحليل المنافسين', 'تقارير السوق']), isActive: true, isPublic: true },
+      { slug: 'affiliate-program', name: 'الأفليت والدروب شيبنج', description: 'نظام الأفليت والتسويق بالعمولة', category: 'MARKETING', monthlyPrice: 0, yearlyPrice: 0, features: JSON.stringify(['إدارة الأفليت', 'دروب شيبنج']), isActive: true, isPublic: true },
+      { slug: 'partner-program', name: 'برنامج الشركاء', description: 'برنامج شركاء المنصة و نظام العمولات', category: 'MARKETING', monthlyPrice: 0, yearlyPrice: 0, features: JSON.stringify(['برنامج الشركاء', 'العمولات']), isActive: true, isPublic: true },
     ];
 
     for (const app of apps) {
@@ -118,6 +123,17 @@ async function seedMarketplace() {
         monthlyPrice: 899,
         yearlyPrice: 8990,
         discount: 40,
+        isActive: true,
+        isFeatured: true
+      },
+      {
+        slug: 'messaging-bundle',
+        name: 'باقة المراسلة',
+        description: 'كل أدوات المحادثات: واتساب + تلجرام + انستجرام + ماسنجر في صندوق واحد مع AI Agent',
+        appIds: JSON.stringify(['crm-basic', 'whatsapp-business', 'telegram-business']),
+        monthlyPrice: 999,
+        yearlyPrice: 9990,
+        discount: 69,
         isActive: true,
         isFeatured: true
       }

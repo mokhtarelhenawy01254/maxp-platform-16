@@ -9,6 +9,8 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models.skill import Skill
+from src.skills.integration import clear_skills_cache
+from src.skills.validation import log_validation, validate_skill_config
 
 logger = structlog.get_logger(__name__)
 
@@ -74,6 +76,10 @@ def _discover_skills() -> list[dict[str, Any]]:
         else:
             trigger_phrases_text = str(trigger_phrases or "")
 
+        # Validate skill config and log warnings (non-blocking)
+        errors, warnings = validate_skill_config(config)
+        log_validation(config.get("id", entry.name), errors, warnings)
+
         results.append({
             "id": config.get("id", entry.name),
             "company_id": config.get("companyId", GLOBAL_SKILL_COMPANY_ID),
@@ -116,7 +122,13 @@ async def seed_skills(session: AsyncSession) -> int:
     except Exception as exc:
         logger.warning("skills_seed_failed", error=str(exc))
         return 0
-    logger.info("skills_seeded", total=len(skills), new=seeded)
+    clear_skills_cache()
+    logger.info(
+        "skills_seeded",
+        total=len(skills),
+        new=seeded,
+        cache_cleared=True,
+    )
     return seeded
 
 

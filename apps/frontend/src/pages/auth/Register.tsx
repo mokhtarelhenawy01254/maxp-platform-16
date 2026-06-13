@@ -102,6 +102,7 @@ const Register: React.FC = () => {
   const isArabic = language === "ar";
   const [searchParams] = useSearchParams();
   const partnerCode = searchParams.get("partner") || undefined;
+  const theme = searchParams.get("theme") || undefined;
 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -151,7 +152,9 @@ const Register: React.FC = () => {
         phone: formData.phone || undefined,
         partnerCode,
       });
-      const redirectPath = NEW_ACCOUNT_DESTINATION;
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectParam = urlParams.get("redirect");
+      const redirectPath = redirectParam || NEW_ACCOUNT_DESTINATION;
 
       trackPlatformSiteCompleteRegistration("auth_register", { destination: redirectPath, role: userData?.role || "UNKNOWN" });
       navigate(redirectPath);
@@ -176,6 +179,7 @@ const Register: React.FC = () => {
       description={copy.description}
       eyebrow={copy.eyebrow}
       wide
+      theme={theme}
       dir={isArabic ? "rtl" : "ltr"}
       footer={
         <div className="elite-form-link-row">

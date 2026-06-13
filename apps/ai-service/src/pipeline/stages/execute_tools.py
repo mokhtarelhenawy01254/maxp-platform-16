@@ -10,6 +10,7 @@ from agent_framework import Message
 from src.pipeline.context import DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL, PipelineContext
 from src.pipeline.llm_messages import to_client_messages
 from src.pipeline.provider_errors import provider_error_result
+from src.skills.integration import resolve_skill_context
 from src.tools.gateway import ToolGateway
 from src.tools.names import canonical_tool_name
 
@@ -395,12 +396,19 @@ async def _execute_planned_tool(
     agent_role: str | None,
     allowed_tools: list[str] | None,
 ) -> tuple[dict, dict]:
+    # Build skill_context with current tool_call_index for max_tool_count enforcement
+    skill_ctx = None
+    if ctx.active_skill_context:
+        skill_ctx = dict(ctx.active_skill_context)
+        skill_ctx["tool_call_index"] = ctx.tool_call_index
+
     result = await gateway.execute(
         tool_name=planned["nativeName"],
         company_id=ctx.company_id,
         agent_role=agent_role,
         allowed_tools=allowed_tools,
         input_data=planned.get("params") or {},
+        skill_context=skill_ctx,
     )
     return planned, result
 
@@ -423,6 +431,20 @@ async def execute_tools(ctx: PipelineContext) -> PipelineContext:
         )
         if planned
     ]
+
+    # Resolve skill context for max_tool_count and requires_human_approval enforcement
+    ctx.tool_call_index = 0
+    if planned_tools and ctx.agent and hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
+        planned_names = {
+            planned.get("nativeName") or planned.get("tool") or ""
+            for planned in planned_tools
+        }
+        planned_names = {n for n in planned_names if n}
+        ctx.active_skill_context = resolve_skill_context(
+            planned_names,
+            set(ctx.agent.allowed_skills),
+        )
+
     for planned in planned_tools:
         await _enrich_order_action_params(
             gateway,
@@ -443,6 +465,7 @@ async def execute_tools(ctx: PipelineContext) -> PipelineContext:
             for planned in planned_tools
         ])
         for planned, result in results:
+            ctx.tool_call_index += 1
             _append_tool_result(ctx, planned, result)
         _collect_response_attachments(ctx)
 

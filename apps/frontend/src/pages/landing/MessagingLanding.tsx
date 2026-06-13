@@ -6,6 +6,7 @@ import {
   ArrowLeft, Smartphone, Headphones, LayoutDashboard, X,
   SendHorizontal, Sparkles, Zap, Shield, Globe, Clock,
 } from "lucide-react";
+import { usePlatformSiteMetaPixel } from "../../hooks/usePlatformSiteMetaPixel";
 import "./messagingLanding.css";
 
 const containerVariants = {
@@ -87,6 +88,7 @@ const faqs = [
 
 const MessagingLanding: React.FC = () => {
   const navigate = useNavigate();
+  usePlatformSiteMetaPixel();
   const [isScrolled, setIsScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showChat, setShowChat] = useState(false);
@@ -95,6 +97,23 @@ const MessagingLanding: React.FC = () => {
   const [leadSent, setLeadSent] = useState(false);
 
   useEffect(() => {
+    document.title = "Max P Inbox | واتساب وتلجرام وانستجرام وماسنجر في صندوق واحد";
+
+    const setMeta = (name: string, content: string) => {
+      let el = document.querySelector(`meta[property="${name}"]`) as HTMLMetaElement | null;
+      if (!el) { el = document.createElement("meta"); el.setAttribute("property", name); document.head.appendChild(el); }
+      el.content = content;
+    };
+    setMeta("og:title", "Max P Inbox — كل رسايل واتساب وتلجرام وانستجرام وماسنجر في مكان واحد");
+    setMeta("og:description", "صندوق وارد موحّد لكل المنصات + AI Agent يرد على العملاء ويعمل حجوزات وطلبات. ٩٩٩ ج.م/شهر — وفّر ٦٠٪ من وقت فريقك.");
+    setMeta("og:type", "website");
+    setMeta("og:url", window.location.href);
+    setMeta("og:image", "https://maxp.online/og-messaging.svg");
+    setMeta("og:locale", "ar_AR");
+    let descEl = document.querySelector("meta[name=\"description\"]") as HTMLMetaElement | null;
+    if (!descEl) { descEl = document.createElement("meta"); descEl.name = "description"; document.head.appendChild(descEl); }
+    descEl.content = "صندوق وارد موحّد لكل منصات المحادثات + AI Agent يرد وينشئ طلبات. باقات من ٩٩٩ ج.م/شهر.";
+
     const onScroll = () => setIsScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
@@ -108,17 +127,42 @@ const MessagingLanding: React.FC = () => {
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch("/api/v1/public/lead", {
+      const nameParts = leadForm.name.trim().split(/\s+/);
+      const res = await fetch("/api/v1/public/customers/lead-capture", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: leadForm.name, phone: leadForm.phone, source: "messaging-landing" }),
+        body: JSON.stringify({ firstName: nameParts[0] || "", lastName: nameParts.slice(1).join(" ") || nameParts[0], phone: leadForm.phone, source: "messaging-landing", service: "messaging_inbox" }),
       });
       if (res.ok) setLeadSent(true);
     } catch { setLeadSent(true); }
   };
 
-  const handleSubscribe = () => {
-    navigate("/auth/register?source=messaging-landing&plan=messaging");
+  const [subscribing, setSubscribing] = useState(false);
+
+  const handleSubscribe = async () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      navigate("/auth/register?source=messaging&theme=messaging&redirect=/lp/messaging");
+      return;
+    }
+    setSubscribing(true);
+    try {
+      const baseUrl = (window as any).envConfig?.apiUrl || "http://localhost:3007/api/v1";
+      const res = await fetch(`${baseUrl}/platform-subscription/messaging-checkout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (data.success && data.data?.sessionUrl) {
+        window.location.href = data.data.sessionUrl;
+      } else {
+        alert(data.message || "فشل إنشاء الدفع");
+        setSubscribing(false);
+      }
+    } catch {
+      alert("خطأ في الاتصال");
+      setSubscribing(false);
+    }
   };
 
   return (
