@@ -155,12 +155,13 @@ def resolve_skill_context(
     """
     if not planned_tool_names or not agent_allowed_skills:
         return None
+    planned_canonical = {canonical_tool_name(t) for t in planned_tool_names}
     for skill_dir in _get_allowed_skill_dirs(agent_allowed_skills):
         meta = _skill_metadata_from_dir(skill_dir)
         if meta is None:
             continue
         skill_tools = {canonical_tool_name(t) for t in meta.get("allowed_tools", [])}
-        if planned_tool_names & skill_tools:
+        if planned_canonical & skill_tools:
             return {
                 "skill_id": meta["id"],
                 "requires_human_approval": meta["requires_human_approval"],

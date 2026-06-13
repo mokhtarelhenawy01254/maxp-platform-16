@@ -36,14 +36,20 @@ function createRequiredAppsError(requiredApps) {
   return error;
 }
 
+const MAX_RECURSION_DEPTH = 10;
+
 async function ensureCompanyMarketplaceAppInstalled(tx, {
   companyId,
   app,
   pricingModel,
   visited = new Set(),
   autoInstalledApps = [],
-  recordAutoInstall = false
+  recordAutoInstall = false,
+  depth = 0
 }) {
+  if (depth > MAX_RECURSION_DEPTH) {
+    throw new Error(`تجاوز الحد الأقصى لعمق التثبيت التلقائي (${MAX_RECURSION_DEPTH}) للتطبيق: ${app?.slug}`);
+  }
   const normalizedSlug = String(app?.slug || '').trim();
   if (!normalizedSlug) {
     throw new Error('App slug is required for installation');
@@ -85,7 +91,8 @@ async function ensureCompanyMarketplaceAppInstalled(tx, {
         pricingModel: normalizePricingModel(requiredApp.pricingModel, 'SUBSCRIPTION'),
         visited,
         autoInstalledApps,
-        recordAutoInstall: true
+        recordAutoInstall: true,
+        depth: depth + 1
       });
     }
   }
@@ -418,17 +425,6 @@ exports.installCompanyCoverageApp = async (req, res) => {
           autoInstalledApps
         });
 
-        await tx.companyWallet.upsert({
-          where: { companyId },
-          update: {},
-          create: {
-            id: uuidv4(),
-            companyId,
-            balance: 0,
-            currency: 'EGP'
-          }
-        });
-
         const installation = await tx.companyApp.findUnique({
           where: {
             companyId_appId: { companyId, appId: app.id }
@@ -585,15 +581,26 @@ exports.deleteApp = async (req, res) => {
     const { id } = req.params;
     const prisma = getSharedPrismaClient();
 
-    // Fetch the app first to check for template connection
     const app = await prisma.marketplaceApp.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        _count: {
+          select: { installations: true }
+        }
+      }
     });
 
     if (!app) {
       return res.status(404).json({
         success: false,
         message: 'الأداة غير موجودة'
+      });
+    }
+
+    if (app._count.installations > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `لا يمكن حذف الأداة لأنها مثبتة لدى ${app._count.installations} شركة. قم بإلغاء تثبيتها أولاً.`
       });
     }
 
@@ -744,13 +751,16 @@ exports.getAllBundles = async (req, res) => {
         orderBy: { createdAt: 'desc' }
       });
 
-      // Fetch apps for each bundle based on appIds
+      // Fetch apps for each bundle based on appIds (supports both IDs and slugs)
       const bundlesWithApps = await Promise.all(
         allBundles.map(async (bundle) => {
           const appIds = Array.isArray(bundle.appIds) ? bundle.appIds : [];
           const apps = await getSharedPrismaClient().marketplaceApp.findMany({
             where: {
-              id: { in: appIds }
+              OR: [
+                { id: { in: appIds } },
+                { slug: { in: appIds } }
+              ]
             },
             select: {
               id: true,
@@ -789,10 +799,18 @@ exports.getAllBundles = async (req, res) => {
 exports.createBundle = async (req, res) => {
   try {
     const bundleData = req.body;
+    const { apps, ...rest } = bundleData;
+
+    const payload = {
+      ...rest,
+      appIds: rest.appIds || (Array.isArray(apps)
+        ? apps.map((app) => (typeof app === 'string' ? app : app.slug || app.id || '')).filter(Boolean)
+        : [])
+    };
 
     const bundle = await executeWithRetry(async () => {
       return await getSharedPrismaClient().appBundle.create({
-        data: bundleData
+        data: payload
       });
     });
 
@@ -818,7 +836,14 @@ exports.createBundle = async (req, res) => {
 exports.updateBundle = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const { apps, ...rest } = req.body;
+
+    const updateData = {
+      ...rest,
+      appIds: rest.appIds || (Array.isArray(apps)
+        ? apps.map((app) => (typeof app === 'string' ? app : app.slug || app.id || '')).filter(Boolean)
+        : [])
+    };
 
     const bundle = await executeWithRetry(async () => {
       return await getSharedPrismaClient().appBundle.update({

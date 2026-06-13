@@ -9,10 +9,16 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
   LinearProgress,
   MenuItem,
   Paper,
+  Snackbar,
   Stack,
   Table,
   TableBody,
@@ -58,6 +64,7 @@ type CoverageApp = {
   isActive: boolean;
   isPublic: boolean;
   category?: string;
+  pricingModel?: string;
 };
 
 type CoverageApiPayload = {
@@ -119,6 +126,10 @@ const MarketplaceCoverageCenter: React.FC = () => {
   const [filter, setFilter] = useState<CompanyFilter>("risk");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
   const [installingKey, setInstallingKey] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    company: CoverageCompany;
+    entry: CoverageFeatureEntry;
+  } | null>(null);
 
   const fetchCoverage = useCallback(async ({ quiet = false } = {}) => {
     if (quiet) {
@@ -139,9 +150,16 @@ const MarketplaceCoverageCenter: React.FC = () => {
 
       setPayload(response.data.data);
       setError(null);
-    } catch (coverageError) {
+    } catch (coverageError: unknown) {
       console.error("Marketplace coverage fetch failed", coverageError);
-      setError("تعذر تحميل تغطية التطبيقات للشركات");
+      const axiosError = coverageError as { response?: { status?: number; data?: { message?: string } } };
+      if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
+        setError("ليس لديك صلاحية الوصول إلى هذه البيانات");
+      } else if (axiosError.response?.status === 404) {
+        setError("خدمة التغطية غير متوفرة حالياً");
+      } else {
+        setError(axiosError.response?.data?.message || "تعذر تحميل تغطية التطبيقات للشركات");
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -152,12 +170,19 @@ const MarketplaceCoverageCenter: React.FC = () => {
     void fetchCoverage();
   }, [fetchCoverage]);
 
-  const catalogAppSlugs = useMemo(
+  const catalogAppsMap = useMemo(
     () =>
-      (payload?.apps || [])
-        .filter((app) => app.isActive && app.isPublic)
-        .map((app) => app.slug),
+      new Map(
+        (payload?.apps || [])
+          .filter((app) => app.isActive && app.isPublic)
+          .map((app) => [app.slug, app]),
+      ),
     [payload?.apps],
+  );
+
+  const catalogAppSlugs = useMemo(
+    () => Array.from(catalogAppsMap.keys()),
+    [catalogAppsMap],
   );
 
   const companyCoverage = useMemo(
@@ -242,26 +267,35 @@ const MarketplaceCoverageCenter: React.FC = () => {
     entry: CoverageFeatureEntry,
   ) => {
     if (!entry.appSlug) return;
-    const confirmation = window.confirm(
-      `تفعيل ${entry.appLabel || entry.appSlug} لشركة ${company.name}؟`,
-    );
-    if (!confirmation) return;
+    setConfirmDialog({ company, entry });
+  };
+
+  const executeInstall = async () => {
+    if (!confirmDialog) return;
+    const { company, entry } = confirmDialog;
+    setConfirmDialog(null);
+    if (!entry.appSlug) return;
 
     const key = `${company.id}:${entry.appSlug}`;
     setInstallingKey(key);
     try {
+      const catalogApp = entry.appSlug ? catalogAppsMap.get(entry.appSlug) : null;
+      const pricingModel = catalogApp?.pricingModel || "SUBSCRIPTION";
       await axios.post(
         buildApiUrl(
           `super-admin/marketplace-management/coverage/companies/${company.id}/apps/${entry.appSlug}/install`,
         ),
-        { pricingModel: "SUBSCRIPTION" },
+        { pricingModel },
         { headers: getAuthHeaders({ "Content-Type": "application/json" }) },
       );
       toast.success("تم تفعيل التطبيق للشركة");
       await fetchCoverage({ quiet: true });
-    } catch (installError) {
+    } catch (installError: unknown) {
       console.error("Coverage install failed", installError);
-      toast.error("تعذر تفعيل التطبيق للشركة");
+      const message =
+        (installError as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "تعذر تفعيل التطبيق للشركة";
+      toast.error(message);
     } finally {
       setInstallingKey(null);
     }
@@ -634,6 +668,23 @@ const MarketplaceCoverageCenter: React.FC = () => {
           </Paper>
         </Box>
       </Box>
+
+      <Dialog open={!!confirmDialog} onClose={() => setConfirmDialog(null)}>
+        <DialogTitle>تأكيد تفعيل التطبيق</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            هل أنت متأكد من تفعيل تطبيق{" "}
+            <strong>{confirmDialog?.entry?.appLabel || confirmDialog?.entry?.appSlug}</strong>{" "}
+            لشركة <strong>{confirmDialog?.company?.name}</strong>؟
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDialog(null)}>إلغاء</Button>
+          <Button variant="contained" onClick={executeInstall} autoFocus>
+            تأكيد التفعيل
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

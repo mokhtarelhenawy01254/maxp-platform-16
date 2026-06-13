@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Autocomplete,
   Box,
   Typography,
   Tabs,
@@ -736,6 +737,7 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
                   ? "pricing"
                   : "bundle"
           }
+          availableApps={apps}
           onSave={async (itemData) => {
             try {
               const headers = getAuthHeaders();
@@ -745,18 +747,29 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
                 typePath = editingItem?.feature ? "pricing-rules" : "bundles";
               else if (activeTab === 3) typePath = "enterprise-plans";
 
+              const { apps: _apps, ...restData } = itemData;
+              const payload =
+                typePath === "bundles"
+                  ? {
+                      ...restData,
+                      appIds: _apps.map((app) =>
+                        typeof app === "string" ? app : app.slug || app.id || "",
+                      ).filter(Boolean),
+                    }
+                  : restData;
+
               if (editingItem?.id) {
                 await axios.put(
                   buildApiUrl(
                     `super-admin/marketplace-management/${typePath}/${editingItem.id}`,
                   ),
-                  itemData,
+                  payload,
                   { headers },
                 );
               } else {
                 await axios.post(
                   buildApiUrl(`super-admin/marketplace-management/${typePath}`),
-                  itemData,
+                  payload,
                   { headers },
                 );
               }
@@ -3762,12 +3775,14 @@ const MarketplaceItemDialog = ({
   item,
   type,
   onSave,
+  availableApps,
 }: {
   open: boolean;
   onClose: () => void;
   item: MarketplaceManagementItem | null;
   type: MarketplaceItemType;
   onSave: (data: MarketplaceDialogFormData) => Promise<void> | void;
+  availableApps?: MarketplaceManagementItem[];
 }) => {
   const [formData, setFormData] = useState<MarketplaceDialogFormData>(() =>
     createDefaultMarketplaceFormData(type),
@@ -4033,6 +4048,59 @@ const MarketplaceItemDialog = ({
                     />
                   </Box>
                 </Box>
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <Autocomplete
+                  multiple
+                  options={availableApps || []}
+                  getOptionLabel={(option) =>
+                    typeof option === "string"
+                      ? option
+                      : option.name || option.slug || option.id || ""
+                  }
+                  value={formData.apps.map((app) => {
+                    if (typeof app === "string") {
+                      const found = (availableApps || []).find(
+                        (a) => a.slug === app || a.id === app,
+                      );
+                      return found || ({ id: app, name: app, slug: app } as MarketplaceManagementItem);
+                    }
+                    return (
+                      (availableApps || []).find(
+                        (a) => a.id === app.id || a.slug === app.slug,
+                      ) || app
+                    );
+                  })}
+                  onChange={(_, newValue) => {
+                    setFieldValue("apps", newValue.map((app) => ({
+                      id: app.id,
+                      name: app.name,
+                      slug: app.slug,
+                      category: app.category,
+                    })));
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="التطبيقات المضمنة"
+                      placeholder="ابحث عن تطبيق..."
+                    />
+                  )}
+                  renderTags={(tagValue, getTagProps) =>
+                    tagValue.map((option, index) => (
+                      <Chip
+                        {...getTagProps({ index })}
+                        key={option.id || option.slug || index}
+                        label={option.name || option.slug || option.id || ""}
+                        size="small"
+                      />
+                    ))
+                  }
+                  isOptionEqualToValue={(option, value) =>
+                    option.id === value.id || option.slug === value.slug
+                  }
+                  noOptionsText="لا توجد تطبيقات متاحة"
+                />
               </Grid>
             </>
           ) : (
