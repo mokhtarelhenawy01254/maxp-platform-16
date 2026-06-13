@@ -12,7 +12,7 @@ env:
 
 concurrency:
   group: production-deploy
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -25,6 +25,11 @@ jobs:
         with:
           token: ${{ secrets.MAXP3_CHECKOUT_TOKEN || github.token }}
           fetch-depth: 2 # Required for git diff HEAD~1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Documentation Compliance Check
         run: |
@@ -43,11 +48,6 @@ jobs:
       - name: Enforce AI Agent File Size Guard
         run: |
           node scripts/check-file-sizes.js --max-kb=150
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
 
       - name: Cache Backend node_modules
         uses: actions/cache@v4
@@ -71,11 +71,18 @@ jobs:
         if: steps.cache-backend.outputs.cache-hit != 'true'
         working-directory: ./apps/backend
         run: |
-          npm ci --ignore-scripts || npm install --ignore-scripts
+          npm ci
         env:
           PUPPETEER_SKIP_DOWNLOAD: '1'
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: '1'
           HUSKY: '0'
+        continue-on-error: false
+
+      - name: Generate Prisma Client
+        if: steps.cache-backend.outputs.cache-hit != 'true'
+        working-directory: ./apps/backend
+        run: |
+          npx prisma generate --schema=prisma/schema
         continue-on-error: false
 
       - name: Run Facebook Ads Regression Tests
@@ -96,7 +103,7 @@ jobs:
         run: |
           if [ "${{ steps.cache-frontend.outputs.cache-hit }}" != 'true' ] || [ ! -f node_modules/.bin/vite ]; then
             echo "📦 Installing frontend dependencies (cache-hit=${{ steps.cache-frontend.outputs.cache-hit }}, vite-found=$(test -f node_modules/.bin/vite && echo yes || echo no))..."
-            npm ci --ignore-scripts || npm install --ignore-scripts
+            npm ci
           else
             echo "✅ Frontend dependencies restored from cache and vite binary found"
           fi
@@ -117,11 +124,11 @@ jobs:
           VITE_BUILD_MINIFY: 'esbuild'
         continue-on-error: false
 
-      # Build Backend (if needed)
-      - name: Install Backend Dependencies
+      # Strip dev dependencies after tests (deps already installed above)
+      - name: Prune Dev Dependencies
         working-directory: ./apps/backend
         run: |
-          npm ci --only=production --ignore-scripts || npm install --only=production --ignore-scripts
+          npm prune --production --ignore-scripts
         env:
           HUSKY: '0'
         continue-on-error: false
@@ -181,58 +188,20 @@ jobs:
           echo "🎯 Target SSH Port: ${{ env.SERVER_SSH_PORT }}"
           echo "💡 Use this IP to whitelist port ${{ env.SERVER_SSH_PORT }} in your server/hosting firewall if connection fails."
 
-      - name: Verify SSH Port Reachability
-        shell: bash
-        env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
-        run: |
-          echo "🔎 Checking SSH target reachability..."
-          SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
-          install -m 700 -d "$HOME/.ssh"
-          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > "$SSH_KEY_PATH"
-          chmod 600 "$SSH_KEY_PATH"
-          for attempt in $(seq 1 5); do
-            echo "Attempt $attempt/5: connecting to ${{ secrets.SERVER_HOST }}:${{ env.SERVER_SSH_PORT }}..."
-            if ssh -o ConnectTimeout=30 \
-                   -o StrictHostKeyChecking=accept-new \
-                   -o BatchMode=yes \
-                   -i "$SSH_KEY_PATH" \
-                   -p "${{ env.SERVER_SSH_PORT }}" \
-                   "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
-                   "echo SSH_REACHABLE" 2>&1 | grep -q SSH_REACHABLE; then
-              echo "✅ SSH port is reachable from this runner"
-              exit 0
-            fi
-            if [ "$attempt" -lt 5 ]; then
-              echo "⏳ SSH not reachable yet; waiting 15s before retry..."
-              sleep 15
-            fi
-          done
-          echo "⚠️ SSH port ${{ env.SERVER_SSH_PORT }} NOT reachable after 5 attempts — attempting SSH connection anyway in subsequent steps"
-          echo "💡 Runner IP may need to be whitelisted in the server/hosting firewall"
-
-      - name: Prepare SSH Key
-        shell: bash
-        env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
-        run: |
-          set -euo pipefail
-          install -m 700 -d "$HOME/.ssh"
-          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/maxp_deploy_key"
-          chmod 600 "$HOME/.ssh/maxp_deploy_key"
-          ssh-keyscan -p "${{ env.SERVER_SSH_PORT }}" -H "$SERVER_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
-
-      # Test SSH Connection & Setup Staging
+      # Prepare SSH Key & Test SSH Connection & Setup Staging
       - name: Test SSH Connection
         shell: bash
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
           SERVER_SSH_PORT: ${{ env.SERVER_SSH_PORT }}
         run: |
           set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/maxp_deploy_key"
+          chmod 600 "$HOME/.ssh/maxp_deploy_key"
+          ssh-keyscan -p "$SERVER_SSH_PORT" -H "$SERVER_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
           SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
           SSH_OPTS=(
             -i "$SSH_KEY_PATH"

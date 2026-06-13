@@ -14,26 +14,55 @@ jobs:
   deploy:
     name: Deploy to Staging
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Get Runner IP
-        id: get-ip
-        run: curl -s https://ifconfig.me/ip
-        
-      - name: Debug DNS and Port
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Frontend Dependencies
+        working-directory: ./apps/frontend
         run: |
-          echo "Runner Public IP: $(curl -s https://ifconfig.me/ip)"
-          echo "Target SSH port: ${{ env.SERVER_SSH_PORT }}"
-          echo "Checking DNS resolution for host..."
-          # Try to resolve host - don't fail yet
-          nslookup ${{ secrets.SERVER_HOST }} || echo "DNS lookup failed for host"
-          echo "Testing port ${{ env.SERVER_SSH_PORT }} connectivity..."
-          # Use timeout to prevent hanging - don't fail here to see the ip log
-          nc -zv -w 5 ${{ secrets.SERVER_HOST }} ${{ env.SERVER_SSH_PORT }} || echo "❌ Port ${{ env.SERVER_SSH_PORT }} is NOT reachable"
-          
+          npm ci --ignore-scripts || npm install --ignore-scripts
+        env:
+          HUSKY: '0'
+
+      - name: Build Frontend
+        working-directory: ./apps/frontend
+        run: npm run build
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
+          VITE_DISABLE_COMPRESSION: 'true'
+          VITE_BUILD_MINIFY: 'esbuild'
+
+      - name: Package Frontend Build
+        run: |
+          tar -czf frontend-staging.tar.gz -C apps/frontend/dist .
+
+      - name: Get Runner IP
+        run: |
+          echo "🌐 Runner IP: $(curl -s https://ifconfig.me)"
+          echo "🎯 Target SSH Port: ${{ env.SERVER_SSH_PORT }}"
+
+      - name: Copy Frontend Build to Server
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          SERVER_SSH_PORT: ${{ env.SERVER_SSH_PORT }}
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/staging_deploy_key"
+          chmod 600 "$HOME/.ssh/staging_deploy_key"
+          ssh-keyscan -p "$SERVER_SSH_PORT" -H "$SERVER_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
+          scp -i "$HOME/.ssh/staging_deploy_key" -P "$SERVER_SSH_PORT" -o StrictHostKeyChecking=accept-new \
+            frontend-staging.tar.gz "$SERVER_USER@$SERVER_HOST:~/frontend-staging.tar.gz"
+
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -46,93 +75,59 @@ jobs:
           timeout: 300s
           command_timeout: 30m
           use_insecure_cipher: false
-          sync: false
+          envs: GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT
           script: |
             set -e
-            DEPLOY_STAGING="$HOME/deploy_staging_23976580484_1"
-            echo "✅ SSH connection successful"
-            echo "👤 User: $(whoami)"
-            echo "🏠 Home: $HOME"
-            echo "📁 Current dir: $(pwd)"
-            
-            echo "🧹 Running early cleanup to free space..."
-            sudo pm2 flush > /dev/null 2>&1 || true
-            sudo journalctl --vacuum-time=1d || echo "⚠️ Journalctl cleanup failed"
-            sudo npm cache clean --force || echo "⚠️ NPM cache cleanup failed"
-            
+            DEPLOY_STAGING="$HOME/deploy_staging_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+
             echo "🚀 Creating staging directory..."
             rm -rf "$DEPLOY_STAGING"
-            mkdir -p "$DEPLOY_STAGING/backend"
-            mkdir -p "$DEPLOY_STAGING/frontend"
-            
-            echo "📊 Disk Space after cleanup:"
-            df -h $HOME
-            
-            echo "🔒 Permissions for $DEPLOY_STAGING:"
-            ls -ld "$DEPLOY_STAGING"
 
-            echo "🚀 Continuing with main deployment logic on Staging (maxp.online)..."
-            
-            # Navigate to path
+            # Pull latest changes (backend will be built on server via git)
             cd /var/www/backend-stage
-            
-            # Pull latest changes
             echo "📥 Pulling latest changes from staging branch..."
             git fetch origin staging
             git reset --hard origin/staging
-            
-            # NEW: Frontend Deployment Logic
-            echo "📦 Installing frontend dependencies..."
-            cd frontend
-            # Increase memory for build
-            export NODE_OPTIONS="--max-old-space-size=4096"
-            npm install
-            
-            echo "🔨 Building frontend for Staging..."
-            npm run build > /tmp/vite-build.log 2>&1 || (cat /tmp/vite-build.log && exit 1)
-            echo "✅ Build completed successfully"
-            
-            echo "🚀 Deploying Frontend to /var/www/frontend-stage/dist..."
-            # Ensure target directory exists
-            sudo mkdir -p /var/www/frontend-stage/dist
-            # Clean old files (optional but safer)
-            sudo rm -rf /var/www/frontend-stage/dist/*
-            # Copy new build files
-            sudo cp -r dist/* /var/www/frontend-stage/dist/
-            
-            echo "✅ Frontend Deployed Successfully"
-            
-            # Return to root for backend steps
-            cd ..
 
             # Install Backend Dependencies
             echo "📦 Installing backend dependencies..."
-            cd backend
-            npm install --production
-            
+            cd /var/www/backend-stage/backend || cd /var/www/backend-stage
+            if [ -f package-lock.json ]; then
+              npm ci --production --ignore-scripts
+            else
+              npm install --production --ignore-scripts
+            fi
+
             # Prisma Generate & DB Push
             echo "🔄 Updating Database Schema..."
-            # Delete conflicting files if they exist (to prevent Prisma errors)
-            rm -f prisma/schema/base.prisma 
-            
+            rm -f prisma/schema/base.prisma
             npx prisma generate --schema=prisma/schema
             npx prisma db push --schema=prisma/schema --skip-generate --accept-data-loss
-            
+
             # Restart Application using PM2
             echo "🔄 Restarting Node.js process using PM2..."
-            # Try to restart, if it doesn't exist (first time), start it
             pm2 restart maxp-staging || pm2 start server.js --name maxp-staging
-            
-            # Save PM2 state to survive server restarts
             pm2 save
-            
-            # Verify if process is running
+
             sleep 2
             if pm2 status maxp-staging | grep -q "online"; then
-              echo "✅ Server started successfully via PM2"
+              echo "✅ Backend started successfully"
             else
-              echo "⚠️ Warning: Server might not have started correctly. Check pm2 logs maxp-staging"
+              echo "⚠️ Backend might not have started correctly"
               pm2 logs maxp-staging --lines 20 --no-daemon
             fi
-            
+
+            # Deploy Frontend build from CI
+            echo "🚀 Deploying Frontend to /var/www/frontend-stage/dist..."
+            if [ -f "$HOME/frontend-staging.tar.gz" ]; then
+              sudo mkdir -p /var/www/frontend-stage/dist
+              sudo rm -rf /var/www/frontend-stage/dist/*
+              sudo tar -xzf "$HOME/frontend-staging.tar.gz" -C /var/www/frontend-stage/dist/
+              sudo chown -R $USER:$USER /var/www/frontend-stage/dist
+              rm -f "$HOME/frontend-staging.tar.gz"
+              echo "✅ Frontend Deployed Successfully"
+            else
+              echo "⚠️ Frontend build archive not found, skipping"
+            fi
+
             echo "✅ Staging Deployment Successful!"
