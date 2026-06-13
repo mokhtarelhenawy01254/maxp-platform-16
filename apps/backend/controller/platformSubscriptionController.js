@@ -712,7 +712,7 @@ exports.messagingCheckout = async (req, res) => {
   try {
     const { companyId } = req.user;
     const amount = 999;
-    const planName = "MESSAGING";
+    const planName = "PRO";
     const prisma = getSharedPrismaClient();
 
     const billingRecord = await prisma.billingHistory.create({
@@ -824,7 +824,7 @@ exports.handleWebhook = async (req, res) => {
     if (paymentSuccessful) {
       // Upgrade subscription and update company plan
       const planName = isMessaging
-        ? "MESSAGING"
+        ? "PRO"
         : billingRecord.description.includes("PRO")
           ? "PRO"
           : billingRecord.description.includes("ENTERPRISE")
