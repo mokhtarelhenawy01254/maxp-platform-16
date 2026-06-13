@@ -20,7 +20,6 @@ interface Competitor {
   location: string | null;
   targetMarket: string | null;
   foundedYear: number | null;
-  employeeCount: string | null;
   strengths: string | null;
   weaknesses: string | null;
   isActive: boolean;
@@ -52,7 +51,7 @@ const CompetitorList: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '', url: '', platform: 'manual', description: '', notes: '',
     activityType: '', location: '', targetMarket: '',
-    foundedYear: '', employeeCount: '', strengths: '', weaknesses: '',
+    foundedYear: '', strengths: '', weaknesses: '',
   });
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>(
     Object.fromEntries(SOCIAL_PLATFORMS.map(p => [p.key, '']))
@@ -92,7 +91,7 @@ const CompetitorList: React.FC = () => {
       name: c.name, url: c.url || '', platform: c.platform, description: '', notes: '',
       activityType: c.activityType || '', location: c.location || '',
       targetMarket: c.targetMarket || '', foundedYear: c.foundedYear?.toString() || '',
-      employeeCount: c.employeeCount || '', strengths: c.strengths || '', weaknesses: c.weaknesses || '',
+      strengths: c.strengths || '', weaknesses: c.weaknesses || '',
     });
     const links: Record<string, string> = Object.fromEntries(SOCIAL_PLATFORMS.map(p => [p.key, '']));
     if (c.socialProfiles) {
@@ -246,7 +245,7 @@ const CompetitorList: React.FC = () => {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowModal(false)}>
-          <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold">{editingId ? t('competitors.editCompetitor') : t('competitors.addCompetitor')}</h2>
               <button onClick={() => setShowModal(false)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800">
@@ -352,21 +351,7 @@ const CompetitorList: React.FC = () => {
                       max={new Date().getFullYear()}
                     />
                   </div>
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium mb-1">{t('competitors.employeeCount')}</label>
-                    <select
-                      value={formData.employeeCount}
-                      onChange={e => setFormData(p => ({ ...p, employeeCount: e.target.value }))}
-                      className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
-                    >
-                      <option value="">{t('competitors.employeeCountPlaceholder')}</option>
-                      <option value="1_10">{t('competitors.employeeCounts.1_10')}</option>
-                      <option value="11_50">{t('competitors.employeeCounts.11_50')}</option>
-                      <option value="51_200">{t('competitors.employeeCounts.51_200')}</option>
-                      <option value="200_plus">{t('competitors.employeeCounts.200_plus')}</option>
-                      <option value="500_plus">{t('competitors.employeeCounts.500_plus')}</option>
-                    </select>
-                  </div>
+
                 </div>
               </div>
 
@@ -411,20 +396,22 @@ const CompetitorList: React.FC = () => {
                     <textarea
                       value={formData.strengths}
                       onChange={e => setFormData(p => ({ ...p, strengths: e.target.value }))}
-                      className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 text-sm"
-                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 text-sm whitespace-pre-wrap"
+                      rows={5}
                       placeholder={t('competitors.strengthsPlaceholder')}
                     />
+                    <p className="text-xs text-gray-400 mt-1">اكتب كل نقطة في سطر منفصل</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">{t('competitors.weaknesses')}</label>
                     <textarea
                       value={formData.weaknesses}
                       onChange={e => setFormData(p => ({ ...p, weaknesses: e.target.value }))}
-                      className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 text-sm"
-                      rows={2}
+                      className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 text-sm whitespace-pre-wrap"
+                      rows={5}
                       placeholder={t('competitors.weaknessesPlaceholder')}
                     />
+                    <p className="text-xs text-gray-400 mt-1">اكتب كل نقطة في سطر منفصل</p>
                   </div>
                 </div>
               </div>
