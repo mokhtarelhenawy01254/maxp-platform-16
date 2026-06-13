@@ -58,7 +58,20 @@ const enterprisePlanSchema = z.object({
 
 function validate(schema) {
   return (req, res, next) => {
-    const result = schema.safeParse(req.body);
+    // Sanitize body: convert empty strings to null for nullish fields,
+    // and coerce numeric fields that come as strings.
+    const sanitizedBody = { ...req.body };
+    const numericFields = ['monthlyPrice', 'yearlyPrice', 'trialDays', 'unitPrice', 'discount', 'price'];
+    
+    for (const key in sanitizedBody) {
+      if (sanitizedBody[key] === '') {
+        sanitizedBody[key] = null;
+      } else if (numericFields.includes(key) && typeof sanitizedBody[key] === 'string' && !isNaN(Number(sanitizedBody[key]))) {
+        sanitizedBody[key] = Number(sanitizedBody[key]);
+      }
+    }
+
+    const result = schema.safeParse(sanitizedBody);
     if (!result.success) {
       const errors = result.error.flatten().fieldErrors;
       const firstError = Object.values(errors).flat()[0] || 'Invalid data';

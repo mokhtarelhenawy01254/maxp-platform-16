@@ -1,3 +1,11 @@
+## [2026-06-13] Backend — Marketplace Validator 400 Error due to Empty Strings and Numeric Types
+- **Bug/Issue**: Saving a marketplace app continued to return HTTP 400 even after removing `.strict()` from the Zod schemas. The frontend sends empty strings `""` for empty text fields (like `slug`, `logo`, `unitName`) and numeric fields as strings (`"199"`) from input fields. Zod's `z.number().nullish()` rejects empty strings and string-numbers, and `z.string().regex(...)` rejects `""` because it doesn't match the regex.
+- **Root Cause**: The `validate` middleware in `marketplaceManagementValidator.js` passed `req.body` directly to `schema.safeParse()`. Zod strictly type-checks without coercion by default unless explicitly configured.
+- **Fix**: Updated the `validate` middleware to sanitize `req.body` before parsing: it converts empty strings `""` to `null` so they safely pass `.nullish()` checks, and coercively parses numeric fields (like `monthlyPrice`, `trialDays`) into `Number` types if they are sent as strings.
+- **Verification**: Local Node test `v.validateUpdateApp` correctly handles empty slugs and string numbers without failing Zod validation.
+- **Affected Files**:
+  - `apps/backend/validators/marketplaceManagementValidator.js`
+
 ## [2026-06-13] Frontend — Competitor Detail Page Missing Strengths/Weaknesses, Social & Platform Tabs Crash
 - **Bug/Issue**: The competitor detail page (`/competitors/:id`) had a narrow tab union type that excluded new tab IDs, causing TypeScript errors when adding tabs. Sections for strengths, weaknesses, social, and platforms were missing, so users couldn't view competitor analysis data beyond the basic overview/products/ads/reports tabs.
 - **Root Cause**: The tab state was typed as `'overview' | 'products' | 'ads' | 'reports'` which rejected any new tab value. The page had no UI to render strengths/weaknesses text, social tab fallback, or platforms tab fallback.
