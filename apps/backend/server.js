@@ -567,6 +567,9 @@ app.use("/uploads", async (req, res, next) => {
   }
 });
 
+// 📖 App Explanations (public + admin routes — admin endpoints are protected by requireSuperAdmin inside the route file)
+app.use("/api/v1/app-explanations", appExplanationsRoutes);
+
 // 🚀 Apply Security for sensitive Admin/Company routes
 app.use(globalSecurity);
 
@@ -698,7 +701,6 @@ app.use("/api/v1/proxy", proxyRoutes);
 // Platform & Super-Admin
 app.use("/api/v1/super-admin", superAdminRoutes);
 app.use("/api/v1/super-admin/platform", superAdminPlatformRoutes);
-app.use("/api/v1/app-explanations", appExplanationsRoutes);
 app.use(
   "/api/v1/super-admin/storefront-theme-catalog",
   storefrontThemeCatalogRoutes,
