@@ -374,6 +374,7 @@ enum CompaniesPlan {
   BASIC
   PRO
   ENTERPRISE
+  MESSAGING
 
   @@map("companies_plan")
 }

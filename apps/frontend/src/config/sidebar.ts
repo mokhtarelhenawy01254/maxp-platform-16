@@ -636,8 +636,8 @@ export const getSidebarConfig = (
                 { to: '/customers/points-center', icon: TrophyIcon, label: t('sidebar.customerPointsCenter') },
                 { to: '/customers/cashback', icon: CurrencyDollarIcon, label: t('sidebar.cashbackSettings') },
             ],
-            // 🔒 إخفاء القسم للمسوقين
-            hidden: user?.role === 'AFFILIATE'
+            // 🔒 إخفاء القسم للمسوقين أو إذا كان CRM غير مفعل
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('crm-basic')
         },
 
         // 4️⃣.3 المشتريات
