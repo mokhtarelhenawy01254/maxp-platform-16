@@ -980,27 +980,38 @@ async function getAgentProfile(req, res) {
 
     const allowedTools = Array.isArray(agentJson.allowedTools) ? agentJson.allowedTools : [];
 
+    // Load skill.json files from ai-service (works both locally and on server)
+    const aiServiceSkillsDir = path.join(__dirname, '..', '..', 'ai-service', 'skills');
+    const loadSkillJson = (id) => {
+      try {
+        const p = path.join(aiServiceSkillsDir, id, 'skill.json');
+        if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8'));
+      } catch {}
+      return null;
+    };
+
     let skillDetails = [];
     if (skillIds.length) {
+      let dbSkillsByName = new Map();
       try {
-        const rows = await prisma.companySkill.findMany({
-          where: { companyId, name: { in: skillIds } },
-        });
-        const byName = new Map(rows.map(r => [r.name, r]));
-        skillDetails = skillIds.map(id => {
-          const r = byName.get(id);
-          return {
-            id,
-            displayName: r ? r.name : id,
-            description: r ? (r.description || '') : '',
-            instructions: r ? (r.instructions || '') : '',
-            allowedTools: r ? (() => { try { return JSON.parse(r.tools || '[]'); } catch { return []; } })() : [],
-            enabled: r ? r.enabled : true,
-          };
-        });
-      } catch {
-        skillDetails = skillIds.map(id => ({ id, displayName: id, description: '', instructions: '', allowedTools: [], enabled: true }));
-      }
+        const rows = await prisma.companySkill.findMany({ where: { companyId, name: { in: skillIds } } });
+        dbSkillsByName = new Map(rows.map(r => [r.name, r]));
+      } catch {}
+
+      skillDetails = skillIds.map(id => {
+        const db = dbSkillsByName.get(id);
+        const sf = loadSkillJson(id);
+        return {
+          id,
+          displayName: sf?.displayName || db?.name || id,
+          description: sf?.description || db?.description || '',
+          instructions: db?.instructions || '',
+          allowedTools: sf?.allowedTools || (db ? (() => { try { return JSON.parse(db.tools || '[]'); } catch { return []; } })() : []),
+          enabled: db ? db.enabled : true,
+          version: sf?.version || null,
+          requiresHumanApproval: sf?.requiresHumanApproval ?? false,
+        };
+      });
     }
 
     return res.json({

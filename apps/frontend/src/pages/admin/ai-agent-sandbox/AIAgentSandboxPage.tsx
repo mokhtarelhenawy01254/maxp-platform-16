@@ -1,16 +1,12 @@
 import React, { useMemo, useState } from "react";
 import {
-  RefreshCw,
   X,
   ChevronLeft,
   ChevronRight,
   AlertTriangle,
   CheckCircle2,
-  FileCheck2,
-  Share2,
   MessageSquare,
   LayoutList,
-  Activity,
   Sparkles
 } from "lucide-react";
 import { useAgentSandbox } from "./hooks/useAgentSandbox";
@@ -20,10 +16,8 @@ import { InspectorPanel } from "./components/InspectorPanel";
 import { HeaderBar } from "./components/HeaderBar";
 import { StatusBar } from "./components/StatusBar";
 import { Button } from "@/components/ui/button";
-import SkillSidebar from "./SkillSidebar";
-import SkillModal from "./SkillModal";
-import type { SandboxTraceSummary, ToolDefinition } from "./types/sandbox.types";
-import type { SkillDefinition } from "./hooks/useAgentSandbox";
+import AgentProfilePanel from "./components/AgentProfilePanel";
+import type { SandboxTraceSummary } from "./types/sandbox.types";
 
 const AIAgentSandboxPage: React.FC = () => {
   const {
@@ -59,18 +53,14 @@ const AIAgentSandboxPage: React.FC = () => {
     exportSession,
     formatCost,
     formatTokens,
-    clearActivityLog,
     clearError,
     toolsMetadata,
-    skills,
   } = useAgentSandbox();
 
   // Media query states implemented directly via window check / resize listener or basic defaults
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
   const [inspectorOpen, setInspectorOpen] = useState<boolean>(true);
   const [activeMobilePanel, setActiveMobilePanel] = useState<'sessions' | 'chat' | 'inspector'>('chat');
-  const [skillModalOpen, setSkillModalOpen] = useState(false);
-  const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
 
 
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -236,16 +226,9 @@ const AIAgentSandboxPage: React.FC = () => {
             </button>
           </div>
   
-          {/* Right Skills Pane */}
+          {/* Right Agent Profile Pane */}
           <div className={`transition-all duration-300 ${activeMobilePanel === 'inspector' ? 'flex' : 'hidden'} md:flex`}>
-            <SkillSidebar
-              selectedAgent={selectedAgent}
-              onSkillSelect={(skillId) => {
-                setSelectedSkillId(skillId);
-                setSkillModalOpen(true);
-              }}
-              skills={skills}
-            />
+            <AgentProfilePanel selectedAgent={selectedAgent} />
           </div>
        </div>
 
@@ -277,14 +260,6 @@ const AIAgentSandboxPage: React.FC = () => {
             <span className="text-[10px] font-medium">Skills</span>
           </button>
         </div>
-
-      {/* Skill Details Modal */}
-      <SkillModal
-        open={skillModalOpen}
-        skillId={selectedSkillId}
-        onClose={() => setSkillModalOpen(false)}
-        skills={skills}
-      />
 
       {/* Export Session Modal overlay */}
       {exportDialogOpen && (

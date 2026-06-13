@@ -89,6 +89,39 @@ export interface AgentListResponse {
   }>;
 }
 
+export interface AgentSkillDetail {
+  id: string;
+  displayName: string;
+  description: string;
+  instructions: string;
+  allowedTools: string[];
+  enabled: boolean;
+}
+
+export interface AgentProfileResponse {
+  success: boolean;
+  agent: {
+    id: string;
+    name: string;
+    role: string;
+    icon: string;
+    description: string;
+    model: string | null;
+    status: string;
+    templateSlug: string | null;
+  };
+  files: {
+    'SOUL.md': string;
+    'AGENTS.md': string;
+    'TOOLS.md': string;
+    'PERSONA.md': string;
+  };
+  allowedTools: string[];
+  skills: AgentSkillDetail[];
+  skillIds: string[];
+  modelPolicy: { default?: string; fallback?: string } | null;
+}
+
 export interface ModelsResponse {
   success: boolean;
   providers: Array<{
@@ -325,5 +358,9 @@ export const sandboxApi = {
     }
 
     return response.json();
+  },
+
+  async getAgentProfile(agentId: string): Promise<AgentProfileResponse> {
+    return request(`ai-sandbox/agents/${agentId}/profile`);
   },
 };
