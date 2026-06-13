@@ -432,7 +432,7 @@ export function useCompanyDetails() {
     planAction, bundleAction, appAction, installAllLoading, activationLoading, activationError,
     currentPlanType, resolvedPlanCatalog, orderedCatalogApps, resolvedBundles, appNameBySlug,
     handleAssignPlatformPlan, handleInstallApp, handleSubscribeBundle, handleActivateAllTools, refreshActivationCatalog,
-    companyUsers, usersLoading, facebookPages, pagesLoading, openAddEmployeeModal, setTransferOpen,
+    companyUsers, usersLoading, facebookPages, pagesLoading, openAddEmployeeModal,
     editOpen, setEditOpen, editSaving, editForm, setEditForm, editErrors,
     handleSaveCompany, transferOpen, setTransferOpen, transferLoading, changeOwnerTargetUserId, setChangeOwnerTargetUserId,
     handleTransferOwnership, addEmployeeOpen, setAddEmployeeOpen, employeeLoading, addEmployeeForm, setAddEmployeeForm,
