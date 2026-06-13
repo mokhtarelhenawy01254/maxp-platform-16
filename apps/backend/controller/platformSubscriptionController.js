@@ -14,7 +14,7 @@ const DEFAULT_PLAN_FEES = {
   BASIC: 99,
   PRO: 199,
   ENTERPRISE: 499,
-  MESSAGING: 999,
+  MESSAGING: 100,
 };
 
 const getDefaultMonthlyFee = (plan) =>
@@ -705,13 +705,13 @@ exports.createCheckoutSession = async (req, res) => {
 
 /**
  * @route POST /api/v1/platform-subscription/messaging-checkout
- * @desc Create Kashier checkout session for the Messaging Package (999 EGP)
+ * @desc Create Kashier checkout session for the Messaging Package (100 EGP - test)
  * @access Protected
  */
 exports.messagingCheckout = async (req, res) => {
   try {
     const { companyId } = req.user;
-    const amount = 999;
+    const amount = 100;
     const planName = "MESSAGING";
     const prisma = getSharedPrismaClient();
 
@@ -738,7 +738,7 @@ exports.messagingCheckout = async (req, res) => {
         customer: { email: req.user.email, reference: req.user.phone || companyId },
         redirectUrl,
         webhookUrl,
-        description: `Messaging Package subscription - 999 EGP`,
+        description: `Messaging Package subscription - 100 EGP (test)`,
       },
       null
     );
