@@ -1,3 +1,11 @@
+## [2026-06-13] Contextual App Explanations (Video & Text) for Dashboard [DONE]
+- **Objective**: Add contextual, route-based app explanations (videos and texts) to the merchant dashboard header based on the active page.
+- **Accomplishments**:
+  - **Schema Update**: Added `targetRoute` and `videoUrl` to the `AppExplanation` model.
+  - **Backend APIs**: Added `/by-route` public endpoint to filter active explanations by current pathname, and secured `/admin` endpoints with `requireSuperAdmin` middleware.
+  - **Super Admin UI**: Refactored `SuperAdminAppExplanations.tsx` to include dropdowns for target routes, text input for video links, and visual chips for classification.
+  - **Layout Injection**: Created the `PageExplanations` frontend component and injected it globally into the `Layout.tsx` header toolbar.
+
 ## [2026-06-13] AI Service — Agent Refactor, Gateway Hardening, Skills Validation, Memory Router, Eval Worker [DONE]
 - **Objective**: Refactor agent base for polymorphic types, harden tool execution with typed error boundaries, add skills validation pipeline, introduce memory routing and async eval worker, and delete legacy Node.js agent skills.
 - **Accomplishments**:
