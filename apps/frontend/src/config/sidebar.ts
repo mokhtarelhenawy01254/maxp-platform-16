@@ -564,8 +564,7 @@ export const getSidebarConfig = (
                 { to: '/settings/upsell', icon: ArrowTrendingUpIcon, label: 'إدارة الـ Upsell' },
                 { to: '/analytics/store', icon: ArrowTrendingUpIcon, label: t('sidebar.storeAnalytics') },
             ],
-            // ✅ صفحة المنتجات أصبحت متاحة لكل الشركات، مع بقاء حجبها عن المسوقين فقط
-            hidden: user?.role === 'AFFILIATE'
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('ecommerce-basic')
         },
 
         // 4️⃣.1 تصميم وتنسيق المتجر (Storefront Design)

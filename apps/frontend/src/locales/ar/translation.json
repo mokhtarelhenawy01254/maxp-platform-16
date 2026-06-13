@@ -1203,6 +1203,48 @@
     "logo": "الشعار",
     "description": "وصف",
     "notes": "ملاحظات",
+    "activityType": "نوع النشاط",
+    "activityTypePlaceholder": "اختر نوع النشاط",
+    "activityTypes": {
+      "ecommerce": "متجر إلكتروني",
+      "services": "خدماتي",
+      "import_export": "استيراد/تصدير",
+      "manufacturing": "تصنيع",
+      "software": "تطبيق/برمجيات",
+      "education": "تعليم",
+      "healthcare": "صحة/طب",
+      "realestate": "عقارات",
+      "tourism": "سياحة/ضيافة",
+      "other": "أخرى"
+    },
+    "location": "الموقع/الدولة",
+    "locationPlaceholder": "مثال: مصر، السعودية، الإمارات",
+    "targetMarket": "السوق المستهدف",
+    "targetMarketPlaceholder": "اختر السوق المستهدف",
+    "targetMarkets": {
+      "b2b": "B2B (شركات)",
+      "b2c": "B2C (أفراد)",
+      "b2b_b2c": "B2B + B2C",
+      "government": "حكومي",
+      "all": "جميع الفئات"
+    },
+    "foundedYear": "سنة التأسيس",
+    "foundedYearPlaceholder": "مثال: 2020",
+    "employeeCount": "عدد الموظفين",
+    "employeeCountPlaceholder": "اختر نطاق عدد الموظفين",
+    "employeeCounts": {
+      "1_10": "1-10",
+      "11_50": "11-50",
+      "51_200": "51-200",
+      "200_plus": "200+",
+      "500_plus": "500+"
+    },
+    "strengths": "نقاط القوة",
+    "strengthsPlaceholder": "أهم المميزات وال نقاط القوة عند المنافس",
+    "weaknesses": "نقاط الضعف",
+    "weaknessesPlaceholder": "أبرز نقاط الضعف والعيوب",
+    "socialLinks": "روابط السوشيال ميديا",
+    "socialLinksDesc": "أضف روابط المنافس على منصات التواصل الاجتماعي",
     "isActive": "نشط",
     "status": "الحالة",
     "active": "نشط",
@@ -4173,6 +4215,18 @@
           }
         }
       }
+    },
+    "marketplaceCoverage": {
+      "noPermission": "ليس لديك صلاحية الوصول إلى هذه البيانات",
+      "coverageUnavailable": "خدمة التغطية غير متوفرة حالياً",
+      "loadFailed": "تعذر تحميل تغطية التطبيقات للشركات",
+      "activateFailed": "تعذر تفعيل التطبيق للشركة",
+      "activated": "تم تفعيل التطبيق للشركة",
+      "confirmTitle": "تأكيد تفعيل التطبيق",
+      "confirmPrefix": "هل أنت متأكد من تفعيل تطبيق",
+      "confirmSuffix": "لشركة {{companyName}}؟",
+      "cancel": "إلغاء",
+      "confirmActivate": "تأكيد التفعيل"
     },
     "evaluation": {
       "title": "تقييم أداء فريق التطوير",

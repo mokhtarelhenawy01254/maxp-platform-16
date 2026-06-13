@@ -1209,6 +1209,48 @@
     "logo": "Logo",
     "description": "Description",
     "notes": "Notes",
+    "activityType": "Activity Type",
+    "activityTypePlaceholder": "Select activity type",
+    "activityTypes": {
+      "ecommerce": "E-commerce",
+      "services": "Services",
+      "import_export": "Import/Export",
+      "manufacturing": "Manufacturing",
+      "software": "Software/App",
+      "education": "Education",
+      "healthcare": "Healthcare",
+      "realestate": "Real Estate",
+      "tourism": "Tourism/Hospitality",
+      "other": "Other"
+    },
+    "location": "Location",
+    "locationPlaceholder": "e.g. Egypt, Saudi Arabia, UAE",
+    "targetMarket": "Target Market",
+    "targetMarketPlaceholder": "Select target market",
+    "targetMarkets": {
+      "b2b": "B2B",
+      "b2c": "B2C",
+      "b2b_b2c": "B2B + B2C",
+      "government": "Government",
+      "all": "All Categories"
+    },
+    "foundedYear": "Founded Year",
+    "foundedYearPlaceholder": "e.g. 2020",
+    "employeeCount": "Employee Count",
+    "employeeCountPlaceholder": "Select employee range",
+    "employeeCounts": {
+      "1_10": "1-10",
+      "11_50": "11-50",
+      "51_200": "51-200",
+      "200_plus": "200+",
+      "500_plus": "500+"
+    },
+    "strengths": "Strengths",
+    "strengthsPlaceholder": "Key strengths and advantages of the competitor",
+    "weaknesses": "Weaknesses",
+    "weaknessesPlaceholder": "Key weaknesses and drawbacks",
+    "socialLinks": "Social Media Links",
+    "socialLinksDesc": "Add the competitor's social media profile links",
     "isActive": "Active",
     "status": "Status",
     "active": "Active",
@@ -4160,6 +4202,18 @@
           }
         }
       }
+    },
+    "marketplaceCoverage": {
+      "noPermission": "You do not have permission to access this data",
+      "coverageUnavailable": "Coverage service is currently unavailable",
+      "loadFailed": "Failed to load company app coverage",
+      "activateFailed": "Failed to activate app for company",
+      "activated": "App activated for company",
+      "confirmTitle": "Confirm App Activation",
+      "confirmPrefix": "Are you sure you want to activate",
+      "confirmSuffix": "for company {{companyName}}?",
+      "cancel": "Cancel",
+      "confirmActivate": "Confirm Activation"
     },
     "evaluation": {
       "title": "Dev Team Performance Evaluation",

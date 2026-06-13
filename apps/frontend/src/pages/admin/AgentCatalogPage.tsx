@@ -657,7 +657,8 @@ export default function AgentCatalogPage() {
       const data = res.data;
       setProducts(data.data || []);
       setTotalCount(
-        data.pagination?.totalProducts ??
+        data.pagination?.total ??
+          data.pagination?.totalProducts ??
           data.pagination?.totalCount ??
           data.totalProducts ??
           (data.data?.length || 0)

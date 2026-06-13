@@ -715,18 +715,6 @@ exports.messagingCheckout = async (req, res) => {
     const planName = "PRO";
     const prisma = getSharedPrismaClient();
 
-    const billingRecord = await prisma.billingHistory.create({
-      data: {
-        companyId,
-        type: "PLATFORM_FEE",
-        amount,
-        description: `طلب اشتراك باقة المراسلة (Messaging) - معلق`,
-        status: "PENDING"
-      }
-    });
-
-    const host = req.headers.host || "maxp.online";
-    const redirectUrl = `http://${host}/billing/wallet?status=success&billingId=${billingRecord.id}`;
     const nextBillingDate = new Date();
     nextBillingDate.setDate(nextBillingDate.getDate() + 30);
     await prisma.$transaction(async (tx) => {
