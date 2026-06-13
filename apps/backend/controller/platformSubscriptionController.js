@@ -14,7 +14,7 @@ const DEFAULT_PLAN_FEES = {
   BASIC: 99,
   PRO: 199,
   ENTERPRISE: 499,
-  MESSAGING: 100,
+  MESSAGING: 999,
 };
 
 const getDefaultMonthlyFee = (plan) =>
@@ -711,7 +711,7 @@ exports.createCheckoutSession = async (req, res) => {
 exports.messagingCheckout = async (req, res) => {
   try {
     const { companyId } = req.user;
-    const amount = 100;
+    const amount = 999;
     const planName = "MESSAGING";
     const prisma = getSharedPrismaClient();
 
