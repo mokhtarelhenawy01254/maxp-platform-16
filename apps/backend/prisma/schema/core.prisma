@@ -236,6 +236,8 @@ model Company {
   whatsAppQuickReplies            WhatsAppQuickReply[]
   whatsAppSessions                WhatsAppSession[]
   whatsAppSettings                WhatsAppSettings?
+  whatsappFollowUpFlows           WhatsAppFollowUpFlow[]
+  customerJourneys                CustomerJourney[]
   wishlists                       Wishlist[]
   woocommerceSettings             WoocommerceSettings[]
   woocommerceSyncLogs             WoocommerceSyncLog[]
@@ -258,6 +260,15 @@ model Company {
   partnerCommissions              PartnerCommission[]
   members                         Member[]
   businessSpecialty                BusinessSpecialty?               @relation(fields: [businessSpecialtyId], references: [id], onDelete: SetNull)
+  moderatorTeams                   ModeratorTeam[]
+  moderatorTeamMembers             ModeratorTeamMember[]
+  whatsappNumberAssignments        WhatsAppNumberAssignment[]
+  conversationModeratorNotes       ConversationModeratorNote[]
+  conversationTags                 ConversationTag[]
+  moderatorActivityLogs            ModeratorActivityLog[]
+  moderatorNotifications           ModeratorNotification[]
+  moderatorDashboardCaches         ModeratorDashboardCache[]
+  inboxSettings                    InboxSettings?
 
   @@index([businessSpecialtyId])
   @@index([planConfigurationId])
@@ -360,6 +371,16 @@ model User {
   positionRelation                                  Position?                @relation(fields: [positionId], references: [id])
   whatsAppMessages                                  WhatsAppMessage[]
   platformPartner                                   PlatformPartner?
+
+  // WhatsApp Inbox CRM Relations
+  moderatorTeamMemberships                          ModeratorTeamMember[]
+  assignedWhatsAppSessions                          WhatsAppNumberAssignment[]
+  assignedByWhatsAppSessions                        WhatsAppNumberAssignment[] @relation("NumberAssignmentBy")
+  conversationModeratorNotes                        ConversationModeratorNote[]
+  conversationTagsCreated                           ConversationTag[]
+  moderatorActivityLogs                             ModeratorActivityLog[]
+  moderatorNotifications                            ModeratorNotification[]
+  moderatorDashboardCaches                          ModeratorDashboardCache[]
 
   @@index([companyId])
   @@index([departmentId])
