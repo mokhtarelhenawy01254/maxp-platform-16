@@ -6,6 +6,7 @@ import structlog
 from agent_framework import Agent
 from agent_framework.orchestrations import MagenticBuilder
 
+from src.agents.middleware import build_maxp_function_middleware
 from src.config import get_settings
 from src.services.agent_registry import get_agent_registry
 
@@ -27,6 +28,7 @@ class MagenticOrchestrator:
     def create_ceo_agent(
         self,
         is_merchant: bool = False,
+        company_id: str = "",
     ) -> Agent:
         if is_merchant:
             instructions = """You are the CEO Orchestrator for the store owner.
@@ -49,6 +51,7 @@ Reply in the customer's language naturally and professionally."""
             name="maxp_ceo_orchestrator",
             instructions=instructions,
             tools=[],
+            middleware=build_maxp_function_middleware(company_id, "CEO"),
         )
 
     async def build_orchestration(
@@ -56,7 +59,7 @@ Reply in the customer's language naturally and professionally."""
         company_id: str,
         is_merchant: bool = False,
     ) -> MagenticBuilder:
-        ceo = self.create_ceo_agent(is_merchant=is_merchant)
+        ceo = self.create_ceo_agent(is_merchant=is_merchant, company_id=company_id)
         builder = MagenticBuilder(manager_agent=ceo)
 
         registry = get_agent_registry()

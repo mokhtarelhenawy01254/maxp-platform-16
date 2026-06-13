@@ -24,7 +24,6 @@ import uuid
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from inspect import isawaitable
 from pathlib import Path
 from typing import Any
 
@@ -854,34 +853,31 @@ class BaseAgent:
                 "episodic_memories": task.get("episodic_memories") or [],
                 "system_prompt": task.get("system_prompt") or "",
             }
-        response = framework_agent.run(
-            message,
-            session=session,
-            options={"maxp_token_budget": int(task.get("token_budget") or 120_000)},
-        )
-        if isawaitable(response):
-            response = await response
-
-        user_input_requests = list(getattr(response, "user_input_requests", None) or [])
-        if user_input_requests:
-            first_request = user_input_requests[0]
-            request_id = _request_attr(first_request, "id") or _request_attr(first_request, "request_id")
+        try:
+            response = await framework_agent.run(
+                message,
+                session=session,
+                options={"maxp_token_budget": int(task.get("token_budget") or 120_000)},
+            )
+        except UserInputRequiredException as e:
+            request_id = getattr(e, "request_id", None) or getattr(e, "id", str(uuid.uuid4()))
+            tool_name = getattr(e, "function_name", "") or getattr(e, "name", "")
+            tool_args = getattr(e, "arguments", None) or {}
             return {
                 "agent_id": self.id,
                 "role": self.role,
                 "status": "PAUSED",
                 "result": {
-                    "reply": _sdk_response_text(response),
-                    "summary": _sdk_response_text(response),
+                    "reply": "",
+                    "summary": "",
                     "tools_used": True,
                     "tool_rounds": 1,
                     "tools": [
                         {
                             "status": "awaiting_approval",
                             "sdk_approval_id": request_id,
-                            "tool": _request_attr(first_request, "name")
-                            or _request_attr(first_request, "function_name"),
-                            "arguments": _request_attr(first_request, "arguments") or {},
+                            "tool": tool_name,
+                            "arguments": tool_args,
                         }
                     ],
                     "repaired": False,
@@ -1224,19 +1220,6 @@ def _sdk_response_text(response: Any) -> str:
     if value is not None and not _is_mock_value(value):
         return str(value)
     return ""
-
-
-def _request_attr(request: Any, name: str) -> Any:
-    if isinstance(request, dict):
-        return request.get(name)
-    value = getattr(request, name, None)
-    return None if _is_mock_value(value) else value
-
-
-def _is_mock_value(value: Any) -> bool:
-    return type(value).__module__.startswith("unittest.mock")
-
-
 @dataclass
 class _OfflineTemplateProxy:
     """Lightweight proxy used when the DB is unreachable in ``from_template``."""

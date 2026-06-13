@@ -122,10 +122,9 @@ async def run_orchestration(
     ceo_agent = create_ceo_agent(
         specialized_agents_tools=sub_agent_tools,
         is_merchant=is_merchant,
+        company_id=company_id,
+        client=client,
     )
-    ceo_agent.client = client
-
-    agent_session = ceo_agent.create_session(session_id=thread_id)
 
     if previous_state:
         state_id, _state_data = previous_state
