@@ -71,6 +71,12 @@ const SKIP_PATTERNS = [
   /kashierRoutes\.js$/,
   /PromotionSettings\.tsx$/,
   /useCheckout\.ts$/,
+  /company-details[/\\]/,    // Arabic UI components for super-admin company details
+  /MessagingLanding\.tsx$/,   // Arabic landing page
+  /messagingLanding\.css$/,   // Landing page styles
+  /AgentManagerPage\.tsx$/,   // Arabic admin UI
+  /agentControlRoutes\.js$/,  // Arabic backend response strings
+  /agentManagerRoutes\.js$/,  // Arabic backend response strings
 ];
 
 // File extensions to scan
