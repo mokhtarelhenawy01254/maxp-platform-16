@@ -82,6 +82,40 @@ def test_resolve_skill_context_first_match_wins():
     assert ctx["max_tool_count"] == 1
 
 
+def test_clear_skills_cache_clears_all():
+    """clear_skills_cache() without skill_id clears everything."""
+    from src.skills.integration import clear_skills_cache, _skill_meta_cache, _skill_json_cache, _skill_md_cache
+
+    _skill_meta_cache["x"] = (1.0, {"id": "x"})
+    _skill_json_cache["x"] = (1.0, {})
+    _skill_md_cache["x"] = (1.0, "# X")
+    clear_skills_cache()
+    assert _skill_meta_cache == {}
+    assert _skill_json_cache == {}
+    assert _skill_md_cache == {}
+
+
+def test_clear_skills_cache_clears_one():
+    """clear_skills_cache(skill_id) clears only that skill."""
+    from src.skills.integration import clear_skills_cache, _skill_meta_cache, _skill_json_cache, _skill_md_cache
+
+    _skill_meta_cache["a"] = (1.0, {})
+    _skill_meta_cache["b"] = (1.0, {})
+    _skill_json_cache["a"] = (1.0, {})
+    _skill_md_cache["a"] = (1.0, "# A")
+    clear_skills_cache("a")
+    assert "a" not in _skill_meta_cache
+    assert "b" in _skill_meta_cache
+    assert "a" not in _skill_json_cache
+    assert "a" not in _skill_md_cache
+
+
+def test_clear_skills_cache_unknown_is_noop():
+    """Clearing a non-existent skill doesn't error."""
+    from src.skills.integration import clear_skills_cache
+    clear_skills_cache("nonexistent")  # should not raise
+
+
 def test_resolve_skill_context_requires_approval():
     """Skill with requires_human_approval=True passes that through."""
     with patch("src.skills.integration._get_allowed_skill_dirs", return_value=[]):
