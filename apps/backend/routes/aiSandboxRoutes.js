@@ -4,6 +4,7 @@ const router = express.Router();
 const { requireAuth, requireRole } = require('../middleware/auth');
 const {
   listAgents,
+  getAgentProfile,
   listModels,
   listSessions,
   getSession,
@@ -37,6 +38,7 @@ router.use(requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']));
 router.use(aiSandboxLimiter);
 
 router.get('/agents', listAgents);
+router.get('/agents/:agentId/profile', getAgentProfile);
 router.get('/models', listModels);
 router.get('/tools', listSandboxTools);
 router.get('/sessions', listSessions);

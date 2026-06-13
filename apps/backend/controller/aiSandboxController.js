@@ -941,6 +941,97 @@ async function listAgents(req, res) {
   }
 }
 
+const path = require('path');
+const fs = require('fs');
+
+async function getAgentProfile(req, res) {
+  try {
+    const companyId = req.user?.companyId || req.companyId;
+    const { agentId } = req.params;
+    if (!companyId) return res.status(400).json({ success: false, error: 'companyId required' });
+    if (!agentId) return res.status(400).json({ success: false, error: 'agentId required' });
+
+    const prisma = getSharedPrismaClient();
+    const agent = await prisma.companyAgent.findFirst({ where: { id: agentId, companyId } });
+    if (!agent) return res.status(404).json({ success: false, error: 'AGENT_NOT_FOUND' });
+
+    let templateFiles = {};
+    let agentJson = {};
+    const slug = agent.templateSlug;
+    if (slug) {
+      const templateDir = path.join(__dirname, '..', 'agents', slug);
+      if (fs.existsSync(templateDir)) {
+        const agentJsonPath = path.join(templateDir, 'agent.json');
+        if (fs.existsSync(agentJsonPath)) {
+          try { agentJson = JSON.parse(fs.readFileSync(agentJsonPath, 'utf8')); } catch {}
+        }
+        for (const file of ['SOUL.md', 'AGENTS.md', 'TOOLS.md', 'PERSONA.md']) {
+          const filePath = path.join(templateDir, file);
+          if (fs.existsSync(filePath)) {
+            try { templateFiles[file] = fs.readFileSync(filePath, 'utf8'); } catch {}
+          }
+        }
+      }
+    }
+
+    let skillIds = [];
+    try { skillIds = JSON.parse(agent.skills || '[]'); } catch {}
+    if (!skillIds.length && Array.isArray(agentJson.allowedSkills)) skillIds = agentJson.allowedSkills;
+
+    const allowedTools = Array.isArray(agentJson.allowedTools) ? agentJson.allowedTools : [];
+
+    let skillDetails = [];
+    if (skillIds.length) {
+      try {
+        const rows = await prisma.companySkill.findMany({
+          where: { companyId, name: { in: skillIds } },
+        });
+        const byName = new Map(rows.map(r => [r.name, r]));
+        skillDetails = skillIds.map(id => {
+          const r = byName.get(id);
+          return {
+            id,
+            displayName: r ? r.name : id,
+            description: r ? (r.description || '') : '',
+            instructions: r ? (r.instructions || '') : '',
+            allowedTools: r ? (() => { try { return JSON.parse(r.tools || '[]'); } catch { return []; } })() : [],
+            enabled: r ? r.enabled : true,
+          };
+        });
+      } catch {
+        skillDetails = skillIds.map(id => ({ id, displayName: id, description: '', instructions: '', allowedTools: [], enabled: true }));
+      }
+    }
+
+    return res.json({
+      success: true,
+      agent: {
+        id: agent.id,
+        name: agent.name,
+        role: agent.role,
+        icon: agent.icon || '🤖',
+        description: agent.description || '',
+        model: agent.model || agentJson.modelPolicy?.default || null,
+        status: agent.status,
+        templateSlug: agent.templateSlug || null,
+      },
+      files: {
+        'SOUL.md': agent.soul || templateFiles['SOUL.md'] || '',
+        'AGENTS.md': templateFiles['AGENTS.md'] || '',
+        'TOOLS.md': templateFiles['TOOLS.md'] || '',
+        'PERSONA.md': templateFiles['PERSONA.md'] || '',
+      },
+      allowedTools,
+      skills: skillDetails,
+      skillIds,
+      modelPolicy: agentJson.modelPolicy || null,
+    });
+  } catch (error) {
+    console.error('[AI-SANDBOX] getAgentProfile error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+}
+
 async function listModels(req, res) {
   try {
     const companyId = req.user?.companyId || req.companyId;
@@ -1678,6 +1769,7 @@ async function resumeRun(req, res) {
 
 module.exports = {
   listAgents,
+  getAgentProfile,
   listModels,
   listSessions,
   getSession,
