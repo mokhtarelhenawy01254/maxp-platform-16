@@ -147,8 +147,7 @@ const MessagingLanding: React.FC = () => {
     }
     setSubscribing(true);
     try {
-      const baseUrl = (window as any).envConfig?.apiUrl || "http://localhost:3007/api/v1";
-      const res = await fetch(`${baseUrl}/platform-subscription/messaging-checkout`, {
+      const res = await fetch("/api/v1/platform-subscription/messaging-checkout", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       });
