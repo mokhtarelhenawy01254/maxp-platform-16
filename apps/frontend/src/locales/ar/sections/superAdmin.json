@@ -74,6 +74,18 @@
       }
     }
   },
+  "marketplaceCoverage": {
+    "noPermission": "ليس لديك صلاحية الوصول إلى هذه البيانات",
+    "coverageUnavailable": "خدمة التغطية غير متوفرة حالياً",
+    "loadFailed": "تعذر تحميل تغطية التطبيقات للشركات",
+    "activateFailed": "تعذر تفعيل التطبيق للشركة",
+    "activated": "تم تفعيل التطبيق للشركة",
+    "confirmTitle": "تأكيد تفعيل التطبيق",
+    "confirmPrefix": "هل أنت متأكد من تفعيل تطبيق",
+    "confirmSuffix": "لشركة {{companyName}}؟",
+    "cancel": "إلغاء",
+    "confirmActivate": "تأكيد التفعيل"
+  },
   "evaluation": {
     "title": "تقييم أداء فريق التطوير",
     "description": "تحليل أداء المطورين بناءً على المهام والوقت والأهداف",

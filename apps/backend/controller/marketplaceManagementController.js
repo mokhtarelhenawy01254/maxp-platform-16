@@ -48,7 +48,7 @@ async function ensureCompanyMarketplaceAppInstalled(tx, {
   depth = 0
 }) {
   if (depth > MAX_RECURSION_DEPTH) {
-    throw new Error(`تجاوز الحد الأقصى لعمق التثبيت التلقائي (${MAX_RECURSION_DEPTH}) للتطبيق: ${app?.slug}`);
+    throw new Error(`Exceeded max auto-install recursion depth (${MAX_RECURSION_DEPTH}) for app: ${app?.slug}`);
   }
   const normalizedSlug = String(app?.slug || '').trim();
   if (!normalizedSlug) {
@@ -600,7 +600,7 @@ exports.deleteApp = async (req, res) => {
     if (app._count.installations > 0) {
       return res.status(400).json({
         success: false,
-        message: `لا يمكن حذف الأداة لأنها مثبتة لدى ${app._count.installations} شركة. قم بإلغاء تثبيتها أولاً.`
+        message: `Cannot delete app: installed by ${app._count.installations} company(ies). Uninstall it first.`
       });
     }
 

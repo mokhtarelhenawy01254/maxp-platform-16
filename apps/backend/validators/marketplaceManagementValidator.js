@@ -3,8 +3,8 @@ const { z } = require('zod');
 const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 const appSchema = z.object({
-  name: z.string().min(1, 'اسم التطبيق مطلوب').max(200),
-  slug: z.string().regex(slugRegex, 'Slug غير صالح').max(200).optional(),
+  name: z.string().min(1, 'App name is required').max(200),
+  slug: z.string().regex(slugRegex, 'Invalid slug format').max(200).optional(),
   description: z.string().max(2000).optional(),
   monthlyPrice: z.number().min(0).optional(),
   yearlyPrice: z.number().min(0).optional(),
@@ -28,8 +28,8 @@ const appSchema = z.object({
 }).strict();
 
 const bundleSchema = z.object({
-  name: z.string().min(1, 'اسم الباقة مطلوب').max(200),
-  slug: z.string().regex(slugRegex, 'Slug غير صالح').max(200).optional(),
+  name: z.string().min(1, 'Bundle name is required').max(200),
+  slug: z.string().regex(slugRegex, 'Invalid slug format').max(200).optional(),
   description: z.string().max(2000).optional(),
   monthlyPrice: z.number().min(0).optional(),
   yearlyPrice: z.number().min(0).optional(),
@@ -40,7 +40,7 @@ const bundleSchema = z.object({
 });
 
 const pricingRuleSchema = z.object({
-  feature: z.string().min(1, 'اسم الميزة مطلوب').max(200),
+  feature: z.string().min(1, 'Feature name is required').max(200),
   price: z.number().min(0).optional(),
   unit: z.string().max(100).optional(),
   description: z.string().max(1000).optional(),
@@ -48,8 +48,8 @@ const pricingRuleSchema = z.object({
 }).strict();
 
 const enterprisePlanSchema = z.object({
-  companyId: z.string().min(1, 'معرف الشركة مطلوب'),
-  name: z.string().min(1, 'اسم الخطة مطلوب').max(200),
+  companyId: z.string().min(1, 'Company ID is required'),
+  name: z.string().min(1, 'Plan name is required').max(200),
   description: z.string().max(2000).optional(),
   price: z.number().min(0).optional(),
   isActive: z.boolean().optional(),
@@ -61,7 +61,7 @@ function validate(schema) {
     const result = schema.safeParse(req.body);
     if (!result.success) {
       const errors = result.error.flatten().fieldErrors;
-      const firstError = Object.values(errors).flat()[0] || 'بيانات غير صالحة';
+      const firstError = Object.values(errors).flat()[0] || 'Invalid data';
       return res.status(400).json({
         success: false,
         message: firstError,

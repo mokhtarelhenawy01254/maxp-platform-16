@@ -42,6 +42,7 @@ import {
 } from "@mui/icons-material";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 import {
   areaLabels,
   marketplaceFeatureMap,
@@ -154,11 +155,11 @@ const MarketplaceCoverageCenter: React.FC = () => {
       console.error("Marketplace coverage fetch failed", coverageError);
       const axiosError = coverageError as { response?: { status?: number; data?: { message?: string } } };
       if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
-        setError("ليس لديك صلاحية الوصول إلى هذه البيانات");
+        setError(i18n.t("superAdmin.marketplaceCoverage.noPermission"));
       } else if (axiosError.response?.status === 404) {
-        setError("خدمة التغطية غير متوفرة حالياً");
+        setError(i18n.t("superAdmin.marketplaceCoverage.coverageUnavailable"));
       } else {
-        setError(axiosError.response?.data?.message || "تعذر تحميل تغطية التطبيقات للشركات");
+        setError(axiosError.response?.data?.message || i18n.t("superAdmin.marketplaceCoverage.loadFailed"));
       }
     } finally {
       setLoading(false);
@@ -288,13 +289,13 @@ const MarketplaceCoverageCenter: React.FC = () => {
         { pricingModel },
         { headers: getAuthHeaders({ "Content-Type": "application/json" }) },
       );
-      toast.success("تم تفعيل التطبيق للشركة");
+      toast.success(i18n.t("superAdmin.marketplaceCoverage.activated"));
       await fetchCoverage({ quiet: true });
     } catch (installError: unknown) {
       console.error("Coverage install failed", installError);
       const message =
         (installError as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        "تعذر تفعيل التطبيق للشركة";
+        i18n.t("superAdmin.marketplaceCoverage.activateFailed");
       toast.error(message);
     } finally {
       setInstallingKey(null);
@@ -670,18 +671,18 @@ const MarketplaceCoverageCenter: React.FC = () => {
       </Box>
 
       <Dialog open={!!confirmDialog} onClose={() => setConfirmDialog(null)}>
-        <DialogTitle>تأكيد تفعيل التطبيق</DialogTitle>
+        <DialogTitle>{i18n.t("superAdmin.marketplaceCoverage.confirmTitle")}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            هل أنت متأكد من تفعيل تطبيق{" "}
+            {i18n.t("superAdmin.marketplaceCoverage.confirmPrefix")}{" "}
             <strong>{confirmDialog?.entry?.appLabel || confirmDialog?.entry?.appSlug}</strong>{" "}
-            لشركة <strong>{confirmDialog?.company?.name}</strong>؟
+            {i18n.t("superAdmin.marketplaceCoverage.confirmSuffix", { companyName: confirmDialog?.company?.name || "" })}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmDialog(null)}>إلغاء</Button>
+          <Button onClick={() => setConfirmDialog(null)}>{i18n.t("superAdmin.marketplaceCoverage.cancel")}</Button>
           <Button variant="contained" onClick={executeInstall} autoFocus>
-            تأكيد التفعيل
+            {i18n.t("superAdmin.marketplaceCoverage.confirmActivate")}
           </Button>
         </DialogActions>
       </Dialog>

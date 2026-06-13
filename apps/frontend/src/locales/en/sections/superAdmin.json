@@ -74,6 +74,18 @@
       }
     }
   },
+  "marketplaceCoverage": {
+    "noPermission": "You do not have permission to access this data",
+    "coverageUnavailable": "Coverage service is currently unavailable",
+    "loadFailed": "Failed to load company app coverage",
+    "activateFailed": "Failed to activate app for company",
+    "activated": "App activated for company",
+    "confirmTitle": "Confirm App Activation",
+    "confirmPrefix": "Are you sure you want to activate",
+    "confirmSuffix": "for company {{companyName}}?",
+    "cancel": "Cancel",
+    "confirmActivate": "Confirm Activation"
+  },
   "evaluation": {
     "title": "Dev Team Performance Evaluation",
     "description": "Developer performance analysis based on tasks, time, and goals",
