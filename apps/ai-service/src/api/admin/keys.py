@@ -405,7 +405,7 @@ async def list_logs(
     return [LogEntry.model_validate(r) for r in result.scalars().all()]
 
 
-def _build_direct_provider(provider_type: str, api_key: str, model: str | None = None) -> BaseProvider:
+def _build_direct_provider(provider_type: str, api_key: str, model: str | None = None, timeout_ms: int | None = None) -> BaseProvider:
     provider_type = provider_type.upper()
     pdef = PROVIDER_DEFS.get(provider_type)
     if not pdef:
@@ -413,11 +413,14 @@ def _build_direct_provider(provider_type: str, api_key: str, model: str | None =
 
     resolved_model = model or pdef["default_model"]
     cls_name = pdef.get("class", "OpenAICompatProvider")
+    kwargs = {}
+    if timeout_ms is not None:
+        kwargs["timeout_ms"] = timeout_ms
 
     if cls_name == "GoogleProvider":
-        return GoogleProvider(api_key, resolved_model)
+        return GoogleProvider(api_key, resolved_model, **kwargs)
     if cls_name == "OllamaProvider":
-        return OllamaProvider(resolved_model, base_url=pdef.get("base_url", ""))
+        return OllamaProvider(resolved_model, base_url=pdef.get("base_url", ""), **kwargs)
 
     extra_config = {
         k: v
@@ -431,6 +434,7 @@ def _build_direct_provider(provider_type: str, api_key: str, model: str | None =
         provider_name=pdef.get("provider_name", provider_type),
         extra_headers=pdef.get("extra_headers"),
         **extra_config,
+        **kwargs,
     )
 
 
@@ -438,6 +442,9 @@ class KeyTestRequest(BaseModel):
     provider: str
     api_key: str
     model: str | None = None
+    messages: list[dict] | None = None
+    prompt: str | None = None
+    timeout_ms: int | None = None
 
 
 class KeyTestResponse(BaseModel):
@@ -445,31 +452,43 @@ class KeyTestResponse(BaseModel):
     latency_ms: float
     model: str
     error: str | None = None
+    reply: str | None = None
 
 
 @router.post("/test", response_model=KeyTestResponse)
 async def test_key_raw(body: KeyTestRequest) -> KeyTestResponse:
     """Test a raw provider API key by sending a simple completion request. Used by super admin dashboard."""
     try:
-        provider = _build_direct_provider(body.provider, body.api_key, body.model)
+        provider = _build_direct_provider(body.provider, body.api_key, body.model, timeout_ms=body.timeout_ms)
     except ValueError as exc:
         return KeyTestResponse(success=False, latency_ms=0, model="", error=str(exc))
+
+    if body.messages:
+        prompt_messages = body.messages
+        max_tokens = 512
+    elif body.prompt:
+        prompt_messages = [{"role": "user", "content": body.prompt}]
+        max_tokens = 512
+    else:
+        prompt_messages = [{"role": "user", "content": "Hi"}]
+        max_tokens = 5
 
     started = _time.perf_counter()
     try:
         response = await provider.generate_response(
-            [{"role": "user", "content": "Hi"}],
-            max_tokens=5,
+            prompt_messages,
+            max_tokens=max_tokens,
         )
         latency_ms = round((_time.perf_counter() - started) * 1000, 2)
         used_model = response.model or provider.model
+        reply_text = getattr(response, 'text', None) or str(response)
         logger.info(
             "raw_key_test_ok",
             provider=body.provider.upper(),
             model=used_model,
             latency_ms=latency_ms,
         )
-        return KeyTestResponse(success=True, latency_ms=latency_ms, model=used_model)
+        return KeyTestResponse(success=True, latency_ms=latency_ms, model=used_model, reply=reply_text)
     except Exception as exc:
         latency_ms = round((_time.perf_counter() - started) * 1000, 2)
         error_msg = str(exc)[:500]
@@ -479,7 +498,7 @@ async def test_key_raw(body: KeyTestRequest) -> KeyTestResponse:
             error=error_msg,
             latency_ms=latency_ms,
         )
-        return KeyTestResponse(success=False, latency_ms=latency_ms, model=provider.model, error=error_msg)
+        return KeyTestResponse(success=False, latency_ms=latency_ms, model=provider.model, error=error_msg, reply=None)
 
 
 class KeyHealthRequest(BaseModel):
