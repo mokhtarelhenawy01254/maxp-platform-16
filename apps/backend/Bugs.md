@@ -20,7 +20,16 @@
   - `apps/ai-service/src/services/memory_router.py` (new)
   - `apps/ai-service/src/services/agent_feedback.py` (new)
   - `apps/ai-service/src/workers/eval_worker.py` (new)
+  - `apps/ai-service/src/context/assembler.py`
 
+## [2026-06-13] AI Service — Memory Router & Agent Feedback Missing Service Stubs
+- **Bug/Issue**: The orchestration flow referenced `memory_router.py` and `agent_feedback.py` services that did not exist yet, causing `ModuleNotFoundError` at import time.
+- **Root Cause**: The new orchestration pipeline was written expecting these services to be available, but they were never created in the initial refactor.
+- **Fix**: Created `memory_router.py` (routes memory operations to the correct store - episodic, semantic, or working) and `agent_feedback.py` (collects and stores agent performance feedback). Added `eval_worker.py` for async evaluation of agent responses.
+- **Affected Files**:
+  - `apps/ai-service/src/services/memory_router.py` (new)
+  - `apps/ai-service/src/services/agent_feedback.py` (new)
+  - `apps/ai-service/src/workers/eval_worker.py` (new)
 ## [2026-06-12] Frontend — WebAssembly memory limit & esbuild transpile OOM in production build
 - **Bug/Issue**: The frontend build failed with `RangeError: [plugin vite:build-import-analysis] ... WebAssembly.Memory.grow(): Unable to grow instance memory` and `[vite:esbuild-transpile] The service was stopped` during the transformation phase.
 - **Root Cause**:

@@ -1,15 +1,36 @@
-# Pricing Review
+# pricing-review
 
-Use when evaluating whether a price should change.
+## متى تستخدم هذه الـ Skill
+- التاجر يطلب مراجعة الأسعار
+- محتاج تحديث سعر منتج بناءً على المنافسة أو التكلفة
+- في طلب تغيير سعر من التاجر
 
-## Procedure
+## الأدوات المتاحة
 
-1. Read current product data.
-2. Compare requested change with policy limits.
-3. If reasonable, create a proposal through `product.updatePrice`.
+### product.search
+**امتى:** أول خطوة دايماً - اعرف السعر الحالي قبل أي تغيير
+**إزاي:** مرر اسم المنتج أو list_all=true
+**النتيجة:** السعر الحالي، بيانات المبيعات
+**ممنوع:** تغير سعر بدون معرفة السعر الحالي
 
-## Stop Conditions
+### product.updatePrice
+**امتى:** بعد موافقة التاجر الصريحة على السعر الجديد
+**إزاي:** مرر اسم المنتج + السعر الجديد
+**النتيجة:** تأكيد تحديث السعر
+**ممنوع:** تغير السعر بدون موافقة صريحة من التاجر
 
-- Original price is missing.
-- The change exceeds policy.
-- The product cannot be identified.
+### audit.read
+**امتى:** لو محتاج تراجع تاريخ تغييرات الأسعار السابقة
+**إزاي:** مرر نوع الحدث المطلوب
+**ممنوع:** تستخدمه في كل مرة - بس لما تحتاجه فعلاً
+
+## خطوات التنفيذ
+1. product.search لمعرفة السعر الحالي
+2. اعرض على التاجر: السعر الحالي + السعر المقترح + السبب
+3. انتظر موافقة التاجر الصريحة
+4. product.updatePrice بعد الموافقة
+5. أكد للتاجر إن السعر اتغير
+
+## ممنوعات
+- لا تغير سعر بدون موافقة صريحة
+- لا تقترح تخفيض السعر بدون مبرر من البيانات

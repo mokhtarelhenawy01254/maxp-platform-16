@@ -1,22 +1,28 @@
-# Hire Agent
+# hire-agent
 
-Use when the manager needs a new specialist agent for a clear role.
+## متى تستخدم هذه الـ Skill
+- التاجر أو الـ CEO يطلب إنشاء agent جديد متخصص
+- محتاج توسيع فريق الـ agents
 
-## Inputs
+## الأدوات المتاحة
 
-- Role or template slug.
-- Reason for hiring.
-- Required tools and skills.
+### agent.list_agents
+**امتى:** أول خطوة - شوف الـ agents الموجودين قبل إنشاء جديد
+**إزاي:** اطلب قائمة الـ agents الحالية
+**ممنوع:** تنشئ agent مكرر بدون التحقق
 
-## Procedure
+### agent.spawn
+**امتى:** بعد التأكد إن الـ agent الجديد مش موجود وبعد موافقة التاجر
+**إزاي:** مرر: الاسم + الدور + الـ skills المطلوبة
+**النتيجة:** agent جديد جاهز للعمل
+**ممنوع:** تنشئ agent بدون موافقة صريحة من التاجر
 
-1. Check existing agents first with `agent.list_agents`.
-2. If no suitable agent exists, choose the narrowest approved template.
-3. Use `agent.spawn` with least-privileged tools.
-4. Record why the agent was created.
+## خطوات التنفيذ
+1. agent.list_agents للتحقق من الـ agents الموجودين
+2. اقترح على التاجر: اسم + دور + skills الـ agent الجديد
+3. انتظر موافقة التاجر
+4. agent.spawn بعد الموافقة
 
-## Stop Conditions
-
-- The requested role is unclear.
-- The tool scope includes unrelated departments.
-- The hire would exceed budget or policy.
+## ممنوعات
+- لا تنشئ agents بدون موافقة
+- لا تكرر agent بدور موجود بالفعل

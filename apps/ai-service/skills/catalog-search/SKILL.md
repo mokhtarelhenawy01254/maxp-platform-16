@@ -1,25 +1,34 @@
-# Catalog Search
+# catalog-search
 
-Use when recommending, comparing, or validating products.
+## متى تستخدم هذه الـ Skill
+- العميل يسأل عندك ايه او ايه المنتجات المتاحة
+- العميل يسأل عن منتج بالاسم أو الوصف
+- العميل يسأل عن مقاس أو لون معين
+- تحتاج تتحقق من توفر منتج قبل ما توعد العميل بأي حاجة
 
-## Procedure
+## الأدوات المتاحة
 
-1. **Browse catalog**: When the customer asks "what products do you have" or similar, call `product_search` with `list_all=true` to return the full catalog with categories, prices, variants, sizes, and colors.
+### product.search
+**امتى:** لما العميل يسأل عن منتج أو يطلب عرض الكتالوج
+**إزاي (كتالوج كامل):** مرر list_all=true لعرض كل المنتجات مع الفئات والأسعار والمتغيرات
+**إزاي (منتج محدد):** مرر كلام العميل بالظبط كـ query بدون تعديل
+**مثال:** العميل قال عايز حذاء أبيض -> product.search(query="حذاء أبيض")
+**ممنوع:** تخترع سعر أو مخزون لو الـ tool ما ردتش بيه
 
-2. **Specific product**: When the customer names a product, call `product_search` with their exact wording first. Return product name, price, category, stock, available colors, and available sizes from the result.
+### inventory.check
+**امتى:** لما العميل يسأل في مقاس 42 او اللون الأسود موجود
+**إزاي:** مرر اسم المنتج + المقاس + اللون المطلوب
+**مثال:** في مقاس 40 لون أبيض -> inventory.check(product="...", size="40", color="أبيض")
+**ممنوع:** تقول موجود أو مش موجود قبل ما تعمل الـ call
 
-3. **Variants (colors/sizes)**: `product_search` now returns `availableSizes` and `availableColors` arrays with per-variant stock and status. Present these directly to the customer.
+## خطوات التنفيذ
+1. لو العميل سأل عن الكتالوج كله -> product.search(list_all=true)
+2. لو سأل عن منتج معين -> product.search(query="كلامه بالظبط")
+3. لو سأل عن مقاس أو لون محدد -> inventory.check
+4. اعرض: اسم، سعر، الألوان والمقاسات المتاحة فقط
+5. لو العميل غير المنتج -> امسح الـ context القديم وابدأ search جديد
 
-4. **Check availability**: When the customer asks if a specific size/color is in stock, call `inventory_check` which returns per-variant availability and constraint validation.
-
-5. **Return only facts** supported by the catalog. Never invent prices, stock, colors, or sizes.
-
-## Category (القسم) Information
-
-- `product_search` returns `categoryName` for each product.
-- When listing all products (`list_all=true`), mention the categories available.
-- When the customer asks "what categories do you have", list the unique `categoryName` values from the results.
-
-## Context Cleanup
-
-If the customer changes product, size, or color, clear stale product assumptions before making new tool calls.
+## ممنوعات
+- لا تخترع سعر أو مخزون أو ميعاد توصيل
+- لا تفترض توفر مقاس أو لون قبل inventory.check
+- لا تعرض منتجات مش موجودة في نتيجة الـ tool

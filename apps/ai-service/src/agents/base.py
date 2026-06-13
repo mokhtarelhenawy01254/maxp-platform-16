@@ -398,7 +398,21 @@ class BaseAgent:
         from src.tools.registry import get_all_tools, unlock_advanced_tools_tool
         allowed = {name.lower() for name in self.allowed_tools}
 
-        # Include skill tool names implicitly for agents with allowed_skills
+        # Derive tools from skill.json allowedTools for each allowed skill
+        if self.allowed_skills:
+            import json as _json
+            for _skill_id in self.allowed_skills:
+                _skill_json = _SKILLS_ROOT / _skill_id / "skill.json"
+                if _skill_json.exists():
+                    try:
+                        _skill_data = _json.loads(_skill_json.read_text(encoding="utf-8"))
+                        for _t in _skill_data.get("allowedTools", _skill_data.get("tools", [])):
+                            allowed.add(str(_t).lower().replace(".", "_"))
+                            allowed.add(str(_t).lower())
+                    except Exception:
+                        pass
+
+        # Include skill meta-tools (load_skill, read_skill_resource)
         if self.allowed_skills:
             from src.skills.integration import get_skill_tool_names
             for st_name in get_skill_tool_names():
@@ -588,6 +602,23 @@ class BaseAgent:
         return skill_id in self.allowed_skills
 
     def get_tools(self) -> list[str]:
+        if self.allowed_tools:
+            return sorted(self.allowed_tools)
+        # Derive from skills when no explicit tools configured
+        if self.allowed_skills:
+            import json as _json
+            derived: set[str] = set()
+            for _skill_id in self.allowed_skills:
+                _skill_json = _SKILLS_ROOT / _skill_id / "skill.json"
+                if _skill_json.exists():
+                    try:
+                        _data = _json.loads(_skill_json.read_text(encoding="utf-8"))
+                        for _t in _data.get("allowedTools", _data.get("tools", [])):
+                            derived.add(str(_t).lower().replace(".", "_"))
+                    except Exception:
+                        pass
+            if derived:
+                return sorted(derived)
         return sorted(self.allowed_tools)
 
     def get_skills(self) -> list[str]:

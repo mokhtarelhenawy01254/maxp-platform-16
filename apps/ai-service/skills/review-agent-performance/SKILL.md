@@ -1,10 +1,28 @@
-# Review Agent Performance
+# review-agent-performance
 
-Use when the merchant asks why an agent behaved a certain way or whether an
-agent is effective.
+## متى تستخدم هذه الـ Skill
+- الـ CEO يريد مراجعة أداء الـ agents
+- محتاج تقييم فعالية agent معين
 
-## Procedure
+## الأدوات المتاحة
 
-1. Read relevant audit entries.
-2. Compare tool use, cost, failures, and approvals.
-3. Recommend one concrete improvement.
+### audit.read
+**امتى:** لجمع بيانات أداء الـ agents من السجلات
+**إزاي:** مرر نوع الحدث وفترة زمنية محددة
+**النتيجة:** سجلات القرارات، الأخطاء، المهام المكتملة
+**ممنوع:** تقيم أداء agent بدون بيانات من الـ tool
+
+### agent.list_agents
+**امتى:** لمعرفة كل الـ agents الموجودين وأدوارهم
+**إزاي:** اطلب القائمة الكاملة
+**ممنوع:** تراجع agent غير موجود
+
+## خطوات التنفيذ
+1. agent.list_agents لمعرفة الـ agents
+2. audit.read لجمع بيانات الأداء للفترة المطلوبة
+3. لخص لكل agent: المهام المكتملة + الأخطاء + التوصية
+4. قترح تحسين واحد واضح لو في مشكلة
+
+## ممنوعات
+- لا تقيم أداء بدون بيانات حقيقية
+- لا تصدر حكم على agent بدون سياق كافي

@@ -1,17 +1,33 @@
-# Delegate Goal
+# delegate-goal
 
-Use when a merchant gives an operational goal that needs multiple steps.
+## متى تستخدم هذه الـ Skill
+- الـ CEO يريد تفويض مهمة لـ agent متخصص
+- مهمة تحتاج خبرة agent معين
 
-## Procedure
+## الأدوات المتاحة
 
-1. Restate the goal in one sentence.
-2. Split it into small tasks with owners.
-3. Use existing agents where possible.
-4. Assign tasks only to agents with matching tools.
-5. Hand off unclear or sensitive work to a human or manager.
+### agent.list_agents
+**امتى:** قبل التفويض - لازم تعرف الـ agents المتاحة وتخصصاتها
+**إزاي:** اطلب قائمة الـ agents
+**ممنوع:** تفوض لـ agent بدون التحقق إنه موجود وشغال
 
-## Output
+### agent.assign_task
+**امتى:** بعد تحديد الـ agent المناسب للمهمة
+**إزاي:** مرر: اسم الـ agent + وصف المهمة بوضوح + الأولوية
+**النتيجة:** المهمة اتحولت للـ agent المناسب
+**ممنوع:** تفوض مهمة لـ agent مش متخصص فيها
 
-- Task list.
-- Assigned agent for each task.
-- Approval requirements.
+### agent.handoff
+**امتى:** لو المهمة تحتاج تحويل فوري للـ agent وليس جدولة
+**إزاي:** لخص السياق + ما يحتاجه الـ agent الجديد
+**ممنوع:** تستخدمه بدل assign_task للمهام العادية
+
+## خطوات التنفيذ
+1. agent.list_agents لمعرفة الـ agents المتاحة
+2. اختر الـ agent الأنسب للمهمة
+3. agent.assign_task مع وصف واضح للمهمة
+4. أكد للـ CEO إن المهمة اتفوضت
+
+## ممنوعات
+- لا تفوض لـ agent غير مناسب
+- لا تفوض بدون وصف واضح للمهمة

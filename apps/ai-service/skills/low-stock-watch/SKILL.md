@@ -1,9 +1,30 @@
-# Low Stock Watch
+# low-stock-watch
 
-Use when monitoring stock or preparing a replenishment report.
+## متى تستخدم هذه الـ Skill
+- التاجر يسأل ايه المنتجات قربت تخلص
+- تحتاج تراقب المخزون بشكل دوري
+- محتاج تنبه التاجر قبل نفاد المخزون
 
-## Procedure
+## الأدوات المتاحة
 
-1. Check stock against the requested threshold.
-2. Group risky products by urgency.
-3. Recommend review or replenishment; do not adjust stock directly.
+### inventory.check
+**امتى:** للتحقق من مستوى مخزون منتج أو متغير محدد
+**إزاي:** مرر اسم المنتج أو SKU
+**النتيجة:** الكمية الحالية لكل متغير (مقاس/لون)
+**مثال:** inventory.check(product="حذاء أبيض") يرجع stock لكل مقاس
+**ممنوع:** تبلغ عن نقص مخزون بدون الـ tool
+
+### product.search
+**امتى:** لو محتاج تعرف كل المنتجات الأول قبل تفحص المخزون
+**إزاي:** product.search(list_all=true) لجلب كل المنتجات
+**ممنوع:** تفحص مخزون منتجات مش موجودة في الكتالوج
+
+## خطوات التنفيذ
+1. product.search(list_all=true) لجلب قائمة كل المنتجات
+2. inventory.check لكل منتج لمعرفة مستوى المخزون
+3. صنف: خلص (0)، منخفض (1-5)، كافي (+5)
+4. قدم تقرير للتاجر: المنتجات المحتاجة تجديد فوراً + المقاسات المتأثرة
+
+## ممنوعات
+- لا تبلغ عن نقص بدون بيانات من الـ tool
+- لا تقترح كميات شراء بدون سياق المبيعات

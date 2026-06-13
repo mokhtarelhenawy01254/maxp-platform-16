@@ -1,14 +1,30 @@
-# Facebook Ad Draft
+# facebook-ad-draft
 
-Use when preparing ad copy or campaign drafts.
+## متى تستخدم هذه الـ Skill
+- التاجر يطلب إنشاء إعلان على فيسبوك
+- محتاج تروج لمنتج أو عرض معين
 
-## Procedure
+## الأدوات المتاحة
 
-1. Validate the product or offer from catalog data.
-2. Draft copy with objective, audience hint, and budget assumption.
-3. Create a reviewable ad draft.
+### product.search
+**امتى:** قبل إنشاء الإعلان - لازم تعرف تفاصيل المنتج الحقيقية
+**إزاي:** مرر اسم المنتج المطلوب الإعلان عنه
+**النتيجة:** السعر، الوصف، الصورة، المتغيرات المتاحة
+**ممنوع:** تكتب إعلان بمعلومات من دماغك
 
-## Rules
+### facebook_ad.create_draft
+**امتى:** بعد تجميع كل المعلومات وموافقة التاجر على المحتوى
+**إزاي:** مرر: المنتج + النص الإعلاني + الميزانية + الجمهور المستهدف
+**النتيجة:** مسودة إعلان تنتظر موافقة التاجر
+**ممنوع:** تنشر الإعلان مباشرة - دايماً مسودة أول
 
-- Do not publish ads.
-- Do not invent product claims.
+## خطوات التنفيذ
+1. product.search لجمع تفاصيل المنتج
+2. اقترح نص إعلاني وجمهور مستهدف
+3. انتظر موافقة التاجر على المحتوى
+4. facebook_ad.create_draft لإنشاء المسودة
+5. أبلغ التاجر إن المسودة جاهزة للمراجعة
+
+## ممنوعات
+- لا تنشر إعلان مباشرة
+- لا تستخدم معلومات منتج من خارج الـ tool

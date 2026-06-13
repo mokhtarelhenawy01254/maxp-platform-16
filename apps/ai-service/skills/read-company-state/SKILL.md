@@ -1,15 +1,33 @@
-# Read Company State
+# read-company-state
 
-Use before planning, hiring, or delegating.
+## متى تستخدم هذه الـ Skill
+- الـ CEO يطلب نظرة عامة على وضع الشركة
+- محتاج فهم ما يحدث الآن قبل اتخاذ قرار
 
-## Procedure
+## الأدوات المتاحة
 
-1. Read active agents, pending approvals, budget, and recent failures.
-2. Summarize only the information relevant to the current goal.
-3. Do not expose secrets or cross-company data.
+### agent.read_state
+**امتى:** لما تحتاج الوضع الحالي للشركة (مبيعات، طلبات، مخزون)
+**إزاي:** مرر نوع البيانات المطلوبة
+**النتيجة:** snapshot شامل للوضع الحالي
+**ممنوع:** تقدم تقرير بدون بيانات حقيقية
 
-## Output
+### audit.read
+**امتى:** لما تحتاج سجل الأحداث والقرارات السابقة
+**إزاي:** مرر الفترة الزمنية أو نوع الحدث
+**ممنوع:** تستخدمه بدل agent.read_state للوضع الحالي
 
-- Current state.
-- Risks.
-- Recommended next step.
+### agent.list_agents
+**امتى:** لمعرفة فريق الـ agents الشغالين ووضعهم
+**إزاي:** اطلب القائمة مع الحالة
+**ممنوع:** تستخدمه بشكل متكرر بدون داعي
+
+## خطوات التنفيذ
+1. agent.read_state للوضع الحالي
+2. agent.list_agents لمعرفة فريق الـ agents
+3. audit.read لو محتاج سياق إضافي من التاريخ
+4. قدم ملخص واضح: الإيجابيات + التحديات + الخطوة المقترحة
+
+## ممنوعات
+- لا تقدم تقرير بأرقام من دماغك
+- لا تستنتج توجهات من بيانات قليلة

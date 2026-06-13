@@ -1,21 +1,42 @@
-# Exchange Support Policy (سياسة وقواعد الاستبدال)
+# exchange-support
 
-Use this skill to validate and process customer requests for order exchanges.
+## متى تستخدم هذه الـ Skill
+- العميل يطلب استبدال منتج
+- العميل يقول المنتج غلط أو المقاس مش تمام أو المنتج وصل تالف
 
-## Exchange Eligibility Rules (شروط استحقاق الاستبدال)
+## الأدوات المتاحة
 
-You MUST verify the following conditions before approving or facilitating any product exchange:
-1. **Previous Order Required (وجود طلب سابق)**: The customer must have an existing order in the system. Use `order.lookup` or `customer.info` to retrieve order history.
-2. **Delivered Status (حالة الطلب تم التسليم)**: The order status must be explicitly set to "delivered" (تم التسليم). Do not exchange orders that are pending, shipped but not delivered, or cancelled.
-3. **Under 14 Days (ألا يمر أكثر من 14 يوماً)**: The delivery date of the order must not be more than 14 days ago. Calculate this by comparing the current date/time with the order/delivery timestamp. If the time elapsed is more than 14 days, politely reject the exchange request explaining the policy.
-4. **Determine the Issue (معرفة سبب الاستبدال والمشكلة)**: You must explicitly ask and know what the issue is with the product (e.g. wrong size, color, damaged item, etc.). Do not proceed without clarifying the specific problem.
+### order.lookup
+**امتى:** أول خطوة دايماً - لازم تتحقق من الطلب قبل أي حاجة
+**إزاي:** مرر رقم الطلب من العميل
+**النتيجة:** حالة الطلب وتاريخ التوصيل
+**ممنوع:** توافق على استبدال قبل ما تتحقق من الطلب
 
-## Operational Flow (خطوات العمل)
+### customer.info
+**امتى:** لو العميل مش عارف رقم طلبه - ابحث بالتليفون
+**إزاي:** مرر رقم تليفون العميل
+**النتيجة:** كل طلبات العميل السابقة
+**ممنوع:** تستخدمها بديل لـ order.lookup لو عنده رقم الطلب
 
-1. Ask the customer for their order number or look up their orders using `customer.info` / `order.lookup`.
-2. Inspect the retrieved order:
-   - Check if status is "delivered".
-   - Check if the creation/delivery date is within 14 days.
-3. Ask the customer to state the reason/issue with the item if they haven't already.
-4. If eligible, proceed with routing details or handoff to support (`agent.handoff`) to complete the swap.
-5. If ineligible (no previous order, not delivered, or > 14 days), explain the specific reason to the customer politely in Arabic and refuse the exchange.
+### agent.handoff
+**امتى:** العميل مؤهل للاستبدال - الطلب delivered وفي حدود 14 يوم
+**إزاي:** لخص: رقم الطلب + سبب الاستبدال + المنتج المطلوب
+**ممنوع:** تعمل handoff قبل التحقق من شروط الاستبدال
+
+## شروط الاستبدال (لازم كلها)
+1. في طلب سابق في النظام
+2. حالة الطلب delivered (تم التسليم)
+3. مضاش على التسليم أكتر من 14 يوم
+4. العميل ذكر سبب واضح (غلط مقاس / لون / تالف)
+
+## خطوات التنفيذ
+1. اطلب رقم الطلب أو ابحث بـ customer.info
+2. order.lookup للتحقق من الحالة والتاريخ
+3. اسأل عن سبب الاستبدال لو ما قاله
+4. لو كل الشروط موجودة -> agent.handoff مع الملخص
+5. لو شرط ناقص -> اشرح للعميل بأدب بالعربي ليه مش مؤهل
+
+## ممنوعات
+- لا توافق على استبدال بدون التحقق من الشروط الأربعة
+- لا ترفض قبل ما تتحقق من الـ tool
+- لا تتجاوز حد الـ 14 يوم حتى لو العميل زعل

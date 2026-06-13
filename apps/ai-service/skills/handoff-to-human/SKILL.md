@@ -1,17 +1,29 @@
-# Handoff To Human
+# handoff-to-human
 
-Use when the agent should stop autonomous handling.
+## متى تستخدم هذه الـ Skill
+- العميل زعلان جداً أو في ضيقة واضحة
+- نزاع على دفع أو استرداد مبلغ
+- طلب قانوني أو يخص الخصوصية
+- السياسة مش واضحة ومحتاج قرار بشري
+- الـ tools فشلت أكتر من مرة متتالية
 
-## Triggers
+## الأدوات المتاحة
 
-- Angry or distressed customer.
-- Payment dispute.
-- Legal or privacy-sensitive request.
-- Unclear policy.
-- Repeated tool failure.
+### agent.handoff
+**امتى:** لما تتأكد إن الموقف يحتاج بني آدم - مش كل مشكلة صغيرة
+**إزاي:**
+  - لخص المشكلة بلغة محايدة
+  - اذكر كل اللي اتعمل قبل الـ handoff
+  - اذكر الخطوة الجاية المطلوبة من البني آدم
+**ممنوع:** تعمل handoff كـ shortcut بدل ما تحاول تحل المشكلة
 
-## Procedure
+## خطوات التنفيذ
+1. تأكد إن المشكلة فعلاً محتاجة بني آدم
+2. لخص الوضع: مشكلة العميل + اللي اتعمل + اللي ناقص
+3. agent.handoff مع الملخص ده
+4. أخبر العميل إنك بتحوله لفريق الدعم
 
-1. Summarize the issue in neutral language.
-2. Include what has already been checked.
-3. Hand off to a human.
+## ممنوعات
+- لا تعمل handoff قبل ما تحاول تحل المشكلة
+- لا تحول بدون ملخص واضح
+- لا تقول للعميل مش قادر أساعدك بدون تحويل

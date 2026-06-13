@@ -37,7 +37,45 @@
   - `apps/backend/controller/platformSubscriptionController.js`
   - `apps/backend/routes/platformSubscriptionRoutes.js`
   - `apps/backend/prisma/seeds/marketplaceSeed_simple.js`
+## [2026-06-13] AI Service — Agent Base Refactor, Tool Gateway Hardening, Skills Validation & Eval Worker
+- **Details**: Refactored the agent base class to support polymorphic agent types (CEO, specialized, SDK), hardened tool execution with per-tool timeouts and structured error responses, added skills validation pipeline, and introduced async evaluation worker for agent response quality scoring.
+- **Architecture**:
+  - **Agent Base Polymorphism**: `base.py` now supports `AgentType` enum (`CEO`, `SPECIALIST`, `SDK`). Each type has different instruction resolution, tool access scope, and lifecycle hooks. CEO agents can spawn/fork sub-agents; SDK agents use native function calling; specialists run within bounded tool sets.
+  - **Tool Gateway Error Boundaries**: `gateway.py` wraps each tool call in typed `ToolResult` objects (success/failure + structured error). Removed bare exception propagation. Per-tool timeout enforced via `asyncio.wait_for`.
+  - **Skills Integration Pipeline**: `skills/__init__.py` and `integration.py` now load skills from a validated registry. `validation.py` ensures skill JSON schemas, required fields, and endpoint reachability before registration. Skills that fail validation are logged and skipped (not crashing the service).
+  - **Memory Router**: `memory_router.py` centralizes memory operations — routes reads/writes to episodic, semantic, or working memory stores based on content type and freshness. Working memory uses in-process dict with TTL; semantic memory uses pgvector; episodic memory uses PostgreSQL.
+  - **Agent Feedback & Eval Worker**: `agent_feedback.py` stores per-turn feedback (rating, comments, tool call quality). `eval_worker.py` processes feedback asynchronously, computing aggregate scores and triggering auto-improvement suggestions.
+  - **Manager Tools Enhancement**: `manager_tools.py` extended with tools for sub-agent lifecycle (spawn, pause, resume, terminate) and cross-agent data sharing via a shared context dict.
+  - **Deleted Legacy Node.js Agent Skills**: Removed `apps/backend/agents/_shared/TOOLS.md` and all 14 Node.js skill definitions (campaign-report, catalog-search, customer-context-summary, delegate-goal, discount-proposal, exchange-support, facebook-ad-draft, facebook-sales-conversion, handoff-to-human, hire-agent, low-stock-watch, order-support, pricing-review, read-company-state, review-agent-performance). These skills are now handled by the Python ai-service.
+- **Affected Files**:
+  - `apps/ai-service/src/agents/base.py`
+  - `apps/ai-service/src/context/assembler.py`
+  - `apps/ai-service/src/pipeline/context.py`
+  - `apps/ai-service/src/pipeline/stages/execute_tools.py`
+  - `apps/ai-service/src/skills/__init__.py`
+  - `apps/ai-service/src/skills/integration.py`
+  - `apps/ai-service/src/skills/validation.py` (new)
+  - `apps/ai-service/src/tools/gateway.py`
+  - `apps/ai-service/src/tools/manager_tools.py`
+  - `apps/ai-service/src/services/agent_feedback.py` (new)
+  - `apps/ai-service/src/services/memory_router.py` (new)
+  - `apps/ai-service/src/workers/eval_worker.py` (new)
+  - `apps/ai-service/src/workflows/orchestration_flow.py`
+  - `apps/ai-service/tests/tools/test_gateway.py` (new)
+  - `apps/ai-service/tests/skills/` (new)
+  - `apps/backend/agents/_shared/TOOLS.md` (deleted)
+  - `apps/backend/agents/_shared/skills/` (14 skills deleted)
 
+## [2026-06-13] Backend — Platform Subscription Controller & Route Refinements
+- **Details**: Enhanced the platform subscription billing flow with improved error handling, route fixes, and marketplace seeding updates.
+- **Architecture**:
+  - **platformSubscriptionController.js**: Added better error boundaries for Kashier checkout session creation. Fixed edge cases where missing company context caused 500 errors instead of user-friendly 400 responses.
+  - **platformSubscriptionRoutes.js**: Cleaned up route definitions, removed duplicate middleware registrations.
+  - **marketplaceSeed_simple.js**: Updated seed data to align with current subscription plan pricing and feature sets.
+- **Affected Files**:
+  - `apps/backend/controller/platformSubscriptionController.js`
+  - `apps/backend/routes/platformSubscriptionRoutes.js`
+  - `apps/backend/prisma/seeds/marketplaceSeed_simple.js`
 ## [2026-06-13] Frontend — Auth & Registration Polish, Messaging Landing Page, Payment Pages, Sidebar Refinements
 - **Details**: Enhanced auth flow, added new messaging landing page, created payment pages, updated sidebar configuration, and added OG meta image.
 - **Architecture**:

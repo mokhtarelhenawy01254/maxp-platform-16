@@ -1,8 +1,22 @@
-# Campaign Report
+# campaign-report
 
-Use when reporting recent marketing work or campaign draft history.
+## متى تستخدم هذه الـ Skill
+- التاجر يطلب تقرير عن أداء الحملات الإعلانية
+- محتاج تراجع فعالية الإعلانات السابقة
 
-## Procedure
+## الأدوات المتاحة
 
-1. Read audit entries relevant to marketing.
-2. Summarize what changed, what is pending approval, and what needs attention.
+### audit.read
+**امتى:** لما تحتاج بيانات الأداء والسجلات
+**إزاي:** مرر نوع الحدث أو الفترة الزمنية المطلوبة
+**النتيجة:** سجلات الأنشطة وبيانات الأداء
+**ممنوع:** تقدم أرقام بدون مصدر من الـ tool
+
+## خطوات التنفيذ
+1. audit.read لجمع بيانات الأداء للفترة المطلوبة
+2. لخص: الوصول، التفاعل، التحويلات لو متاحة
+3. اقترح خطوة تحسين واحدة واضحة
+
+## ممنوعات
+- لا تخترع أرقام أداء
+- لا تقدم توصيات بدون بيانات تدعمها

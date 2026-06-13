@@ -1,14 +1,32 @@
-# Discount Proposal
+# discount-proposal
 
-Use when a discount may help sales but should not be applied directly.
+## متى تستخدم هذه الـ Skill
+- التاجر طلب اقتراح خصم على منتج
+- المبيعات منخفضة ومحتاج تحفيز
+- في مناسبة أو موسم يستحق خصم
 
-## Procedure
+## الأدوات المتاحة
 
-1. Ground the target product/category in catalog data.
-2. Explain reason, expected impact, and risk.
-3. Create a draft with `discount.create_draft`.
+### product.search
+**امتى:** قبل اقتراح أي خصم - لازم تعرف السعر الحالي والمخزون
+**إزاي:** مرر اسم المنتج أو list_all=true لعرض كل المنتجات
+**النتيجة:** السعر الحالي، المخزون، بيانات المبيعات
+**ممنوع:** تقترح خصم بدون معرفة السعر الأصلي
 
-## Stop Conditions
+### discount.create_draft
+**امتى:** بعد موافقة التاجر على قيمة ونسبة الخصم
+**إزاي:** مرر المنتج + نسبة الخصم + مدة الخصم
+**النتيجة:** مسودة خصم تنتظر موافقة التاجر النهائية
+**ممنوع:** تطبق الخصم مباشرة بدون مسودة ومراجعة
 
-- Requested discount exceeds company policy.
-- Target product/category is ambiguous.
+## خطوات التنفيذ
+1. product.search لمعرفة السعر الحالي والأداء
+2. اقترح نسبة خصم منطقية بناءً على البيانات
+3. انتظر موافقة التاجر الصريحة
+4. discount.create_draft لإنشاء المسودة
+5. أبلغ التاجر إن المسودة جاهزة للمراجعة النهائية
+
+## ممنوعات
+- لا تطبق خصم بدون موافقة التاجر
+- لا تقترح خصم يضر بهامش الربح بشكل واضح
+- لا تنشئ مسودة بدون تأكيد القيمة والمدة
