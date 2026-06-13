@@ -1,3 +1,17 @@
+## [2026-06-13] Backend + Frontend — Agent Profile API & AgentProfilePanel UI
+- **Details**: Added a new endpoint `GET /api/v1/ai-sandbox/agents/:agentId/profile` that returns the full agent profile (markdown files, tools, skills) for the sandbox page. Replaced the `SkillSidebar` component with a new `AgentProfilePanel` that displays all agent data in 4 tabs.
+- **Architecture**:
+  - **`getAgentProfile()` in `aiSandboxController.js`**: Fetches agent from `companyAgent` table, loads `agent.json` + markdown files (`SOUL.md`, `AGENTS.md`, `TOOLS.md`, `PERSONA.md`) from `apps/backend/agents/{templateSlug}/` on disk, reads `allowedTools` from the template's `agent.json`, resolves skills from DB `skills` column (falls back to template's `allowedSkills`), and enriches each skill by reading its `skill.json` from `apps/ai-service/skills/{id}/skill.json`. DB `soul` column overrides template SOUL.md when customized.
+  - **Skill Resolution Priority**: `skill.json` (ai-service, disk) → `companySkill` (DB, per-company overrides) → stub (id only). This ensures `displayName`, `allowedTools`, `requiresHumanApproval` are always populated from the canonical source.
+  - **`AgentProfilePanel.tsx`**: React component with 4 tabs — Soul (SOUL.md as monospace text), Agents (AGENTS.md), Tools (TOOLS.md + tool badges colored by read/write), Skills (expandable cards per skill with tools list). Fetches via `sandboxApi.getAgentProfile(agentId)` and re-fetches on agent change. Replaces the old MUI-based `SkillSidebar`.
+  - **Path Resolution**: `path.join(__dirname, '..', '..', 'ai-service', 'skills')` resolves to `apps/ai-service/skills/` locally and `/var/www/ai-service/skills/` on the server — no env var needed.
+- **Affected Files**:
+  - `apps/backend/controller/aiSandboxController.js` — `getAgentProfile()` function added
+  - `apps/backend/routes/aiSandboxRoutes.js` — `GET /agents/:agentId/profile` wired
+  - `apps/frontend/src/pages/admin/ai-agent-sandbox/services/sandboxApi.ts` — `getAgentProfile()` + types
+  - `apps/frontend/src/pages/admin/ai-agent-sandbox/components/AgentProfilePanel.tsx` (new)
+  - `apps/frontend/src/pages/admin/ai-agent-sandbox/AIAgentSandboxPage.tsx` — SkillSidebar replaced
+
 ## [2026-06-13] AI Service — Skills as Single Source of Truth for Agent Tools + Intent Classifier Hardening
 - **Details**: Enriched all 15 SKILL.md files with structured per-tool guidance (when/how/forbidden). Made `get_tools()` and `_resolve_tools()` in `base.py` derive tool lists from `skill.json` when the agent has no explicit `allowedTools`. Fixed the intent classifier fallback chain and added image-aware routing in the planner.
 - **Architecture**:

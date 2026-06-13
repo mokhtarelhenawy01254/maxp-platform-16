@@ -1,3 +1,10 @@
+## [2026-06-13] Backend — Skills `allowedTools` Empty in Agent Profile Endpoint
+- **Bug/Issue**: `GET /ai-sandbox/agents/:agentId/profile` returned `skills[*].allowedTools = []` for all skills — the skills had no tool metadata.
+- **Root Cause**: The endpoint loaded skill details exclusively from the `companySkill` table, but that table is either empty or not populated for most companies. The real skill definitions (`displayName`, `allowedTools`, `requiresHumanApproval`) live in `apps/ai-service/skills/{id}/skill.json` on the server at `/var/www/ai-service/skills/`.
+- **Fix**: Updated `getAgentProfile()` in `aiSandboxController.js` to read `skill.json` directly from the ai-service skills directory using `path.join(__dirname, '..', '..', 'ai-service', 'skills', id, 'skill.json')`. This path resolves correctly both locally (`apps/ai-service/skills/`) and on the server (`/var/www/ai-service/skills/`). DB data from `companySkill` is still merged if it exists (custom instructions override).
+- **Affected Files**:
+  - `apps/backend/controller/aiSandboxController.js`
+
 ## [2026-06-13] AI Service — Intent Classifier CLASSIFIER_UNAVAILABLE on All Tool-Required Intents
 - **Bug/Issue**: The intent classifier returned `CLASSIFIER_UNAVAILABLE` for product search, order creation, shipping, and discount requests, causing the pipeline to skip tool execution and reply generically without calling any tools.
 - **Root Cause**: The FB sales agent's model config (`llama-3.3-70b-versatile`) was passed as `preferredModel` into the classifier. The classifier used `preferredProvider=GOOGLE` with `preferredModel=llama-3.3-70b-versatile`, which is incompatible — Google does not serve llama models. `build_provider_client_async("GOOGLE", model="llama-3.3-70b-versatile")` failed silently. The NVIDIA fallback (`openai/gpt-oss-120b`) was not configured on the server. The final GROQ fallback returned HTTP 429 (rate limited) because multiple sequential tests exhausted the free-tier quota. All three attempts failed → `classifier_result = None` → `CLASSIFIER_UNAVAILABLE`.
