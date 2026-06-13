@@ -727,42 +727,25 @@ exports.messagingCheckout = async (req, res) => {
 
     const host = req.headers.host || "maxp.online";
     const redirectUrl = `http://${host}/billing/wallet?status=success&billingId=${billingRecord.id}`;
-    const baseDomain = process.env.MAIN_DOMAIN || "maxp.online";
-    const webhookUrl = `https://${baseDomain}/api/v1/public/platform-subscription/webhook`;
-
-    const session = await KashierService.createPaymentSession(
-      {
-        amount,
-        currency: "EGP",
-        orderId: `messaging-${billingRecord.id}`,
-        customer: { email: req.user.email, reference: req.user.phone || companyId },
-        redirectUrl,
-        webhookUrl,
-        description: `Messaging Package subscription - 100 EGP (test)`,
-      },
-      null
-    );
-
-    if (!session.success) {
-      await prisma.billingHistory.update({
-        where: { id: billingRecord.id },
-        data: { status: "FAILED", description: `فشل إنشاء جلسة الدفع: ${session.error}` }
+    const nextBillingDate = new Date();
+    nextBillingDate.setDate(nextBillingDate.getDate() + 30);
+    await prisma.$transaction(async (tx) => {
+      await tx.platformSubscription.upsert({
+        where: { companyId },
+        update: { plan: "PRO", status: "ACTIVE", monthlyFee: amount, nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
+        create: { companyId, plan: "PRO", status: "ACTIVE", monthlyFee: amount, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date() }
       });
-      return res.status(502).json({ success: false, message: "فشل إنشاء جلسة الدفع في كاشير." });
-    }
-
-    await prisma.billingHistory.update({
-      where: { id: billingRecord.id },
-      data: {
-        referenceId: session.sessionId,
-        description: `طلب اشتراك باقة المراسلة (معرّف الجلسة: ${session.sessionId})`
+      await tx.company.update({ where: { id: companyId }, data: { plan: "PRO" } });
+      const apps = await tx.marketplaceApp.findMany({ where: { slug: { in: ["crm-basic", "whatsapp-business", "telegram-business"] } } });
+      for (const app of apps) {
+        await tx.companyApp.upsert({
+          where: { companyId_appId: { companyId, appId: app.id } },
+          update: { status: "ACTIVE" },
+          create: { companyId, appId: app.id, status: "ACTIVE" }
+        });
       }
     });
-
-    res.json({
-      success: true,
-      data: { billingId: billingRecord.id, sessionUrl: session.sessionUrl, sessionId: session.sessionId }
-    });
+    res.json({ success: true, message: "تم تفعيل الباقة تجريبياً", data: { skipPayment: true } });
   } catch (error) {
     console.error("[MESSAGING-CHECKOUT] Error:", error);
     res.status(500).json({ success: false, message: "خطأ أثناء إنشاء عملية الدفع" });
