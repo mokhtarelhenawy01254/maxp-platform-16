@@ -36,7 +36,7 @@ dependencies = [
     "mcp>=1.2",
     "telethon>=1.35",
     "aiogram>=3.0",
-    "agent-framework==1.8.0",
+    "agent-framework==1.8.1",
 ]
 
 [project.optional-dependencies]
@@ -51,7 +51,7 @@ dev = [
     "testcontainers>=4.8",
 ]
 agents = [
-    "agent-framework>=1.8.0",
+    "agent-framework>=1.8.1",
 ]
 
 [build-system]

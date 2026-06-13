@@ -12,7 +12,7 @@ const {
   getConversationAudience
 } = require('../whatsappRealtimeAudienceService');
 const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
-const aiMessageProcessor = require('../../legacy-ai-agent/aiAgent/aiMessageProcessor');
+const aiSdkClient = require('../aiSdkClient');
 
 const getIO = () => socketService.getIO();
 
@@ -244,25 +244,50 @@ async function saveIncomingMessage(payload) {
   }
 
   // ── AI auto-reply (fire-and-forget, never blocks the webhook) ──────────────
-  if (content && messageType === 'TEXT') {
+  if (content && messageType === 'TEXT' && syncedCustomer?.companyId) {
     setImmediate(async () => {
       try {
-        const replyText = await aiMessageProcessor.processMessage({
-          companyId,
-          sessionId,
-          conversationId: syncedConversation?.id || null,
-          customerId: syncedCustomer?.id || null,
-          remoteJid: normalizedJid,
-          content,
+        const { getSharedPrismaClient } = require('../sharedDatabase');
+        const prisma = getSharedPrismaClient();
+        const aiSetting = await prisma.aiSetting.findUnique({ where: { companyId: syncedCustomer.companyId } });
+        if (!aiSetting?.autoReplyEnabled) {
+          console.log('🤖 [WA-AI-AUTOREPLY] AI auto-reply disabled for company');
+          return;
+        }
+        if (aiSetting.workingHoursEnabled && aiSetting.workingHours) {
+          try {
+            const hours = JSON.parse(typeof aiSetting.workingHours === 'string' ? aiSetting.workingHours : '{}');
+            const now = new Date();
+            const dayName = now.toLocaleString('en', { weekday: 'long', timeZone: 'Africa/Cairo' }).toLowerCase();
+            const today = hours[dayName];
+            if (today && !today.enabled) { console.log('🤖 [WA-AI-AUTOREPLY] Outside working hours (day disabled)'); return; }
+            if (today && today.start && today.end) {
+              const currentMinutes = now.getHours() * 60 + now.getMinutes();
+              const [startH, startM] = today.start.split(':').map(Number);
+              const [endH, endM] = today.end.split(':').map(Number);
+              const startMin = startH * 60 + startM;
+              const endMin = endH * 60 + endM;
+              if (currentMinutes < startMin || currentMinutes > endMin) { console.log('🤖 [WA-AI-AUTOREPLY] Outside working hours (time)'); return; }
+            }
+          } catch(e) { /* continue if parsing fails */ }
+        }
+
+        const result = await aiSdkClient.sendChatMessage({
+          companyId: syncedCustomer.companyId,
+          customerId: syncedCustomer.id,
+          message: content,
+          threadId: syncedConversation?.id || null,
+          channel: 'WHATSAPP',
         });
 
+        const replyText = result.reply;
         if (replyText) {
           await WhatsAppMessageHandler.sendText(sessionId, normalizedJid, replyText, {
             isAIResponse: true,
           });
         }
       } catch (e) {
-        console.error('❌ [AI-AUTOREPLY] Error generating or sending AI reply:', e.message);
+        console.error('❌ [WA-AI-AUTOREPLY] Error generating or sending AI reply:', e.message);
       }
     });
   }

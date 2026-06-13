@@ -195,47 +195,51 @@ async def init_registry_from_db(session_factory) -> None:
         for company_id in companies:
             db_agents = await repo.list_active_agents(company_id)
             for db_agent in db_agents:
-                if registry.get(company_id, db_agent.id):
-                    continue
+                try:
+                    if registry.get(company_id, db_agent.id):
+                        continue
 
-                tool_names: list[str] = []
-                if db_agent.skills:
-                    try:
-                        parsed = json.loads(db_agent.skills)
-                        if isinstance(parsed, list):
-                            tool_names = parsed
-                    except (json.JSONDecodeError, TypeError):
-                        pass
+                    tool_names: list[str] = []
+                    if db_agent.skills:
+                        try:
+                            parsed = json.loads(db_agent.skills)
+                            if isinstance(parsed, list):
+                                tool_names = parsed
+                        except (json.JSONDecodeError, TypeError):
+                            pass
 
-                if not tool_names:
-                    tool_names = get_tool_names_for_role(db_agent.role)
+                    if not tool_names:
+                        tool_names = get_tool_names_for_role(db_agent.role)
 
-                raw_tools = resolve_tools_from_names(tool_names)
-                agent_tools = wrap_tools_for_gateway(
-                    raw_tools,
-                    company_id=company_id,
-                    agent_role=db_agent.role,
-                    allowed_tools=tool_names,
-                )
-
-                if settings.default_llm_provider == "anthropic":
-                    agent: BaseAgent | RawClaudeAgent = RawClaudeAgent(
-                        name=db_agent.name,
-                        instructions=db_agent.soul or "",
-                        tools=agent_tools,
-                        default_options={"model": db_agent.model or settings.default_model},
-                    )
-                else:
-                    config = BaseAgentConfig(
-                        id=db_agent.id,
-                        name=db_agent.name,
-                        role=db_agent.role,
+                    raw_tools = resolve_tools_from_names(tool_names)
+                    agent_tools = wrap_tools_for_gateway(
+                        raw_tools,
                         company_id=company_id,
+                        agent_role=db_agent.role,
                         allowed_tools=tool_names,
-                        model=db_agent.model or settings.default_model,
                     )
-                    agent = BaseAgent(config)
 
-                registry.register(company_id, db_agent.id, agent, tool_names=tool_names)
+                    if settings.default_llm_provider == "anthropic":
+                        agent: BaseAgent | RawClaudeAgent = RawClaudeAgent(
+                            name=db_agent.name,
+                            instructions=db_agent.soul or "",
+                            tools=agent_tools,
+                            default_options={"model": db_agent.model or settings.default_model},
+                        )
+                    else:
+                        config = BaseAgentConfig(
+                            id=db_agent.id,
+                            name=db_agent.name,
+                            role=db_agent.role,
+                            company_id=company_id,
+                            allowed_tools=tool_names,
+                            model=db_agent.model or settings.default_model,
+                        )
+                        agent = BaseAgent(config)
+
+                    registry.register(company_id, db_agent.id, agent, tool_names=tool_names)
+                except Exception as exc:
+                    logger.warning("failed to load agent from DB", agent_id=db_agent.id, role=db_agent.role, error=str(exc))
+                    continue
 
     logger.info("registry recovered from DB", companies=len(companies))

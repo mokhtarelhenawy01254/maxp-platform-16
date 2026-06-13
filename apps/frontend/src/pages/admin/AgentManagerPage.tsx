@@ -224,7 +224,7 @@ export default function AgentManagerPage() {
       setTasks(Array.isArray(inboxData.tasks) ? inboxData.tasks : []);
       const managerAgentId = managerData.context.manager?.id || "";
       if (!toolAgentId) setToolAgentId(managerAgentId);
-      if (!hireTemplate && managerData.context.profiles.length) {
+      if (!hireTemplate && (managerData.context.profiles || []).length) {
         const supportTemplate = managerData.context.profiles.find((profile) => profile.role === "SUPPORT");
         const defaultTemplate = supportTemplate || managerData.context.profiles[0];
         setHireTemplate(defaultTemplate.slug);
@@ -398,7 +398,7 @@ export default function AgentManagerPage() {
               <Metric icon={<TeamIcon />} label="الوكلاء" value={String(agents.length)} note={`${profiles.length} قالب`} />
             </Grid>
             <Grid item xs={12} md={3}>
-              <Metric icon={<InboxIcon />} label="المهام النشطة" value={String(context?.inbox.active || 0)} note={`${context?.inbox.pending || 0} معلقة`} />
+              <Metric icon={<InboxIcon />} label="المهام النشطة" value={String(context?.inbox?.active || 0)} note={`${context?.inbox?.pending || 0} معلقة`} />
             </Grid>
             <Grid item xs={12} md={3}>
               <Metric icon={<ToolIcon />} label="الأدوات" value={String(tools.length)} note={`${writeTools.length} كتابة`} />
@@ -462,7 +462,7 @@ export default function AgentManagerPage() {
                               <Chip size="small" label={profile.role} variant="outlined" />
                             </Stack>
                             <Typography variant="caption" color="text.secondary">
-                              {profile.slug} · {profile.allowedTools.length} tools · {profile.allowedSkills.length} skills
+                              {profile.slug} · {(profile.allowedTools || []).length} tools · {(profile.allowedSkills || []).length} skills
                             </Typography>
                           </Box>
                         ))}

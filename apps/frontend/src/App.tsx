@@ -620,6 +620,10 @@ const MaxPMerchantsLanding = React.lazy(
 const MgAgencyLeadLanding = React.lazy(
   () => import("./pages/landing/MgAgencyLeadLanding"),
 );
+
+const MessagingLanding = React.lazy(
+  () => import("./pages/landing/MessagingLanding"),
+);
 const PlatformLandingPreviewPage = React.lazy(
   () => import("./pages/landing/PlatformLandingPreviewPage"),
 );
@@ -1526,6 +1530,7 @@ const AppContent = () => {
             <Route path="/for-merchants" element={<MaxPMerchantsLanding />} />
             <Route path="/lp/mg" element={<MgAgencyLeadLanding />} />
             <Route path="/lp/mg-agency" element={<MgAgencyLeadLanding />} />
+            <Route path="/lp/messaging" element={<MessagingLanding />} />
             <Route
               path="/preview/platform-home/:variantId"
               element={<PlatformLandingPreviewPage />}

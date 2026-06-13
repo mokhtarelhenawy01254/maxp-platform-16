@@ -9,12 +9,106 @@ const verifyToken = require('../utils/verifyToken');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const agentProvisioningService = { listAgents: () => [], spawn: async () => ({}), getAgent: () => ({}), updateAgent: async () => {} };
 const agentManagerService = { getManagerAgent: async () => ({}), ensureFacebookMessengerAgent: async () => {}, archiveAgent: async () => ({}), updateAgentProfile: async () => ({}), runAgentTask: async () => ({}) };
-const agentProfileLoaderService = { loadProfile: () => null, listProfiles: () => [] };
+const agentProfileLoaderService = {
+  loadProfile: (slug) => {
+    if (!slug) return null;
+    try {
+      const db = getSharedPrismaClient();
+      return db.agentDefinition.findUnique({ where: { type: slug } });
+    } catch (_) { return null; }
+  },
+  listProfiles: () => {
+    try {
+      const db = getSharedPrismaClient();
+      return db.agentDefinition.findMany({ where: { isBuiltIn: true } });
+    } catch (_) { return []; }
+  },
+};
 const toolRegistryService = { getTool: () => null, listTools: () => [] };
-const skillRegistryService = { getSkillsForIds: () => [], listSkills: () => [] };
+const skillRegistryService = {
+  listSkills: (companyId) => {
+    try {
+      const db = getSharedPrismaClient();
+      return db.companySkill.findMany({ where: { companyId, enabled: true }, orderBy: { priority: 'asc' } });
+    } catch (_) { return []; }
+  },
+  getSkillsForIds: (companyId, ids = []) => {
+    if (!ids.length) return [];
+    try {
+      const db = getSharedPrismaClient();
+      return db.companySkill.findMany({ where: { companyId, name: { in: ids }, enabled: true } });
+    } catch (_) { return []; }
+  },
+};
 const { getModelCapabilities } = { getModelCapabilities: () => ({}) };
-const naturalLanguageCronService = { getJobs: () => [], scheduleJob: async () => ({}), cancelJob: async () => {} };
-const routineExecutorService = { executeRoutine: async () => ({}) };
+const cronParser = require('node-cron');
+const jobStore = new Map(); // companyId -> job[]
+
+const naturalLanguageCronService = {
+  getJobs: (companyId) => jobStore.get(companyId) || [],
+  scheduleJob: (companyId, body) => {
+    const jobs = jobStore.get(companyId) || [];
+    const id = `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const description = body.description || body.naturalInput || '';
+    const cronExpression = guessCronFromText(description);
+    const job = {
+      id, description, cronExpression, taskType: body.taskType || 'GENERAL',
+      status: 'ACTIVE', lastRun: null, lastStatus: null, nextRun: '—', runCount: 0,
+      payload: body.payload || {}, createdAt: new Date().toISOString(),
+    };
+    jobs.unshift(job);
+    jobStore.set(companyId, jobs);
+    return { success: true, job };
+  },
+  cancelJob: (companyId, jobId) => {
+    const jobs = jobStore.get(companyId);
+    if (!jobs) return false;
+    const idx = jobs.findIndex(j => j.id === jobId);
+    if (idx === -1) return false;
+    jobs.splice(idx, 1);
+    if (jobs.length === 0) jobStore.delete(companyId);
+    else jobStore.set(companyId, jobs);
+    return true;
+  },
+};
+
+const routineExecutorService = {
+  executeRoutine: async (companyId, job, payload) => {
+    try {
+      const result = await aiServiceAdminClient.chatWithAgent({
+        companyId, agentId: '', message: job.description || 'نفذ المهمة المجدولة',
+        threadId: `scheduler_${companyId}_${job.id}`,
+      });
+      const status = result && result.success !== false ? 'SUCCESS' : 'FAILED';
+      // Update job in store
+      const jobs = jobStore.get(companyId);
+      if (jobs) {
+        const j = jobs.find(j => j.id === job.id);
+        if (j) { j.lastRun = new Date().toISOString(); j.lastStatus = status; j.runCount = (j.runCount || 0) + 1; }
+      }
+      return { status, reply: result?.reply || '' };
+    } catch (_) {
+      return { status: 'FAILED', reply: '' };
+    }
+  },
+};
+
+function guessCronFromText(text) {
+  const lower = (text || '').toLowerCase();
+  if (lower.includes('كل') && (lower.includes('ساعة') || lower.includes('ساعه'))) return '0 * * * *';
+  if (lower.includes('كل') && (lower.includes('يوم') || lower.includes('يوماً'))) return '0 0 * * *';
+  if (lower.includes('صباح') || lower.includes('كل يوم')) return '0 8 * * *';
+  if (lower.includes('مساء')) return '0 20 * * *';
+  if (lower.includes('اثنين') || lower.includes('الاثنين')) return '0 9 * * 1';
+  if (lower.includes('ثلاثاء') || lower.includes('الثلاثاء')) return '0 9 * * 2';
+  if (lower.includes('اربعاء') || lower.includes('الأربعاء')) return '0 9 * * 3';
+  if (lower.includes('خميس') || lower.includes('الخميس')) return '0 9 * * 4';
+  if (lower.includes('جمعة') || lower.includes('الجمعة')) return '0 9 * * 5';
+  if (lower.includes('سبت') || lower.includes('السبت')) return '0 9 * * 6';
+  if (lower.includes('شهر') || lower.includes('شهرياً') || lower.includes('شهري')) return '0 0 1 * *';
+  if (cronParser.validate(text.trim())) return text.trim();
+  return '0 8 * * *'; // default: daily 8am
+}
 const agentAuditTrailService = { getDecisionLog: async () => [], getCostSummary: async () => ({}) };
 const aiRuntimeService = { getModelManager: () => ({}) };
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
@@ -42,7 +136,7 @@ const serializeAgent = (agent) => ({
   status: agent.status === 'INACTIVE' ? 'PAUSED' : agent.status,
   avatar: agent.persona?.avatar || 'AI',
   soulInstructions: agent.persona?.soulInstructions || agent.persona?.instructions || '',
-  allowedTools: agent.getTools(),
+  allowedTools: typeof agent.getTools === 'function' ? agent.getTools() : [],
   allowedSkills: agent.getSkills ? agent.getSkills() : [],
   templateSlug: agent.templateSlug || agent.persona?.templateSlug || null,
   version: agent.version || agent.persona?.version || null,
@@ -56,31 +150,36 @@ const serializeAgent = (agent) => ({
 
 const buildAgentFiles = (agent) => {
   let profile = null;
+  let profileSettings = {};
   if (agent.templateSlug) {
     try {
-      profile = agentProfileLoaderService.loadProfile(agent.templateSlug);
+      const p = agentProfileLoaderService.loadProfile(agent.templateSlug);
+      if (p) {
+        profile = p;
+        profileSettings = (() => { try { return JSON.parse(p.settings || '{}'); } catch { return {}; } })();
+      }
     } catch (_) {
       profile = null;
     }
   }
   const persona = agent.persona || {};
   const skillDetails = skillRegistryService.getSkillsForIds(agent.getSkills ? agent.getSkills() : []);
-  const toolDetails = agent.getTools().map(name => toolRegistryService.getTool(name)).filter(Boolean);
+  const toolDetails = (typeof agent.getTools === 'function' ? agent.getTools() : []).map(name => toolRegistryService.getTool(name)).filter(Boolean);
 
   return {
     profile: profile
       ? {
-        slug: profile.slug,
+        slug: profile.type,
         name: profile.name,
-        role: profile.role,
-        version: profile.version,
-        modelPolicy: profile.modelPolicy,
+        role: profileSettings.role || '',
+        version: profileSettings.version || '1.0.0',
+        modelPolicy: profileSettings.modelPolicy || null,
       }
       : null,
     files: {
-      'SOUL.md': persona.soulInstructions || profile?.instructions?.soul || '',
-      'AGENTS.md': persona.agentInstructions || profile?.instructions?.agents || '',
-      'TOOLS.md': persona.toolsInstructions || profile?.instructions?.tools || '',
+      'SOUL.md': persona.soulInstructions || profileSettings?.instructions?.soul || '',
+      'AGENTS.md': persona.agentInstructions || profileSettings?.instructions?.agents || '',
+      'TOOLS.md': persona.toolsInstructions || profileSettings?.instructions?.tools || '',
       'SKILLS.json': JSON.stringify({
         allowedSkills: agent.getSkills ? agent.getSkills() : [],
         skills: skillDetails.map(skill => ({
@@ -222,18 +321,22 @@ router.get('/team-map', async (req, res) => {
   });
 });
 
-router.get('/profiles', (req, res) => {
+router.get('/profiles', async (req, res) => {
   try {
-    const profiles = agentProfileLoaderService.listProfiles().map(profile => ({
-      slug: profile.slug,
-      name: profile.name,
-      role: profile.role,
-      version: profile.version,
-      modelPolicy: profile.modelPolicy,
-      allowedTools: profile.allowedTools,
-      allowedSkills: profile.allowedSkills,
-      instructions: profile.instructions,
-    }));
+    const dbProfiles = await agentProfileLoaderService.listProfiles();
+    const profiles = dbProfiles.map(profile => {
+      const s = (() => { try { return JSON.parse(profile.settings || '{}'); } catch { return {}; } })();
+      return {
+        slug: profile.type,
+        name: profile.name,
+        role: s.role || '',
+        version: s.version || '1.0.0',
+        modelPolicy: s.modelPolicy || null,
+        allowedTools: s.allowedTools || [],
+        allowedSkills: s.allowedSkills || [],
+        instructions: s.instructions || null,
+      };
+    });
     return res.json({ success: true, profiles, count: profiles.length });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
@@ -243,8 +346,8 @@ router.get('/profiles', (req, res) => {
 router.get('/tools', async (req, res) => {
   try {
     const result = await aiServiceAdminClient.listTools();
-    if (result && result.ok) {
-      return res.json(result.data);
+    if (Array.isArray(result)) {
+      return res.json({ success: true, tools: result, count: result.length, catalogSource: 'python_tool_registry' });
     }
   } catch (_) {}
   // Fallback: return tools from the local Node registry
@@ -252,10 +355,12 @@ router.get('/tools', async (req, res) => {
   return res.json({ success: true, tools, count: tools.length, catalogSource: 'node_tool_registry' });
 });
 
-router.get('/skills', (req, res) => {
+router.get('/skills', async (req, res) => {
   try {
-    const skills = skillRegistryService.listSkills();
-    return res.json({ success: true, skills, count: skills.length });
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
+    const skills = await skillRegistryService.listSkills(companyId);
+    return res.json({ success: true, skills: skills || [], count: (skills || []).length });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }
@@ -419,23 +524,30 @@ router.patch('/agents/:id/status', async (req, res) => {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ error: 'companyId is required' });
 
-    const agent = agentProvisioningService.getAgent(companyId, req.params.id);
-    if (!agent) return res.status(404).json({ error: 'AGENT_NOT_FOUND' });
-
     const nextStatus = req.body?.status === 'PAUSED' || req.body?.status === 'INACTIVE'
       ? 'INACTIVE'
       : 'ACTIVE';
-    if (nextStatus === 'INACTIVE') agent.deactivate();
-    else agent.activate();
 
-    await getSharedPrismaClient().companyAgent.updateMany({
-      where: { id: req.params.id, companyId },
-      data: { status: nextStatus },
+    // Delegate to Python ai-service (single source of truth)
+    const pyResult = await aiServiceAdminClient.updateAgentStatus(req.params.id, nextStatus);
+    if (!pyResult) {
+      return res.status(502).json({ success: false, error: 'AI service unreachable' });
+    }
+
+    return res.json({
+      success: true,
+      agent: {
+        id: pyResult.id,
+        name: pyResult.name,
+        role: pyResult.role,
+        status: pyResult.status === 'INACTIVE' ? 'PAUSED' : pyResult.status,
+        model: pyResult.model,
+        templateSlug: pyResult.template_slug,
+        persona: pyResult.persona || {},
+      },
     });
-
-    return res.json({ success: true, agent: serializeAgent(agent) });
   } catch (error) {
-    return res.status(400).json({ success: false, error: error.message });
+    return res.status(502).json({ success: false, error: 'AI service unreachable: ' + (error.message || 'connection failed') });
   }
 });
 

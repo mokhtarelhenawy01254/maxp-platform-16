@@ -134,6 +134,10 @@ async function getAgent(companyId, agentId) {
   return request('GET', `/admin/agents/${encodeURIComponent(agentId)}${qs}`);
 }
 
+async function updateAgentStatus(agentId, status) {
+  return request('PATCH', `/admin/agents/${encodeURIComponent(agentId)}/status`, { status });
+}
+
 async function testProviderKey({ provider, apiKey, model, messages, prompt, timeoutMs }) {
   const body = { provider, api_key: apiKey };
   if (model) body.model = model;
@@ -156,4 +160,5 @@ module.exports = {
   testProviderKey,
   spawnAgent,
   getAgent,
+  updateAgentStatus,
 };

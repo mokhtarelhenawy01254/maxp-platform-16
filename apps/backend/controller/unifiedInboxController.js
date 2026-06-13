@@ -1,7 +1,7 @@
 /**
  * unifiedInboxController.js
  * وحدة التحكم الموحدة لصندوق الوارد - تجمع المحادثات من جميع المنصات
- * (Facebook, WhatsApp, Telegram) في واجهة واحدة
+ * (Facebook, Instagram, WhatsApp, Telegram) في واجهة واحدة
  */
 
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
@@ -24,7 +24,7 @@ const getUnifiedConversations = async (req, res) => {
         const {
             page = 1,
             limit = 30,
-            platform,      // 'all' | 'facebook' | 'whatsapp' | 'telegram'
+            platform,      // 'all' | 'facebook' | 'instagram' | 'whatsapp' | 'telegram'
             search,
             status,        // 'active' | 'pending' | 'resolved' | 'closed'
             unreadOnly,
@@ -46,7 +46,7 @@ const getUnifiedConversations = async (req, res) => {
         }
         // If no platform specified, include all channels except TEST
         if (!platform || platform === 'all') {
-            fbWhere.channel = { in: ['FACEBOOK', 'WHATSAPP', 'TELEGRAM'] };
+            fbWhere.channel = { in: ['FACEBOOK', 'INSTAGRAM', 'WHATSAPP', 'TELEGRAM'] };
         }
 
         if (status) {
@@ -280,14 +280,15 @@ const getUnifiedConversations = async (req, res) => {
         // ──────────────────────────────────────────────────────────
         // 4. Get platform counts
         // ──────────────────────────────────────────────────────────
-        const [fbCount, waCount, tgCount, unrepliedCount] = await Promise.all([
+        const [fbCount, igCount, waCount, tgCount, unrepliedCount] = await Promise.all([
             prisma.conversation.count({ where: { companyId, channel: 'FACEBOOK', status: { in: ['ACTIVE', 'PENDING'] } } }),
+            prisma.conversation.count({ where: { companyId, channel: 'INSTAGRAM', status: { in: ['ACTIVE', 'PENDING'] } } }),
             prisma.conversation.count({ where: { companyId, channel: 'WHATSAPP', status: { in: ['ACTIVE', 'PENDING'] } } }),
             prisma.conversation.count({ where: { companyId, channel: 'TELEGRAM', status: { in: ['ACTIVE', 'PENDING'] } } }),
             prisma.conversation.count({
                 where: {
                     companyId,
-                    channel: { in: ['FACEBOOK', 'WHATSAPP', 'TELEGRAM'] },
+                    channel: { in: ['FACEBOOK', 'INSTAGRAM', 'WHATSAPP', 'TELEGRAM'] },
                     status: { in: ['ACTIVE', 'PENDING'] },
                     lastMessageIsFromCustomer: true
                 }
@@ -304,8 +305,9 @@ const getUnifiedConversations = async (req, res) => {
                 totalPages: Math.ceil((totalCount + whatsappContacts.length) / parseInt(limit))
             },
             counts: {
-                all: fbCount + waCount + tgCount,
+                all: fbCount + igCount + waCount + tgCount,
                 facebook: fbCount,
+                instagram: igCount,
                 whatsapp: waCount,
                 telegram: tgCount,
                 unreplied: unrepliedCount
@@ -560,7 +562,7 @@ const sendUnifiedMessage = async (req, res) => {
             });
         }
 
-        // Facebook/Telegram - send via Conversation model
+        // Facebook/Telegram/Instagram - send via Conversation model
         const conversation = await prisma.conversation.findFirst({
             where: { id, companyId },
             include: { customer: true }
@@ -621,6 +623,26 @@ const sendUnifiedMessage = async (req, res) => {
             } catch (tgErr) {
                 console.error('⚠️ [UNIFIED] Telegram send error:', tgErr.message);
             }
+        } else if (conversation.channel === 'INSTAGRAM') {
+            try {
+                let metadata = {};
+                try { metadata = conversation.metadata ? JSON.parse(conversation.metadata) : {}; } catch (e) { }
+                const igPage = await prisma.facebookPage.findFirst({
+                    where: { companyId, instagramAccountId: { not: null } },
+                    select: { pageAccessToken: true, instagramAccountId: true }
+                });
+                if (igPage?.pageAccessToken && igPage?.instagramAccountId && conversation.customer?.instagramId) {
+                    const axios = require('axios');
+                    const IG_GRAPH_API = `https://graph.facebook.com/v22.0/${igPage.instagramAccountId}/messages`;
+                    await axios.post(IG_GRAPH_API, {
+                        recipient: { id: conversation.customer.instagramId },
+                        message: { text: content },
+                        access_token: igPage.pageAccessToken
+                    }, { timeout: 15000 });
+                }
+            } catch (igErr) {
+                console.error('⚠️ [UNIFIED] Instagram send error:', igErr.message);
+            }
         }
 
         res.json({
@@ -663,18 +685,22 @@ const getUnifiedStats = async (req, res) => {
             totalActive,
             totalUnreplied,
             fbActive,
+            igActive,
             waActive,
             tgActive,
             totalResolved
         ] = await Promise.all([
             prisma.conversation.count({
-                where: { companyId, channel: { in: ['FACEBOOK', 'WHATSAPP', 'TELEGRAM'] }, status: { in: ['ACTIVE', 'PENDING'] } }
+                where: { companyId, channel: { in: ['FACEBOOK', 'INSTAGRAM', 'WHATSAPP', 'TELEGRAM'] }, status: { in: ['ACTIVE', 'PENDING'] } }
             }),
             prisma.conversation.count({
-                where: { companyId, channel: { in: ['FACEBOOK', 'WHATSAPP', 'TELEGRAM'] }, status: { in: ['ACTIVE', 'PENDING'] }, lastMessageIsFromCustomer: true }
+                where: { companyId, channel: { in: ['FACEBOOK', 'INSTAGRAM', 'WHATSAPP', 'TELEGRAM'] }, status: { in: ['ACTIVE', 'PENDING'] }, lastMessageIsFromCustomer: true }
             }),
             prisma.conversation.count({
                 where: { companyId, channel: 'FACEBOOK', status: { in: ['ACTIVE', 'PENDING'] } }
+            }),
+            prisma.conversation.count({
+                where: { companyId, channel: 'INSTAGRAM', status: { in: ['ACTIVE', 'PENDING'] } }
             }),
             prisma.conversation.count({
                 where: { companyId, channel: 'WHATSAPP', status: { in: ['ACTIVE', 'PENDING'] } }
@@ -683,7 +709,7 @@ const getUnifiedStats = async (req, res) => {
                 where: { companyId, channel: 'TELEGRAM', status: { in: ['ACTIVE', 'PENDING'] } }
             }),
             prisma.conversation.count({
-                where: { companyId, channel: { in: ['FACEBOOK', 'WHATSAPP', 'TELEGRAM'] }, status: { in: ['RESOLVED', 'CLOSED'] } }
+                where: { companyId, channel: { in: ['FACEBOOK', 'INSTAGRAM', 'WHATSAPP', 'TELEGRAM'] }, status: { in: ['RESOLVED', 'CLOSED'] } }
             })
         ]);
 
@@ -714,6 +740,7 @@ const getUnifiedStats = async (req, res) => {
                 totalResolved,
                 platforms: {
                     facebook: { active: fbActive, icon: '💬' },
+                    instagram: { active: igActive, icon: '📷' },
                     whatsapp: { active: waActive, unread: waUnread, icon: '📱' },
                     telegram: { active: tgActive, icon: '✈️' }
                 }
@@ -858,7 +885,7 @@ const getQuickReplies = async (req, res) => {
             shortcut: r.shortcut,
             content: r.content,
             category: r.category,
-            platforms: ['whatsapp', 'facebook', 'telegram'],
+            platforms: ['whatsapp', 'facebook', 'instagram', 'telegram'],
             mediaUrl: r.mediaUrl,
             mediaType: r.mediaType
         }));
@@ -892,7 +919,7 @@ const getSettings = async (req, res) => {
         const prisma = getSharedPrismaClient();
 
         // Check connected platforms
-        const [fbPages, waSessions, tgConfigs] = await Promise.all([
+        const [fbPages, waSessions, tgConfigs, igPages] = await Promise.all([
             prisma.conversation.groupBy({
                 by: ['channel'],
                 where: { companyId, channel: 'FACEBOOK' },
@@ -905,6 +932,10 @@ const getSettings = async (req, res) => {
             prisma.telegramConfig.findMany({
                 where: { companyId },
                 select: { id: true, botName: true, botUsername: true, isActive: true, type: true }
+            }),
+            prisma.facebookPage.findMany({
+                where: { companyId, instagramAccountId: { not: null } },
+                select: { id: true, name: true, instagramAccountId: true, instagramAccountName: true }
             })
         ]);
 
@@ -915,6 +946,10 @@ const getSettings = async (req, res) => {
                     facebook: {
                         connected: fbPages.length > 0,
                         count: fbPages[0]?._count?.id || 0
+                    },
+                    instagram: {
+                        connected: igPages.length > 0,
+                        pages: igPages
                     },
                     whatsapp: {
                         connected: waSessions.length > 0,
@@ -942,6 +977,7 @@ function getPlatformIcon(channel) {
     switch (channel?.toUpperCase()) {
         case 'FACEBOOK': return '💬';
         case 'WHATSAPP': return '📱';
+        case 'INSTAGRAM': return '📷';
         case 'TELEGRAM': return '✈️';
         default: return '💬';
     }

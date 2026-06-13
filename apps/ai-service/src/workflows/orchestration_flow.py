@@ -6,6 +6,8 @@ from typing import Any
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from agent_framework.a2a import A2AAgent
+
 from src.agents.ceo import create_ceo_agent
 from src.config import get_settings
 from src.observability.llm_fallback import LLMFallbackProvider
@@ -20,6 +22,7 @@ from src.pipeline.stages.route_to_tools import route_to_tools
 from src.pipeline.stages.validate_reply import validate_reply
 from src.services.agent_manager_service import get_agent_manager_service
 from src.services.agent_registry import get_agent_registry
+from src.services.a2a_bridge import AGENT_CARD_META
 from src.services.run_state_manager import RunStateManager
 from src.tools.registry import get_tool_names_for_role
 from src.workflows.magentic_orchestration import MagenticOrchestrator
@@ -87,16 +90,34 @@ async def run_orchestration(
     sub_agent_tools = []
     for _agent_id, agent, tool_names in registry.list_agents(company_id):
         role = getattr(agent, "role", "UNKNOWN").lower()
+        meta = AGENT_CARD_META.get(agent.role.upper(), {})
         tool_name = f"{role}_specialist"
         tool_description = (
-            f"Specialist agent for {role} tasks. "
+            meta.get("description")
+            or f"Specialist agent for {role} tasks. "
             f"Tools: {', '.join(tool_names)}. "
             f"Send the customer message to this agent to handle {role}-related requests."
         )
         try:
-            sub_agent_tools.append(agent.as_tool(name=tool_name, description=tool_description))
+            a2a_agent = A2AAgent(
+                name=meta.get("name", agent.name or role),
+                description=tool_description,
+                url=f"http://localhost:8000/a2a/agents/{_agent_id}",
+            )
+            a2a_tool = a2a_agent.as_tool(
+                name=tool_name,
+                description=tool_description,
+                arg_name="task",
+                arg_description=tool_description,
+            )
+            sub_agent_tools.append(a2a_tool)
         except Exception as exc:
-            logger.warning("could not convert agent to tool", role=role, error=str(exc))
+            logger.warning("could not create A2A agent tool", role=role, error=str(exc))
+            # Fallback: use in-process agent tool
+            try:
+                sub_agent_tools.append(agent.as_tool(name=tool_name, description=tool_description))
+            except Exception as exc2:
+                logger.warning("could not convert agent to tool", role=role, error=str(exc2))
 
     ceo_agent = create_ceo_agent(
         specialized_agents_tools=sub_agent_tools,

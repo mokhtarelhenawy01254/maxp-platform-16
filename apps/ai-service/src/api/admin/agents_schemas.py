@@ -71,6 +71,10 @@ class AgentUpdate(BaseModel):
     config: dict[str, Any] | None = None
 
 
+class AgentStatusUpdate(BaseModel):
+    status: Literal["ACTIVE", "INACTIVE"]
+
+
 class AgentRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

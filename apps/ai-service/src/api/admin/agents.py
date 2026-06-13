@@ -20,6 +20,7 @@ from src.api.admin.agents_schemas import (
     AgentChatResponse,
     AgentCreate,
     AgentRead,
+    AgentStatusUpdate,
     AgentTemplateList,
     AgentTemplateRead,
     AgentUpdate,
@@ -27,7 +28,7 @@ from src.api.admin.agents_schemas import (
     SandboxEvaluateResponse,
 )
 from src.db.models.agent import Agent as AgentModel
-from src.db.models.agent import AgentTemplate
+from src.db.models.agent import AgentTemplate, CompanyAgent
 from src.db.models.thread import Thread
 from src.db.session import get_session
 from src.llm.agent_client_factory import build_provider_client_async
@@ -115,16 +116,16 @@ def _agent_to_read(agent: AgentModel) -> AgentRead:
         template_slug=agent.template_slug,
         status=agent.status,
         model=agent.model,
-        persona=agent.persona,
-        allowed_tools=agent.allowed_tools,
-        allowed_skills=agent.allowed_skills,
-        guardrails=agent.guardrails,
-        budget=agent.budget,
+        persona=getattr(agent, 'persona', None) or {},
+        allowed_tools=getattr(agent, 'allowed_tools', None) or [],
+        allowed_skills=getattr(agent, 'allowed_skills', None) or [],
+        guardrails=getattr(agent, 'guardrails', None) or {},
+        budget=getattr(agent, 'budget', None) or {},
         parent_id=agent.parent_id,
-        version=agent.version,
-        config=agent.config,
+        version=getattr(agent, 'version', None) or '1.0.0',
+        config=getattr(agent, 'config', None) or {},
         created_at=agent.created_at or datetime.now(UTC),
-        updated_at=agent.updated_at or datetime.now(UTC),
+        updated_at=getattr(agent, 'updated_at', agent.created_at) or datetime.now(UTC),
     )
 
 
@@ -431,7 +432,7 @@ async def list_agents(
     role: str | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=500),
 ) -> list[AgentRead]:
-    """List agents, optionally filtered by company_id, status, or role."""
+    """List agents from Agent table."""
     stmt = select(AgentModel).order_by(AgentModel.created_at.desc())
     if company_id:
         stmt = stmt.where(AgentModel.company_id == company_id)
@@ -765,6 +766,25 @@ async def update_agent(
     await session.commit()
     await session.refresh(agent)
     logger.info("Agent updated", agent_id=agent_id)
+    return _agent_to_read(agent)
+
+
+@router.patch("/agents/{agent_id}/status", response_model=AgentRead)
+async def patch_agent_status(
+    agent_id: str, body: AgentStatusUpdate, session: SessionDep
+) -> AgentRead:
+    """Update an agent's active status (ACTIVE / INACTIVE)."""
+    if body.status not in ("ACTIVE", "INACTIVE"):
+        raise HTTPException(status_code=422, detail="Status must be ACTIVE or INACTIVE")
+    agent = await _ensure_agent_in_db(agent_id, session)
+    if not agent:
+        raise HTTPException(status_code=404, detail=f"Agent not found: {agent_id}")
+    if agent.role == "CEO" and body.status == "INACTIVE":
+        raise HTTPException(status_code=400, detail="Cannot deactivate the CEO agent")
+    agent.status = body.status
+    await session.commit()
+    await session.refresh(agent)
+    logger.info("Agent status updated", agent_id=agent_id, status=body.status)
     return _agent_to_read(agent)
 
 

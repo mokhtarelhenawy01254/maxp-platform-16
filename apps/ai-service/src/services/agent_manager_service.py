@@ -164,12 +164,19 @@ class AgentManagerService:
             msg = f"Agent not found: id={agent_id}, role={role}"
             return {"success": False, "error": msg}
 
-        agent_session = agent.create_session(session_id=thread_id or f"task_{agent_id}")
         try:
-            response = await agent.run(message, session=agent_session)
+            await agent.ensure_client()
+            task = {
+                "current_message": message,
+                "description": message,
+                "session_id": thread_id or f"task_{agent_id}",
+                "user_id": "",
+                "channel": "a2a",
+            }
+            response = await agent.process_task(task)
             return {
                 "success": True,
-                "reply": str(response),
+                "reply": response.get("result", {}).get("reply", ""),
                 "agent_id": agent_id or "",
                 "agent_name": agent.name,
             }

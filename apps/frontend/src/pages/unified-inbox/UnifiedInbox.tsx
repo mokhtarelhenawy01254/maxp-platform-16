@@ -25,7 +25,7 @@ import { useTranslation } from "react-i18next";
 
 interface UnifiedConversation {
   id: string;
-  platform: "facebook" | "whatsapp" | "telegram";
+  platform: "facebook" | "instagram" | "whatsapp" | "telegram";
   platformIcon: string;
   contactName: string;
   contactAvatar: string | null;
@@ -84,6 +84,7 @@ interface CustomerProfile {
 interface PlatformCounts {
   all: number;
   facebook: number;
+  instagram: number;
   whatsapp: number;
   telegram: number;
   unreplied: number;
@@ -95,6 +96,7 @@ interface PlatformCounts {
 
 const platformStyles: Record<string, { label: string; icon: string }> = {
   facebook: { label: "Messenger", icon: "💬" },
+  instagram: { label: "Instagram", icon: "📷" },
   whatsapp: { label: "WhatsApp", icon: "📱" },
   telegram: { label: "Telegram", icon: "✈️" },
 };
@@ -117,6 +119,7 @@ const UnifiedInbox: React.FC = () => {
   const [counts, setCounts] = useState<PlatformCounts>({
     all: 0,
     facebook: 0,
+    instagram: 0,
     whatsapp: 0,
     telegram: 0,
     unreplied: 0,
@@ -435,6 +438,7 @@ const UnifiedInbox: React.FC = () => {
                   count: counts.all,
                 },
                 { key: "facebook", label: "💬", count: counts.facebook },
+                { key: "instagram", label: "📷", count: counts.instagram },
                 { key: "whatsapp", label: "📱", count: counts.whatsapp },
                 { key: "telegram", label: "✈️", count: counts.telegram },
               ].map((tab) => (
@@ -953,6 +957,10 @@ const UnifiedInbox: React.FC = () => {
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-2xl">💬</span>
                     <span className="text-xs">Messenger</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-2xl">📷</span>
+                    <span className="text-xs">Instagram</span>
                   </div>
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-2xl">📱</span>

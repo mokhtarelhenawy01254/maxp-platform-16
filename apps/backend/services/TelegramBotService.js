@@ -2,6 +2,7 @@ const { Telegraf } = require('telegraf');
 const crypto = require('crypto');
 const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
 const socketService = require('./socketService');
+const aiSdkClient = require('./aiSdkClient');
 
 function buildWebhookSecret(configId, token) {
     return crypto
@@ -397,6 +398,53 @@ class TelegramBotService {
                 channel: 'TELEGRAM',
                 companyId: companyId
             });
+
+            // ── AI auto-reply (fire-and-forget, never blocks the webhook) ──────────────
+            if (content && type === 'TEXT') {
+                const configId = metadata.telegramConfigId;
+                setImmediate(async () => {
+                    try {
+                        const aiSetting = await prisma.aiSetting.findUnique({ where: { companyId } });
+                        if (!aiSetting?.autoReplyEnabled) { console.log('🤖 [TG-AI-AUTOREPLY] AI auto-reply disabled for company'); return; }
+                        if (aiSetting.workingHoursEnabled && aiSetting.workingHours) {
+                            try {
+                                const hours = JSON.parse(typeof aiSetting.workingHours === 'string' ? aiSetting.workingHours : '{}');
+                                const now = new Date();
+                                const dayName = now.toLocaleString('en', { weekday: 'long', timeZone: 'Africa/Cairo' }).toLowerCase();
+                                const today = hours[dayName];
+                                if (today && !today.enabled) { console.log('🤖 [TG-AI-AUTOREPLY] Outside working hours (day disabled)'); return; }
+                                if (today && today.start && today.end) {
+                                    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                                    const [startH, startM] = today.start.split(':').map(Number);
+                                    const [endH, endM] = today.end.split(':').map(Number);
+                                    const startMin = startH * 60 + startM;
+                                    const endMin = endH * 60 + endM;
+                                    if (currentMinutes < startMin || currentMinutes > endMin) { console.log('🤖 [TG-AI-AUTOREPLY] Outside working hours (time)'); return; }
+                                }
+                            } catch(e) { /* continue if parsing fails */ }
+                        }
+
+                        const result = await aiSdkClient.sendChatMessage({
+                            companyId,
+                            customerId: customer.id,
+                            message: content,
+                            threadId: conversation.id,
+                            channel: 'TELEGRAM',
+                        });
+
+                        const replyText = result.reply;
+                        if (replyText && configId && telegramId) {
+                            const bot = this.bots.get(configId);
+                            if (bot) {
+                                await bot.telegram.sendMessage(telegramId, replyText);
+                                console.log(`✅ [TG-AI-AUTOREPLY] AI reply sent to Telegram user ${telegramId}`);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('❌ [TG-AI-AUTOREPLY] Error generating or sending AI reply:', e.message);
+                    }
+                });
+            }
         });
     }
 

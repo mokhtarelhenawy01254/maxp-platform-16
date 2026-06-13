@@ -20,10 +20,11 @@ router.get('/agents', async (req, res) => {
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
 
     const result = await aiServiceAdminClient.listAgents(companyId);
-    if (!result) {
+    if (result === null || result === undefined) {
       return res.status(502).json({ success: false, error: 'ai-service unreachable' });
     }
-    return res.json(result.data);
+    // Python /admin/agents returns an array directly, not {success, agents}
+    return res.json(Array.isArray(result) ? { success: true, agents: result } : result);
   } catch (error) {
     console.error('[ai-proxy] list agents failed:', error.message);
     return res.status(502).json({ success: false, error: error.message });

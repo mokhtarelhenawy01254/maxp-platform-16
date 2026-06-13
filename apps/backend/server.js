@@ -4,13 +4,7 @@ process.env.TZ = "Africa/Cairo";
 // Global error handlers — log but do NOT crash on transient rejections
 process.on('uncaughtException', (err) => {
   console.error('💥 UNCAUGHT EXCEPTION:', err.message, err.stack);
-  // Graceful shutdown: allow open connections to drain
   setTimeout(() => process.exit(1), 3000);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  // Log only — transient Redis/DB rejections must NOT crash the server
-  console.error('⚠️ UNHANDLED REJECTION (non-fatal):', reason);
 });
 
 // Load environment variables
@@ -130,13 +124,11 @@ process.on("unhandledRejection", async (reason, promise) => {
     return;
   }
 
-  console.error("🔥 FATAL UNHANDLED REJECTION:", reason);
+  console.error("🔥 UNHANDLED REJECTION (non-fatal):", reason);
   try {
     const stack = reason && reason.stack ? reason.stack : "";
     await telegramAlertService.sendFatalError("unhandledRejection", msg, stack);
   } catch (e) {}
-  // PM2 will restart the process
-  process.exit(1);
 });
 // ---------------------------------------------------------
 

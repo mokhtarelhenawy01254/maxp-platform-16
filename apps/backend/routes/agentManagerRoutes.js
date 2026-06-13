@@ -5,10 +5,209 @@
 
 const express = require('express');
 const verifyToken = require('../utils/verifyToken');
-const agentManagerService = { getManagerContext: async () => ({}), chat: async () => ({}), hireAgent: async () => ({}), delegateGoal: async () => ({}), archiveAgent: async () => ({}), listAgentDepartments: async () => [] };
-const agentInboxService = { listTasks: async () => [], checkoutTask: async () => ({}), completeTask: async () => ({}), failTask: async () => ({}) };
-const toolOrchestratorService = { execute: async () => ({}) };
+const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+
+const EMPTY_CONTEXT = () => ({ manager: null, agents: [], profiles: [], tools: [], skills: [], inbox: { active: 0, pending: 0 } });
+
+const prisma = () => getSharedPrismaClient();
+
+const agentManagerService = {
+  getManagerContext: async (companyId) => {
+    try {
+      const [agentsRes, toolsRes] = await Promise.allSettled([
+        aiServiceAdminClient.listAgents(companyId),
+        aiServiceAdminClient.listTools(),
+      ]);
+      const agents = agentsRes.status === 'fulfilled' && Array.isArray(agentsRes.value) ? agentsRes.value : [];
+      const tools = toolsRes.status === 'fulfilled' && Array.isArray(toolsRes.value) ? toolsRes.value : [];
+
+      let profiles = [];
+      let skills = [];
+      let manager = null;
+      try {
+        const db = prisma();
+        const dbProfiles = await db.agentDefinition.findMany({ where: { isBuiltIn: true } });
+        profiles = dbProfiles.map(p => {
+          const settings = (() => { try { return JSON.parse(p.settings || '{}'); } catch { return {}; } })();
+          return {
+            slug: p.type,
+            name: p.name,
+            role: settings.role || '',
+            allowedTools: settings.allowedTools || [],
+            allowedSkills: settings.allowedSkills || [],
+          };
+        });
+        const ceo = agents.find(a => a.role === 'CEO' || a.managerType === 'CEO');
+        if (ceo) manager = { id: ceo.id, name: ceo.name, status: ceo.status || 'ACTIVE', templateSlug: ceo.templateSlug || null };
+        if (!manager) {
+          try {
+            const dbCeo = await db.companyAgent.findFirst({ where: { companyId, role: 'CEO', status: { not: 'ARCHIVED' } } });
+            if (dbCeo) manager = { id: dbCeo.id, name: dbCeo.name, status: dbCeo.status, templateSlug: dbCeo.templateSlug || null };
+          } catch (_) {}
+        }
+        skills = profiles.length > 0 ? profiles.flatMap(p => p.allowedSkills).filter(Boolean) : [];
+        const uniqueSkills = [...new Set(skills)];
+        skills = uniqueSkills.map(s => ({ id: s, displayName: s }));
+      } catch (_) {}
+
+      const taskCounts = await countAgentTasks(companyId);
+      return { manager, agents, profiles, tools, skills, inbox: taskCounts };
+    } catch (_) {
+      return EMPTY_CONTEXT();
+    }
+  },
+  chat: async (companyId, { message, userId }) => {
+    try {
+      const result = await aiServiceAdminClient.chatWithAgent({
+        companyId, agentId: '', message, threadId: `manager_${companyId}`,
+      });
+      return result || { success: false, reply: '', context: null };
+    } catch (_) {
+      return { success: false, reply: '', error: 'فشل الاتصال بخدمة الذكاء الاصطناعي' };
+    }
+  },
+  hireAgent: async (companyId, body) => {
+    const result = await aiServiceAdminClient.spawnAgent({ companyId, ...body });
+    return result || { success: false, error: 'فشل تعيين الوكيل' };
+  },
+  delegateGoal: async (companyId, body) => {
+    try {
+      const db = prisma();
+      const task = await db.aiAgentTask.create({
+        data: {
+          companyId,
+          agentId: body.agentId || (await resolveCeoAgentId(companyId)),
+          title: body.title || body.goal || 'مهمة جديدة',
+          description: body.description || body.goal || '',
+          status: 'PENDING',
+          priority: body.priority || 'medium',
+          createdBy: body.requestedBy || null,
+          metadata: body.metadata || {},
+        },
+      });
+      return { success: true, task: { id: task.id, title: task.title, status: task.status, createdAt: task.createdAt } };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+  archiveAgent: async (companyId, agentId) => {
+    try {
+      const db = prisma();
+      await db.companyAgent.updateMany({
+        where: { id: agentId, companyId, status: { not: 'ARCHIVED' } },
+        data: { status: 'ARCHIVED' },
+      });
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+  listAgentDepartments: async (companyId) => {
+    try {
+      const db = prisma();
+      return await db.agentDepartment.findMany({ where: { companyId }, orderBy: { sortOrder: 'asc' } });
+    } catch (_) {
+      return [];
+    }
+  },
+};
+
+async function countAgentTasks(companyId) {
+  try {
+    const db = prisma();
+    const [active, pending] = await Promise.all([
+      db.aiAgentTask.count({ where: { companyId, status: { in: ['PENDING', 'CHECKED_OUT', 'IN_PROGRESS'] } } }),
+      db.aiAgentTask.count({ where: { companyId, status: 'PENDING' } }),
+    ]);
+    return { active, pending };
+  } catch (_) {
+    return { active: 0, pending: 0 };
+  }
+}
+
+async function resolveCeoAgentId(companyId) {
+  try {
+    const db = prisma();
+    const ceo = await db.companyAgent.findFirst({ where: { companyId, role: 'CEO', status: { not: 'ARCHIVED' } } });
+    return ceo?.id || '';
+  } catch (_) {
+    return '';
+  }
+}
+
+const agentInboxService = {
+  listTasks: async (companyId, filters = {}) => {
+    try {
+      const db = prisma();
+      const where = { companyId };
+      if (filters.status) where.status = filters.status;
+      if (filters.agentId) where.agentId = filters.agentId;
+      if (filters.assignTo) where.checkedOutBy = filters.assignTo;
+      if (filters.activeOnly) where.status = { in: ['PENDING', 'CHECKED_OUT', 'IN_PROGRESS'] };
+      return await db.aiAgentTask.findMany({ where, orderBy: { createdAt: 'desc' }, take: 100 });
+    } catch (_) {
+      return [];
+    }
+  },
+  checkoutTask: async (companyId, taskId, agentId) => {
+    try {
+      const db = prisma();
+      const task = await db.aiAgentTask.findFirst({ where: { id: taskId, companyId } });
+      if (!task) return { success: false, error: 'المهمة غير موجودة' };
+      if (task.status !== 'PENDING') return { success: false, error: 'المهمة ليست في حالة انتظار' };
+      await db.aiAgentTask.update({
+        where: { id: taskId },
+        data: { status: 'CHECKED_OUT', checkedOutBy: agentId || null, checkedOutAt: new Date() },
+      });
+      return { success: true, task: { ...task, status: 'CHECKED_OUT' } };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+  completeTask: async (companyId, taskId, agentId, result) => {
+    try {
+      const db = prisma();
+      const task = await db.aiAgentTask.findFirst({ where: { id: taskId, companyId } });
+      if (!task) return { success: false, error: 'المهمة غير موجودة' };
+      await db.aiAgentTask.update({
+        where: { id: taskId },
+        data: { status: 'COMPLETED', completedAt: new Date(), metadata: result || {} },
+      });
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+  failTask: async (companyId, taskId, agentId, error) => {
+    try {
+      const db = prisma();
+      const task = await db.aiAgentTask.findFirst({ where: { id: taskId, companyId } });
+      if (!task) return { success: false, error: 'المهمة غير موجودة' };
+      await db.aiAgentTask.update({
+        where: { id: taskId },
+        data: { status: 'FAILED', metadata: { error: error || 'فشل غير معروف' } },
+      });
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+};
+
+const toolOrchestratorService = {
+  execute: async (companyId, body) => {
+    try {
+      const result = await aiServiceAdminClient.chatWithAgent({
+        companyId, agentId: body.agentId || '', message: body.input || '',
+        threadId: `tool_${companyId}_${Date.now()}`,
+      });
+      return result || { success: false, error: 'فشل تنفيذ الأداة' };
+    } catch (_) {
+      return { success: false, error: 'فشل الاتصال بخدمة الذكاء الاصطناعي' };
+    }
+  },
+};
 
 const router = express.Router();
 
