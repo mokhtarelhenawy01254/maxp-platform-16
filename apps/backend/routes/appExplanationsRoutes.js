@@ -1,6 +1,6 @@
 const express = require("express");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
-const { requireSuperAdmin } = require("../middleware/superAdminMiddleware");
+const { requireSuperAdmin, authenticateToken } = require("../middleware/superAdminMiddleware");
 
 const router = express.Router();
 const prisma = getSharedPrismaClient();
@@ -58,7 +58,7 @@ router.get("/by-route", async (req, res) => {
 });
 
 // Admin: get all explanations
-router.get("/admin", requireSuperAdmin, async (req, res) => {
+router.get("/admin", authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
     const explanations = await prisma.appExplanation.findMany({
       orderBy: {
@@ -91,8 +91,8 @@ router.get("/public/:slug", async (req, res) => {
   }
 });
 
-// Create new explanation
-router.post("/admin", requireSuperAdmin, async (req, res) => {
+// Admin: create explanation
+router.post("/admin", authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
     const { title, content, slug, targetRoute, videoUrl, isActive, order } = req.body;
     
@@ -118,8 +118,8 @@ router.post("/admin", requireSuperAdmin, async (req, res) => {
   }
 });
 
-// Update explanation
-router.put("/admin/:id", requireSuperAdmin, async (req, res) => {
+// Admin: update explanation
+router.put("/admin/:id", authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, content, slug, targetRoute, videoUrl, isActive, order } = req.body;
@@ -147,8 +147,8 @@ router.put("/admin/:id", requireSuperAdmin, async (req, res) => {
   }
 });
 
-// Delete explanation
-router.delete("/admin/:id", requireSuperAdmin, async (req, res) => {
+// Admin: delete explanation
+router.delete("/admin/:id", authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     
