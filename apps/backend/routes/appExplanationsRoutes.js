@@ -1,9 +1,9 @@
 const express = require("express");
-const { PrismaClient } = require("@prisma/client");
+const { getSharedPrismaClient } = require("../services/sharedDatabase");
 const { requireSuperAdmin } = require("../middleware/superAdminMiddleware");
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = getSharedPrismaClient();
 
 // Get all active explanations (public)
 router.get("/public", async (req, res) => {
