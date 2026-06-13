@@ -77,8 +77,18 @@ export const SidebarSettingsProvider: React.FC<{ children: React.ReactNode }> = 
         setSettings(res.data.data.settings as unknown as SidebarManagementData);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "فشل تحميل إعدادات القائمة الجانبية";
-      setError(msg);
+      // 403 is expected for SUPER_ADMIN users who have no company context
+      const status =
+        typeof err === "object" &&
+        err !== null &&
+        "response" in err &&
+        typeof (err as { response?: { status?: number } }).response === "object"
+          ? (err as { response?: { status?: number } }).response?.status
+          : undefined;
+      if (status !== 403) {
+        const msg = err instanceof Error ? err.message : "فشل تحميل إعدادات القائمة الجانبية"; // no-arabic-check
+        setError(msg);
+      }
     } finally {
       setIsLoading(false);
     }

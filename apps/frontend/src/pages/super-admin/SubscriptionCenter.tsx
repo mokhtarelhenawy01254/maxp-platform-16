@@ -48,7 +48,6 @@ import {
   CorporateFare as EnterpriseIcon,
   Add as AddIcon,
   Edit as EditIcon,
-  TrendingUp as TrendingUpIcon,
   Check as CheckIcon,
   Close as CloseIcon,
   Delete as DeleteIcon,
@@ -61,6 +60,10 @@ import {
   Visibility as VisibilityIcon,
   CreditCard as CreditCardIcon,
 } from "@mui/icons-material";
+import {
+  DeferredResponsiveContainer,
+} from "../../components/ui/DeferredResponsiveContainer";
+import { appSchema, pricingRuleSchema, enterprisePlanSchema } from "../../../backend/validators/marketplaceManagementValidator";
 import { buildApiUrl } from "../../utils/urlHelper";
 import axios from "axios";
 import { toast } from "react-hot-toast";
@@ -79,7 +82,6 @@ const getAuthHeaders = (additionalHeaders: Record<string, string> = {}) =>
   tokenManager.createAuthHeaders(additionalHeaders);
 
 type Primitive = string | number | boolean | null;
-type JsonValue = Primitive | JsonValue[] | { [key: string]: JsonValue };
 type CatalogMeta = Record<string, unknown>;
 type BillingCycle = "monthly" | "quarterly" | "yearly" | string;
 type PricingModel = "FREE" | "SUBSCRIPTION" | "PAY_PER_USE" | string;
@@ -242,12 +244,12 @@ const getErrorMessage = (
   if (
     isRecord(error) &&
     "response" in error &&
-    isRecord(error.response) &&
-    "data" in error.response &&
-    isRecord(error.response.data) &&
-    typeof error.response.data.message === "string"
+    isRecord(error["response"]) &&
+    "data" in error["response"] &&
+    isRecord(error["response"]["data"]) &&
+    typeof error["response"]["data"]["message"] === "string"
   ) {
-    return error.response.data.message;
+    return error["response"]["data"]["message"] as string;
   }
 
   if (error instanceof Error && error.message) {
@@ -1332,7 +1334,7 @@ const MarketplaceAppsTab = ({
     value: boolean,
   ) => {
     try {
-      await axios.patch(
+      await axios.put(
         buildApiUrl(`super-admin/marketplace-management/apps/${app.id}`),
         { [field]: value },
         { headers: getAuthHeaders() },

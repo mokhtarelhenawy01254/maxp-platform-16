@@ -25,7 +25,7 @@ const appSchema = z.object({
   unitName: z.string().max(100).optional(),
   features: z.union([z.string(), z.array(z.string())]).optional(),
   requiredApps: z.array(z.string()).optional(),
-}).strict();
+});
 
 const bundleSchema = z.object({
   name: z.string().min(1, 'Bundle name is required').max(200),
@@ -45,7 +45,7 @@ const pricingRuleSchema = z.object({
   unit: z.string().max(100).optional(),
   description: z.string().max(1000).optional(),
   isActive: z.boolean().optional(),
-}).strict();
+});
 
 const enterprisePlanSchema = z.object({
   companyId: z.string().min(1, 'Company ID is required'),
@@ -54,7 +54,7 @@ const enterprisePlanSchema = z.object({
   price: z.number().min(0).optional(),
   isActive: z.boolean().optional(),
   features: z.union([z.string(), z.array(z.string())]).optional(),
-}).strict();
+});
 
 function validate(schema) {
   return (req, res, next) => {
