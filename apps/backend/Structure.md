@@ -1,3 +1,19 @@
+## [2026-06-13] AI Service — Skills as Single Source of Truth for Agent Tools + Intent Classifier Hardening
+- **Details**: Enriched all 15 SKILL.md files with structured per-tool guidance (when/how/forbidden). Made `get_tools()` and `_resolve_tools()` in `base.py` derive tool lists from `skill.json` when the agent has no explicit `allowedTools`. Fixed the intent classifier fallback chain and added image-aware routing in the planner.
+- **Architecture**:
+  - **Skills as Tool Authority**: Each skill directory now contains a `skill.json` with an `allowedTools` list (canonical tool names) and a `SKILL.md` with Arabic-language guidance covering when to call each tool, how to call it, and what is forbidden. `base.py` reads `skill.json` in both `get_tools()` (used by the intent classifier to know available tools) and `_resolve_tools()` (used to build `FunctionTool` objects for the LLM). This makes skills the single authoritative source for agent capabilities.
+  - **`get_tools()` skill derivation**: When `self.allowed_tools` is empty (DB-loaded agents with no explicit tool list), `get_tools()` iterates `self.allowed_skills`, reads each `skill.json`, and returns the union of all `allowedTools`. This fixed `TOOL_NOT_AVAILABLE` blocking — the classifier now sees the correct tools.
+  - **`_resolve_tools()` skill derivation**: Mirrors `get_tools()` logic using the same `skill.json` files, ensuring the LLM's native function-call list matches what the classifier exposed.
+  - **SKILL.md Structured Format**: All 15 SKILL.md files rewritten with: (1) `## متى تستخدم هذه الـ Skill` section, (2) per-tool blocks with `**امتى:**`, `**إزاي:**`, `**ممنوع:**` sub-sections, (3) `## خطوات التنفيذ` numbered procedure, (4) `## ممنوعات` global forbidden list. Skills: `catalog-search`, `customer-context-summary`, `facebook-sales-conversion`, `order-support`, `exchange-support`, `handoff-to-human`, `discount-proposal`, `low-stock-watch`, `pricing-review`, `facebook-ad-draft`, `campaign-report`, `hire-agent`, `delegate-goal`, `read-company-state`, `review-agent-performance`.
+  - **Classifier Model Sanitization**: `classifier.py` now validates that `preferredModel` is compatible with `preferredProvider`. If a GROQ model (e.g. `llama-3.3-70b-versatile`) is passed with `provider=GOOGLE`, it overrides to `gemini-2.5-flash`. Fallback chain updated: primary → `("GOOGLE", "gemini-2.5-flash")` → `("GROQ", "llama-3.3-70b-versatile")` (NVIDIA removed — not configured).
+  - **Image-Aware Planner Routing**: `planner.py` has two new image attachment checks: (1) `_resolve_blocking_missing_slots` skips `productName` requirement when `context["attachments"]` contains an image (image IS the product reference); (2) `build_intent_contract_async` overrides `inventory_check` → `product_search` when an image attachment is present, because only `product_search` supports `image_bytes` vector search.
+- **Affected Files**:
+  - `apps/ai-service/src/agents/base.py`
+  - `apps/ai-service/src/intent/classifier.py`
+  - `apps/ai-service/src/intent/planner.py`
+  - `apps/ai-service/skills/*/SKILL.md` (all 15 files rewritten)
+  - `apps/ai-service/skills/*/skill.json` (allowedTools populated for each skill)
+
 ## [2026-06-13] AI Service — Agent Base Refactor, Tool Gateway Hardening, Skills Validation & Eval Worker
 - **Details**: Refactored the agent base class to support polymorphic agent types (CEO, specialized, SDK), hardened tool execution with per-tool timeouts and structured error responses, added skills validation pipeline, and introduced async evaluation worker for agent response quality scoring.
 - **Architecture**:

@@ -1,3 +1,25 @@
+## [2026-06-13] AI Service — Intent Classifier CLASSIFIER_UNAVAILABLE on All Tool-Required Intents
+- **Bug/Issue**: The intent classifier returned `CLASSIFIER_UNAVAILABLE` for product search, order creation, shipping, and discount requests, causing the pipeline to skip tool execution and reply generically without calling any tools.
+- **Root Cause**: The FB sales agent's model config (`llama-3.3-70b-versatile`) was passed as `preferredModel` into the classifier. The classifier used `preferredProvider=GOOGLE` with `preferredModel=llama-3.3-70b-versatile`, which is incompatible — Google does not serve llama models. `build_provider_client_async("GOOGLE", model="llama-3.3-70b-versatile")` failed silently. The NVIDIA fallback (`openai/gpt-oss-120b`) was not configured on the server. The final GROQ fallback returned HTTP 429 (rate limited) because multiple sequential tests exhausted the free-tier quota. All three attempts failed → `classifier_result = None` → `CLASSIFIER_UNAVAILABLE`.
+- **Fix**:
+  1. Added model sanitization in `classifier.py`: when `preferredProvider == "GOOGLE"` and the resolved model does not start with `gemini-` or `gemma-`, override to `default_model_for_provider("GOOGLE")` (i.e. `gemini-2.5-flash`).
+  2. Replaced the NVIDIA fallback (`openai/gpt-oss-120b`) with `("GOOGLE", "gemini-2.5-flash")` — Gemini is always available and already used for the main pipeline.
+- **Affected Files**:
+  - `apps/ai-service/src/intent/classifier.py`
+
+## [2026-06-13] AI Service — Image Attachments Return NEEDS_CLARIFICATION / TOOL_NOT_AVAILABLE
+- **Bug/Issue**: Sending a product image to the FB sales agent resulted in `NEEDS_CLARIFICATION` (slot `productName` missing) or `TOOL_NOT_AVAILABLE`, so the agent never performed visual product search and instead asked the user to type the product name.
+- **Root Cause**:
+  1. The classifier (even with Gemini vision) chose `inventory` intent → `inventory_check` tool. `inventory_check` requires `productName` in `_missing_core_tool_slots`. The image attachment counts as the product reference, but `_resolve_blocking_missing_slots` had no rule to waive `productName` when an image is present.
+  2. Even when `productName` was waived, `inventory_check` does not support image-based vector search — only `product_search` can accept `image_bytes` for embedding-based lookup. The wrong tool was being selected.
+- **Fix**:
+  1. In `planner.py` `_resolve_blocking_missing_slots`: when `context["attachments"]` contains at least one image, remove `productName` from the blocking missing slots list (image is the product reference, no text name needed).
+  2. In `planner.py` `build_intent_contract_async`: after tool assignment, if an image attachment is present and the selected primary tool is `inventory_check`, override to `product_search` (which supports image embedding via `image_bytes`).
+  3. Added image-aware instruction to the classifier system prompt: when an image attachment is present without a text product name, use `products` intent (not `inventory`) and set `toolEligibility.status=allowed`.
+- **Affected Files**:
+  - `apps/ai-service/src/intent/planner.py`
+  - `apps/ai-service/src/intent/classifier.py`
+
 ## [2026-06-13] AI Service — Tool Gateway & Skills Integration Error Handling
 - **Bug/Issue**: The tool gateway in `gateway.py` had incomplete error boundaries around async tool execution, causing unhandled exceptions to crash the agent pipeline instead of returning structured error responses. Skills integration pipeline in `integration.py` also lacked proper error propagation from external skill calls.
 - **Root Cause**: `execute_tools.py` did not wrap individual tool calls in try/except with typed error responses. `skills/integration.py` called external skill endpoints without timeout or error boundary, causing the entire pipeline to fail on a single skill failure.

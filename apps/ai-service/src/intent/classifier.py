@@ -180,6 +180,11 @@ async def classify_intent(
         }
     preferred_provider = str(ctx.get("preferredProvider") or DEFAULT_VISION_PROVIDER).upper()
     preferred_model = ctx.get("preferredModel") or default_model_for_provider(preferred_provider)
+    # Sanitize: if model is incompatible with provider, use provider default
+    if preferred_provider == "GOOGLE" and preferred_model and not any(
+        preferred_model.lower().startswith(p) for p in ("gemini-", "gemma-")
+    ):
+        preferred_model = default_model_for_provider("GOOGLE")  # gemini-2.5-flash
     model_route = route_for_modalities(
         model=preferred_model,
         provider=preferred_provider,
@@ -206,6 +211,7 @@ async def classify_intent(
         f"Available tools: {', '.join(available_tools) if available_tools else 'none'}.\n"
         "For customer read-only catalog questions about price, availability, stock, images, size, color, SKU, or variants, "
         "choose inventory when a current stock/variant fact is requested; choose products only for broad catalog browsing.\n"
+        "When an image attachment is provided without an explicit product name in text, use products intent (not inventory), toolEligibility.status=allowed, no productName in missingSlots (image is the product reference).\n"
         "Set slots.requestedProductImage to true when the latest message semantically asks to SEE, VIEW, or VISUALLY INSPECT a product — any phrasing that indicates the customer wants to look at the product visually (e.g. asking for images, photos, pictures, wanting to \"see\" or \"view\" the product or \"how it looks\", \"its appearance\", \"شكله\", \"صورته\"). Set it to false only when the request is purely about price, stock count, size, or availability without any visual component.\n"
         "Set slots.listAll to true ONLY for READ-ONLY catalog browsing when the customer asks to see ALL products (intent must be products, not products.manage). products.manage is only for creating or editing products.\n"
         "Use catalog.categories ONLY when the customer explicitly asks about product categories, sections, types, or what the store carries (e.g. \"what categories do you have\", \"what are your sections\", \"اقسامكم ايه\", \"عندك اقسام ايه\", \"أنواع المنتجات\"). "
@@ -231,8 +237,8 @@ async def classify_intent(
         fallback_provider = model_route.provider or ctx.get("preferredProvider")
         fallback_model = model_route.model or preferred_model
         classifier_attempts.append((fallback_provider, fallback_model))
-        # Fallback 2: NVIDIA with its default model
-        classifier_attempts.append(("NVIDIA", "openai/gpt-oss-120b"))
+        # Fallback 2: Google Gemini (always available, supports vision)
+        classifier_attempts.append(("GOOGLE", "gemini-2.5-flash"))
         # Fallback 3: GROQ
         classifier_attempts.append(("GROQ", "llama-3.3-70b-versatile"))
 

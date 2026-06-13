@@ -305,6 +305,16 @@ def _resolve_blocking_missing_slots(
         ):
             resolved_missing = [slot for slot in resolved_missing if slot != "city"]
         return resolved_missing
+    # When image attachments present, image IS the product reference
+    if "productName" in missing:
+        _att = (context or {}).get("attachments", [])
+        _has_img = any(
+            isinstance(a, dict) and (
+                a.get("type") == "image" or str(a.get("mime_type", "")).startswith("image/")
+            ) for a in _att
+        )
+        if _has_img:
+            missing = [s for s in missing if s != "productName"]
     return missing
 
 
@@ -389,6 +399,21 @@ async def build_intent_contract_async(
             policy_plan.allowedTools = []
 
         policy_plan.requiresTool = bool(policy_plan.primaryTool)
+        # When image attachment present and tool is inventory_check, switch to product_search
+        _ctx_attachments = (context or {}).get('attachments', [])
+        _has_image_att = any(
+            isinstance(a, dict) and (
+                a.get('type') == 'image' or str(a.get('mime_type', '')).startswith('image/')
+            ) for a in _ctx_attachments
+        )
+        if _has_image_att and canonical_tool_name(policy_plan.primaryTool or '') == 'inventory_check':
+            _ps_avail = _filter_available(['product_search'], available_tools)
+            if _ps_avail:
+                policy_plan.primaryTool = _ps_avail[0]
+                policy_plan.allowedTools = _ps_avail
+                policy_plan.intent = 'products'
+                logger.info('image_search_override', original='inventory_check', new='product_search')
+
         logger.info("intent_routed", intent=policy_plan.intent, requiresTool=policy_plan.requiresTool, primaryTool=policy_plan.primaryTool, allowedTools=policy_plan.allowedTools)
         classifier_missing_slots = _unique(classifier_result.missingSlots or [])
         slots = dict(classifier_result.slots or {})
