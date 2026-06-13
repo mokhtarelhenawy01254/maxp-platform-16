@@ -271,6 +271,11 @@ export const menuGroups = [
         path: "/super-admin/system-management",
       },
       {
+        text: "شرح التطبيقات",
+        icon: <WebIcon />,
+        path: "/super-admin/app-explanations",
+      },
+      {
         text: "إعدادات Facebook OAuth",
         icon: <FacebookIcon />,
         path: "/super-admin/facebook-oauth",

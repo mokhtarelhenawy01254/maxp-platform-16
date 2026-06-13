@@ -28,6 +28,7 @@ import type { ApiRequestConfig } from "../../services/apiClient";
 import ActiveUsersMonitor from "../ActiveUsersMonitor";
 import { SidebarSettingsProvider, useSidebarSettings } from "../../contexts/SidebarSettingsContext";
 import { SectionGuide } from "@/components/guides/SectionGuide";
+import PageExplanations from "../common/PageExplanations";
 
 const SuperAdminLayout = React.lazy(() => import("./SuperAdminLayout"));
 const AppDashboardPage = React.lazy(() => import("./app-dashboard/AppDashboardPage"));
@@ -518,6 +519,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
             />
             <NotificationDropdown className="business-shell-notification-slot" />
             <SectionGuide />
+            <PageExplanations />
             
             {isSuperAdmin && (
               <button

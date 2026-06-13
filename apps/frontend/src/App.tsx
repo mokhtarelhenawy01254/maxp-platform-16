@@ -180,6 +180,9 @@ const CommissionsManagement = React.lazy(
 const PublicAffiliateRegister = React.lazy(
   () => import("./pages/public/PublicAffiliateRegister"),
 );
+const AppExplanationsPage = React.lazy(
+  () => import("./pages/public/AppExplanationsPage"),
+);
 const PublicMerchantRegister = React.lazy(
   () => import("./pages/public/PublicMerchantRegister"),
 );
@@ -825,6 +828,9 @@ const SubscriptionCenter = React.lazy(
 );
 const StorefrontThemesManagement = React.lazy(
   () => import("./pages/super-admin/StorefrontThemesManagement"),
+);
+const SuperAdminAppExplanations = React.lazy(
+  () => import("./pages/super-admin/SuperAdminAppExplanations"),
 );
 
 // Dev Tasks System
@@ -1477,6 +1483,8 @@ const AppContent = () => {
             />
             {/* Public Application Form - For job applicants */}
             <Route path="/apply/:formId" element={<PublicApplicationForm />} />
+            
+            <Route path="/app-explanations" element={<AppExplanationsPage />} />
             {/* Legal Pages - Public Access */}
             {/* <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} /> */}
@@ -1730,6 +1738,14 @@ const AppContent = () => {
               element={
                 <Layout>
                   <SuperAdminSystemManagement />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/app-explanations"
+              element={
+                <Layout>
+                  <SuperAdminAppExplanations />
                 </Layout>
               }
             />
