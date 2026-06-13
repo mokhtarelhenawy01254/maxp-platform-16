@@ -793,6 +793,9 @@ const SubAgentsPage = React.lazy(
 const AIAgentSandboxPage = React.lazy(
   () => import("./pages/admin/ai-agent-sandbox/AIAgentSandboxPage"),
 );
+const AgentProfilesPage = React.lazy(
+  () => import("./pages/admin/agent-profiles/AgentProfilesPage"),
+);
 const CompanyAIScheduler = React.lazy(
   () => import("./pages/admin/CompanyAIScheduler"),
 );
@@ -6191,6 +6194,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <AIHubLayout />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/agent-profiles"
+                  element={
+                    <Layout fullWidth>
+                      <AgentProfilesPage />
                     </Layout>
                   }
                 />

@@ -54,7 +54,6 @@ const AIAgentSandboxPage: React.FC = () => {
     formatCost,
     formatTokens,
     clearError,
-    toolsMetadata,
   } = useAgentSandbox();
 
   // Media query states implemented directly via window check / resize listener or basic defaults
@@ -81,20 +80,6 @@ const AIAgentSandboxPage: React.FC = () => {
       && m.isSelectable !== false
     ))
   ), [models, selectedKeyId, selectedModel, selectedProvider]);
-
-  const agentTools: ToolDefinition[] = useMemo(() => {
-    if (!selectedAgent) return [];
-    const toolNames = selectedAgent.allowedTools;
-    return toolNames.map((name) => {
-      const meta = toolsMetadata.find(t => t.name === name);
-      return {
-        name,
-        description: meta?.description || `Tool: ${name}`,
-        sideEffect: (meta?.sideEffect || "read") as "read" | "write",
-        enabled: true,
-      };
-    });
-  }, [selectedAgent, toolsMetadata]);
 
   const latestTraceSummary: SandboxTraceSummary | null = useMemo(() => {
     const assistantMessage = [...(activeSession?.messages || [])]
