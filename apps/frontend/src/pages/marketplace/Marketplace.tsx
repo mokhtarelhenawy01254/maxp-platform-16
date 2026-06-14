@@ -827,7 +827,7 @@ export default function Marketplace() {
           )}
 
           {/* Main Content Area */}
-          <main className="min-w-0">
+          <div role="main" className="min-w-0">
             <div className="mb-4">
               <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                 <div className="min-w-0 text-right">
@@ -1171,7 +1171,7 @@ export default function Marketplace() {
                   })}
                 </div>
               )}
-          </main>
+          </div>
         </div>
       </div>
       {/* Pricing Choice Dialog */}
