@@ -38,7 +38,7 @@ const CHANNELS: { key: string; label: string; icon: string; tool: string }[] = [
   { key: "WHATSAPP", label: "WhatsApp", icon: "💚", tool: "whatsapp_send" },
   { key: "INSTAGRAM", label: "Instagram", icon: "📸", tool: "" },
   { key: "TELEGRAM", label: "Telegram", icon: "✈️", tool: "" },
-  { key: "DASHBOARD", label: "لوحة التحكم", icon: "🖥️", tool: "" },
+  { key: "DASHBOARD", label: "Dashboard", icon: "🖥️", tool: "" },
 ];
 
 async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -88,7 +88,7 @@ export default function ChannelRoutingPage() {
       });
       setChannelConfigs(configs);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "فشل تحميل البيانات");
+      setError(e instanceof Error ? e.message : t("aiHub.channelRouting.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -140,11 +140,11 @@ export default function ChannelRoutingPage() {
           }
         }
       }
-      toast.success(t("channelRouting.saved") || "تم حفظ التغييرات");
+      toast.success(t("aiHub.channelRouting.saved"));
       setDirty(false);
       await load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "فشل الحفظ");
+      toast.error(e instanceof Error ? e.message : t("aiHub.channelRouting.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -166,13 +166,13 @@ export default function ChannelRoutingPage() {
             <GitFork className="size-5 text-indigo-600" />
           </div>
           <div>
-            <h2 className="text-xl font-bold tracking-tight">توجيه القنوات</h2>
-            <p className="text-sm text-muted-foreground">حدد الوكيل المسؤول عن الرد على كل قناة تواصل</p>
+            <h2 className="text-xl font-bold tracking-tight">{t("aiHub.channelRouting.title")}</h2>
+            <p className="text-sm text-muted-foreground">{t("aiHub.channelRouting.subtitle")}</p>
           </div>
         </div>
         <Button onClick={handleSave} disabled={!dirty || saving} className="gap-2">
           {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-          حفظ التغييرات
+          {t("aiHub.channelRouting.save")}
         </Button>
       </div>
 
@@ -184,17 +184,17 @@ export default function ChannelRoutingPage() {
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">القنوات المتاحة</CardTitle>
-          <CardDescription>اختر وكيل لكل قناة لتفعيل الرد التلقائي</CardDescription>
+          <CardTitle className="text-base">{t("aiHub.channelRouting.cardTitle")}</CardTitle>
+          <CardDescription>{t("aiHub.channelRouting.cardDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">القناة</TableHead>
-                <TableHead>الوكيل المسؤول</TableHead>
-                <TableHead className="w-[120px] text-center">الرد التلقائي</TableHead>
-                <TableHead className="w-[140px]">حالة الأداة</TableHead>
+                <TableHead className="w-[200px]">{t("aiHub.channelRouting.channel")}</TableHead>
+                <TableHead>{t("aiHub.channelRouting.agent")}</TableHead>
+                <TableHead className="w-[120px] text-center">{t("aiHub.channelRouting.autoReply")}</TableHead>
+                <TableHead className="w-[140px]">{t("aiHub.channelRouting.toolStatus")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -212,10 +212,10 @@ export default function ChannelRoutingPage() {
                       onValueChange={(val) => handleAgentChange(config.channel, val)}
                     >
                       <SelectTrigger className="w-[240px]">
-                        <SelectValue placeholder="اختر وكيل..." />
+                        <SelectValue placeholder={t("aiHub.channelRouting.selectPlaceholder")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">بدون توجيه (CEO)</SelectItem>
+                        <SelectItem value="">{t("aiHub.channelRouting.noRouting")}</SelectItem>
                         {agents
                           .filter((a) => a.status === "ACTIVE")
                           .map((agent) => (
@@ -235,10 +235,10 @@ export default function ChannelRoutingPage() {
                   <TableCell>
                     {config.toolName ? (
                       <Badge variant={config.toolActive ? "default" : "secondary"}>
-                        {config.toolActive ? "✅ مفعلة" : "❌ غير مفعلة"}
+                        {config.toolActive ? t("aiHub.channelRouting.active") : t("aiHub.channelRouting.inactive")}
                       </Badge>
                     ) : (
-                      <Badge variant="outline">قريباً</Badge>
+                      <Badge variant="outline">{t("aiHub.channelRouting.comingSoon")}</Badge>
                     )}
                   </TableCell>
                 </TableRow>
@@ -250,7 +250,7 @@ export default function ChannelRoutingPage() {
 
       {!dirty && channelConfigs.every((c) => !c.agentId) && (
         <div className="text-center py-8 text-muted-foreground text-sm">
-          <p>لم يتم تخصيص أي وكيل بعد. سيتم استخدام التوجيه التلقائي (CEO) لجميع القنوات.</p>
+          <p>{t("aiHub.channelRouting.emptyState")}</p>
         </div>
       )}
     </div>
