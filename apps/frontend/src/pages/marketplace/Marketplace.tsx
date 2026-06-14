@@ -1072,7 +1072,7 @@ export default function Marketplace() {
                   </p>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
                   {displayedApps.map((app) => {
                     const Icon = categoryIcons[app.category] || Package;
                     const textIcon = shouldUseTextIcon(app.icon) ? app.icon?.trim() : null;
@@ -1081,7 +1081,7 @@ export default function Marketplace() {
                       <Card
                         key={app.id}
                         className={cn(
-                          "group flex min-h-[220px] flex-col p-4 text-right transition-all hover:-translate-y-0.5",
+                          "group flex min-h-[220px] flex-col p-5 text-right transition-all hover:-translate-y-0.5",
                           app.isInstalled && "border-success/50",
                           app.isFeatured && "border-primary/30 shadow-sm"
                         )}
@@ -1123,7 +1123,7 @@ export default function Marketplace() {
                           {app.description}
                         </p>
 
-                        <div className="mt-3 flex flex-wrap justify-end gap-1">
+                        <div className="mt-3 flex flex-wrap justify-end gap-1.5">
                           {app.isFeatured && (
                             <Badge variant="default" className="text-[10px] font-black">
                               {t('marketplace.featured')}
