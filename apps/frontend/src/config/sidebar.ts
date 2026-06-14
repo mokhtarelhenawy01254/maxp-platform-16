@@ -43,6 +43,7 @@ import {
     QuestionMarkCircleIcon,
     RocketLaunchIcon,
     StarIcon,
+    ArrowPathRoundedSquareIcon,
     ArrowTrendingUpIcon,
     PaperAirplaneIcon,
     PencilSquareIcon,
@@ -966,6 +967,7 @@ export const getSidebarConfig = (
                 { to: '/admin/faqs', icon: QuestionMarkCircleIcon, label: t('sidebar.faqs') },
                 { to: '/admin/policies', icon: ClipboardDocumentCheckIcon, label: t('sidebar.policies') },
                 { to: '/admin/ai-hub?tab=scheduler', icon: ClockIcon, label: t('sidebar.aiScheduler') },
+                { to: '/admin/ai-hub?tab=routing', icon: ArrowPathRoundedSquareIcon, label: t('sidebar.channelRouting') },
             ]
         }] : []),
 
