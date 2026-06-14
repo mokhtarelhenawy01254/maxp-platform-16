@@ -155,10 +155,10 @@ const Register: React.FC = () => {
       });
       const urlParams = new URLSearchParams(window.location.search);
       const redirectParam = urlParams.get("redirect");
-      // Use getPostAuthDestination so role-based routing (OWNER, AFFILIATE, etc.) is respected,
-      // with fallback to explicit redirect param or the default new-account destination.
       const postAuthDest = getPostAuthDestination(userData);
-      const redirectPath = redirectParam || postAuthDest || NEW_ACCOUNT_DESTINATION;
+      
+      const isValidRedirect = redirectParam && redirectParam !== "/" && !redirectParam.startsWith("/lp/");
+      const redirectPath = (isValidRedirect ? redirectParam : null) || postAuthDest || NEW_ACCOUNT_DESTINATION;
 
       trackPlatformSiteCompleteRegistration("auth_register", { destination: redirectPath, role: userData?.role || "UNKNOWN" });
       // Small delay to allow the React auth state (isAuthenticated) to settle before
