@@ -1,4 +1,5 @@
 const CompetitorService = require('../services/competitorService');
+const CompetitorFeatureService = require('../services/competitorFeatureService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { t } = require('../services/i18n');
 const getPrisma = () => getSharedPrismaClient();
@@ -418,6 +419,59 @@ exports.autoDiscover = async (req, res) => {
   } catch (error) {
     console.error('Error in auto-discover:', error);
     res.status(500).json({ success: false, error: t('competitor.discover_failed') });
+  }
+};
+
+exports.listFeatures = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const result = await CompetitorFeatureService.list(companyId, req.params.id, req.query);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('Error fetching features:', error);
+    res.status(500).json({ success: false, error: t('competitor.features_list_failed') });
+  }
+};
+
+exports.createFeature = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { title } = req.body;
+    if (!title || !title.trim()) {
+      return res.status(400).json({ success: false, error: t('competitor.feature_title_required') });
+    }
+    const feature = await CompetitorFeatureService.create(companyId, req.params.id, req.body);
+    if (!feature) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.status(201).json({ success: true, data: feature });
+  } catch (error) {
+    console.error('Error creating feature:', error);
+    res.status(500).json({ success: false, error: t('competitor.feature_create_failed') });
+  }
+};
+
+exports.updateFeature = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { featureId } = req.params;
+    const feature = await CompetitorFeatureService.update(companyId, req.params.id, featureId, req.body);
+    if (!feature) return res.status(404).json({ success: false, error: t('competitor.feature_not_found') });
+    res.json({ success: true, data: feature });
+  } catch (error) {
+    console.error('Error updating feature:', error);
+    res.status(500).json({ success: false, error: t('competitor.feature_update_failed') });
+  }
+};
+
+exports.deleteFeature = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { featureId } = req.params;
+    const deleted = await CompetitorFeatureService.remove(companyId, req.params.id, featureId);
+    if (!deleted) return res.status(404).json({ success: false, error: t('competitor.feature_not_found') });
+    res.json({ success: true, message: t('competitor.feature_delete_success') });
+  } catch (error) {
+    console.error('Error deleting feature:', error);
+    res.status(500).json({ success: false, error: t('competitor.feature_delete_failed') });
   }
 };
 

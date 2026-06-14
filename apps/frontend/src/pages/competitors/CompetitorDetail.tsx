@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, RefreshCw, BarChart2, TrendingUp, Scale, History, Settings, Instagram, Share2, Crosshair } from 'lucide-react';
+import { ArrowLeft, ExternalLink, RefreshCw, BarChart2, TrendingUp, Scale, History, Settings, Instagram, Share2, Crosshair, Lightbulb } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
+import CompetitorFeatures from './CompetitorFeatures';
 
 interface CompetitorProduct {
   id: string;
@@ -91,6 +92,7 @@ const CompetitorDetail: React.FC = () => {
     { key: 'products', label: t('competitors.productsTab') },
     { key: 'social', label: t('competitors.social.overview'), icon: <Instagram size={14} /> },
     { key: 'ads', label: t('competitors.ads.overview'), icon: <Share2 size={14} /> },
+    { key: 'features', label: t('competitors.features.title'), icon: <Lightbulb size={14} /> },
     { key: 'platforms', label: t('competitors.platforms.techStack'), icon: <TrendingUp size={14} /> },
     { key: 'reports', label: t('competitors.reportsTab') },
   ] as const;
@@ -349,6 +351,13 @@ const CompetitorDetail: React.FC = () => {
           >
             {t('competitors.social.overview')}
           </button>
+        </div>
+      )}
+
+      {tab === 'features' && (
+        <div>
+          <p className="text-xs text-gray-500 mb-3">{t('competitors.features.derivedFrom')}</p>
+          <CompetitorFeatures competitorId={id || ''} />
         </div>
       )}
 

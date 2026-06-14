@@ -21,6 +21,11 @@ router.get('/:id/ads', controller.listAds);
 router.post('/:id/ads', controller.addAd);
 router.post('/:id/reports/generate', controller.generateReport);
 router.get('/:id/reports', controller.listReports);
+router.get('/:id/features', controller.listFeatures);
+router.post('/:id/features', controller.createFeature);
+router.put('/:id/features/:featureId', controller.updateFeature);
+router.delete('/:id/features/:featureId', controller.deleteFeature);
+
 router.get('/:id/price-compare', controller.priceCompare);
 router.get('/:id/battlecard', controller.getBattlecard);
 
