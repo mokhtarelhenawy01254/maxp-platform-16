@@ -4906,6 +4906,18 @@
     "title": "صندوق الوارد الموحد",
     "refresh": "تحديث",
     "searchPlaceholder": "البحث في المحادثات...",
+    "filters": {
+      "unread": "غير مقروء",
+      "followUp": "تحتاج متابعة",
+      "allPlatforms": "جميع المنصات"
+    },
+    "platforms": {
+      "facebook": "فيسبوك",
+      "instagram": "انستقرام",
+      "whatsapp": "واتساب",
+      "website": "الموقع",
+      "test": "تجربة"
+    },
     "tabs": {
       "all": "الكل",
       "messenger": "Messenger",
