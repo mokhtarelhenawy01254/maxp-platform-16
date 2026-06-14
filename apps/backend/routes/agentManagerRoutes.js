@@ -469,6 +469,24 @@ router.put('/agents/:id', async (req, res) => {
   }
 });
 
+// PUT /auto-reply — enable/disable AI auto-reply globally
+router.put('/auto-reply', async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
+    const enabled = req.body?.enabled === true;
+    const prisma = getSharedPrismaClient();
+    await prisma.aiSetting.upsert({
+      where: { companyId },
+      update: { autoReplyEnabled: enabled, updatedAt: new Date() },
+      create: { companyId, autoReplyEnabled: enabled },
+    });
+    return res.json({ success: true, autoReplyEnabled: enabled });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // DELETE /agents/:id — archive a sub-agent (not CEO)
 router.delete('/agents/:id', async (req, res) => {
   try {

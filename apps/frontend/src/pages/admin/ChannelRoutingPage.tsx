@@ -113,6 +113,7 @@ export default function ChannelRoutingPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const hasAnyAssignment = channelConfigs.some((c) => c.agentId);
       const activeAgents = agents.filter((a) => a.status === "ACTIVE");
       for (const config of channelConfigs) {
         const prevAgent = activeAgents.find((a) =>
@@ -139,6 +140,12 @@ export default function ChannelRoutingPage() {
             }
           }
         }
+      }
+      if (hasAnyAssignment) {
+        await apiFetch("/agent-manager/auto-reply", {
+          method: "PUT",
+          body: JSON.stringify({ enabled: true }),
+        });
       }
       toast.success(t("aiHub.channelRouting.saved"));
       setDirty(false);
