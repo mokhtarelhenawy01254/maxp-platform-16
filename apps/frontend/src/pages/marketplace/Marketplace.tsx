@@ -1083,7 +1083,8 @@ export default function Marketplace() {
                         className={cn(
                           "group flex min-h-[220px] flex-col p-5 text-right transition-all hover:-translate-y-0.5",
                           app.isInstalled && "border-success/50",
-                          app.isFeatured && "border-primary/30 shadow-sm"
+                          app.isFeatured && "border-primary/30 shadow-sm",
+                          app.pricingModel === "FREE" && "border-muted"
                         )}
                       >
                         <div className="flex items-start justify-between gap-3">
