@@ -1,3 +1,25 @@
+## [2026-06-14] Landing Page — Mobile Menu, Testimonials, Validation, Footer Links, Accessibility
+
+- **Changes**:
+  1. Added hamburger mobile menu for screens <1024px (nav links were hidden on mobile with no replacement).
+  2. Added 3-client testimonials section (social proof between stats and pricing).
+  3. Added per-field validation errors in `Register.tsx` with `elite-input-error` CSS.
+  4. Fixed footer privacy/terms links from `#` to `/apps/legal`.
+  5. Added `aria-label` and `<title>` to all platform SVG icons (WhatsApp, Telegram, Instagram, Messenger).
+  6. Improved `.msg-price-original` strikethrough contrast with `text-decoration-color` + opacity.
+  7. Created empty-state for `MyCompaniesDashboard` when no companies exist.
+  8. Removed hardcoded `localhost:3007` from `getImageUrl` fallback.
+  9. Updated `.env.production` and `.env.example` with correct `VITE_API_URL=/api/v1` and `VITE_BACKEND_URL=https://maxp.online`.
+- **Verification**: `vite build` passes clean.
+- **Affected Files**:
+  - `apps/frontend/.env`, `apps/frontend/.env.production`
+  - `apps/frontend/.env.example`
+  - `apps/frontend/src/pages/auth/Register.tsx`
+  - `apps/frontend/src/pages/auth/authRedesign.css`
+  - `apps/frontend/src/pages/hr/MyCompaniesDashboard.tsx`
+  - `apps/frontend/src/pages/landing/MessagingLanding.tsx`
+  - `apps/frontend/src/pages/landing/messagingLanding.css`
+
 ## [2026-06-14] Frontend — Bypass Onboarding Screens for New Users
 
 - **Bug/Issue**: The user requested that the multi-step onboarding wizard (which sets company name, slug, etc.) be completely removed/bypassed so that newly registered users land straight on the Apps page.

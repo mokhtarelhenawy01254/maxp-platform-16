@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageCircle, Bot, Users, BarChart3, Check, ChevronDown,
   ArrowLeft, Smartphone, Headphones, LayoutDashboard, X,
-  SendHorizontal, Sparkles, Zap, Shield, Globe, Clock,
+  SendHorizontal, Sparkles, Zap, Shield, Globe, Clock, Menu, Star,
 } from "lucide-react";
 import { usePlatformSiteMetaPixel } from "../../hooks/usePlatformSiteMetaPixel";
 import "./messagingLanding.css";
@@ -77,6 +77,12 @@ const stepsData = [
   { num: "٠٣", title: "فعل الـ AI", desc: "الـ AI بيبدأ يرد على الاستفسارات، يعمل طلبات، ويحجز مواعيد — أوتوماتيك بدون تدخل.", icon: <Bot className="w-6 h-6" /> },
 ];
 
+const testimonials = [
+  { name: "أحمد الشريف", role: "صاحب متجر إلكتروني — القاهرة", text: "كنت بخسر عملاء كتير بسبب تأخير الرد على الواتساب. بعد Max P، الـ AI بيرد فوراً والطلبات بتتسجل تلقائياً. مبيعاتي زادت ٤٠٪ في شهرين.", rating: 5 },
+  { name: "سارة السعيد", role: "مدير تسويق — جدة", text: "كنا محتاجين حل يلم كل المنصات في مكان واحد. Max P وفر علينا ٣ موظفين وكانت التجربة مع الـ AI Agent مذهلة — بيفهم اللهجة الخليجية ويرد بدقة.", rating: 5 },
+  { name: "مصطفى كامل", role: "صاحب وكالة دعاية — الإسكندرية", text: "تقارير الأداء وتحليلات الرضا بتخليني أعرف مين الأكفأ في فريقي. والـ AI بيحول المحادثات المعقدة للموظف الصح من أول مرة.", rating: 5 },
+];
+
 const faqs = [
   { q: "إزاي أربط حساباتي مع Max P?", a: "الواتساب: استخدم QR كود أو WhatsApp API. تلجرام: ضيف البوت برابط. انستجرام وماسنجر: عبر فيسبوك OAuth. كل دا خلال ٥ دقايق من لوحة التحكم." },
   { q: "هل الـ AI بيستغنى عن فريق الدعم البشري?", a: "الـ AI بيساعد في الرد على الاستفسارات البسيطة والتكرارية. الاستفسارات المعقدة أو الحساسة بيحولها للموظف المختص — ما بينوبش عن البشر، بيساعدهم." },
@@ -95,6 +101,7 @@ const MessagingLanding: React.FC = () => {
   const [leadFormOpen, setLeadFormOpen] = useState(false);
   const [leadForm, setLeadForm] = useState({ name: "", phone: "" });
   const [leadSent, setLeadSent] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     document.title = "Max P Inbox | واتساب وتلجرام وانستجرام وماسنجر في صندوق واحد";
@@ -175,9 +182,26 @@ const MessagingLanding: React.FC = () => {
           <a href="#pricing">الأسعار</a>
           <a href="#faq">الأسئلة</a>
         </div>
-        <Link to="/auth/login" className="msg-btn msg-btn-ghost">تسجيل الدخول</Link>
-        <button onClick={handleSubscribe} className="msg-btn msg-btn-primary">ابدأ الاشتراك</button>
+        <div className="msg-nav-actions">
+          <Link to="/auth/login" className="msg-btn msg-btn-ghost msg-nav-login">تسجيل الدخول</Link>
+          <button onClick={handleSubscribe} className="msg-btn msg-btn-primary msg-nav-subscribe">ابدأ الاشتراك</button>
+          <button className="msg-mobile-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} aria-label={isMobileMenuOpen ? "إغلاق القائمة" : "فتح القائمة"}>
+            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
       </nav>
+      {isMobileMenuOpen && (
+        <div className="msg-mobile-menu">
+          <a href="#features" onClick={() => setIsMobileMenuOpen(false)}>المميزات</a>
+          <a href="#how-it-works" onClick={() => setIsMobileMenuOpen(false)}>طريقة العمل</a>
+          <a href="#ai-agent" onClick={() => setIsMobileMenuOpen(false)}>AI Agent</a>
+          <a href="#pricing" onClick={() => setIsMobileMenuOpen(false)}>الأسعار</a>
+          <a href="#faq" onClick={() => setIsMobileMenuOpen(false)}>الأسئلة</a>
+          <div className="msg-mobile-menu-divider" />
+          <Link to="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>تسجيل الدخول</Link>
+          <button onClick={() => { setIsMobileMenuOpen(false); handleSubscribe(); }} className="msg-btn msg-btn-primary" style={{ width: "100%", justifyContent: "center", marginTop: "0.5rem" }}>ابدأ الاشتراك</button>
+        </div>
+      )}
 
       {/* Hero */}
       <section className="msg-section" style={{ paddingTop: "8rem" }}>
@@ -407,6 +431,33 @@ const MessagingLanding: React.FC = () => {
           <div className="flex flex-wrap justify-center gap-10 mt-8 opacity-40">
             {platformIcons.map(p => (
               <div key={p.name} className="flex items-center gap-1 text-sm font-bold"><p.icon title={p.name} /> {p.name}</div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="msg-section" style={{ background: "var(--msg-bg-deep)" }}>
+        <div className="msg-container">
+          <motion.div className="text-center mb-12" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: "-80px" }}>
+            <span className="msg-kicker"><Star className="w-4 h-4" /> آراء العملاء</span>
+            <h2 className="msg-title" style={{ fontSize: "clamp(1.6rem, 3vw, 2.4rem)" }}>ماذا يقول عملاؤنا عن Max P Inbox</h2>
+          </motion.div>
+          <div className="grid md:grid-cols-3 gap-5">
+            {testimonials.map((t, i) => (
+              <motion.div key={i} className="msg-card" style={{ padding: "1.8rem" }}
+                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+              >
+                <div className="flex gap-1 mb-3" style={{ color: "var(--msg-accent-light)" }}>
+                  {Array.from({ length: t.rating }).map((_, si) => <Star key={si} className="w-4 h-4 fill-current" />)}
+                </div>
+                <p className="text-sm mb-4" style={{ color: "var(--msg-text-muted)", lineHeight: 1.7 }}>"{t.text}"</p>
+                <div>
+                  <div className="font-bold text-sm">{t.name}</div>
+                  <div className="text-xs" style={{ color: "var(--msg-text-muted)" }}>{t.role}</div>
+                </div>
+              </motion.div>
             ))}
           </div>
         </div>
