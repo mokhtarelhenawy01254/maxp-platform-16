@@ -69,6 +69,18 @@ const agentManagerService = {
   },
   hireAgent: async (companyId, body) => {
     const result = await aiServiceAdminClient.spawnAgent({ companyId, ...body });
+    if (result && result.id) {
+      try {
+        const db = prisma();
+        await db.companyAgent.upsert({
+          where: { id: result.id },
+          update: { name: result.name, role: result.role, model: result.model || null, templateSlug: result.template_slug || result.templateSlug || null, status: result.status || 'ACTIVE' },
+          create: { id: result.id, companyId, name: result.name, role: result.role, model: result.model || null, templateSlug: result.template_slug || result.templateSlug || null, status: result.status || 'ACTIVE', icon: body.icon || '🤖', description: body.description || '' },
+        });
+      } catch (dbErr) {
+        console.error('[MANAGER] Failed to sync hired agent to company_agents:', dbErr.message);
+      }
+    }
     return result || { success: false, error: 'فشل تعيين الوكيل' };
   },
   delegateGoal: async (companyId, body) => {
@@ -406,6 +418,7 @@ router.get('/agents', async (req, res) => {
           soul: a.soul || '',
           rules: (() => { try { return JSON.parse(a.rules || '[]'); } catch { return []; } })(),
           skills: (() => { try { return JSON.parse(a.skills || '[]'); } catch { return []; } })(),
+          channels: (() => { try { return JSON.parse(a.channels || '[]'); } catch { return []; } })(),
           model: a.model || null,
           status: a.status,
           parentId: a.parentId || null,
@@ -437,33 +450,22 @@ router.get('/agents', async (req, res) => {
   }
 });
 
-// PUT /agents/:id — update agent channels or config
+// PUT /agents/:id — update agent channels via Prisma (direct, no Python dependency)
 router.put('/agents/:id', async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
-    if (req.body?.allowedChannels) {
-      const result = await aiServiceAdminClient.updateAgent(req.params.id, companyId, { allowed_channels: req.body.allowedChannels });
-      return res.json(result || { success: true });
+    const prisma = getSharedPrismaClient();
+    const allowedChannels = req.body?.allowedChannels;
+    if (allowedChannels !== undefined) {
+      await prisma.companyAgent.updateMany({
+        where: { id: req.params.id, companyId },
+        data: { channels: JSON.stringify(allowedChannels) },
+      });
     }
     return res.json({ success: true });
   } catch (error) {
-    return res.status(502).json({ success: false, error: 'AI service unreachable: ' + (error.message || 'connection failed') });
-  }
-});
-
-// PUT /agents/:id — update agent channels or config
-router.put('/agents/:id', async (req, res) => {
-  try {
-    const companyId = getCompanyId(req);
-    if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
-    if (req.body?.allowedChannels) {
-      const result = await aiServiceAdminClient.updateAgent(req.params.id, companyId, { allowed_channels: req.body.allowedChannels });
-      return res.json(result || { success: true });
-    }
-    return res.json({ success: true });
-  } catch (error) {
-    return res.status(502).json({ success: false, error: 'AI service unreachable: ' + (error.message || 'connection failed') });
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 
