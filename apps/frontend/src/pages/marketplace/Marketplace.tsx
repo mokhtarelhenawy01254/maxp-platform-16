@@ -695,12 +695,9 @@ export default function Marketplace() {
   );
 
   return (
-    <div className="min-h-screen overflow-x-hidden marketplace-container">
+    <div className="min-h-screen overflow-x-hidden">
       <div className="mx-auto max-w-[1440px] px-4 pb-10 pt-5 sm:px-6 lg:px-8">
-        <div className="premium-hero">
-          <div className="floating-shape" style={{width:'280px',height:'280px',background:'var(--color-primary)',top:'-80px',right:'-60px'}} />
-          <div className="floating-shape" style={{width:'180px',height:'180px',background:'var(--color-secondary)',bottom:'-50px',left:'-40px'}} />
-          <div className="premium-hero-content text-right">
+        <Card className="overflow-hidden border p-4 sm:p-6 text-right">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="order-2 lg:order-1">
               <div className="flex flex-wrap items-center justify-center gap-2 text-xs sm:justify-end sm:text-right">
@@ -743,8 +740,7 @@ export default function Marketplace() {
               <TabsTrigger value="BUNDLES" onClick={() => setSelectedCategory("")}>{t('marketplace.savingsBundles')}</TabsTrigger>
             </TabsList>
           </Tabs>
-        </div>
-      </div>
+        </Card>
 
         <div
           className={`mt-5 grid grid-cols-1 gap-5 ${
