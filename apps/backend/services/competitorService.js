@@ -102,24 +102,49 @@ class CompetitorService {
     const existing = await getPrisma().competitor.findFirst({ where: { id, companyId } });
     if (!existing) return null;
 
-    const competitor = await getPrisma().competitor.update({
-      where: { id },
-      data: {
-        name: data.name,
-        url: data.url,
-        platform: data.platform,
-        logo: data.logo,
-        description: data.description,
-        notes: data.notes,
-        activityType: data.activityType,
-        location: data.location,
-        targetMarket: data.targetMarket,
-        foundedYear: data.foundedYear ? parseInt(data.foundedYear) : undefined,
-        employeeCount: data.employeeCount,
-        strengths: data.strengths,
-        weaknesses: data.weaknesses,
-        isActive: data.isActive,
-      },
+    const competitor = await getSharedPrismaClient().$transaction(async (tx) => {
+      const comp = await tx.competitor.update({
+        where: { id },
+        data: {
+          name: data.name,
+          url: data.url,
+          platform: data.platform,
+          logo: data.logo,
+          description: data.description,
+          notes: data.notes,
+          activityType: data.activityType,
+          location: data.location,
+          targetMarket: data.targetMarket,
+          foundedYear: data.foundedYear ? parseInt(data.foundedYear) : undefined,
+          employeeCount: data.employeeCount,
+          strengths: data.strengths,
+          weaknesses: data.weaknesses,
+          isActive: data.isActive,
+        },
+      });
+
+      if (data.socialProfiles && Array.isArray(data.socialProfiles)) {
+        await tx.competitorSocialProfile.deleteMany({ where: { competitorId: id } });
+        if (data.socialProfiles.length) {
+          await Promise.all(
+            data.socialProfiles.map((p) =>
+              tx.competitorSocialProfile.create({
+                data: {
+                  platform: p.platform,
+                  profileUrl: p.url,
+                  competitorId: id,
+                  companyId,
+                },
+              })
+            )
+          );
+        }
+      }
+
+      return tx.competitor.findUnique({
+        where: { id },
+        include: { socialProfiles: true },
+      });
     });
     return competitor;
   }
