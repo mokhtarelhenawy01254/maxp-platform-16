@@ -217,18 +217,6 @@ router.put('/agents/:id/persona', async (req, res) => {
   }
 });
 
-router.put('/agents/:id', async (req, res) => {
-  try {
-    const companyId = getCompanyId(req);
-    if (!companyId) return res.status(400).json({ error: 'companyId is required' });
-    const allowedFields = { allowedChannels: req.body?.allowedChannels };
-    const result = await aiServiceAdminClient.updateAgent(req.params.id, companyId, allowedFields);
-    return res.json(result || { success: true });
-  } catch (error) {
-    return res.status(502).json({ success: false, error: 'AI service unreachable: ' + (error.message || 'connection failed') });
-  }
-});
-
 // ── 12 Node-only routes (no Python equivalent yet) ─────────────────────
 
 router.get('/available-models', async (req, res) => {

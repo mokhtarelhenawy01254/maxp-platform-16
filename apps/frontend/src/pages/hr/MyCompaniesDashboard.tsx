@@ -102,7 +102,7 @@ const MyCompaniesDashboard: React.FC = () => {
     if (path.startsWith("http")) return path;
     const backendUrl =
       import.meta.env["VITE_API_URL"]?.replace("/api/v1", "") ||
-      "http://localhost:3007";
+      window.location.origin;
     return `${backendUrl}/${path.replace(/^\/+/, "")}`;
   };
 
@@ -316,6 +316,16 @@ const MyCompaniesDashboard: React.FC = () => {
           <h2 className="text-lg font-bold text-gray-800 dark:text-white">
             الشركات
           </h2>
+          {companies.length === 0 ? (
+            <div className="bg-white dark:bg-gray-800 p-12 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 text-center">
+              <BuildingOffice2Icon className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+              <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">لا توجد شركات بعد</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-4">ابدأ بإنشاء أول شركة لإدارة أعمالك</p>
+              <button onClick={() => setIsCreateModalOpen(true)} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2">
+                <PlusIcon className="w-5 h-5" /> إنشاء أول شركة
+              </button>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {companies.map((item) => (
               <div
@@ -414,6 +424,7 @@ const MyCompaniesDashboard: React.FC = () => {
               </div>
             ))}
           </div>
+          )}
         </div>
       )}
 

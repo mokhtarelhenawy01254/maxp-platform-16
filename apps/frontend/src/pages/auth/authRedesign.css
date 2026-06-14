@@ -313,6 +313,17 @@
   color: var(--auth-accent);
 }
 
+.elite-input-error {
+  border-color: #e53e3e !important;
+}
+
+.elite-field-error {
+  color: #e53e3e;
+  font-size: 0.8rem;
+  margin-top: 0.3rem;
+  padding-right: 0.5rem;
+}
+
 .elite-submit-button, .business-primary-button {
   width: 100%;
   padding: 0.8125rem;

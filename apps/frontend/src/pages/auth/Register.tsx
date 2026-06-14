@@ -108,6 +108,7 @@ const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -122,24 +123,30 @@ const Register: React.FC = () => {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (fieldErrors[name]) setFieldErrors((prev) => ({ ...prev, [name]: "" }));
     if (error) setError("");
+  };
+
+  const validate = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!formData.fullName.trim()) errors.fullName = copy.errors.fullName;
+    if (!formData.email.trim()) errors.email = copy.errors.email;
+    if (!formData.password) errors.password = copy.errors.password;
+    if (formData.phone) {
+      const phoneClean = formData.phone.replace(/\s+/g, "");
+      const egyptPhoneRegex = /^(\+20|0020|0)?1[0125][0-9]{8}$/;
+      if (!egyptPhoneRegex.test(phoneClean)) errors.phone = copy.errors.phone;
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!validate()) return;
     try {
       setIsLoading(true);
       setError("");
-
-      if (!formData.fullName.trim()) throw new Error(copy.errors.fullName);
-      if (!formData.email.trim()) throw new Error(copy.errors.email);
-      if (!formData.password) throw new Error(copy.errors.password);
-
-      if (formData.phone) {
-        const phoneClean = formData.phone.replace(/\s+/g, "");
-        const egyptPhoneRegex = /^(\+20|0020|0)?1[0125][0-9]{8}$/;
-        if (!egyptPhoneRegex.test(phoneClean)) throw new Error(copy.errors.phone);
-      }
 
       const nameParts = formData.fullName.trim().split(/\s+/);
       const firstName = nameParts[0] || "";
@@ -220,29 +227,32 @@ const Register: React.FC = () => {
 
       {error && <AuthNotice variant="error" title={copy.errorTitle}>{error}</AuthNotice>}
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         <div className="elite-input-group">
           <label className="elite-label">{copy.labels.fullName}</label>
           <div className="elite-input-wrapper">
-            <input name="fullName" type="text" value={formData.fullName} onChange={handleChange} required className="elite-input" placeholder={copy.placeholders.fullName} disabled={isLoading} />
+            <input name="fullName" type="text" value={formData.fullName} onChange={handleChange} required className={`elite-input ${fieldErrors.fullName ? "elite-input-error" : ""}`} placeholder={copy.placeholders.fullName} disabled={isLoading} />
             <User className="elite-input-icon" />
           </div>
+          {fieldErrors.fullName && <p className="elite-field-error">{fieldErrors.fullName}</p>}
         </div>
 
         <div className="elite-input-group">
           <label className="elite-label">{copy.labels.email}</label>
           <div className="elite-input-wrapper">
-            <input name="email" type="email" value={formData.email} onChange={handleChange} required className="elite-input" placeholder={copy.placeholders.email} disabled={isLoading} />
+            <input name="email" type="email" value={formData.email} onChange={handleChange} required className={`elite-input ${fieldErrors.email ? "elite-input-error" : ""}`} placeholder={copy.placeholders.email} disabled={isLoading} />
             <Mail className="elite-input-icon" />
           </div>
+          {fieldErrors.email && <p className="elite-field-error">{fieldErrors.email}</p>}
         </div>
 
         <div className="elite-input-group">
           <label className="elite-label">{copy.labels.phone}</label>
           <div className="elite-input-wrapper">
-            <input name="phone" type="tel" value={formData.phone} onChange={handleChange} className="elite-input" placeholder={copy.placeholders.phone} disabled={isLoading} />
+            <input name="phone" type="tel" value={formData.phone} onChange={handleChange} className={`elite-input ${fieldErrors.phone ? "elite-input-error" : ""}`} placeholder={copy.placeholders.phone} disabled={isLoading} />
             <Phone className="elite-input-icon" />
           </div>
+          {fieldErrors.phone && <p className="elite-field-error">{fieldErrors.phone}</p>}
         </div>
 
         <div className="elite-input-group">
@@ -254,7 +264,7 @@ const Register: React.FC = () => {
               value={formData.password}
               onChange={handleChange}
               required
-              className="elite-input"
+              className={`elite-input ${fieldErrors.password ? "elite-input-error" : ""}`}
               placeholder="••••••••"
               disabled={isLoading}
             />
@@ -263,6 +273,7 @@ const Register: React.FC = () => {
             </button>
             <Lock className="elite-input-icon" />
           </div>
+          {fieldErrors.password && <p className="elite-field-error">{fieldErrors.password}</p>}
         </div>
 
         <button type="submit" disabled={isLoading} className="elite-submit-button">

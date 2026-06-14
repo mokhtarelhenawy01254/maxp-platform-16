@@ -69,7 +69,7 @@ interface AgentTask { id: string; title: string; description: string; priority: 
 interface ChatMessage { role: "user" | "manager"; content: string; }
 interface ApiResult { success: boolean; [key: string]: any; }
 
-const ROLE_OPTIONS = ["CEO", "SALES", "SUPPORT", "INVENTORY", "PRICING", "MARKETING", "SHIPPING"];
+
 
 const TOOL_INPUT_EXAMPLES: Record<string, Record<string, unknown>> = {
   "agent.assign_task": { agentId: "", title: "راجع هدف اختبار من مدير الوكلاء", description: "مهمة تشغيلية قصيرة للتأكد من بروتوكول التفويض.", priority: "medium", conflictKey: "test:agent-manager:task", conflictAction: "review", conflictResource: "agent-manager", conflictScope: "ui-smoke-test" },
@@ -197,7 +197,6 @@ export default function AgentManagerPage() {
   const [error, setError] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState("جاهزية مدير الوكلاء والمهارات والأدوات الحالية");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [hireRole, setHireRole] = useState("SUPPORT");
   const [hireTemplate, setHireTemplate] = useState("");
   const [hireName, setHireName] = useState("");
   const [delegateGoal, setDelegateGoal] = useState("اختبار تفويض هدف قصير: راجع المنتجات التجريبية وارجع بتقرير جاهزية.");
@@ -230,7 +229,7 @@ export default function AgentManagerPage() {
       if (!hireTemplate && (managerData.context.profiles || []).length) {
         const supportTemplate = managerData.context.profiles.find((p) => p.role === "SUPPORT");
         const dt = supportTemplate || managerData.context.profiles[0];
-        setHireTemplate(dt.slug); setHireRole(dt.role);
+        setHireTemplate(dt.slug);
       }
     } catch (err: any) { setError(err.message || "تعذر تحميل مركز مدير الوكلاء."); }
     finally { setLoading(false); }
@@ -241,7 +240,7 @@ export default function AgentManagerPage() {
   const handleTemplateChange = (slug: string) => {
     setHireTemplate(slug);
     const profile = profiles.find((p) => p.slug === slug);
-    if (profile) { setHireRole(profile.role); if (!hireName) setHireName(profile.name); }
+    if (profile) { if (!hireName) setHireName(profile.name); }
   };
 
   const handleToolChange = (nextTool: string) => {
@@ -265,7 +264,9 @@ export default function AgentManagerPage() {
   });
 
   const hireAgent = () => withWork(async () => {
-    const data = await apiRequest<{ success: true; agent: AgentSummary }>("agent-manager/hire", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: hireRole, name: hireName.trim() || undefined, templateSlug: hireTemplate || undefined }) });
+    const profile = profiles.find((p) => p.slug === hireTemplate);
+    const role = profile?.role || "CUSTOM";
+    const data = await apiRequest<{ success: true; agent: AgentSummary }>("agent-manager/hire", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role, name: hireName.trim() || undefined, templateSlug: hireTemplate || undefined }) });
     toast.success(`تم تعيين ${data.agent.name}`); await loadAll();
   });
 
@@ -409,9 +410,8 @@ export default function AgentManagerPage() {
                     <Panel title="تعيين وكيل جديد" icon={<UserPlus className="size-5" />}>
                       <div className="flex flex-col gap-4">
                         <div className="flex flex-col gap-1.5"><Label>القالب</Label><Select value={hireTemplate} onValueChange={handleTemplateChange}><SelectTrigger><SelectValue placeholder="اختر قالباً" /></SelectTrigger><SelectContent>{profiles.map((p) => (<SelectItem key={p.slug} value={p.slug}>{p.name} ({p.slug})</SelectItem>))}</SelectContent></Select></div>
-                        <div className="flex flex-col gap-1.5"><Label>الدور</Label><Select value={hireRole} onValueChange={setHireRole}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{ROLE_OPTIONS.map((r) => (<SelectItem key={r} value={r}>{r}</SelectItem>))}</SelectContent></Select></div>
                         <div className="flex flex-col gap-1.5"><Label>اسم اختياري</Label><Input value={hireName} onChange={(e) => setHireName(e.target.value)} /></div>
-                        <Button onClick={hireAgent} disabled={working || !hireRole}><UserPlus className="size-4" />تعيين الوكيل</Button>
+                        <Button onClick={hireAgent} disabled={working || !hireTemplate}><UserPlus className="size-4" />تعيين الوكيل</Button>
                       </div>
                     </Panel>
                   </div>
