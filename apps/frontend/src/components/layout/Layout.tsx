@@ -559,16 +559,20 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
         {isAppsDashboard && headerBlock}
         {isAppsDashboard ? (
           <React.Suspense fallback={headerBlock || <div className="min-h-screen" />}>
-            <AppDashboardPage
-              userId={user?.id}
-              companyId={user?.companyId || user?.company?.id}
-              allSections={menuSections}
-            />
+            <div key={normalizedPathname} className="motion-safe:animate-fade-in">
+              <AppDashboardPage
+                userId={user?.id}
+                companyId={user?.companyId || user?.company?.id}
+                allSections={menuSections}
+              />
+            </div>
           </React.Suspense>
         ) : (
           <React.Suspense fallback={<div className="min-h-screen" />}>
             <AppShell allSections={menuSections}>
-              {children}
+              <div key={normalizedPathname} className="motion-safe:animate-fade-in">
+                {children}
+              </div>
             </AppShell>
           </React.Suspense>
         )}

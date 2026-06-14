@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Bars3Icon, ArrowUturnLeftIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import AppSidebar from './AppSidebar';
+import { sectionHasVisibleItems } from './helpers';
 import { getAppById, APP_REGISTRY } from '../../../config/appRegistry';
 import type { AppDefinition } from '../../../config/appRegistry';
 import type { SidebarItem, SidebarSection } from '../../../types/layout';
@@ -225,9 +226,6 @@ const itemOrChildrenMatchPath = (item: SidebarItem, pathname: string): boolean =
 
 const sectionHasPath = (section: SidebarSection, pathname: string): boolean =>
   !section.hidden && section.items.some((item) => itemOrChildrenMatchPath(item, pathname));
-
-const sectionHasVisibleItems = (section: SidebarSection): boolean =>
-  !section.hidden && section.items.some((item) => !item.hidden);
 
 const buildAppFromSection = (section: SidebarSection): AppDefinition => {
   const metadata = APP_REGISTRY.find((app) => app.id === section.id || app.sectionIds.includes(section.id));

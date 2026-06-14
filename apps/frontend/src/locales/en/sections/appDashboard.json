@@ -14,6 +14,10 @@
   "appNotFound": "App not found",
   "skipToContent": "Skip to content",
   "noResults": "No matching results",
+  "clearFilters": "Clear filters and show all",
+  "shortcuts": "Keyboard shortcuts",
+  "shortcutFocusSearch": "Focus search",
+  "shortcutClose": "Close",
   "category": {
     "all": "All",
     "favorites": "Favorites",

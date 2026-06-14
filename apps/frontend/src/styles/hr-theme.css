@@ -138,23 +138,6 @@
 }
 
 /* ── Page Title / Headers ── */
-.hr-theme > div > div > h1,
-.hr-theme > div > div > div > h1,
-.hr-theme > div > h1 {
-  background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 30%, #db2777 70%, #6366f1 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.dark .hr-theme > div > div > h1,
-.dark .hr-theme > div > div > div > h1,
-.dark .hr-theme > div > h1 {
-  background: linear-gradient(135deg, #c4b5fd 0%, #e9a8ff 30%, #a5b4fc 60%, #f0abfc 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
 
 /* ── Select/Dropdown Triggers ── */
 .hr-theme button[role="combobox"] {

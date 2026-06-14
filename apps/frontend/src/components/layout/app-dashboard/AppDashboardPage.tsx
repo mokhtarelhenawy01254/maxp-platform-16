@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { ChartBarIcon, MagnifyingGlassIcon, StarIcon } from '@heroicons/react/24/outline';
 import AppCard from './AppCard';
+import AppCardSkeleton from './AppCardSkeleton';
+import { sectionHasVisibleItems } from './helpers';
 import { APP_CATEGORIES, APP_REGISTRY, AppCategory } from '../../../config/appRegistry';
 import type { AppDefinition } from '../../../config/appRegistry';
 import type { SidebarSection } from '../../../types/layout';
@@ -176,7 +178,7 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
               placeholder={String(t('appDashboard.searchPlaceholder'))}
               autoComplete="off"
               className={`
-                w-full ${isRtl ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2.5 sm:pr-12
+                w-full ${isRtl ? 'pr-10 pl-8' : 'pl-10 pr-8'} py-2.5
                 rounded-xl
                 border border-gray-200 dark:border-gray-700
                 bg-white dark:bg-gray-800
@@ -186,9 +188,35 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
                 transition-[border-color,box-shadow] duration-200
               `}
             />
-            <kbd className={`hidden sm:inline-flex absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600`}>
+            <button
+              type="button"
+              popoverTarget="shortcuts-popover"
+              popoverTargetAction="toggle"
+              className={`inline-flex absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-150`}
+              title={String(t('appDashboard.shortcuts'))}
+            >
               <span className="text-xs">⌘</span>K
-            </kbd>
+            </button>
+
+            <div
+              id="shortcuts-popover"
+              popover="auto"
+              className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl p-4 text-sm min-w-[220px]"
+            >
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-3">{t('appDashboard.shortcuts')}</h4>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-gray-600 dark:text-gray-400">{t('appDashboard.shortcutFocusSearch')}</span>
+                  <kbd className="px-1.5 py-0.5 text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
+                    <span className="text-xs">⌘</span>K
+                  </kbd>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-gray-600 dark:text-gray-400">{t('appDashboard.shortcutClose')}</span>
+                  <kbd className="px-1.5 py-0.5 text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">Esc</kbd>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -248,6 +276,12 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
           ))}
         </nav>
 
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-sm text-gray-500 dark:text-gray-400" aria-hidden="true">
+            {filteredApps.length} {t('appDashboard.title')}
+          </p>
+        </div>
+
         <div aria-live="polite" aria-atomic="true" className="sr-only">
           {filteredApps.length === 0
             ? t('appDashboard.noResults')
@@ -255,22 +289,40 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
           }
         </div>
 
-        {filteredApps.length === 0 ? (
+        {visibleApps.length === 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <AppCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : filteredApps.length === 0 ? (
           <div className="text-center py-16">
             <MagnifyingGlassIcon aria-hidden="true" className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
             <p className="mt-4 text-gray-500 dark:text-gray-400">
               {t('appDashboard.noResults')}
             </p>
+            <button
+              type="button"
+              onClick={() => updateDashboardParams({ q: '', category: 'all' })}
+              className="mt-4 px-4 py-2 rounded-lg text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            >
+              {t('appDashboard.clearFilters')}
+            </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredApps.map((app) => (
-              <AppCard
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 @container">
+            {filteredApps.map((app, index) => (
+              <div
                 key={app.id}
-                app={app}
-                isFavorite={favorites.includes(app.id)}
-                onToggleFavorite={toggleFavorite}
-              />
+                className="motion-safe:animate-fade-in"
+                style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'forwards', contentVisibility: 'auto', containIntrinsicSize: '80px' }}
+              >
+                <AppCard
+                  app={app}
+                  isFavorite={favorites.includes(app.id)}
+                  onToggleFavorite={toggleFavorite}
+                />
+              </div>
             ))}
           </div>
         )}
@@ -278,9 +330,6 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
     </div>
   );
 };
-
-const sectionHasVisibleItems = (section: SidebarSection): boolean =>
-  !section.hidden && section.items.some((item) => !item.hidden);
 
 const SECTION_CATEGORY_OVERRIDES: Partial<Record<string, AppCategory>> = {
   facebook: 'communication',
@@ -313,15 +362,27 @@ const SECTION_CATEGORY_OVERRIDES: Partial<Record<string, AppCategory>> = {
   'my-companies': 'main',
 };
 
+const CATEGORY_COLORS: Record<AppCategory, string> = {
+  main: 'indigo',
+  communication: 'blue',
+  sales: 'teal',
+  operations: 'slate',
+  hr: 'violet',
+  analytics: 'indigo',
+  marketing: 'amber',
+  settings: 'gray',
+  system: 'purple',
+};
+
 const FALLBACK_COLORS = [
   'indigo',
   'blue',
-  'green',
-  'orange',
   'teal',
+  'slate',
   'violet',
-  'cyan',
   'amber',
+  'gray',
+  'purple',
 ] as const;
 
 const buildAppFromSection = (
@@ -333,7 +394,10 @@ const buildAppFromSection = (
   const inheritedMetadata = APP_REGISTRY.find((app) => app.sectionIds.includes(section.id));
   const metadata = exactMetadata ?? inheritedMetadata;
   const visibleItemCount = section.items.filter((item) => !item.hidden).length;
-  const fallbackColor = FALLBACK_COLORS[index % FALLBACK_COLORS.length] ?? 'indigo';
+  const category = metadata?.id === section.id
+    ? metadata.category
+    : SECTION_CATEGORY_OVERRIDES[section.id] ?? metadata?.category ?? 'main';
+  const fallbackColor = CATEGORY_COLORS[category] ?? FALLBACK_COLORS[index % FALLBACK_COLORS.length] ?? 'indigo';
 
   return {
     id: section.id,
@@ -343,9 +407,7 @@ const buildAppFromSection = (
     color: metadata?.color ?? fallbackColor,
     bgGradient: metadata?.bgGradient ?? `from-${fallbackColor}-500 to-${fallbackColor}-600`,
     sectionIds: [section.id],
-    category: metadata?.id === section.id
-      ? metadata.category
-      : SECTION_CATEGORY_OVERRIDES[section.id] ?? metadata?.category ?? 'main',
+    category,
       displayName: section.title,
       displayDescription: exactMetadata?.descriptionKey
         ? t(exactMetadata.descriptionKey)
