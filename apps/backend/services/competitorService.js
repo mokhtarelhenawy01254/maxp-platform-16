@@ -81,7 +81,7 @@ class CompetitorService {
             tx.competitorSocialProfile.create({
               data: {
                 platform: p.platform,
-                url: p.url,
+                profileUrl: p.url,
                 competitorId: comp.id,
                 companyId,
               },
