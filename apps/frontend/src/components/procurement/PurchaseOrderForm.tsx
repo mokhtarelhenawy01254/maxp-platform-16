@@ -7,6 +7,7 @@ import {
   Printer,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
 import toast from "react-hot-toast";
@@ -64,6 +65,7 @@ const PurchaseOrderForm: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
+  const { t } = useTranslation();
   const { actualTheme } = useTheme();
   const isDark = actualTheme === "dark";
   const glassClass = isDark ? "glass-effect-dark" : "glass-effect";
@@ -115,7 +117,7 @@ const PurchaseOrderForm: React.FC = () => {
       setProducts(productsRes.data.data || []);
     } catch (error) {
       console.error("Error fetching initial data:", error);
-      toast.error("فشل في تحميل البيانات الأولية");
+      toast.error(t("procurement.purchaseOrderForm.fetchError"));
     } finally {
       setLoading(false);
     }
@@ -154,7 +156,7 @@ const PurchaseOrderForm: React.FC = () => {
       );
     } catch (error) {
       console.error("Error fetching order:", error);
-      toast.error("فشل في تحميل بيانات أمر الشراء");
+      toast.error(t("procurement.purchaseOrderForm.fetchOrderError"));
     } finally {
       setLoading(false);
     }
@@ -255,13 +257,13 @@ const PurchaseOrderForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.supplierId) {
-      toast.error("يرجى اختيار المورد");
+      toast.error(t("procurement.purchaseOrderForm.supplierRequired"));
       return;
     }
 
     const invalidItems = items.filter((item) => !item.productName || item.quantity <= 0);
     if (invalidItems.length > 0) {
-      toast.error("يرجى التأكد من اختيار المنتج وإدخال كمية صحيحة لكل البنود");
+      toast.error(t("procurement.purchaseOrderForm.itemsValidation"));
       return;
     }
 
@@ -271,15 +273,15 @@ const PurchaseOrderForm: React.FC = () => {
 
       if (isEdit) {
         await apiClient.put(`/procurement/purchase-orders/${id}`, payload);
-        toast.success("تم تحديث أمر الشراء بنجاح");
+        toast.success(t("procurement.purchaseOrderForm.updateSuccess"));
       } else {
         await apiClient.post("/procurement/purchase-orders", payload);
-        toast.success("تم إنشاء أمر الشراء بنجاح");
+        toast.success(t("procurement.purchaseOrderForm.createSuccess"));
       }
       navigate("/procurement/purchase-orders");
     } catch (error: any) {
       console.error("Error saving order:", error);
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء حفظ أمر الشراء");
+      toast.error(error.response?.data?.message || t("procurement.purchaseOrderForm.saveError"));
     } finally {
       setSaving(false);
     }
@@ -312,12 +314,12 @@ const PurchaseOrderForm: React.FC = () => {
             <ArrowLeft className="size-5" />
           </Button>
           <h1 className="text-2xl font-bold gradient-text">
-            {isEdit ? "تعديل أمر شراء" : "إنشاء أمر شراء جديد"}
+            {isEdit ? t("procurement.purchaseOrderForm.editTitle") : t("procurement.purchaseOrderForm.createTitle")}
           </h1>
         </div>
         {isEdit && (
           <Button variant="outline" onClick={handlePrint} className="micro-bounce">
-            <Printer className="size-4" /> طباعة
+            <Printer className="size-4" /> {t("procurement.purchaseOrderForm.print")}
           </Button>
         )}
       </div>
@@ -328,13 +330,13 @@ const PurchaseOrderForm: React.FC = () => {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1">
-                  <Label>المورد *</Label>
+                  <Label>{t("procurement.purchaseOrderForm.supplierLabel")}</Label>
                   <Select
                     value={formData.supplierId}
                     onValueChange={(value) => setFormData({ ...formData, supplierId: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="اختر المورد" />
+                      <SelectValue placeholder={t("procurement.purchaseOrderForm.supplierPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       {suppliers.map((s) => (
@@ -344,7 +346,7 @@ const PurchaseOrderForm: React.FC = () => {
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label>تاريخ الأمر</Label>
+                  <Label>{t("procurement.purchaseOrderForm.orderDateLabel")}</Label>
                   <Input
                     type="date"
                     value={formData.orderDate}
@@ -352,7 +354,7 @@ const PurchaseOrderForm: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>التسليم المتوقع</Label>
+                  <Label>{t("procurement.purchaseOrderForm.expectedDeliveryLabel")}</Label>
                   <Input
                     type="date"
                     value={formData.expectedDelivery}
@@ -365,17 +367,17 @@ const PurchaseOrderForm: React.FC = () => {
 
           <Card className={`${glassClass} card-hover-lift`} size="sm">
             <CardContent>
-              <h3 className="text-base font-semibold mb-2 gradient-text">الأصناف</h3>
+              <h3 className="text-base font-semibold mb-2 gradient-text">{t("procurement.purchaseOrderForm.itemsSection")}</h3>
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[250px] font-bold">الصنف</TableHead>
-                      <TableHead className="w-[100px] text-right font-bold">الكمية</TableHead>
-                      <TableHead className="w-[120px] text-right font-bold">سعر الوحدة</TableHead>
-                      <TableHead className="w-[100px] text-right font-bold">الضريبة %</TableHead>
-                      <TableHead className="w-[100px] text-right font-bold">الخصم %</TableHead>
-                      <TableHead className="w-[120px] text-right font-bold">الإجمالي</TableHead>
+                      <TableHead className="min-w-[250px] font-bold">{t("procurement.purchaseOrderForm.columnItem")}</TableHead>
+                      <TableHead className="w-[100px] text-right font-bold">{t("procurement.purchaseOrderForm.columnQuantity")}</TableHead>
+                      <TableHead className="w-[120px] text-right font-bold">{t("procurement.purchaseOrderForm.columnUnitPrice")}</TableHead>
+                      <TableHead className="w-[100px] text-right font-bold">{t("procurement.purchaseOrderForm.columnTax")}</TableHead>
+                      <TableHead className="w-[100px] text-right font-bold">{t("procurement.purchaseOrderForm.columnDiscount")}</TableHead>
+                      <TableHead className="w-[120px] text-right font-bold">{t("procurement.purchaseOrderForm.columnTotal")}</TableHead>
                       <TableHead className="w-[50px] text-center"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -385,7 +387,7 @@ const PurchaseOrderForm: React.FC = () => {
                         <TableCell>
                           <div className="space-y-1">
                             <Input
-                              placeholder="اختر صنفاً أو ابحث باسمه"
+                              placeholder={t("procurement.purchaseOrderForm.itemPlaceholder")}
                               value={item.productName}
                               onChange={(e) => {
                                 updateItem(index, "productName", e.target.value);
@@ -471,7 +473,7 @@ const PurchaseOrderForm: React.FC = () => {
                 onClick={addItem}
                 className="mt-2 micro-bounce"
               >
-                <Plus className="size-4" /> إضافة صنف جديد
+                <Plus className="size-4" /> {t("procurement.purchaseOrderForm.addItem")}
               </Button>
             </CardContent>
           </Card>
@@ -482,7 +484,7 @@ const PurchaseOrderForm: React.FC = () => {
                 <CardContent>
                   <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-1">
-                      <Label>شروط الدفع</Label>
+                      <Label>{t("procurement.purchaseOrderForm.paymentTermsLabel")}</Label>
                       <Textarea
                         rows={2}
                         value={formData.paymentTerms}
@@ -490,7 +492,7 @@ const PurchaseOrderForm: React.FC = () => {
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label>ملاحظات إضافية</Label>
+                      <Label>{t("procurement.purchaseOrderForm.notesLabel")}</Label>
                       <Textarea
                         rows={3}
                         value={formData.notes}
@@ -505,23 +507,23 @@ const PurchaseOrderForm: React.FC = () => {
             <div>
               <Card className={`${glassClass} pulse-glow`} size="sm">
                 <CardContent>
-                  <h3 className="text-base font-semibold mb-3 gradient-text">ملخص المبالغ</h3>
+                  <h3 className="text-base font-semibold mb-3 gradient-text">{t("procurement.purchaseOrderForm.summaryTitle")}</h3>
                   <div className="flex flex-col gap-2">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">المجموع قبل الخصم:</span>
+                      <span className="text-muted-foreground">{t("procurement.purchaseOrderForm.subtotalLabel")}</span>
                       <span className="font-bold">{totals.subtotal.toFixed(2)} EGP</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">إجمالي خصم البنود:</span>
+                      <span className="text-muted-foreground">{t("procurement.purchaseOrderForm.itemDiscountsLabel")}</span>
                       <span className="text-red-500">-{totals.itemDiscounts.toFixed(2)} EGP</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">إجمالي الضرائب:</span>
+                      <span className="text-muted-foreground">{t("procurement.purchaseOrderForm.totalTaxLabel")}</span>
                       <span className="text-green-600">+{totals.totalTax.toFixed(2)} EGP</span>
                     </div>
                     <Separator className="my-1" />
                     <div className="grid grid-cols-2 gap-1 items-center">
-                      <span className="text-muted-foreground text-sm">مصاريف الشحن:</span>
+                      <span className="text-muted-foreground text-sm">{t("procurement.purchaseOrderForm.shippingLabel")}</span>
                       <Input
                         type="number"
                         value={formData.shippingCost}
@@ -529,7 +531,7 @@ const PurchaseOrderForm: React.FC = () => {
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-1 items-center">
-                      <span className="text-muted-foreground text-sm">خصم إضافي عام:</span>
+                      <span className="text-muted-foreground text-sm">{t("procurement.purchaseOrderForm.additionalDiscountLabel")}</span>
                       <Input
                         type="number"
                         value={formData.discountAmount}
@@ -538,7 +540,7 @@ const PurchaseOrderForm: React.FC = () => {
                     </div>
                     <Separator className="my-1" />
                     <div className="flex justify-between mt-1">
-                      <h3 className="font-bold text-base">الإجمالي النهائي:</h3>
+                      <h3 className="font-bold text-base">{t("procurement.purchaseOrderForm.grandTotalLabel")}</h3>
                       <h2 className="text-xl font-black text-primary">
                         {totals.grandTotal.toFixed(2)} EGP
                       </h2>
@@ -555,7 +557,7 @@ const PurchaseOrderForm: React.FC = () => {
               onClick={() => navigate("/procurement/purchase-orders")}
               className="micro-bounce"
             >
-              إلغاء
+              {t("procurement.purchaseOrderForm.cancel")}
             </Button>
             <Button
               type="submit"
@@ -567,7 +569,7 @@ const PurchaseOrderForm: React.FC = () => {
               }}
             >
               {saving ? <LoadingSpinner size="sm" /> : <Save className="size-4" />}
-              {isEdit ? "تحديث البيانات" : "تأكيد وحفظ الأمر"}
+              {isEdit ? t("procurement.purchaseOrderForm.updateBtn") : t("procurement.purchaseOrderForm.createBtn")}
             </Button>
           </div>
         </div>

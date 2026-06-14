@@ -410,7 +410,7 @@ const Suppliers: React.FC = () => {
             disabled={page <= 1}
             onClick={() => setPage(page - 1)}
           >
-            السابق
+            {t("common.previous")}
           </Button>
           <span className="text-sm px-3">
             {page} / {totalPages}
@@ -421,7 +421,7 @@ const Suppliers: React.FC = () => {
             disabled={page >= totalPages}
             onClick={() => setPage(page + 1)}
           >
-            التالي
+            {t("common.next")}
           </Button>
         </div>
       </div>

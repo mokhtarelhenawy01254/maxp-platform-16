@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Plus, Eye, Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import {
@@ -42,21 +43,22 @@ interface SupplierPayment {
   };
 }
 
-const paymentMethodLabels: Record<string, string> = {
-  CASH: "نقدي",
-  BANK_TRANSFER: "تحويل بنكي",
-  CHECK: "شيك",
-  CREDIT_CARD: "بطاقة ائتمان",
-  OTHER: "أخرى",
-};
-
 const SupplierPayments: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [payments, setPayments] = useState<SupplierPayment[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [methodFilter, setMethodFilter] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  const paymentMethodLabels: Record<string, string> = {
+    CASH: t("procurement.supplierPayments.methodCash"),
+    BANK_TRANSFER: t("procurement.supplierPayments.methodBankTransfer"),
+    CHECK: t("procurement.supplierPayments.methodCheck"),
+    CREDIT_CARD: t("procurement.supplierPayments.methodCreditCard"),
+    OTHER: t("procurement.supplierPayments.methodOther"),
+  };
 
   const fetchPayments = useCallback(async () => {
     try {
@@ -77,9 +79,9 @@ const SupplierPayments: React.FC = () => {
   return (
     <div className="p-3">
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 justify-between mb-3">
-        <h1 className="text-2xl font-bold">إدارة المدفوعات</h1>
+        <h1 className="text-2xl font-bold">{t("procurement.supplierPayments.title")}</h1>
         <Button onClick={() => navigate("/procurement/supplier-payments/new")}>
-          <Plus className="size-4" /> تسجيل دفعة جديدة
+          <Plus className="size-4" /> {t("procurement.supplierPayments.createNew")}
         </Button>
       </div>
 
@@ -89,7 +91,7 @@ const SupplierPayments: React.FC = () => {
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
-                placeholder="البحث عن دفعة..."
+                placeholder={t("procurement.supplierPayments.searchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-8"
@@ -98,10 +100,10 @@ const SupplierPayments: React.FC = () => {
             <div className="min-w-[200px]">
               <Select value={methodFilter} onValueChange={setMethodFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="طريقة الدفع" />
+                  <SelectValue placeholder={t("procurement.supplierPayments.filterPaymentMethod")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">الكل</SelectItem>
+                  <SelectItem value="all">{t("procurement.supplierPayments.all")}</SelectItem>
                   {Object.entries(paymentMethodLabels).map(([key, label]) => (
                     <SelectItem key={key} value={key}>{label}</SelectItem>
                   ))}
@@ -116,13 +118,13 @@ const SupplierPayments: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>رقم الدفعة</TableHead>
-              <TableHead>المورد</TableHead>
-              <TableHead>رقم الفاتورة</TableHead>
-              <TableHead>تاريخ الدفع</TableHead>
-              <TableHead>المبلغ</TableHead>
-              <TableHead>طريقة الدفع</TableHead>
-              <TableHead>الإجراءات</TableHead>
+              <TableHead>{t("procurement.supplierPayments.columnPaymentNumber")}</TableHead>
+              <TableHead>{t("procurement.supplierPayments.columnSupplier")}</TableHead>
+              <TableHead>{t("procurement.supplierPayments.columnInvoiceNumber")}</TableHead>
+              <TableHead>{t("procurement.supplierPayments.columnPaymentDate")}</TableHead>
+              <TableHead>{t("procurement.supplierPayments.columnAmount")}</TableHead>
+              <TableHead>{t("procurement.supplierPayments.columnPaymentMethod")}</TableHead>
+              <TableHead>{t("procurement.supplierPayments.columnActions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -131,7 +133,7 @@ const SupplierPayments: React.FC = () => {
                 <TableCell>{payment.paymentNumber}</TableCell>
                 <TableCell>{payment.supplier.name}</TableCell>
                 <TableCell>
-                  {payment.purchaseInvoice?.invoiceNumber || "دفعة مقدمة"}
+                  {payment.purchaseInvoice?.invoiceNumber || t("procurement.supplierPayments.advancePayment")}
                 </TableCell>
                 <TableCell>
                   {new Date(payment.paymentDate).toLocaleDateString("ar-EG")}
@@ -149,7 +151,7 @@ const SupplierPayments: React.FC = () => {
                     onClick={() =>
                       navigate(`/procurement/supplier-payments/${payment.id}`)
                     }
-                    title="عرض التفاصيل"
+                    title={t("procurement.supplierPayments.viewDetails")}
                   >
                     <Eye className="size-4" />
                   </Button>
@@ -162,14 +164,14 @@ const SupplierPayments: React.FC = () => {
 
       <div className="grid md:hidden gap-2">
         {payments.length === 0 ? (
-          <ProcurementMobileState>لا توجد مدفوعات</ProcurementMobileState>
+          <ProcurementMobileState>{t("procurement.supplierPayments.emptyState")}</ProcurementMobileState>
         ) : (
           payments.map((payment) => (
             <ProcurementMobileCard
               key={payment.id}
               eyebrow={payment.paymentNumber}
               title={payment.supplier.name}
-              subtitle={payment.purchaseInvoice?.invoiceNumber || "دفعة مقدمة"}
+              subtitle={payment.purchaseInvoice?.invoiceNumber || t("procurement.supplierPayments.advancePayment")}
               status={
                 <Badge variant="outline">
                   {paymentMethodLabels[payment.paymentMethod] || payment.paymentMethod}
@@ -177,16 +179,16 @@ const SupplierPayments: React.FC = () => {
               }
               fields={[
                 {
-                  label: "تاريخ الدفع",
+                  label: t("procurement.supplierPayments.mobilePaymentDate"),
                   value: new Date(payment.paymentDate).toLocaleDateString("ar-EG"),
                 },
                 {
-                  label: "المبلغ",
+                  label: t("procurement.supplierPayments.mobileAmount"),
                   value: `${Number(payment.amount).toFixed(2)} EGP`,
                   emphasis: true,
                 },
                 {
-                  label: "طريقة الدفع",
+                  label: t("procurement.supplierPayments.mobilePaymentMethod"),
                   value: paymentMethodLabels[payment.paymentMethod] || payment.paymentMethod,
                 },
               ]}
@@ -197,7 +199,7 @@ const SupplierPayments: React.FC = () => {
                   onClick={() =>
                     navigate(`/procurement/supplier-payments/${payment.id}`)
                   }
-                  title="عرض التفاصيل"
+                  title={t("procurement.supplierPayments.viewDetails")}
                 >
                   <Eye className="size-4" />
                 </Button>
@@ -210,11 +212,11 @@ const SupplierPayments: React.FC = () => {
       <div className="flex justify-center mt-3">
         <div className="flex items-center gap-1">
           <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-            السابق
+            {t("common.previous")}
           </Button>
           <span className="text-sm px-3">{page} / {totalPages}</span>
           <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-            التالي
+            {t("common.next")}
           </Button>
         </div>
       </div>

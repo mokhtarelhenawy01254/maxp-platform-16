@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Menu, Lightbulb, LogOut } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
   user,
   title,
 }) => {
+  const { t } = useTranslation();
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -73,7 +75,7 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
                   {activeUsersCount > 0 && <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-emerald-500 text-[0.6rem] font-bold text-white">{activeUsersCount}</span>}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>المستخدمون النشطون</TooltipContent>
+              <TooltipContent>{t("superAdmin.activeUsers")}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
           <ThemeToggle />
@@ -84,7 +86,7 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[180px]" style={{ backgroundColor: isDark ? "#1e293b" : "#fff", color: isDark ? "#f1f5f9" : "#1e293b", borderColor: isDark ? "rgba(255,255,255,0.1)" : "#e2e8f0" }}>
-              <DropdownMenuItem onClick={() => { logout(); navigate("/auth/login"); }} className="font-semibold text-destructive"><LogOut className="ml-2 size-4" />تسجيل الخروج</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { logout(); navigate("/auth/login"); }} className="font-semibold text-destructive"><LogOut className="ml-2 size-4" />{t("superAdmin.logout")}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

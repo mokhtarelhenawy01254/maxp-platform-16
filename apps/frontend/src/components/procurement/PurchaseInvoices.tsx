@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Plus, Eye, CreditCard, Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import {
@@ -53,21 +54,22 @@ const statusColors: Record<string, "default" | "secondary" | "destructive" | "ou
   CANCELLED: "outline",
 };
 
-const statusLabels: Record<string, string> = {
-  PENDING: "في انتظار الدفع",
-  PARTIALLY_PAID: "مدفوع جزئياً",
-  PAID: "مدفوع بالكامل",
-  OVERDUE: "متأخر",
-  CANCELLED: "ملغي",
-};
-
 const PurchaseInvoices: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  const statusLabels: Record<string, string> = {
+    PENDING: t("procurement.purchaseInvoices.statusPending"),
+    PARTIALLY_PAID: t("procurement.purchaseInvoices.statusPartiallyPaid"),
+    PAID: t("procurement.purchaseInvoices.statusPaid"),
+    OVERDUE: t("procurement.purchaseInvoices.statusOverdue"),
+    CANCELLED: t("procurement.purchaseInvoices.statusCancelled"),
+  };
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -88,9 +90,9 @@ const PurchaseInvoices: React.FC = () => {
   return (
     <div className="p-3">
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 justify-between mb-3">
-        <h1 className="text-2xl font-bold">فواتير الموردين</h1>
+        <h1 className="text-2xl font-bold">{t("procurement.purchaseInvoices.title")}</h1>
         <Button onClick={() => navigate("/procurement/purchase-invoices/new")}>
-          <Plus className="size-4" /> إنشاء فاتورة جديدة
+          <Plus className="size-4" /> {t("procurement.purchaseInvoices.createNew")}
         </Button>
       </div>
 
@@ -100,7 +102,7 @@ const PurchaseInvoices: React.FC = () => {
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
-                placeholder="البحث عن فاتورة..."
+                placeholder={t("procurement.purchaseInvoices.searchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-8"
@@ -109,10 +111,10 @@ const PurchaseInvoices: React.FC = () => {
             <div className="min-w-[200px]">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="الحالة" />
+                  <SelectValue placeholder={t("procurement.purchaseInvoices.filterStatus")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">الكل</SelectItem>
+                  <SelectItem value="all">{t("procurement.purchaseInvoices.all")}</SelectItem>
                   {Object.entries(statusLabels).map(([key, label]) => (
                     <SelectItem key={key} value={key}>{label}</SelectItem>
                   ))}
@@ -127,15 +129,15 @@ const PurchaseInvoices: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>رقم الفاتورة</TableHead>
-              <TableHead>المورد</TableHead>
-              <TableHead>تاريخ الفاتورة</TableHead>
-              <TableHead>تاريخ الاستحقاق</TableHead>
-              <TableHead>المبلغ الإجمالي</TableHead>
-              <TableHead>المبلغ المدفوع</TableHead>
-              <TableHead>المبلغ المتبقي</TableHead>
-              <TableHead>الحالة</TableHead>
-              <TableHead>الإجراءات</TableHead>
+              <TableHead>{t("procurement.purchaseInvoices.columnInvoiceNumber")}</TableHead>
+              <TableHead>{t("procurement.purchaseInvoices.columnSupplier")}</TableHead>
+              <TableHead>{t("procurement.purchaseInvoices.columnInvoiceDate")}</TableHead>
+              <TableHead>{t("procurement.purchaseInvoices.columnDueDate")}</TableHead>
+              <TableHead>{t("procurement.purchaseInvoices.columnTotalAmount")}</TableHead>
+              <TableHead>{t("procurement.purchaseInvoices.columnPaidAmount")}</TableHead>
+              <TableHead>{t("procurement.purchaseInvoices.columnRemainingAmount")}</TableHead>
+              <TableHead>{t("procurement.purchaseInvoices.columnStatus")}</TableHead>
+              <TableHead>{t("procurement.purchaseInvoices.columnActions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -167,7 +169,7 @@ const PurchaseInvoices: React.FC = () => {
                       onClick={() =>
                         navigate(`/procurement/purchase-invoices/${invoice.id}`)
                       }
-                      title="عرض التفاصيل"
+                      title={t("procurement.purchaseInvoices.viewDetails")}
                     >
                       <Eye className="size-4" />
                     </Button>
@@ -180,7 +182,7 @@ const PurchaseInvoices: React.FC = () => {
                             `/procurement/supplier-payments/new?invoiceId=${invoice.id}`,
                           )
                         }
-                        title="تسجيل دفعة"
+                        title={t("procurement.purchaseInvoices.recordPayment")}
                       >
                         <CreditCard className="size-4" />
                       </Button>
@@ -195,14 +197,14 @@ const PurchaseInvoices: React.FC = () => {
 
       <div className="grid md:hidden gap-2">
         {invoices.length === 0 ? (
-          <ProcurementMobileState>لا توجد فواتير موردين</ProcurementMobileState>
+          <ProcurementMobileState>{t("procurement.purchaseInvoices.emptyState")}</ProcurementMobileState>
         ) : (
           invoices.map((invoice) => (
             <ProcurementMobileCard
               key={invoice.id}
               eyebrow={invoice.invoiceNumber}
               title={invoice.supplier.name}
-              subtitle={`دفعات: ${invoice._count.payments} | أصناف: ${invoice._count.items}`}
+              subtitle={t("procurement.purchaseInvoices.mobileSubtitle", { payments: invoice._count.payments, items: invoice._count.items })}
               status={
                 <Badge variant={statusColors[invoice.status] || "outline"}>
                   {statusLabels[invoice.status] || invoice.status}
@@ -210,26 +212,26 @@ const PurchaseInvoices: React.FC = () => {
               }
               fields={[
                 {
-                  label: "تاريخ الفاتورة",
+                  label: t("procurement.purchaseInvoices.mobileInvoiceDate"),
                   value: new Date(invoice.invoiceDate).toLocaleDateString("ar-EG"),
                 },
                 {
-                  label: "تاريخ الاستحقاق",
+                  label: t("procurement.purchaseInvoices.mobileDueDate"),
                   value: invoice.dueDate
                     ? new Date(invoice.dueDate).toLocaleDateString("ar-EG")
                     : "-",
                 },
                 {
-                  label: "الإجمالي",
+                  label: t("procurement.purchaseInvoices.mobileTotal"),
                   value: `${Number(invoice.totalAmount).toFixed(2)} EGP`,
                   emphasis: true,
                 },
                 {
-                  label: "المدفوع",
+                  label: t("procurement.purchaseInvoices.mobilePaid"),
                   value: `${Number(invoice.paidAmount).toFixed(2)} EGP`,
                 },
                 {
-                  label: "المتبقي",
+                  label: t("procurement.purchaseInvoices.mobileRemaining"),
                   value: `${Number(invoice.remainingAmount).toFixed(2)} EGP`,
                   emphasis: invoice.remainingAmount > 0,
                 },
@@ -242,7 +244,7 @@ const PurchaseInvoices: React.FC = () => {
                     onClick={() =>
                       navigate(`/procurement/purchase-invoices/${invoice.id}`)
                     }
-                    title="عرض التفاصيل"
+                    title={t("procurement.purchaseInvoices.viewDetails")}
                   >
                     <Eye className="size-4" />
                   </Button>
@@ -255,7 +257,7 @@ const PurchaseInvoices: React.FC = () => {
                           `/procurement/supplier-payments/new?invoiceId=${invoice.id}`,
                         )
                       }
-                      title="تسجيل دفعة"
+                      title={t("procurement.purchaseInvoices.recordPayment")}
                     >
                       <CreditCard className="size-4" />
                     </Button>
@@ -270,11 +272,11 @@ const PurchaseInvoices: React.FC = () => {
       <div className="flex justify-center mt-3">
         <div className="flex items-center gap-1">
           <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-            السابق
+            {t("common.previous")}
           </Button>
           <span className="text-sm px-3">{page} / {totalPages}</span>
           <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-            التالي
+            {t("common.next")}
           </Button>
         </div>
       </div>

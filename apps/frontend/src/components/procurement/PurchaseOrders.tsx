@@ -7,6 +7,7 @@ import {
   XCircle,
   Search,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import {
@@ -61,24 +62,25 @@ const statusColors: Record<string, "default" | "secondary" | "destructive" | "ou
   CLOSED: "outline",
 };
 
-const statusLabels: Record<string, string> = {
-  DRAFT: "مسودة",
-  PENDING: "في انتظار الموافقة",
-  APPROVED: "تمت الموافقة",
-  SENT: "تم الإرسال",
-  PARTIALLY_RECEIVED: "استلام جزئي",
-  RECEIVED: "تم الاستلام",
-  CANCELLED: "ملغي",
-  CLOSED: "مغلق",
-};
-
 const PurchaseOrders: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  const statusLabels: Record<string, string> = {
+    DRAFT: t("procurement.purchaseOrders.statusDraft"),
+    PENDING: t("procurement.purchaseOrders.statusPending"),
+    APPROVED: t("procurement.purchaseOrders.statusApproved"),
+    SENT: t("procurement.purchaseOrders.statusSent"),
+    PARTIALLY_RECEIVED: t("procurement.purchaseOrders.statusPartiallyReceived"),
+    RECEIVED: t("procurement.purchaseOrders.statusReceived"),
+    CANCELLED: t("procurement.purchaseOrders.statusCancelled"),
+    CLOSED: t("procurement.purchaseOrders.statusClosed"),
+  };
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -97,7 +99,7 @@ const PurchaseOrders: React.FC = () => {
   }, [fetchOrders]);
 
   const handleApprove = async (id: string) => {
-    if (window.confirm("هل تريد الموافقة على هذا الأمر؟")) {
+    if (window.confirm(t("procurement.purchaseOrders.confirmApprove"))) {
       try {
         await apiClient.post(`/procurement/purchase-orders/${id}/approve`);
         fetchOrders();
@@ -108,7 +110,7 @@ const PurchaseOrders: React.FC = () => {
   };
 
   const handleCancel = async (id: string) => {
-    if (window.confirm("هل تريد إلغاء هذا الأمر؟")) {
+    if (window.confirm(t("procurement.purchaseOrders.confirmCancel"))) {
       try {
         await apiClient.post(`/procurement/purchase-orders/${id}/cancel`);
         fetchOrders();
@@ -121,9 +123,9 @@ const PurchaseOrders: React.FC = () => {
   return (
     <div className="p-3">
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 justify-between mb-3">
-        <h1 className="text-2xl font-bold">أوامر الشراء</h1>
+        <h1 className="text-2xl font-bold">{t("procurement.purchaseOrders.title")}</h1>
         <Button onClick={() => navigate("/procurement/purchase-orders/new")}>
-          <Plus className="size-4" /> إنشاء أمر شراء جديد
+          <Plus className="size-4" /> {t("procurement.purchaseOrders.createNew")}
         </Button>
       </div>
 
@@ -133,7 +135,7 @@ const PurchaseOrders: React.FC = () => {
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
-                placeholder="البحث عن أمر شراء..."
+                placeholder={t("procurement.purchaseOrders.searchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-8"
@@ -142,10 +144,10 @@ const PurchaseOrders: React.FC = () => {
             <div className="min-w-[200px]">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="الحالة" />
+                  <SelectValue placeholder={t("procurement.purchaseOrders.filterStatus")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">الكل</SelectItem>
+                  <SelectItem value="all">{t("procurement.purchaseOrders.all")}</SelectItem>
                   {Object.entries(statusLabels).map(([key, label]) => (
                     <SelectItem key={key} value={key}>
                       {label}
@@ -162,14 +164,14 @@ const PurchaseOrders: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>رقم الأمر</TableHead>
-              <TableHead>المورد</TableHead>
-              <TableHead>تاريخ الأمر</TableHead>
-              <TableHead>التسليم المتوقع</TableHead>
-              <TableHead>عدد الأصناف</TableHead>
-              <TableHead>المبلغ الإجمالي</TableHead>
-              <TableHead>الحالة</TableHead>
-              <TableHead>الإجراءات</TableHead>
+              <TableHead>{t("procurement.purchaseOrders.columnOrderNumber")}</TableHead>
+              <TableHead>{t("procurement.purchaseOrders.columnSupplier")}</TableHead>
+              <TableHead>{t("procurement.purchaseOrders.columnOrderDate")}</TableHead>
+              <TableHead>{t("procurement.purchaseOrders.columnExpectedDelivery")}</TableHead>
+              <TableHead>{t("procurement.purchaseOrders.columnItemCount")}</TableHead>
+              <TableHead>{t("procurement.purchaseOrders.columnTotalAmount")}</TableHead>
+              <TableHead>{t("procurement.purchaseOrders.columnStatus")}</TableHead>
+              <TableHead>{t("procurement.purchaseOrders.columnActions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -200,7 +202,7 @@ const PurchaseOrders: React.FC = () => {
                       onClick={() =>
                         navigate(`/procurement/purchase-orders/${order.id}`)
                       }
-                      title="عرض التفاصيل"
+                      title={t("procurement.purchaseOrders.viewDetails")}
                     >
                       <Eye className="size-4" />
                     </Button>
@@ -212,7 +214,7 @@ const PurchaseOrders: React.FC = () => {
                           onClick={() =>
                             navigate(`/procurement/purchase-orders/${order.id}/edit`)
                           }
-                          title="تعديل"
+                          title={t("procurement.purchaseOrders.edit")}
                         >
                           <Pencil className="size-4" />
                         </Button>
@@ -220,7 +222,7 @@ const PurchaseOrders: React.FC = () => {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleApprove(order.id)}
-                          title="الموافقة"
+                          title={t("procurement.purchaseOrders.approve")}
                         >
                           <CheckCircle className="size-4 text-green-600" />
                         </Button>
@@ -233,7 +235,7 @@ const PurchaseOrders: React.FC = () => {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleCancel(order.id)}
-                          title="إلغاء"
+                          title={t("procurement.purchaseOrders.cancel")}
                         >
                           <XCircle className="size-4 text-red-600" />
                         </Button>
@@ -248,14 +250,14 @@ const PurchaseOrders: React.FC = () => {
 
       <div className="grid md:hidden gap-2">
         {orders.length === 0 ? (
-          <ProcurementMobileState>لا توجد أوامر شراء</ProcurementMobileState>
+          <ProcurementMobileState>{t("procurement.purchaseOrders.emptyState")}</ProcurementMobileState>
         ) : (
           orders.map((order) => (
             <ProcurementMobileCard
               key={order.id}
               eyebrow={order.orderNumber}
               title={order.supplier.name}
-              subtitle={`عدد الأصناف: ${order._count.items}`}
+              subtitle={t("procurement.purchaseOrders.mobileItemCount", { count: order._count.items })}
               status={
                 <Badge variant={statusColors[order.status] || "outline"}>
                   {statusLabels[order.status] || order.status}
@@ -263,22 +265,22 @@ const PurchaseOrders: React.FC = () => {
               }
               fields={[
                 {
-                  label: "تاريخ الأمر",
+                  label: t("procurement.purchaseOrders.mobileOrderDate"),
                   value: new Date(order.orderDate).toLocaleDateString("ar-EG"),
                 },
                 {
-                  label: "التسليم المتوقع",
+                  label: t("procurement.purchaseOrders.mobileExpectedDelivery"),
                   value: order.expectedDelivery
                     ? new Date(order.expectedDelivery).toLocaleDateString("ar-EG")
                     : "-",
                 },
                 {
-                  label: "المبلغ الإجمالي",
+                  label: t("procurement.purchaseOrders.mobileTotalAmount"),
                   value: `${Number(order.totalAmount).toFixed(2)} EGP`,
                   emphasis: true,
                 },
                 {
-                  label: "هاتف المورد",
+                  label: t("procurement.purchaseOrders.mobileSupplierPhone"),
                   value: order.supplier.phone || "-",
                 },
               ]}
@@ -290,7 +292,7 @@ const PurchaseOrders: React.FC = () => {
                     onClick={() =>
                       navigate(`/procurement/purchase-orders/${order.id}`)
                     }
-                    title="عرض التفاصيل"
+                    title={t("procurement.purchaseOrders.viewDetails")}
                   >
                     <Eye className="size-4" />
                   </Button>
@@ -302,7 +304,7 @@ const PurchaseOrders: React.FC = () => {
                         onClick={() =>
                           navigate(`/procurement/purchase-orders/${order.id}/edit`)
                         }
-                        title="تعديل"
+                        title={t("procurement.purchaseOrders.edit")}
                       >
                         <Pencil className="size-4" />
                       </Button>
@@ -310,7 +312,7 @@ const PurchaseOrders: React.FC = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleApprove(order.id)}
-                        title="الموافقة"
+                        title={t("procurement.purchaseOrders.approve")}
                       >
                         <CheckCircle className="size-4 text-green-600" />
                       </Button>
@@ -323,7 +325,7 @@ const PurchaseOrders: React.FC = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleCancel(order.id)}
-                        title="إلغاء"
+                        title={t("procurement.purchaseOrders.cancel")}
                       >
                         <XCircle className="size-4 text-red-600" />
                       </Button>
@@ -338,11 +340,11 @@ const PurchaseOrders: React.FC = () => {
       <div className="flex justify-center mt-3">
         <div className="flex items-center gap-1">
           <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-            السابق
+            {t("common.previous")}
           </Button>
           <span className="text-sm px-3">{page} / {totalPages}</span>
           <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-            التالي
+            {t("common.next")}
           </Button>
         </div>
       </div>

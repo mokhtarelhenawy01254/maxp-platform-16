@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import {
   Alert,
@@ -124,6 +125,7 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 };
 
 const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
+  const { t } = useTranslation();
   const params = useParams();
   const navigate = useNavigate();
   const printRef = useRef<HTMLDivElement>(null);
@@ -148,13 +150,13 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
       } else if (finalOrderId) {
         response = await apiClient.get(`/order-invoices/order/${finalOrderId}`);
       } else {
-        throw new Error("يجب تحديد رقم الطلب أو رقم الفاتورة");
+        throw new Error(t("orders.invoice.errorOrderRequired"));
       }
 
       setInvoice(response.data.data);
     } catch (err: unknown) {
       console.error("Error fetching invoice:", err);
-      setError(getErrorMessage(err, "خطأ في جلب الفاتورة"));
+      setError(getErrorMessage(err, t("orders.invoice.fetchError")));
     } finally {
       setLoading(false);
     }
@@ -204,10 +206,10 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
     if (!invoice) return;
     try {
       await apiClient.post(`/order-invoices/${invoice.id}/email`);
-      alert("تم إرسال الفاتورة بنجاح");
+      alert(t("orders.invoice.emailSent"));
     } catch (err: unknown) {
       console.error("Error emailing invoice:", err);
-      alert("خطأ في إرسال الفاتورة");
+      alert(t("orders.invoice.emailError"));
     }
   };
 
@@ -237,12 +239,12 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
 
   const getPaymentStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      PAID: "مدفوعة",
-      COMPLETED: "مدفوعة",
-      PENDING: "قيد الانتظار",
-      CANCELLED: "ملغاة",
-      REFUNDED: "مستردة",
-      PARTIALLY_PAID: "مدفوعة جزئياً",
+      PAID: t("orders.invoice.statusPaid"),
+      COMPLETED: t("orders.invoice.statusPaid"),
+      PENDING: t("orders.invoice.statusPending"),
+      CANCELLED: t("orders.invoice.statusCancelled"),
+      REFUNDED: t("orders.invoice.statusRefunded"),
+      PARTIALLY_PAID: t("orders.invoice.statusPartiallyPaid"),
     };
     return labels[status] || status;
   };
@@ -280,7 +282,7 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
         <Button variant="outline" onClick={() => navigate(-1)} className="mt-2">
-          <ArrowLeft className="size-4" /> رجوع
+          <ArrowLeft className="size-4" /> {t("orders.invoice.back")}
         </Button>
       </div>
     );
@@ -290,10 +292,10 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
     return (
       <div className="p-3">
         <Alert>
-          <AlertDescription>الفاتورة غير موجودة</AlertDescription>
+          <AlertDescription>{t("orders.invoice.notFound")}</AlertDescription>
         </Alert>
         <Button variant="outline" onClick={() => navigate(-1)} className="mt-2">
-          <ArrowLeft className="size-4" /> رجوع
+          <ArrowLeft className="size-4" /> {t("orders.invoice.back")}
         </Button>
       </div>
     );
@@ -307,16 +309,16 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
     >
       <div className="mb-3 flex gap-2 flex-wrap no-print">
         <Button variant="outline" onClick={() => navigate(-1)}>
-          <ArrowLeft className="size-4" /> رجوع
+          <ArrowLeft className="size-4" /> {t("orders.invoice.back")}
         </Button>
         <Button onClick={handlePrint} disabled={printing}>
-          <Printer className="size-4" /> طباعة
+          <Printer className="size-4" /> {t("orders.invoice.print")}
         </Button>
         <Button variant="outline" onClick={handleEmail}>
-          <Mail className="size-4" /> إرسال بالبريد
+          <Mail className="size-4" /> {t("orders.invoice.email")}
         </Button>
         <Button variant="outline" onClick={handlePrint}>
-          <Download className="size-4" /> تحميل PDF
+          <Download className="size-4" /> {t("orders.invoice.downloadPdf")}
         </Button>
       </div>
 
@@ -351,28 +353,28 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
             )}
             {invoice.companyPhone && (
               <p className="text-sm" style={{ color: secondaryColor }}>
-                هاتف: {invoice.companyPhone}
+                {t("orders.invoice.phone")} {invoice.companyPhone}
               </p>
             )}
             {invoice.companyEmail && (
               <p className="text-sm" style={{ color: secondaryColor }}>
-                بريد: {invoice.companyEmail}
+                {t("orders.invoice.emailLabel")} {invoice.companyEmail}
               </p>
             )}
           </div>
 
           <div className="min-w-[220px] text-right">
             <h1 className="text-2xl font-bold" style={{ color: primaryColor }}>
-              فاتورة
+              {t("orders.invoice.title")}
             </h1>
             <h3 className="text-lg mt-1">{invoice.invoiceNumber}</h3>
             <div className="mt-2 grid gap-1">
               <p className="text-sm">
-                <strong>تاريخ الإصدار:</strong> {formatDate(invoice.issueDate)}
+                <strong>{t("orders.invoice.issueDate")}</strong> {formatDate(invoice.issueDate)}
               </p>
               {invoice.dueDate && (
                 <p className="text-sm">
-                  <strong>تاريخ الاستحقاق:</strong> {formatDate(invoice.dueDate)}
+                  <strong>{t("orders.invoice.dueDate")}</strong> {formatDate(invoice.dueDate)}
                 </p>
               )}
               <div className="mt-0.5">
@@ -387,38 +389,38 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-3">
           <div>
             <p className="text-xs font-semibold mb-1" style={{ color: secondaryColor }}>
-              الفاتورة إلى
+              {t("orders.invoice.billedTo")}
             </p>
             <p className="text-sm font-bold">{invoice.customerName}</p>
             {invoice.customerPhone && (
-              <p className="text-sm">هاتف: {invoice.customerPhone}</p>
+              <p className="text-sm">{t("orders.invoice.phone")} {invoice.customerPhone}</p>
             )}
             {invoice.customerEmail && (
-              <p className="text-sm">بريد: {invoice.customerEmail}</p>
+              <p className="text-sm">{t("orders.invoice.emailLabel")} {invoice.customerEmail}</p>
             )}
             {invoice.customerAddress && (
-              <p className="text-sm">العنوان: {invoice.customerAddress}</p>
+              <p className="text-sm">{t("orders.invoice.address")} {invoice.customerAddress}</p>
             )}
             {invoice.city && (
-              <p className="text-sm">المدينة: {invoice.city}</p>
+              <p className="text-sm">{t("orders.invoice.city")} {invoice.city}</p>
             )}
             {invoice.governorate && (
-              <p className="text-sm">المحافظة: {invoice.governorate}</p>
+              <p className="text-sm">{t("orders.invoice.governorate")} {invoice.governorate}</p>
             )}
           </div>
           <div className="text-right">
             <p className="text-xs font-semibold mb-1" style={{ color: secondaryColor }}>
-              معلومات الطلب
+              {t("orders.invoice.orderInfo")}
             </p>
             <p className="text-sm">
-              <strong>رقم الطلب:</strong> {invoice.order?.orderNumber || "-"}
+              <strong>{t("orders.invoice.orderNumber")}</strong> {invoice.order?.orderNumber || "-"}
             </p>
             <p className="text-sm">
-              <strong>حالة الطلب:</strong> {invoice.order?.status || "-"}
+              <strong>{t("orders.invoice.orderStatus")}</strong> {invoice.order?.status || "-"}
             </p>
             {showPaymentMethod && invoice.paymentMethod && (
               <p className="text-sm">
-                <strong>طريقة الدفع:</strong> {invoice.paymentMethod}
+                <strong>{t("orders.invoice.paymentMethod")}</strong> {invoice.paymentMethod}
               </p>
             )}
           </div>
@@ -430,10 +432,10 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
               <TableHeader>
                 <TableRow style={{ backgroundColor: `${primaryColor}15` }}>
                   <TableHead className="font-bold">#</TableHead>
-                  <TableHead className="font-bold">المنتج</TableHead>
-                  <TableHead className="text-center font-bold">الكمية</TableHead>
-                  <TableHead className="text-right font-bold">السعر</TableHead>
-                  <TableHead className="text-right font-bold">الإجمالي</TableHead>
+                  <TableHead className="font-bold">{t("orders.invoice.product")}</TableHead>
+                  <TableHead className="text-center font-bold">{t("orders.invoice.quantity")}</TableHead>
+                  <TableHead className="text-right font-bold">{t("orders.invoice.price")}</TableHead>
+                  <TableHead className="text-right font-bold">{t("orders.invoice.total")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -466,14 +468,14 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
         <div className="flex justify-end">
           <div className="w-full md:w-1/2 p-2.5 rounded-lg" style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
             <div className="flex justify-between mb-1">
-              <span className="text-sm">المجموع الفرعي:</span>
+              <span className="text-sm">{t("orders.invoice.subtotal")}</span>
               <span className="text-sm font-medium">
                 {formatCurrency(parseNumber(invoice.subtotal), invoice.currency)}
               </span>
             </div>
             {parseNumber(invoice.discount) > 0 && (
               <div className="flex justify-between mb-1">
-                <span className="text-sm">الخصم:</span>
+                <span className="text-sm">{t("orders.invoice.discount")}</span>
                 <span className="text-sm font-medium text-red-500">
                   - {formatCurrency(parseNumber(invoice.discount), invoice.currency)}
                 </span>
@@ -481,7 +483,7 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
             )}
             {showTaxBreakdown && parseNumber(invoice.tax) > 0 && (
               <div className="flex justify-between mb-1">
-                <span className="text-sm">الضريبة ({invoice.taxRate || 0}%):</span>
+                <span className="text-sm">{t("orders.invoice.tax", { rate: invoice.taxRate || 0 })}</span>
                 <span className="text-sm font-medium">
                   {formatCurrency(parseNumber(invoice.tax), invoice.currency)}
                 </span>
@@ -489,7 +491,7 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
             )}
             {parseNumber(invoice.shipping) > 0 && (
               <div className="flex justify-between mb-1">
-                <span className="text-sm">الشحن:</span>
+                <span className="text-sm">{t("orders.invoice.shipping")}</span>
                 <span className="text-sm font-medium">
                   {formatCurrency(parseNumber(invoice.shipping), invoice.currency)}
                 </span>
@@ -497,7 +499,7 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
             )}
             <Separator className="my-1.5" />
             <div className="flex justify-between">
-              <h3 className="text-base font-bold">الإجمالي:</h3>
+              <h3 className="text-base font-bold">{t("orders.invoice.grandTotal")}</h3>
               <h3 className="text-base font-bold" style={{ color: primaryColor }}>
                 {formatCurrency(parseNumber(invoice.totalAmount), invoice.currency)}
               </h3>
@@ -509,7 +511,7 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
           <div className="mt-4">
             {invoice.notes && (
               <div className="mb-2">
-                <p className="text-xs font-bold mb-1">ملاحظات</p>
+                <p className="text-xs font-bold mb-1">{t("orders.invoice.notes")}</p>
                 <p className="text-sm" style={{ color: secondaryColor }}>
                   {invoice.notes}
                 </p>
@@ -517,7 +519,7 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
             )}
             {invoice.terms && (
               <div>
-                <p className="text-xs font-bold mb-1">الشروط والأحكام</p>
+                <p className="text-xs font-bold mb-1">{t("orders.invoice.terms")}</p>
                 <p className="text-sm" style={{ color: secondaryColor }}>
                   {invoice.terms}
                 </p>
@@ -528,11 +530,11 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
 
         <div className="mt-4 pt-3 text-center" style={{ borderTop: "1px solid #e2e8f0" }}>
           <p className="text-sm" style={{ color: secondaryColor }}>
-            شكراً لتعاملكم معنا
+            {t("orders.invoice.thankYou")}
           </p>
           {invoice.printCount > 0 && (
             <p className="text-xs mt-1" style={{ color: secondaryColor }}>
-              تم طباعة هذه الفاتورة {invoice.printCount} مرة
+              {t("orders.invoice.printedCount", { count: invoice.printCount })}
             </p>
           )}
         </div>

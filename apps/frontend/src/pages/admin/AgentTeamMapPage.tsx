@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { GitBranch, Users, ExternalLink, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
@@ -45,6 +46,7 @@ const roleTone = (role: string) => {
 };
 
 export default function AgentTeamMapPage() {
+  const { t } = useTranslation();
   const [tree, setTree] = useState<AgentNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +59,7 @@ export default function AgentTeamMapPage() {
       const data = await apiRequest<{ success: true; tree: AgentNode[] }>("agent/team-map");
       setTree(data.tree || []);
     } catch (err: any) {
-      setError(err.message || "تعذر تحميل خريطة الوكلاء.");
+      setError(err.message || t("agentTeamMap.loadError"));
     } finally {
       setLoading(false);
     }
@@ -73,11 +75,11 @@ export default function AgentTeamMapPage() {
       dir="rtl"
     >
       <AdminPageHeader
-        title="خريطة الوكلاء"
-        subtitle="تقسيم شجري يوضح المدير، الفريق المباشر، وأي وكلاء تابعين لوكلاء آخرين."
+        title={t("agentTeamMap.title")}
+        subtitle={t("agentTeamMap.subtitle")}
         icon={<GitBranch className="size-7" />}
         actions={<>
-          <Button variant="outline" asChild><RouterLink to="/admin/ai-agents"><ExternalLink className="mr-1 size-4" />إدارة الملفات</RouterLink></Button>
+          <Button variant="outline" asChild><RouterLink to="/admin/ai-agents"><ExternalLink className="mr-1 size-4" />{t("agentTeamMap.manageFiles")}</RouterLink></Button>
           <Button variant="ghost" size="icon" onClick={loadTree}>{loading ? <LoadingSpinner size="sm" /> : <RefreshCw className="size-5" />}</Button>
         </>}
       />
@@ -105,7 +107,7 @@ export default function AgentTeamMapPage() {
           </div>
         ) : tree.length === 0 ? (
           <div className="grid min-h-[420px] place-items-center text-center">
-            <p className="text-muted-foreground">لا يوجد وكلاء بعد.</p>
+            <p className="text-muted-foreground">{t("agentTeamMap.emptyState")}</p>
           </div>
         ) : (
           <div className="flex min-w-[980px] items-start justify-center gap-0">
@@ -149,6 +151,7 @@ function TreeBranch({ node, depth }: { node: AgentNode; depth: number }) {
 }
 
 function AgentCard({ node, depth }: { node: AgentNode; depth: number }) {
+  const { t } = useTranslation();
   const tone = roleTone(node.role);
   const { derivedTheme } = useTheme();
   const isDark = derivedTheme === "dark";
@@ -189,7 +192,7 @@ function AgentCard({ node, depth }: { node: AgentNode; depth: number }) {
         <Button variant="link" size="sm" asChild>
           <RouterLink to={`/admin/ai-agents?agent=${node.id}`}>
             <ExternalLink className="mr-1 size-3.5" />
-            فتح الوكيل
+            {t("agentTeamMap.openAgent")}
           </RouterLink>
         </Button>
       </div>

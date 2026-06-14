@@ -2179,6 +2179,8 @@ const AppContent = () => {
               />
             ) : isAuthenticated ? (
               <>
+                {/* Root redirect to apps */}
+                <Route path="/" element={<Navigate to="/apps" replace />} />
                 {/* App Dashboard Routes */}
                 <Route
                   path="/company-dashboard"
@@ -6177,6 +6179,8 @@ const AppContent = () => {
                   path="/admin/ai-scheduler"
                   element={<Navigate to="/admin/ai-hub?tab=scheduler" replace />}
                 />
+                {/* Catch-all for authenticated users */}
+                <Route path="*" element={<Navigate to="/apps" replace />} />
               </>
             ) : (
               // Redirect unauthenticated users trying to access protected routes

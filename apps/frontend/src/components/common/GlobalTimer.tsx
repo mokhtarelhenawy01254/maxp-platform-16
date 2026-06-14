@@ -1,5 +1,6 @@
 import React from "react";
 import { Play, Pause, Square } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useTimer } from "../../contexts/TimerContext";
 import { useTheme } from "../../hooks/useTheme";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const GlobalTimer: React.FC = () => {
+  const { t } = useTranslation();
   const { activeTimer, elapsedSeconds, stopTimer, pauseTimer, resumeTimer } = useTimer();
   const navigate = useNavigate();
   const { actualTheme } = useTheme();
@@ -50,7 +52,7 @@ const GlobalTimer: React.FC = () => {
             className="text-[0.65rem] font-semibold max-w-[120px] truncate text-center"
             style={{ color: textColor, opacity: 0.8 }}
           >
-            {activeTimer.taskTitle || "مهمة قيد التنفيذ"}
+            {activeTimer.taskTitle || t("globalTimer.taskRunning")}
           </span>
         </div>
 
@@ -71,7 +73,7 @@ const GlobalTimer: React.FC = () => {
                   <Play className="size-[18px]" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>استئناف</TooltipContent>
+              <TooltipContent>{t("globalTimer.resume")}</TooltipContent>
             </Tooltip>
           ) : (
             <Tooltip>
@@ -86,7 +88,7 @@ const GlobalTimer: React.FC = () => {
                   <Pause className="size-[18px]" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>إيقاف مؤقت</TooltipContent>
+              <TooltipContent>{t("globalTimer.pause")}</TooltipContent>
             </Tooltip>
           )}
           <Tooltip>
@@ -101,7 +103,7 @@ const GlobalTimer: React.FC = () => {
                 <Square className="size-[18px]" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>إنهاء المهمة</TooltipContent>
+            <TooltipContent>{t("globalTimer.stop")}</TooltipContent>
           </Tooltip>
         </div>
       </div>

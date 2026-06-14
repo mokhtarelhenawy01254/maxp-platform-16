@@ -1,0 +1,39 @@
+{
+  "title": "أدوات الوكلاء",
+  "subtitle": "كل أداة عبارة عن وحدة عمل يستطيع الوكيل استدعاؤها. هنا تعرف مين بيستخدم أنهي أداة وتقدر تعيّنها.",
+  "search": "بحث في الأدوات أو الوكلاء...",
+  "refresh": "تحديث",
+  "totalTools": "إجمالي الأدوات",
+  "read": "قراءة",
+  "write": "كتابة",
+  "agents": "الوكلاء",
+  "noDescription": "لا يوجد وصف لهذه الأداة.",
+  "noAgents": "لا يوجد وكلاء يستخدمون هذه الأداة حالياً",
+  "assignToAgent": "تعيين لوكيل",
+  "agentsUsing": "الوكلاء يستخدمون هذه الأداة ({count})",
+  "dialogAssignTitle": "تعيين الأداة لوكيل",
+  "dialogSearch": "بحث في الوكلاء...",
+  "dialogSelected": "{selected} / {total} محدد",
+  "dialogSelectAll": "تحديد الكل",
+  "dialogDeselectAll": "إلغاء تحديد الكل",
+  "dialogCurrent": "حالي",
+  "dialogNoResults": "لا توجد نتائج",
+  "dialogSaving": "جارٍ الحفظ...",
+  "dialogSave": "حفظ",
+  "needsApproval": "تحتاج موافقة",
+  "readSection": "قراءة (آمنة)",
+  "writeSection": "كتابة (تحتاج موافقة)",
+  "autonomy": {
+    "auto": "تلقائي",
+    "blocked": "محظور",
+    "approval": "يحتاج تأكيد"
+  },
+  "sideEffects": {
+    "read": "قراءة",
+    "write": "كتابة"
+  },
+  "sources": {
+    "mcp": "MCP",
+    "python": "Python"
+  }
+}

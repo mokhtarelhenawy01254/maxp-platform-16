@@ -1,0 +1,39 @@
+{
+  "title": "Agent Tools",
+  "subtitle": "Each tool is a work unit the agent can invoke. Here you can see who uses which tool and assign them.",
+  "search": "Search tools or agents...",
+  "refresh": "Refresh",
+  "totalTools": "Total Tools",
+  "read": "Read",
+  "write": "Write",
+  "agents": "Agents",
+  "noDescription": "No description for this tool.",
+  "noAgents": "No agents currently using this tool",
+  "assignToAgent": "Assign to Agent",
+  "agentsUsing": "Agents using this tool ({count})",
+  "dialogAssignTitle": "Assign Tool to Agent",
+  "dialogSearch": "Search agents...",
+  "dialogSelected": "{selected} / {total} selected",
+  "dialogSelectAll": "Select All",
+  "dialogDeselectAll": "Deselect All",
+  "dialogCurrent": "Current",
+  "dialogNoResults": "No results found",
+  "dialogSaving": "Saving...",
+  "dialogSave": "Save",
+  "needsApproval": "Needs Approval",
+  "readSection": "Read (Safe)",
+  "writeSection": "Write (Needs Approval)",
+  "autonomy": {
+    "auto": "Auto",
+    "blocked": "Blocked",
+    "approval": "Needs Approval"
+  },
+  "sideEffects": {
+    "read": "Read",
+    "write": "Write"
+  },
+  "sources": {
+    "mcp": "MCP",
+    "python": "Python"
+  }
+}

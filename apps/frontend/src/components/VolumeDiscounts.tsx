@@ -6,6 +6,7 @@ import {
   Percent,
   DollarSign,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { apiClient } from "../services/apiClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +51,7 @@ interface VolumeDiscountsProps {
 }
 
 const VolumeDiscounts: React.FC<VolumeDiscountsProps> = ({ productId }) => {
+  const { t } = useTranslation();
   const [discounts, setDiscounts] = useState<VolumeDiscount[]>([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
@@ -75,7 +77,7 @@ const VolumeDiscounts: React.FC<VolumeDiscountsProps> = ({ productId }) => {
       if (response.data.success) setDiscounts(response.data.data);
     } catch (error: any) {
       console.error("Error fetching volume discounts:", error);
-      setMessage({ type: "error", text: "فشل في جلب خصومات الكميات" });
+      setMessage({ type: "error", text: t("volumeDiscounts.fetchError") });
     } finally {
       setLoading(false);
     }
@@ -107,28 +109,28 @@ const VolumeDiscounts: React.FC<VolumeDiscountsProps> = ({ productId }) => {
     try {
       if (editingDiscount) {
         await apiClient.put(`/products/${productId}/volume-discounts/${editingDiscount.id}`, formData);
-        setMessage({ type: "success", text: "تم تحديث الخصم بنجاح" });
+        setMessage({ type: "success", text: t("volumeDiscounts.updateSuccess") });
       } else {
         await apiClient.post(`/products/${productId}/volume-discounts`, formData);
-        setMessage({ type: "success", text: "تم إضافة الخصم بنجاح" });
+        setMessage({ type: "success", text: t("volumeDiscounts.createSuccess") });
       }
       handleCloseDialog();
       fetchDiscounts();
     } catch (error: any) {
       console.error("Error saving volume discount:", error);
-      setMessage({ type: "error", text: error.response?.data?.message || "فشل في حفظ الخصم" });
+      setMessage({ type: "error", text: error.response?.data?.message || t("volumeDiscounts.saveError") });
     }
   };
 
   const handleDelete = async (discountId: string) => {
-    if (!window.confirm("هل أنت متأكد من حذف هذا الخصم؟")) return;
+    if (!window.confirm(t("volumeDiscounts.confirmDelete"))) return;
     try {
       await apiClient.delete(`/products/${productId}/volume-discounts/${discountId}`);
-      setMessage({ type: "success", text: "تم حذف الخصم بنجاح" });
+      setMessage({ type: "success", text: t("volumeDiscounts.deleteSuccess") });
       fetchDiscounts();
     } catch (error: any) {
       console.error("Error deleting volume discount:", error);
-      setMessage({ type: "error", text: "فشل في حذف الخصم" });
+      setMessage({ type: "error", text: t("volumeDiscounts.deleteError") });
     }
   };
 
@@ -146,13 +148,13 @@ const VolumeDiscounts: React.FC<VolumeDiscountsProps> = ({ productId }) => {
     <div>
       <div className="flex justify-between items-center mb-2">
         <div>
-          <h3 className="text-base font-semibold mb-1">خصومات الكميات</h3>
+          <h3 className="text-base font-semibold mb-1">{t("volumeDiscounts.title")}</h3>
           <p className="text-sm text-muted-foreground">
-            قم بإضافة خصومات تلقائية عند شراء كميات معينة من المنتج
+            {t("volumeDiscounts.description")}
           </p>
         </div>
         <Button size="sm" onClick={() => handleOpenDialog()}>
-          <Plus className="size-4" /> إضافة خصم
+          <Plus className="size-4" /> {t("volumeDiscounts.addDiscount")}
         </Button>
       </div>
 
@@ -168,11 +170,11 @@ const VolumeDiscounts: React.FC<VolumeDiscountsProps> = ({ productId }) => {
             <Table size="small">
               <TableHeader>
                 <TableRow>
-                  <TableHead>نطاق الكمية</TableHead>
-                  <TableHead>نوع الخصم</TableHead>
-                  <TableHead>قيمة الخصم</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead className="text-center">الإجراءات</TableHead>
+                  <TableHead>{t("volumeDiscounts.columns.quantityRange")}</TableHead>
+                  <TableHead>{t("volumeDiscounts.columns.discountType")}</TableHead>
+                  <TableHead>{t("volumeDiscounts.columns.discountValue")}</TableHead>
+                  <TableHead>{t("volumeDiscounts.columns.status")}</TableHead>
+                  <TableHead className="text-center">{t("volumeDiscounts.columns.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -182,7 +184,7 @@ const VolumeDiscounts: React.FC<VolumeDiscountsProps> = ({ productId }) => {
                       <div className="py-3">
                         <Percent className="size-12 text-muted-foreground mb-1 mx-auto" />
                         <p className="text-sm text-muted-foreground">
-                          لا توجد خصومات كميات. قم بإضافة خصم لتحفيز العملاء على الشراء بكميات أكبر
+                          {t("volumeDiscounts.emptyState")}
                         </p>
                       </div>
                     </TableCell>
@@ -190,11 +192,11 @@ const VolumeDiscounts: React.FC<VolumeDiscountsProps> = ({ productId }) => {
                 ) : (
                   discounts.map((discount) => (
                     <TableRow key={discount.id}>
-                      <TableCell>{formatQuantityRange(discount)} قطعة</TableCell>
+                      <TableCell>{formatQuantityRange(discount)} {t("volumeDiscounts.preview.pieces")}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="flex items-center gap-1 w-fit">
                           {discount.discountType === "percentage" ? <Percent className="size-3" /> : <DollarSign className="size-3" />}
-                          {discount.discountType === "percentage" ? "نسبة مئوية" : "مبلغ ثابت"}
+                          {discount.discountType === "percentage" ? t("volumeDiscounts.type.percentage") : t("volumeDiscounts.type.fixed")}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -202,7 +204,7 @@ const VolumeDiscounts: React.FC<VolumeDiscountsProps> = ({ productId }) => {
                       </TableCell>
                       <TableCell>
                         <Badge variant={discount.isActive ? "default" : "secondary"}>
-                          {discount.isActive ? "نشط" : "معطل"}
+                          {discount.isActive ? t("volumeDiscounts.status.active") : t("volumeDiscounts.status.inactive")}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
@@ -224,9 +226,9 @@ const VolumeDiscounts: React.FC<VolumeDiscountsProps> = ({ productId }) => {
 
           {discounts.length > 0 && (
             <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/30 rounded">
-              <p className="text-xs text-muted-foreground mb-1">نصيحة:</p>
+              <p className="text-xs text-muted-foreground mb-1">{t("volumeDiscounts.preview.title")}:</p>
               <p className="text-sm">
-                تأكد من عدم تداخل نطاقات الكميات. سيتم تطبيق الخصم تلقائياً عند إضافة المنتج للسلة.
+                {t("volumeDiscounts.tip.description")}
               </p>
             </div>
           )}
@@ -236,11 +238,11 @@ const VolumeDiscounts: React.FC<VolumeDiscountsProps> = ({ productId }) => {
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent className="sm:max-w-sm">
           <DialogTitle>
-            {editingDiscount ? "تعديل خصم الكمية" : "إضافة خصم كمية جديد"}
+            {editingDiscount ? t("volumeDiscounts.editDiscount") : t("volumeDiscounts.addNewDiscount")}
           </DialogTitle>
           <div className="flex flex-col gap-4 py-4">
             <div className="space-y-1">
-              <Label>الحد الأدنى للكمية</Label>
+              <Label>{t("volumeDiscounts.label.minQuantity")}</Label>
               <Input
                 type="number"
                 value={formData.minQuantity}
@@ -250,7 +252,7 @@ const VolumeDiscounts: React.FC<VolumeDiscountsProps> = ({ productId }) => {
             </div>
 
             <div className="space-y-1">
-              <Label>الحد الأقصى للكمية (اختياري)</Label>
+              <Label>{t("volumeDiscounts.label.maxQuantity")}</Label>
               <Input
                 type="number"
                 value={formData.maxQuantity || ""}
@@ -260,7 +262,7 @@ const VolumeDiscounts: React.FC<VolumeDiscountsProps> = ({ productId }) => {
             </div>
 
             <div className="space-y-1">
-              <Label>نوع الخصم</Label>
+              <Label>{t("volumeDiscounts.label.discountType")}</Label>
               <Select
                 value={formData.discountType}
                 onValueChange={(value) => setFormData({ ...formData, discountType: value as "percentage" | "fixed" })}
@@ -271,12 +273,12 @@ const VolumeDiscounts: React.FC<VolumeDiscountsProps> = ({ productId }) => {
                 <SelectContent>
                   <SelectItem value="percentage">
                     <div className="flex items-center gap-1">
-                      <Percent className="size-4" /> نسبة مئوية
+                      <Percent className="size-4" /> {t("volumeDiscounts.type.percentage")}
                     </div>
                   </SelectItem>
                   <SelectItem value="fixed">
                     <div className="flex items-center gap-1">
-                      <DollarSign className="size-4" /> مبلغ ثابت
+                      <DollarSign className="size-4" /> {t("volumeDiscounts.type.fixed")}
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -285,7 +287,7 @@ const VolumeDiscounts: React.FC<VolumeDiscountsProps> = ({ productId }) => {
 
             <div className="space-y-1">
               <Label>
-                {formData.discountType === "percentage" ? "نسبة الخصم (%)" : "مبلغ الخصم (جنيه)"}
+                {formData.discountType === "percentage" ? t("volumeDiscounts.label.discountValuePercentage") : t("volumeDiscounts.label.discountValueFixed")}
               </Label>
               <Input
                 type="number"
@@ -302,21 +304,21 @@ const VolumeDiscounts: React.FC<VolumeDiscountsProps> = ({ productId }) => {
                 checked={formData.isActive}
                 onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
               />
-              <Label>تفعيل الخصم</Label>
+              <Label>{t("volumeDiscounts.label.enableDiscount")}</Label>
             </div>
 
             <div className="p-2 bg-green-50 dark:bg-green-950/30 rounded">
-              <p className="text-xs text-muted-foreground mb-1">معاينة:</p>
+              <p className="text-xs text-muted-foreground mb-1">{t("volumeDiscounts.preview.title")}:</p>
               <p className="text-sm font-medium">
-                عند شراء {formData.minQuantity}
-                {formData.maxQuantity ? ` - ${formData.maxQuantity}` : "+"} قطعة، سيحصل العميل على
-                خصم {formData.discountValue}{formData.discountType === "percentage" ? "%" : " جنيه"}
+                {t("volumeDiscounts.preview.buy")} {formData.minQuantity}
+                {formData.maxQuantity ? ` - ${formData.maxQuantity}` : "+"} {t("volumeDiscounts.preview.pieces")}{t("volumeDiscounts.preview.customerGets")}
+                {t("volumeDiscounts.preview.discount")} {formData.discountValue}{formData.discountType === "percentage" ? "%" : " جنيه"}
               </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={handleCloseDialog}>إلغاء</Button>
-            <Button onClick={handleSave}>{editingDiscount ? "تحديث" : "إضافة"}</Button>
+            <Button variant="outline" onClick={handleCloseDialog}>{t("common.cancel")}</Button>
+            <Button onClick={handleSave}>{editingDiscount ? t("volumeDiscounts.actions.update") : t("volumeDiscounts.actions.add")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

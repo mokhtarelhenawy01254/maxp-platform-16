@@ -38,6 +38,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 
 interface Policy {
@@ -67,6 +68,7 @@ const getCategoryBadgeVariant = (category: string): "default" | "secondary" | "d
 };
 
 const PolicyManagement: React.FC = () => {
+  const { t } = useTranslation();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +98,7 @@ const PolicyManagement: React.FC = () => {
       const response = await apiClient.get("/policies");
       setPolicies(response.data);
     } catch (err: any) {
-      setError(err.response?.data?.error || "فشل تحميل السياسات");
+      setError(err.response?.data?.error || t("policyManagement.loadError"));
     } finally {
       setLoading(false);
     }
@@ -116,29 +118,29 @@ const PolicyManagement: React.FC = () => {
 
       if (editingPolicy) {
         await apiClient.put(`/policies/${editingPolicy.id}`, data);
-        setSuccess("تم تحديث السياسة بنجاح");
+        setSuccess(t("policyManagement.updateSuccess"));
       } else {
         await apiClient.post("/policies", data);
-        setSuccess("تم إضافة السياسة بنجاح");
+        setSuccess(t("policyManagement.createSuccess"));
       }
 
       setDialogOpen(false);
       resetForm();
       loadPolicies();
     } catch (err: any) {
-      setError(err.response?.data?.error || "فشل حفظ السياسة");
+      setError(err.response?.data?.error || t("policyManagement.saveError"));
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("هل أنت متأكد من حذف هذه السياسة؟")) return;
+    if (!window.confirm(t("policyManagement.confirmDelete"))) return;
 
     try {
       await apiClient.delete(`/policies/${id}`);
-      setSuccess("تم حذف السياسة بنجاح");
+      setSuccess(t("policyManagement.deleteSuccess"));
       loadPolicies();
     } catch (err: any) {
-      setError(err.response?.data?.error || "فشل حذف السياسة");
+      setError(err.response?.data?.error || t("policyManagement.deleteError"));
     }
   };
 
@@ -147,10 +149,10 @@ const PolicyManagement: React.FC = () => {
       await apiClient.put(`/policies/${policy.id}`, {
         isActive: !policy.isActive,
       });
-      setSuccess(`تم ${!policy.isActive ? "تفعيل" : "تعطيل"} السياسة بنجاح`);
+      setSuccess(t("policyManagement.toggleSuccess", { status: !policy.isActive ? t("policyManagement.label.active") : "معطل" }));
       loadPolicies();
     } catch (err: any) {
-      setError(err.response?.data?.error || "فشل تحديث حالة السياسة");
+      setError(err.response?.data?.error || t("policyManagement.statusError"));
     }
   };
 
@@ -192,7 +194,7 @@ const PolicyManagement: React.FC = () => {
   return (
     <div className="p-3">
       <div className="flex justify-between items-center mb-3">
-        <h1 className="text-2xl font-bold">إدارة السياسات</h1>
+        <h1 className="text-2xl font-bold">{t("policyManagement.title")}</h1>
         <Button
           onClick={() => {
             resetForm();
@@ -200,7 +202,7 @@ const PolicyManagement: React.FC = () => {
           }}
         >
           <Plus className="size-4" />
-          إضافة سياسة جديدة
+          {t("policyManagement.addNew")}
         </Button>
       </div>
 
@@ -234,13 +236,13 @@ const PolicyManagement: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>العنوان</TableHead>
-                <TableHead>الفئة</TableHead>
-                <TableHead>تاريخ السريان</TableHead>
-                <TableHead>تاريخ الانتهاء</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead>الإصدار</TableHead>
-                <TableHead>الإجراءات</TableHead>
+                <TableHead>{t("policyManagement.columns.title")}</TableHead>
+                <TableHead>{t("policyManagement.columns.category")}</TableHead>
+                <TableHead>{t("policyManagement.columns.effectiveDate")}</TableHead>
+                <TableHead>{t("policyManagement.columns.expiryDate")}</TableHead>
+                <TableHead>{t("policyManagement.columns.status")}</TableHead>
+                <TableHead>{t("policyManagement.columns.version")}</TableHead>
+                <TableHead>{t("policyManagement.columns.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -283,7 +285,7 @@ const PolicyManagement: React.FC = () => {
                       </span>
                     ) : (
                       <span className="text-xs text-muted-foreground">
-                        بدون انتهاء
+                        {t("policyManagement.status.noExpiry")}
                       </span>
                     )}
                   </TableCell>
@@ -294,10 +296,10 @@ const PolicyManagement: React.FC = () => {
                         onCheckedChange={() => handleToggleActive(policy)}
                       />
                       {isExpired(policy) && (
-                        <Badge variant="destructive">منتهية</Badge>
+                        <Badge variant="destructive">{t("policyManagement.status.expired")}</Badge>
                       )}
                       {isNotYetEffective(policy) && (
-                        <Badge variant="secondary">قادمة</Badge>
+                        <Badge variant="secondary">{t("policyManagement.status.upcoming")}</Badge>
                       )}
                     </div>
                   </TableCell>
@@ -341,12 +343,12 @@ const PolicyManagement: React.FC = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingPolicy ? "تعديل السياسة" : "إضافة سياسة جديدة"}
+              {editingPolicy ? t("policyManagement.editTitle") : t("policyManagement.addNew")}
             </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-12 gap-4 mt-1">
             <div className="col-span-12">
-              <Label>العنوان</Label>
+              <Label>{t("policyManagement.label.title")}</Label>
               <Input
                 value={formData.title}
                 onChange={(e) =>
@@ -355,7 +357,7 @@ const PolicyManagement: React.FC = () => {
               />
             </div>
             <div className="col-span-12">
-              <Label>المحتوى</Label>
+              <Label>{t("policyManagement.label.content")}</Label>
               <Textarea
                 value={formData.content}
                 onChange={(e) =>
@@ -365,7 +367,7 @@ const PolicyManagement: React.FC = () => {
               />
             </div>
             <div className="col-span-12 md:col-span-6">
-              <Label>الفئة</Label>
+              <Label>{t("policyManagement.label.category")}</Label>
               <Select
                 value={formData.category}
                 onValueChange={(value) =>
@@ -376,27 +378,27 @@ const PolicyManagement: React.FC = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="general">عام</SelectItem>
-                  <SelectItem value="shipping">الشحن</SelectItem>
-                  <SelectItem value="return">الإرجاع</SelectItem>
-                  <SelectItem value="refund">الاسترداد</SelectItem>
-                  <SelectItem value="privacy">الخصوصية</SelectItem>
-                  <SelectItem value="terms">الشروط والأحكام</SelectItem>
+                  <SelectItem value="general">{t("policyManagement.category.general")}</SelectItem>
+                  <SelectItem value="shipping">{t("policyManagement.category.shipping")}</SelectItem>
+                  <SelectItem value="return">{t("policyManagement.category.return")}</SelectItem>
+                  <SelectItem value="refund">{t("policyManagement.category.refund")}</SelectItem>
+                  <SelectItem value="privacy">{t("policyManagement.category.privacy")}</SelectItem>
+                  <SelectItem value="terms">{t("policyManagement.category.terms")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="col-span-12 md:col-span-6">
-              <Label>الوسوم (مفصولة بفواصل)</Label>
+              <Label>{t("policyManagement.label.tags")}</Label>
               <Input
                 value={formData.tags}
                 onChange={(e) =>
                   setFormData({ ...formData, tags: e.target.value })
                 }
-                placeholder="شحن, إرجاع, ضمان"
+                placeholder={t("policyManagement.label.tagsPlaceholder")}
               />
             </div>
             <div className="col-span-12 md:col-span-6">
-              <Label>تاريخ السريان</Label>
+              <Label>{t("policyManagement.label.effectiveAt")}</Label>
               <Input
                 type="datetime-local"
                 value={formData.effectiveAt}
@@ -406,7 +408,7 @@ const PolicyManagement: React.FC = () => {
               />
             </div>
             <div className="col-span-12 md:col-span-6">
-              <Label>تاريخ الانتهاء (اختياري)</Label>
+              <Label>{t("policyManagement.label.expiresAt")}</Label>
               <Input
                 type="datetime-local"
                 value={formData.expiresAt}
@@ -423,19 +425,19 @@ const PolicyManagement: React.FC = () => {
                     setFormData({ ...formData, isActive: checked })
                   }
                 />
-                <Label>نشط</Label>
+                <Label>{t("policyManagement.label.active")}</Label>
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              إلغاء
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleSave}
               disabled={!formData.title || !formData.content}
             >
-              حفظ
+              {t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -450,25 +452,25 @@ const PolicyManagement: React.FC = () => {
             <div>
               <div className="grid grid-cols-12 gap-4 mb-2">
                 <div className="col-span-6">
-                  <span className="text-xs text-muted-foreground">الفئة</span>
+                  <span className="text-xs text-muted-foreground">{t("policyManagement.view.category")}</span>
                   <p className="text-sm">{viewingPolicy.category}</p>
                 </div>
                 <div className="col-span-6">
-                  <span className="text-xs text-muted-foreground">الإصدار</span>
+                  <span className="text-xs text-muted-foreground">{t("policyManagement.view.version")}</span>
                   <p className="text-sm">v{viewingPolicy.version}</p>
                 </div>
                 <div className="col-span-6">
-                  <span className="text-xs text-muted-foreground">تاريخ السريان</span>
+                  <span className="text-xs text-muted-foreground">{t("policyManagement.view.effectiveDate")}</span>
                   <p className="text-sm">
                     {new Date(viewingPolicy.effectiveAt).toLocaleString("ar-EG")}
                   </p>
                 </div>
                 <div className="col-span-6">
-                  <span className="text-xs text-muted-foreground">تاريخ الانتهاء</span>
+                  <span className="text-xs text-muted-foreground">{t("policyManagement.view.expiryDate")}</span>
                   <p className="text-sm">
                     {viewingPolicy.expiresAt
                       ? new Date(viewingPolicy.expiresAt).toLocaleString("ar-EG")
-                      : "بدون انتهاء"}
+                      : t("policyManagement.status.noExpiry")}
                   </p>
                 </div>
               </div>
@@ -479,7 +481,7 @@ const PolicyManagement: React.FC = () => {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
-              إغلاق
+              {t("common.close")}
             </Button>
           </DialogFooter>
         </DialogContent>
