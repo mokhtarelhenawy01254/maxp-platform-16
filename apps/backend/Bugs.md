@@ -1,3 +1,14 @@
+## [2026-06-14] Marketplace — Convert to shadcn/ui components
+
+- **Changes**:
+  1. Replaced custom marketplace-* CSS classes with shadcn components: Card, Badge, Button, Input, Skeleton, Separator, Tabs, Dialog, AlertDialog.
+  2. Replaced sidebar active state (border-r-2) with bg-primary/10 (removes banned side-stripe borders pattern).
+  3. Replaced custom dialogs with shadcn Dialog and AlertDialog (proper a11y, focus trap, escape handling).
+  4. Replaced loading spinner with 6-card Skeleton grid.
+  5. Replaced custom mobile chips with Badge component.
+  6. Removed 257 lines of custom marketplace CSS from index.css (now fully uses shadcn + Tailwind theme tokens).
+- **Files**: `apps/frontend/src/pages/marketplace/Marketplace.tsx`, `apps/frontend/src/styles/index.css`
+
 ## [2026-06-14] Landing Page — Mobile Menu, Testimonials, Validation, Footer Links, Accessibility
 
 - **Changes**:
