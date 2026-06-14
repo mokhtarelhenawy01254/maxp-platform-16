@@ -87,6 +87,86 @@ router.get('/skills', async (req, res) => {
   }
 });
 
+router.get('/skills/company', async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ error: 'companyId is required' });
+    const prisma = getSharedPrismaClient();
+    const rows = await prisma.companySkill.findMany({
+      where: { companyId },
+      orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
+    });
+    return res.json({
+      success: true,
+      skills: rows.map((s) => ({
+        id: s.id,
+        name: s.name,
+        description: s.description || '',
+        instructions: s.instructions,
+        tools: parseJson(s.tools, []),
+        channels: parseJson(s.channels, []),
+        priority: s.priority,
+        enabled: s.enabled,
+        createdAt: s.createdAt,
+      })),
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/skills', async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ error: 'companyId is required' });
+    const { name, description, instructions, tools, channels, priority, enabled } = req.body;
+    if (!name || !instructions) {
+      return res.status(400).json({ success: false, error: 'name and instructions are required' });
+    }
+    const prisma = getSharedPrismaClient();
+    const skill = await prisma.companySkill.create({
+      data: {
+        companyId,
+        name: name.trim(),
+        description: description || '',
+        instructions: instructions.trim(),
+        tools: JSON.stringify(Array.isArray(tools) ? tools : []),
+        channels: JSON.stringify(Array.isArray(channels) ? channels : []),
+        priority: Number(priority) || 0,
+        enabled: enabled !== false,
+      },
+    });
+    return res.status(201).json({
+      success: true,
+      skill: {
+        ...skill,
+        tools: parseJson(skill.tools, []),
+        channels: parseJson(skill.channels, []),
+      },
+    });
+  } catch (error) {
+    if (error.code === 'P2002') {
+      return res.status(400).json({ success: false, error: 'اسم المهارة مستخدم بالفعل' });
+    }
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.delete('/skills/:id', async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ error: 'companyId is required' });
+    const prisma = getSharedPrismaClient();
+    const deleted = await prisma.companySkill.deleteMany({
+      where: { id: req.params.id, companyId },
+    });
+    if (deleted.count === 0) return res.status(404).json({ success: false, error: 'Skill not found' });
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.post('/agents', async (req, res) => {
   try {
     const companyId = getCompanyId(req);

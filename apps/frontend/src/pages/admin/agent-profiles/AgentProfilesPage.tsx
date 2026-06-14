@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Brain, Users, Wrench, Zap, ChevronDown, ChevronRight,
-  Loader2, AlertCircle, Bot, Search, Clock, PenLine, Save, X,
+  Loader2, AlertCircle, Bot, Search, Clock, PenLine, Save, X, Plus, Trash2, Check,
 } from "lucide-react";
 import { sandboxApi, type AgentProfileResponse, type AgentSkillDetail } from "../ai-agent-sandbox/services/sandboxApi";
 import { Input } from "@/components/ui/input";
@@ -107,6 +107,255 @@ interface AgentItem {
   icon?: string;
 }
 
+interface AvailableTool {
+  name: string;
+  description: string;
+  sideEffect?: string;
+  sideEffects?: string;
+}
+
+interface CompanySkill {
+  id: string;
+  name: string;
+  description: string;
+  instructions: string;
+  tools: string[];
+  enabled: boolean;
+  priority: number;
+  createdAt?: string;
+}
+
+function CreateSkillDrawer({
+  open,
+  onClose,
+  onCreated,
+  tryApiFetch,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreated: (skill: CompanySkill) => void;
+  tryApiFetch: <T>(path: string, init?: RequestInit) => Promise<T | null>;
+}) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [instructions, setInstructions] = useState("");
+  const [selectedTools, setSelectedTools] = useState<string[]>([]);
+  const [enabled, setEnabled] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [tools, setTools] = useState<AvailableTool[]>([]);
+  const [toolsLoading, setToolsLoading] = useState(false);
+  const [toolSearch, setToolSearch] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setToolsLoading(true);
+    tryApiFetch<{ success: boolean; tools: AvailableTool[] }>("/agent/tools")
+      .then((data) => { if (data?.tools) setTools(data.tools); })
+      .finally(() => setToolsLoading(false));
+  }, [open]);
+
+  const reset = () => {
+    setName(""); setDescription(""); setInstructions("");
+    setSelectedTools([]); setEnabled(true); setError(null); setToolSearch("");
+  };
+
+  const handleClose = () => { reset(); onClose(); };
+
+  const toggleTool = (toolName: string) => {
+    setSelectedTools((prev) =>
+      prev.includes(toolName) ? prev.filter((t) => t !== toolName) : [...prev, toolName]
+    );
+  };
+
+  const handleSave = async () => {
+    if (!name.trim()) { setError("اسم المهارة مطلوب"); return; }
+    if (!instructions.trim()) { setError("التعليمات مطلوبة"); return; }
+    setSaving(true);
+    setError(null);
+    const data = await tryApiFetch<{ success: boolean; skill: CompanySkill }>("/agent/skills", {
+      method: "POST",
+      body: JSON.stringify({ name: name.trim(), description, instructions, tools: selectedTools, enabled }),
+    });
+    setSaving(false);
+    if (data?.skill) {
+      onCreated(data.skill);
+      handleClose();
+    } else {
+      setError("فشل إنشاء المهارة");
+    }
+  };
+
+  const filteredTools = tools.filter((t) =>
+    !toolSearch || t.name.toLowerCase().includes(toolSearch.toLowerCase()) || t.description?.toLowerCase().includes(toolSearch.toLowerCase())
+  );
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      {/* Backdrop */}
+      <div className="flex-1 bg-slate-900/40 backdrop-blur-sm" onClick={handleClose} />
+      {/* Panel */}
+      <div className="w-full max-w-xl bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <Zap className="size-5 text-indigo-600" />
+            <h2 className="text-base font-bold text-slate-800 dark:text-slate-200">إنشاء مهارة جديدة</h2>
+          </div>
+          <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400">
+            <X className="size-4" />
+          </button>
+        </div>
+
+        {/* Form */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+          {error && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <AlertCircle className="size-4 text-red-500 flex-shrink-0" />
+              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            </div>
+          )}
+
+          {/* Name */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+              اسم المهارة <span className="text-red-500">*</span>
+            </label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="مثال: order-support"
+              className="h-9 text-sm font-mono"
+              dir="ltr"
+            />
+            <p className="text-[10px] text-slate-400">يُستخدم كـ ID فريد، بدون مسافات</p>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">الوصف</label>
+            <Input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="وصف مختصر للمهارة"
+              className="h-9 text-sm"
+            />
+          </div>
+
+          {/* Instructions */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+              التعليمات <span className="text-red-500">*</span>
+            </label>
+            <Textarea
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              placeholder="اكتب التعليمات التفصيلية لهذه المهارة..."
+              className="min-h-[120px] text-sm resize-y"
+              rows={5}
+            />
+          </div>
+
+          {/* Tools */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                الأدوات المتاحة
+              </label>
+              {selectedTools.length > 0 && (
+                <span className="text-xs text-indigo-600 font-medium">{selectedTools.length} محدد</span>
+              )}
+            </div>
+
+            {/* Tool search */}
+            <div className="relative">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
+              <Input
+                value={toolSearch}
+                onChange={(e) => setToolSearch(e.target.value)}
+                placeholder="بحث في الأدوات..."
+                className="h-8 pr-8 text-xs"
+              />
+            </div>
+
+            {toolsLoading ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="size-4 text-indigo-500 animate-spin" />
+              </div>
+            ) : (
+              <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+                {filteredTools.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-4">لا توجد أدوات</p>
+                ) : filteredTools.map((tool) => {
+                  const isWrite = (tool.sideEffect || tool.sideEffects || "").includes("write");
+                  const checked = selectedTools.includes(tool.name);
+                  return (
+                    <button
+                      key={tool.name}
+                      type="button"
+                      onClick={() => toggleTool(tool.name)}
+                      className={`w-full flex items-start gap-3 px-3 py-2.5 text-left border-b border-slate-100 dark:border-slate-800 last:border-0 transition-colors ${
+                        checked
+                          ? "bg-indigo-50 dark:bg-indigo-950/20"
+                          : "hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                      }`}
+                    >
+                      <div className={`mt-0.5 size-4 rounded flex-shrink-0 flex items-center justify-center border ${
+                        checked
+                          ? "bg-indigo-600 border-indigo-600"
+                          : "border-slate-300 dark:border-slate-600"
+                      }`}>
+                        {checked && <Check className="size-2.5 text-white" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-mono font-semibold text-slate-700 dark:text-slate-300">{tool.name}</span>
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
+                            isWrite
+                              ? "bg-orange-50 text-orange-600 border border-orange-200"
+                              : "bg-blue-50 text-blue-600 border border-blue-200"
+                          }`}>
+                            {isWrite ? "write" : "read"}
+                          </span>
+                        </div>
+                        {tool.description && (
+                          <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{tool.description}</p>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Enabled */}
+          <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+            <div>
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">تفعيل المهارة</p>
+              <p className="text-xs text-slate-400">المهارة ستكون متاحة للـ agents فور الإنشاء</p>
+            </div>
+            <Switch checked={enabled} onCheckedChange={setEnabled} />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-3 flex-shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
+          <Button variant="outline" size="sm" onClick={handleClose} className="h-9 px-4 text-sm" disabled={saving}>
+            إلغاء
+          </Button>
+          <Button size="sm" onClick={handleSave} disabled={saving} className="h-9 px-5 text-sm bg-indigo-600 hover:bg-indigo-700 text-white">
+            {saving ? <Loader2 className="size-3.5 animate-spin ml-1.5" /> : <Zap className="size-3.5 ml-1.5" />}
+            {saving ? "جار الإنشاء..." : "إنشاء المهارة"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Helpers ──────────────────────────────────────────────────── */
 
 const isActive = (s?: string | null) => String(s || "").toUpperCase() === "ACTIVE";
@@ -170,6 +419,10 @@ export default function AgentProfilesPage() {
   const [models, setModels] = useState<Array<{ id: string; modelName: string; provider: string }>>([]);
   const [statusSaving, setStatusSaving] = useState(false);
 
+  const [createSkillOpen, setCreateSkillOpen] = useState(false);
+  const [companySkills, setCompanySkills] = useState<CompanySkill[]>([]);
+  const [companySkillsLoading, setCompanySkillsLoading] = useState(false);
+
   /* ── Edit state ── */
   const [editing, setEditing] = useState(false);
   const [draftModel, setDraftModel] = useState("");
@@ -211,6 +464,23 @@ export default function AgentProfilesPage() {
       .finally(() => { if (!cancelled) setProfileLoading(false); });
     return () => { cancelled = true; };
   }, [selectedId]);
+
+  /* ── Load company skills ── */
+  useEffect(() => {
+    setCompanySkillsLoading(true);
+    tryApiFetch<{ success: boolean; skills: CompanySkill[] }>("/agent/skills/company")
+      .then((data) => { if (data?.skills) setCompanySkills(data.skills); })
+      .finally(() => setCompanySkillsLoading(false));
+  }, []);
+
+  const handleSkillCreated = (skill: CompanySkill) => {
+    setCompanySkills((prev) => [skill, ...prev]);
+  };
+
+  const handleDeleteSkill = async (id: string) => {
+    const data = await tryApiFetch<{ success: boolean }>(`/agent/skills/${id}`, { method: "DELETE" });
+    if (data?.success) setCompanySkills((prev) => prev.filter((s) => s.id !== id));
+  };
 
   /* ── Toggle status ── */
   const toggleStatus = async (nextActive: boolean) => {
@@ -452,13 +722,98 @@ export default function AgentProfilesPage() {
               )}
 
               {tab === "skills" && (
-                <div className="max-w-3xl space-y-3">
-                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Skills ({profile.skills.length})</h3>
-                  {profile.skills.length === 0 ? (
-                    <p className="text-sm text-slate-400 italic">No skills assigned to this agent.</p>
-                  ) : (
-                    profile.skills.map((skill) => <SkillCard key={skill.id} skill={skill} />)
-                  )}
+                <div className="max-w-3xl space-y-6">
+                  {/* Agent Template Skills */}
+                  <div>
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                      مهارات الـ Agent ({profile.skills.length})
+                    </h3>
+                    {profile.skills.length === 0 ? (
+                      <p className="text-sm text-slate-400 italic">لا توجد مهارات مخصصة لهذا الـ agent.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {profile.skills.map((skill) => <SkillCard key={skill.id} skill={skill} />)}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Company Skills (custom) */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                        مهارات الشركة ({companySkills.length})
+                      </h3>
+                      <Button
+                        size="sm"
+                        onClick={() => setCreateSkillOpen(true)}
+                        className="h-8 px-3 text-xs bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
+                      >
+                        <Plus className="size-3.5" />
+                        إنشاء مهارة
+                      </Button>
+                    </div>
+
+                    {companySkillsLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="size-4 text-indigo-500 animate-spin" />
+                      </div>
+                    ) : companySkills.length === 0 ? (
+                      <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-8 text-center">
+                        <Zap className="size-8 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
+                        <p className="text-sm text-slate-400">لا توجد مهارات مخصصة بعد</p>
+                        <p className="text-xs text-slate-400 mt-1">اضغط على "إنشاء مهارة" لإضافة مهارة جديدة</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {companySkills.map((skill) => (
+                          <div key={skill.id} className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                            <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-800/50">
+                              <Zap className="size-4 text-indigo-500 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{skill.name}</span>
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${
+                                    skill.enabled
+                                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                      : "bg-slate-100 text-slate-500 border-slate-200"
+                                  }`}>
+                                    {skill.enabled ? "مفعل" : "متوقف"}
+                                  </span>
+                                </div>
+                                {skill.description && (
+                                  <p className="text-xs text-slate-500 mt-0.5 truncate">{skill.description}</p>
+                                )}
+                              </div>
+                              {skill.tools.length > 0 && (
+                                <span className="text-xs text-slate-400 flex-shrink-0">{skill.tools.length} أداة</span>
+                              )}
+                              <button
+                                onClick={() => handleDeleteSkill(skill.id)}
+                                className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
+                                title="حذف"
+                              >
+                                <Trash2 className="size-3.5" />
+                              </button>
+                            </div>
+                            {(skill.instructions || skill.tools.length > 0) && (
+                              <div className="px-4 py-3 space-y-2 bg-white dark:bg-slate-900">
+                                {skill.instructions && (
+                                  <p className="text-xs text-slate-500 italic border-l-2 border-slate-200 pl-3 line-clamp-2">
+                                    {skill.instructions}
+                                  </p>
+                                )}
+                                {skill.tools.length > 0 && (
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {skill.tools.map((t) => <ToolBadge key={t} name={t} />)}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </>
@@ -476,6 +831,13 @@ export default function AgentProfilesPage() {
           )}
         </div>
       </main>
+
+      <CreateSkillDrawer
+        open={createSkillOpen}
+        onClose={() => setCreateSkillOpen(false)}
+        onCreated={handleSkillCreated}
+        tryApiFetch={tryApiFetch}
+      />
     </div>
   );
 }

@@ -1,3 +1,15 @@
+## [2026-06-14] Backend + Frontend — Create Skill Feature on AgentProfilesPage
+- **Details**: Added "إنشاء مهارة" (Create Skill) button on the Skills tab of `/admin/agent-profiles`. Opens a slide-over drawer with a full form (name, description, instructions, tools multi-select, enabled toggle). Skills are stored in the `CompanySkill` DB table.
+- **Architecture**:
+  - **`POST /api/v1/agent/skills`**: Creates a new `CompanySkill` row in DB. Validates `name` (unique per company) and `instructions`. Stores `tools` as JSON array.
+  - **`GET /api/v1/agent/skills/company`**: Returns all `CompanySkill` rows for the company from DB (separate from Python ai-service skills).
+  - **`DELETE /api/v1/agent/skills/:id`**: Deletes a `CompanySkill` by id (scoped to company).
+  - **`CreateSkillDrawer`** (in `AgentProfilesPage.tsx`): Slide-over from right. Fetches tools from `GET /agent/tools` on open. Multi-select checkboxes with read/write badges. On submit calls `POST /agent/skills`.
+  - **Skills tab** now shows 2 sections: (1) Agent template skills, (2) Company custom skills with delete button.
+- **Affected Files**:
+  - `apps/backend/routes/agentControlRoutes.js` — POST /skills, GET /skills/company, DELETE /skills/:id
+  - `apps/frontend/src/pages/admin/agent-profiles/AgentProfilesPage.tsx` — CreateSkillDrawer + company skills state + Skills tab UI
+
 ## [2026-06-13] Backend + Frontend — Agent Profile API & AgentProfilePanel UI
 - **Details**: Added a new endpoint `GET /api/v1/ai-sandbox/agents/:agentId/profile` that returns the full agent profile (markdown files, tools, skills) for the sandbox page. Replaced the `SkillSidebar` component with a new `AgentProfilePanel` that displays all agent data in 4 tabs.
 - **Architecture**:
