@@ -10,7 +10,7 @@ import StorefrontShell from '../StorefrontShell';
 import { useCartStore } from '../store/useCartStore';
 import { useCheckoutStore } from '../store/useCheckoutStore';
 
-vi.mock('react-hot-toast', () => ({
+vi.mock('sonner', () => ({
   default: {
     success: vi.fn(),
     error: vi.fn(),

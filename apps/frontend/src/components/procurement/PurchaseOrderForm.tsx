@@ -10,7 +10,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import "../../styles/dashboard-enhanced.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

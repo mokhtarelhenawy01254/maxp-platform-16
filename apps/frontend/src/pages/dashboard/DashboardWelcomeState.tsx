@@ -21,15 +21,11 @@ export default function DashboardWelcomeState() {
 
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center max-w-lg mx-auto">
-      <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 mb-6">
-        <RocketLaunchIcon className="w-10 h-10 text-primary" />
+      <div className="p-4 rounded-2xl border mb-6" style={{ background: "color-mix(in srgb, var(--color-primary) 10%, var(--color-background))", borderColor: "color-mix(in srgb, var(--color-primary) 18%, transparent)" }}>
+        <RocketLaunchIcon className="w-10 h-10" style={{ color: "var(--color-primary)" }} />
       </div>
-      <h2 className="text-xl font-bold text-foreground mb-2">
-        {t("welcomeState.title")}
-      </h2>
-      <p className="text-sm text-muted-foreground mb-8 max-w-sm">
-        {t("welcomeState.description")}
-      </p>
+      <h2 className="text-xl font-bold text-foreground mb-2">{t("welcomeState.title")}</h2>
+      <p className="text-sm text-muted-foreground mb-8 max-w-sm">{t("welcomeState.description")}</p>
       <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
         {steps.map((step) => {
           const Icon = step.icon;
@@ -38,14 +34,12 @@ export default function DashboardWelcomeState() {
               key={step.key}
               type="button"
               onClick={() => navigate(step.path)}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl bg-card border border-border/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+              className="flex flex-col items-center gap-2 p-4 rounded-xl bg-card border border-border/50 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Icon className="w-5 h-5 text-primary" />
+              <div className="p-2 rounded-lg" style={{ background: "color-mix(in srgb, var(--color-primary) 12%, var(--color-background))" }}>
+                <Icon className="w-5 h-5" style={{ color: "var(--color-primary)" }} />
               </div>
-              <span className="text-xs font-medium text-foreground">
-                {t(step.key)}
-              </span>
+              <span className="text-xs font-medium text-foreground">{t(step.key)}</span>
             </button>
           );
         })}

@@ -4,7 +4,7 @@ import axios, {
   AxiosResponse,
   AxiosError,
 } from "axios";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { config } from "../config";
 import { tokenManager } from "../utils/tokenManager";
 import { repairMojibakeText } from "../utils/textEncoding";

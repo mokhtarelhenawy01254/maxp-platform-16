@@ -22,7 +22,7 @@ jest.mock("../../../../services/apiClient", () => ({
   },
 }));
 
-jest.mock("react-hot-toast", () => ({
+jest.mock("sonner", () => ({
   toast: {
     success: jest.fn(),
     error: jest.fn(),
@@ -55,7 +55,7 @@ jest.mock("react-router-dom", () => ({
   useNavigate: () => mockNavigate,
 }));
 
-const { toast } = require("react-hot-toast") as {
+const { toast } = require("sonner") as {
   toast: { success: jest.Mock; error: jest.Mock };
 };
 

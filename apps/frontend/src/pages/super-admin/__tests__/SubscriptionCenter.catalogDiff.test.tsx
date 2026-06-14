@@ -4,7 +4,7 @@ import SubscriptionCenter from "../SubscriptionCenter";
 import { toast } from "sonner";
 
 jest.mock("axios");
-jest.mock("react-hot-toast", () => ({
+jest.mock("sonner", () => ({
   toast: {
     success: jest.fn(),
     error: jest.fn(),

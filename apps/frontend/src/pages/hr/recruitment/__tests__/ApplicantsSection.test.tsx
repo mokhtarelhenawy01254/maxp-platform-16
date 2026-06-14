@@ -14,7 +14,7 @@ jest.mock("../../../../services/companyAwareApi", () => ({
   },
 }));
 
-jest.mock("react-hot-toast", () => ({
+jest.mock("sonner", () => ({
   toast: {
     success: jest.fn(),
     error: jest.fn(),

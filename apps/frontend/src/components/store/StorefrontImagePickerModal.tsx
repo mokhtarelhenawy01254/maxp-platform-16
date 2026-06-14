@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useState } from "react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import imageGalleryService, {
   GalleryImage,
 } from "../../services/imageGalleryService";

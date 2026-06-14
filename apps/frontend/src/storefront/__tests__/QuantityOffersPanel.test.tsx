@@ -25,7 +25,7 @@ vi.mock("../components/VariantSelector", () => ({
   default: () => null,
 }));
 
-vi.mock("react-hot-toast", () => ({
+vi.mock("sonner", () => ({
   default: {
     success: vi.fn(),
     error: vi.fn(),

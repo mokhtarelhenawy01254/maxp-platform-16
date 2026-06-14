@@ -15,7 +15,7 @@ vi.mock('../../utils/storefrontApi', () => ({
   },
   getCompanyId: vi.fn(() => 'test-company-123'),
 }));
-vi.mock('react-hot-toast', () => ({
+vi.mock('sonner', () => ({
   default: {
     success: vi.fn(),
     error: vi.fn(),

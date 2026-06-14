@@ -6,7 +6,7 @@ const createCouponMock = jest.fn();
 const updateCouponMock = jest.fn();
 const removeCouponMock = jest.fn();
 
-jest.mock("react-hot-toast", () => ({
+jest.mock("sonner", () => ({
   __esModule: true,
   default: {
     success: jest.fn(),

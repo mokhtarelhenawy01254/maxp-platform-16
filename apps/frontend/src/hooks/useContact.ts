@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 export const useContact = () => {
   const [formData, setFormData] = useState({

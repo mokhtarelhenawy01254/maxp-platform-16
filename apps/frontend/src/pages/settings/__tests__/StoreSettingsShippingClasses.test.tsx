@@ -23,7 +23,7 @@ vi.mock("react-router-dom", () => ({
   ],
 }));
 
-vi.mock("react-hot-toast", () => ({
+vi.mock("sonner", () => ({
   __esModule: true,
   default: {
     success: (...args: unknown[]) => mockToastSuccess(...args),

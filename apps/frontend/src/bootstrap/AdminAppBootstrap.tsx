@@ -4,48 +4,10 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../utils/queryClient";
 
 import AppRoot from "../AppRoot";
-import { Toaster as SonnerToaster } from "../components/ui/sonner";
+import { Toaster } from "sonner";
 import { ThemeProvider } from "../components/theme-provider";
 
-const LazyToaster = React.lazy(() =>
-  import("react-hot-toast").then((module) => ({ default: module.Toaster })),
-);
 const LazyErrorBoundary = React.lazy(() => import("../components/ErrorBoundary"));
-
-const toastOptions = {
-  duration: 4000,
-  position: "top-right" as const,
-  style: {
-    background: "#363636",
-    color: "#fff",
-    borderRadius: "8px",
-    fontSize: "14px",
-    maxWidth: "400px",
-  },
-  success: {
-    duration: 3000,
-    iconTheme: {
-      primary: "#22c55e",
-      secondary: "#fff",
-    },
-  },
-  error: {
-    duration: 5000,
-    iconTheme: {
-      primary: "#ef4444",
-      secondary: "#fff",
-    },
-  },
-  loading: {
-    duration: Infinity,
-  },
-};
-
-const RouteAwareToaster: React.FC = () => (
-  <React.Suspense fallback={null}>
-    <LazyToaster toastOptions={toastOptions} />
-  </React.Suspense>
-);
 
 const RouteAwareErrorBoundary: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -67,8 +29,7 @@ const AdminAppBootstrap: React.FC = () => (
       <RouteAwareErrorBoundary>
         <AppRoot />
       </RouteAwareErrorBoundary>
-      <RouteAwareToaster />
-      <SonnerToaster position="top-right" richColors />
+      <Toaster position="top-right" richColors />
     </BrowserRouter>
   </ThemeProvider>
   </QueryClientProvider>

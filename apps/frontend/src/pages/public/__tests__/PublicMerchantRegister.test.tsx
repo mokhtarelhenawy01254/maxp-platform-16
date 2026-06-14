@@ -5,7 +5,7 @@ import PublicMerchantRegister from "../PublicMerchantRegister";
 const mockPost = jest.fn();
 const mockTrackCompleteRegistration = jest.fn();
 
-jest.mock("react-hot-toast", () => ({
+jest.mock("sonner", () => ({
   __esModule: true,
   default: {
     success: jest.fn(),

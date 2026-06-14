@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 export const useBlog = () => {
   const [searchParams] = useSearchParams();

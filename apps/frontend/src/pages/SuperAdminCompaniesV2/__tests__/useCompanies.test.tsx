@@ -2,7 +2,7 @@ jest.mock("../../../services/apiClient", () => ({
   apiClient: { get: jest.fn(), post: jest.fn(), put: jest.fn(), delete: jest.fn() },
 }));
 
-jest.mock("react-hot-toast", () => ({
+jest.mock("sonner", () => ({
   toast: { success: jest.fn(), error: jest.fn() },
 }));
 

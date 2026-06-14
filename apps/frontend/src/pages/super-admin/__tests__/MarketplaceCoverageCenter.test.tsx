@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import MarketplaceCoverageCenter from "../MarketplaceCoverageCenter";
 
 jest.mock("axios");
-jest.mock("react-hot-toast", () => ({
+jest.mock("sonner", () => ({
   toast: {
     success: jest.fn(),
     error: jest.fn(),

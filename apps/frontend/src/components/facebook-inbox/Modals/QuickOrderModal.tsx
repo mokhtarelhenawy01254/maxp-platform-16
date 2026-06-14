@@ -13,7 +13,7 @@ import {
   ExclamationTriangleIcon,
   ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { apiClient } from "../../../services/apiClient";
 import { authService } from "../../../services/authService";
 import { config } from "../../../config";

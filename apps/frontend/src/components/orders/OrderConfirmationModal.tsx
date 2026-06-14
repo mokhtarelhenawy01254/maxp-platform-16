@@ -16,7 +16,7 @@ import {
     HeartIcon
 } from '@heroicons/react/24/outline';
 import { QRCodeSVG } from 'qrcode.react';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 interface OrderItem {
     productName: string;

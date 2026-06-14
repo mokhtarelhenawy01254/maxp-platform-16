@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { useCart } from "../hooks/useCart";
 import { useProductVariants } from "../hooks/useProductVariants";
 import { StorefrontProduct } from "../types/StorefrontTypes";

@@ -34,6 +34,9 @@ import { toast } from "sonner";
 import type { StorefrontThemeCatalogItem } from "../../services/storefrontThemeCatalogService";
 import tokenManager from "../../utils/tokenManager";
 import SuperAdminPaymentSettings from "./SuperAdminPaymentSettings";
+import {
+  Check, X, Plus, Pencil, Trash2, Download, Upload, RefreshCw, Save, Search, Eye, Archive, Star, ShoppingBag, Package, Building2, Store, CreditCard,
+} from "lucide-react";
 
 type SubscriptionCenterProps = {
   initialTab?: number;
@@ -558,72 +561,45 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
     setActiveTab(initialTab);
   }, [initialTab]);
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
+  const handleTabChange = (newValue: string) => {
+    setActiveTab(Number(newValue));
   };
 
   if (loading)
     return (
-      <Box display="flex" justifyContent="center" p={10}>
-        <CircularProgress />
-      </Box>
+      <div className="flex justify-center p-10">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+      </div>
     );
 
   return (
-    <Box p={3}>
-      <Box mb={4}>
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
+    <div className="p-3">
+      <div className="mb-4">
+        <h4 className="scroll-m-20 text-xl font-semibold tracking-tight">
           {pageTitle}
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+        </h4>
+        <p className="text-base leading-7 text-muted-foreground">
           {pageDescription}
-        </Typography>
-      </Box>
+        </p>
+      </div>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert variant="destructive" className="mb-3">
           {error}
         </Alert>
       )}
 
       {!storefrontThemesOnly ? (
-        <Paper sx={{ mb: 3 }}>
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            indicatorColor="primary"
-            textColor="primary"
-            variant="scrollable"
-            scrollButtons="auto"
-          >
-            <Tab icon={<StarIcon />} iconPosition="start" label="خطط المنصة" />
-            <Tab
-              icon={<MarketplaceIcon />}
-              iconPosition="start"
-              label="تطبيقات المتجر"
-            />
-            <Tab
-              icon={<BundleIcon />}
-              iconPosition="start"
-              label="الباقات والأسعار"
-            />
-            <Tab
-              icon={<EnterpriseIcon />}
-              iconPosition="start"
-              label="تعاقدات المؤسسات"
-            />
-            <Tab
-              icon={<StorefrontIcon />}
-              iconPosition="start"
-              label="قوالب المتجر"
-            />
-            <Tab
-              icon={<CreditCardIcon />}
-              iconPosition="start"
-              label="إعدادات الدفع"
-            />
-          </Tabs>
-        </Paper>
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm mb-3 overflow-x-auto">
+          <div className="flex gap-1 p-1" role="tablist">
+            <Button variant={activeTab === 0 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(0)}><Star className="h-4 w-4 ml-1" />خطط المنصة</Button>
+            <Button variant={activeTab === 1 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(1)}><ShoppingBag className="h-4 w-4 ml-1" />تطبيقات المتجر</Button>
+            <Button variant={activeTab === 2 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(2)}><Package className="h-4 w-4 ml-1" />الباقات والأسعار</Button>
+            <Button variant={activeTab === 3 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(3)}><Building2 className="h-4 w-4 ml-1" />تعاقدات المؤسسات</Button>
+            <Button variant={activeTab === 4 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(4)}><Store className="h-4 w-4 ml-1" />قوالب المتجر</Button>
+            <Button variant={activeTab === 5 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(5)}><CreditCard className="h-4 w-4 ml-1" />إعدادات الدفع</Button>
+          </div>
+        </div>
       ) : null}
 
       {!storefrontThemesOnly && activeTab === 0 && (
@@ -680,9 +656,9 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
         />
       )}
       {!storefrontThemesOnly && activeTab === 5 && (
-        <Box p={3}>
+        <div className="p-3">
           <SuperAdminPaymentSettings />
-        </Box>
+        </div>
       )}
 
       {/* Marketplace Item Dialog */}
@@ -781,7 +757,7 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
           }
         }}
       />
-    </Box>
+    </div>
   );
 };
 
@@ -824,310 +800,176 @@ const PlatformPlansTab = ({
   };
 
   return (
-    <Box>
+    <div>
       {/* Summary Stats */}
-      <Paper
-        sx={{
-          p: 3,
-          mb: 3,
-          bgcolor: "primary.light",
-          color: "primary.contrastText",
-        }}
-      >
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 3 }}>
-            <Typography variant="h4" fontWeight="bold">
+      <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-3 mb-3" style={{ backgroundColor: "#dbeafe", color: "#1e40af" }}>
+        <div className="grid grid-cols-12 gap-4">
+          <div className="col-span-12 md:col-span-3">
+            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
               {plans.reduce(
                 (sum, p) => sum + (p.stats?.activeCompanies || 0),
                 0,
               )}
-            </Typography>
-            <Typography variant="body2">إجمالي الشركات المشتركة</Typography>
-          </Grid>
-          <Grid size={{ xs: 12, md: 3 }}>
-            <Typography variant="h4" fontWeight="bold">
+            </h4>
+            <p className="text-sm leading-6">إجمالي الشركات المشتركة</p>
+          </div>
+          <div className="col-span-12 md:col-span-3">
+            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
               {plans
                 .reduce((sum, p) => sum + calculateTotalRevenue(p), 0)
                 .toLocaleString()}{" "}
               ج.م
-            </Typography>
-            <Typography variant="body2">إجمالي الإيرادات الشهرية</Typography>
-          </Grid>
-          <Grid size={{ xs: 12, md: 3 }}>
-            <Typography variant="h4" fontWeight="bold">
+            </h4>
+            <p className="text-sm leading-6">إجمالي الإيرادات الشهرية</p>
+          </div>
+          <div className="col-span-12 md:col-span-3">
+            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
               {plans.length}
-            </Typography>
-            <Typography variant="body2">عدد الخطط المتاحة</Typography>
-          </Grid>
-          <Grid size={{ xs: 12, md: 3 }}>
-            <Typography variant="h4" fontWeight="bold">
+            </h4>
+            <p className="text-sm leading-6">عدد الخطط المتاحة</p>
+          </div>
+          <div className="col-span-12 md:col-span-3">
+            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
               {plans.filter((p) => p.isCustom).length}
-            </Typography>
-            <Typography variant="body2">خطط مخصصة</Typography>
-          </Grid>
-        </Grid>
-      </Paper>
+            </h4>
+            <p className="text-sm leading-6">خطط مخصصة</p>
+          </div>
+        </div>
+      </div>
 
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
-      >
-        <Typography variant="h6">خطط المنصة الأساسية</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => onEdit(null)}
-        >
+      <div className="flex justify-between items-center mb-3">
+        <h6 className="text-base font-semibold leading-none">خطط المنصة الأساسية</h6>
+        <Button variant="default" onClick={() => onEdit(null)}>
+          <Plus className="h-4 w-4 ml-1" />
           إنشاء خطة جديدة
         </Button>
-      </Box>
+      </div>
 
-      <Grid container spacing={3}>
+      <div className="grid grid-cols-12 gap-4">
         {plans.map((plan) => {
           const features = parsePlanFeatures(plan.features);
           const isExpanded = expandedPlan === plan.planType;
           const monthlyRevenue = calculateTotalRevenue(plan);
 
           return (
-            <Grid key={plan.planType} size={{ xs: 12, md: 6, lg: 4 }}>
-              <Card
-                sx={{
-                  height: "100%",
-                  borderTop: 4,
-                  borderColor: getPlanColor(plan.planType),
-                  transition: "all 0.3s ease",
-                  "&:hover": { boxShadow: 4 },
-                }}
-              >
+            <div key={plan.planType} className="col-span-12 md:col-span-6 lg:col-span-4">
+              <Card className="h-full" style={{ borderTop: `4px solid ${getPlanColor(plan.planType)}`, transition: "all 0.3s ease" }}>
                 <CardContent>
                   {/* Plan Header */}
-                  <Box textAlign="center" mb={2}>
-                    <Typography variant="h5" fontWeight="bold">
+                  <div className="text-center mb-2">
+                    <h5 className="scroll-m-18 text-lg font-semibold tracking-tight font-bold">
                       {plan.name}
-                    </Typography>
-                    <Chip
-                      label={plan.planType}
-                      size="small"
-                      sx={{
-                        mt: 0.5,
-                        bgcolor: getPlanColor(plan.planType),
-                        color: "white",
-                      }}
-                    />
-                    <Typography variant="h4" color="primary" sx={{ my: 1 }}>
+                    </h5>
+                    <Badge className="mt-0.5" style={{ backgroundColor: getPlanColor(plan.planType), color: "white" }}>
+                      {plan.planType}
+                    </Badge>
+                    <h4 className="scroll-m-20 text-xl font-semibold tracking-tight text-primary my-1">
                       {plan.price?.toLocaleString()} {plan.currency || "ج.م"}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    </h4>
+                    <p className="text-sm leading-6 text-muted-foreground">
                       /{" "}
                       {plan.billingCycle === "monthly"
                         ? "شهرياً"
                         : plan.billingCycle === "yearly"
                           ? "سنوياً"
                           : "ربع سنوي"}
-                    </Typography>
-                  </Box>
+                    </p>
+                  </div>
 
                   {/* Stats Row */}
-                  <Paper
-                    variant="outlined"
-                    sx={{ p: 2, mb: 2, bgcolor: "action.hover" }}
-                  >
-                    <Grid container spacing={1} textAlign="center">
-                      <Grid size={{ xs: 6 }}>
-                        <Typography
-                          variant="h6"
-                          fontWeight="bold"
-                          color="success.main"
-                        >
+                  <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-2 mb-2 bg-muted/50">
+                    <div className="grid grid-cols-12 gap-1 text-center">
+                      <div className="col-span-6">
+                        <h6 className="text-base font-semibold leading-none font-bold text-green-600">
                           {plan.stats?.activeCompanies || 0}
-                        </Typography>
-                        <Typography variant="caption" display="block">
-                          الشركات
-                        </Typography>
-                      </Grid>
-                      <Grid size={{ xs: 6 }}>
-                        <Typography
-                          variant="h6"
-                          fontWeight="bold"
-                          color="primary.main"
-                        >
+                        </h6>
+                        <span className="text-xs text-muted-foreground block">الشركات</span>
+                      </div>
+                      <div className="col-span-6">
+                        <h6 className="text-base font-semibold leading-none font-bold text-primary">
                           {monthlyRevenue.toLocaleString()}
-                        </Typography>
-                        <Typography variant="caption" display="block">
-                          ج.م/شهر
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                  </Paper>
+                        </h6>
+                        <span className="text-xs text-muted-foreground block">ج.م/شهر</span>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Quick Features Preview */}
-                  <Box mb={2}>
-                    <Typography
-                      variant="subtitle2"
-                      gutterBottom
-                      fontWeight="bold"
-                    >
+                  <div className="mb-2">
+                    <p className="text-sm font-medium text-muted-foreground font-bold">
                       أبرز المميزات:
-                    </Typography>
-                    <Box display="flex" flexWrap="wrap" gap={0.5}>
-                      <Chip
-                        icon={<CheckIcon fontSize="small" />}
-                        label={`${formatFeatureValue(features.maxUsers)} مستخدم`}
-                        size="small"
-                        variant="outlined"
-                      />
-                      <Chip
-                        icon={<CheckIcon fontSize="small" />}
-                        label={`${formatFeatureValue(features.maxCustomers)} عميل`}
-                        size="small"
-                        variant="outlined"
-                      />
-                      <Chip
-                        icon={<CheckIcon fontSize="small" />}
-                        label={`${formatFeatureValue(features.storageLimit)} GB تخزين`}
-                        size="small"
-                        variant="outlined"
-                      />
+                    </p>
+                    <div className="flex flex-wrap gap-0.5">
+                      <Badge variant="outline" className="text-xs"><Check className="h-3 w-3 ml-0.5" />{`${formatFeatureValue(features.maxUsers)} مستخدم`}</Badge>
+                      <Badge variant="outline" className="text-xs"><Check className="h-3 w-3 ml-0.5" />{`${formatFeatureValue(features.maxCustomers)} عميل`}</Badge>
+                      <Badge variant="outline" className="text-xs"><Check className="h-3 w-3 ml-0.5" />{`${formatFeatureValue(features.storageLimit)} GB تخزين`}</Badge>
                       {features.apiAccess && (
-                        <Chip
-                          icon={<CheckIcon fontSize="small" />}
-                          label="API"
-                          size="small"
-                          color="success"
-                        />
+                        <Badge variant="default" className="bg-green-500 text-xs"><Check className="h-3 w-3 ml-0.5" />API</Badge>
                       )}
                       {features.prioritySupport && (
-                        <Chip
-                          icon={<CheckIcon fontSize="small" />}
-                          label="دعم مميز"
-                          size="small"
-                          color="primary"
-                        />
+                        <Badge variant="default" className="bg-blue-500 text-xs"><Check className="h-3 w-3 ml-0.5" />دعم مميز</Badge>
                       )}
-                    </Box>
-                  </Box>
+                    </div>
+                  </div>
 
                   {/* Description */}
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2, minHeight: 40 }}
-                  >
+                  <p className="text-sm leading-6 text-muted-foreground mb-2" style={{ minHeight: 40 }}>
                     {plan.description || "لا يوجد وصف"}
-                  </Typography>
+                  </p>
 
                   {/* Expandable Features List */}
-                  <Collapse in={isExpanded}>
-                    <Divider sx={{ my: 2 }} />
-                    <Typography variant="subtitle2" gutterBottom>
-                      تفاصيل المميزات:
-                    </Typography>
-                    <List dense sx={{ mb: 2 }}>
-                      <ListItem>
-                        <ListItemText
-                          primary={`المستخدمين: ${formatFeatureValue(features.maxUsers)}`}
-                          secondary={`العملاء: ${formatFeatureValue(features.maxCustomers)}`}
-                        />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText
-                          primary={`المحادثات: ${formatFeatureValue(features.maxConversations)}`}
-                          secondary={`الرسائل: ${formatFeatureValue(features.maxMessages)}`}
-                        />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText
-                          primary={`ردود تلقائية: ${formatFeatureValue(features.aiResponses)}`}
-                          secondary={`التخزين: ${formatFeatureValue(features.storageLimit)} GB`}
-                        />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText
-                          primary={`سير العمل: ${formatFeatureValue(features.automatedWorkflows)}`}
-                          secondary={`الحقول المخصصة: ${formatFeatureValue(features.customFields)}`}
-                        />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText
-                          primary={`الاحتفاظ بالبيانات: ${formatFeatureValue(features.dataRetention)} يوم`}
-                          secondary={`SLA: ${features.sla || "غير محدد"}`}
-                        />
-                      </ListItem>
-                    </List>
-                    <Box display="flex" flexWrap="wrap" gap={1}>
-                      {features.customBranding && (
-                        <Chip label="علامة تجارية" size="small" />
-                      )}
-                      {features.advancedReports && (
-                        <Chip label="تقارير متقدمة" size="small" />
-                      )}
-                      {features.apiAccess && (
-                        <Chip label="API" size="small" color="primary" />
-                      )}
-                      {features.prioritySupport && (
-                        <Chip label="دعم أولوية" size="small" color="primary" />
-                      )}
-                      {features.customIntegrations && (
-                        <Chip label="تكاملات" size="small" />
-                      )}
-                      {features.whatsappBusiness && (
-                        <Chip label="واتساب" size="small" />
-                      )}
-                      {features.facebookMessenger && (
-                        <Chip label="ماسنجر" size="small" />
-                      )}
-                      {features.webChat && <Chip label="دردشة" size="small" />}
-                      {features.mobileApp && (
-                        <Chip label="تطبيق" size="small" color="success" />
-                      )}
-                      {features.multiLanguage && (
-                        <Chip label="متعدد اللغات" size="small" />
-                      )}
-                      {features.exportData && (
-                        <Chip label="تصدير" size="small" />
-                      )}
-                      {features.dedicatedSupport && (
-                        <Chip label="دعم مخصص" size="small" color="success" />
-                      )}
-                    </Box>
-                  </Collapse>
+                  {isExpanded && (
+                    <div>
+                      <Separator className="my-2" />
+                      <p className="text-sm font-medium text-muted-foreground">تفاصيل المميزات:</p>
+                      <ul className="space-y-1 mb-2">
+                        <li className="py-0.5"><div><span className="font-medium">{`المستخدمين: ${formatFeatureValue(features.maxUsers)}`}</span><span className="text-sm text-muted-foreground block">{`العملاء: ${formatFeatureValue(features.maxCustomers)}`}</span></div></li>
+                        <li className="py-0.5"><div><span className="font-medium">{`المحادثات: ${formatFeatureValue(features.maxConversations)}`}</span><span className="text-sm text-muted-foreground block">{`الرسائل: ${formatFeatureValue(features.maxMessages)}`}</span></div></li>
+                        <li className="py-0.5"><div><span className="font-medium">{`ردود تلقائية: ${formatFeatureValue(features.aiResponses)}`}</span><span className="text-sm text-muted-foreground block">{`التخزين: ${formatFeatureValue(features.storageLimit)} GB`}</span></div></li>
+                        <li className="py-0.5"><div><span className="font-medium">{`سير العمل: ${formatFeatureValue(features.automatedWorkflows)}`}</span><span className="text-sm text-muted-foreground block">{`الحقول المخصصة: ${formatFeatureValue(features.customFields)}`}</span></div></li>
+                        <li className="py-0.5"><div><span className="font-medium">{`الاحتفاظ بالبيانات: ${formatFeatureValue(features.dataRetention)} يوم`}</span><span className="text-sm text-muted-foreground block">{`SLA: ${features.sla || "غير محدد"}`}</span></div></li>
+                      </ul>
+                      <div className="flex flex-wrap gap-1">
+                        {features.customBranding && <Badge variant="outline" className="text-xs">علامة تجارية</Badge>}
+                        {features.advancedReports && <Badge variant="outline" className="text-xs">تقارير متقدمة</Badge>}
+                        {features.apiAccess && <Badge variant="default" className="bg-blue-500 text-xs">API</Badge>}
+                        {features.prioritySupport && <Badge variant="default" className="bg-blue-500 text-xs">دعم أولوية</Badge>}
+                        {features.customIntegrations && <Badge variant="outline" className="text-xs">تكاملات</Badge>}
+                        {features.whatsappBusiness && <Badge variant="outline" className="text-xs">واتساب</Badge>}
+                        {features.facebookMessenger && <Badge variant="outline" className="text-xs">ماسنجر</Badge>}
+                        {features.webChat && <Badge variant="outline" className="text-xs">دردشة</Badge>}
+                        {features.mobileApp && <Badge variant="default" className="bg-green-500 text-xs">تطبيق</Badge>}
+                        {features.multiLanguage && <Badge variant="outline" className="text-xs">متعدد اللغات</Badge>}
+                        {features.exportData && <Badge variant="outline" className="text-xs">تصدير</Badge>}
+                        {features.dedicatedSupport && <Badge variant="default" className="bg-green-500 text-xs">دعم مخصص</Badge>}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Actions */}
-                  <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    mt={2}
-                  >
-                    <Tooltip
-                      title={isExpanded ? "إخفاء التفاصيل" : "عرض التفاصيل"}
-                    >
-                      <Button
-                        size="small"
-                        onClick={() => toggleExpand(plan.planType)}
-                        variant="text"
-                      >
-                        {isExpanded ? "إخفاء" : "المزيد"}
-                      </Button>
-                    </Tooltip>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<EditIcon />}
-                      onClick={() => onEdit(plan)}
-                    >
+                  <div className="flex justify-between items-center mt-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" onClick={() => toggleExpand(plan.planType)} variant="ghost">
+                            {isExpanded ? "إخفاء" : "المزيد"}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{isExpanded ? "إخفاء التفاصيل" : "عرض التفاصيل"}</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <Button variant="outline" size="sm" onClick={() => onEdit(plan)}>
+                      <Pencil className="h-4 w-4 ml-1" />
                       تعديل
                     </Button>
-                  </Box>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
+            </div>
           );
         })}
-      </Grid>
-    </Box>
+      </div>
+    </div>
   );
 };
 
@@ -1369,786 +1211,379 @@ const MarketplaceAppsTab = ({
   };
 
   return (
-    <Box>
+    <div>
       {/* Statistics Dashboard */}
-      <Paper
-        sx={{
-          p: 3,
-          mb: 3,
-          bgcolor: "secondary.light",
-          color: "secondary.contrastText",
-        }}
-      >
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 6, md: 3 }}>
-            <Typography variant="h4" fontWeight="bold">
+      <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-3 mb-3" style={{ backgroundColor: "#f3e8ff", color: "#581c87" }}>
+        <div className="grid grid-cols-12 gap-4">
+          <div className="col-span-6 md:col-span-3">
+            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
               {apps.length}
-            </Typography>
-            <Typography variant="body2">إجمالي التطبيقات</Typography>
-          </Grid>
-          <Grid size={{ xs: 6, md: 3 }}>
-            <Typography variant="h4" fontWeight="bold">
+            </h4>
+            <p className="text-sm leading-6">إجمالي التطبيقات</p>
+          </div>
+          <div className="col-span-6 md:col-span-3">
+            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
               {totalInstallations.toLocaleString()}
-            </Typography>
-            <Typography variant="body2">إجمالي التثبيتات</Typography>
-          </Grid>
-          <Grid size={{ xs: 6, md: 3 }}>
-            <Typography variant="h4" fontWeight="bold">
+            </h4>
+            <p className="text-sm leading-6">إجمالي التثبيتات</p>
+          </div>
+          <div className="col-span-6 md:col-span-3">
+            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
               {totalMonthlyRevenue.toLocaleString()} ج.م
-            </Typography>
-            <Typography variant="body2">إيرادات شهرية</Typography>
-          </Grid>
-          <Grid size={{ xs: 6, md: 3 }}>
-            <Typography variant="h4" fontWeight="bold">
+            </h4>
+            <p className="text-sm leading-6">إيرادات شهرية</p>
+          </div>
+          <div className="col-span-6 md:col-span-3">
+            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
               {activeApps}
-            </Typography>
-            <Typography variant="body2">نشط | {featuredApps} مميز</Typography>
-          </Grid>
-        </Grid>
-      </Paper>
+            </h4>
+            <p className="text-sm leading-6">نشط | {featuredApps} مميز</p>
+          </div>
+        </div>
+      </div>
 
       {/* Catalog Diff (Files vs DB) */}
-      <Paper
-        sx={{
-          p: 2,
-          mb: 3,
-          border: 1,
-          borderColor:
-            (catalogDiff?.totals?.diffEntries || 0) > 0
-              ? "warning.light"
-              : "success.light",
-        }}
-      >
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems={{ xs: "flex-start", md: "center" }}
-          flexDirection={{ xs: "column", md: "row" }}
-          gap={1}
-          mb={1.5}
-        >
-          <Box>
-            <Typography variant="h6" fontWeight="bold">
+      <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-2 mb-3" style={{ borderColor: (catalogDiff?.totals?.diffEntries || 0) > 0 ? "#fbbf24" : "#86efac" }}>
+        <div className="flex justify-between items-start md:items-center flex-col md:flex-row gap-1 mb-1.5">
+          <div>
+            <h6 className="text-base font-semibold leading-none font-bold">
               فرق الكاتالوج (Files vs DB)
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
+            </h6>
+            <span className="text-xs text-muted-foreground">
               آخر مقارنة: {comparedAtLabel}
-            </Typography>
-          </Box>
-          <Box display="flex" gap={1}>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<RefreshIcon />}
-              onClick={onRefreshCatalogDiff}
-              disabled={catalogDiffLoading}
-            >
+            </span>
+          </div>
+          <div className="flex gap-1">
+            <Button variant="outline" size="sm" onClick={onRefreshCatalogDiff} disabled={catalogDiffLoading}>
+              <RefreshCw className="h-4 w-4 ml-1" />
               {catalogDiffLoading ? "جارٍ التحديث..." : "تحديث"}
             </Button>
-            <Button
-              variant="text"
-              size="small"
-              onClick={() => setShowCatalogDiffDetails((prev) => !prev)}
-              disabled={!hasDiffData}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setShowCatalogDiffDetails((prev) => !prev)} disabled={!hasDiffData}>
               {showCatalogDiffDetails ? "إخفاء التفاصيل" : "عرض التفاصيل"}
             </Button>
-          </Box>
-        </Box>
+          </div>
+        </div>
 
         {catalogDiffError && (
-          <Alert severity="warning" sx={{ mb: 1.5 }}>
+          <Alert variant="default" className="mb-1.5 border-yellow-500/50 text-yellow-700">
             {catalogDiffError}
           </Alert>
         )}
 
         {hasDiffData ? (
-          <Grid container spacing={1}>
-            <Grid size={{ xs: 6, md: 4 }}>
-              <Paper variant="outlined" sx={{ p: 1.5 }}>
-                <Typography variant="caption" color="text.secondary">
-                  إجمالي الفرق
-                </Typography>
-                <Typography variant="h6" fontWeight="bold">
-                  {catalogDiff?.totals?.diffEntries || 0}
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid size={{ xs: 6, md: 4 }}>
-              <Paper variant="outlined" sx={{ p: 1.5 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Apps (Catalog/DB)
-                </Typography>
-                <Typography variant="h6" fontWeight="bold">
-                  {catalogDiff?.totals?.catalogApps || 0}/
-                  {catalogDiff?.totals?.dbApps || 0}
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid size={{ xs: 6, md: 4 }}>
-              <Paper variant="outlined" sx={{ p: 1.5 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Bundles (Catalog/DB)
-                </Typography>
-                <Typography variant="h6" fontWeight="bold">
-                  {catalogDiff?.totals?.catalogBundles || 0}/
-                  {catalogDiff?.totals?.dbBundles || 0}
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid size={{ xs: 6, md: 4 }}>
-              <Paper variant="outlined" sx={{ p: 1.5 }}>
-                <Typography variant="caption" color="text.secondary">
-                  فروقات التطبيقات
-                </Typography>
-                <Typography variant="h6" fontWeight="bold">
-                  {appDiffEntries}
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid size={{ xs: 6, md: 4 }}>
-              <Paper variant="outlined" sx={{ p: 1.5 }}>
-                <Typography variant="caption" color="text.secondary">
-                  فروقات الباقات
-                </Typography>
-                <Typography variant="h6" fontWeight="bold">
-                  {bundleDiffEntries}
-                </Typography>
-              </Paper>
-            </Grid>
-          </Grid>
+          <div className="grid grid-cols-12 gap-1">
+            <div className="col-span-6 md:col-span-4">
+              <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-1.5">
+                <span className="text-xs text-muted-foreground">إجمالي الفرق</span>
+                <h6 className="text-base font-semibold leading-none font-bold">{catalogDiff?.totals?.diffEntries || 0}</h6>
+              </div>
+            </div>
+            <div className="col-span-6 md:col-span-4">
+              <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-1.5">
+                <span className="text-xs text-muted-foreground">Apps (Catalog/DB)</span>
+                <h6 className="text-base font-semibold leading-none font-bold">{catalogDiff?.totals?.catalogApps || 0}/{catalogDiff?.totals?.dbApps || 0}</h6>
+              </div>
+            </div>
+            <div className="col-span-6 md:col-span-4">
+              <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-1.5">
+                <span className="text-xs text-muted-foreground">Bundles (Catalog/DB)</span>
+                <h6 className="text-base font-semibold leading-none font-bold">{catalogDiff?.totals?.catalogBundles || 0}/{catalogDiff?.totals?.dbBundles || 0}</h6>
+              </div>
+            </div>
+            <div className="col-span-6 md:col-span-4">
+              <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-1.5">
+                <span className="text-xs text-muted-foreground">فروقات التطبيقات</span>
+                <h6 className="text-base font-semibold leading-none font-bold">{appDiffEntries}</h6>
+              </div>
+            </div>
+            <div className="col-span-6 md:col-span-4">
+              <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-1.5">
+                <span className="text-xs text-muted-foreground">فروقات الباقات</span>
+                <h6 className="text-base font-semibold leading-none font-bold">{bundleDiffEntries}</h6>
+              </div>
+            </div>
+          </div>
         ) : (
-          <Typography variant="body2" color="text.secondary">
-            لا توجد بيانات فرق متاحة حالياً.
-          </Typography>
+          <p className="text-sm leading-6 text-muted-foreground">لا توجد بيانات فرق متاحة حالياً.</p>
         )}
 
-        <Collapse in={showCatalogDiffDetails && hasDiffData}>
-          <Divider sx={{ my: 2 }} />
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                تطبيقات
-              </Typography>
-              <Box mb={1}>
-                <Typography variant="caption" color="text.secondary">
-                  موجود بالملفات وغير موجود في DB (
-                  {catalogDiff?.apps?.missingInDb?.length || 0})
-                </Typography>
-                <Box display="flex" flexWrap="wrap" gap={0.5} mt={0.5}>
-                  {(catalogDiff?.apps?.missingInDb || []).map((slug) => (
-                    <Chip
-                      key={`app-miss-${slug}`}
-                      size="small"
-                      label={slug}
-                      color="warning"
-                    />
-                  ))}
-                </Box>
-              </Box>
-              <Box mb={1}>
-                <Typography variant="caption" color="text.secondary">
-                  موجود في DB وغير موجود بالملفات (
-                  {catalogDiff?.apps?.extraInDb?.length || 0})
-                </Typography>
-                <Box display="flex" flexWrap="wrap" gap={0.5} mt={0.5}>
-                  {(catalogDiff?.apps?.extraInDb || []).map((slug) => (
-                    <Chip
-                      key={`app-extra-${slug}`}
-                      size="small"
-                      label={slug}
-                      color="info"
-                    />
-                  ))}
-                </Box>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  عناصر مختلفة ({catalogDiff?.apps?.changed?.length || 0})
-                </Typography>
-                <List dense sx={{ maxHeight: 220, overflow: "auto", mt: 0.5 }}>
-                  {(catalogDiff?.apps?.changed || []).map((entry) => (
-                    <ListItem
-                      key={`app-changed-${entry.slug}`}
-                      sx={{ display: "block", py: 0.5 }}
-                    >
-                      <Typography variant="body2" fontWeight="bold">
-                        {entry.slug}
-                      </Typography>
-                      {(entry.changes || []).slice(0, 3).map((change) => (
-                        <Typography
-                          key={`${entry.slug}-${change.field}`}
-                          variant="caption"
-                          color="text.secondary"
-                          display="block"
-                        >
-                          {change.field}: [{formatDiffValue(change.catalog)}]{" "}
-                          {"->"} [{formatDiffValue(change.db)}]
-                        </Typography>
-                      ))}
-                      {(entry.changes || []).length > 3 && (
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          display="block"
-                        >
-                          +{entry.changes.length - 3} تغييرات إضافية
-                        </Typography>
-                      )}
-                    </ListItem>
-                  ))}
-                </List>
-              </Box>
-            </Grid>
+        {showCatalogDiffDetails && hasDiffData && (
+          <div>
+            <Separator className="my-2" />
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-12 md:col-span-6">
+                <p className="text-sm font-medium text-muted-foreground font-bold">تطبيقات</p>
+                <div className="mb-1">
+                  <span className="text-xs text-muted-foreground">موجود بالملفات وغير موجود في DB ({catalogDiff?.apps?.missingInDb?.length || 0})</span>
+                  <div className="flex flex-wrap gap-0.5 mt-0.5">
+                    {(catalogDiff?.apps?.missingInDb || []).map((slug) => (
+                      <Badge key={`app-miss-${slug}`} variant="default" className="bg-amber-500 text-xs">{slug}</Badge>
+                    ))}
+                  </div>
+                </div>
+                <div className="mb-1">
+                  <span className="text-xs text-muted-foreground">موجود في DB وغير موجود بالملفات ({catalogDiff?.apps?.extraInDb?.length || 0})</span>
+                  <div className="flex flex-wrap gap-0.5 mt-0.5">
+                    {(catalogDiff?.apps?.extraInDb || []).map((slug) => (
+                      <Badge key={`app-extra-${slug}`} variant="default" className="bg-blue-500 text-xs">{slug}</Badge>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">عناصر مختلفة ({catalogDiff?.apps?.changed?.length || 0})</span>
+                  <ul className="space-y-1 mt-0.5" style={{ maxHeight: 220, overflow: "auto" }}>
+                    {(catalogDiff?.apps?.changed || []).map((entry) => (
+                      <li key={`app-changed-${entry.slug}`} className="block py-0.5">
+                        <p className="text-sm leading-6 font-bold">{entry.slug}</p>
+                        {(entry.changes || []).slice(0, 3).map((change) => (
+                          <span key={`${entry.slug}-${change.field}`} className="text-xs text-muted-foreground block">
+                            {change.field}: [{formatDiffValue(change.catalog)}] {"->"} [{formatDiffValue(change.db)}]
+                          </span>
+                        ))}
+                        {(entry.changes || []).length > 3 && (
+                          <span className="text-xs text-muted-foreground block">+{entry.changes.length - 3} تغييرات إضافية</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
 
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                باقات
-              </Typography>
-              <Box mb={1}>
-                <Typography variant="caption" color="text.secondary">
-                  موجود بالملفات وغير موجود في DB (
-                  {catalogDiff?.bundles?.missingInDb?.length || 0})
-                </Typography>
-                <Box display="flex" flexWrap="wrap" gap={0.5} mt={0.5}>
-                  {(catalogDiff?.bundles?.missingInDb || []).map((slug) => (
-                    <Chip
-                      key={`bundle-miss-${slug}`}
-                      size="small"
-                      label={slug}
-                      color="warning"
-                    />
-                  ))}
-                </Box>
-              </Box>
-              <Box mb={1}>
-                <Typography variant="caption" color="text.secondary">
-                  موجود في DB وغير موجود بالملفات (
-                  {catalogDiff?.bundles?.extraInDb?.length || 0})
-                </Typography>
-                <Box display="flex" flexWrap="wrap" gap={0.5} mt={0.5}>
-                  {(catalogDiff?.bundles?.extraInDb || []).map((slug) => (
-                    <Chip
-                      key={`bundle-extra-${slug}`}
-                      size="small"
-                      label={slug}
-                      color="info"
-                    />
-                  ))}
-                </Box>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  عناصر مختلفة ({catalogDiff?.bundles?.changed?.length || 0})
-                </Typography>
-                <List dense sx={{ maxHeight: 220, overflow: "auto", mt: 0.5 }}>
-                  {(catalogDiff?.bundles?.changed || []).map((entry) => (
-                    <ListItem
-                      key={`bundle-changed-${entry.slug}`}
-                      sx={{ display: "block", py: 0.5 }}
-                    >
-                      <Typography variant="body2" fontWeight="bold">
-                        {entry.slug}
-                      </Typography>
-                      {(entry.changes || []).slice(0, 3).map((change) => (
-                        <Typography
-                          key={`${entry.slug}-${change.field}`}
-                          variant="caption"
-                          color="text.secondary"
-                          display="block"
-                        >
-                          {change.field}: [{formatDiffValue(change.catalog)}]{" "}
-                          {"->"} [{formatDiffValue(change.db)}]
-                        </Typography>
-                      ))}
-                      {(entry.changes || []).length > 3 && (
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          display="block"
-                        >
-                          +{entry.changes.length - 3} تغييرات إضافية
-                        </Typography>
-                      )}
-                    </ListItem>
-                  ))}
-                </List>
-              </Box>
-            </Grid>
-          </Grid>
-        </Collapse>
-      </Paper>
+              <div className="col-span-12 md:col-span-6">
+                <p className="text-sm font-medium text-muted-foreground font-bold">باقات</p>
+                <div className="mb-1">
+                  <span className="text-xs text-muted-foreground">موجود بالملفات وغير موجود في DB ({catalogDiff?.bundles?.missingInDb?.length || 0})</span>
+                  <div className="flex flex-wrap gap-0.5 mt-0.5">
+                    {(catalogDiff?.bundles?.missingInDb || []).map((slug) => (
+                      <Badge key={`bundle-miss-${slug}`} variant="default" className="bg-amber-500 text-xs">{slug}</Badge>
+                    ))}
+                  </div>
+                </div>
+                <div className="mb-1">
+                  <span className="text-xs text-muted-foreground">موجود في DB وغير موجود بالملفات ({catalogDiff?.bundles?.extraInDb?.length || 0})</span>
+                  <div className="flex flex-wrap gap-0.5 mt-0.5">
+                    {(catalogDiff?.bundles?.extraInDb || []).map((slug) => (
+                      <Badge key={`bundle-extra-${slug}`} variant="default" className="bg-blue-500 text-xs">{slug}</Badge>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">عناصر مختلفة ({catalogDiff?.bundles?.changed?.length || 0})</span>
+                  <ul className="space-y-1 mt-0.5" style={{ maxHeight: 220, overflow: "auto" }}>
+                    {(catalogDiff?.bundles?.changed || []).map((entry) => (
+                      <li key={`bundle-changed-${entry.slug}`} className="block py-0.5">
+                        <p className="text-sm leading-6 font-bold">{entry.slug}</p>
+                        {(entry.changes || []).slice(0, 3).map((change) => (
+                          <span key={`${entry.slug}-${change.field}`} className="text-xs text-muted-foreground block">
+                            {change.field}: [{formatDiffValue(change.catalog)}] {"->"} [{formatDiffValue(change.db)}]
+                          </span>
+                        ))}
+                        {(entry.changes || []).length > 3 && (
+                          <span className="text-xs text-muted-foreground block">+{entry.changes.length - 3} تغييرات إضافية</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Filters and Search */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid size={{ xs: 12, md: 4 }}>
-            <TextField
-              fullWidth
-              placeholder="البحث في التطبيقات..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              size="small"
-              InputProps={{
-                startAdornment: (
-                  <Box component="span" sx={{ mr: 1 }}>
-                    🔍
-                  </Box>
-                ),
-              }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, md: 3 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>الترتيب</InputLabel>
-              <Select
-                value={sortBy}
-                label="الترتيب"
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <MenuItem value="installations">الأكثر تثبيتاً</MenuItem>
-                <MenuItem value="price">الأعلى سعراً</MenuItem>
-                <MenuItem value="rating">الأعلى تقييماً</MenuItem>
-                <MenuItem value="name">الاسم</MenuItem>
+      <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-2 mb-3">
+        <div className="grid grid-cols-12 gap-2 items-center">
+          <div className="col-span-12 md:col-span-4">
+            <div className="relative">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2">🔍</span>
+              <Input className="w-full pr-10" placeholder="البحث في التطبيقات..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            </div>
+          </div>
+          <div className="col-span-12 md:col-span-3">
+            <div className="space-y-2">
+              <Label>الترتيب</Label>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="installations">الأكثر تثبيتاً</SelectItem>
+                  <SelectItem value="price">الأعلى سعراً</SelectItem>
+                  <SelectItem value="rating">الأعلى تقييماً</SelectItem>
+                  <SelectItem value="name">الاسم</SelectItem>
+                </SelectContent>
               </Select>
-            </FormControl>
-          </Grid>
-          <Grid size={{ xs: 12, md: 5 }}>
-            <Box display="flex" gap={1}>
-              <Button
-                fullWidth
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => onEdit(null)}
-              >
-                إضافة
+            </div>
+          </div>
+          <div className="col-span-12 md:col-span-5">
+            <div className="flex gap-1">
+              <Button className="w-full" variant="default" onClick={() => onEdit(null)}>
+                <Plus className="h-4 w-4 ml-1" />إضافة
               </Button>
-              <Button
-                variant="outlined"
-                startIcon={<DownloadIcon />}
-                onClick={handleExport}
-                sx={{ minWidth: 100 }}
-              >
-                تصدير
+              <Button variant="outline" onClick={handleExport} style={{ minWidth: 100 }}>
+                <Download className="h-4 w-4 ml-1" />تصدير
               </Button>
-              <Button
-                variant="outlined"
-                component="label"
-                startIcon={<UploadIcon />}
-                sx={{ minWidth: 100 }}
-              >
-                استيراد
-                <input
-                  type="file"
-                  hidden
-                  accept=".json"
-                  onChange={handleImport}
-                />
-              </Button>
-            </Box>
-          </Grid>
-        </Grid>
+              <label className="inline-flex items-center gap-1 cursor-pointer">
+                <Button variant="outline" style={{ minWidth: 100 }} asChild>
+                  <span>
+                    <Upload className="h-4 w-4 ml-1" />استيراد
+                  </span>
+                </Button>
+                <input type="file" hidden accept=".json" onChange={handleImport} />
+              </label>
+            </div>
+          </div>
+        </div>
         {filteredApps.length !== apps.length && (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ mt: 1, display: "block" }}
-          >
-            عرض {filteredApps.length} من {apps.length} تطبيق
-          </Typography>
+          <span className="text-xs text-muted-foreground block mt-1">عرض {filteredApps.length} من {apps.length} تطبيق</span>
         )}
-      </Paper>
+      </div>
 
       {/* Category Tabs + Apps Grid Layout */}
-      <Grid container spacing={2}>
+      <div className="grid grid-cols-12 gap-2">
         {/* Side Category Tabs */}
-        <Grid size={{ xs: 12, md: 2 }}>
-          <Paper sx={{ height: "100%", minHeight: 400 }}>
-            <Tabs
-              orientation="vertical"
-              variant="scrollable"
-              value={categoryFilter}
-              onChange={(_, newValue) => setCategoryFilter(newValue)}
-              sx={{
-                borderLeft: 1,
-                borderColor: "divider",
-                "& .MuiTabs-flexContainer": { alignItems: "stretch" },
-              }}
-            >
+        <div className="col-span-12 md:col-span-2">
+          <div className="rounded-lg border bg-card text-card-foreground shadow-sm" style={{ minHeight: 400 }}>
+            <div className="flex flex-col border-l border-border">
               {categories.map((cat) => (
-                <Tab
+                <button
                   key={cat}
-                  value={cat}
-                  label={
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        width: "100%",
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          width: 12,
-                          height: 12,
-                          borderRadius: "50%",
-                          bgcolor:
-                            cat === "ALL" ? "#6b7280" : getCategoryColor(cat),
-                          flexShrink: 0,
-                        }}
-                      />
-                      <Typography
-                        variant="body2"
-                        sx={{ flex: 1, textAlign: "right" }}
-                      >
-                        {categoryLabels[cat] || cat}
-                      </Typography>
-                      <Chip
-                        label={
-                          cat === "ALL"
-                            ? apps.length
-                            : apps.filter((a) => a.category === cat).length
-                        }
-                        size="small"
-                        sx={{
-                          height: 20,
-                          fontSize: "0.7rem",
-                          bgcolor:
-                            categoryFilter === cat
-                              ? "primary.main"
-                              : "action.hover",
-                          color:
-                            categoryFilter === cat
-                              ? "primary.contrastText"
-                              : "text.secondary",
-                        }}
-                      />
-                    </Box>
-                  }
-                  sx={{
-                    alignItems: "flex-start",
-                    textAlign: "right",
-                    minHeight: 48,
-                    px: 1,
-                    "&.Mui-selected": {
-                      bgcolor: "action.selected",
-                      borderLeft: 3,
-                      borderColor:
-                        cat === "ALL" ? "#6b7280" : getCategoryColor(cat),
-                    },
-                  }}
-                />
+                  onClick={() => setCategoryFilter(cat)}
+                  className={`flex items-center gap-1 w-full text-right px-1 py-3 text-sm transition-colors ${categoryFilter === cat ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground hover:bg-accent/50"}`}
+                  style={{ borderRight: categoryFilter === cat ? `3px solid ${cat === "ALL" ? "#6b7280" : getCategoryColor(cat)}` : "3px solid transparent" }}
+                >
+                  <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: cat === "ALL" ? "#6b7280" : getCategoryColor(cat) }} />
+                  <span className="flex-1 text-right text-sm">{categoryLabels[cat] || cat}</span>
+                  <Badge variant="secondary" className="h-5 text-[0.7rem]">
+                    {cat === "ALL" ? apps.length : apps.filter((a) => a.category === cat).length}
+                  </Badge>
+                </button>
               ))}
-            </Tabs>
-          </Paper>
-        </Grid>
+            </div>
+          </div>
+        </div>
 
         {/* Apps Grid */}
-        <Grid size={{ xs: 12, md: 10 }}>
-          <Grid container spacing={3}>
+        <div className="col-span-12 md:col-span-10">
+          <div className="grid grid-cols-12 gap-4">
             {filteredApps.map((app) => {
               const monthlyRevenue = calculateAppRevenue(app);
               const isExpanded = expandedApp === app.id;
 
               return (
-                <Grid key={app.id} size={{ xs: 12, sm: 6, md: 4 }}>
-                  <Card
-                    sx={{
-                      height: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                      borderTop: 3,
-                      borderColor: getCategoryColor(app.category),
-                      transition: "all 0.2s ease",
-                      "&:hover": {
-                        boxShadow: 4,
-                        transform: "translateY(-2px)",
-                      },
-                    }}
-                  >
-                    <CardContent sx={{ flexGrow: 1, pb: 1 }}>
+                <div key={app.id} className="col-span-12 sm:col-span-6 md:col-span-4">
+                  <Card className="h-full flex flex-col" style={{ borderTop: `3px solid ${getCategoryColor(app.category)}`, transition: "all 0.2s ease" }}>
+                    <CardContent className="flex-grow pb-1">
                       {/* Header */}
-                      <Box
-                        display="flex"
-                        justifyContent="space-between"
-                        alignItems="flex-start"
-                        mb={1}
-                      >
-                        <Box flex={1}>
-                          <Typography variant="h6" fontWeight="bold" noWrap>
-                            {app.name}
-                          </Typography>
-                          <Chip
-                            label={app.category}
-                            size="small"
-                            sx={{
-                              mt: 0.5,
-                              bgcolor: getCategoryColor(app.category),
-                              color: "white",
-                              fontSize: "0.7rem",
-                            }}
-                          />
-                        </Box>
-                        <Box
-                          display="flex"
-                          flexDirection="column"
-                          alignItems="flex-end"
-                          gap={0.5}
-                        >
-                          {app.isFeatured && (
-                            <Chip
-                              label="مميز"
-                              color="warning"
-                              size="small"
-                              icon={<StarIcon fontSize="small" />}
-                            />
-                          )}
-                          {app.isPopular && (
-                            <Chip label="شائع" color="info" size="small" />
-                          )}
-                        </Box>
-                      </Box>
+                      <div className="flex justify-between items-start mb-1">
+                        <div className="flex-1">
+                          <h6 className="text-base font-semibold leading-none font-bold truncate">{app.name}</h6>
+                          <Badge className="mt-0.5 text-[0.7rem]" style={{ backgroundColor: getCategoryColor(app.category), color: "white" }}>{app.category}</Badge>
+                        </div>
+                        <div className="flex flex-col items-end gap-0.5">
+                          {app.isFeatured && <Badge variant="default" className="bg-amber-500 text-xs"><Star className="h-3 w-3 ml-0.5" />مميز</Badge>}
+                          {app.isPopular && <Badge variant="default" className="bg-blue-500 text-xs">شائع</Badge>}
+                        </div>
+                      </div>
 
                       {/* Description */}
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{
-                          mb: 2,
-                          height: 36,
-                          overflow: "hidden",
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          fontSize: "0.8rem",
-                        }}
-                      >
+                      <p className="text-sm leading-6 text-muted-foreground mb-2" style={{ height: 36, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", fontSize: "0.8rem" }}>
                         {app.description || "لا يوجد وصف"}
-                      </Typography>
+                      </p>
 
                       {/* Stats Row */}
-                      <Paper
-                        variant="outlined"
-                        sx={{ p: 1.5, mb: 2, bgcolor: "action.hover" }}
-                      >
-                        <Grid container spacing={1} textAlign="center">
-                          <Grid size={{ xs: 4 }}>
-                            <Typography
-                              variant="h6"
-                              fontWeight="bold"
-                              color="primary.main"
-                              fontSize="1rem"
-                            >
-                              {app._count?.installations ||
-                                app.installCount ||
-                                0}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              display="block"
-                              fontSize="0.65rem"
-                            >
-                              تثبيت
-                            </Typography>
-                          </Grid>
-                          <Grid size={{ xs: 4 }}>
-                            <Typography
-                              variant="h6"
-                              fontWeight="bold"
-                              color="success.main"
-                              fontSize="1rem"
-                            >
-                              ⭐ {app.rating?.toFixed(1) || "0.0"}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              display="block"
-                              fontSize="0.65rem"
-                            >
-                              ({app.reviewCount || 0})
-                            </Typography>
-                          </Grid>
-                          <Grid size={{ xs: 4 }}>
-                            <Typography
-                              variant="h6"
-                              fontWeight="bold"
-                              color="warning.main"
-                              fontSize="1rem"
-                            >
-                              {monthlyRevenue.toLocaleString()}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              display="block"
-                              fontSize="0.65rem"
-                            >
-                              ج.م/شهر
-                            </Typography>
-                          </Grid>
-                        </Grid>
-                      </Paper>
+                      <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-1.5 mb-2 bg-muted/50">
+                        <div className="grid grid-cols-12 gap-1 text-center">
+                          <div className="col-span-4">
+                            <h6 className="text-base font-semibold leading-none font-bold text-primary" style={{ fontSize: "1rem" }}>{app._count?.installations || app.installCount || 0}</h6>
+                            <span className="text-xs text-muted-foreground block" style={{ fontSize: "0.65rem" }}>تثبيت</span>
+                          </div>
+                          <div className="col-span-4">
+                            <h6 className="text-base font-semibold leading-none font-bold text-green-600" style={{ fontSize: "1rem" }}>⭐ {app.rating?.toFixed(1) || "0.0"}</h6>
+                            <span className="text-xs text-muted-foreground block" style={{ fontSize: "0.65rem" }}>({app.reviewCount || 0})</span>
+                          </div>
+                          <div className="col-span-4">
+                            <h6 className="text-base font-semibold leading-none font-bold text-amber-500" style={{ fontSize: "1rem" }}>{monthlyRevenue.toLocaleString()}</h6>
+                            <span className="text-xs text-muted-foreground block" style={{ fontSize: "0.65rem" }}>ج.م/شهر</span>
+                          </div>
+                        </div>
+                      </div>
 
                       {/* Price */}
-                      <Box display="flex" alignItems="center" gap={1} mb={1}>
-                        <Typography
-                          variant="h5"
-                          color="primary"
-                          fontWeight="bold"
-                        >
-                          {app.monthlyPrice?.toLocaleString() || 0} ج
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          / شهر
-                        </Typography>
+                      <div className="flex items-center gap-1 mb-1">
+                        <h5 className="scroll-m-18 text-lg font-semibold tracking-tight text-primary font-bold">{app.monthlyPrice?.toLocaleString() || 0} ج</h5>
+                        <span className="text-xs text-muted-foreground">/ شهر</span>
                         {app.yearlyPrice > 0 && (
-                          <Chip
-                            label={`${Math.round((1 - app.yearlyPrice / (app.monthlyPrice * 12)) * 100)}% توفير سنوي`}
-                            size="small"
-                            color="success"
-                            variant="outlined"
-                          />
+                          <Badge variant="outline" className="border-green-500/50 text-green-700 text-xs">{`${Math.round((1 - app.yearlyPrice / (app.monthlyPrice * 12)) * 100)}% توفير سنوي`}</Badge>
                         )}
-                      </Box>
+                      </div>
 
                       {/* Expanded Details */}
-                      <Collapse in={isExpanded}>
-                        <Divider sx={{ my: 1.5 }} />
-                        <Box mb={1.5}>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            display="block"
-                          >
-                            أيام التجربة: {app.trialDays || 14} يوم
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            display="block"
-                          >
-                            الإيرادات المتوقعة:{" "}
-                            {(
-                              app.monthlyPrice *
-                              (app._count?.installations || 0) *
-                              12
-                            ).toLocaleString()}{" "}
-                            ج.م/سنة
-                          </Typography>
-                          {app.mainRoute && (
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              display="block"
-                            >
-                              المسار: {app.mainRoute}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Collapse>
+                      {isExpanded && (
+                        <div>
+                          <Separator className="my-1.5" />
+                          <div className="mb-1.5">
+                            <span className="text-xs text-muted-foreground block">أيام التجربة: {app.trialDays || 14} يوم</span>
+                            <span className="text-xs text-muted-foreground block">الإيرادات المتوقعة: {(app.monthlyPrice * (app._count?.installations || 0) * 12).toLocaleString()} ج.م/سنة</span>
+                            {app.mainRoute && <span className="text-xs text-muted-foreground block">المسار: {app.mainRoute}</span>}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Toggle Switches */}
-                      <Box display="flex" gap={2} mb={1} flexWrap="wrap">
-                        <Box display="flex" alignItems="center" gap={0.5}>
-                          <input
-                            type="checkbox"
-                            checked={!!app.isActive}
-                            onChange={(e) =>
-                              handleQuickToggle(
-                                app,
-                                "isActive",
-                                e.target.checked,
-                              )
-                            }
-                            style={{ cursor: "pointer" }}
-                          />
-                          <Typography variant="caption">نشط</Typography>
-                        </Box>
-                        <Box display="flex" alignItems="center" gap={0.5}>
-                          <input
-                            type="checkbox"
-                            checked={!!app.isPublic}
-                            onChange={(e) =>
-                              handleQuickToggle(
-                                app,
-                                "isPublic",
-                                e.target.checked,
-                              )
-                            }
-                            style={{ cursor: "pointer" }}
-                          />
-                          <Typography variant="caption">عام</Typography>
-                        </Box>
-                        <Box display="flex" alignItems="center" gap={0.5}>
-                          <input
-                            type="checkbox"
-                            checked={!!app.isFeatured}
-                            onChange={(e) =>
-                              handleQuickToggle(
-                                app,
-                                "isFeatured",
-                                e.target.checked,
-                              )
-                            }
-                            style={{ cursor: "pointer" }}
-                          />
-                          <Typography variant="caption">مميز</Typography>
-                        </Box>
-                      </Box>
+                      <div className="flex gap-2 mb-1 flex-wrap">
+                        <label className="flex items-center gap-0.5 cursor-pointer">
+                          <input type="checkbox" checked={!!app.isActive} onChange={(e) => handleQuickToggle(app, "isActive", e.target.checked)} style={{ cursor: "pointer" }} />
+                          <span className="text-xs">نشط</span>
+                        </label>
+                        <label className="flex items-center gap-0.5 cursor-pointer">
+                          <input type="checkbox" checked={!!app.isPublic} onChange={(e) => handleQuickToggle(app, "isPublic", e.target.checked)} style={{ cursor: "pointer" }} />
+                          <span className="text-xs">عام</span>
+                        </label>
+                        <label className="flex items-center gap-0.5 cursor-pointer">
+                          <input type="checkbox" checked={!!app.isFeatured} onChange={(e) => handleQuickToggle(app, "isFeatured", e.target.checked)} style={{ cursor: "pointer" }} />
+                          <span className="text-xs">مميز</span>
+                        </label>
+                      </div>
 
                       {/* Actions */}
-                      <Box
-                        display="flex"
-                        justifyContent="space-between"
-                        alignItems="center"
-                      >
-                        <Button
-                          size="small"
-                          onClick={() =>
-                            setExpandedApp(isExpanded ? null : app.id)
-                          }
-                          variant="text"
-                        >
+                      <div className="flex justify-between items-center">
+                        <Button size="sm" onClick={() => setExpandedApp(isExpanded ? null : app.id)} variant="ghost">
                           {isExpanded ? "أقل" : "المزيد"}
                         </Button>
-                        <Box>
-                          <Tooltip title="تعديل">
-                            <IconButton
-                              size="small"
-                              onClick={() => onEdit(app)}
-                              color="primary"
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="حذف">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => onDelete(app.id)}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      </Box>
+                        <div>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" onClick={() => onEdit(app)}><Pencil className="h-4 w-4" /></Button>
+                              </TooltipTrigger>
+                              <TooltipContent>تعديل</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" onClick={() => onDelete(app.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                              </TooltipTrigger>
+                              <TooltipContent>حذف</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
-                </Grid>
+                </div>
               );
             })}
-          </Grid>
+          </div>
 
           {filteredApps.length === 0 && (
-            <Paper sx={{ p: 4, textAlign: "center" }}>
-              <Typography variant="h6" color="text.secondary">
-                لا توجد تطبيقات مطابقة للبحث
-              </Typography>
-            </Paper>
+            <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 text-center">
+              <h6 className="text-base font-semibold leading-none text-muted-foreground">لا توجد تطبيقات مطابقة للبحث</h6>
+            </div>
           )}
-        </Grid>
-      </Grid>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -2192,102 +1627,59 @@ const BundlesAndPricingTab = ({
   };
 
   return (
-    <Box>
+    <div>
       {/* Pricing Rules Section */}
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={2}
-      >
-        <Typography variant="h6">قواعد التسعير الإضافية</Typography>
-        <Button
-          variant="outlined"
-          startIcon={<AddIcon />}
-          size="small"
-          onClick={() => onEdit({ feature: "", price: 0, unit: "" })}
-        >
-          إضافة قاعدة
+      <div className="flex justify-between items-center mb-2">
+        <h6 className="text-base font-semibold leading-none">قواعد التسعير الإضافية</h6>
+        <Button variant="outline" size="sm" onClick={() => onEdit({ feature: "", price: 0, unit: "" })}>
+          <Plus className="h-4 w-4 ml-1" />إضافة قاعدة
         </Button>
-      </Box>
-      <TableContainer component={Paper} sx={{ mb: 4 }}>
-        <Table size="small">
-          <TableHead sx={{ bgcolor: "action.hover" }}>
+      </div>
+      <div className="mb-4">
+        <Table>
+          <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableCell>الميزة</TableCell>
-              <TableCell>السعر</TableCell>
-              <TableCell>الوحدة</TableCell>
-              <TableCell>الحالة</TableCell>
-              <TableCell>إجراءات</TableCell>
+              <TableHead>الميزة</TableHead>
+              <TableHead>السعر</TableHead>
+              <TableHead>الوحدة</TableHead>
+              <TableHead>الحالة</TableHead>
+              <TableHead>إجراءات</TableHead>
             </TableRow>
-          </TableHead>
+          </TableHeader>
           <TableBody>
             {pricingRules.map((rule) => (
               <TableRow key={rule.id}>
                 <TableCell>
-                  <Typography fontWeight="bold">{rule.feature}</Typography>
-                  {rule.description && (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                    >
-                      {rule.description}
-                    </Typography>
-                  )}
+                  <span className="font-medium">{rule.feature}</span>
+                  {rule.description && <span className="text-xs text-muted-foreground block">{rule.description}</span>}
                 </TableCell>
                 <TableCell>{rule.price} ج</TableCell>
                 <TableCell>{rule.unit}</TableCell>
                 <TableCell>
-                  <Chip
-                    label={rule.isActive ? "نشط" : "معطل"}
-                    color={rule.isActive ? "success" : "default"}
-                    size="small"
-                  />
+                  <Badge variant={rule.isActive ? "default" : "secondary"} className={rule.isActive ? "bg-green-500" : ""}>{rule.isActive ? "نشط" : "معطل"}</Badge>
                 </TableCell>
                 <TableCell>
-                  <IconButton size="small" onClick={() => onEdit(rule)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={() => onDelete(rule.id)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+                  <Button variant="ghost" size="icon" onClick={() => onEdit(rule)}><Pencil className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => onDelete(rule.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
+      </div>
 
       {/* Bundles Section */}
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={2}
-      >
-        <Box>
-          <Typography variant="h6">باقات العروض (Bundles)</Typography>
-          <Typography variant="caption" color="text.secondary">
-            {bundles.length} باقة | {bundles.filter((b) => b.isActive).length}{" "}
-            نشطة
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          size="small"
-          onClick={() => onEdit({ name: "", price: 0, apps: [] })}
-        >
-          إضافة باقة
+      <div className="flex justify-between items-center mb-2">
+        <div>
+          <h6 className="text-base font-semibold leading-none">باقات العروض (Bundles)</h6>
+          <span className="text-xs text-muted-foreground">{bundles.length} باقة | {bundles.filter((b) => b.isActive).length} نشطة</span>
+        </div>
+        <Button variant="default" size="sm" onClick={() => onEdit({ name: "", price: 0, apps: [] })}>
+          <Plus className="h-4 w-4 ml-1" />إضافة باقة
         </Button>
-      </Box>
+      </div>
 
-      <Grid container spacing={3}>
+      <div className="grid grid-cols-12 gap-4">
         {bundles.map((bundle) => {
           const isExpanded = expandedBundle === bundle.id;
           const bundleApps = normalizeBundleApps(bundle.apps);
@@ -2295,251 +1687,134 @@ const BundlesAndPricingTab = ({
           const savings = calculateBundleSavings(bundle);
 
           return (
-            <Grid key={bundle.id} size={{ xs: 12, md: 6 }}>
-              <Card
-                sx={{
-                  bgcolor: bundle.isActive
-                    ? "background.paper"
-                    : "action.disabledBackground",
-                  border: 2,
-                  borderColor: bundle.isFeatured ? "warning.main" : "divider",
-                  transition: "all 0.2s ease",
-                  "&:hover": { boxShadow: 3 },
-                }}
-              >
+            <div key={bundle.id} className="col-span-12 md:col-span-6">
+              <Card style={{ backgroundColor: bundle.isActive ? "var(--card)" : "rgba(0,0,0,0.05)", border: `2px solid ${bundle.isFeatured ? "#f59e0b" : "var(--border)"}`, transition: "all 0.2s ease" }}>
                 <CardContent>
                   {/* Header */}
-                  <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="flex-start"
-                    mb={2}
-                  >
-                    <Box flex={1}>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Typography variant="h6" fontWeight="bold">
-                          {bundle.name}
-                        </Typography>
-                        {bundle.isFeatured && (
-                          <Chip
-                            label="مميزة"
-                            color="warning"
-                            size="small"
-                            icon={<StarIcon fontSize="small" />}
-                          />
-                        )}
-                      </Box>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mt: 0.5 }}
-                      >
-                        {bundle.description || "لا يوجد وصف"}
-                      </Typography>
-                    </Box>
-                    <Box
-                      display="flex"
-                      flexDirection="column"
-                      alignItems="flex-end"
-                      gap={0.5}
-                    >
-                      <Chip
-                        label={bundle.isActive ? "نشطة" : "معطلة"}
-                        color={bundle.isActive ? "success" : "error"}
-                        size="small"
-                      />
-                    </Box>
-                  </Box>
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1">
+                        <h6 className="text-base font-semibold leading-none font-bold">{bundle.name}</h6>
+                        {bundle.isFeatured && <Badge variant="default" className="bg-amber-500 text-xs"><Star className="h-3 w-3 ml-0.5" />مميزة</Badge>}
+                      </div>
+                      <p className="text-sm leading-6 text-muted-foreground mt-0.5">{bundle.description || "لا يوجد وصف"}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-0.5">
+                      <Badge variant={bundle.isActive ? "default" : "destructive"} className={bundle.isActive ? "bg-green-500" : ""}>{bundle.isActive ? "نشطة" : "معطلة"}</Badge>
+                    </div>
+                  </div>
 
                   {/* Pricing Info */}
-                  <Paper
-                    variant="outlined"
-                    sx={{ p: 2, mb: 2, bgcolor: "success.light" }}
-                  >
-                    <Grid container spacing={2} alignItems="center">
-                      <Grid size={{ xs: 6 }}>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          display="block"
-                        >
-                          السعر الحالي
-                        </Typography>
-                        <Typography
-                          variant="h4"
-                          fontWeight="bold"
-                          color="success.dark"
-                        >
-                          {bundle.monthlyPrice?.toLocaleString() || 0} ج
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          / شهر
-                        </Typography>
-                      </Grid>
-                      <Grid textAlign="right" size={{ xs: 6 }}>
+                  <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-2 mb-2" style={{ backgroundColor: "#f0fdf4" }}>
+                    <div className="grid grid-cols-12 gap-2 items-center">
+                      <div className="col-span-6">
+                        <span className="text-xs text-muted-foreground block">السعر الحالي</span>
+                        <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold text-green-700">{bundle.monthlyPrice?.toLocaleString() || 0} ج</h4>
+                        <span className="text-xs text-muted-foreground">/ شهر</span>
+                      </div>
+                      <div className="col-span-6 text-right">
                         {savings > 0 && (
                           <>
-                            <Chip
-                              label={`توفير ${savings}%`}
-                              color="success"
-                              size="small"
-                              sx={{ mb: 0.5 }}
-                            />
-                            <Typography
-                              variant="caption"
-                              color="success.main"
-                              display="block"
-                            >
-                              خصم على التطبيقات
-                            </Typography>
+                            <Badge className="bg-green-500 mb-0.5">توفير {savings}%</Badge>
+                            <span className="text-xs text-green-600 block">خصم على التطبيقات</span>
                           </>
                         )}
-                      </Grid>
-                    </Grid>
-                  </Paper>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Apps List */}
-                  <Box mb={2}>
-                    <Box
-                      display="flex"
-                      justifyContent="space-between"
-                      alignItems="center"
-                      mb={1}
-                    >
-                      <Typography variant="subtitle2" fontWeight="bold">
-                        التطبيقات المُضمنة ({appsCount})
-                      </Typography>
-                    </Box>
-                    <Box display="flex" flexWrap="wrap" gap={0.5}>
+                  <div className="mb-2">
+                    <div className="flex justify-between items-center mb-1">
+                      <p className="text-sm font-medium text-muted-foreground font-bold">التطبيقات المُضمنة ({appsCount})</p>
+                    </div>
+                    <div className="flex flex-wrap gap-0.5">
                       {appsCount > 0 ? (
                         bundleApps.map((app, idx) => (
-                          <Tooltip key={idx} title={getBundleAppLabel(app)}>
-                            <Chip
-                              label={getBundleAppLabel(app)}
-                              size="small"
-                              variant="outlined"
-                              sx={{ maxWidth: 120 }}
-                            />
-                          </Tooltip>
+                          <TooltipProvider key={idx}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="text-xs" style={{ maxWidth: 120 }}>{getBundleAppLabel(app)}</Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>{getBundleAppLabel(app)}</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         ))
                       ) : (
-                        <Typography variant="caption" color="text.secondary">
-                          لا توجد تطبيقات مضمنة
-                        </Typography>
+                        <span className="text-xs text-muted-foreground">لا توجد تطبيقات مضمنة</span>
                       )}
-                    </Box>
-                  </Box>
+                    </div>
+                  </div>
 
                   {/* Expanded Details */}
-                  <Collapse in={isExpanded}>
-                    <Divider sx={{ my: 1.5 }} />
-                    {appsCount > 0 && (
-                      <List dense sx={{ mb: 1 }}>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          gutterBottom
-                          display="block"
-                        >
-                          تفاصيل التطبيقات:
-                        </Typography>
-                        {bundleApps.map((app, idx) => (
-                          <ListItem key={idx} sx={{ py: 0.5 }}>
-                            <ListItemText
-                              primary={getBundleAppLabel(app)}
-                              secondary={getBundleAppCategory(app)}
-                            />
-                          </ListItem>
-                        ))}
-                      </List>
-                    )}
-                  </Collapse>
+                  {isExpanded && (
+                    <div>
+                      <Separator className="my-1.5" />
+                      {appsCount > 0 && (
+                        <ul className="space-y-1 mb-1">
+                          <span className="text-xs text-muted-foreground block">تفاصيل التطبيقات:</span>
+                          {bundleApps.map((app, idx) => (
+                            <li key={idx} className="py-0.5">
+                              <div>
+                                <span className="font-medium">{getBundleAppLabel(app)}</span>
+                                <span className="text-sm text-muted-foreground block">{getBundleAppCategory(app)}</span>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
 
                   {/* Toggle Switches */}
-                  <Box display="flex" gap={2} mb={1} flexWrap="wrap">
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      <input
-                        type="checkbox"
-                        checked={!!bundle.isActive}
-                        onChange={(e) =>
-                          handleQuickToggle(
-                            bundle,
-                            "isActive",
-                            e.target.checked,
-                          )
-                        }
-                        style={{ cursor: "pointer" }}
-                      />
-                      <Typography variant="caption">نشطة</Typography>
-                    </Box>
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      <input
-                        type="checkbox"
-                        checked={!!bundle.isFeatured}
-                        onChange={(e) =>
-                          handleQuickToggle(
-                            bundle,
-                            "isFeatured",
-                            e.target.checked,
-                          )
-                        }
-                        style={{ cursor: "pointer" }}
-                      />
-                      <Typography variant="caption">مميزة</Typography>
-                    </Box>
-                  </Box>
+                  <div className="flex gap-2 mb-1 flex-wrap">
+                    <label className="flex items-center gap-0.5 cursor-pointer">
+                      <input type="checkbox" checked={!!bundle.isActive} onChange={(e) => handleQuickToggle(bundle, "isActive", e.target.checked)} style={{ cursor: "pointer" }} />
+                      <span className="text-xs">نشطة</span>
+                    </label>
+                    <label className="flex items-center gap-0.5 cursor-pointer">
+                      <input type="checkbox" checked={!!bundle.isFeatured} onChange={(e) => handleQuickToggle(bundle, "isFeatured", e.target.checked)} style={{ cursor: "pointer" }} />
+                      <span className="text-xs">مميزة</span>
+                    </label>
+                  </div>
 
                   {/* Actions */}
-                  <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Button
-                      size="small"
-                      onClick={() =>
-                        setExpandedBundle(isExpanded ? null : bundle.id)
-                      }
-                      variant="text"
-                    >
+                  <div className="flex justify-between items-center">
+                    <Button size="sm" onClick={() => setExpandedBundle(isExpanded ? null : bundle.id)} variant="ghost">
                       {isExpanded ? "أقل" : "عرض التفاصيل"}
                     </Button>
-                    <Box>
-                      <Tooltip title="تعديل">
-                        <IconButton
-                          size="small"
-                          onClick={() => onEdit(bundle)}
-                          color="primary"
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="حذف">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => onDelete(bundle.id)}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </Box>
+                    <div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => onEdit(bundle)}><Pencil className="h-4 w-4" /></Button>
+                          </TooltipTrigger>
+                          <TooltipContent>تعديل</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => onDelete(bundle.id)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                          </TooltipTrigger>
+                          <TooltipContent>حذف</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
+            </div>
           );
         })}
-      </Grid>
+      </div>
 
       {bundles.length === 0 && (
-        <Paper sx={{ p: 4, textAlign: "center" }}>
-          <Typography variant="h6" color="text.secondary">
-            لا توجد باقات محددة
-          </Typography>
-        </Paper>
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 text-center">
+          <h6 className="text-base font-semibold leading-none text-muted-foreground">لا توجد باقات محددة</h6>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
 
@@ -2553,60 +1828,50 @@ const EnterprisePlansTab = ({
   onRefresh: () => Promise<void> | void;
 }) => {
   return (
-    <Box>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead sx={{ bgcolor: "action.hover" }}>
-            <TableRow>
-              <TableCell>الشركة</TableCell>
-              <TableCell>الرسوم الشهرية</TableCell>
-              <TableCell>مدير الحساب</TableCell>
-              <TableCell>دعم مخصص</TableCell>
-              <TableCell>الحالة</TableCell>
-              <TableCell>إجراءات</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {enterprisePlans.map((plan) => {
-              const features = parsePlanFeatures(plan.features);
-              return (
-                <TableRow key={plan.id}>
-                  <TableCell>
-                    <Typography variant="subtitle2">
-                      {plan.company?.name}
-                    </Typography>
-                    <Typography variant="caption">
-                      {plan.company?.email}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>{plan.price} ج</TableCell>
-                  <TableCell>{features.accountManager || "غير محدد"}</TableCell>
-                  <TableCell>
-                    {features.dedicatedSupport ? (
-                      <CheckIcon color="success" />
-                    ) : (
-                      <CloseIcon color="error" />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Chip label="Enterprise" color="warning" size="small" />
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => onEdit(plan)}
-                      aria-label="تعديل"
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
+    <div>
+      <Table>
+        <TableHeader className="bg-muted/50">
+          <TableRow>
+            <TableHead>الشركة</TableHead>
+            <TableHead>الرسوم الشهرية</TableHead>
+            <TableHead>مدير الحساب</TableHead>
+            <TableHead>دعم مخصص</TableHead>
+            <TableHead>الحالة</TableHead>
+            <TableHead>إجراءات</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {enterprisePlans.map((plan) => {
+            const features = parsePlanFeatures(plan.features);
+            return (
+              <TableRow key={plan.id}>
+                <TableCell>
+                  <p className="text-sm font-medium text-muted-foreground">{plan.company?.name}</p>
+                  <span className="text-xs">{plan.company?.email}</span>
+                </TableCell>
+                <TableCell>{plan.price} ج</TableCell>
+                <TableCell>{features.accountManager || "غير محدد"}</TableCell>
+                <TableCell>
+                  {features.dedicatedSupport ? (
+                    <Check className="text-green-500 h-5 w-5" />
+                  ) : (
+                    <X className="text-red-500 h-5 w-5" />
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Badge variant="default" className="bg-amber-500">Enterprise</Badge>
+                </TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="icon" onClick={() => onEdit(plan)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
   );
 };
 
@@ -3056,49 +2321,29 @@ const StorefrontThemesTab = ({
   );
 
   return (
-    <Box>
-      <Paper
-        sx={{
-          p: 3,
-          mb: 3,
-          bgcolor: "info.light",
-          color: "info.contrastText",
-        }}
-      >
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 6, md: 3 }}>
-            <Typography variant="h4" fontWeight="bold">
-              {draftThemes.length}
-            </Typography>
-            <Typography variant="body2">إجمالي القوالب</Typography>
-          </Grid>
-          <Grid size={{ xs: 6, md: 3 }}>
-            <Typography variant="h4" fontWeight="bold">
-              {draftThemes.filter((theme) => theme.isActive).length}
-            </Typography>
-            <Typography variant="body2">قوالب متاحة للتفعيل</Typography>
-          </Grid>
-          <Grid size={{ xs: 6, md: 3 }}>
-            <Typography variant="h4" fontWeight="bold">
-              {totalCurrentCompanies}
-            </Typography>
-            <Typography variant="body2">شركات تستخدم قالبًا</Typography>
-          </Grid>
-          <Grid size={{ xs: 6, md: 3 }}>
-            <Typography
-              variant="h6"
-              fontWeight="bold"
-              sx={{ wordBreak: "break-word" }}
-            >
-              {defaultTheme ? defaultTheme.name : "غير محدد"}
-            </Typography>
-            <Typography variant="body2">القالب الافتراضي</Typography>
+    <div>
+      <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-3 mb-3" style={{ backgroundColor: "#e0f2fe", color: "#0c4a6e" }}>
+        <div className="grid grid-cols-12 gap-4">
+          <div className="col-span-6 md:col-span-3">
+            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">{draftThemes.length}</h4>
+            <p className="text-sm leading-6">إجمالي القوالب</p>
+          </div>
+          <div className="col-span-6 md:col-span-3">
+            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">{draftThemes.filter((theme) => theme.isActive).length}</h4>
+            <p className="text-sm leading-6">قوالب متاحة للتفعيل</p>
+          </div>
+          <div className="col-span-6 md:col-span-3">
+            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">{totalCurrentCompanies}</h4>
+            <p className="text-sm leading-6">شركات تستخدم قالبًا</p>
+          </div>
+          <div className="col-span-6 md:col-span-3">
+            <h6 className="text-base font-semibold leading-none font-bold break-all">{defaultTheme ? defaultTheme.name : "غير محدد"}</h6>
+            <p className="text-sm leading-6">القالب الافتراضي</p>
+          </div>
+        </div>
+      </div>
 
-          </Grid>
-        </Grid>
-      </Paper>
-
-      <Alert severity="info" sx={{ mb: 3 }}>
+      <Alert variant="default" className="mb-3 border-blue-500/50 text-blue-700">
         القالب الافتراضي هو الذي يحصل عليه أي متجر جديد عند إنشاء إعدادات
         المتجر لأول مرة.{" "}
         {defaultTheme
@@ -3107,635 +2352,309 @@ const StorefrontThemesTab = ({
         إجمالي عمليات شراء القوالب المسجلة: {totalPurchases}.
       </Alert>
 
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems={{ xs: "flex-start", md: "center" }}
-        flexDirection={{ xs: "column", md: "row" }}
-        gap={2}
-        mb={3}
-      >
-        <Box>
-          <Typography variant="h6">كتالوج قوالب المتجر</Typography>
-          <Typography variant="body2" color="text.secondary">
+      <div className="flex justify-between items-start md:items-center flex-col md:flex-row gap-2 mb-3">
+        <div>
+          <h6 className="text-base font-semibold leading-none">كتالوج قوالب المتجر</h6>
+          <p className="text-sm leading-6 text-muted-foreground">
             من هنا يتحكم السوبر أدمن في إتاحة القوالب وتسعيرها للشركات، بينما
             الشراء والتطبيق يتمان من صفحة القوالب داخل متجر التطبيقات.
-          </Typography>
-        </Box>
-        <Button
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={onRefresh}
-          disabled={bulkSaving}
-        >
-          تحديث البيانات
+          </p>
+        </div>
+        <Button variant="outline" onClick={onRefresh} disabled={bulkSaving}>
+          <RefreshCw className="h-4 w-4 ml-1" />تحديث البيانات
         </Button>
-        <Button
-          variant="contained"
-          color="success"
-          startIcon={<CheckIcon />}
-          onClick={handleEnableAndShowAllThemes}
-          disabled={bulkSaving || uniqueThemes.length === 0}
-        >
-          {bulkSaving ? "جارٍ الإظهار والتفعيل..." : "إظهار وتفعيل كل القوالب"}
+        <Button variant="default" className="bg-green-600 hover:bg-green-700" onClick={handleEnableAndShowAllThemes} disabled={bulkSaving || uniqueThemes.length === 0}>
+          <Check className="h-4 w-4 ml-1" />{bulkSaving ? "جارٍ الإظهار والتفعيل..." : "إظهار وتفعيل كل القوالب"}
         </Button>
-      </Box>
+      </div>
 
       {hiddenOrInactiveThemesCount > 0 ? (
-        <Alert severity="warning" sx={{ mb: 3 }}>
+        <Alert variant="default" className="mb-3 border-yellow-500/50 text-yellow-700">
           يوجد {hiddenOrInactiveThemesCount} قالب غير ظاهر للشركات أو غير متاح
           للتفعيل حاليًا. الزر الجماعي بالأعلى يعيدها كلها إلى حالة
           <strong> ظاهر + متاح للتفعيل </strong>
           دفعة واحدة.
         </Alert>
       ) : (
-        <Alert severity="success" sx={{ mb: 3 }}>
+        <Alert variant="default" className="mb-3 border-green-500/50 text-green-700">
           جميع القوالب الحالية ظاهرة للشركات ومتاحة للتفعيل.
         </Alert>
       )}
 
-      <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid size={{ xs: 12, md: 4 }}>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="ابحث بالاسم أو الوصف أو themeId..."
-              value={themeSearchQuery}
-              onChange={(event) => setThemeSearchQuery(event.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel id="theme-visibility-filter-label">الحالة</InputLabel>
-              <Select
-                labelId="theme-visibility-filter-label"
-                label="الحالة"
-                value={visibilityFilter}
-                onChange={(event) =>
-                  setVisibilityFilter(event.target.value as ThemeVisibilityFilter)
-                }
-              >
-                <MenuItem value="ALL">كل الحالات</MenuItem>
-                <MenuItem value="VISIBLE">ظاهر للشركات</MenuItem>
-                <MenuItem value="HIDDEN">مخفي</MenuItem>
-                <MenuItem value="ACTIVE">متاح للتفعيل</MenuItem>
-                <MenuItem value="INACTIVE">غير متاح</MenuItem>
-                <MenuItem value="ARCHIVED">مؤرشف</MenuItem>
-                <MenuItem value="FEATURED">مميز</MenuItem>
+      <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-2 mb-3">
+        <div className="grid grid-cols-12 gap-2 items-center">
+          <div className="col-span-12 md:col-span-4">
+            <div className="relative">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input className="w-full pr-10" placeholder="ابحث بالاسم أو الوصف أو themeId..." value={themeSearchQuery} onChange={(event) => setThemeSearchQuery(event.target.value)} />
+            </div>
+          </div>
+          <div className="col-span-12 sm:col-span-6 md:col-span-2">
+            <div className="space-y-2">
+              <Label>الحالة</Label>
+              <Select value={visibilityFilter} onValueChange={(v) => setVisibilityFilter(v as ThemeVisibilityFilter)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">كل الحالات</SelectItem>
+                  <SelectItem value="VISIBLE">ظاهر للشركات</SelectItem>
+                  <SelectItem value="HIDDEN">مخفي</SelectItem>
+                  <SelectItem value="ACTIVE">متاح للتفعيل</SelectItem>
+                  <SelectItem value="INACTIVE">غير متاح</SelectItem>
+                  <SelectItem value="ARCHIVED">مؤرشف</SelectItem>
+                  <SelectItem value="FEATURED">مميز</SelectItem>
+                </SelectContent>
               </Select>
-            </FormControl>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel id="theme-pricing-filter-label">التسعير</InputLabel>
-              <Select
-                labelId="theme-pricing-filter-label"
-                label="التسعير"
-                value={pricingFilter}
-                onChange={(event) =>
-                  setPricingFilter(event.target.value as ThemePricingFilter)
-                }
-              >
-                <MenuItem value="ALL">كل الأسعار</MenuItem>
-                <MenuItem value="FREE">مجاني</MenuItem>
-                <MenuItem value="PAID">مدفوع</MenuItem>
+            </div>
+          </div>
+          <div className="col-span-12 sm:col-span-6 md:col-span-2">
+            <div className="space-y-2">
+              <Label>التسعير</Label>
+              <Select value={pricingFilter} onValueChange={(v) => setPricingFilter(v as ThemePricingFilter)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">كل الأسعار</SelectItem>
+                  <SelectItem value="FREE">مجاني</SelectItem>
+                  <SelectItem value="PAID">مدفوع</SelectItem>
+                </SelectContent>
               </Select>
-            </FormControl>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel id="theme-category-filter-label">المجال</InputLabel>
-              <Select
-                labelId="theme-category-filter-label"
-                label="المجال"
-                value={categoryFilter}
-                onChange={(event) => setCategoryFilter(event.target.value)}
-              >
-                <MenuItem value="ALL">كل المجالات</MenuItem>
-                {themeCategoryOptions.map((categoryLabel) => (
-                  <MenuItem key={categoryLabel} value={categoryLabel}>
-                    {categoryLabel}
-                  </MenuItem>
-                ))}
+            </div>
+          </div>
+          <div className="col-span-12 sm:col-span-6 md:col-span-2">
+            <div className="space-y-2">
+              <Label>المجال</Label>
+              <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">كل المجالات</SelectItem>
+                  {themeCategoryOptions.map((categoryLabel) => (
+                    <SelectItem key={categoryLabel} value={categoryLabel}>{categoryLabel}</SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
-            </FormControl>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={allFilteredSelected}
-                    indeterminate={
-                      selectedThemeIds.length > 0 && !allFilteredSelected
-                    }
-                    onChange={(event) =>
-                      toggleFilteredSelection(event.target.checked)
-                    }
-                  />
-                }
-                label="تحديد المعروض"
-              />
-              <Chip
-                size="small"
-                label={`${filteredThemes.length}/${draftThemes.length}`}
-              />
-            </Box>
-          </Grid>
-        </Grid>
+            </div>
+          </div>
+          <div className="col-span-12 sm:col-span-6 md:col-span-2">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={allFilteredSelected}
+                  onCheckedChange={(checked) => toggleFilteredSelection(checked === true)}
+                />
+                <span className="text-sm">تحديد المعروض</span>
+              </label>
+              <Badge variant="secondary" className="text-xs">{filteredThemes.length}/{draftThemes.length}</Badge>
+            </div>
+          </div>
+        </div>
 
-        <Collapse in={selectedThemeIds.length > 0}>
-          <Divider sx={{ my: 2 }} />
-          <Box
-            display="flex"
-            alignItems={{ xs: "stretch", md: "center" }}
-            justifyContent="space-between"
-            flexDirection={{ xs: "column", md: "row" }}
-            gap={2}
-          >
-            <Box>
-              <Typography variant="subtitle2" fontWeight="bold">
-                {selectedThemeIds.length} قالب محدد
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                مستخدم حاليًا لدى {selectedUsageTotals.currentCompanies} شركة •
-                مشتريات مسجلة {selectedUsageTotals.purchases}
-              </Typography>
-            </Box>
-            <Box display="flex" flexWrap="wrap" gap={1}>
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<VisibilityIcon />}
-                disabled={bulkSaving}
-                onClick={() =>
-                  persistThemePatch(
-                    selectedThemeIds,
-                    { isActive: true, isPublic: true },
-                    "تم إظهار وتفعيل القوالب المحددة",
-                  )
-                }
-              >
-                إظهار المحدد
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                color="warning"
-                disabled={bulkSaving}
-                onClick={() =>
-                  persistThemePatch(
-                    selectedThemeIds,
-                    { isActive: false },
-                    "تم تعطيل القوالب المحددة",
-                  )
-                }
-              >
-                تعطيل المحدد
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                color="error"
-                startIcon={<ArchiveIcon />}
-                disabled={bulkSaving}
-                onClick={() => handleArchiveThemes(selectedThemeIds)}
-              >
-                أرشفة المحدد
-              </Button>
-              <TextField
-                size="small"
-                type="number"
-                label="سعر موحد"
-                value={bulkPrice}
-                onChange={(event) => setBulkPrice(event.target.value)}
-                sx={{ width: 130 }}
-              />
-              <Button
-                size="small"
-                variant="contained"
-                disabled={bulkSaving}
-                onClick={handleApplyBulkPrice}
-              >
-                تطبيق السعر
-              </Button>
-            </Box>
-          </Box>
-        </Collapse>
-      </Paper>
+        {selectedThemeIds.length > 0 && (
+          <div>
+            <Separator className="my-2" />
+            <div className="flex items-stretch md:items-center justify-between flex-col md:flex-row gap-2">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground font-bold">{selectedThemeIds.length} قالب محدد</p>
+                <span className="text-xs text-muted-foreground">مستخدم حاليًا لدى {selectedUsageTotals.currentCompanies} شركة • مشتريات مسجلة {selectedUsageTotals.purchases}</span>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                <Button size="sm" variant="outline" disabled={bulkSaving} onClick={() => persistThemePatch(selectedThemeIds, { isActive: true, isPublic: true }, "تم إظهار وتفعيل القوالب المحددة")}>
+                  <Eye className="h-4 w-4 ml-1" />إظهار المحدد
+                </Button>
+                <Button size="sm" variant="outline" className="text-amber-500 border-amber-500" disabled={bulkSaving} onClick={() => persistThemePatch(selectedThemeIds, { isActive: false }, "تم تعطيل القوالب المحددة")}>
+                  تعطيل المحدد
+                </Button>
+                <Button size="sm" variant="outline" className="text-red-500 border-red-500" disabled={bulkSaving} onClick={() => handleArchiveThemes(selectedThemeIds)}>
+                  <Archive className="h-4 w-4 ml-1" />أرشفة المحدد
+                </Button>
+                <Input className="w-[130px] h-9" type="number" placeholder="سعر موحد" value={bulkPrice} onChange={(event) => setBulkPrice(event.target.value)} />
+                <Button size="sm" variant="default" disabled={bulkSaving} onClick={handleApplyBulkPrice}>
+                  تطبيق السعر
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
-      <Grid container spacing={3}>
+      <div className="grid grid-cols-12 gap-4">
         {filteredThemes.map((theme) => {
           const draft = theme;
           const isSaving = savingThemeId === theme.themeId || bulkSaving;
-          const previewColors =
-            draft.preview?.colors?.length > 0 ? draft.preview.colors : [];
+          const previewColors = draft.preview?.colors?.length > 0 ? draft.preview.colors : [];
           const usageStats = getThemeUsageStats(draft);
           const isSelected = selectedThemeSet.has(theme.themeId);
 
           return (
-            <Grid key={theme.themeId} size={{ xs: 12, lg: 6 }}>
-              <Card
-                sx={{
-                  height: "100%",
-                  overflow: "hidden",
-                  border: "1px solid",
-                  borderColor: isSelected ? "primary.main" : "divider",
-                  boxShadow: isSelected ? 4 : 1,
-                }}
-              >
+            <div key={theme.themeId} className="col-span-12 lg:col-span-6">
+              <Card className="h-full overflow-hidden" style={{ border: `1px solid ${isSelected ? "var(--primary)" : "var(--border)"}`, boxShadow: isSelected ? "0 10px 15px -3px rgba(0,0,0,0.1)" : "0 1px 3px 0 rgba(0,0,0,0.1)" }}>
                 {draft.preview?.imageUrl && (
-                  <Box
-                    sx={{
-                      height: 200,
-                      width: "100%",
-                      overflow: "hidden",
-                      position: "relative",
-                      borderBottom: "1px solid",
-                      borderColor: "divider",
-                      bgcolor: "action.hover",
-                    }}
-                  >
-                    <img
-                      src={draft.preview.imageUrl}
-                      alt={draft.name}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        objectPosition: "top center",
-                      }}
-                    />
-                  </Box>
+                  <div className="h-[200px] w-full overflow-hidden relative border-b border-border bg-muted/50">
+                    <img src={draft.preview.imageUrl} alt={draft.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} />
+                  </div>
                 )}
                 <CardContent>
-                  <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="flex-start"
-                    gap={2}
-                    mb={2}
-                  >
-                    <Box display="flex" alignItems="flex-start" gap={1}>
+                  <div className="flex justify-between items-start gap-2 mb-2">
+                    <div className="flex items-start gap-1">
                       <Checkbox
-                        size="small"
                         checked={isSelected}
-                        onChange={(event) =>
-                          toggleThemeSelection(theme.themeId, event.target.checked)
-                        }
-                        sx={{ mt: -0.75, mr: -0.5 }}
+                        onCheckedChange={(checked) => toggleThemeSelection(theme.themeId, checked === true)}
+                        className="mt-[-0.75rem] mr-[-0.5rem]"
                       />
-                      <Box>
-                        <Typography variant="h6" fontWeight="bold">
-                          {draft.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {draft.themeId}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <Box display="flex" gap={1} flexWrap="wrap">
-                      {draft.isFeatured ? (
-                        <Chip label="مميز" color="warning" size="small" />
-                      ) : null}
-                      {draft.isDefaultTheme ? (
-                        <Chip
-                          label="افتراضي للمتاجر الجديدة"
-                          color="primary"
-                          size="small"
-                          icon={<StarIcon fontSize="small" />}
-                        />
-                      ) : null}
-                      <Chip
-                        label={draft.isActive ? "نشط" : "موقوف"}
-                        color={draft.isActive ? "success" : "default"}
-                        size="small"
-                      />
-                      <Chip
-                        label={draft.isPublic ? "ظاهر" : "مخفي"}
-                        color={draft.isPublic ? "info" : "default"}
-                        size="small"
-                      />
-                      {!draft.isActive && !draft.isPublic ? (
-                        <Chip label="مؤرشف" color="error" size="small" />
-                      ) : null}
-                    </Box>
-                  </Box>
+                      <div>
+                        <h6 className="text-base font-semibold leading-none font-bold">{draft.name}</h6>
+                        <span className="text-xs text-muted-foreground">{draft.themeId}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-1 flex-wrap">
+                      {draft.isFeatured ? <Badge variant="default" className="bg-amber-500 text-xs">مميز</Badge> : null}
+                      {draft.isDefaultTheme ? <Badge variant="default" className="bg-blue-500 text-xs"><Star className="h-3 w-3 ml-0.5" />افتراضي للمتاجر الجديدة</Badge> : null}
+                      <Badge variant={draft.isActive ? "default" : "secondary"} className={draft.isActive ? "bg-green-500" : ""}>{draft.isActive ? "نشط" : "موقوف"}</Badge>
+                      <Badge variant={draft.isPublic ? "default" : "secondary"} className={draft.isPublic ? "bg-blue-500" : ""}>{draft.isPublic ? "ظاهر" : "مخفي"}</Badge>
+                      {!draft.isActive && !draft.isPublic ? <Badge variant="destructive">مؤرشف</Badge> : null}
+                    </div>
+                  </div>
 
-                  <Box display="flex" gap={1} mb={2}>
+                  <div className="flex gap-1 mb-2">
                     {previewColors.map((colorValue, colorIndex) => (
-                      <Box
-                        key={`${draft.themeId}-${colorValue}-${colorIndex}`}
-                        sx={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: "999px",
-                          border: "1px solid",
-                          borderColor: "divider",
-                          backgroundColor: `hsl(${colorValue})`,
-                        }}
-                      />
+                      <div key={`${draft.themeId}-${colorValue}-${colorIndex}`} className="w-7 h-7 rounded-full border border-border" style={{ backgroundColor: `hsl(${colorValue})` }} />
                     ))}
-                  </Box>
+                  </div>
 
-                  <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: "action.hover" }}>
-                    <Grid container spacing={1}>
-                      <Grid size={{ xs: 6, md: 3 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          مفعل
-                        </Typography>
-                        <Typography variant="subtitle2">
-                          {usageStats.activeInstallations} شركة
-                        </Typography>
-                      </Grid>
-                      <Grid size={{ xs: 6, md: 3 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          مشتريات
-                        </Typography>
-                        <Typography variant="subtitle2">
-                          {usageStats.purchases}
-                        </Typography>
-                      </Grid>
-                      <Grid size={{ xs: 6, md: 3 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          مستخدم الآن
-                        </Typography>
-                        <Typography variant="subtitle2">
-                          {usageStats.currentCompanies} شركة
-                        </Typography>
-                      </Grid>
-                      <Grid size={{ xs: 6, md: 3 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          إجمالي
-                        </Typography>
-                        <Typography variant="subtitle2">
-                          {usageStats.installations || usageStats.installCount}
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                  </Paper>
+                  <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-2 mb-2 bg-muted/50">
+                    <div className="grid grid-cols-12 gap-1">
+                      <div className="col-span-6 md:col-span-3">
+                        <span className="text-xs text-muted-foreground">مفعل</span>
+                        <p className="text-sm font-medium text-muted-foreground">{usageStats.activeInstallations} شركة</p>
+                      </div>
+                      <div className="col-span-6 md:col-span-3">
+                        <span className="text-xs text-muted-foreground">مشتريات</span>
+                        <p className="text-sm font-medium text-muted-foreground">{usageStats.purchases}</p>
+                      </div>
+                      <div className="col-span-6 md:col-span-3">
+                        <span className="text-xs text-muted-foreground">مستخدم الآن</span>
+                        <p className="text-sm font-medium text-muted-foreground">{usageStats.currentCompanies} شركة</p>
+                      </div>
+                      <div className="col-span-6 md:col-span-3">
+                        <span className="text-xs text-muted-foreground">إجمالي</span>
+                        <p className="text-sm font-medium text-muted-foreground">{usageStats.installations || usageStats.installCount}</p>
+                      </div>
+                    </div>
+                  </div>
 
-                  <Grid container spacing={2} sx={{ mb: 2 }}>
-                    <Grid size={{ xs: 12 }}>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        label="رابط الصورة المعاينة (imageUrl)"
-                        value={draft.preview?.imageUrl || ""}
-                        onChange={(event) =>
-                          handleDraftChange(theme.themeId, {
-                            preview: {
-                              ...draft.preview,
-                              imageUrl: event.target.value,
-                            },
-                          })
-                        }
-                        sx={{ mb: 2 }}
-                        helperText="يفضل استخدام مسار يبدأ بـ /assets/themes/..."
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12 }}>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        label="وصف القالب"
-                        multiline
-                        minRows={2}
-                        value={draft.description}
-                        onChange={(event) =>
-                          handleDraftChange(theme.themeId, {
-                            description: event.target.value,
-                          })
-                        }
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 4 }}>
-                      <FormControl fullWidth size="small">
-                        <InputLabel id={`${theme.themeId}-pricing-model-label`}>
-                          نموذج التسعير
-                        </InputLabel>
-                        <Select
-                          labelId={`${theme.themeId}-pricing-model-label`}
-                          label="نموذج التسعير"
-                          value={draft.pricingModel}
-                          onChange={(event) =>
-                            handleDraftChange(theme.themeId, {
-                              pricingModel:
-                                event.target.value === "ONE_TIME"
-                                  ? "ONE_TIME"
-                                  : "FREE",
-                              yearlyPrice:
-                                event.target.value === "ONE_TIME"
-                                  ? Number(draft.yearlyPrice) || 0
-                                  : 0,
-                            })
-                          }
-                        >
-                          <MenuItem value="FREE">مجاني</MenuItem>
-                          <MenuItem value="ONE_TIME">شراء مرة واحدة</MenuItem>
+                  <div className="grid grid-cols-12 gap-2 mb-2">
+                    <div className="col-span-12">
+                      <div className="space-y-1">
+                        <Label>رابط الصورة المعاينة (imageUrl)</Label>
+                        <Input value={draft.preview?.imageUrl || ""} onChange={(event) => handleDraftChange(theme.themeId, { preview: { ...draft.preview, imageUrl: event.target.value } })} />
+                        <p className="text-xs text-muted-foreground">يفضل استخدام مسار يبدأ بـ /assets/themes/...</p>
+                      </div>
+                    </div>
+                    <div className="col-span-12">
+                      <div className="space-y-1">
+                        <Label>وصف القالب</Label>
+                        <Textarea value={draft.description} onChange={(event) => handleDraftChange(theme.themeId, { description: event.target.value })} rows={2} />
+                      </div>
+                    </div>
+                    <div className="col-span-12 md:col-span-4">
+                      <div className="space-y-2">
+                        <Label>نموذج التسعير</Label>
+                        <Select value={draft.pricingModel} onValueChange={(v) => handleDraftChange(theme.themeId, { pricingModel: v === "ONE_TIME" ? "ONE_TIME" : "FREE", yearlyPrice: v === "ONE_TIME" ? Number(draft.yearlyPrice) || 0 : 0 })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="FREE">مجاني</SelectItem>
+                            <SelectItem value="ONE_TIME">شراء مرة واحدة</SelectItem>
+                          </SelectContent>
                         </Select>
-                      </FormControl>
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 4 }}>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        type="number"
-                        label="سعر الشراء"
-                        value={draft.monthlyPrice}
-                        onChange={(event) =>
-                          handleDraftChange(theme.themeId, {
-                            monthlyPrice: Number(event.target.value) || 0,
-                          })
-                        }
-                        disabled={draft.pricingModel !== "ONE_TIME"}
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 4 }}>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        type="number"
-                        label="السعر السنوي"
-                        value={draft.yearlyPrice}
-                        onChange={(event) =>
-                          handleDraftChange(theme.themeId, {
-                            yearlyPrice: Number(event.target.value) || 0,
-                          })
-                        }
-                        disabled
-                        helperText="غير مستخدم في شراء القوالب"
-                      />
-                    </Grid>
-                  </Grid>
+                      </div>
+                    </div>
+                    <div className="col-span-12 md:col-span-4">
+                      <div className="space-y-1">
+                        <Label>سعر الشراء</Label>
+                        <Input type="number" value={draft.monthlyPrice} onChange={(event) => handleDraftChange(theme.themeId, { monthlyPrice: Number(event.target.value) || 0 })} disabled={draft.pricingModel !== "ONE_TIME"} />
+                      </div>
+                    </div>
+                    <div className="col-span-12 md:col-span-4">
+                      <div className="space-y-1">
+                        <Label>السعر السنوي</Label>
+                        <Input type="number" value={draft.yearlyPrice} onChange={(event) => handleDraftChange(theme.themeId, { yearlyPrice: Number(event.target.value) || 0 })} disabled />
+                        <p className="text-xs text-muted-foreground">غير مستخدم في شراء القوالب</p>
+                      </div>
+                    </div>
+                  </div>
 
-                  <Grid container spacing={1} sx={{ mb: 2 }}>
-                    <Grid size={{ xs: 12, md: 4 }}>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={draft.isActive}
-                            disabled={draft.isDefaultTheme}
-                            onChange={(event) =>
-                              handleDraftChange(theme.themeId, {
-                                isActive: event.target.checked,
-                              })
-                            }
-                          />
-                        }
-                        label="متاح للتفعيل"
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 4 }}>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={draft.isPublic}
-                            disabled={draft.isDefaultTheme}
-                            onChange={(event) =>
-                              handleDraftChange(theme.themeId, {
-                                isPublic: event.target.checked,
-                              })
-                            }
-                          />
-                        }
-                        label="ظاهر للشركات"
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 4 }}>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={draft.isFeatured}
-                            onChange={(event) =>
-                              handleDraftChange(theme.themeId, {
-                                isFeatured: event.target.checked,
-                              })
-                            }
-                          />
-                        }
-                        label="شارة مميز"
-                      />
-                    </Grid>
-                  </Grid>
+                  <div className="grid grid-cols-12 gap-1 mb-2">
+                    <div className="col-span-12 md:col-span-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <Switch checked={draft.isActive} disabled={draft.isDefaultTheme} onCheckedChange={(checked) => handleDraftChange(theme.themeId, { isActive: checked })} />
+                        <span className="text-sm">متاح للتفعيل</span>
+                      </label>
+                    </div>
+                    <div className="col-span-12 md:col-span-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <Switch checked={draft.isPublic} disabled={draft.isDefaultTheme} onCheckedChange={(checked) => handleDraftChange(theme.themeId, { isPublic: checked })} />
+                        <span className="text-sm">ظاهر للشركات</span>
+                      </label>
+                    </div>
+                    <div className="col-span-12 md:col-span-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <Switch checked={draft.isFeatured} onCheckedChange={(checked) => handleDraftChange(theme.themeId, { isFeatured: checked })} />
+                        <span className="text-sm">شارة مميز</span>
+                      </label>
+                    </div>
+                  </div>
 
-                  <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-                    <Grid container spacing={1}>
-                      <Grid size={{ xs: 6 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          الرئيسية
-                        </Typography>
-                        <Typography variant="subtitle2">
-                          {draft.pageStats.homeSections} sections
-                        </Typography>
-                      </Grid>
-                      <Grid size={{ xs: 6 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          المتجر
-                        </Typography>
-                        <Typography variant="subtitle2">
-                          {draft.pageStats.shopSections} sections
-                        </Typography>
-                      </Grid>
-                      <Grid size={{ xs: 6 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          المنتج
-                        </Typography>
-                        <Typography variant="subtitle2">
-                          {draft.pageStats.pdpSections} sections
-                        </Typography>
-                      </Grid>
-                      <Grid size={{ xs: 6 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          السلة/الدفع
-                        </Typography>
-                        <Typography variant="subtitle2">
-                          {draft.pageStats.cartSections +
-                            draft.pageStats.checkoutSections}{" "}
-                          sections
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                  </Paper>
+                  <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-2 mb-2">
+                    <div className="grid grid-cols-12 gap-1">
+                      <div className="col-span-6">
+                        <span className="text-xs text-muted-foreground">الرئيسية</span>
+                        <p className="text-sm font-medium text-muted-foreground">{draft.pageStats.homeSections} sections</p>
+                      </div>
+                      <div className="col-span-6">
+                        <span className="text-xs text-muted-foreground">المتجر</span>
+                        <p className="text-sm font-medium text-muted-foreground">{draft.pageStats.shopSections} sections</p>
+                      </div>
+                      <div className="col-span-6">
+                        <span className="text-xs text-muted-foreground">المنتج</span>
+                        <p className="text-sm font-medium text-muted-foreground">{draft.pageStats.pdpSections} sections</p>
+                      </div>
+                      <div className="col-span-6">
+                        <span className="text-xs text-muted-foreground">السلة/الدفع</span>
+                        <p className="text-sm font-medium text-muted-foreground">{draft.pageStats.cartSections + draft.pageStats.checkoutSections} sections</p>
+                      </div>
+                    </div>
+                  </div>
 
-                  <Box display="flex" justifyContent="space-between" gap={1} flexWrap="wrap">
-                    <Button
-                      component="a"
-                      href={`/marketplace/themes?theme=${encodeURIComponent(draft.themeId)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      variant="outlined"
-                      startIcon={<VisibilityIcon />}
-                    >
-                      معاينة
+                  <div className="flex justify-between gap-1 flex-wrap">
+                    <Button variant="outline" asChild>
+                      <a href={`/marketplace/themes?theme=${encodeURIComponent(draft.themeId)}`} target="_blank" rel="noreferrer">
+                        <Eye className="h-4 w-4 ml-1" />معاينة
+                      </a>
                     </Button>
-                    <Box display="flex" gap={1} flexWrap="wrap">
-                      <Button
-                        variant={draft.isDefaultTheme ? "contained" : "outlined"}
-                        color="primary"
-                        startIcon={<StarIcon />}
-                        onClick={() => handleSetDefaultTheme(draft)}
-                        disabled={isSaving || draft.isDefaultTheme}
-                      >
-                        {draft.isDefaultTheme ? "القالب الافتراضي" : "تعيين كافتراضي"}
+                    <div className="flex gap-1 flex-wrap">
+                      <Button variant={draft.isDefaultTheme ? "default" : "outline"} onClick={() => handleSetDefaultTheme(draft)} disabled={isSaving || draft.isDefaultTheme}>
+                        <Star className="h-4 w-4 ml-1" />{draft.isDefaultTheme ? "القالب الافتراضي" : "تعيين كافتراضي"}
                       </Button>
-                      <Button
-
-                        variant="outlined"
-                        color={draft.isActive || draft.isPublic ? "error" : "success"}
-                        startIcon={
-                          draft.isActive || draft.isPublic ? (
-                            <ArchiveIcon />
-                          ) : (
-                            <VisibilityIcon />
-                          )
-                        }
-                        onClick={() =>
-                          draft.isActive || draft.isPublic
-                            ? handleArchiveThemes([theme.themeId])
-                            : persistThemePatch(
-                                [theme.themeId],
-                                { isActive: true, isPublic: true },
-                                "تم إظهار القالب",
-                              )
-                        }
-                        disabled={isSaving || draft.isDefaultTheme}
-
-                      >
-                        {draft.isActive || draft.isPublic ? "أرشفة" : "إظهار"}
+                      <Button variant="outline" className={draft.isActive || draft.isPublic ? "text-red-500 border-red-500" : "text-green-600 border-green-600"} onClick={() => draft.isActive || draft.isPublic ? handleArchiveThemes([theme.themeId]) : persistThemePatch([theme.themeId], { isActive: true, isPublic: true }, "تم إظهار القالب")} disabled={isSaving || draft.isDefaultTheme}>
+                        {draft.isActive || draft.isPublic ? <><Archive className="h-4 w-4 ml-1" />أرشفة</> : <><Eye className="h-4 w-4 ml-1" />إظهار</>}
                       </Button>
-                    <Button
-                      variant="contained"
-                      startIcon={<SaveIcon />}
-                      onClick={() => handleSave(theme.themeId)}
-                      disabled={isSaving}
-                    >
-                      {isSaving ? "جاري الحفظ..." : "حفظ القالب"}
-                    </Button>
-                    </Box>
-                  </Box>
+                      <Button variant="default" onClick={() => handleSave(theme.themeId)} disabled={isSaving}>
+                        <Save className="h-4 w-4 ml-1" />{isSaving ? "جاري الحفظ..." : "حفظ القالب"}
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </Grid>
+            </div>
           );
         })}
         {filteredThemes.length === 0 && (
-          <Grid size={{ xs: 12 }}>
-            <Alert severity="info">
+          <div className="col-span-12">
+            <Alert variant="default" className="border-blue-500/50 text-blue-700">
               لا توجد قوالب مطابقة للبحث أو الفلاتر الحالية.
             </Alert>
-          </Grid>
+          </div>
         )}
-      </Grid>
-    </Box>
+      </div>
+    </div>
   );
 };
 
@@ -3826,507 +2745,343 @@ const MarketplaceItemDialog = ({
           ? "خطة مؤسسة"
           : "باقة";
 
+  const [bundleSearch, setBundleSearch] = useState("");
+
+  const filteredAvailableApps = useMemo(
+    () =>
+      (availableApps || []).filter((app) => {
+        if (!bundleSearch) return true;
+        const q = bundleSearch.toLowerCase();
+        return (
+          (app.name || "").toLowerCase().includes(q) ||
+          (app.slug || "").toLowerCase().includes(q)
+        );
+      }),
+    [availableApps, bundleSearch],
+  );
+
+  const toggleBundleApp = (app: MarketplaceManagementItem) => {
+    const current = formData.apps;
+    const exists = current.some(
+      (a) =>
+        (typeof a === "string" ? a : a.id) === app.id ||
+        (typeof a === "string" ? a : a.slug) === app.slug,
+    );
+    if (exists) {
+      setFieldValue(
+        "apps",
+        current.filter(
+          (a) =>
+            (typeof a === "string" ? a : a.id) !== app.id &&
+            (typeof a === "string" ? a : a.slug) !== app.slug,
+        ),
+      );
+    } else {
+      setFieldValue("apps", [
+        ...current,
+        { id: app.id, name: app.name, slug: app.slug, category: app.category },
+      ]);
+    }
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        {item ? "تعديل" : "إضافة"} {dialogLabel}
-      </DialogTitle>
-      <DialogContent dividers>
-        <Grid container spacing={2} sx={{ mt: 1 }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>
+            {item ? "تعديل" : "إضافة"} {dialogLabel}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="grid grid-cols-12 gap-2 mt-1">
           {type === "pricing" ? (
             <>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="الميزة"
-                  name="feature"
-                  value={formData.feature ?? ""}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <TextField
-                  fullWidth
-                  label="السعر"
-                  name="price"
-                  type="number"
-                  value={formData.price ?? 0}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <TextField
-                  fullWidth
-                  label="الوحدة"
-                  name="unit"
-                  value={formData.unit ?? ""}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Box display="flex" gap={3}>
-                  <Box display="flex" alignItems="center">
-                    <Typography variant="body2" sx={{ mr: 1 }}>
-                      نشط:
-                    </Typography>
-                    <input
-                      type="checkbox"
-                      name="isActive"
-                      checked={!!formData.isActive}
-                      onChange={handleChange}
-                    />
-                  </Box>
-                </Box>
-              </Grid>
+              <div className="col-span-12">
+                <div className="space-y-1">
+                  <Label>الميزة</Label>
+                  <Input name="feature" value={formData.feature ?? ""} onChange={handleChange} />
+                </div>
+              </div>
+              <div className="col-span-6">
+                <div className="space-y-1">
+                  <Label>السعر</Label>
+                  <Input name="price" type="number" value={formData.price ?? 0} onChange={handleChange} />
+                </div>
+              </div>
+              <div className="col-span-6">
+                <div className="space-y-1">
+                  <Label>الوحدة</Label>
+                  <Input name="unit" value={formData.unit ?? ""} onChange={handleChange} />
+                </div>
+              </div>
+              <div className="col-span-12">
+                <div className="flex gap-3">
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <span className="text-sm">نشط:</span>
+                    <input type="checkbox" name="isActive" checked={!!formData.isActive} onChange={handleChange} />
+                  </label>
+                </div>
+              </div>
             </>
           ) : type === "enterprise" ? (
             <>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="معرف الشركة (Company ID)"
-                  name="companyId"
-                  value={formData.companyId ?? ""}
-                  onChange={handleChange}
-                  disabled={!!item}
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="اسم الخطة"
-                  name="name"
-                  value={formData.name ?? ""}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="السعر"
-                  name="price"
-                  type="number"
-                  value={formData.price ?? 0}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="الوصف"
-                  name="description"
-                  multiline
-                  rows={3}
-                  value={formData.description ?? ""}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Box display="flex" gap={3}>
-                  <Box display="flex" alignItems="center">
-                    <Typography variant="body2" sx={{ mr: 1 }}>
-                      نشط:
-                    </Typography>
-                    <input
-                      type="checkbox"
-                      name="isActive"
-                      checked={!!formData.isActive}
-                      onChange={handleChange}
-                    />
-                  </Box>
-                </Box>
-              </Grid>
+              <div className="col-span-12">
+                <div className="space-y-1">
+                  <Label>معرف الشركة (Company ID)</Label>
+                  <Input name="companyId" value={formData.companyId ?? ""} onChange={handleChange} disabled={!!item} />
+                </div>
+              </div>
+              <div className="col-span-12">
+                <div className="space-y-1">
+                  <Label>اسم الخطة</Label>
+                  <Input name="name" value={formData.name ?? ""} onChange={handleChange} />
+                </div>
+              </div>
+              <div className="col-span-12">
+                <div className="space-y-1">
+                  <Label>السعر</Label>
+                  <Input name="price" type="number" value={formData.price ?? 0} onChange={handleChange} />
+                </div>
+              </div>
+              <div className="col-span-12">
+                <div className="space-y-1">
+                  <Label>الوصف</Label>
+                  <Textarea name="description" rows={3} value={formData.description ?? ""} onChange={handleChange} />
+                </div>
+              </div>
+              <div className="col-span-12">
+                <div className="flex gap-3">
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <span className="text-sm">نشط:</span>
+                    <input type="checkbox" name="isActive" checked={!!formData.isActive} onChange={handleChange} />
+                  </label>
+                </div>
+              </div>
             </>
           ) : type === "bundle" ? (
             <>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  fullWidth
-                  label="الاسم"
-                  name="name"
-                  value={formData.name ?? ""}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Slug"
-                  name="slug"
-                  value={formData.slug ?? ""}
-                  onChange={handleChange}
-                  placeholder="اتركه فارغاً للتوليد التلقائي"
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="الوصف"
-                  name="description"
-                  multiline
-                  rows={3}
-                  value={formData.description ?? ""}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid size={{ xs: 6, md: 4 }}>
-                <TextField
-                  fullWidth
-                  label="السعر الشهري"
-                  name="monthlyPrice"
-                  type="number"
-                  value={formData.monthlyPrice ?? 0}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid size={{ xs: 6, md: 4 }}>
-                <TextField
-                  fullWidth
-                  label="الخصم %"
-                  name="discount"
-                  type="number"
-                  value={formData.discount ?? 0}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 4 }}>
-                <Box
-                  display="flex"
-                  gap={2}
-                  sx={{ height: "100%", alignItems: "center" }}
-                >
-                  <Box display="flex" alignItems="center">
-                    <Typography variant="body2" sx={{ mr: 1 }}>
-                      نشط:
-                    </Typography>
-                    <input
-                      type="checkbox"
-                      name="isActive"
-                      checked={!!formData.isActive}
-                      onChange={handleChange}
-                    />
-                  </Box>
-                  <Box display="flex" alignItems="center">
-                    <Typography variant="body2" sx={{ mr: 1 }}>
-                      مميز:
-                    </Typography>
-                    <input
-                      type="checkbox"
-                      name="isFeatured"
-                      checked={!!formData.isFeatured}
-                      onChange={handleChange}
-                    />
-                  </Box>
-                </Box>
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <Autocomplete
-                  multiple
-                  options={availableApps || []}
-                  getOptionLabel={(option) =>
-                    typeof option === "string"
-                      ? option
-                      : option.name || option.slug || option.id || ""
-                  }
-                  value={formData.apps.map((app) => {
-                    if (typeof app === "string") {
-                      const found = (availableApps || []).find(
-                        (a) => a.slug === app || a.id === app,
+              <div className="col-span-12 md:col-span-6">
+                <div className="space-y-1">
+                  <Label>الاسم</Label>
+                  <Input name="name" value={formData.name ?? ""} onChange={handleChange} />
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-6">
+                <div className="space-y-1">
+                  <Label>Slug</Label>
+                  <Input name="slug" value={formData.slug ?? ""} onChange={handleChange} placeholder="اتركه فارغاً للتوليد التلقائي" />
+                </div>
+              </div>
+              <div className="col-span-12">
+                <div className="space-y-1">
+                  <Label>الوصف</Label>
+                  <Textarea name="description" rows={3} value={formData.description ?? ""} onChange={handleChange} />
+                </div>
+              </div>
+              <div className="col-span-6 md:col-span-4">
+                <div className="space-y-1">
+                  <Label>السعر الشهري</Label>
+                  <Input name="monthlyPrice" type="number" value={formData.monthlyPrice ?? 0} onChange={handleChange} />
+                </div>
+              </div>
+              <div className="col-span-6 md:col-span-4">
+                <div className="space-y-1">
+                  <Label>الخصم %</Label>
+                  <Input name="discount" type="number" value={formData.discount ?? 0} onChange={handleChange} />
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-4">
+                <div className="flex gap-2 items-center h-full">
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <span className="text-sm">نشط:</span>
+                    <input type="checkbox" name="isActive" checked={!!formData.isActive} onChange={handleChange} />
+                  </label>
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <span className="text-sm">مميز:</span>
+                    <input type="checkbox" name="isFeatured" checked={!!formData.isFeatured} onChange={handleChange} />
+                  </label>
+                </div>
+              </div>
+              <div className="col-span-12">
+                <div className="space-y-1">
+                  <Label>التطبيقات المضمنة</Label>
+                  <Input placeholder="ابحث عن تطبيق..." value={bundleSearch} onChange={(e) => setBundleSearch(e.target.value)} />
+                  <ScrollArea className="h-40 rounded-md border p-2">
+                    {filteredAvailableApps.map((app) => {
+                      const isSelected = formData.apps.some(
+                        (a) =>
+                          (typeof a === "string" ? a : a.id) === app.id ||
+                          (typeof a === "string" ? a : a.slug) === app.slug,
                       );
-                      return found || ({ id: app, name: app, slug: app } as MarketplaceManagementItem);
-                    }
-                    return (
-                      (availableApps || []).find(
-                        (a) => a.id === app.id || a.slug === app.slug,
-                      ) || app
-                    );
-                  })}
-                  onChange={(_, newValue) => {
-                    setFieldValue("apps", newValue.map((app) => ({
-                      id: app.id,
-                      name: app.name,
-                      slug: app.slug,
-                      category: app.category,
-                    })));
-                  }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="التطبيقات المضمنة"
-                      placeholder="ابحث عن تطبيق..."
-                    />
-                  )}
-                  renderTags={(tagValue, getTagProps) =>
-                    tagValue.map((option, index) => (
-                      <Chip
-                        {...getTagProps({ index })}
-                        key={option.id || option.slug || index}
-                        label={option.name || option.slug || option.id || ""}
-                        size="small"
-                      />
-                    ))
-                  }
-                  isOptionEqualToValue={(option, value) =>
-                    option.id === value.id || option.slug === value.slug
-                  }
-                  noOptionsText="لا توجد تطبيقات متاحة"
-                />
-              </Grid>
+                      return (
+                        <label key={app.id} className="flex items-center gap-2 py-1 cursor-pointer hover:bg-accent rounded px-1">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleBundleApp(app)}
+                          />
+                          <span className="text-sm">{app.name || app.slug || app.id}</span>
+                        </label>
+                      );
+                    })}
+                    {filteredAvailableApps.length === 0 && (
+                      <span className="text-xs text-muted-foreground">لا توجد تطبيقات متاحة</span>
+                    )}
+                  </ScrollArea>
+                  <div className="flex flex-wrap gap-1">
+                    {formData.apps.map((app, idx) => {
+                      const label = typeof app === "string" ? app : app.name || app.slug || app.id || "";
+                      return <Badge key={idx} variant="outline" className="text-xs">{label}</Badge>;
+                    })}
+                  </div>
+                </div>
+              </div>
             </>
           ) : (
             <>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  fullWidth
-                  label="الاسم"
-                  name="name"
-                  value={formData.name ?? ""}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Slug"
-                  name="slug"
-                  value={formData.slug ?? ""}
-                  onChange={handleChange}
-                  placeholder="اتركه فارغاً للتوليد التلقائي"
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="الوصف"
-                  name="description"
-                  multiline
-                  rows={2}
-                  value={formData.description ?? ""}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <FormControl fullWidth>
-                  <InputLabel id="category-label">الفئة</InputLabel>
-                  <Select
-                    labelId="category-label"
-                    label="الفئة"
-                    name="category"
-                    value={formData.category ?? "ECOMMERCE"}
-                    onChange={(event) =>
-                      setFieldValue("category", String(event.target.value))
-                    }
-                  >
-                    {categoryMap.map((cat) => (
-                      <MenuItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </MenuItem>
-                    ))}
+              <div className="col-span-12 md:col-span-6">
+                <div className="space-y-1">
+                  <Label>الاسم</Label>
+                  <Input name="name" value={formData.name ?? ""} onChange={handleChange} />
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-6">
+                <div className="space-y-1">
+                  <Label>Slug</Label>
+                  <Input name="slug" value={formData.slug ?? ""} onChange={handleChange} placeholder="اتركه فارغاً للتوليد التلقائي" />
+                </div>
+              </div>
+              <div className="col-span-12">
+                <div className="space-y-1">
+                  <Label>الوصف</Label>
+                  <Textarea name="description" rows={2} value={formData.description ?? ""} onChange={handleChange} />
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-6">
+                <div className="space-y-2">
+                  <Label>الفئة</Label>
+                  <Select value={formData.category ?? "ECOMMERCE"} onValueChange={(v) => setFieldValue("category", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {categoryMap.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 6, md: 3 }}>
-                <TextField
-                  fullWidth
-                  label="السعر الشهري"
-                  name="monthlyPrice"
-                  type="number"
-                  value={formData.monthlyPrice ?? 0}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid size={{ xs: 6, md: 3 }}>
-                <TextField
-                  fullWidth
-                  label="أيام التجربة"
-                  name="trialDays"
-                  type="number"
-                  value={formData.trialDays ?? 14}
-                  onChange={handleChange}
-                />
-              </Grid>
+                </div>
+              </div>
+              <div className="col-span-6 md:col-span-3">
+                <div className="space-y-1">
+                  <Label>السعر الشهري</Label>
+                  <Input name="monthlyPrice" type="number" value={formData.monthlyPrice ?? 0} onChange={handleChange} />
+                </div>
+              </div>
+              <div className="col-span-6 md:col-span-3">
+                <div className="space-y-1">
+                  <Label>أيام التجربة</Label>
+                  <Input name="trialDays" type="number" value={formData.trialDays ?? 14} onChange={handleChange} />
+                </div>
+              </div>
 
-              <Grid size={{ xs: 12, md: 4 }}>
-                <TextField
-                  fullWidth
-                  label="الأيقونة (Emoji or Icon Name)"
-                  name="icon"
-                  value={formData.icon ?? ""}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 2 }}>
-                <Box display="flex" alignItems="center" sx={{ height: "100%" }}>
-                  <Typography variant="body2" sx={{ mr: 1 }}>
-                    تثبيت تلقائي:
-                  </Typography>
-                  <input
-                    type="checkbox"
-                    name="isAutoInstall"
-                    checked={!!formData.isAutoInstall}
-                    onChange={handleChange}
-                  />
-                </Box>
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  fullWidth
-                  label="رابط اللوجو (URL)"
-                  name="logo"
-                  value={formData.logo ?? ""}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  fullWidth
-                  label="رابط الميديا (صورة أو فيديو URL)"
-                  name="coverImage"
-                  value={formData.coverImage ?? ""}
-                  onChange={handleChange}
-                  placeholder="رابط مباشر للصورة أو يوتيوب/فيديو"
-                />
-              </Grid>
+              <div className="col-span-12 md:col-span-4">
+                <div className="space-y-1">
+                  <Label>الأيقونة (Emoji or Icon Name)</Label>
+                  <Input name="icon" value={formData.icon ?? ""} onChange={handleChange} />
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-2">
+                <label className="flex items-center gap-1 h-full cursor-pointer">
+                  <span className="text-sm">تثبيت تلقائي:</span>
+                  <input type="checkbox" name="isAutoInstall" checked={!!formData.isAutoInstall} onChange={handleChange} />
+                </label>
+              </div>
+              <div className="col-span-12 md:col-span-6">
+                <div className="space-y-1">
+                  <Label>رابط اللوجو (URL)</Label>
+                  <Input name="logo" value={formData.logo ?? ""} onChange={handleChange} />
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-6">
+                <div className="space-y-1">
+                  <Label>رابط الميديا (صورة أو فيديو URL)</Label>
+                  <Input name="coverImage" value={formData.coverImage ?? ""} onChange={handleChange} placeholder="رابط مباشر للصورة أو يوتيوب/فيديو" />
+                </div>
+              </div>
 
-              <Grid size={{ xs: 12, md: 4 }}>
-                <FormControl fullWidth>
-                  <InputLabel id="pricing-model-label">نظام التسعير</InputLabel>
-                  <Select
-                    labelId="pricing-model-label"
-                    label="نظام التسعير"
-                    name="pricingModel"
-                    value={formData.pricingModel ?? "SUBSCRIPTION"}
-                    onChange={(event) =>
-                      setFieldValue(
-                        "pricingModel",
-                        String(event.target.value) as PricingModel,
-                      )
-                    }
-                  >
-                    <MenuItem value="FREE">مجاني</MenuItem>
-                    <MenuItem value="SUBSCRIPTION">اشتراك شهري/سنوي</MenuItem>
-                    <MenuItem value="PAY_PER_USE">حسب الاستخدام (PPU)</MenuItem>
+              <div className="col-span-12 md:col-span-4">
+                <div className="space-y-2">
+                  <Label>نظام التسعير</Label>
+                  <Select value={formData.pricingModel ?? "SUBSCRIPTION"} onValueChange={(v) => setFieldValue("pricingModel", v as PricingModel)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="FREE">مجاني</SelectItem>
+                      <SelectItem value="SUBSCRIPTION">اشتراك شهري/سنوي</SelectItem>
+                      <SelectItem value="PAY_PER_USE">حسب الاستخدام (PPU)</SelectItem>
+                    </SelectContent>
                   </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 6, md: 4 }}>
-                <TextField
-                  fullWidth
-                  label="سعر الوحدة (لـ PPU)"
-                  name="unitPrice"
-                  type="number"
-                  value={formData.unitPrice ?? 0}
-                  onChange={handleChange}
-                  disabled={formData.pricingModel !== "PAY_PER_USE"}
-                />
-              </Grid>
-              <Grid size={{ xs: 6, md: 4 }}>
-                <TextField
-                  fullWidth
-                  label="اسم الوحدة (لـ PPU)"
-                  name="unitName"
-                  value={formData.unitName ?? ""}
-                  onChange={handleChange}
-                  disabled={formData.pricingModel !== "PAY_PER_USE"}
-                  placeholder="مثال: رسالة، موظف"
-                />
-              </Grid>
+                </div>
+              </div>
+              <div className="col-span-6 md:col-span-4">
+                <div className="space-y-1">
+                  <Label>سعر الوحدة (لـ PPU)</Label>
+                  <Input name="unitPrice" type="number" value={formData.unitPrice ?? 0} onChange={handleChange} disabled={formData.pricingModel !== "PAY_PER_USE"} />
+                </div>
+              </div>
+              <div className="col-span-6 md:col-span-4">
+                <div className="space-y-1">
+                  <Label>اسم الوحدة (لـ PPU)</Label>
+                  <Input name="unitName" value={formData.unitName ?? ""} onChange={handleChange} disabled={formData.pricingModel !== "PAY_PER_USE"} placeholder="مثال: رسالة، موظف" />
+                </div>
+              </div>
 
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  fullWidth
-                  label="المسار الرئيسي (Main Route)"
-                  name="mainRoute"
-                  value={formData.mainRoute ?? ""}
-                  onChange={handleChange}
-                  placeholder="/my-apps/something"
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  fullWidth
-                  label="مسار الإدارة (Admin Route)"
-                  name="adminRoute"
-                  value={formData.adminRoute ?? ""}
-                  onChange={handleChange}
-                  placeholder="/settings/something"
-                />
-              </Grid>
+              <div className="col-span-12 md:col-span-6">
+                <div className="space-y-1">
+                  <Label>المسار الرئيسي (Main Route)</Label>
+                  <Input name="mainRoute" value={formData.mainRoute ?? ""} onChange={handleChange} placeholder="/my-apps/something" />
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-6">
+                <div className="space-y-1">
+                  <Label>مسار الإدارة (Admin Route)</Label>
+                  <Input name="adminRoute" value={formData.adminRoute ?? ""} onChange={handleChange} placeholder="/settings/something" />
+                </div>
+              </div>
 
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  label="الأدوات والمميزات (Tools Included)"
-                  name="features"
-                  multiline
-                  rows={3}
-                  value={formData.features.join(", ")}
-                  onChange={(event) =>
-                    setFieldValue("features", parseStringList(event.target.value))
-                  }
-                  placeholder="افصل بين كل ميزة بفاصلة (،) .. مثال: نظام تقارير، ربط واتساب، دعم فني"
-                  helperText="افصل بين الأدوات بفاصلة لكي تظهر كنقاط منفصلة للمستخدم"
-                />
-              </Grid>
+              <div className="col-span-12">
+                <div className="space-y-1">
+                  <Label>الأدوات والمميزات (Tools Included)</Label>
+                  <Textarea name="features" rows={3} value={formData.features.join(", ")} onChange={(event) => setFieldValue("features", parseStringList(event.target.value))} placeholder="افصل بين كل ميزة بفاصلة (،) .. مثال: نظام تقارير، ربط واتساب، دعم فني" />
+                  <p className="text-xs text-muted-foreground">افصل بين الأدوات بفاصلة لكي تظهر كنقاط منفصلة للمستخدم</p>
+                </div>
+              </div>
 
-              <Grid size={{ xs: 12 }}>
-                <Box display="flex" gap={3} flexWrap="wrap">
-                  <Box display="flex" alignItems="center">
-                    <Typography variant="body2" sx={{ mr: 1 }}>
-                      نشط:
-                    </Typography>
-                    <input
-                      type="checkbox"
-                      name="isActive"
-                      checked={!!formData.isActive}
-                      onChange={handleChange}
-                    />
-                  </Box>
-                  <Box display="flex" alignItems="center">
-                    <Typography variant="body2" sx={{ mr: 1 }}>
-                      عام (Public):
-                    </Typography>
-                    <input
-                      type="checkbox"
-                      name="isPublic"
-                      checked={!!formData.isPublic}
-                      onChange={handleChange}
-                    />
-                  </Box>
-                  <Box display="flex" alignItems="center">
-                    <Typography variant="body2" sx={{ mr: 1 }}>
-                      مميز (Featured):
-                    </Typography>
-                    <input
-                      type="checkbox"
-                      name="isFeatured"
-                      checked={!!formData.isFeatured}
-                      onChange={handleChange}
-                    />
-                  </Box>
-                  <Box display="flex" alignItems="center">
-                    <Typography variant="body2" sx={{ mr: 1 }}>
-                      شائع (Popular):
-                    </Typography>
-                    <input
-                      type="checkbox"
-                      name="isPopular"
-                      checked={!!formData.isPopular}
-                      onChange={handleChange}
-                    />
-                  </Box>
-                </Box>
-              </Grid>
+              <div className="col-span-12">
+                <div className="flex gap-3 flex-wrap">
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <span className="text-sm">نشط:</span>
+                    <input type="checkbox" name="isActive" checked={!!formData.isActive} onChange={handleChange} />
+                  </label>
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <span className="text-sm">عام (Public):</span>
+                    <input type="checkbox" name="isPublic" checked={!!formData.isPublic} onChange={handleChange} />
+                  </label>
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <span className="text-sm">مميز (Featured):</span>
+                    <input type="checkbox" name="isFeatured" checked={!!formData.isFeatured} onChange={handleChange} />
+                  </label>
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <span className="text-sm">شائع (Popular):</span>
+                    <input type="checkbox" name="isPopular" checked={!!formData.isPopular} onChange={handleChange} />
+                  </label>
+                </div>
+              </div>
             </>
           )}
-        </Grid>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>إلغاء</Button>
+          <Button variant="default" onClick={() => onSave(formData)}>حفظ</Button>
+        </DialogFooter>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>إلغاء</Button>
-        <Button variant="contained" onClick={() => onSave(formData)}>
-          حفظ
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 };
@@ -4542,319 +3297,223 @@ const EditPlanDialog = ({
     { key: "onPremiseDeployment", label: "النشر المحلي" },
   ];
 
+  const [dialogActiveTab, setDialogActiveTab] = useState(0);
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-      <DialogTitle sx={{ pb: 1 }}>
-        <Box display="flex" alignItems="center" gap={2}>
-          {plan ? <EditIcon color="primary" /> : <AddIcon color="success" />}
-          <Typography variant="h6">
-            {plan ? `تعديل خطة ${plan.name}` : "إنشاء خطة جديدة"}
-          </Typography>
-        </Box>
-      </DialogTitle>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-4xl">
+        <DialogHeader>
+          <DialogTitle>
+            <div className="flex items-center gap-2">
+              {plan ? <Pencil className="h-5 w-5 text-primary" /> : <Plus className="h-5 w-5 text-green-500" />}
+              <h6 className="text-base font-semibold leading-none">
+                {plan ? `تعديل خطة ${plan.name}` : "إنشاء خطة جديدة"}
+              </h6>
+            </div>
+          </DialogTitle>
+        </DialogHeader>
 
-      <Tabs
-        value={activeTab}
-        onChange={(e, v) => setActiveTab(v)}
-        sx={{ px: 3, borderBottom: 1, borderColor: "divider" }}
-      >
-        <Tab label="المعلومات الأساسية" />
-        <Tab label="الحدود والأرقام" />
-        <Tab label="المميزات المتقدمة" />
-        <Tab label="معاينة" />
-      </Tabs>
+        <div className="flex gap-1 border-b px-3">
+          <Button variant={dialogActiveTab === 0 ? "default" : "ghost"} size="sm" onClick={() => setDialogActiveTab(0)}>المعلومات الأساسية</Button>
+          <Button variant={dialogActiveTab === 1 ? "default" : "ghost"} size="sm" onClick={() => setDialogActiveTab(1)}>الحدود والأرقام</Button>
+          <Button variant={dialogActiveTab === 2 ? "default" : "ghost"} size="sm" onClick={() => setDialogActiveTab(2)}>المميزات المتقدمة</Button>
+          <Button variant={dialogActiveTab === 3 ? "default" : "ghost"} size="sm" onClick={() => setDialogActiveTab(3)}>معاينة</Button>
+        </div>
 
-      <DialogContent sx={{ pt: 3 }}>
-        {/* Tab 1: Basic Info */}
-        {activeTab === 0 && (
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                label="نوع الخطة (Plan Type) *"
-                name="planType"
-                value={formData.planType}
-                onChange={handleChange}
-                disabled={!!plan}
-                error={!!errors.planType}
-                helperText={
-                  errors.planType ||
-                  (plan
-                    ? "لا يمكن تغيير نوع الخطة"
-                    : "مثال: BASIC, PRO, ENTERPRISE أو CUSTOM1")
-                }
-                placeholder="مثال: PRO"
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                label="الاسم (العربية) *"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                error={!!errors.name}
-                helperText={errors.name}
-                placeholder="الخطة الاحترافية"
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                label="الاسم (English)"
-                name="nameEn"
-                value={formData.nameEn}
-                onChange={handleChange}
-                placeholder="Professional Plan"
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
-                label="السعر *"
-                name="price"
-                type="number"
-                value={formData.price}
-                onChange={handleChange}
-                error={!!errors.price}
-                helperText={errors.price}
-                InputProps={{
-                  startAdornment: (
-                    <Typography sx={{ mr: 1, color: "text.secondary" }}>
-                      {formData.currency}
-                    </Typography>
-                  ),
-                }}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <FormControl fullWidth>
-                <InputLabel>العملة</InputLabel>
-                <Select
-                  name="currency"
-                  value={formData.currency}
-                  label="العملة"
-                  onChange={(event) =>
-                    updateField("currency", String(event.target.value))
-                  }
-                >
-                  {currencies.map((c) => (
-                    <MenuItem key={c.value} value={c.value}>
-                      {c.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <FormControl fullWidth>
-                <InputLabel>دورة الفوترة</InputLabel>
-                <Select
-                  name="billingCycle"
-                  value={formData.billingCycle}
-                  label="دورة الفوترة"
-                  onChange={(event) =>
-                    updateField(
-                      "billingCycle",
-                      String(event.target.value) as BillingCycle,
-                    )
-                  }
-                >
-                  {billingCycles.map((b) => (
-                    <MenuItem key={b.value} value={b.value}>
-                      {b.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="وصف الخطة (عربي)"
-                name="description"
-                multiline
-                rows={2}
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="وصف مختصر للخطة ومميزاتها الرئيسية"
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="الوصف (English)"
-                name="descriptionEn"
-                multiline
-                rows={2}
-                value={formData.descriptionEn}
-                onChange={handleChange}
-                placeholder="Brief description of the plan"
-              />
-            </Grid>
-          </Grid>
-        )}
+        <div className="pt-3">
+          {/* Tab 1: Basic Info */}
+          {dialogActiveTab === 0 && (
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-12 md:col-span-6">
+                <div className="space-y-1">
+                  <Label>نوع الخطة (Plan Type) *</Label>
+                  <Input
+                    name="planType"
+                    value={formData.planType}
+                    onChange={handleChange}
+                    disabled={!!plan}
+                    className={errors.planType ? "border-red-500" : ""}
+                    placeholder="مثال: PRO"
+                  />
+                  {errors.planType && <p className="text-sm text-red-500">{errors.planType}</p>}
+                  {!errors.planType && plan && <p className="text-xs text-muted-foreground">لا يمكن تغيير نوع الخطة</p>}
+                  {!errors.planType && !plan && <p className="text-xs text-muted-foreground">مثال: BASIC, PRO, ENTERPRISE أو CUSTOM1</p>}
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-6">
+                <div className="space-y-1">
+                  <Label>الاسم (العربية) *</Label>
+                  <Input name="name" value={formData.name} onChange={handleChange} className={errors.name ? "border-red-500" : ""} placeholder="الخطة الاحترافية" />
+                  {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-6">
+                <div className="space-y-1">
+                  <Label>الاسم (English)</Label>
+                  <Input name="nameEn" value={formData.nameEn} onChange={handleChange} placeholder="Professional Plan" />
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-6">
+                <div className="space-y-1">
+                  <Label>السعر *</Label>
+                  <div className="relative">
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{formData.currency}</span>
+                    <Input name="price" type="number" value={formData.price} onChange={handleChange} className={`pr-12 ${errors.price ? "border-red-500" : ""}`} />
+                  </div>
+                  {errors.price && <p className="text-sm text-red-500">{errors.price}</p>}
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-6">
+                <div className="space-y-2">
+                  <Label>العملة</Label>
+                  <Select value={formData.currency} onValueChange={(v) => updateField("currency", v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {currencies.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-6">
+                <div className="space-y-2">
+                  <Label>دورة الفوترة</Label>
+                  <Select value={formData.billingCycle} onValueChange={(v) => updateField("billingCycle", v as BillingCycle)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {billingCycles.map((b) => (
+                        <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="col-span-12">
+                <div className="space-y-1">
+                  <Label>وصف الخطة (عربي)</Label>
+                  <Textarea name="description" rows={2} value={formData.description} onChange={handleChange} placeholder="وصف مختصر للخطة ومميزاتها الرئيسية" />
+                </div>
+              </div>
+              <div className="col-span-12">
+                <div className="space-y-1">
+                  <Label>الوصف (English)</Label>
+                  <Textarea name="descriptionEn" rows={2} value={formData.descriptionEn} onChange={handleChange} placeholder="Brief description of the plan" />
+                </div>
+              </div>
+            </div>
+          )}
 
-        {/* Tab 2: Numeric Limits */}
-        {activeTab === 1 && (
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12 }}>
-              <Alert severity="info" sx={{ mb: 2 }}>
-                أدخل -1 للقيم غير المحدودة. القيم تُحسب بالشهر ما عدا
-                dataRetention (أيام).
-              </Alert>
-            </Grid>
-            {numericFeatures.map((feature) => (
-              <Grid key={feature.key} size={{ xs: 12, sm: 6, md: 4 }}>
-                <TextField
-                  fullWidth
-                  type="number"
-                  label={feature.label}
-                  value={formData.features[feature.key]}
-                  onChange={(e) =>
-                    handleFeatureChange(
-                      feature.key,
-                      parseInt(e.target.value) || 0,
-                    )
-                  }
-                  helperText={feature.helper}
-                  size="small"
-                />
-              </Grid>
-            ))}
-          </Grid>
-        )}
+          {/* Tab 2: Numeric Limits */}
+          {activeTab === 1 && (
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-12">
+                <Alert variant="default" className="mb-2 border-blue-500/50 text-blue-700">
+                  أدخل -1 للقيم غير المحدودة. القيم تُحسب بالشهر ما عدا dataRetention (أيام).
+                </Alert>
+              </div>
+              {numericFeatures.map((feature) => (
+                <div key={feature.key} className="col-span-12 sm:col-span-6 md:col-span-4">
+                  <div className="space-y-1">
+                    <Label>{feature.label}</Label>
+                    <Input type="number" value={formData.features[feature.key]} onChange={(e) => handleFeatureChange(feature.key, parseInt(e.target.value) || 0)} />
+                    <p className="text-xs text-muted-foreground">{feature.helper}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
-        {/* Tab 3: Boolean Features */}
-        {activeTab === 2 && (
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12 }}>
-              <Alert severity="info" sx={{ mb: 2 }}>
-                مميزات إضافية متوفرة في هذه الخطة.
-              </Alert>
-            </Grid>
-            {booleanFeatures.map((feature) => (
-              <Grid key={feature.key} size={{ xs: 12, sm: 6, md: 4 }}>
-                <Paper
-                  sx={{
-                    p: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    bgcolor: formData.features[feature.key]
-                      ? "success.light"
-                      : "background.paper",
-                    border: 1,
-                    borderColor: formData.features[feature.key]
-                      ? "success.main"
-                      : "divider",
-                  }}
-                >
-                  <Typography
-                    variant="body2"
-                    fontWeight={formData.features[feature.key] ? 600 : 400}
+          {/* Tab 3: Boolean Features */}
+          {activeTab === 2 && (
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-12">
+                <Alert variant="default" className="mb-2 border-blue-500/50 text-blue-700">
+                  مميزات إضافية متوفرة في هذه الخطة.
+                </Alert>
+              </div>
+              {booleanFeatures.map((feature) => (
+                <div key={feature.key} className="col-span-12 sm:col-span-6 md:col-span-4">
+                  <div
+                    className="rounded-lg border p-2 flex items-center justify-between"
+                    style={{
+                      backgroundColor: formData.features[feature.key] ? "#f0fdf4" : "var(--card)",
+                      borderColor: formData.features[feature.key] ? "#22c55e" : "var(--border)",
+                    }}
                   >
-                    {feature.label}
-                  </Typography>
-                  <input
-                    type="checkbox"
-                    checked={!!formData.features[feature.key]}
-                    onChange={(e) =>
-                      handleFeatureChange(feature.key, e.target.checked)
-                    }
-                    style={{ width: 20, height: 20, cursor: "pointer" }}
-                  />
-                </Paper>
-              </Grid>
-            ))}
-            <Grid size={{ xs: 12, md: 4 }}>
-              <TextField
-                fullWidth
-                label="اتفاقية مستوى الخدمة (SLA)"
-                value={formData.features.sla || ""}
-                onChange={(e) => handleFeatureChange("sla", e.target.value)}
-                placeholder="99.9%"
-                helperText="مثال: 99.9%"
-                size="small"
-              />
-            </Grid>
-          </Grid>
-        )}
-
-        {/* Tab 4: Preview */}
-        {activeTab === 3 && (
-          <Box>
-            <Paper
-              sx={{
-                p: 3,
-                mb: 3,
-                bgcolor: "primary.light",
-                color: "primary.contrastText",
-              }}
-            >
-              <Typography variant="h4" fontWeight="bold">
-                {formData.name || "اسم الخطة"}
-              </Typography>
-              <Typography variant="h5" sx={{ mt: 1 }}>
-                {formData.price} {formData.currency} /
-                {
-                  billingCycles.find((b) => b.value === formData.billingCycle)
-                    ?.label
-                }
-              </Typography>
-              <Typography variant="body1" sx={{ mt: 1, opacity: 0.9 }}>
-                {formData.description || "لا يوجد وصف"}
-              </Typography>
-            </Paper>
-
-            <Typography variant="h6" gutterBottom>
-              ملخص المميزات:
-            </Typography>
-            <Grid container spacing={1}>
-              {numericFeatures.map((f) => (
-                <Grid key={f.key} size={{ xs: 12, sm: 6 }}>
-                  <Chip
-                    label={`${f.label}: ${formatFeatureValue(formData.features[f.key])}`}
-                    color={
-                      formData.features[f.key] === -1 ? "success" : "default"
-                    }
-                    size="small"
-                    sx={{ width: "100%", justifyContent: "flex-start" }}
-                  />
-                </Grid>
+                    <span className={`text-sm ${formData.features[feature.key] ? "font-semibold" : ""}`}>
+                      {feature.label}
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={!!formData.features[feature.key]}
+                      onChange={(e) => handleFeatureChange(feature.key, e.target.checked)}
+                      style={{ width: 20, height: 20, cursor: "pointer" }}
+                    />
+                  </div>
+                </div>
               ))}
-              {booleanFeatures.map((f) => (
-                <Grid key={f.key} size={{ xs: 12, sm: 6 }}>
-                  <Chip
-                    icon={
-                      formData.features[f.key] ? <CheckIcon /> : <CloseIcon />
-                    }
-                    label={f.label}
-                    color={formData.features[f.key] ? "success" : "default"}
-                    variant={formData.features[f.key] ? "filled" : "outlined"}
-                    size="small"
-                    sx={{ width: "100%", justifyContent: "flex-start" }}
-                  />
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-        )}
+              <div className="col-span-12 md:col-span-4">
+                <div className="space-y-1">
+                  <Label>اتفاقية مستوى الخدمة (SLA)</Label>
+                  <Input value={formData.features.sla || ""} onChange={(e) => handleFeatureChange("sla", e.target.value)} placeholder="99.9%" />
+                  <p className="text-xs text-muted-foreground">مثال: 99.9%</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab 4: Preview */}
+          {activeTab === 3 && (
+            <div>
+              <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-3 mb-3" style={{ backgroundColor: "#dbeafe", color: "#1e40af" }}>
+                <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
+                  {formData.name || "اسم الخطة"}
+                </h4>
+                <h5 className="scroll-m-18 text-lg font-semibold tracking-tight mt-1">
+                  {formData.price} {formData.currency} /{billingCycles.find((b) => b.value === formData.billingCycle)?.label}
+                </h5>
+                <p className="text-base leading-7 mt-1 opacity-90">
+                  {formData.description || "لا يوجد وصف"}
+                </p>
+              </div>
+
+              <h6 className="text-base font-semibold leading-none">ملخص المميزات:</h6>
+              <div className="grid grid-cols-12 gap-1">
+                {numericFeatures.map((f) => (
+                  <div key={f.key} className="col-span-12 sm:col-span-6">
+                    <Badge variant={formData.features[f.key] === -1 ? "default" : "secondary"} className={formData.features[f.key] === -1 ? "bg-green-500 w-full justify-start" : "w-full justify-start"}>
+                      {`${f.label}: ${formatFeatureValue(formData.features[f.key])}`}
+                    </Badge>
+                  </div>
+                ))}
+                {booleanFeatures.map((f) => (
+                  <div key={f.key} className="col-span-12 sm:col-span-6">
+                    <Badge
+                      variant={formData.features[f.key] ? "default" : "outline"}
+                      className={formData.features[f.key] ? "bg-green-500 w-full justify-start" : "w-full justify-start"}
+                    >
+                      {formData.features[f.key] ? <Check className="h-3 w-3 ml-0.5" /> : <X className="h-3 w-3 ml-0.5" />}
+                      {f.label}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="px-3 py-2">
+          <Button variant="outline" onClick={onClose}>إلغاء</Button>
+          <Button
+            variant="default"
+            onClick={handleSave}
+            disabled={Object.keys(errors).length > 0 && dialogActiveTab === 0}
+          >
+            {plan ? <><Save className="h-4 w-4 ml-1" />حفظ التغييرات</> : <><Plus className="h-4 w-4 ml-1" />إنشاء الخطة</>}
+          </Button>
+        </DialogFooter>
       </DialogContent>
-
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} variant="outlined">
-          إلغاء
-        </Button>
-        <Button
-          variant="contained"
-          onClick={handleSave}
-          startIcon={plan ? <SaveIcon /> : <AddIcon />}
-          disabled={Object.keys(errors).length > 0 && activeTab === 0}
-        >
-          {plan ? "حفظ التغييرات" : "إنشاء الخطة"}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 };

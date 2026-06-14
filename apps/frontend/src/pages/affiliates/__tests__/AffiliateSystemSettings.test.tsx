@@ -5,7 +5,7 @@ import AffiliateSystemSettings from "../AffiliateSystemSettings";
 const mockGet = jest.fn();
 const mockPut = jest.fn();
 
-jest.mock("react-hot-toast", () => ({
+jest.mock("sonner", () => ({
   __esModule: true,
   default: {
     error: jest.fn(),

@@ -2652,9 +2652,7 @@
     "installedCurrently": "{{count}} apps currently installed.",
     "fetchError": "An error occurred while loading marketplace data. Please try again.",
     "retry": "Retry",
-    "currencyUnit": "EGP",
-    "loadMore": "Show more ({{remaining}})",
-    "filters": "Filters"
+    "currencyUnit": "EGP"
   },
   "notifications": {
     "title": "Notifications",

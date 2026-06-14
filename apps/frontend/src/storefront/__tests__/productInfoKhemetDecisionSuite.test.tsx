@@ -13,7 +13,7 @@ const mockUseProduct = vi.hoisted(() => vi.fn());
 const mockUseStorefrontSettings = vi.hoisted(() => vi.fn());
 const mockUseStorefrontTheme = vi.hoisted(() => vi.fn());
 
-vi.mock('react-hot-toast', () => ({
+vi.mock('sonner', () => ({
   default: {
     success: vi.fn(),
     error: vi.fn(),

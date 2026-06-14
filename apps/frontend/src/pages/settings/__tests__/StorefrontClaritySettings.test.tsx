@@ -8,7 +8,7 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
-jest.mock('react-hot-toast', () => ({
+jest.mock('sonner', () => ({
   __esModule: true,
   default: {
     success: jest.fn(),
@@ -26,7 +26,7 @@ jest.mock('../../../services/storefrontSettingsService', () => ({
 jest.mock('../ClarityAnalyticsPanel', () => () => <div data-testid="analytics-panel" />);
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const toast = require('react-hot-toast').default as {
+const toast = require('sonner').default as {
   success: jest.Mock;
   error: jest.Mock;
 };

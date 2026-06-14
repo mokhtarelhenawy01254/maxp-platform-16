@@ -5,7 +5,7 @@ import PlatformSiteHomepageTemplates from "../PlatformSiteHomepageTemplates";
 const getSettingsMock = jest.fn();
 const updateSettingsMock = jest.fn();
 
-jest.mock("react-hot-toast", () => ({
+jest.mock("sonner", () => ({
   __esModule: true,
   default: {
     success: jest.fn(),

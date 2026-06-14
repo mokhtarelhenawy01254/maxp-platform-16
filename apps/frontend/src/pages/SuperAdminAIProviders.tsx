@@ -22,7 +22,7 @@ import {
 } from "../components/ui/tooltip";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import {
-  Plus, Trash2, CheckCircle, XCircle, RefreshCw, Bot, Key, Zap, Brain, User, Search, SlidersHorizontal, Play, Square, ImagePlus, Save, GripVertical, ChevronDown, ChevronUp, FlaskConical, Timeline,
+  Plus, Trash2, CheckCircle, XCircle, RefreshCw, Bot, Key, Zap, Brain, User, Search, SlidersHorizontal, Play, Square, ImagePlus, Save, GripVertical, ChevronDown, ChevronUp, FlaskConical, Clock,
 } from "lucide-react";
 import {
   DndContext,
@@ -696,21 +696,23 @@ const RuntimeDashboardPanel = ({
 }) => {
   if (loading && !dashboard) {
     return (
-      <Paper sx={{ p: 3, borderRadius: 1, boxShadow: "none" }}>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <CircularProgress size={18} />
-          <Typography variant="body2" color="text.secondary">
+      <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
+        <div className="flex flex-row gap-2 items-center">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600" />
+          <span className="text-sm text-gray-500">
             Loading provider runtime dashboard...
-          </Typography>
-        </Stack>
-      </Paper>
+          </span>
+        </div>
+      </div>
     );
   }
 
   if (!dashboard) {
     return (
-      <Alert severity="info" variant="outlined">
-        Provider dashboard data is not available yet.
+      <Alert variant="default" className="border-blue-500/50">
+        <AlertDescription>
+          Provider dashboard data is not available yet.
+        </AlertDescription>
       </Alert>
     );
   }
@@ -720,52 +722,36 @@ const RuntimeDashboardPanel = ({
     .slice(0, 8);
 
   return (
-    <Stack spacing={1.5}>
-      <Paper
-        sx={{
-          p: { xs: 1, md: 1.25 },
-          borderRadius: 1,
-          boxShadow: "none",
-          border: "1px solid",
-          borderColor: isDark
-            ? "rgba(148, 163, 184, 0.16)"
-            : "rgba(15, 23, 42, 0.1)",
-        }}
+    <div className="flex flex-col gap-1.5">
+      <div
+        className="rounded-lg border bg-card text-card-foreground shadow-sm"
+        style={{ padding: "clamp(8px, 1.25vw, 12px)" }}
       >
-        <Stack
-          direction={{ xs: "column", md: "row" }}
-          spacing={1}
-          alignItems={{ xs: "stretch", md: "center" }}
-          justifyContent="space-between"
-          sx={{ mb: 1.2 }}
+        <div
+          className="flex flex-col md:flex-row gap-1 items-stretch md:items-center justify-between"
+          style={{ marginBottom: 6 }}
         >
-          <Box>
-            <Typography variant="subtitle1" fontWeight={900}>
+          <div>
+            <span className="text-base font-black" style={{ fontSize: "1rem", lineHeight: 1.2 }}>
               Runtime Dashboard
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
+            </span>
+            <span className="text-sm text-gray-500">
               Health, budget limits, fallback readiness, and recent provider traffic.
-            </Typography>
-          </Box>
+            </span>
+          </div>
           <Button
-            size="small"
-            variant="outlined"
-            startIcon={<RefreshIcon fontSize="small" />}
+            size="sm"
+            variant="outline"
             onClick={onRefresh}
           >
+            <RefreshCw className="h-4 w-4 mr-1" />
             Refresh
           </Button>
-        </Stack>
+        </div>
 
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr 1fr",
-              md: "repeat(6, minmax(0, 1fr))",
-            },
-            gap: 0.8,
-          }}
+        <div
+          className="grid grid-cols-2 md:grid-cols-6"
+          style={{ gap: 4 }}
         >
           {[
             ["Ready providers", `${dashboard.summary.readyProviders}/${dashboard.summary.totalProviders}`],
@@ -775,212 +761,181 @@ const RuntimeDashboardPanel = ({
             [`Requests ${dashboard.summary.sinceHours}h`, dashboard.summary.requests24h],
             ["Avg latency", formatLatency(dashboard.summary.avgLatencyMs)],
           ].map(([label, value]) => (
-            <Paper
+            <div
               key={String(label)}
-              variant="outlined"
-              sx={{ p: 1, borderRadius: 1, minHeight: 74 }}
+              className="rounded-lg border bg-card text-card-foreground shadow-sm p-2"
+              style={{ minHeight: 74 }}
             >
-              <Typography variant="caption" color="text.secondary">
+              <span className="text-xs text-gray-500">
                 {label}
-              </Typography>
-              <Typography variant="h6" fontWeight={900} sx={{ mt: 0.3 }}>
+              </span>
+              <span className="text-lg font-black" style={{ marginTop: 2 }}>
                 {typeof value === "number" ? formatCompactNumber(value) : value}
-              </Typography>
-            </Paper>
+              </span>
+            </div>
           ))}
-        </Box>
-      </Paper>
+        </div>
+      </div>
 
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", xl: "1.3fr 0.9fr" },
-          gap: 1.5,
-        }}
+      <div
+        className="grid grid-cols-1 xl:grid-cols-[1.3fr_0.9fr]"
+        style={{ gap: 6 }}
       >
-        <Paper
-          sx={{
-            p: { xs: 1, md: 1.25 },
-            borderRadius: 1,
-            boxShadow: "none",
-            border: "1px solid",
-            borderColor: isDark
-              ? "rgba(148, 163, 184, 0.16)"
-              : "rgba(15, 23, 42, 0.1)",
-          }}
+        <div
+          className="rounded-lg border bg-card text-card-foreground shadow-sm"
+          style={{ padding: "clamp(8px, 1.25vw, 12px)" }}
         >
-          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-            <Typography variant="subtitle2" fontWeight={900}>
+          <div className="flex flex-row items-center justify-between" style={{ marginBottom: 4 }}>
+            <span className="text-sm font-black">
               Provider catalog and health
-            </Typography>
+            </span>
             <Button
-              component={RouterLink}
-              to="/super-admin/ai-providers/provider-priority"
-              size="small"
-              variant="text"
+              variant="link"
+              size="sm"
+              asChild
             >
-              Fallback chain
+              <RouterLink to="/super-admin/ai-providers/provider-priority">
+                Fallback chain
+              </RouterLink>
             </Button>
-          </Stack>
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" },
-              gap: 0.9,
-            }}
+          </div>
+          <div
+            className="grid grid-cols-1 lg:grid-cols-2"
+            style={{ gap: 4 }}
           >
             {dashboard.providers.map((provider) => {
               const providerInfo = PROVIDERS.find((item) => item.value === provider.provider);
               return (
-                <Paper
+                <div
                   key={provider.provider}
-                  variant="outlined"
-                  sx={{
-                    p: 1,
-                    borderRadius: 1,
-                    bgcolor: isDark ? "rgba(15, 23, 42, 0.52)" : "background.paper",
-                  }}
+                  className="rounded-lg border bg-card text-card-foreground shadow-sm p-2"
+                  style={{ backgroundColor: isDark ? "rgba(15, 23, 42, 0.52)" : "#ffffff" }}
                 >
-                  <Stack spacing={0.85}>
-                    <Stack direction="row" spacing={0.8} alignItems="center">
-                      <Box sx={{ display: "grid", placeItems: "center", width: 28, height: 28 }}>
-                        {providerInfo?.icon || <BotIcon fontSize="small" />}
-                      </Box>
-                      <Box minWidth={0} sx={{ flex: 1 }}>
-                        <Typography variant="body2" fontWeight={900} noWrap>
+                  <div className="flex flex-col" style={{ gap: 3 }}>
+                    <div className="flex flex-row items-center" style={{ gap: 3 }}>
+                      <div className="grid place-items-center" style={{ width: 28, height: 28 }}>
+                        {providerInfo?.icon || <BotIcon className="h-4 w-4" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-sm font-black truncate block">
                           #{provider.priority} {provider.label}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" noWrap>
+                        </span>
+                        <span className="text-xs text-gray-500 truncate block">
                           {provider.adapter} · {provider.activeModel || provider.defaultModel || "No model"}
-                        </Typography>
-                      </Box>
-                      <Chip
-                        size="small"
-                        color={getProviderHealthColor(provider.healthStatus)}
-                        label={provider.healthStatus.replace(/_/g, " ")}
-                        sx={{ height: 22 }}
-                      />
-                    </Stack>
+                        </span>
+                      </div>
+                      <Badge
+                        className={getProviderHealthColor(provider.healthStatus) === "success" ? "bg-green-100 text-green-800 hover:bg-green-100" : getProviderHealthColor(provider.healthStatus) === "warning" ? "bg-amber-100 text-amber-800 hover:bg-amber-100" : getProviderHealthColor(provider.healthStatus) === "error" ? "bg-red-100 text-red-800 hover:bg-red-100" : "bg-gray-100 text-gray-800 hover:bg-gray-100"}
+                        style={{ height: 22 }}
+                      >
+                        {provider.healthStatus.replace(/_/g, " ")}
+                      </Badge>
+                    </div>
 
-                    <Typography variant="caption" color="text.secondary" sx={{ minHeight: 34 }}>
+                    <span className="text-xs text-gray-500" style={{ minHeight: 34 }}>
                       {provider.strength}
-                    </Typography>
+                    </span>
 
-                    <Stack direction="row" spacing={0.5} useFlexGap flexWrap="wrap">
-                      <Chip size="small" label={`${provider.activeKeyCount}/${provider.totalKeyCount} keys`} variant="outlined" sx={{ height: 21 }} />
-                      <Chip size="small" label={`${provider.stats24h.success} ok`} color="success" variant="outlined" sx={{ height: 21 }} />
-                      <Chip size="small" label={`${provider.stats24h.failed} failed`} color={provider.stats24h.failed ? "error" : "default"} variant="outlined" sx={{ height: 21 }} />
-                      <Chip size="small" label={`${provider.stats24h.rateLimit} limit`} color={provider.stats24h.rateLimit ? "warning" : "default"} variant="outlined" sx={{ height: 21 }} />
-                    </Stack>
+                    <div className="flex flex-row flex-wrap gap-0.5">
+                      <Badge variant="outline" className="h-5 text-xs">{provider.activeKeyCount}/{provider.totalKeyCount} keys</Badge>
+                      <Badge variant="outline" className="h-5 text-xs bg-green-50 text-green-700 border-green-200">{provider.stats24h.success} ok</Badge>
+                      <Badge variant="outline" className={`h-5 text-xs ${provider.stats24h.failed ? "bg-red-50 text-red-700 border-red-200" : ""}`}>{provider.stats24h.failed} failed</Badge>
+                      <Badge variant="outline" className={`h-5 text-xs ${provider.stats24h.rateLimit ? "bg-amber-50 text-amber-700 border-amber-200" : ""}`}>{provider.stats24h.rateLimit} limit</Badge>
+                    </div>
 
-                    <Typography variant="caption" color="text.secondary">
+                    <span className="text-xs text-gray-500">
                       {formatProviderLimits(provider.limitHints)}
-                    </Typography>
+                    </span>
                     {provider.latestSuccessKey && (
-                      <Typography variant="caption" color="text.secondary" noWrap>
+                      <span className="text-xs text-gray-500 truncate block">
                         Last success: {provider.latestSuccessKey.name} · {formatRoutingTime(provider.latestSuccessKey.at)}
-                      </Typography>
+                      </span>
                     )}
-                  </Stack>
-                </Paper>
+                  </div>
+                </div>
               );
             })}
-          </Box>
-        </Paper>
+          </div>
+        </div>
 
-        <Stack spacing={1.5}>
-          <Paper
-            sx={{
-              p: { xs: 1, md: 1.25 },
-              borderRadius: 1,
-              boxShadow: "none",
-              border: "1px solid",
-              borderColor: isDark
-                ? "rgba(148, 163, 184, 0.16)"
-                : "rgba(15, 23, 42, 0.1)",
-            }}
+        <div className="flex flex-col gap-1.5">
+          <div
+            className="rounded-lg border bg-card text-card-foreground shadow-sm"
+            style={{ padding: "clamp(8px, 1.25vw, 12px)" }}
           >
-            <Typography variant="subtitle2" fontWeight={900} sx={{ mb: 1 }}>
+            <span className="text-sm font-black block" style={{ marginBottom: 4 }}>
               Budget ledger
-            </Typography>
+            </span>
             {topKeys.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
+              <span className="text-sm text-gray-500">
                 No keys have explicit RPM/RPD/TPM/TPD limits configured yet.
-              </Typography>
+              </span>
             ) : (
-              <Stack spacing={0.8}>
+              <div className="flex flex-col" style={{ gap: 3 }}>
                 {topKeys.map((key) => (
-                  <Paper key={key.id} variant="outlined" sx={{ p: 0.9, borderRadius: 1 }}>
-                    <Stack direction="row" spacing={0.8} alignItems="center">
-                      <Box minWidth={0} sx={{ flex: 1 }}>
-                        <Typography variant="body2" fontWeight={850} noWrap>
+                  <div key={key.id} className="rounded-lg border bg-card text-card-foreground shadow-sm p-2">
+                    <div className="flex flex-row items-center" style={{ gap: 3 }}>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-sm font-black truncate block">
                           {key.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" noWrap>
+                        </span>
+                        <span className="text-xs text-gray-500 truncate block">
                           {key.provider} · {key.activeModel?.modelName || "No model"}
-                        </Typography>
-                      </Box>
-                      <Chip
-                        size="small"
-                        color={getBudgetColor(key.budget)}
-                        label={
-                          key.budget?.allowed === false
-                            ? key.budget.reason || "blocked"
-                            : key.budget?.severity || "ready"
-                        }
-                        sx={{ height: 22 }}
-                      />
-                    </Stack>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.6 }}>
+                        </span>
+                      </div>
+                      <Badge
+                        className={getBudgetColor(key.budget) === "error" ? "bg-red-100 text-red-800 hover:bg-red-100" : getBudgetColor(key.budget) === "warning" ? "bg-amber-100 text-amber-800 hover:bg-amber-100" : getBudgetColor(key.budget) === "success" ? "bg-green-100 text-green-800 hover:bg-green-100" : "bg-gray-100 text-gray-800 hover:bg-gray-100"}
+                        style={{ height: 22 }}
+                      >
+                        {key.budget?.allowed === false
+                          ? key.budget.reason || "blocked"
+                          : key.budget?.severity || "ready"}
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-gray-500 block" style={{ marginTop: 3 }}>
                       {formatProviderLimits(key.budget?.limits)}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                    </span>
+                    <span className="text-xs text-gray-500 block">
                       Today: {formatCompactNumber(key.budget?.usage?.day?.requests)} req · {formatCompactNumber(key.budget?.usage?.day?.tokens)} tokens
-                    </Typography>
-                  </Paper>
+                    </span>
+                  </div>
                 ))}
-              </Stack>
+              </div>
             )}
-          </Paper>
+          </div>
 
-          <Paper
-            sx={{
-              p: { xs: 1, md: 1.25 },
-              borderRadius: 1,
-              boxShadow: "none",
-              border: "1px solid",
-              borderColor: isDark
-                ? "rgba(148, 163, 184, 0.16)"
-                : "rgba(15, 23, 42, 0.1)",
-            }}
+          <div
+            className="rounded-lg border bg-card text-card-foreground shadow-sm"
+            style={{ padding: "clamp(8px, 1.25vw, 12px)" }}
           >
-            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-              <Typography variant="subtitle2" fontWeight={900}>
+            <div className="flex flex-row items-center justify-between" style={{ marginBottom: 4 }}>
+              <span className="text-sm font-black">
                 Recent analytics
-              </Typography>
+              </span>
               <Button
-                component={RouterLink}
-                to="/super-admin/ai-providers/logs"
-                size="small"
-                variant="text"
+                variant="link"
+                size="sm"
+                asChild
               >
-                Logs
+                <RouterLink to="/super-admin/ai-providers/logs">
+                  Logs
+                </RouterLink>
               </Button>
-            </Stack>
-            <Stack spacing={0.75}>
-              <Stack direction="row" spacing={0.8} useFlexGap flexWrap="wrap">
-                <Chip size="small" color="success" label={`${dashboard.summary.successes24h} successes`} variant="outlined" />
-                <Chip size="small" color={dashboard.summary.failures24h ? "error" : "default"} label={`${dashboard.summary.failures24h} failures`} variant="outlined" />
-                <Chip size="small" color={dashboard.summary.rateLimits24h ? "warning" : "default"} label={`${dashboard.summary.rateLimits24h} limit events`} variant="outlined" />
-              </Stack>
-              <Typography variant="body2" color="text.secondary">
+            </div>
+            <div className="flex flex-col" style={{ gap: 3 }}>
+              <div className="flex flex-row flex-wrap gap-1">
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">{dashboard.summary.successes24h} successes</Badge>
+                <Badge variant="outline" className={dashboard.summary.failures24h ? "bg-red-50 text-red-700 border-red-200" : ""}>{dashboard.summary.failures24h} failures</Badge>
+                <Badge variant="outline" className={dashboard.summary.rateLimits24h ? "bg-amber-50 text-amber-700 border-amber-200" : ""}>{dashboard.summary.rateLimits24h} limit events</Badge>
+              </div>
+              <span className="text-sm text-gray-500">
                 Provider logs are already the source of truth for full observability. This panel is the short operational view FreeLLMAPI had split across Keys, Fallback, and Analytics.
-              </Typography>
-            </Stack>
-          </Paper>
-        </Stack>
-      </Box>
-    </Stack>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -1016,152 +971,141 @@ const SortableProviderPriorityRow = ({
       : null;
 
   return (
-    <Paper
+    <div
       ref={setNodeRef}
-      sx={{
-        borderRadius: 1,
-        boxShadow: "none",
-        border: "1px solid",
-        borderColor: isDark
-          ? "rgba(148, 163, 184, 0.18)"
-          : "rgba(15, 23, 42, 0.1)",
-        bgcolor: isDragging
-          ? isDark
-            ? "rgba(37, 99, 235, 0.18)"
-            : "rgba(37, 99, 235, 0.08)"
-          : "background.paper",
+      className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden"
+      style={{
+        borderColor: isDark ? "rgba(148, 163, 184, 0.18)" : "rgba(15, 23, 42, 0.1)",
+        backgroundColor: isDragging
+          ? isDark ? "rgba(37, 99, 235, 0.18)" : "rgba(37, 99, 235, 0.08)"
+          : undefined,
         transform: CSS.Transform.toString(transform),
         transition,
-        overflow: "hidden",
       }}
     >
-      <Stack
-        direction={{ xs: "column", md: "row" }}
-        spacing={1}
-        alignItems={{ xs: "stretch", md: "center" }}
-        sx={{ px: 1, py: 0.85 }}
+      <div
+        className="flex flex-col md:flex-row gap-1 items-stretch md:items-center"
+        style={{ padding: "4px 8px 3px" }}
       >
-        <Stack direction="row" spacing={0.8} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
-          <Tooltip title="Drag to reorder">
-            <IconButton
-              size="small"
-              {...attributes}
-              {...listeners}
-              sx={{ cursor: isDragging ? "grabbing" : "grab", width: 32, height: 32 }}
-            >
-              <DragIndicatorIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Chip
-            label={`#${index + 1}`}
-            size="small"
-            color={index === 0 ? "primary" : "default"}
-            sx={{ height: 24, fontWeight: 800 }}
-          />
-          <Box sx={{ display: "grid", placeItems: "center", width: 28, height: 28 }}>
-            {item.icon || <BotIcon fontSize="small" />}
-          </Box>
-          <Box minWidth={0}>
-            <Typography variant="body2" fontWeight={850} noWrap>
+        <div className="flex flex-row items-center gap-1 min-w-0 flex-1">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  {...attributes}
+                  {...listeners}
+                  style={{ cursor: isDragging ? "grabbing" : "grab" }}
+                >
+                  <GripVertical className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Drag to reorder</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <Badge
+            className={index === 0 ? "bg-indigo-100 text-indigo-800 hover:bg-indigo-100" : ""}
+            style={{ height: 24, fontWeight: 800 }}
+          >
+            #{index + 1}
+          </Badge>
+          <div className="grid place-items-center" style={{ width: 28, height: 28 }}>
+            {item.icon || <BotIcon className="h-4 w-4" />}
+          </div>
+          <div className="min-w-0">
+            <span className="text-sm font-black truncate block">
               {item.label}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" noWrap>
+            </span>
+            <span className="text-xs text-gray-500 truncate block">
               {index === 0
                 ? "Primary provider / المزود الأساسي"
                 : `Fallback ${index} / احتياطي ${index}`}
-            </Typography>
-          </Box>
-        </Stack>
+            </span>
+          </div>
+        </div>
 
-        <Stack direction="row" spacing={0.7} useFlexGap flexWrap="wrap" alignItems="center">
-          <Chip
-            size="small"
-            icon={
-              item.hasActiveKey ? (
-                <CheckCircleIcon fontSize="small" />
-              ) : (
-                <ErrorOutlineIcon fontSize="small" />
-              )
-            }
-            label={`${item.activeKeyCount}/${item.totalKeyCount} active keys`}
-            color={item.hasActiveKey ? "success" : "error"}
-            variant="outlined"
-            sx={{ height: 24 }}
-          />
-          <Chip
-            size="small"
-            label={item.activeModel || "No active model"}
-            color={item.activeModel ? "default" : "warning"}
-            variant="outlined"
-            sx={{ height: 24, maxWidth: 210 }}
-          />
+        <div className="flex flex-row flex-wrap items-center gap-1">
+          <Badge
+            variant="outline"
+            className={`h-6 ${item.hasActiveKey ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200"}`}
+          >
+            <span className="flex items-center gap-1">
+              {item.hasActiveKey ? <CheckCircle className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
+              <span>{item.activeKeyCount}/{item.totalKeyCount} active keys</span>
+            </span>
+          </Badge>
+          <Badge
+            variant="outline"
+            className={`h-6 ${!item.activeModel ? "bg-amber-50 text-amber-700 border-amber-200" : ""}`}
+            style={{ maxWidth: 210 }}
+          >
+            {item.activeModel || "No active model"}
+          </Badge>
           <Button
-            size="small"
-            variant="outlined"
-            startIcon={testing ? <CircularProgress size={14} /> : <ScienceIcon fontSize="small" />}
+            size="sm"
+            variant="outline"
             onClick={() => onTest(item.provider)}
             disabled={testing || !item.hasActiveKey}
-            sx={{ minHeight: 30, whiteSpace: "nowrap" }}
+            className="whitespace-nowrap"
+            style={{ minHeight: 30 }}
           >
+            {testing ? (
+              <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-indigo-600 mr-1" />
+            ) : (
+              <FlaskConical className="h-4 w-4 mr-1" />
+            )}
             Test Now
           </Button>
-          <IconButton
-            size="small"
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
             onClick={() => onToggle(item.provider)}
-            sx={{ width: 32, height: 32 }}
           >
-            {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
-          </IconButton>
-        </Stack>
-      </Stack>
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        </div>
+      </div>
 
-      <Collapse in={expanded} timeout="auto" unmountOnExit>
-        <Divider />
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr 1fr",
-              md: "repeat(6, minmax(120px, 1fr))",
-            },
-            gap: 0.75,
-            px: 1,
-            py: 1,
-          }}
-        >
-          {[
-            ["Active key", item.activeKeyName || "None"],
-            ["24h success", item.stats24h.success],
-            ["24h failures", item.stats24h.failure],
-            ["Rate limits", item.stats24h.rateLimit],
-            ["Avg latency", formatLatency(item.stats24h.avgResponseTimeMs)],
-            ["Success rate", successRate === null ? "No data" : `${successRate}%`],
-          ].map(([label, value]) => (
-            <Box
-              key={label}
-              sx={{
-                px: 0.9,
-                py: 0.8,
-                borderRadius: 1,
-                bgcolor: isDark ? "rgba(15, 23, 42, 0.58)" : "rgba(248, 250, 252, 0.95)",
-                border: "1px solid",
-                borderColor: isDark
-                  ? "rgba(148, 163, 184, 0.12)"
-                  : "rgba(15, 23, 42, 0.08)",
-                minWidth: 0,
-              }}
-            >
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                {label}
-              </Typography>
-              <Typography variant="body2" fontWeight={800} noWrap>
-                {value}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
-      </Collapse>
-    </Paper>
+      {expanded && (
+        <>
+          <Separator />
+          <div
+            className="grid grid-cols-2 md:grid-cols-[repeat(6,minmax(120px,1fr))]"
+            style={{ gap: 3, padding: "4px 8px 4px" }}
+          >
+            {[
+              ["Active key", item.activeKeyName || "None"],
+              ["24h success", item.stats24h.success],
+              ["24h failures", item.stats24h.failure],
+              ["Rate limits", item.stats24h.rateLimit],
+              ["Avg latency", formatLatency(item.stats24h.avgResponseTimeMs)],
+              ["Success rate", successRate === null ? "No data" : `${successRate}%`],
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                className="rounded min-w-0"
+                style={{
+                  padding: "3px 4px",
+                  backgroundColor: isDark ? "rgba(15, 23, 42, 0.58)" : "rgba(248, 250, 252, 0.95)",
+                  border: "1px solid",
+                  borderColor: isDark ? "rgba(148, 163, 184, 0.12)" : "rgba(15, 23, 42, 0.08)",
+                }}
+              >
+                <span className="text-xs text-gray-500 block">
+                  {label}
+                </span>
+                <span className="text-sm font-black truncate block">
+                  {value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 };
 
@@ -2241,738 +2185,456 @@ const SuperAdminAIProviders = ({
   );
 
   return (
-    <Box
-      sx={{
-        p: { xs: 0.75, md: 1 },
+    <div
+      className="p-1 md:p-1"
+      style={{
         minHeight: "calc(100vh - 64px)",
-        bgcolor: isDark ? "rgba(2, 6, 23, 0.28)" : "rgba(248, 250, 252, 0.72)",
+        backgroundColor: isDark ? "rgba(2, 6, 23, 0.28)" : "rgba(248, 250, 252, 0.72)",
       }}
     >
-      {/* Compact command header */}
-      <Paper
-        sx={{
-          mb: 1.5,
-          px: { xs: 1.25, md: 1.5 },
-          py: 1.25,
-          borderRadius: 1,
-          border: "1px solid",
-          borderColor: isDark
-            ? "rgba(148, 163, 184, 0.18)"
-            : "rgba(15, 23, 42, 0.1)",
-          boxShadow: "none",
-          bgcolor: isDark ? "rgba(15, 23, 42, 0.82)" : "background.paper",
+      <div
+        className="rounded-lg border bg-card text-card-foreground shadow-sm"
+        style={{
+          marginBottom: 6,
+          padding: "clamp(6px, 1vw, 12px)",
+          borderColor: isDark ? "rgba(148, 163, 184, 0.18)" : "rgba(15, 23, 42, 0.1)",
+          backgroundColor: isDark ? "rgba(15, 23, 42, 0.82)" : undefined,
         }}
       >
-        <Stack spacing={1.1}>
-          <Stack
-            direction={{ xs: "column", lg: "row" }}
-            spacing={1}
-            alignItems={{ xs: "stretch", lg: "center" }}
-            justifyContent="space-between"
-          >
-            <Stack direction="row" spacing={1} alignItems="center" minWidth={0}>
-              <Box
-                sx={{
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-col lg:flex-row gap-1 items-stretch lg:items-center justify-between">
+            <div className="flex flex-row gap-1 items-center min-w-0">
+              <div
+                className="rounded grid place-items-center flex-shrink-0"
+                style={{
                   width: 34,
                   height: 34,
-                  borderRadius: 1,
-                  display: "grid",
-                  placeItems: "center",
-                  color: "primary.main",
-                  bgcolor: isDark
-                    ? "rgba(96, 165, 250, 0.14)"
-                    : "rgba(37, 99, 235, 0.08)",
+                  color: "#6366f1",
+                  backgroundColor: isDark ? "rgba(96, 165, 250, 0.14)" : "rgba(37, 99, 235, 0.08)",
                   border: "1px solid",
-                  borderColor: isDark
-                    ? "rgba(148, 163, 184, 0.18)"
-                    : "rgba(15, 23, 42, 0.08)",
-                  flexShrink: 0,
+                  borderColor: isDark ? "rgba(148, 163, 184, 0.18)" : "rgba(15, 23, 42, 0.08)",
                 }}
               >
-                <BotIcon fontSize="small" />
-              </Box>
-              <Box minWidth={0}>
-                <Typography
-                  variant="h6"
-                  sx={{ fontSize: "1rem", lineHeight: 1.2, fontWeight: 800 }}
-                >
+                <BotIcon className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-base font-black block leading-tight">
                   {standalonePriority
                     ? "Provider Priority"
                     : "AI Keys & Provider Management"}
-                </Typography>
-                <Stack
-                  direction="row"
-                  spacing={0.5}
-                  useFlexGap
-                  flexWrap="wrap"
-                  sx={{ mt: 0.45 }}
-                >
-                  <Chip
-                    size="small"
-                    label={`${activeProviderLabel} active`}
-                    color="primary"
-                    variant="outlined"
-                    sx={{ height: 22 }}
-                  />
-                  <Chip
-                    size="small"
-                    label={`${activeKeysCount} active keys`}
-                    color={activeKeysCount > 0 ? "success" : "default"}
-                    variant="outlined"
-                    sx={{ height: 22 }}
-                  />
-                  <Chip
-                    size="small"
-                    label={`${inactiveKeysCount} inactive`}
-                    variant="outlined"
-                    sx={{ height: 22 }}
-                  />
-                  <Chip
-                    size="small"
-                    label={`${filteredKeys.length}/${keys.length} shown`}
-                    variant="outlined"
-                    sx={{ height: 22 }}
-                  />
-                </Stack>
-              </Box>
-            </Stack>
+                </span>
+                <div className="flex flex-row flex-wrap gap-0.5" style={{ marginTop: 2 }}>
+                  <Badge variant="outline" className="h-5 text-xs border-indigo-200 text-indigo-700">{activeProviderLabel} active</Badge>
+                  <Badge variant="outline" className={`h-5 text-xs ${activeKeysCount > 0 ? "bg-green-50 text-green-700 border-green-200" : ""}`}>{activeKeysCount} active keys</Badge>
+                  <Badge variant="outline" className="h-5 text-xs">{inactiveKeysCount} inactive</Badge>
+                  <Badge variant="outline" className="h-5 text-xs">{filteredKeys.length}/{keys.length} shown</Badge>
+                </div>
+              </div>
+            </div>
 
-            <Alert
-              severity="info"
-              variant="outlined"
-              sx={{
-                py: 0.35,
-                alignItems: "center",
-                borderColor: isDark
-                  ? "rgba(96, 165, 250, 0.28)"
-                  : "rgba(37, 99, 235, 0.18)",
-              }}
-            >
-              {standalonePriority ? (
-                <>
-                  Drag providers to set the runtime order. / اسحب المزودين
-                  لتحديد ترتيب التشغيل والـ fallback.
-                </>
-              ) : (
-                <>
-                  المفاتيح المركزية المضافة هنا مخصصة لإدارة المزودين،
-                  ترتيب التشغيل، السجلات، وتشخيص المفاتيح داخل سطح السوبر
-                  أدمن فقط.
-                </>
-              )}
+            <Alert variant="default" className="border-blue-500/50 py-1 items-center">
+              <AlertDescription>
+                {standalonePriority ? (
+                  <>
+                    Drag providers to set the runtime order. / اسحب المزودين
+                    لتحديد ترتيب التشغيل والـ fallback.
+                  </>
+                ) : (
+                  <>
+                    المفاتيح المركزية المضافة هنا مخصصة لإدارة المزودين،
+                    ترتيب التشغيل، السجلات، وتشخيص المفاتيح داخل سطح السوبر
+                    أدمن فقط.
+                  </>
+                )}
+              </AlertDescription>
             </Alert>
 
-            <Stack
-              direction="row"
-              spacing={0.75}
-              useFlexGap
-              flexWrap="wrap"
-              justifyContent={{ xs: "flex-start", lg: "flex-end" }}
-            >
+            <div className="flex flex-row flex-wrap gap-1 justify-start lg:justify-end">
               <Button
-                size="small"
-                variant="outlined"
-                startIcon={<RefreshIcon fontSize="small" />}
+                size="sm"
+                variant="outline"
                 onClick={fetchData}
               >
+                <RefreshCw className="h-4 w-4 mr-1" />
                 Refresh
               </Button>
               {standalonePriority ? (
                 <Button
-                  size="small"
-                  variant="outlined"
-                  component={RouterLink}
-                  to="/super-admin/ai-providers"
+                  size="sm"
+                  variant="outline"
+                  asChild
                 >
-                  AI Keys
+                  <RouterLink to="/super-admin/ai-providers">
+                    AI Keys
+                  </RouterLink>
                 </Button>
               ) : (
                 <>
                   <Button
-                    size="small"
-                    variant="outlined"
-                    component={RouterLink}
-                    to="/super-admin/ai-providers/provider-priority"
-                    startIcon={<DragIndicatorIcon fontSize="small" />}
+                    size="sm"
+                    variant="outline"
+                    asChild
                   >
-                    Provider Priority
+                    <RouterLink to="/super-admin/ai-providers/provider-priority">
+                      <GripVertical className="h-4 w-4 mr-1" />
+                      Provider Priority
+                    </RouterLink>
                   </Button>
                   <Button
-                    size="small"
-                    variant="outlined"
-                    component={RouterLink}
-                    to="/super-admin/ai-providers/logs"
-                    startIcon={<TimelineIcon fontSize="small" />}
+                    size="sm"
+                    variant="outline"
+                    asChild
                   >
-                    Provider Logs
+                    <RouterLink to="/super-admin/ai-providers/logs">
+                      <Clock className="h-4 w-4 mr-1" />
+                      Provider Logs
+                    </RouterLink>
                   </Button>
                   <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={
-                      testingRouting ? (
-                        <CircularProgress size={14} />
-                      ) : (
-                        <KeyIcon fontSize="small" />
-                      )
-                    }
+                    size="sm"
+                    variant="outline"
                     onClick={handlePreviewRouting}
                     disabled={testingRouting}
                   >
+                    {testingRouting ? (
+                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-indigo-600 mr-1" />
+                    ) : (
+                      <Key className="h-4 w-4 mr-1" />
+                    )}
                     Check Routing
                   </Button>
                   <Button
-                    size="small"
-                    variant="contained"
-                    startIcon={<AddIcon fontSize="small" />}
+                    size="sm"
                     onClick={handleOpenAddDialog}
                   >
+                    <Plus className="h-4 w-4 mr-1" />
                     Add API Key
                   </Button>
                 </>
               )}
-            </Stack>
-          </Stack>
+            </div>
+          </div>
 
           {!standalonePriority && (
-            <Tabs
-              value={activeTab}
-              onChange={(_, value) => setActiveTab(value)}
-              variant="scrollable"
-              scrollButtons="auto"
-              sx={{
-                minHeight: 38,
-                borderBottom: "1px solid",
-                borderColor: isDark
-                  ? "rgba(148, 163, 184, 0.14)"
-                  : "rgba(15, 23, 42, 0.08)",
-                "& .MuiTab-root": {
-                  minHeight: 38,
-                  textTransform: "none",
-                  fontWeight: 800,
-                },
-              }}
-            >
-              <Tab value="dashboard" label="Runtime Dashboard" />
-              <Tab value="keys" label="AI Keys" />
-              <Tab value="config" label="Global Config" />
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
+              <TabsList className="h-9">
+                <TabsTrigger value="dashboard" className="text-xs font-black">Runtime Dashboard</TabsTrigger>
+                <TabsTrigger value="keys" className="text-xs font-black">AI Keys</TabsTrigger>
+                <TabsTrigger value="config" className="text-xs font-black">Global Config</TabsTrigger>
+              </TabsList>
             </Tabs>
           )}
 
           {activeTab === "config" && (
             <>
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                md: "minmax(220px, 0.85fr) minmax(160px, 0.55fr) minmax(340px, 1.6fr)",
-              },
-              gap: 0.75,
-              alignItems: "center",
-            }}
+          <div
+            className="grid grid-cols-1 md:grid-cols-[minmax(220px,0.85fr)_minmax(160px,0.55fr)_minmax(340px,1.6fr)] items-center"
+            style={{ gap: 3 }}
           >
-            <Stack
-              direction="row"
-              spacing={0.75}
-              alignItems="center"
-              sx={{
+            <div
+              className="flex flex-row items-center gap-1 rounded border"
+              style={{
                 minHeight: 42,
-                px: 0.75,
-                border: "1px solid",
-                borderRadius: 1,
-                borderColor: isDark
-                  ? "rgba(148, 163, 184, 0.14)"
-                  : "rgba(15, 23, 42, 0.08)",
+                padding: "0 3px",
+                borderColor: isDark ? "rgba(148, 163, 184, 0.14)" : "rgba(15, 23, 42, 0.08)",
               }}
             >
               {activeProviderInfo?.icon}
-              <TextField
-                select
-                label="Active Provider"
+              <Select
                 value={globalConfig.defaultProvider}
-                onChange={(e) => handleSaveConfig(e.target.value)}
-                size="small"
-                fullWidth
+                onValueChange={(value) => handleSaveConfig(value)}
               >
-                {PROVIDERS.map((p) => (
-                  <MenuItem key={p.value} value={p.value}>
-                    <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                      {p.icon} {p.label}
-                    </Box>
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Stack>
+                <SelectTrigger className="w-full h-9 text-sm">
+                  <SelectValue placeholder="Active Provider" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROVIDERS.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>
+                      <span className="flex items-center gap-1">{p.icon} {p.label}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <FormControlLabel
-              labelPlacement="start"
-              control={
-                <Switch
-                  size="small"
-                  checked={globalConfig.enableFailover !== false}
-                  onChange={() => handleSaveConfig(undefined)}
-                  color="primary"
-                />
-              }
-              label={
-                <Box sx={{ mr: 0.75 }}>
-                  <Typography
-                    variant="caption"
-                    sx={{ display: "block", fontWeight: 800, lineHeight: 1.15 }}
-                  >
-                    Smart Failover
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: "block", lineHeight: 1.15 }}
-                  >
-                    Backup on failure
-                  </Typography>
-                </Box>
-              }
-              sx={{
-                m: 0,
-                minHeight: 42,
-                px: 0.75,
-                justifyContent: "space-between",
-                border: "1px solid",
-                borderRadius: 1,
-                borderColor: isDark
-                  ? "rgba(148, 163, 184, 0.14)"
-                  : "rgba(15, 23, 42, 0.08)",
-              }}
-            />
-
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "145px minmax(180px, 1fr) auto",
-                },
-                gap: 0.75,
-                alignItems: "center",
+            <div
+              className="flex items-center justify-between rounded border min-h-[42px]"
+              style={{
+                padding: "0 3px",
+                borderColor: isDark ? "rgba(148, 163, 184, 0.14)" : "rgba(15, 23, 42, 0.08)",
               }}
             >
-              <TextField
-                select
-                fullWidth
-                size="small"
-                label="Vision"
+              <div className="mr-1">
+                <span className="text-xs font-black block leading-tight">Smart Failover</span>
+                <span className="text-xs text-gray-500 block leading-tight">Backup on failure</span>
+              </div>
+              <Switch
+                size="default"
+                checked={globalConfig.enableFailover !== false}
+                onCheckedChange={() => handleSaveConfig(undefined)}
+              />
+            </div>
+
+            <div
+              className="grid grid-cols-1 sm:grid-cols-[145px_minmax(180px,1fr)_auto] items-center"
+              style={{ gap: 3 }}
+            >
+              <Select
                 value={visionForm.provider}
-                onChange={(e) => {
-                  const nextProvider = e.target.value;
+                onValueChange={(nextProvider) => {
                   setVisionForm({
                     provider: nextProvider,
-                    model:
-                      DEFAULT_VISION_MODELS[nextProvider] ||
-                      visionForm.model ||
-                      "",
+                    model: DEFAULT_VISION_MODELS[nextProvider] || visionForm.model || "",
                   });
-                  if (
-                    nextProvider === "OPENROUTER" &&
-                    openRouterModels.length === 0
-                  ) {
+                  if (nextProvider === "OPENROUTER" && openRouterModels.length === 0) {
                     fetchOpenRouterModels({ silent: true });
                   }
                 }}
               >
-                <MenuItem value="OPENROUTER">OpenRouter</MenuItem>
-                <MenuItem value="GOOGLE">Google Gemini</MenuItem>
-              </TextField>
-              <Autocomplete
-                freeSolo
-                fullWidth
-                size="small"
-                options={visionModelOptions}
-                value={visionForm.model || null}
-                inputValue={visionForm.model}
-                loading={
-                  visionForm.provider === "OPENROUTER" &&
-                  loadingOpenRouterModels
-                }
-                onInputChange={(_, value) =>
-                  setVisionForm((current) => ({ ...current, model: value }))
-                }
-                onChange={(_, value) =>
-                  setVisionForm((current) => ({
-                    ...current,
-                    model: typeof value === "string" ? value : value || "",
-                  }))
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Vision Model"
-                    placeholder={
-                      visionForm.provider === "OPENROUTER"
-                        ? "openrouter/free"
-                        : "gemini-2.5-flash"
-                    }
-                    InputProps={{
-                      ...params.InputProps,
-                      startAdornment: (
-                        <>
-                          <InputAdornment position="start">
-                            <ImageSearchIcon fontSize="small" />
-                          </InputAdornment>
-                          {params.InputProps.startAdornment}
-                        </>
-                      ),
-                      endAdornment: (
-                        <>
-                          {visionForm.provider === "OPENROUTER" &&
-                          loadingOpenRouterModels ? (
-                            <CircularProgress color="inherit" size={16} />
-                          ) : null}
-                          {params.InputProps.endAdornment}
-                        </>
-                      ),
-                    }}
-                  />
+                <SelectTrigger className="w-full h-9 text-sm">
+                  <SelectValue placeholder="Vision" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="OPENROUTER">OpenRouter</SelectItem>
+                  <SelectItem value="GOOGLE">Google Gemini</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="relative w-full">
+                <ImagePlus className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
+                <Input
+                  className="pl-8 h-9 text-sm"
+                  placeholder={visionForm.provider === "OPENROUTER" ? "openrouter/free" : "gemini-2.5-flash"}
+                  value={visionForm.model}
+                  onChange={(e) => setVisionForm((current) => ({ ...current, model: e.target.value }))}
+                />
+                {visionForm.provider === "OPENROUTER" && loadingOpenRouterModels && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600 absolute right-2 top-1/2 -translate-y-1/2" />
                 )}
-              />
+              </div>
               <Button
-                size="small"
-                variant="outlined"
-                startIcon={<SaveIcon fontSize="small" />}
+                size="sm"
+                variant="outline"
                 onClick={handleSaveVisionConfig}
                 disabled={!visionForm.provider || !visionForm.model.trim()}
-                sx={{ minHeight: 40, whiteSpace: "nowrap" }}
+                className="whitespace-nowrap"
+                style={{ minHeight: 40 }}
               >
+                <Save className="h-4 w-4 mr-1" />
                 Save
               </Button>
-            </Box>
-          </Box>
+            </div>
+          </div>
 
-          {/* Embedding Configuration */}
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "145px minmax(180px, 1fr) 100px auto",
-              },
-              gap: 0.75,
-              alignItems: "center",
-              mt: 0.75,
-              p: 0.75,
-              border: "1px solid",
-              borderRadius: 1,
-              borderColor: isDark
-                ? "rgba(148, 163, 184, 0.14)"
-                : "rgba(15, 23, 42, 0.08)",
-            }}
+          <div
+            className="grid grid-cols-1 sm:grid-cols-[145px_minmax(180px,1fr)_100px_auto] items-center rounded border mt-1"
+            style={{ gap: 3, padding: 3, borderColor: isDark ? "rgba(148, 163, 184, 0.14)" : "rgba(15, 23, 42, 0.08)" }}
           >
             {embeddingHealth && (
               <Alert
-                severity={embeddingHealthSeverity}
-                variant="outlined"
-                sx={{
-                  gridColumn: "1 / -1",
-                  py: 0.35,
-                  "& .MuiAlert-message": { width: "100%" },
-                }}
+                variant={embeddingHealthSeverity === "error" ? "destructive" : embeddingHealthSeverity === "warning" ? "default" : "default"}
+                className={`col-span-full py-1 ${embeddingHealthSeverity === "warning" ? "border-yellow-500/50" : embeddingHealthSeverity === "success" ? "border-green-500/50" : embeddingHealthSeverity === "info" ? "border-blue-500/50" : ""}`}
               >
-                <Stack spacing={0.5}>
-                  <Stack
-                    direction={{ xs: "column", sm: "row" }}
-                    spacing={0.75}
-                    alignItems={{ xs: "flex-start", sm: "center" }}
-                    justifyContent="space-between"
-                  >
-                    <Box>
-                      <Typography variant="caption" fontWeight={900}>
-                        {i18n.t("superAdmin.aiProviders.embedding.health.title")}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        display="block"
-                      >
-                        {embeddingHealthReason}
-                      </Typography>
-                    </Box>
-                    <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-                      <Chip
-                        size="small"
-                        color={embeddingHealthSeverity === "error" ? "error" : embeddingHealthSeverity}
-                        label={i18n.t(
-                          "superAdmin.aiProviders.embedding.health.statusChip",
-                          { status: embeddingHealthStatus },
+                <AlertDescription className="w-full">
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex flex-col sm:flex-row gap-1 items-start sm:items-center justify-between">
+                      <div>
+                        <span className="text-xs font-black block">
+                          {i18n.t("superAdmin.aiProviders.embedding.health.title")}
+                        </span>
+                        <span className="text-xs text-gray-500 block">
+                          {embeddingHealthReason}
+                        </span>
+                      </div>
+                      <div className="flex flex-row flex-wrap gap-0.5">
+                        <Badge
+                          className={embeddingHealthSeverity === "error" ? "bg-red-100 text-red-800 hover:bg-red-100" : embeddingHealthSeverity === "warning" ? "bg-amber-100 text-amber-800 hover:bg-amber-100" : embeddingHealthSeverity === "success" ? "bg-green-100 text-green-800 hover:bg-green-100" : "bg-blue-100 text-blue-800 hover:bg-blue-100"}
+                        >
+                          {i18n.t("superAdmin.aiProviders.embedding.health.statusChip", { status: embeddingHealthStatus })}
+                        </Badge>
+                        {embeddingHealth.fallback && embeddingHealth.fallback !== "NONE" && (
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                            {i18n.t("superAdmin.aiProviders.embedding.health.fallbackChip", { fallback: embeddingHealthFallback })}
+                          </Badge>
                         )}
-                      />
-                      {embeddingHealth.fallback &&
-                        embeddingHealth.fallback !== "NONE" && (
-                          <Chip
-                            size="small"
-                            color="warning"
-                            variant="outlined"
-                            label={i18n.t(
-                              "superAdmin.aiProviders.embedding.health.fallbackChip",
-                              { fallback: embeddingHealthFallback },
-                            )}
-                          />
-                        )}
-                    </Stack>
-                  </Stack>
-                  <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-                    <Chip
-                      size="small"
-                      variant="outlined"
-                      label={i18n.t(
-                        "superAdmin.aiProviders.embedding.health.modelChip",
-                        {
-                          model:
-                            embeddingHealth.requiredModel ||
-                            DEFAULT_EMBEDDING_SETTINGS.model,
-                        },
-                      )}
-                    />
-                    <Chip
-                      size="small"
-                      variant="outlined"
-                      label={i18n.t(
-                        "superAdmin.aiProviders.embedding.health.dimensionChip",
-                        {
-                          dimension:
-                            embeddingHealth.requiredDimension ||
-                            DEFAULT_EMBEDDING_SETTINGS.dimension,
-                        },
-                      )}
-                    />
-                    <Chip
-                      size="small"
-                      variant="outlined"
-                      label={i18n.t(
-                        "superAdmin.aiProviders.embedding.health.activeKeysChip",
-                        { count: embeddingHealth.activeGoogleKeyCount || 0 },
-                      )}
-                    />
-                  </Stack>
-                  {embeddingHealthWarnings.length > 0 && (
-                    <Typography variant="caption" color="text.secondary">
-                      {i18n.t(
-                        "superAdmin.aiProviders.embedding.health.warningsLabel",
-                        { warnings: embeddingHealthWarnings.join(" · ") },
-                      )}
-                    </Typography>
-                  )}
-                  {embeddingHealth.runtimeFailure && (
-                    <Typography variant="caption" color="text.secondary">
-                      {i18n.t(
-                        "superAdmin.aiProviders.embedding.health.runtimeFailure",
-                        {
-                          reason: embeddingRuntimeFailureReason,
-                          count:
-                            embeddingHealth.runtimeFailure
-                              .consecutiveFailures || 0,
-                          context:
-                            embeddingHealth.runtimeFailure.context ||
-                            "UNKNOWN",
-                        },
-                      )}
-                    </Typography>
-                  )}
-                </Stack>
+                      </div>
+                    </div>
+                    <div className="flex flex-row flex-wrap gap-0.5">
+                      <Badge variant="outline">
+                        {i18n.t("superAdmin.aiProviders.embedding.health.modelChip", { model: embeddingHealth.requiredModel || DEFAULT_EMBEDDING_SETTINGS.model })}
+                      </Badge>
+                      <Badge variant="outline">
+                        {i18n.t("superAdmin.aiProviders.embedding.health.dimensionChip", { dimension: embeddingHealth.requiredDimension || DEFAULT_EMBEDDING_SETTINGS.dimension })}
+                      </Badge>
+                      <Badge variant="outline">
+                        {i18n.t("superAdmin.aiProviders.embedding.health.activeKeysChip", { count: embeddingHealth.activeGoogleKeyCount || 0 })}
+                      </Badge>
+                    </div>
+                    {embeddingHealthWarnings.length > 0 && (
+                      <span className="text-xs text-gray-500">
+                        {i18n.t("superAdmin.aiProviders.embedding.health.warningsLabel", { warnings: embeddingHealthWarnings.join(" · ") })}
+                      </span>
+                    )}
+                    {embeddingHealth.runtimeFailure && (
+                      <span className="text-xs text-gray-500">
+                        {i18n.t("superAdmin.aiProviders.embedding.health.runtimeFailure", { reason: embeddingRuntimeFailureReason, count: embeddingHealth.runtimeFailure.consecutiveFailures || 0, context: embeddingHealth.runtimeFailure.context || "UNKNOWN" })}
+                      </span>
+                    )}
+                  </div>
+                </AlertDescription>
               </Alert>
             )}
-            <Typography
-              variant="caption"
-              sx={{ fontWeight: 800, whiteSpace: "nowrap" }}
-            >
+            <span className="text-xs font-black whitespace-nowrap">
               {i18n.t("superAdmin.aiProviders.embedding.title")}
-            </Typography>
-            <TextField
-              select
-              fullWidth
-              size="small"
-              label={i18n.t("superAdmin.aiProviders.embedding.modelLabel")}
+            </span>
+            <Select
               value={embeddingForm.model || "gemini-embedding-2"}
-              onChange={(e) =>
+              onValueChange={(value) =>
                 setEmbeddingForm((prev) => ({
                   ...prev,
-                  model: e.target.value,
-                  dimension:
-                    e.target.value.includes("embedding-2")
-                      ? 768
-                      : prev.dimension,
+                  model: value,
+                  dimension: value.includes("embedding-2") ? 768 : prev.dimension,
                 }))
               }
             >
-              {EMBEDDING_MODELS.map((m) => (
-                <MenuItem key={m.id} value={m.id}>
-                  {i18n.t(m.labelKey)}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              fullWidth
-              size="small"
-              label={i18n.t("superAdmin.aiProviders.embedding.dimensionsLabel")}
-              value={embeddingForm.dimension || 768}
-              onChange={(e) =>
+              <SelectTrigger className="w-full h-9 text-sm">
+                <SelectValue placeholder={i18n.t("superAdmin.aiProviders.embedding.modelLabel")} />
+              </SelectTrigger>
+              <SelectContent>
+                {EMBEDDING_MODELS.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {i18n.t(m.labelKey)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={String(embeddingForm.dimension || 768)}
+              onValueChange={(value) =>
                 setEmbeddingForm((prev) => ({
                   ...prev,
-                  dimension: Number(e.target.value),
+                  dimension: Number(value),
                 }))
               }
             >
-              {EMBEDDING_DIMENSIONS.map((d) => (
-                <MenuItem key={d} value={d}>
-                  {d}
-                </MenuItem>
-              ))}
-            </TextField>
+              <SelectTrigger className="w-full h-9 text-sm">
+                <SelectValue placeholder={i18n.t("superAdmin.aiProviders.embedding.dimensionsLabel")} />
+              </SelectTrigger>
+              <SelectContent>
+                {EMBEDDING_DIMENSIONS.map((d) => (
+                  <SelectItem key={d} value={String(d)}>
+                    {d}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
-              size="small"
-              variant="outlined"
-              startIcon={<SaveIcon fontSize="small" />}
+              size="sm"
+              variant="outline"
               onClick={handleSaveEmbeddingConfig}
-              sx={{ minHeight: 40, whiteSpace: "nowrap" }}
+              className="whitespace-nowrap"
+              style={{ minHeight: 40 }}
             >
+              <Save className="h-4 w-4 mr-1" />
               {i18n.t("superAdmin.aiProviders.embedding.save")}
             </Button>
-          </Box>
+          </div>
 
             </>
           )}
 
           {activeTab === "keys" && (
-          <Stack
-            direction={{ xs: "column", xl: "row" }}
-            spacing={0.75}
-            alignItems={{ xs: "stretch", xl: "center" }}
-            sx={{
-              pt: 1,
-              borderTop: "1px solid",
-              borderColor: isDark
-                ? "rgba(148, 163, 184, 0.14)"
-                : "rgba(15, 23, 42, 0.08)",
-            }}
+          <div
+            className="flex flex-col xl:flex-row gap-1 items-stretch xl:items-center pt-1 border-t"
+            style={{ borderColor: isDark ? "rgba(148, 163, 184, 0.14)" : "rgba(15, 23, 42, 0.08)" }}
           >
-            <Stack
-              direction="row"
-              spacing={0.75}
-              useFlexGap
-              flexWrap="wrap"
-              alignItems="center"
-              sx={{ flex: { xs: "0 1 auto", xl: "1 1 340px" }, minWidth: 0 }}
+            <div
+              className="flex flex-row flex-wrap items-center gap-1 min-w-0"
+              style={{ flex: "0 1 auto" }}
             >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.75,
-                  minWidth: 0,
+              <div
+                className="flex items-center gap-1 min-w-0 rounded"
+                style={{
                   flex: "1 1 280px",
-                  maxWidth: { xl: 460 },
-                  px: 0.9,
-                  py: 0.65,
-                  borderRadius: 1,
-                  bgcolor: isDark
-                    ? "rgba(37, 99, 235, 0.12)"
-                    : "rgba(37, 99, 235, 0.06)",
+                  maxWidth: 460,
+                  padding: "3px 4px",
+                  backgroundColor: isDark ? "rgba(37, 99, 235, 0.12)" : "rgba(37, 99, 235, 0.06)",
                 }}
               >
-                <KeyIcon fontSize="small" color="primary" />
-                <Typography
-                  variant="caption"
-                  sx={{ fontWeight: 800, flexShrink: 0 }}
-                >
-                  Route
-                </Typography>
-                <Typography variant="caption" color="text.secondary" noWrap>
-                  {routeProviderLabel}: {routeSummary}
-                </Typography>
-              </Box>
+                <Key className="h-4 w-4 text-indigo-500 flex-shrink-0" />
+                <span className="text-xs font-black flex-shrink-0">Route</span>
+                <span className="text-xs text-gray-500 truncate">{routeProviderLabel}: {routeSummary}</span>
+              </div>
               {activePreferredKey && (
                 <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() =>
-                    handleClearPreferredKey(globalConfig.defaultProvider)
-                  }
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleClearPreferredKey(globalConfig.defaultProvider)}
                   disabled={settingPreferredKeyId === globalConfig.defaultProvider}
-                  sx={{ whiteSpace: "nowrap" }}
+                  className="whitespace-nowrap"
                 >
                   Auto rotation
                 </Button>
               )}
-            </Stack>
+            </div>
 
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "minmax(220px, 1fr) 145px 130px auto",
-                },
-                gap: 0.75,
-                flex: { xs: "0 1 auto", xl: "2 1 560px" },
-              }}
+            <div
+              className="grid grid-cols-1 sm:grid-cols-[minmax(220px,1fr)_145px_130px_auto] gap-1"
+              style={{ flex: "0 1 auto" }}
             >
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="Search name, provider, or key"
-                value={filters.search}
-                onChange={handleFilterChange("search")}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <TextField
-                fullWidth
-                select
-                size="small"
-                label="Provider"
+              <div className="relative">
+                <Search className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
+                <Input
+                  className="pl-8 h-9 text-sm"
+                  placeholder="Search name, provider, or key"
+                  value={filters.search}
+                  onChange={handleFilterChange("search")}
+                />
+              </div>
+              <Select
                 value={filters.provider}
-                onChange={handleFilterChange("provider")}
+                onValueChange={(value) => setFilters({ ...filters, provider: value })}
               >
-                <MenuItem value="">All</MenuItem>
-                {PROVIDERS.map((p) => (
-                  <MenuItem key={p.value} value={p.value}>
-                    {p.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <TextField
-                fullWidth
-                select
-                size="small"
-                label="Status"
+                <SelectTrigger className="w-full h-9 text-sm">
+                  <SelectValue placeholder="Provider" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All</SelectItem>
+                  {PROVIDERS.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
                 value={filters.status}
-                onChange={handleFilterChange("status")}
+                onValueChange={(value) => setFilters({ ...filters, status: value })}
               >
-                <MenuItem value="">All</MenuItem>
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="inactive">Inactive</MenuItem>
-              </TextField>
+                <SelectTrigger className="w-full h-9 text-sm">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
               <Button
-                size="small"
-                variant="outlined"
-                startIcon={<FilterListIcon fontSize="small" />}
+                size="sm"
+                variant="outline"
                 disabled={!hasActiveFilters}
-                onClick={() => {
-                  setFilters({ search: "", provider: "", status: "" });
-                }}
-                sx={{ minHeight: 40, whiteSpace: "nowrap" }}
+                onClick={() => setFilters({ search: "", provider: "", status: "" })}
+                className="whitespace-nowrap"
+                style={{ minHeight: 40 }}
               >
+                <SlidersHorizontal className="h-4 w-4 mr-1" />
                 Clear
               </Button>
-            </Box>
-          </Stack>
+            </div>
+          </div>
           )}
-        </Stack>
-      </Paper>
+        </div>
+      </div>
 
       {activeTab === "dashboard" && (
         <RuntimeDashboardPanel
@@ -2984,81 +2646,56 @@ const SuperAdminAIProviders = ({
       )}
 
       {activeTab === "priority" && (
-        <Paper
-          sx={{
-            mb: 1.5,
-            p: { xs: 1, md: 1.25 },
-            borderRadius: 1,
-            boxShadow: "none",
-            border: "1px solid",
-            borderColor: isDark
-              ? "rgba(148, 163, 184, 0.16)"
-              : "rgba(15, 23, 42, 0.1)",
+        <div
+          className="rounded-lg border bg-card text-card-foreground shadow-sm"
+          style={{
+            marginBottom: 6,
+            padding: "clamp(4px, 1vw, 6px)",
+            borderColor: isDark ? "rgba(148, 163, 184, 0.16)" : "rgba(15, 23, 42, 0.1)",
           }}
         >
-          <Stack spacing={1.1}>
-            <Stack
-              direction={{ xs: "column", md: "row" }}
-              spacing={1}
-              alignItems={{ xs: "stretch", md: "center" }}
-              justifyContent="space-between"
-            >
-              <Box>
-                <Typography variant="subtitle1" fontWeight={900}>
-                  Provider Priority / ترتيب المزودين
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Runtime order: {providerPriority.slice(0, 4).join(" > ")}
-                </Typography>
-              </Box>
-              <Stack direction="row" spacing={0.8} useFlexGap flexWrap="wrap" alignItems="center">
-                <FormControlLabel
-                  labelPlacement="start"
-                  control={
-                    <Switch
-                      size="small"
-                      checked={globalConfig.enableFailover !== false}
-                      onChange={handleTogglePriorityFailover}
-                      disabled={savingProviderPriority}
-                    />
-                  }
-                  label={
-                    <Box sx={{ mr: 0.75 }}>
-                      <Typography variant="caption" fontWeight={850} sx={{ display: "block" }}>
-                        Enable Auto-Failover
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                        تفعيل الانتقال التلقائي
-                      </Typography>
-                    </Box>
-                  }
-                  sx={{ m: 0 }}
-                />
+          <div className="flex flex-col gap-1">
+            <div className="flex flex-col md:flex-row gap-1 items-stretch md:items-center justify-between">
+              <div>
+                <span className="text-base font-black block">Provider Priority / ترتيب المزودين</span>
+                <span className="text-sm text-gray-500">Runtime order: {providerPriority.slice(0, 4).join(" > ")}</span>
+              </div>
+              <div className="flex flex-row flex-wrap items-center gap-1">
+                <div className="flex items-center gap-2 mr-1">
+                  <div className="text-right">
+                    <span className="text-xs font-black block">Enable Auto-Failover</span>
+                    <span className="text-xs text-gray-500 block">تفعيل الانتقال التلقائي</span>
+                  </div>
+                  <Switch
+                    size="default"
+                    checked={globalConfig.enableFailover !== false}
+                    onCheckedChange={handleTogglePriorityFailover}
+                    disabled={savingProviderPriority}
+                  />
+                </div>
                 <Button
-                  size="small"
-                  variant="contained"
-                  startIcon={
-                    savingProviderPriority ? (
-                      <CircularProgress size={14} color="inherit" />
-                    ) : (
-                      <SaveIcon fontSize="small" />
-                    )
-                  }
+                  size="sm"
                   onClick={() => saveProviderPriority()}
                   disabled={savingProviderPriority}
-                  sx={{ minHeight: 36, whiteSpace: "nowrap" }}
+                  className="whitespace-nowrap"
+                  style={{ minHeight: 36 }}
                 >
+                  {savingProviderPriority ? (
+                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-current mr-1" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-1" />
+                  )}
                   Save Order
                 </Button>
-              </Stack>
-            </Stack>
+              </div>
+            </div>
 
             <DndContext sensors={dndSensors} onDragEnd={handleProviderDragEnd}>
               <SortableContext
                 items={providerPriority}
                 strategy={verticalListSortingStrategy}
               >
-                <Stack spacing={0.75}>
+                <div className="flex flex-col gap-1">
                   {orderedProviderPriorityItems.map((item, index) => (
                     <SortableProviderPriorityRow
                       key={item.provider}
@@ -3075,537 +2712,285 @@ const SuperAdminAIProviders = ({
                       onTest={handleTestProvider}
                     />
                   ))}
-                </Stack>
+                </div>
               </SortableContext>
             </DndContext>
-          </Stack>
-        </Paper>
+          </div>
+        </div>
       )}
 
-      {/* Errors/Success */}
       {error && (
-        <Alert severity="error" sx={{ mb: 1.5 }} onClose={() => setError(null)}>
-          {error}
+        <Alert variant="destructive" className="mb-1.5">
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
       {success && (
-        <Alert
-          severity="success"
-          sx={{ mb: 1.5 }}
-          onClose={() => setSuccess(null)}
-        >
-          {success}
+        <Alert variant="default" className="mb-1.5 border-green-500/50">
+          <AlertDescription>{success}</AlertDescription>
         </Alert>
       )}
 
       {activeTab === "keys" && (
         <>
-      {/* Bulk actions */}
       {selectedKeys.length > 0 && (
-        <Paper
-          sx={{
-            mb: 1,
-            px: 1,
-            py: 0.75,
-            bgcolor: isDark
-              ? "rgba(25, 118, 210, 0.1)"
-              : "rgba(25, 118, 210, 0.05)",
-            borderRadius: 1,
-            boxShadow: "none",
+        <div
+          className="rounded mb-1 px-1 py-0.5"
+          style={{
+            backgroundColor: isDark ? "rgba(25, 118, 210, 0.1)" : "rgba(25, 118, 210, 0.05)",
           }}
         >
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={1}
-            alignItems={{ xs: "stretch", sm: "center" }}
-            justifyContent="space-between"
-          >
-            <Typography variant="body2" fontWeight={700}>
-              {selectedKeys.length} key(s) selected
-            </Typography>
-            <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
-              <Button
-                size="small"
-                variant="outlined"
-                color="success"
-                startIcon={<PlayArrowIcon />}
-                onClick={() => handleBulkUpdateStatus(true)}
-              >
-                Activate
+          <div className="flex flex-col sm:flex-row gap-1 items-stretch sm:items-center justify-between">
+            <span className="text-sm font-bold">{selectedKeys.length} key(s) selected</span>
+            <div className="flex flex-row flex-wrap gap-1">
+              <Button size="sm" variant="outline" className="border-green-500 text-green-700 hover:bg-green-50" onClick={() => handleBulkUpdateStatus(true)}>
+                <Play className="h-4 w-4 mr-1" /> Activate
               </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                color="warning"
-                startIcon={<StopIcon />}
-                onClick={() => handleBulkUpdateStatus(false)}
-              >
-                Deactivate
+              <Button size="sm" variant="outline" className="border-amber-500 text-amber-700 hover:bg-amber-50" onClick={() => handleBulkUpdateStatus(false)}>
+                <Square className="h-4 w-4 mr-1" /> Deactivate
               </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                color="error"
-                startIcon={<DeleteIcon />}
-                onClick={handleBulkDelete}
-              >
-                Delete
+              <Button size="sm" variant="destructive" onClick={handleBulkDelete}>
+                <Trash2 className="h-4 w-4 mr-1" /> Delete
               </Button>
-            </Stack>
-          </Stack>
-        </Paper>
+            </div>
+          </div>
+        </div>
       )}
 
-      <TableContainer
-        component={Paper}
-        sx={{
-          borderRadius: 1,
-          boxShadow: "none",
-          border: "1px solid",
-          borderColor: isDark
-            ? "rgba(148, 163, 184, 0.16)"
-            : "rgba(15, 23, 42, 0.1)",
-          overflowX: "auto",
-          "& .MuiTableCell-root": {
-            py: 0.75,
-            px: 1.1,
-            fontSize: "0.8125rem",
-            borderColor: isDark
-              ? "rgba(148, 163, 184, 0.12)"
-              : "rgba(15, 23, 42, 0.08)",
-          },
-          "& .MuiTableHead .MuiTableCell-root": {
-            py: 0.85,
-            fontWeight: 800,
-            color: "text.secondary",
-            bgcolor: isDark ? "rgba(15, 23, 42, 0.92)" : "grey.50",
-          },
-          "& .MuiTableRow-root:hover": {
-            bgcolor: isDark
-              ? "rgba(96, 165, 250, 0.08)"
-              : "rgba(37, 99, 235, 0.04)",
-          },
+      <div
+        className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-x-auto"
+        style={{
+          borderColor: isDark ? "rgba(148, 163, 184, 0.16)" : "rgba(15, 23, 42, 0.1)",
         }}
       >
-        <Table size="small">
-          <TableHead>
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell padding="checkbox">
+              <TableHead className="py-2 px-1 text-xs font-black text-gray-500 w-10">
                 <Checkbox
-                  size="small"
-                  indeterminate={
-                    selectedKeys.length > 0 &&
-                    selectedKeys.length < filteredKeys.length
-                  }
-                  checked={
-                    filteredKeys.length > 0 &&
-                    selectedKeys.length === filteredKeys.length
-                  }
-                  onChange={handleSelectAll}
+                  checked={filteredKeys.length > 0 && selectedKeys.length === filteredKeys.length}
+                  onCheckedChange={(checked) => {
+                    if (checked) setSelectedKeys(filteredKeys.map((key) => key.id));
+                    else setSelectedKeys([]);
+                  }}
                 />
-              </TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Provider</TableCell>
-              <TableCell>Active Model</TableCell>
-              <TableCell>Agent Fit</TableCell>
-              <TableCell>Key (Masked)</TableCell>
-              <TableCell>Base URL</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Routing</TableCell>
-              <TableCell>Actions</TableCell>
+              </TableHead>
+              <TableHead className="py-2 px-1 text-xs font-black text-gray-500">Name</TableHead>
+              <TableHead className="py-2 px-1 text-xs font-black text-gray-500">Provider</TableHead>
+              <TableHead className="py-2 px-1 text-xs font-black text-gray-500">Active Model</TableHead>
+              <TableHead className="py-2 px-1 text-xs font-black text-gray-500">Agent Fit</TableHead>
+              <TableHead className="py-2 px-1 text-xs font-black text-gray-500">Key (Masked)</TableHead>
+              <TableHead className="py-2 px-1 text-xs font-black text-gray-500">Base URL</TableHead>
+              <TableHead className="py-2 px-1 text-xs font-black text-gray-500">Status</TableHead>
+              <TableHead className="py-2 px-1 text-xs font-black text-gray-500">Routing</TableHead>
+              <TableHead className="py-2 px-1 text-xs font-black text-gray-500">Actions</TableHead>
             </TableRow>
-          </TableHead>
+          </TableHeader>
           <TableBody>
             {filteredKeys.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} align="center">
+                <TableCell colSpan={10} className="text-center py-4 text-sm text-gray-500">
                   {loading ? "Loading keys..." : "No keys found."}
                 </TableCell>
               </TableRow>
             ) : (
               filteredKeys.map((key) => {
-                // Logic to find active model (Priority 1)
-                // Default to empty string if not found, to match standard Select behavior
-                const providerDefaultModel = getProviderDefaultModel(
-                  key.provider,
-                );
+                const providerDefaultModel = getProviderDefaultModel(key.provider);
                 const activeModel =
-                  key.aiModelConfigs?.find(
-                    (m) => m.priority === 1 && m.isEnabled,
-                  )?.modelName ||
-                  providerDefaultModel ||
-                  "";
+                  key.aiModelConfigs?.find((m) => m.priority === 1 && m.isEnabled)?.modelName ||
+                  providerDefaultModel || "";
                 const activeModelConfig =
                   key.aiModelConfigs?.find((m) => m.modelName === activeModel) ||
-                  key.activeModel ||
-                  null;
-                const agentFit =
-                  activeModelConfig?.agentSuitability || key.agentSuitability;
+                  key.activeModel || null;
+                const agentFit = activeModelConfig?.agentSuitability || key.agentSuitability;
 
-                const configuredModels =
-                  key.aiModelConfigs?.map((m) => m.modelName) || [];
+                const configuredModels = key.aiModelConfigs?.map((m) => m.modelName) || [];
                 const providerModels =
-                  key.provider === "OPENROUTER"
-                    ? openRouterModels
-                    : getStaticProviderModels(key.provider);
+                  key.provider === "OPENROUTER" ? openRouterModels : getStaticProviderModels(key.provider);
                 const draftModel = modelDrafts[key.id] ?? activeModel;
                 const availableModels = Array.from(
-                  new Set(
-                    [
-                      ...configuredModels,
-                      ...providerModels,
-                      providerDefaultModel,
-                      activeModel,
-                      draftModel,
-                    ].filter(Boolean),
-                  ),
+                  new Set([...configuredModels, ...providerModels, providerDefaultModel, activeModel, draftModel].filter(Boolean)),
                 );
                 const routingStatus = key.routingStatus;
-                const isLastWorkedForProvider =
-                  latestSuccessByProvider[key.provider]?.keyId === key.id;
+                const isLastWorkedForProvider = latestSuccessByProvider[key.provider]?.keyId === key.id;
                 const isPreviewKey = routingPreview?.keyId === key.id;
-                const isPreferredKey =
-                  globalConfig.preferredAiKeyIds?.[key.provider] === key.id;
-                const routingTime =
-                  routingStatus?.lastSucceededAt || routingStatus?.lastSelectedAt;
-                const routingModel =
-                  routingStatus?.lastSucceededModel || routingStatus?.lastSelectedModel;
-                const routingPool =
-                  routingStatus?.lastSucceededPool || routingStatus?.lastSelectedPool;
+                const isPreferredKey = globalConfig.preferredAiKeyIds?.[key.provider] === key.id;
+                const routingTime = routingStatus?.lastSucceededAt || routingStatus?.lastSelectedAt;
+                const routingModel = routingStatus?.lastSucceededModel || routingStatus?.lastSelectedModel;
+                const routingPool = routingStatus?.lastSucceededPool || routingStatus?.lastSelectedPool;
                 const testStatus = routingStatus?.lastTestStatus;
                 const testTime = routingStatus?.lastTestedAt;
 
                 return (
-                  <TableRow
-                    key={key.id}
-                    hover
-                    selected={selectedKeys.includes(key.id)}
-                  >
-                    <TableCell padding="checkbox">
+                  <TableRow key={key.id} className={selectedKeys.includes(key.id) ? "bg-muted" : ""}>
+                    <TableCell className="py-2 px-1">
                       <Checkbox
-                        size="small"
                         checked={selectedKeys.includes(key.id)}
-                        onChange={() => handleSelectKey(key.id)}
+                        onCheckedChange={() => handleSelectKey(key.id)}
                       />
                     </TableCell>
-                    <TableCell>
-                      <Button
-                        component={RouterLink}
-                        to={`/super-admin/ai-providers/keys/${key.id}`}
-                        variant="text"
-                        size="small"
-                        sx={{
-                          maxWidth: 210,
-                          minWidth: 0,
-                          justifyContent: "flex-start",
-                          px: 0,
-                          textTransform: "none",
-                          fontWeight: 700,
-                        }}
-                      >
-                        <Typography
-                          component="span"
-                          variant="body2"
-                          fontWeight={700}
-                          noWrap
-                          sx={{ maxWidth: 190 }}
-                        >
+                    <TableCell className="py-2 px-1">
+                      <Button variant="link" size="sm" asChild className="px-0 font-bold justify-start text-left max-w-[210px]">
+                        <RouterLink to={`/super-admin/ai-providers/keys/${key.id}`} className="truncate block max-w-[190px]">
                           {key.name}
-                        </Typography>
+                        </RouterLink>
                       </Button>
                     </TableCell>
-                    <TableCell>
-                      <Chip
-                        icon={
-                          PROVIDERS.find((p) => p.value === key.provider)?.icon
-                        }
-                        label={key.provider}
-                        size="small"
-                        variant="outlined"
-                        sx={{ height: 22 }}
-                      />
+                    <TableCell className="py-2 px-1">
+                      <Badge variant="outline" className="h-5 text-xs">
+                        <span className="flex items-center gap-1">
+                          {PROVIDERS.find((p) => p.value === key.provider)?.icon}
+                          <span>{key.provider}</span>
+                        </span>
+                      </Badge>
                     </TableCell>
-                    <TableCell>
-                      {/* Model Selector */}
+                    <TableCell className="py-2 px-1">
                       {availableModels.length > 0 ? (
-                        <Autocomplete
-                          freeSolo
-                          size="small"
-                          options={availableModels}
-                          value={activeModel || null}
-                          inputValue={draftModel}
-                          loading={
-                            key.provider === "OPENROUTER" &&
-                            loadingOpenRouterModels
-                          }
-                          onInputChange={(_, value) => {
-                            setModelDrafts((current) => ({
-                              ...current,
-                              [key.id]: value,
-                            }));
-                          }}
-                          onChange={(_, value) => {
-                            const modelName =
-                              typeof value === "string" ? value : value || "";
-                            commitActiveModel(key.id, activeModel, modelName);
-                          }}
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              variant="standard"
-                              placeholder="Search or type model id..."
-                              onBlur={() =>
-                                commitActiveModel(
-                                  key.id,
-                                  activeModel,
-                                  modelDrafts[key.id] ?? activeModel,
-                                )
-                              }
-                              onKeyDown={(event) => {
-                                if (event.key === "Enter") {
-                                  commitActiveModel(
-                                    key.id,
-                                    activeModel,
-                                    modelDrafts[key.id] ?? activeModel,
-                                  );
-                                }
-                              }}
-                              InputProps={{
-                                ...params.InputProps,
-                                disableUnderline: true,
-                                endAdornment: (
-                                  <>
-                                    {key.provider === "OPENROUTER" &&
-                                    loadingOpenRouterModels ? (
-                                      <CircularProgress
-                                        color="inherit"
-                                        size={16}
-                                      />
-                                    ) : null}
-                                    {params.InputProps.endAdornment}
-                                  </>
-                                ),
-                              }}
-                            />
-                          )}
-                          sx={{
-                            minWidth: 240,
-                            maxWidth: 360,
-                            "& .MuiInputBase-input": {
-                              fontSize: "0.8125rem",
-                            },
-                          }}
-                        />
-                      ) : (
-                        <Typography variant="body2">{activeModel}</Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Tooltip title={getAgentFitTooltip(agentFit)}>
-                        <Chip
-                          size="small"
-                          icon={<BotIcon fontSize="small" />}
-                          color={getAgentFitColor(agentFit) as any}
-                          label={getAgentFitLabel(agentFit)}
-                          variant={agentFit?.agentReady ? "filled" : "outlined"}
-                          sx={{ height: 22 }}
-                        />
-                      </Tooltip>
-                      {agentFit?.warnings?.[0] && (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.35, maxWidth: 220 }}>
-                          {agentFit.warnings[0]}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontFamily:
-                            "ui-monospace, SFMono-Regular, Consolas, monospace",
-                          fontSize: "0.78rem",
-                        }}
-                      >
-                        {key.apiKey.substring(0, 8)}...
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      {key.baseUrl ? (
-                        <Typography
-                          variant="body2"
-                          noWrap
-                          sx={{ maxWidth: 220 }}
-                          title={key.baseUrl}
-                        >
-                          {key.baseUrl}
-                        </Typography>
-                      ) : (
-                        <Typography color="text.secondary" variant="caption">
-                          Default
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {key.isActive ? (
-                        <Chip
-                          label="Active"
-                          color="success"
-                          size="small"
-                          sx={{ height: 22 }}
-                        />
-                      ) : (
-                        <Chip label="Inactive" size="small" sx={{ height: 22 }} />
-                      )}
-                    </TableCell>
-                    <TableCell sx={{ minWidth: 170 }}>
-                      <Stack spacing={0.35} alignItems="flex-start">
-                        <Stack direction="row" spacing={0.5} flexWrap="wrap">
-                          <Chip
-                            label={
-                              isLastWorkedForProvider
-                                ? "Last worked"
-                                : routingStatus?.lastSucceededAt
-                                  ? "Worked before"
-                                  : routingStatus?.lastSelectedAt
-                                    ? "Selected before"
-                                  : "Not used yet"
-                            }
-                            color={isLastWorkedForProvider ? "success" : "default"}
-                            size="small"
-                            variant={
-                              isLastWorkedForProvider ? "filled" : "outlined"
-                            }
-                            sx={{ height: 21 }}
+                        <div className="relative min-w-[240px] max-w-[360px]">
+                          <Input
+                            className="h-8 text-xs border-0 border-b rounded-none"
+                            placeholder="Search or type model id..."
+                            value={draftModel}
+                            onChange={(e) => setModelDrafts((current) => ({ ...current, [key.id]: e.target.value }))}
+                            onBlur={() => commitActiveModel(key.id, activeModel, modelDrafts[key.id] ?? activeModel)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") commitActiveModel(key.id, activeModel, modelDrafts[key.id] ?? activeModel);
+                            }}
                           />
+                          {key.provider === "OPENROUTER" && loadingOpenRouterModels && (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600 absolute right-2 top-1/2 -translate-y-1/2" />
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm">{activeModel}</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="py-2 px-1">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant={agentFit?.agentReady ? "default" : "outline"}
+                              className={getAgentFitColor(agentFit) === "success" ? "bg-green-100 text-green-800 hover:bg-green-100" : getAgentFitColor(agentFit) === "warning" ? "bg-amber-100 text-amber-800 hover:bg-amber-100" : ""}
+                              style={{ height: 22 }}
+                            >
+                              <BotIcon className="h-3.5 w-3.5 mr-1" />
+                              {getAgentFitLabel(agentFit)}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>{getAgentFitTooltip(agentFit)}</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      {agentFit?.warnings?.[0] && (
+                        <span className="text-xs text-gray-500 block mt-0.5 max-w-[220px]">{agentFit.warnings[0]}</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="py-2 px-1">
+                      <span className="text-xs" style={{ fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace" }}>
+                        {key.apiKey.substring(0, 8)}...
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-2 px-1">
+                      {key.baseUrl ? (
+                        <span className="text-xs truncate block max-w-[220px]" title={key.baseUrl}>{key.baseUrl}</span>
+                      ) : (
+                        <span className="text-xs text-gray-500">Default</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="py-2 px-1">
+                      {key.isActive ? (
+                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100" style={{ height: 22 }}>Active</Badge>
+                      ) : (
+                        <Badge variant="outline" style={{ height: 22 }}>Inactive</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="py-2 px-1 min-w-[170px]">
+                      <div className="flex flex-col items-start gap-0.5">
+                        <div className="flex flex-row flex-wrap gap-0.5">
+                          <Badge
+                            className={isLastWorkedForProvider ? "bg-green-100 text-green-800 hover:bg-green-100" : ""}
+                            variant={isLastWorkedForProvider ? "default" : "outline"}
+                            style={{ height: 21 }}
+                          >
+                            {isLastWorkedForProvider ? "Last worked" : routingStatus?.lastSucceededAt ? "Worked before" : routingStatus?.lastSelectedAt ? "Selected before" : "Not used yet"}
+                          </Badge>
                           {isPreviewKey && (
-                            <Chip
-                              label="Current route"
-                              color="primary"
-                              size="small"
-                              variant="outlined"
-                              sx={{ height: 21 }}
-                            />
+                            <Badge variant="outline" className="border-indigo-200 text-indigo-700" style={{ height: 21 }}>Current route</Badge>
                           )}
                           {isPreferredKey && (
-                            <Chip
-                              label="Preferred"
-                              color="secondary"
-                              size="small"
-                              variant="outlined"
-                              sx={{ height: 21 }}
-                            />
+                            <Badge variant="outline" className="border-gray-400 text-gray-600" style={{ height: 21 }}>Preferred</Badge>
                           )}
                           {testStatus && (
-                            <Chip
-                              label={
-                                testStatus === "success"
-                                  ? "Test OK"
-                                  : "Test failed"
-                              }
-                              color={
-                                testStatus === "success" ? "success" : "error"
-                              }
-                              size="small"
-                              variant="outlined"
-                              sx={{ height: 21 }}
-                            />
+                            <Badge
+                              className={testStatus === "success" ? "bg-green-100 text-green-800 hover:bg-green-100" : "bg-red-100 text-red-800 hover:bg-red-100"}
+                              variant="outline"
+                              style={{ height: 21 }}
+                            >
+                              {testStatus === "success" ? "Test OK" : "Test failed"}
+                            </Badge>
                           )}
-                        </Stack>
-                        <Typography variant="caption" color="text.secondary">
-                          {formatRoutingTime(routingTime)}
-                        </Typography>
-                        {routingModel && (
-                          <Typography variant="caption" color="text.secondary">
-                            {routingModel}
-                            {routingPool ? ` / ${routingPool}` : ""}
-                          </Typography>
-                        )}
+                        </div>
+                        <span className="text-xs text-gray-500">{formatRoutingTime(routingTime)}</span>
+                        {routingModel && <span className="text-xs text-gray-500">{routingModel}{routingPool ? ` / ${routingPool}` : ""}</span>}
                         {testTime && (
-                          <Typography variant="caption" color="text.secondary">
-                            Test {formatRoutingTime(testTime)}
-                            {routingStatus?.lastTestLatencyMs
-                              ? ` / ${routingStatus.lastTestLatencyMs}ms`
-                              : ""}
-                          </Typography>
+                          <span className="text-xs text-gray-500">
+                            Test {formatRoutingTime(testTime)}{routingStatus?.lastTestLatencyMs ? ` / ${routingStatus.lastTestLatencyMs}ms` : ""}
+                          </span>
                         )}
                         {routingStatus?.lastTestError && (
-                          <Typography
-                            variant="caption"
-                            color="error"
-                            sx={{ maxWidth: 260 }}
-                          >
-                            {routingStatus.lastTestError}
-                          </Typography>
+                          <span className="text-xs text-red-500 max-w-[260px]">{routingStatus.lastTestError}</span>
                         )}
-                      </Stack>
+                      </div>
                     </TableCell>
-                    <TableCell>
-                      <Stack
-                        direction="row"
-                        spacing={0.5}
-                        flexWrap="wrap"
-                        useFlexGap
-                      >
+                    <TableCell className="py-2 px-1">
+                      <div className="flex flex-row flex-wrap gap-0.5">
                         <Button
-                          size="small"
-                          variant="outlined"
-                          startIcon={
-                            testingKeyId === key.id ? (
-                              <CircularProgress size={14} />
-                            ) : (
-                              <CheckCircleIcon fontSize="small" />
-                            )
-                          }
+                          size="sm"
+                          variant="outline"
                           onClick={() => handleTestKey(key.id)}
                           disabled={testingKeyId === key.id}
-                          sx={{ minHeight: 28, px: 0.9 }}
+                          className="px-1"
+                          style={{ minHeight: 28 }}
                         >
-                          Test key
+                          {testingKeyId === key.id ? (
+                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-indigo-600" />
+                          ) : (
+                            <CheckCircle className="h-4 w-4" />
+                          )}
+                          <span className="ml-1">Test key</span>
                         </Button>
                         <Button
-                          size="small"
-                          variant={isPreferredKey ? "contained" : "outlined"}
-                          startIcon={
-                            settingPreferredKeyId === key.id ? (
-                              <CircularProgress size={14} />
-                            ) : (
-                              <KeyIcon fontSize="small" />
-                            )
-                          }
+                          size="sm"
+                          variant={isPreferredKey ? "default" : "outline"}
                           onClick={() => handleSetPreferredKey(key.id)}
-                          disabled={
-                            !key.isActive ||
-                            isPreferredKey ||
-                            settingPreferredKeyId === key.id
-                          }
-                          sx={{ minHeight: 28, px: 0.9 }}
+                          disabled={!key.isActive || isPreferredKey || settingPreferredKeyId === key.id}
+                          className="px-1"
+                          style={{ minHeight: 28 }}
                         >
-                          {isPreferredKey ? "Preferred" : "Use key"}
-                        </Button>
-                        <IconButton
-                          onClick={() =>
-                            handleToggleKeyStatus(key.id, key.isActive)
-                          }
-                          color={key.isActive ? "warning" : "success"}
-                          size="small"
-                          title={key.isActive ? "Deactivate" : "Activate"}
-                          sx={{ width: 30, height: 30 }}
-                        >
-                          {key.isActive ? (
-                            <StopIcon fontSize="small" />
+                          {settingPreferredKeyId === key.id ? (
+                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-indigo-600" />
                           ) : (
-                            <PlayArrowIcon fontSize="small" />
+                            <Key className="h-4 w-4" />
                           )}
-                        </IconButton>
-                        <IconButton
-                          onClick={() => handleDeleteKey(key.id)}
-                          color="error"
-                          size="small"
-                          sx={{ width: 30, height: 30 }}
+                          <span className="ml-1">{isPreferredKey ? "Preferred" : "Use key"}</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleToggleKeyStatus(key.id, key.isActive)}
+                          title={key.isActive ? "Deactivate" : "Activate"}
                         >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Stack>
+                          {key.isActive ? <Square className="h-4 w-4 text-amber-500" /> : <Play className="h-4 w-4 text-green-500" />}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleDeleteKey(key.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -3613,298 +2998,213 @@ const SuperAdminAIProviders = ({
             )}
           </TableBody>
         </Table>
-      </TableContainer>
+      </div>
         </>
       )}
 
-      {/* Add Key Dialog */}
-      <Dialog
-        open={openDialog}
-        onClose={() => setOpenDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Add Central AI API Key</DialogTitle>
-        <DialogContent>
-          <Stack spacing={3} sx={{ mt: 1 }}>
-            <TextField
-              label="Key Name (e.g. My DeepSeek Key)"
-              fullWidth
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-            />
-            <TextField
-              select
-              label="Provider"
-              fullWidth
-              value={formData.provider}
-              onChange={(e) => {
-                const newProvider = e.target.value;
-                const defaultBaseUrl = DEFAULT_BASE_URLS[newProvider] || "";
-                const defaultModel = DEFAULT_MODELS[newProvider] || "";
-                const canReplaceBaseUrl =
-                  !formData.baseUrl ||
-                  MANAGED_BASE_URLS.includes(formData.baseUrl);
-                const canReplaceModel =
-                  !formData.defaultModel ||
-                  MANAGED_MODELS.includes(formData.defaultModel);
-
-                setFormData({
-                  ...formData,
-                  provider: newProvider,
-                  baseUrl: canReplaceBaseUrl
-                    ? defaultBaseUrl
-                    : formData.baseUrl,
-                  defaultModel: canReplaceModel
-                    ? defaultModel
-                    : formData.defaultModel,
-                });
-              }}
-            >
-              {PROVIDERS.map((p) => (
-                <MenuItem key={p.value} value={p.value}>
-                  {p.label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              label="API Key"
-              fullWidth
-              value={formData.apiKey}
-              onChange={(e) =>
-                setFormData({ ...formData, apiKey: e.target.value })
-              }
-              type="password"
-            />
+      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Central AI API Key</DialogTitle>
+            <DialogDescription>
+              Fill in the details to add a new AI API key.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-1">
+            <div>
+              <Label>Key Name (e.g. My DeepSeek Key)</Label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Provider</Label>
+              <Select
+                value={formData.provider}
+                onValueChange={(newProvider) => {
+                  const defaultBaseUrl = DEFAULT_BASE_URLS[newProvider] || "";
+                  const defaultModel = DEFAULT_MODELS[newProvider] || "";
+                  const canReplaceBaseUrl = !formData.baseUrl || MANAGED_BASE_URLS.includes(formData.baseUrl);
+                  const canReplaceModel = !formData.defaultModel || MANAGED_MODELS.includes(formData.defaultModel);
+                  setFormData({
+                    ...formData,
+                    provider: newProvider,
+                    baseUrl: canReplaceBaseUrl ? defaultBaseUrl : formData.baseUrl,
+                    defaultModel: canReplaceModel ? defaultModel : formData.defaultModel,
+                  });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Provider" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROVIDERS.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>API Key</Label>
+              <Input
+                type="password"
+                value={formData.apiKey}
+                onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
+              />
+            </div>
             {formData.provider === "GOOGLE" && (
-              <Autocomplete
-                freeSolo
-                fullWidth
-                options={GOOGLE_GEMINI_MODELS}
-                value={formData.defaultModel || null}
-                inputValue={formData.defaultModel}
-                onInputChange={(_, value) =>
-                  setFormData((current) => ({
-                    ...current,
-                    defaultModel: value,
-                  }))
-                }
-                onChange={(_, value) =>
-                  setFormData((current) => ({
-                    ...current,
-                    defaultModel:
-                      typeof value === "string" ? value : value || "",
-                  }))
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Gemini Model"
-                    placeholder="gemini-2.5-flash"
-                    helperText="Stable default is gemini-2.5-flash; Gemini 3 options are preview."
-                  />
-                )}
-              />
+              <div>
+                <Label>Gemini Model</Label>
+                <Input
+                  placeholder="gemini-2.5-flash"
+                  value={formData.defaultModel}
+                  onChange={(e) => setFormData((current) => ({ ...current, defaultModel: e.target.value }))}
+                />
+                <p className="text-xs text-gray-500 mt-1">Stable default is gemini-2.5-flash; Gemini 3 options are preview.</p>
+              </div>
             )}
-            {(formData.provider === "DEEPSEEK" ||
-              formData.provider === "GROQ" ||
-              formData.provider === "OLLAMA" ||
-              formData.provider === "OPENROUTER" ||
-              formData.provider === "NVIDIA") && (
-              <TextField
-                label="Base URL (Optional)"
-                placeholder={
-                  formData.provider === "GROQ"
-                    ? "https://api.groq.com/openai/v1"
-                    : formData.provider === "OPENROUTER"
-                      ? "https://openrouter.ai/api/v1"
-                      : formData.provider === "NVIDIA"
-                        ? "https://integrate.api.nvidia.com/v1"
-                        : formData.provider === "OLLAMA"
-                          ? "https://ollama.maxp.online"
-                          : "https://api.deepseek.com"
-                }
-                fullWidth
-                value={formData.baseUrl}
-                onChange={(e) =>
-                  setFormData({ ...formData, baseUrl: e.target.value })
-                }
-                helperText={
-                  formData.provider === "OLLAMA"
-                    ? "e.g. http://localhost:11434"
-                    : formData.provider === "GROQ"
-                      ? "Groq uses an OpenAI-compatible API base URL"
-                      : formData.provider === "OPENROUTER"
-                        ? "Use OpenRouter's OpenAI-compatible API base URL"
-                        : formData.provider === "NVIDIA"
-                          ? "NVIDIA NIM uses an OpenAI-compatible API base URL"
-                          : "Keep empty for standard cloud API"
-                }
-              />
+            {(formData.provider === "DEEPSEEK" || formData.provider === "GROQ" || formData.provider === "OLLAMA" || formData.provider === "OPENROUTER" || formData.provider === "NVIDIA") && (
+              <div>
+                <Label>Base URL (Optional)</Label>
+                <Input
+                  placeholder={formData.provider === "GROQ" ? "https://api.groq.com/openai/v1" : formData.provider === "OPENROUTER" ? "https://openrouter.ai/api/v1" : formData.provider === "NVIDIA" ? "https://integrate.api.nvidia.com/v1" : formData.provider === "OLLAMA" ? "https://ollama.maxp.online" : "https://api.deepseek.com"}
+                  value={formData.baseUrl}
+                  onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.provider === "OLLAMA" ? "e.g. http://localhost:11434" : formData.provider === "GROQ" ? "Groq uses an OpenAI-compatible API base URL" : formData.provider === "OPENROUTER" ? "Use OpenRouter's OpenAI-compatible API base URL" : formData.provider === "NVIDIA" ? "NVIDIA NIM uses an OpenAI-compatible API base URL" : "Keep empty for standard cloud API"}
+                </p>
+              </div>
             )}
 
             {formData.provider === "OLLAMA" && (
-              <Box>
-                <Stack direction="row" spacing={1} mb={2} alignItems="center">
+              <div>
+                <div className="flex flex-row gap-1 items-center mb-2">
                   <Button
-                    variant="outlined"
-                    size="small"
+                    variant="outline"
+                    size="sm"
                     onClick={fetchOllamaModels}
                     disabled={loadingModels || !formData.baseUrl}
                   >
                     {loadingModels ? (
-                      <CircularProgress size={20} />
-                    ) : (
-                      "Fetch Models"
-                    )}
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600" />
+                    ) : "Fetch Models"}
                   </Button>
-                  <Typography variant="caption" color="text.secondary">
-                    Click to load available models from your server
-                  </Typography>
-                </Stack>
+                  <span className="text-xs text-gray-500">Click to load available models from your server</span>
+                </div>
 
                 {ollamaModels.length > 0 ? (
-                  <TextField
-                    select
-                    label="Select Model"
-                    fullWidth
+                  <Select
                     value={formData.defaultModel}
-                    onChange={(e) =>
-                      setFormData({ ...formData, defaultModel: e.target.value })
-                    }
-                    helperText="Select the model to use"
+                    onValueChange={(value) => setFormData({ ...formData, defaultModel: value })}
                   >
-                    {ollamaModels.map((model) => (
-                      <MenuItem key={model} value={model}>
-                        {model}
-                      </MenuItem>
-                    ))}
-                  </TextField>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ollamaModels.map((model) => (
+                        <SelectItem key={model} value={model}>{model}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 ) : (
-                  <TextField
-                    label="Default Model (Manual Entry)"
-                    placeholder="e.g. llama3"
-                    fullWidth
-                    value={formData.defaultModel}
-                    onChange={(e) =>
-                      setFormData({ ...formData, defaultModel: e.target.value })
-                    }
-                    helperText="Fetch models to select from list, or type manually"
-                  />
+                  <div>
+                    <Label>Default Model (Manual Entry)</Label>
+                    <Input
+                      placeholder="e.g. llama3"
+                      value={formData.defaultModel}
+                      onChange={(e) => setFormData({ ...formData, defaultModel: e.target.value })}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Fetch models to select from list, or type manually</p>
+                  </div>
                 )}
-              </Box>
+              </div>
             )}
 
             {formData.provider === "OPENROUTER" && (
-              <Box>
-                <Stack direction="row" spacing={1} mb={2} alignItems="center">
+              <div>
+                <div className="flex flex-row gap-1 items-center mb-2">
                   <Button
-                    variant="outlined"
-                    size="small"
+                    variant="outline"
+                    size="sm"
                     onClick={() => fetchOpenRouterModels()}
                     disabled={loadingOpenRouterModels}
                   >
                     {loadingOpenRouterModels ? (
-                      <CircularProgress size={20} />
-                    ) : (
-                      "Fetch Models"
-                    )}
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600" />
+                    ) : "Fetch Models"}
                   </Button>
-                  <Typography variant="caption" color="text.secondary">
-                    Load available models from OpenRouter
-                  </Typography>
-                </Stack>
+                  <span className="text-xs text-gray-500">Load available models from OpenRouter</span>
+                </div>
 
                 {openRouterModels.length > 0 ? (
-                  <Autocomplete
-                    freeSolo
-                    fullWidth
-                    options={openRouterModels}
-                    value={formData.defaultModel || null}
-                    inputValue={formData.defaultModel}
-                    loading={loadingOpenRouterModels}
-                    onInputChange={(_, value) =>
-                      setFormData((current) => ({
-                        ...current,
-                        defaultModel: value,
-                      }))
-                    }
-                    onChange={(_, value) =>
-                      setFormData((current) => ({
-                        ...current,
-                        defaultModel:
-                          typeof value === "string" ? value : value || "",
-                      }))
-                    }
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Default Model"
+                  <div>
+                    <Label>Default Model</Label>
+                    <div className="relative">
+                      <Input
                         placeholder="Search or type model id"
-                        helperText="Search OpenRouter models, or type a model id manually"
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {loadingOpenRouterModels ? (
-                                <CircularProgress color="inherit" size={18} />
-                              ) : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
-                        }}
+                        value={formData.defaultModel}
+                        onChange={(e) => setFormData((current) => ({ ...current, defaultModel: e.target.value }))}
+                        className="pr-8"
                       />
-                    )}
-                  />
+                      {loadingOpenRouterModels && (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600 absolute right-2 top-1/2 -translate-y-1/2" />
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Search OpenRouter models, or type a model id manually</p>
+                  </div>
                 ) : (
-                  <TextField
-                    label="Default Model"
-                    placeholder="openrouter/auto"
-                    fullWidth
-                    value={formData.defaultModel}
-                    onChange={(e) =>
-                      setFormData({ ...formData, defaultModel: e.target.value })
-                    }
-                    helperText="Use openrouter/auto or fetch the model list"
-                  />
+                  <div>
+                    <Label>Default Model</Label>
+                    <Input
+                      placeholder="openrouter/auto"
+                      value={formData.defaultModel}
+                      onChange={(e) => setFormData({ ...formData, defaultModel: e.target.value })}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Use openrouter/auto or fetch the model list</p>
+                  </div>
                 )}
-              </Box>
+              </div>
             )}
 
-            {(formData.provider === "GROQ" ||
-              formData.provider === "NVIDIA") && (
-              <TextField
-                label="Default Model"
-                placeholder={
-                  formData.provider === "NVIDIA"
-                    ? "openai/gpt-oss-120b"
-                    : "llama-3.3-70b-versatile"
-                }
-                fullWidth
-                value={formData.defaultModel}
-                onChange={(e) =>
-                  setFormData({ ...formData, defaultModel: e.target.value })
-                }
-                helperText={
-                  formData.provider === "NVIDIA"
-                    ? "Use the NVIDIA NIM model id from docs, or keep the default."
-                    : "Use a Groq model id, or keep the default."
-                }
-              />
+            {(formData.provider === "GROQ" || formData.provider === "NVIDIA") && (
+              <div>
+                <Label>Default Model</Label>
+                <Input
+                  placeholder={formData.provider === "NVIDIA" ? "openai/gpt-oss-120b" : "llama-3.3-70b-versatile"}
+                  value={formData.defaultModel}
+                  onChange={(e) => setFormData({ ...formData, defaultModel: e.target.value })}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.provider === "NVIDIA" ? "Use the NVIDIA NIM model id from docs, or keep the default." : "Use a Groq model id, or keep the default."}
+                </p>
+              </div>
             )}
-          </Stack>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddKey}>Add Key</Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleAddKey}>
-            Add Key
-          </Button>
-        </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 };
+
+const BotIcon = ({ color, fontSize, className: cn }: { color?: string; fontSize?: string; className?: string }) => (
+  <Bot className={`${cn || ""} ${color === "primary" ? "text-indigo-500" : color === "success" ? "text-green-500" : color === "error" ? "text-red-500" : color === "warning" ? "text-amber-500" : color === "info" ? "text-blue-500" : color === "secondary" ? "text-gray-500" : "text-current"} ${fontSize === "small" ? "h-4 w-4" : "h-5 w-5"}`} />
+);
+const BoltIcon = ({ color, fontSize, className: cn }: { color?: string; fontSize?: string; className?: string }) => (
+  <Zap className={`${cn || ""} ${color === "primary" ? "text-indigo-500" : color === "success" ? "text-green-500" : color === "error" ? "text-red-500" : color === "warning" ? "text-amber-500" : color === "info" ? "text-blue-500" : color === "secondary" ? "text-gray-500" : "text-current"} ${fontSize === "small" ? "h-4 w-4" : "h-5 w-5"}`} />
+);
+const BrainIcon = ({ color, fontSize, className: cn }: { color?: string; fontSize?: string; className?: string }) => (
+  <Brain className={`${cn || ""} ${color === "primary" ? "text-indigo-500" : color === "success" ? "text-green-500" : color === "error" ? "text-red-500" : color === "warning" ? "text-amber-500" : color === "info" ? "text-blue-500" : color === "secondary" ? "text-gray-500" : "text-current"} ${fontSize === "small" ? "h-4 w-4" : "h-5 w-5"}`} />
+);
+const FaceIcon = ({ color, fontSize, className: cn }: { color?: string; fontSize?: string; className?: string }) => (
+  <User className={`${cn || ""} ${color === "primary" ? "text-indigo-500" : color === "success" ? "text-green-500" : color === "error" ? "text-red-500" : color === "warning" ? "text-amber-500" : color === "info" ? "text-blue-500" : color === "secondary" ? "text-gray-500" : "text-current"} ${fontSize === "small" ? "h-4 w-4" : "h-5 w-5"}`} />
+);
 
 export default SuperAdminAIProviders;

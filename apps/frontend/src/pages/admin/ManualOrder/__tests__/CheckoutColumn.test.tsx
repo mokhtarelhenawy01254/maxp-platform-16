@@ -6,7 +6,7 @@ jest.mock("react-router-dom", () => ({
   useNavigate: () => jest.fn(),
 }));
 
-jest.mock("react-hot-toast", () => ({
+jest.mock("sonner", () => ({
   toast: {
     success: jest.fn(),
     error: jest.fn(),

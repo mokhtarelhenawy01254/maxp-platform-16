@@ -726,7 +726,7 @@ const AuditLogs = () => {
                     الكيان
                   </span>
                   <div className="font-medium flex items-center gap-2 text-sm text-primary">
-                    <Box className="h-4 w-4" />
+                    <div className="h-4 w-4" />
                     {getEntityName(selectedLog.entityType)}
                     {selectedLog.entityType !== "SETTINGS" && (
                       <span className="text-[10px] text-muted-foreground bg-muted px-1 rounded">

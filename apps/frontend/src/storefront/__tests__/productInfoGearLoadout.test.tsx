@@ -17,7 +17,7 @@ const trackingMocks = vi.hoisted(() => ({
   trackViewContentEvent: vi.fn(),
 }));
 
-vi.mock('react-hot-toast', () => ({
+vi.mock('sonner', () => ({
   default: {
     success: vi.fn(),
     error: vi.fn(),

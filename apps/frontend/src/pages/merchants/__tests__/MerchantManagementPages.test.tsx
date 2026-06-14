@@ -10,7 +10,7 @@ const mockPost = jest.fn();
 const mockPut = jest.fn();
 const mockNavigate = jest.fn();
 
-jest.mock("react-hot-toast", () => ({
+jest.mock("sonner", () => ({
   __esModule: true,
   default: {
     error: jest.fn(),

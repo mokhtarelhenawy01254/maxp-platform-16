@@ -2647,9 +2647,7 @@
     "installedCurrently": "{{count}} تطبيق مثبت حالياً.",
     "fetchError": "حدث خطأ أثناء تحميل بيانات المتجر. حاول مرة أخرى.",
     "retry": "إعادة المحاولة",
-    "currencyUnit": "ج",
-    "loadMore": "عرض المزيد ({{remaining}})",
-    "filters": "تصفية"
+    "currencyUnit": "ج"
   },
   "notifications": {
     "title": "الإشعارات",

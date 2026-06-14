@@ -206,7 +206,7 @@ vi.mock('../utils/appUsageTracking', () => ({
   trackStorefrontAppUsage: (...args: unknown[]) => mockTrackStorefrontAppUsage(...args),
 }));
 
-vi.mock('react-hot-toast', () => ({
+vi.mock('sonner', () => ({
   default: {
     error: (...args: unknown[]) => mockToastError(...args),
   },

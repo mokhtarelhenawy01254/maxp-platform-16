@@ -8,7 +8,7 @@ const mockPost = jest.fn();
 const mockToastSuccess = jest.fn();
 const mockToastError = jest.fn();
 
-jest.mock("react-hot-toast", () => ({
+jest.mock("sonner", () => ({
   __esModule: true,
   default: {
     success: (...args: unknown[]) => mockToastSuccess(...args),
