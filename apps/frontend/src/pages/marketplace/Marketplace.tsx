@@ -818,7 +818,7 @@ export default function Marketplace() {
             <div className="mb-4">
               <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                 <div className="min-w-0 text-right">
-                  <h2 className="marketplace-strong text-lg font-black sm:text-xl">
+                  <h2 className="text-lg font-black text-foreground sm:text-xl">
                     {isBundlesTab
                       ? t('marketplace.featuredBundles')
                       : activeTab === "INSTALLED"
@@ -827,7 +827,7 @@ export default function Marketplace() {
                         ? `${selectedCollectionMeta.label} • ${selectedCategoryMeta.name}`
                         : selectedCollectionMeta.label}
                   </h2>
-                  <p className="marketplace-muted mt-1 text-sm leading-6">
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
                     {isBundlesTab
                       ? t('marketplace.bundlesAvailable', { count: bundles.length })
                       : activeTab === "INSTALLED"
@@ -947,62 +947,80 @@ export default function Marketplace() {
               /* Bundles Grid */
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {bundles.map((bundle) => (
-                  <article
-                    key={bundle.id}
-                    className="marketplace-card group relative overflow-hidden rounded-2xl p-4 text-right transition-[border-color,background-color,transform] duration-200 hover:-translate-y-0.5"
-                  >
+                  <Card key={bundle.id} className="group p-4 text-right transition-transform hover:-translate-y-0.5">
                     <div className="mb-3 flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1 text-right">
-                        <h3 className="marketplace-strong mb-1.5 text-base font-black transition-colors duration-200 group-hover:text-[var(--color-primary)] sm:text-lg">
+                        <h3 className="mb-1.5 text-base font-black text-foreground transition-colors group-hover:text-primary sm:text-lg">
                           {bundle.name}
                         </h3>
-                        <p className="marketplace-muted line-clamp-2 text-sm leading-6">
+                        <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
                           {bundle.description}
                         </p>
                       </div>
-                      <div className="marketplace-soft-success shrink-0 rounded-full border px-3 py-1 text-xs font-black">
+                      <Badge variant="secondary" className="shrink-0 border px-3 text-xs font-black">
                         {t('marketplace.savePercent', { percent: bundle.discount })}
-                      </div>
+                      </Badge>
                     </div>
 
                     <div className="mt-4 flex items-center justify-between gap-3">
                       <div className="text-right">
-                        <span className="marketplace-strong text-lg font-black">
+                        <span className="text-lg font-black text-foreground">
                           {t('marketplace.bundlePrice', { price: bundle.monthlyPrice })}
                         </span>
-                        <span className="marketplace-muted mr-1 text-xs">
+                        <span className="mr-1 text-xs text-muted-foreground">
                           {t('marketplace.perMonth')}
                         </span>
                       </div>
-                      <Link
-                        to={`/marketplace/bundle/${bundle.slug}`}
-                        className="marketplace-control inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-black transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
-                      >
-                        {t('marketplace.bundleDetails')}
-                        <ChevronLeft size={16} aria-hidden="true" />
-                      </Link>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link to={`/marketplace/bundle/${bundle.slug}`}>
+                          {t('marketplace.bundleDetails')}
+                          <ChevronLeft size={16} aria-hidden="true" />
+                        </Link>
+                      </Button>
                     </div>
-                  </article>
+                  </Card>
                 ))}
                 {bundles.length === 0 && (
-                  <div className="marketplace-card col-span-full rounded-2xl border-dashed py-10 text-center">
-                    <Package size={42} className="marketplace-muted mx-auto mb-4" aria-hidden="true" />
-                    <p className="marketplace-muted">{t('marketplace.noBundles')}</p>
-                  </div>
+                  <Card className="col-span-full border-dashed py-10 text-center">
+                    <Package size={42} className="mx-auto mb-4 text-muted-foreground" aria-hidden="true" />
+                    <p className="text-muted-foreground">{t('marketplace.noBundles')}</p>
+                  </Card>
                 )}
               </div>
             ) : /* Apps Grid */
               loading ? (
-                <div className="marketplace-card rounded-2xl py-16 text-center">
-                  <div className="mx-auto h-10 w-10 animate-spin rounded-full border-b-2 border-[var(--color-primary)]"></div>
-                    <p className="marketplace-muted mt-4">
-                    {t('marketplace.loadingTools')}
-                  </p>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Card key={i} className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 flex-1 items-start justify-end gap-3">
+                          <div className="min-w-0 space-y-2">
+                            <Skeleton className="h-5 w-28" />
+                            <Skeleton className="h-3 w-20" />
+                          </div>
+                          <Skeleton className="h-11 w-11 shrink-0 rounded-xl" />
+                        </div>
+                      </div>
+                      <div className="mt-3 space-y-2">
+                        <Skeleton className="h-3 w-full" />
+                        <Skeleton className="h-3 w-3/4" />
+                        <Skeleton className="h-3 w-1/2" />
+                      </div>
+                      <div className="mt-3 flex gap-1.5">
+                        <Skeleton className="h-5 w-16 rounded-full" />
+                        <Skeleton className="h-5 w-16 rounded-full" />
+                      </div>
+                      <div className="mt-4 flex items-center justify-between">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-8 w-24 rounded-full" />
+                      </div>
+                    </Card>
+                  ))}
                 </div>
               ) : visibleApps.length === 0 ? (
-                <div className="marketplace-card rounded-2xl border-dashed py-16 text-center">
-                  <Package size={42} className="marketplace-muted mx-auto mb-4" aria-hidden="true" />
-                  <p className="marketplace-muted">
+                <Card className="border-dashed py-16 text-center">
+                  <Package size={42} className="mx-auto mb-4 text-muted-foreground" aria-hidden="true" />
+                  <p className="text-muted-foreground">
                     {t('marketplace.noTools')}
                   </p>
                 </div>
