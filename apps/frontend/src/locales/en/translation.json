@@ -1088,11 +1088,7 @@
       "profitSubtitle": "Net profit after deducting costs",
       "aovSubtitle": "Average value per order",
       "storeVisitsSubtitle": "Track visits and storefront interest",
-      "conversionRateSubtitle": "Visits converted into real orders",
-      "totalOrders": "Total Orders",
-      "confirmedOrders": "Confirmed Orders",
-      "cancelledOrders": "Cancelled Orders",
-      "returnedOrders": "Returned Orders"
+      "conversionRateSubtitle": "Visits converted into real orders"
     },
     "labels": {
       "cancelled": "Cancelled",
@@ -1245,7 +1241,6 @@
         "adjustIdentity": "Adjust identity"
       }
     },
-    "welcome": "Welcome back, {name}",
     "sellableProducts": "Sellable products now",
     "publicLinkPending": "Public link is not set yet",
     "topProductsEmpty": "No top products",
@@ -1265,14 +1260,6 @@
     "loading": {
       "title": "Loading dashboard",
       "summary": "Fetching latest company data..."
-    },
-    "welcomeState": {
-      "title": "Welcome to MaxP",
-      "description": "Set up your store. Complete these steps to start selling.",
-      "addProduct": "Add Product",
-      "setupStore": "Setup Store",
-      "connectChannel": "Connect WhatsApp",
-      "configureSettings": "Settings"
     }
   },
   "companyLinks": {
@@ -2665,7 +2652,9 @@
     "installedCurrently": "{{count}} apps currently installed.",
     "fetchError": "An error occurred while loading marketplace data. Please try again.",
     "retry": "Retry",
-    "currencyUnit": "EGP"
+    "currencyUnit": "EGP",
+    "loadMore": "Show more ({{remaining}})",
+    "filters": "Filters"
   },
   "notifications": {
     "title": "Notifications",

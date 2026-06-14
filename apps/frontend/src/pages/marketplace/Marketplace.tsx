@@ -353,6 +353,9 @@ export default function Marketplace() {
     useState<MarketplaceApp | null>(null);
   const [confirmUninstallApp, setConfirmUninstallApp] =
     useState<MarketplaceApp | null>(null);
+  const DISPLAY_INITIAL = 15;
+  const DISPLAY_INCREMENT = 12;
+  const [displayCount, setDisplayCount] = useState(DISPLAY_INITIAL);
 
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -409,6 +412,7 @@ export default function Marketplace() {
 
   useEffect(() => {
     fetchData();
+    setDisplayCount(DISPLAY_INITIAL);
   }, [fetchData]);
 
   const markAppsInstalled = (slugs: string[]) => {
@@ -661,6 +665,8 @@ export default function Marketplace() {
     activeTab === "INSTALLED"
       ? collectionApps.filter((app) => app.isInstalled)
       : collectionApps;
+  const displayedApps = visibleApps.slice(0, displayCount);
+  const hasMoreApps = visibleApps.length > displayCount;
   const isEnterprise = user?.company?.plan === "ENTERPRISE";
   const installedAppsCount = apps.filter((app) => app.isInstalled).length;
   const discoverAppsCount = apps.filter((app) => !app.isInstalled).length;
@@ -689,9 +695,12 @@ export default function Marketplace() {
   );
 
   return (
-    <div className="min-h-screen overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden marketplace-container">
       <div className="mx-auto max-w-[1440px] px-4 pb-10 pt-5 sm:px-6 lg:px-8">
-        <Card className="overflow-hidden border p-4 sm:p-6 text-right">
+        <div className="premium-hero">
+          <div className="floating-shape" style={{width:'280px',height:'280px',background:'var(--color-primary)',top:'-80px',right:'-60px'}} />
+          <div className="floating-shape" style={{width:'180px',height:'180px',background:'var(--color-secondary)',bottom:'-50px',left:'-40px'}} />
+          <div className="premium-hero-content text-right">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="order-2 lg:order-1">
               <div className="flex flex-wrap items-center justify-center gap-2 text-xs sm:justify-end sm:text-right">
@@ -734,11 +743,12 @@ export default function Marketplace() {
               <TabsTrigger value="BUNDLES" onClick={() => setSelectedCategory("")}>{t('marketplace.savingsBundles')}</TabsTrigger>
             </TabsList>
           </Tabs>
-        </Card>
+        </div>
+      </div>
 
         <div
           className={`mt-5 grid grid-cols-1 gap-5 ${
-            showAppFilters ? "lg:grid-cols-[220px_minmax(0,1fr)]" : ""
+            showAppFilters ? "lg:grid-cols-[240px_minmax(0,1fr)]" : ""
           }`}
         >
           {/* Sidebar */}
@@ -1058,7 +1068,7 @@ export default function Marketplace() {
                     </Card>
                   ))}
                 </div>
-              ) : visibleApps.length === 0 ? (
+              ) : displayedApps.length === 0 && !hasMoreApps ? (
                 <Card className="border-dashed py-16 text-center">
                   <Package size={42} className="mx-auto mb-4 text-muted-foreground" aria-hidden="true" />
                   <p className="text-muted-foreground">
@@ -1067,7 +1077,7 @@ export default function Marketplace() {
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {visibleApps.map((app) => {
+                  {displayedApps.map((app) => {
                     const Icon = categoryIcons[app.category] || Package;
                     const textIcon = shouldUseTextIcon(app.icon) ? app.icon?.trim() : null;
                     const accessKind = getFeatureAccessKind(app.pricingModel);
@@ -1184,6 +1194,13 @@ export default function Marketplace() {
                       </Card>
                     );
                   })}
+                </div>
+              )}
+              {hasMoreApps && activeTab !== "INSTALLED" && (
+                <div className="mt-6 text-center">
+                  <Button variant="outline" onClick={() => setDisplayCount((prev) => prev + DISPLAY_INCREMENT)} className="gap-2 px-8 font-black">
+                    {t('marketplace.loadMore', { remaining: visibleApps.length - displayCount })}
+                  </Button>
                 </div>
               )}
           </div>
