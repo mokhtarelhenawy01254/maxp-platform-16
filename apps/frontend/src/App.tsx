@@ -755,6 +755,10 @@ const SuperAdminAIPlayground = React.lazy(
 const SuperAdminAgentConfig = React.lazy(
   () => import("./pages/super-admin/SuperAdminAgentConfig"),
 );
+// Super Admin Product Embeddings
+const SuperAdminProductEmbeddings = React.lazy(
+  () => import("./pages/super-admin/SuperAdminProductEmbeddings"),
+);
 // Merchant AI Pages
 const AIChatPage = React.lazy(
   () => import("./pages/admin/AIChatPage"),
@@ -1787,6 +1791,14 @@ const AppContent = () => {
               element={
                 <Layout fullWidth>
                   <SuperAdminAgentConfig />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/product-embeddings"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminProductEmbeddings />
                 </Layout>
               }
             />

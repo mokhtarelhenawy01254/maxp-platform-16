@@ -887,6 +887,15 @@ try {
   );
 }
 
+// Product Embedding Cron — daily backfill via Python ai-service
+try {
+  const productEmbeddingCron = require("./cron/productEmbeddingCron");
+  productEmbeddingCron.start();
+  console.log("✅ [EMBEDDING-CRON] Product embedding cron started");
+} catch (error) {
+  console.error("❌ [EMBEDDING-CRON] Failed to start product embedding cron:", error);
+}
+
 // AI Provider Health Check — delegated to Python ai-service
 try {
   const { healthCheck } = require("./services/aiSdkClient");

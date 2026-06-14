@@ -357,6 +357,16 @@ router.post(
     checkPermission("canAccessSettings"),
     superAdminAiController.testEmbeddingKey,
 );
+router.get(
+    "/ai/product-embeddings/status",
+    checkPermission("canAccessSettings"),
+    superAdminAiController.getProductEmbeddingStatus,
+);
+router.post(
+    "/ai/product-embeddings/sync",
+    checkPermission("canAccessSettings"),
+    superAdminAiController.triggerProductEmbeddingSync,
+);
 
 const {
   uploadDevTaskFile,

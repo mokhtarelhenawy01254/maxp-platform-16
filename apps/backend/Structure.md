@@ -1,3 +1,53 @@
+## [2026-06-14] Super Admin — Product Embeddings Sync Page + Cron Job
+- **Details**: Added a complete product-embedding management system: a daily cron job that auto-syncs all product embeddings via the Python ai-service, plus a Super Admin page (under AI Models → "تضمينات المنتجات") showing job status, per-company coverage, and a manual trigger button.
+- **Architecture**:
+  - **Python ai-service — `src/api/admin/product_embeddings.py`** (new): Two endpoints registered under `/admin/`:
+    - `GET /product-embeddings/status` — returns current job state (`idle/running/done/error`), progress counters, per-company stats (total / embedded / missing), and up to 500 un-embedded products.
+    - `POST /product-embeddings/sync` — triggers a background `asyncio.create_task` backfill. Accepts optional `company_id` to sync one company only. Guards against double-start. Rate-limited internally at 0.7 s/request to stay under the Gemini free tier (100 req/min). Detects pseudo-embeddings (zero-norm vectors) and retries with 35 s sleep.
+  - **`src/api/admin/__init__.py`** — registered `product_embeddings_router`.
+  - **`apps/backend/cron/productEmbeddingCron.js`** (new): `node-cron` job (`0 3 * * *`, Cairo timezone) that calls `POST /admin/product-embeddings/sync` on the Python service every day at 3 AM. Skips silently if a sync is already running.
+  - **`superAdminAiController.js`** — added `getProductEmbeddingStatus` and `triggerProductEmbeddingSync` controller functions (proxy to Python service).
+  - **`superAdminRoutes.js`** — added `GET /ai/product-embeddings/status` and `POST /ai/product-embeddings/sync`.
+  - **`server.js`** — registered `productEmbeddingCron.start()` at startup.
+  - **`SuperAdminProductEmbeddings.tsx`** (new): Super Admin page at `/super-admin/product-embeddings`. Shows: cron job status card (last run, finish time, duration, next scheduled run), summary stats (total / embedded / missing), per-company table with progress bars and per-company sync button, expandable list of missing products per company. Auto-polls every 4 s while a sync is running.
+  - **`SuperAdminSidebar.tsx`** — added "تضمينات المنتجات" menu item (Database icon) in the AI Models section.
+  - **`App.tsx`** — lazy-loaded route `/super-admin/product-embeddings`.
+- **Data Flow**:
+  ```
+  Cron (03:00 Cairo) OR manual button → POST /super-admin/ai/product-embeddings/sync
+  → superAdminAiController → Python POST /admin/product-embeddings/sync
+  → asyncio.create_task(_run_backfill) → reads public.products → gemini-embedding-2
+  → upsert ai.product_embeddings ON CONFLICT (product_id)
+  Page polls GET /product-embeddings/status → live progress + coverage stats
+  ```
+- **Affected Files**:
+  - `apps/ai-service/src/api/admin/product_embeddings.py` (new)
+  - `apps/ai-service/src/api/admin/__init__.py`
+  - `apps/backend/cron/productEmbeddingCron.js` (new)
+  - `apps/backend/controller/superAdminAiController.js`
+  - `apps/backend/routes/superAdminRoutes.js`
+  - `apps/backend/server.js`
+  - `apps/frontend/src/pages/super-admin/SuperAdminProductEmbeddings.tsx` (new)
+  - `apps/frontend/src/components/layout/SuperAdminSidebar.tsx`
+  - `apps/frontend/src/App.tsx`
+
+## [2026-06-14] AI Service — Cross-Lingual Product Search Fix (inventory_check Vector Fallback)
+- **Details**: The `inventory_check` tool was returning "not found" for Arabic queries against English product names (e.g. "سكوتش بكام؟" vs "Swan Flat Skotch") because SQL `ILIKE` is language-agnostic and phonetic transliterations don't match. Fixed by adding a semantic vector search fallback and backfilling `ai.product_embeddings` with compatible embeddings.
+- **Root Causes**:
+  1. `inventory_check` used `name ILIKE '%query%'` only — no cross-lingual fallback.
+  2. `ai.product_embeddings` was empty — `vector_product_search` had nothing to search.
+  3. `ai.product_embeddings.product_id` had no UNIQUE constraint, so all backfill `ON CONFLICT` inserts failed silently.
+  4. Previous backfill used `gemini-embedding-001` (Node.js) but Python queries use `gemini-embedding-2` → cosine similarity ≈ −0.03 (incompatible vector spaces).
+  5. Initial vector fallback code used `top.get("id")` but `vector_product_search` results have no `id` field — only `sku`.
+- **Fixes**:
+  - **`registry.py` — `inventory_check`**: When ILIKE returns no row, falls back to `vector_product_search(query, company_id, limit=1)`, then looks up the product by `sku` from the top result. Wrapped in `try/except` to never break the main path.
+  - **DB migration**: Added `UNIQUE` constraint on `ai.product_embeddings(product_id)` directly on the server.
+  - **`backfill_v2.py`** (server-only script): Backfill script with 0.7 s/request rate limiting to stay under the 100 req/min free tier, pseudo-embedding detection (zero-norm vector → sleep 35 s and retry), and `ON CONFLICT (product_id) DO UPDATE`. Ran successfully: **278/278 products embedded, 0 errors, 0 pseudo**.
+- **Verification**: `POST /admin/agents/chat` with `agent_pmp8rt_25`, company `cmleybpf70028juo2wwpmp8rt`, message "سكوتش بكام؟" → reply "السعر ٤٩٩ جنيه مصري" ✅
+- **Affected Files**:
+  - `apps/ai-service/src/tools/registry.py` — `inventory_check` vector fallback (lines 763–788)
+  - `/var/www/ai-service/backfill_v2.py` (server-only, not in repo)
+
 ## [2026-06-14] Backend — Fix CompetitorFeature table missing from database
 - **Details**: The `CompetitorFeature` Prisma model existed in `prisma/schema/competitors_features.prisma` but its database table `competitor_features` was never created — no migration existed. The Prisma client had the model (from `prisma generate`) but all API queries failed at runtime because the table didn't exist.
 - **Root Cause Fixed**: The model was defined in `prisma/schema/competitors_features.prisma` but was never included in the manual `schema.prisma` reference file, and no migration SQL was ever committed. On fresh databases, `prisma db push` or `prisma migrate` would skip it. On the server, the table simply didn't exist.

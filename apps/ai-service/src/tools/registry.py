@@ -761,6 +761,35 @@ async def inventory_check(input_data: InventoryCheckInput) -> dict[str, Any]:
         product_row = rows.first()
 
     if not product_row:
+        # ILIKE failed (likely cross-lingual query, e.g. Arabic name for English product).
+        # Fall back to vector semantic search to find the closest match.
+        try:
+            vec_results = await vector_product_search(
+                query=product_name,
+                company_id=company_id,
+                limit=1,
+            )
+            if vec_results:
+                top = vec_results[0]
+                top_sku = top.get("sku")
+                if top_sku:
+                    async with _db_mod.async_session() as sess:
+                        rows2 = await sess.execute(
+                            text("""
+                                SELECT id, name, sku, price, "comparePrice", stock, "trackInventory",
+                                       "mainImage", images, "isFeatured"
+                                FROM products
+                                WHERE sku = :sku AND "companyId" = :company_id
+                                  AND "deletedAt" IS NULL AND "isActive" = TRUE
+                                LIMIT 1
+                            """),
+                            {"sku": top_sku, "company_id": company_id},
+                        )
+                        product_row = rows2.first()
+        except Exception:
+            pass
+
+    if not product_row:
         return {"found": False, "code": "PRODUCT_NOT_FOUND", "error": f"No product matching '{product_name}'"}
 
     product = dict(product_row._mapping)
