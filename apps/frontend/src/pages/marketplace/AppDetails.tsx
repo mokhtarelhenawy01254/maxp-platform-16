@@ -29,6 +29,28 @@ import {
   getFeatureAccessLabel,
   getMarketplaceFeatureItems,
 } from "./featureCatalog";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface MarketplaceApp {
   id: string;
@@ -278,10 +300,10 @@ export default function AppDetails() {
 
   if (loading) {
     return (
-      <div className="marketplace-page flex min-h-screen items-center justify-center overflow-x-hidden">
-        <div className="marketplace-card rounded-2xl px-10 py-8 text-center">
+      <div className="bg-background flex min-h-screen items-center justify-center overflow-x-hidden">
+        <div className="rounded-2xl border bg-card rounded-2xl px-10 py-8 text-center">
           <div className="mx-auto h-11 w-11 animate-spin rounded-full border-b-2 border-[var(--color-primary)]" />
-          <p className="marketplace-muted mt-4 text-sm font-bold">
+          <p className="text-muted-foreground mt-4 text-sm font-bold">
             جاري التحميل…
           </p>
         </div>
@@ -291,10 +313,10 @@ export default function AppDetails() {
 
   if (!app) {
     return (
-      <div className="marketplace-page flex min-h-screen items-center justify-center overflow-x-hidden">
-        <div className="marketplace-card rounded-2xl px-10 py-8 text-center">
-          <AlertCircle size={44} className="marketplace-muted mx-auto mb-4" aria-hidden="true" />
-          <p className="marketplace-muted">الأداة غير موجودة</p>
+      <div className="bg-background flex min-h-screen items-center justify-center overflow-x-hidden">
+        <div className="rounded-2xl border bg-card rounded-2xl px-10 py-8 text-center">
+          <AlertCircle size={44} className="text-muted-foreground mx-auto mb-4" aria-hidden="true" />
+          <p className="text-muted-foreground">الأداة غير موجودة</p>
           <Link
             to="/marketplace"
             className="mt-4 inline-flex items-center gap-2 text-sm font-black text-[var(--color-primary)] transition-colors duration-200 hover:text-[color-mix(in_srgb,var(--color-primary)_80%,black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
@@ -321,7 +343,7 @@ export default function AppDetails() {
   const textIcon = shouldUseTextIcon(app.icon) ? app.icon?.trim() : null;
 
   return (
-    <div className="marketplace-page min-h-screen overflow-x-hidden">
+    <div className="bg-background min-h-screen overflow-x-hidden">
       <div className="mx-auto max-w-[1280px] px-4 pb-10 pt-5 sm:px-6 lg:px-8">
         <Link
           to={document.referrer.includes('/my-apps') ? '/my-apps' : '/marketplace'}
@@ -331,54 +353,54 @@ export default function AppDetails() {
           العودة إلى التطبيقات
         </Link>
 
-        <section className="marketplace-panel mt-4 overflow-hidden rounded-[1.75rem]">
+        <section className="rounded-[1.75rem] bg-card mt-4 overflow-hidden rounded-[1.75rem]">
           <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:p-6">
             <div className="min-w-0 text-right">
               <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
-                <span className="marketplace-chip rounded-full px-3 py-1 text-xs font-black">
+                <span className="rounded-full bg-muted/50 px-3 py-1 text-xs font-black text-muted-foreground rounded-full px-3 py-1 text-xs font-black">
                   {getFeatureAccessLabel(accessKind)}
                 </span>
                 {app.isFeatured && (
-                  <span className="marketplace-soft-warning inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-black">
+                  <span className="bg-warning/10 text-warning inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-black">
                     <Sparkles size={13} aria-hidden="true" />
                     مميز
                   </span>
                 )}
                 {isEnterprise && app.pricingModel !== "FREE" && (
-                  <span className="marketplace-soft-success rounded-full border px-3 py-1 text-xs font-black">
+                  <span className="bg-success/10 text-success rounded-full border px-3 py-1 text-xs font-black">
                     ضمن الوصول الشامل
                   </span>
                 )}
               </div>
 
               <div className="flex flex-col items-end gap-4 sm:flex-row-reverse sm:items-start">
-                <div className="marketplace-soft-primary flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border text-3xl">
+                <div className="bg-primary/10 text-primary flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border text-3xl">
                   {textIcon || <DetailIcon size={30} aria-hidden="true" />}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h1 className="marketplace-strong text-3xl font-black leading-tight text-pretty sm:text-4xl">
+                  <h1 className="text-foreground text-3xl font-black leading-tight text-pretty sm:text-4xl">
                     {app.name}
                   </h1>
-                  <p className="marketplace-muted mt-3 max-w-3xl text-sm font-semibold leading-7 sm:text-base">
+                  <p className="text-muted-foreground mt-3 max-w-3xl text-sm font-semibold leading-7 sm:text-base">
                     {app.description}
                   </p>
 
                   <div className="mt-4 flex flex-wrap items-center justify-end gap-2 text-xs font-bold">
                     {app.rating && (
-                      <span className="marketplace-chip inline-flex items-center gap-1 rounded-full px-3 py-1">
+                      <span className="rounded-full bg-muted/50 px-3 py-1 text-xs font-black text-muted-foreground inline-flex items-center gap-1 rounded-full px-3 py-1">
                         <Star size={14} className="fill-amber-400 text-amber-400" aria-hidden="true" />
                         {app.rating.toFixed(1)}
-                        <span className="marketplace-muted">
+                        <span className="text-muted-foreground">
                           ({formatNumber(app.reviewCount)} تقييم)
                         </span>
                       </span>
                     )}
-                    <span className="marketplace-chip inline-flex items-center gap-1 rounded-full px-3 py-1">
+                    <span className="rounded-full bg-muted/50 px-3 py-1 text-xs font-black text-muted-foreground inline-flex items-center gap-1 rounded-full px-3 py-1">
                       <Download size={14} aria-hidden="true" />
                       {formatNumber(app.installCount)} تثبيت
                     </span>
                     {app.trialDays > 0 && (
-                      <span className="marketplace-chip inline-flex items-center gap-1 rounded-full px-3 py-1">
+                      <span className="rounded-full bg-muted/50 px-3 py-1 text-xs font-black text-muted-foreground inline-flex items-center gap-1 rounded-full px-3 py-1">
                         <Calendar size={14} aria-hidden="true" />
                         تجربة {formatNumber(app.trialDays)} يوم
                       </span>
@@ -388,14 +410,14 @@ export default function AppDetails() {
               </div>
             </div>
 
-            <aside className="marketplace-card rounded-2xl p-4 text-right lg:sticky lg:top-5 lg:self-start">
-              <div className="marketplace-control rounded-2xl p-4">
+            <aside className="rounded-2xl border bg-card rounded-2xl p-4 text-right lg:sticky lg:top-5 lg:self-start">
+              <div className="rounded-xl border bg-background rounded-2xl p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="marketplace-strong text-sm font-black">
+                    <div className="text-foreground text-sm font-black">
                       {pricingSummary.title}
                     </div>
-                    <p className="marketplace-muted mt-1 text-xs leading-5">
+                    <p className="text-muted-foreground mt-1 text-xs leading-5">
                       {pricingSummary.helper}
                     </p>
                   </div>
@@ -404,7 +426,7 @@ export default function AppDetails() {
                       {pricingSummary.price}
                     </div>
                     {!isEnterprise && app.pricingModel !== "FREE" && app.monthlyPrice ? (
-                      <div className="marketplace-muted mt-1 text-[11px]">
+                      <div className="text-muted-foreground mt-1 text-[11px]">
                         شهريًا
                       </div>
                     ) : null}
@@ -414,51 +436,24 @@ export default function AppDetails() {
 
               {app.isInstalled ? (
                 <div className="mt-4 flex flex-col gap-2">
-                  <button
-                    type="button"
-                    onClick={handleInstall}
-                    disabled={installing}
-                    className="marketplace-primary-action inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-black transition-[background-color,box-shadow] duration-200 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
-                  >
-                    {installing ? (
-                      <span className="h-5 w-5 animate-spin rounded-full border-b-2 border-current" aria-hidden="true" />
-                    ) : (
-                      <>
-                        <Zap size={18} className="fill-current" aria-hidden="true" />
-                        تحديث الاشتراك
-                      </>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmUninstall(true)}
-                    disabled={uninstalling}
-                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-red-200 px-5 text-sm font-black text-red-500 transition-colors duration-200 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-                  >
+                  <Button onClick={handleInstall} disabled={installing} className="h-12 w-full gap-2 text-sm font-black">
+                    {installing ? <span className="h-5 w-5 animate-spin rounded-full border-b-2 border-current" /> : <Zap size={18} className="fill-current" />}
+                    تحديث الاشتراك
+                  </Button>
+                  <Button variant="destructive" onClick={() => setConfirmUninstall(true)} disabled={uninstalling} className="h-12 w-full gap-2 text-sm font-black">
                     <X size={18} strokeWidth={2.5} />
                     إلغاء التفعيل
-                  </button>
+                  </Button>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={handleInstall}
-                  disabled={installing}
-                  className="marketplace-primary-action mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-black transition-[background-color,box-shadow] duration-200 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
-                >
-                  {installing ? (
-                    <span className="h-5 w-5 animate-spin rounded-full border-b-2 border-current" aria-hidden="true" />
-                  ) : (
-                    <>
-                      <Zap size={18} className="fill-current" aria-hidden="true" />
-                      تفعيل الأداة الآن
-                    </>
-                  )}
-                </button>
+                <Button onClick={handleInstall} disabled={installing} className="mt-4 h-12 w-full gap-2 text-sm font-black">
+                  {installing ? <span className="h-5 w-5 animate-spin rounded-full border-b-2 border-current" /> : <Zap size={18} className="fill-current" />}
+                  تفعيل الأداة الآن
+                </Button>
               )}
 
               {app.setupFee && app.setupFee > 0 && (
-                <p className="marketplace-muted mt-3 text-center text-xs">
+                <p className="text-muted-foreground mt-3 text-center text-xs">
                   + رسوم إعداد لمرة واحدة: {formatMoney(app.setupFee)}
                 </p>
               )}
@@ -469,7 +464,7 @@ export default function AppDetails() {
         <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
           <main className="min-w-0 space-y-5">
             {app.coverImage && (
-              <section className="marketplace-card overflow-hidden rounded-2xl">
+              <section className="rounded-2xl border bg-card overflow-hidden rounded-2xl">
                 {getEmbedUrl(app.coverImage) ? (
                   <iframe
                     className="aspect-video w-full"
@@ -499,16 +494,16 @@ export default function AppDetails() {
               </section>
             )}
 
-            <section className="marketplace-card rounded-2xl p-5 text-right">
+            <section className="rounded-2xl border bg-card rounded-2xl p-5 text-right">
               <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <h2 className="marketplace-strong flex items-center justify-end gap-3 text-xl font-black">
+                  <h2 className="text-foreground flex items-center justify-end gap-3 text-xl font-black">
                     المزايا الظاهرة قبل التفعيل
-                    <span className="marketplace-soft-success flex h-9 w-9 items-center justify-center rounded-xl border">
+                    <span className="bg-success/10 text-success flex h-9 w-9 items-center justify-center rounded-xl border">
                       <Check size={20} aria-hidden="true" />
                     </span>
                   </h2>
-                  <p className="marketplace-muted mt-2 text-sm leading-6">
+                  <p className="text-muted-foreground mt-2 text-sm leading-6">
                     كل ميزة موضحة بوسم واضح: مجاني أو مدفوع أو حسب الاستخدام.
                   </p>
                 </div>
@@ -519,21 +514,21 @@ export default function AppDetails() {
                   featureItems.map((feature) => (
                     <article
                       key={feature.key}
-                      className="marketplace-control group rounded-2xl p-4 text-right transition-[background-color,border-color,transform] duration-200 hover:-translate-y-0.5"
+                      className="rounded-xl border bg-background group rounded-2xl p-4 text-right transition-[background-color,border-color,transform] duration-200 hover:-translate-y-0.5"
                     >
                       <div className="flex items-start justify-between gap-3">
-                        <span className="marketplace-chip shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black">
+                        <span className="rounded-full bg-muted/50 px-3 py-1 text-xs font-black text-muted-foreground shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black">
                           {getFeatureAccessLabel(feature.access)}
                         </span>
                         <div className="min-w-0">
-                          <h3 className="marketplace-strong text-base font-black">
+                          <h3 className="text-foreground text-base font-black">
                             {feature.name}
                           </h3>
-                          <p className="marketplace-muted mt-1 text-sm font-semibold leading-6">
+                          <p className="text-muted-foreground mt-1 text-sm font-semibold leading-6">
                             {feature.description}
                           </p>
                         </div>
-                        <span className="marketplace-soft-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-transform duration-200 group-hover:scale-105">
+                        <span className="bg-primary/10 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-transform duration-200 group-hover:scale-105">
                           <Sparkles size={17} aria-hidden="true" />
                         </span>
                       </div>
@@ -549,25 +544,25 @@ export default function AppDetails() {
             </section>
 
             {app.pricingRules && app.pricingRules.length > 0 && (
-              <section className="marketplace-card rounded-2xl p-5 text-right">
-                <h2 className="marketplace-strong text-xl font-black">
+              <section className="rounded-2xl border bg-card rounded-2xl p-5 text-right">
+                <h2 className="text-foreground text-xl font-black">
                   تفاصيل التسعير
                 </h2>
                 <div className="mt-4 space-y-3">
                   {app.pricingRules.map((rule: any) => (
                     <div
                       key={rule.id}
-                      className="marketplace-control flex items-center justify-between gap-4 rounded-xl p-3"
+                      className="rounded-xl border bg-background flex items-center justify-between gap-4 rounded-xl p-3"
                     >
                       <div className="text-left text-lg font-black text-[var(--color-primary)]">
                         {formatMoney(rule.price)}
                       </div>
                       <div className="min-w-0 text-right">
-                        <div className="marketplace-strong font-black">
+                        <div className="text-foreground font-black">
                           {rule.name}
                         </div>
                         {rule.description && (
-                          <div className="marketplace-muted mt-1 text-sm">
+                          <div className="text-muted-foreground mt-1 text-sm">
                             {rule.description}
                           </div>
                         )}
@@ -579,19 +574,19 @@ export default function AppDetails() {
             )}
 
             {app.reviews && app.reviews.length > 0 && (
-              <section className="marketplace-card rounded-2xl p-5 text-right">
-                <h2 className="marketplace-strong text-xl font-black">
+              <section className="rounded-2xl border bg-card rounded-2xl p-5 text-right">
+                <h2 className="text-foreground text-xl font-black">
                   التقييمات
                 </h2>
                 <div className="mt-4 space-y-4">
                   {app.reviews.map((review: any) => (
                     <article
                       key={review.id}
-                      className="marketplace-control rounded-xl p-4"
+                      className="rounded-xl border bg-background rounded-xl p-4"
                     >
                       <div className="mb-2 flex items-center justify-end gap-2">
                         {review.isVerified && (
-                          <span className="marketplace-soft-success rounded-full border px-2 py-0.5 text-xs font-bold">
+                          <span className="bg-success/10 text-success rounded-full border px-2 py-0.5 text-xs font-bold">
                             موثق
                           </span>
                         )}
@@ -611,12 +606,12 @@ export default function AppDetails() {
                         </div>
                       </div>
                       {review.title && (
-                        <h3 className="marketplace-strong mb-1 font-black">
+                        <h3 className="text-foreground mb-1 font-black">
                           {review.title}
                         </h3>
                       )}
                       {review.comment && (
-                        <p className="marketplace-muted text-sm leading-6">
+                        <p className="text-muted-foreground text-sm leading-6">
                           {review.comment}
                         </p>
                       )}
@@ -629,8 +624,8 @@ export default function AppDetails() {
 
           <aside className="space-y-4">
             {normalizedRequiredApps.length > 0 && (
-              <section className="marketplace-soft-warning rounded-2xl border p-5 text-right">
-                <h3 className="marketplace-strong mb-3 flex items-center justify-end gap-2 font-black">
+              <section className="bg-warning/10 text-warning rounded-2xl border p-5 text-right">
+                <h3 className="text-foreground mb-3 flex items-center justify-end gap-2 font-black">
                   متطلبات التشغيل
                   <AlertCircle size={19} aria-hidden="true" />
                 </h3>
@@ -652,8 +647,8 @@ export default function AppDetails() {
             )}
 
             {limitations && Object.keys(limitations).length > 0 && (
-              <section className="marketplace-card rounded-2xl p-5 text-right">
-                <h3 className="marketplace-strong mb-3 flex items-center justify-end gap-2 font-black">
+              <section className="rounded-2xl border bg-card rounded-2xl p-5 text-right">
+                <h3 className="text-foreground mb-3 flex items-center justify-end gap-2 font-black">
                   القيود
                   <Shield size={19} aria-hidden="true" />
                 </h3>
@@ -661,9 +656,9 @@ export default function AppDetails() {
                   {Object.entries(limitations).map(([key, value]) => (
                     <li
                       key={key}
-                      className="marketplace-muted text-sm leading-6"
+                      className="text-muted-foreground text-sm leading-6"
                     >
-                      <span className="marketplace-strong font-bold">{key}:</span>{" "}
+                      <span className="text-foreground font-bold">{key}:</span>{" "}
                       {String(value)}
                     </li>
                   ))}
@@ -671,17 +666,17 @@ export default function AppDetails() {
               </section>
             )}
 
-            <section className="marketplace-card rounded-2xl p-5 text-right">
-              <h3 className="marketplace-strong mb-3 flex items-center justify-end gap-2 font-black">
+            <section className="rounded-2xl border bg-card rounded-2xl p-5 text-right">
+              <h3 className="text-foreground mb-3 flex items-center justify-end gap-2 font-black">
                 الدعم
                 <Users size={19} className="text-[var(--color-primary)]" aria-hidden="true" />
               </h3>
-              <p className="marketplace-muted mb-4 text-sm leading-6">
+              <p className="text-muted-foreground mb-4 text-sm leading-6">
                 هل تحتاج مساعدة؟ فريق الدعم جاهز لمساعدتك.
               </p>
               <button
                 type="button"
-                className="marketplace-control w-full rounded-xl px-4 py-2 text-sm font-black transition-colors duration-200 hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                className="rounded-xl border bg-background w-full rounded-xl px-4 py-2 text-sm font-black transition-colors duration-200 hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
               >
                 تواصل مع الدعم
               </button>
@@ -690,176 +685,85 @@ export default function AppDetails() {
         </div>
       </div>
 
-      {showPricingDialog && app && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center overscroll-contain bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none"
-          onClick={() => setShowPricingDialog(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="app-pricing-dialog-title"
-            className="marketplace-panel w-full max-w-md overflow-hidden rounded-2xl animate-in zoom-in-95 duration-200 motion-reduce:animate-none"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6 text-right">
-              <div className="mb-6 flex items-center justify-end gap-4">
-                <div className="text-right">
-                  <h2 id="app-pricing-dialog-title" className="marketplace-strong text-xl font-black">
-                    {app.name}
-                  </h2>
-                  <p className="marketplace-muted text-sm">
-                    اختر نظام الدفع المناسب لك
-                  </p>
-                </div>
-                <div className="marketplace-soft-primary flex h-12 w-12 items-center justify-center rounded-xl border text-2xl">
+      <Dialog open={showPricingDialog && !!app} onOpenChange={(open) => !open && setShowPricingDialog(false)}>
+        {app && (
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <div className="flex items-center gap-4">
+                <div className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-xl border text-2xl">
                   {textIcon || <DetailIcon size={24} aria-hidden="true" />}
                 </div>
+                <div>
+                  <DialogTitle>{app.name}</DialogTitle>
+                  <DialogDescription>اختر نظام الدفع المناسب لك</DialogDescription>
+                </div>
               </div>
+            </DialogHeader>
 
-              <div className="space-y-4">
-                <button
-                  type="button"
-                  onClick={() => executeInstall("SUBSCRIPTION")}
-                  disabled={
-                    app.isInstalled && app.activePricingModel === "SUBSCRIPTION"
-                  }
-                  className={`group relative w-full overflow-hidden rounded-xl border-2 p-4 text-right transition-[background-color,border-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${app.isInstalled && app.activePricingModel === "SUBSCRIPTION"
-                    ? "marketplace-filter-active cursor-default"
-                    : "marketplace-card hover:border-[var(--color-primary)]"
-                    }`}
-                >
-                  {app.isInstalled &&
-                    app.activePricingModel === "SUBSCRIPTION" && (
-                      <div className="marketplace-primary-action absolute top-0 left-0 rounded-br-lg px-2 py-0.5 text-[10px] font-bold">
-                        نشط حالياً
-                      </div>
-                    )}
-                  <div className="mb-1 flex items-center justify-between gap-3">
-                    <span className="font-bold text-[var(--color-primary)]">
-                      {(app.monthlyPrice ?? 0) > 0
-                        ? `${formatMoney(app.monthlyPrice)} / شهر`
-                        : "مجاني"}
-                    </span>
-                    <span className="marketplace-strong font-black">
-                      {app.activePricingModel === "PAY_PER_USE"
-                        ? "ترقية لاشتراك شهري"
-                        : "اشتراك شهري كامل"}
-                    </span>
-                  </div>
-                  <p className="marketplace-muted text-xs">
-                    ادفع مبلغ ثابت شهرياً واستمتع بجميع مميزات الأداة بلا حدود.
-                  </p>
-                </button>
-
-                {app.pricingModel === "PAY_PER_USE" && (
-                  <button
-                    type="button"
-                    onClick={() => executeInstall("PAY_PER_USE")}
-                    disabled={
-                      app.isInstalled &&
-                      app.activePricingModel === "PAY_PER_USE"
-                    }
-                    className={`group relative w-full overflow-hidden rounded-xl border-2 p-4 text-right transition-[background-color,border-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-warning)] ${app.isInstalled &&
-                      app.activePricingModel === "PAY_PER_USE"
-                      ? "marketplace-soft-warning cursor-default"
-                      : "marketplace-card hover:border-[var(--color-warning)]"
-                      }`}
-                  >
-                    {app.isInstalled &&
-                      app.activePricingModel === "PAY_PER_USE" && (
-                        <div className="absolute top-0 left-0 rounded-br-lg bg-[var(--color-warning)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-warning-foreground)]">
-                          نشط حالياً
-                        </div>
-                      )}
-                    <div className="mb-1 flex items-center justify-between gap-3">
-                      <span className="font-bold text-[var(--color-warning)]">
-                        {formatMoney(app.unitPrice)} / {app.unitName || "وحدة"}
-                      </span>
-                      <span className="marketplace-strong flex items-center gap-1 font-black">
-                        حسب الاستخدام
-                        <Zap size={14} className="fill-current text-[var(--color-warning)]" aria-hidden="true" />
-                      </span>
-                    </div>
-                    <p className="marketplace-muted text-xs">
-                      ادفع فقط مقابل ما تستهلكه فعلياً. مناسب للمشاريع المبتدئة.
-                    </p>
-                  </button>
-                )}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowPricingDialog(false)}
-                className="marketplace-control marketplace-muted mt-6 w-full rounded-xl py-3 text-sm font-medium transition-colors duration-200 hover:text-[var(--color-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+            <div className="space-y-4">
+              <Button
+                variant="outline"
+                className={cn("relative w-full justify-between p-4 text-right", app.isInstalled && app.activePricingModel === "SUBSCRIPTION" && "border-primary bg-primary/5")}
+                onClick={() => executeInstall("SUBSCRIPTION")}
+                disabled={app.isInstalled && app.activePricingModel === "SUBSCRIPTION"}
               >
-                إلغاء
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                {app.isInstalled && app.activePricingModel === "SUBSCRIPTION" && (
+                  <span className="bg-primary text-primary-foreground absolute top-0 left-0 rounded-br-lg px-2 py-0.5 text-[10px] font-bold">نشط حالياً</span>
+                )}
+                <span className="font-bold text-primary">{(app.monthlyPrice ?? 0) > 0 ? `${formatMoney(app.monthlyPrice)} / شهر` : "مجاني"}</span>
+                <span className="text-foreground font-black">{app.activePricingModel === "PAY_PER_USE" ? "ترقية لاشتراك شهري" : "اشتراك شهري كامل"}</span>
+              </Button>
 
-      {/* Uninstall Confirmation Dialog */}
-      {confirmUninstall && app && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center overscroll-contain bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none"
-          onClick={() => setConfirmUninstall(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="app-uninstall-dialog-title"
-            className="marketplace-panel w-full max-w-md overflow-hidden rounded-2xl animate-in zoom-in-95 duration-200 motion-reduce:animate-none"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
+              {app.pricingModel === "PAY_PER_USE" && (
+                <Button
+                  variant="outline"
+                  className={cn("relative w-full justify-between p-4 text-right", app.isInstalled && app.activePricingModel === "PAY_PER_USE" && "border-warning bg-warning/5")}
+                  onClick={() => executeInstall("PAY_PER_USE")}
+                  disabled={app.isInstalled && app.activePricingModel === "PAY_PER_USE"}
+                >
+                  {app.isInstalled && app.activePricingModel === "PAY_PER_USE" && (
+                    <span className="absolute top-0 left-0 rounded-br-lg bg-warning px-2 py-0.5 text-[10px] font-bold text-warning-foreground">نشط حالياً</span>
+                  )}
+                  <span className="font-bold text-warning">{formatMoney(app.unitPrice)} / {app.unitName || "وحدة"}</span>
+                  <span className="text-foreground flex items-center gap-1 font-black">
+                    حسب الاستخدام
+                    <Zap size={14} className="fill-current text-warning" aria-hidden="true" />
+                  </span>
+                </Button>
+              )}
+            </div>
+          </DialogContent>
+        )}
+      </Dialog>
+
+      <AlertDialog open={confirmUninstall && !!app} onOpenChange={(open) => !open && setConfirmUninstall(false)}>
+        {app && (
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
                 <AlertTriangle size={28} className="text-red-600" />
               </div>
-
-              <h2
-                id="app-uninstall-dialog-title"
-                className="text-center text-xl font-black"
-              >
-                إلغاء تفعيل {app.name}
-              </h2>
-
-              <p className="mt-3 text-center text-sm leading-6 text-[var(--color-muted-foreground)]">
+              <AlertDialogTitle className="text-center">إلغاء تفعيل {app.name}</AlertDialogTitle>
+              <AlertDialogDescription className="text-center">
                 هل أنت متأكد من إلغاء تفعيل هذه الأداة؟
                 <br />
                 سيتم إلغاء الخدمة وقد تفقد بعض الإعدادات المرتبطة بها.
-              </p>
-
-              <div className="mt-6 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setConfirmUninstall(false)}
-                  disabled={uninstalling}
-                  className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm font-black transition-colors duration-200 hover:bg-[var(--color-surface-hover)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
-                >
-                  تراجع
-                </button>
-                <button
-                  type="button"
-                  onClick={handleUninstall}
-                  disabled={uninstalling}
-                  className="flex-1 rounded-xl bg-red-600 px-4 py-3 text-sm font-black text-white transition-colors duration-200 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  {uninstalling ? (
-                    <span className="inline-flex items-center justify-center gap-2">
-                      <Loader2 size={16} className="animate-spin" />
-                      جاري الإلغاء...
-                    </span>
-                  ) : (
-                    "تأكيد الإلغاء"
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="gap-3">
+              <AlertDialogCancel disabled={uninstalling}>تراجع</AlertDialogCancel>
+              <AlertDialogAction onClick={handleUninstall} disabled={uninstalling} className="bg-red-600 hover:bg-red-700">
+                {uninstalling ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Loader2 size={16} className="animate-spin" />
+                    جاري الإلغاء...
+                  </span>
+                ) : "تأكيد الإلغاء"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        )}
+      </AlertDialog>
     </div>
   );
 }
