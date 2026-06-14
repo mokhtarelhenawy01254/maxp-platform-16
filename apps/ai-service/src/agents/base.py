@@ -103,6 +103,7 @@ class BaseAgentConfig:
 
     allowed_tools: list[str] = field(default_factory=list)
     allowed_skills: list[str] = field(default_factory=list)
+    allowed_channels: list[str] = field(default_factory=list)
 
     template_slug: str | None = None
     version: str | None = None

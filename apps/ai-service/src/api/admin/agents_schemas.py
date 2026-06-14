@@ -53,6 +53,7 @@ class AgentCreate(BaseModel):
     model: str | None = None
     allowed_tools: list[str] | None = None
     allowed_skills: list[str] | None = None
+    allowed_channels: list[str] | None = None
     persona: dict[str, Any] | None = None
     guardrails: dict[str, Any] | None = None
     budget: dict[str, Any] | None = None
@@ -65,6 +66,7 @@ class AgentUpdate(BaseModel):
     model: str | None = None
     allowed_tools: list[str] | None = None
     allowed_skills: list[str] | None = None
+    allowed_channels: list[str] | None = None
     persona: dict[str, Any] | None = None
     guardrails: dict[str, Any] | None = None
     budget: dict[str, Any] | None = None
@@ -88,6 +90,7 @@ class AgentRead(BaseModel):
     persona: dict[str, Any]
     allowed_tools: list[str]
     allowed_skills: list[str]
+    allowed_channels: list[str] = []
     guardrails: dict[str, Any]
     budget: dict[str, Any]
     parent_id: str | None = None
@@ -214,6 +217,7 @@ class AgentSummary(BaseModel):
     version: str | None = None
     allowed_tools: list[str] = []
     allowed_skills: list[str] = []
+    allowed_channels: list[str] = []
 
 
 class ProfileSummary(BaseModel):
@@ -301,6 +305,7 @@ class AgentFilesSaveRequest(BaseModel):
     model: str | None = None
     allowedTools: list[str] | None = None
     allowedSkills: list[str] | None = None
+    allowedChannels: list[str] | None = None
     soulInstructions: str | None = None
     agentInstructions: str | None = None
     toolsInstructions: str | None = None

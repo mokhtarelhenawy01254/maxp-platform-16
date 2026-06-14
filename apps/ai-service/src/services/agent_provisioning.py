@@ -66,6 +66,7 @@ async def ensure_global_template_agents(
             persona={},
             allowed_tools=template.allowed_tools,
             allowed_skills=template.allowed_skills,
+            channels=template.channels,
             guardrails=template.guardrails,
             budget=template.budget,
             version=template.version,

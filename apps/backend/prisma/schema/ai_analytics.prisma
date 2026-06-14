@@ -182,6 +182,7 @@ model CompanyAgent {
   skills       String?  @db.Text
   model        String?
   status       String   @default("ACTIVE")
+  channels     String?  @db.Text
   parentId     String?
   departmentId String?
   managerType  String?  @default("AGENT")

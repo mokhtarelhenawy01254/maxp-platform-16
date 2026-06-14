@@ -90,6 +90,7 @@ class AgentRegistry:
         name: str | None = None,
         instructions: str | None = None,
         allowed_tools: list[str] | None = None,
+        allowed_channels: list[str] | None = None,
         model: str | None = None,
         parent_id: str | None = None,
         template_slug: str | None = None,
@@ -109,6 +110,7 @@ class AgentRegistry:
             role=role,
             company_id=company_id,
             allowed_tools=tool_names,
+            allowed_channels=allowed_channels or [],
             model=resolved_model,
             parent_id=parent_id,
             template_slug=template_slug,
@@ -129,6 +131,7 @@ class AgentRegistry:
                 "parent_id": parent_id,
                 "template_slug": template_slug,
                 "skills": json.dumps(tool_names),
+                "channels": json.dumps(allowed_channels or []),
                 "created_by": "agent_registry",
             })
 
@@ -211,6 +214,8 @@ async def init_registry_from_db(session_factory) -> None:
                     if not tool_names:
                         tool_names = get_tool_names_for_role(db_agent.role)
 
+                    channels: list[str] = db_agent.channels or []
+
                     raw_tools = resolve_tools_from_names(tool_names)
                     agent_tools = wrap_tools_for_gateway(
                         raw_tools,
@@ -233,6 +238,7 @@ async def init_registry_from_db(session_factory) -> None:
                             role=db_agent.role,
                             company_id=company_id,
                             allowed_tools=tool_names,
+                            allowed_channels=channels,
                             model=db_agent.model or settings.default_model,
                         )
                         agent = BaseAgent(config)

@@ -132,6 +132,7 @@ def _agent_to_read(agent: AgentModel) -> AgentRead:
         persona=getattr(agent, 'persona', None) or {},
         allowed_tools=getattr(agent, 'allowed_tools', None) or [],
         allowed_skills=getattr(agent, 'allowed_skills', None) or [],
+        allowed_channels=getattr(agent, 'channels', None) or [],
         guardrails=getattr(agent, 'guardrails', None) or {},
         budget=getattr(agent, 'budget', None) or {},
         parent_id=agent.parent_id,
@@ -173,6 +174,7 @@ def _agent_config_from_record(agent: AgentModel) -> dict[str, Any]:
         },
         "allowed_tools": agent.allowed_tools or [],
         "allowed_skills": agent.allowed_skills or [],
+        "allowed_channels": agent.channels or [],
         "status": agent.status,
     }
 
@@ -202,6 +204,7 @@ def _normalize_agent_config(
         "policies": policies,
         "allowed_tools": list(_first_present(config, "allowed_tools", "allowedTools", default=[]) or []),
         "allowed_skills": list(_first_present(config, "allowed_skills", "allowedSkills", default=[]) or []),
+        "allowed_channels": list(_first_present(config, "allowed_channels", "allowedChannels", default=[]) or []),
         "status": str(_first_present(config, "status", default="ACTIVE") or "ACTIVE"),
         "instructions": _instructions_from_persona(persona),
         "version": _first_present(config, "version"),
@@ -325,6 +328,7 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
             company_id=body.company_id,
             allowed_tools=cfg.get("allowed_tools") or [],
             allowed_skills=cfg.get("allowed_skills") or [],
+            allowed_channels=cfg.get("allowed_channels") or [],
             model=cfg.get("model") or "gemini-2.5-flash",
             provider=cfg.get("provider"),
             key_id=cfg.get("key_id") or cfg.get("keyId"),
@@ -424,6 +428,7 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         persona=body.persona or {},
         allowed_tools=allowed_tools,
         allowed_skills=allowed_skills,
+        channels=template.channels if template else [],
         guardrails=body.guardrails or (template.guardrails if template else {}),
         budget=body.budget or (template.budget if template else {}),
         parent_id=body.parent_id,
@@ -656,7 +661,7 @@ async def _ensure_agent_in_db(agent_id: str, session: AsyncSession) -> AgentMode
     ca_row = await session.execute(
         text("""
             SELECT id, name, role, "templateSlug" AS template_slug, model,
-                   soul, skills, status, "parentId" AS parent_id, "companyId" AS company_id
+                   soul, skills, channels, status, "parentId" AS parent_id, "companyId" AS company_id
             FROM public.company_agents
             WHERE id = :agent_id
         """),
@@ -690,6 +695,13 @@ async def _ensure_agent_in_db(agent_id: str, session: AsyncSession) -> AgentMode
         except Exception:
             pass
 
+    channels: list[str] = []
+    if ca.get("channels"):
+        try:
+            channels = _json.loads(ca["channels"])
+        except Exception:
+            channels = [ca["channels"]] if isinstance(ca["channels"], str) and ca["channels"].strip() else []
+
     # Fallback default tools and skills from template if available
     allowed_tools = template.allowed_tools if template else []
     if template and not allowed_skills:
@@ -708,6 +720,7 @@ async def _ensure_agent_in_db(agent_id: str, session: AsyncSession) -> AgentMode
         persona=persona,
         allowed_tools=allowed_tools,
         allowed_skills=allowed_skills,
+        channels=channels,
         guardrails=template.guardrails if template else {},
         budget=template.budget if template else {},
         parent_id=ca["parent_id"],
@@ -740,6 +753,7 @@ async def get_manager_context(
             model=a.model, template_slug=a.template_slug, version=a.version,
             allowed_tools=list(a.allowed_tools or []),
             allowed_skills=list(a.allowed_skills or []),
+            allowed_channels=list(a.channels or []) if a.channels else [],
         )
 
     ca_stmt = (
@@ -753,6 +767,7 @@ async def get_manager_context(
                 id=ca.id, name=ca.name, role=ca.role, status=ca.status,
                 model=ca.model, template_slug=ca.template_slug,
                 allowed_tools=[], allowed_skills=[],
+                allowed_channels=list(ca.channels or []),
             )
 
     agents = list(agents_map.values())
@@ -852,6 +867,8 @@ async def update_agent(
         agent.allowed_tools = body.allowed_tools
     if body.allowed_skills is not None:
         agent.allowed_skills = body.allowed_skills
+    if body.allowed_channels is not None:
+        agent.channels = body.allowed_channels
     if body.persona is not None:
         agent.persona = body.persona
     if body.guardrails is not None:
@@ -919,6 +936,7 @@ async def reconcile_agent(agent_id: str, session: SessionDep) -> AgentRead:
 
     agent.allowed_tools = template.allowed_tools
     agent.allowed_skills = template.allowed_skills
+    agent.channels = template.channels
     agent.guardrails = template.guardrails
     agent.budget = template.budget
     agent.version = template.version
@@ -1033,7 +1051,7 @@ async def _load_agent_for_files(
     ca_row = await session.execute(
         text("""
             SELECT ca.id, ca.name, ca.role, ca.icon, ca.description, ca.soul,
-                   ca.rules, ca.skills, ca.model, ca.status, ca."parentId" AS parent_id,
+                   ca.rules, ca.skills, ca.channels, ca.model, ca.status, ca."parentId" AS parent_id,
                    ca."templateSlug" AS template_slug, ca."createdBy" AS created_by,
                    ca."createdAt" AS created_at, ca."departmentId" AS department_id,
                    ca."managerType" AS manager_type,
@@ -1057,6 +1075,7 @@ async def _load_agent_for_files(
         "icon": ca["icon"] or "🤖", "description": ca["description"] or "",
         "soul": ca["soul"] or "", "rules": [],
         "skills": _json.loads(ca["skills"]) if ca["skills"] else [],
+        "channels": _json.loads(ca["channels"]) if ca.get("channels") else [],
         "allowed_tools": [], "allowed_skills": [],
         "created_by": ca["created_by"],
         "created_at": str(ca["created_at"]) if ca["created_at"] else "",
@@ -1205,6 +1224,8 @@ async def save_agent_files(
             agent_model.allowed_tools = body.allowedTools
         if body.allowedSkills is not None:
             agent_model.allowed_skills = body.allowedSkills
+        if body.allowedChannels is not None:
+            agent_model.channels = body.allowedChannels
 
         persona = dict(agent_model.persona or {})
         if body.soulInstructions is not None:

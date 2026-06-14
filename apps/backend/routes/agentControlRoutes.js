@@ -95,7 +95,7 @@ router.post('/agents', async (req, res) => {
       companyId, name: req.body?.name, role: req.body?.role,
       templateSlug: req.body?.templateSlug, model: req.body?.model,
       parentId: req.body?.parentId, allowedTools: req.body?.allowedTools,
-      allowedSkills: req.body?.allowedSkills,
+      allowedSkills: req.body?.allowedSkills, allowedChannels: req.body?.allowedChannels,
     });
     return res.status(201).json(result);
   } catch (error) {
@@ -131,6 +131,18 @@ router.put('/agents/:id/persona', async (req, res) => {
     const result = await aiServiceAdminClient.updateAgent(req.params.id, companyId, {
       persona: { soulInstructions: req.body?.soulInstructions || '' },
     });
+    return res.json(result || { success: true });
+  } catch (error) {
+    return res.status(502).json({ success: false, error: 'AI service unreachable: ' + (error.message || 'connection failed') });
+  }
+});
+
+router.put('/agents/:id', async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ error: 'companyId is required' });
+    const allowedFields = { allowedChannels: req.body?.allowedChannels };
+    const result = await aiServiceAdminClient.updateAgent(req.params.id, companyId, allowedFields);
     return res.json(result || { success: true });
   } catch (error) {
     return res.status(502).json({ success: false, error: 'AI service unreachable: ' + (error.message || 'connection failed') });

@@ -2,7 +2,7 @@ import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bot, PlayCircle, BookOpen, Wrench, Shield, Clock } from "lucide-react";
+import { Bot, PlayCircle, BookOpen, Wrench, Shield, Clock, GitFork } from "lucide-react";
 
 // Lazy-loaded sub-components for AI pages
 const CompanyAIAgents = React.lazy(() => import("./CompanyAIAgents"));
@@ -11,6 +11,7 @@ const AgenticRAGLab = React.lazy(() => import("./AgenticRAGLab"));
 const AgentToolsPage = React.lazy(() => import("./AgentToolsPage"));
 const AgentSkillsPage = React.lazy(() => import("./AgentSkillsPage"));
 const CompanyAIScheduler = React.lazy(() => import("./CompanyAIScheduler"));
+import ChannelRoutingPage from "./ChannelRoutingPage";
 
 export default function AIHubLayout() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -57,9 +58,13 @@ export default function AIHubLayout() {
                  <span>{t("aiHub.tabs.skills")}</span>
                </TabsTrigger>
                <TabsTrigger value="scheduler" className="flex items-center gap-1.5 px-3 py-1.5 text-xs transition-all duration-200 flex-shrink-0">
-                 <Clock className="size-3.5" />
-                 <span>{t("aiHub.tabs.scheduler")}</span>
-               </TabsTrigger>
+                  <Clock className="size-3.5" />
+                  <span>{t("aiHub.tabs.scheduler")}</span>
+                </TabsTrigger>
+               <TabsTrigger value="routing" className="flex items-center gap-1.5 px-3 py-1.5 text-xs transition-all duration-200 flex-shrink-0">
+                  <GitFork className="size-3.5" />
+                  <span>{t("aiHub.tabs.routing")}</span>
+                </TabsTrigger>
              </TabsList>
            </Tabs>
         </div>
@@ -78,6 +83,7 @@ export default function AIHubLayout() {
            {activeTab === "tools" && <AgentToolsPage />}
            {activeTab === "skills" && <AgentSkillsPage />}
            {activeTab === "scheduler" && <CompanyAIScheduler />}
+           {activeTab === "routing" && <ChannelRoutingPage />}
         </React.Suspense>
       </div>
     </div>
