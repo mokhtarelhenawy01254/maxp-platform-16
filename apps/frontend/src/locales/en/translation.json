@@ -270,6 +270,26 @@
       "scheduler": "Scheduler",
       "routing": "Channel Routing"
     },
+    "channelRouting": {
+      "title": "Channel Routing",
+      "subtitle": "Assign which agent handles replies on each channel",
+      "save": "Save Changes",
+      "cardTitle": "Available Channels",
+      "cardDesc": "Select an agent for each channel to enable auto-reply",
+      "channel": "Channel",
+      "agent": "Responsible Agent",
+      "autoReply": "Auto Reply",
+      "toolStatus": "Tool Status",
+      "selectPlaceholder": "Select agent...",
+      "noRouting": "No Routing (CEO)",
+      "active": "✅ Active",
+      "inactive": "❌ Inactive",
+      "comingSoon": "Coming Soon",
+      "saved": "Changes saved successfully",
+      "saveFailed": "Failed to save changes",
+      "loadFailed": "Failed to load data",
+      "emptyState": "No agent assigned yet. CEO auto-routing will be used for all channels."
+    },
     "sandbox": {
       "chat": {
         "selectAgent": "Select an agent to start chatting",
