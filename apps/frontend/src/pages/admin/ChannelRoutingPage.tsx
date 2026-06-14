@@ -33,7 +33,6 @@ interface ChannelConfig {
 }
 
 const CHANNELS: { key: string; label: string; icon: string; tool: string }[] = [
-  { key: "FACEBOOK", label: "Facebook", icon: "📘", tool: "facebook_reply" },
   { key: "MESSENGER", label: "Messenger", icon: "💬", tool: "facebook_reply" },
   { key: "WHATSAPP", label: "WhatsApp", icon: "💚", tool: "whatsapp_send" },
   { key: "INSTAGRAM", label: "Instagram", icon: "📸", tool: "" },
