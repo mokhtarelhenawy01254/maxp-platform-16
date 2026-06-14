@@ -1023,7 +1023,7 @@ export default function Marketplace() {
                   <p className="text-muted-foreground">
                     {t('marketplace.noTools')}
                   </p>
-                </div>
+                </Card>
               ) : (
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {visibleApps.map((app) => {
