@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { AdminPageHeader } from "@/components/admin";
+import { AdminPageHeader } from "@/components/Admin";
 
 interface AgentNode {
   id: string;
