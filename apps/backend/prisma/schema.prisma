@@ -1505,6 +1505,25 @@ model CompetitorAdIntelligence {
   @@map("competitor_ad_intelligence")
 }
 
+// --- From: competitors_features.prisma ---
+model CompetitorFeature {
+  id           String     @id @default(cuid())
+  competitorId String
+  title        String
+  description  String?    @db.Text
+  priority     String     @default("medium")
+  status       String     @default("pending")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  competitor   Competitor @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+
+  @@index([competitorId])
+  @@index([competitorId, status])
+  @@index([competitorId, priority])
+  @@map("competitor_features")
+}
+
 // --- From: competitors_platforms.prisma ---
 model CompetitorAmazonData {
   id               String   @id @default(cuid())
@@ -1806,6 +1825,7 @@ model Competitor {
   shopifyStores  CompetitorShopifyStore[]
   adCampaigns    CompetitorAdCampaign[]
   adIntelligence CompetitorAdIntelligence[]
+  features       CompetitorFeature[]
 
   @@unique([companyId, slug])
   @@index([companyId])
