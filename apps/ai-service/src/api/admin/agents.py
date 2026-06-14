@@ -9,8 +9,9 @@ from typing import Annotated, Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, text
+from sqlalchemy import case, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.agents.base import BaseAgent, BaseAgentConfig
 from src.agents.loader import get_template, list_templates, seed_templates
@@ -19,16 +20,28 @@ from src.api.admin.agents_schemas import (
     AgentChatRequest,
     AgentChatResponse,
     AgentCreate,
+    AgentFileSkill,
+    AgentFileTool,
+    AgentFilesResponse,
+    AgentFilesSaveRequest,
     AgentRead,
     AgentStatusUpdate,
+    AgentSummary,
     AgentTemplateList,
     AgentTemplateRead,
     AgentUpdate,
+    InboxSummary,
+    ManagerContextResponse,
+    ProfileSummary,
     SandboxEvaluateRequest,
     SandboxEvaluateResponse,
+    TeamMapNode,
+    TeamMapResponse,
+    ToolSummary,
 )
 from src.db.models.agent import Agent as AgentModel
-from src.db.models.agent import AgentTemplate, CompanyAgent
+from src.db.models.agent import AgentTemplate, CompanyAgent as CompanyAgentModel
+from src.db.models.skill import Skill as SkillModel
 from src.db.models.thread import Thread
 from src.db.session import get_session
 from src.llm.agent_client_factory import build_provider_client_async
@@ -708,6 +721,91 @@ async def _ensure_agent_in_db(agent_id: str, session: AsyncSession) -> AgentMode
     return agent
 
 
+@router.get("/manager/context", response_model=ManagerContextResponse)
+async def get_manager_context(
+    session: SessionDep,
+    company_id: str = Query(..., min_length=1),
+) -> ManagerContextResponse:
+    """Full manager context: agents, tools, profiles, skills, inbox counts."""
+    agents_map: dict[str, AgentSummary] = {}
+
+    agents_stmt = (
+        select(AgentModel)
+        .where(AgentModel.company_id == company_id, AgentModel.status != "ARCHIVED")
+        .order_by(AgentModel.created_at)
+    )
+    for a in (await session.execute(agents_stmt)).scalars().all():
+        agents_map[a.id] = AgentSummary(
+            id=a.id, name=a.name, role=a.role, status=a.status,
+            model=a.model, template_slug=a.template_slug, version=a.version,
+            allowed_tools=list(a.allowed_tools or []),
+            allowed_skills=list(a.allowed_skills or []),
+        )
+
+    ca_stmt = (
+        select(CompanyAgentModel)
+        .where(CompanyAgentModel.company_id == company_id, CompanyAgentModel.status != "ARCHIVED")
+        .order_by(CompanyAgentModel.created_at)
+    )
+    for ca in (await session.execute(ca_stmt)).scalars().all():
+        if ca.id not in agents_map:
+            agents_map[ca.id] = AgentSummary(
+                id=ca.id, name=ca.name, role=ca.role, status=ca.status,
+                model=ca.model, template_slug=ca.template_slug,
+                allowed_tools=[], allowed_skills=[],
+            )
+
+    agents = list(agents_map.values())
+    manager = next((a for a in agents if a.role == "CEO"), agents[0] if agents else None)
+
+    all_tools_data = get_all_tools()
+    tools: list[ToolSummary] = []
+    for t in all_tools_data:
+        side_effects = getattr(t, "side_effects", "read")
+        tools.append(ToolSummary(
+            name=t.name, description=t.description or "",
+            side_effects=side_effects,
+            requires_approval=side_effects == "write",
+            handler=t.name.split(".")[0] if "." in t.name else "agent",
+        ))
+
+    templates = await list_templates(session)
+    profiles = [ProfileSummary(
+        slug=t.slug, name=t.name, role=t.role, version=t.version,
+        allowed_tools=list(t.allowed_tools or []),
+        allowed_skills=list(t.allowed_skills or []),
+    ) for t in templates]
+
+    seen: set[str] = set()
+    skills = []
+    for t in templates:
+        for s in (t.allowed_skills or []):
+            if s not in seen:
+                seen.add(s)
+                skills.append({"id": s, "displayName": s})
+
+    inbox = InboxSummary()
+    try:
+        from sqlalchemy import func as sa_func
+        from src.db.models.task import AiAgentTask
+        c = select(
+            sa_func.count().label("total"),
+            sa_func.sum(case((AiAgentTask.status.in_(["PENDING","CHECKED_OUT","IN_PROGRESS"]), 1), else_=0)).label("active"),
+            sa_func.sum(case((AiAgentTask.status == "PENDING", 1), else_=0)).label("pending"),
+            sa_func.sum(case((AiAgentTask.status == "CHECKED_OUT", 1), else_=0)).label("checked_out"),
+            sa_func.sum(case((AiAgentTask.status == "COMPLETED", 1), else_=0)).label("completed"),
+            sa_func.sum(case((AiAgentTask.status == "FAILED", 1), else_=0)).label("failed"),
+        ).where(AiAgentTask.company_id == company_id)
+        row = (await session.execute(c)).one()
+        inbox = InboxSummary(total=row.total or 0, active=row.active or 0, pending=row.pending or 0,
+                            checked_out=row.checked_out or 0, completed=row.completed or 0, failed=row.failed or 0)
+    except Exception:
+        logger.warning("inbox table not available", company_id=company_id)
+
+    return ManagerContextResponse(manager=manager, agents=agents, profiles=profiles,
+                                  tools=tools, skills=skills, inbox=inbox)
+
+
 @router.get("/tools")
 async def list_tools() -> list[dict[str, Any]]:
     """List all available tools from the tool registry."""
@@ -829,3 +927,324 @@ async def reconcile_agent(agent_id: str, session: SessionDep) -> AgentRead:
     await session.refresh(agent)
     logger.info("Agent reconciled with template", agent_id=agent_id, template=agent.template_slug)
     return _agent_to_read(agent)
+
+
+@router.get("/team-map", response_model=TeamMapResponse)
+async def get_team_map(
+    session: SessionDep,
+    company_id: str = Query(..., min_length=1),
+) -> TeamMapResponse:
+    """Build agent hierarchy tree with department metadata."""
+    agents_map: dict[str, dict[str, Any]] = {}
+
+    agents_stmt = (
+        select(AgentModel)
+        .where(
+            AgentModel.company_id == company_id,
+            AgentModel.status != "ARCHIVED",
+        )
+        .order_by(AgentModel.created_at)
+    )
+    for a in (await session.execute(agents_stmt)).scalars().all():
+        agents_map[a.id] = {
+            "id": a.id, "name": a.name, "role": a.role,
+            "status": a.status, "model": a.model,
+            "template_slug": a.template_slug, "parent_id": a.parent_id,
+            "department_name": None, "department_icon": None, "manager_type": None,
+        }
+
+    ca_stmt = (
+        select(CompanyAgentModel)
+        .options(selectinload(CompanyAgentModel.department))
+        .where(
+            CompanyAgentModel.company_id == company_id,
+            CompanyAgentModel.status != "ARCHIVED",
+        )
+        .order_by(CompanyAgentModel.created_at)
+    )
+    for ca in (await session.execute(ca_stmt)).scalars().all():
+        dept_name = ca.department.name if ca.department else None
+        dept_icon = ca.department.icon if ca.department else None
+        if ca.id in agents_map:
+            agents_map[ca.id]["department_name"] = dept_name
+            agents_map[ca.id]["department_icon"] = dept_icon
+            agents_map[ca.id]["manager_type"] = ca.manager_type
+        else:
+            agents_map[ca.id] = {
+                "id": ca.id, "name": ca.name, "role": ca.role,
+                "status": ca.status, "model": ca.model,
+                "template_slug": ca.template_slug, "parent_id": ca.parent_id,
+                "department_name": dept_name, "department_icon": dept_icon,
+                "manager_type": ca.manager_type,
+            }
+
+    agents_list = list(agents_map.values())
+    summary_list = [AgentSummary(
+        id=a["id"], name=a["name"], role=a["role"],
+        status=a["status"], model=a["model"], template_slug=a["template_slug"],
+    ) for a in agents_list]
+
+    node_by_id: dict[str, dict[str, Any]] = {}
+    for a in agents_list:
+        node_by_id[a["id"]] = {
+            "id": a["id"], "name": a["name"], "role": a["role"],
+            "status": a["status"], "model": a["model"],
+            "template_slug": a["template_slug"],
+            "department_name": a["department_name"],
+            "department_icon": a["department_icon"],
+            "manager_type": a["manager_type"],
+            "children": [],
+        }
+
+    roots: list[dict[str, Any]] = []
+    for a in agents_list:
+        node = node_by_id[a["id"]]
+        parent = node_by_id.get(a["parent_id"])
+        if parent and parent["id"] != node["id"]:
+            parent["children"].append(node)
+        else:
+            roots.append(node)
+
+    roots.sort(key=lambda n: (-1 if n["role"] == "CEO" else 1, n["name"]))
+
+    return TeamMapResponse(
+        tree=[TeamMapNode.model_validate(r) for r in roots],
+        agents=summary_list,
+        count=len(summary_list),
+    )
+
+
+async def _load_agent_for_files(
+    agent_id: str,
+    company_id: str | None,
+    session: AsyncSession,
+) -> tuple[AgentModel | None, dict[str, Any] | None]:
+    result = await session.execute(
+        select(AgentModel).where(
+            AgentModel.id == agent_id,
+            AgentModel.status != "ARCHIVED",
+        )
+    )
+    agent = result.scalar_one_or_none()
+    if agent:
+        return agent, _agent_config_from_record(agent)
+
+    import json as _json
+    ca_row = await session.execute(
+        text("""
+            SELECT ca.id, ca.name, ca.role, ca.icon, ca.description, ca.soul,
+                   ca.rules, ca.skills, ca.model, ca.status, ca."parentId" AS parent_id,
+                   ca."templateSlug" AS template_slug, ca."createdBy" AS created_by,
+                   ca."createdAt" AS created_at, ca."departmentId" AS department_id,
+                   ca."managerType" AS manager_type,
+                   ad."key" AS department_key, ad."name" AS department_name,
+                   ad."icon" AS department_icon
+            FROM public.company_agents ca
+            LEFT JOIN ai.agent_departments ad ON ad.id = ca."departmentId"
+            WHERE ca.id = :agent_id
+              AND (ca."companyId" = :company_id OR :company_id IS NULL)
+        """),
+        {"agent_id": agent_id, "company_id": company_id or ""},
+    )
+    ca = ca_row.mappings().one_or_none()
+    if not ca:
+        return None, None
+
+    raw = {
+        "id": ca["id"], "name": ca["name"], "role": ca["role"],
+        "status": ca["status"], "model": ca["model"],
+        "template_slug": ca["template_slug"], "parent_id": ca["parent_id"],
+        "icon": ca["icon"] or "🤖", "description": ca["description"] or "",
+        "soul": ca["soul"] or "", "rules": [],
+        "skills": _json.loads(ca["skills"]) if ca["skills"] else [],
+        "allowed_tools": [], "allowed_skills": [],
+        "created_by": ca["created_by"],
+        "created_at": str(ca["created_at"]) if ca["created_at"] else "",
+        "department_id": ca["department_id"], "department_key": ca["department_key"],
+        "department_name": ca["department_name"], "department_icon": ca["department_icon"],
+        "manager_type": ca["manager_type"],
+        "persona": {"soulInstructions": ca["soul"] or ""} if ca["soul"] else {},
+        "policies": {}, "config": {},
+    }
+    return None, raw
+
+
+async def _build_agent_files_response(
+    agent_id: str,
+    company_id: str | None,
+    session: AsyncSession,
+) -> AgentFilesResponse:
+    agent_model, agent_raw = await _load_agent_for_files(agent_id, company_id, session)
+    if not agent_raw:
+        raise HTTPException(status_code=404, detail=f"Agent not found: {agent_id}")
+
+    if agent_model:
+        agent_raw.update({
+            "id": agent_model.id, "name": agent_model.name, "role": agent_model.role,
+            "status": agent_model.status, "model": agent_model.model,
+            "template_slug": agent_model.template_slug, "parent_id": agent_model.parent_id,
+            "persona": agent_model.persona or {},
+            "policies": {"guardrails": agent_model.guardrails or {}, "budget": agent_model.budget or {}},
+            "config": agent_model.config or {},
+            "allowed_tools": list(agent_model.allowed_tools or []),
+            "allowed_skills": list(agent_model.allowed_skills or []),
+        })
+
+    template_slug = agent_raw.get("template_slug")
+    profile = None
+    template = None
+    if template_slug:
+        template = await get_template(template_slug, session)
+        if template:
+            profile = {
+                "slug": template.slug, "name": template.name, "role": template.role,
+                "version": template.version, "modelPolicy": template.model_policy or {},
+            }
+
+    persona = agent_raw.get("persona") or {}
+    soul = persona.get("soulInstructions") or (template.instructions_soul if template else "")
+    agents_i = persona.get("agentInstructions") or (template.instructions_agents if template else "")
+    tools_i = persona.get("toolsInstructions") or (template.instructions_tools if template else "")
+    persona_i = persona.get("personaInstructions") or (template.instructions_persona if template else "")
+
+    allowed_skill_ids = agent_raw.get("allowed_skills") or agent_raw.get("skills") or []
+    skill_details: list[dict[str, Any]] = []
+    if allowed_skill_ids:
+        skill_rows = await session.execute(
+            select(SkillModel).where(SkillModel.id.in_(allowed_skill_ids))
+        )
+        for s in skill_rows.scalars().all():
+            skill_details.append({
+                "id": s.id, "displayName": s.name,
+                "description": s.description or "",
+                "allowedTools": s.allowed_tools or [],
+            })
+
+    skills_json = json.dumps({
+        "allowedSkills": allowed_skill_ids,
+        "skills": skill_details,
+    }, ensure_ascii=False, default=str)
+
+    all_tools = get_all_tools()
+    allowed_tool_names = agent_raw.get("allowed_tools") or []
+    tools_list: list[dict[str, Any]] = []
+    for t in all_tools:
+        if not allowed_tool_names or t.name in allowed_tool_names:
+            se = "read"
+            if hasattr(t, "side_effects") and t.side_effects:
+                se = t.side_effects
+            tools_list.append({"name": t.name, "description": t.description or "", "sideEffects": se})
+
+    agent_dict = {
+        "id": agent_raw["id"], "name": agent_raw["name"], "role": agent_raw["role"],
+        "status": agent_raw["status"], "model": agent_raw.get("model"),
+        "templateSlug": agent_raw.get("template_slug"),
+        "parentId": agent_raw.get("parent_id"),
+        "icon": agent_raw.get("icon") or "🤖",
+        "description": agent_raw.get("description") or "",
+        "soul": agent_raw.get("soul") or soul,
+        "rules": agent_raw.get("rules") or [],
+        "skills": agent_raw.get("skills") or [],
+        "allowedTools": agent_raw.get("allowed_tools") or [],
+        "allowedSkills": agent_raw.get("allowed_skills") or [],
+        "createdBy": agent_raw.get("created_by"),
+        "createdAt": agent_raw.get("created_at") or "",
+        "departmentId": agent_raw.get("department_id"),
+        "departmentKey": agent_raw.get("department_key"),
+        "departmentName": agent_raw.get("department_name"),
+        "departmentIcon": agent_raw.get("department_icon"),
+        "managerType": agent_raw.get("manager_type"),
+        "persona": persona,
+        "policies": agent_raw.get("policies") or {},
+        "config": agent_raw.get("config") or {},
+    }
+
+    files = {
+        "SOUL.md": soul or "",
+        "AGENTS.md": agents_i or "",
+        "TOOLS.md": tools_i or "",
+        "SKILLS.json": skills_json,
+        "PERSONA.md": persona_i or "",
+    }
+
+    return AgentFilesResponse(
+        agent=agent_dict, profile=profile, files=files,
+        tools=[AgentFileTool(**t) for t in tools_list],
+        skills=[AgentFileSkill(**s) for s in skill_details],
+    )
+
+
+@router.get("/agents/{agent_id}/files", response_model=AgentFilesResponse)
+async def get_agent_files(
+    agent_id: str,
+    session: SessionDep,
+    company_id: str | None = Query(default=None),
+) -> AgentFilesResponse:
+    """Load agent profile files (SOUL.md, SKILLS.json, tools, skills)."""
+    return await _build_agent_files_response(agent_id, company_id, session)
+
+
+@router.put("/agents/{agent_id}/files", response_model=AgentFilesResponse)
+async def save_agent_files(
+    agent_id: str,
+    body: AgentFilesSaveRequest,
+    session: SessionDep,
+    company_id: str | None = Query(default=None),
+) -> AgentFilesResponse:
+    """Save agent profile changes and return updated files."""
+    agent_model, agent_raw = await _load_agent_for_files(agent_id, company_id, session)
+    if not agent_raw:
+        raise HTTPException(status_code=404, detail=f"Agent not found: {agent_id}")
+
+    if agent_model:
+        if body.name is not None:
+            agent_model.name = body.name
+        if body.model is not None:
+            agent_model.model = body.model
+        if body.allowedTools is not None:
+            agent_model.allowed_tools = body.allowedTools
+        if body.allowedSkills is not None:
+            agent_model.allowed_skills = body.allowedSkills
+
+        persona = dict(agent_model.persona or {})
+        if body.soulInstructions is not None:
+            persona["soulInstructions"] = body.soulInstructions
+        if body.agentInstructions is not None:
+            persona["agentInstructions"] = body.agentInstructions
+        if body.toolsInstructions is not None:
+            persona["toolsInstructions"] = body.toolsInstructions
+        if body.personaInstructions is not None:
+            persona["personaInstructions"] = body.personaInstructions
+        if persona:
+            agent_model.persona = persona
+
+        if body.policies is not None:
+            agent_model.guardrails = body.policies.get("guardrails", agent_model.guardrails)
+            agent_model.budget = body.policies.get("budget", agent_model.budget)
+
+        await session.commit()
+        await session.refresh(agent_model)
+    else:
+        ca_updates: list[str] = []
+        if body.soulInstructions is not None:
+            ca_updates.append('"soul" = :soul')
+        if body.name is not None:
+            ca_updates.append('"name" = :name')
+        if body.model is not None:
+            ca_updates.append('"model" = :model')
+        if ca_updates:
+            set_clause = ", ".join(ca_updates)
+            params = {"agent_id": agent_id}
+            if body.soulInstructions is not None:
+                params["soul"] = body.soulInstructions
+            if body.name is not None:
+                params["name"] = body.name
+            if body.model is not None:
+                params["model"] = body.model
+            await session.execute(
+                text(f'UPDATE public.company_agents SET {set_clause} WHERE id = :agent_id'),
+                params,
+            )
+            await session.commit()
+
+    return await _build_agent_files_response(agent_id, company_id, session)

@@ -1,611 +1,165 @@
-/**
- * AgentToolsPage
- *
- * Tool-centric view: shows ALL tools in the system and which agents use each one.
- * Includes "Assign to Agent" dialog for quick tool assignment.
- */
-
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
-  Alert,
-  Avatar,
-  Box,
-  Button,
-  Checkbox,
-  Chip,
-  CircularProgress,
-  Collapse,
+  Zap,
+  ChevronDown,
+  ChevronLeft,
+  RefreshCw,
+  Search,
+  UserPlus,
+  Lock,
+  Unlock,
+  Shield,
+  Check,
+  AlertCircle,
+  Wrench,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
   Dialog,
-  DialogActions,
   DialogContent,
+  DialogHeader,
   DialogTitle,
-  Divider,
-  IconButton,
-  InputAdornment,
-  LinearProgress,
-  Paper,
-  Stack,
-  TextField,
-  Tooltip,
-  Typography,
-  useTheme,
-} from "@mui/material";
-import Grid from "../../components/ui/CompatGrid";
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
-  Bolt as ToolIcon,
-  ExpandMore as ChevronDownIcon,
-  ChevronRight as ChevronRightIcon,
-  Refresh as RefreshIcon,
-  Search as SearchIcon,
-  PersonAdd as AssignIcon,
-  Lock as WriteIcon,
-  LockOpen as ReadIcon,
-  Shield as GuardIcon,
-  CheckCircle as CheckIcon,
-} from "@mui/icons-material";
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { cn } from "@/lib/utils";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
-import { useNavigate } from "react-router-dom";
 import i18n from "../../i18n";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface ToolDefinition {
-  name: string;
-  description: string;
-  sideEffects: "read" | "write";
-  requiresApproval: boolean;
-  approvalMode?: string;
-  source?: "python_builtin" | "mcp" | "legacy_bridge" | string;
-  runtimeSource?: string;
-  aliases?: string[];
-  companyScoped?: boolean;
-}
-
-interface AgentToolInfo {
-  id: string;
-  name: string;
-  role: string;
-  icon: string;
-  status: string;
-  autonomy?: string;
-}
-
-interface AgentDefinition {
-  id: string;
-  name: string;
-  role: string;
-  icon: string;
-  status: string;
-  allowedTools: string[];
-  toolAutonomy?: Record<string, string>;
-}
-
-// ─── API helpers ──────────────────────────────────────────────────────────────
+interface ToolDefinition { name: string; description: string; sideEffects: "read" | "write"; requiresApproval: boolean; approvalMode?: string; source?: string; runtimeSource?: string; aliases?: string[]; companyScoped?: boolean; }
+interface AgentToolInfo { id: string; name: string; role: string; icon: string; status: string; autonomy?: string; }
+interface AgentDefinition { id: string; name: string; role: string; icon: string; status: string; allowedTools: string[]; toolAutonomy?: Record<string, string>; }
 
 const apiRequest = async <T,>(path: string): Promise<T> => {
-  const response = await fetch(buildApiUrl(path), {
-    headers: tokenManager.createAuthHeaders(),
-  });
+  const response = await fetch(buildApiUrl(path), { headers: tokenManager.createAuthHeaders() });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.success === false) {
-    throw new Error(data.error || data.message || `Request failed: ${response.status}`);
-  }
+  if (!response.ok || data.success === false) throw new Error(data.error || data.message || `Request failed: ${response.status}`);
   return data as T;
 };
-
 const apiPut = async <T,>(path: string, body: unknown): Promise<T> => {
-  const response = await fetch(buildApiUrl(path), {
-    method: "PUT",
-    headers: { ...tokenManager.createAuthHeaders(), "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  const response = await fetch(buildApiUrl(path), { method: "PUT", headers: { ...tokenManager.createAuthHeaders(), "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.success === false) {
-    throw new Error(data.error || data.message || `Request failed: ${response.status}`);
-  }
+  if (!response.ok || data.success === false) throw new Error(data.error || data.message || `Request failed: ${response.status}`);
   return data as T;
 };
 
-// ─── Assign Dialog ────────────────────────────────────────────────────────────
-
-interface AssignDialogProps {
-  open: boolean;
-  toolName: string;
-  agents: AgentDefinition[];
-  onClose: () => void;
-  onSaved: () => void;
-}
-
-function AssignToolDialog({ open, toolName, agents, onClose, onSaved }: AssignDialogProps) {
+function AssignToolDialog({ open, toolName, agents, onClose, onSaved }: { open: boolean; toolName: string; agents: AgentDefinition[]; onClose: () => void; onSaved: () => void }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [search, setSearch] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState(""); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null);
 
-  // Initialize selection: agents that already have this tool
-  useEffect(() => {
-    if (open) {
-      const initial = new Set(
-        agents.filter((a) => a.allowedTools?.includes(toolName)).map((a) => a.id)
-      );
-      setSelected(initial);
-      setSearch("");
-      setError(null);
-    }
-  }, [open, toolName, agents]);
-
-  const filtered = useMemo(() => {
-    if (!search.trim()) return agents;
-    const q = search.toLowerCase();
-    return agents.filter((a) =>
-      [a.name, a.role, a.id].some((v) => String(v).toLowerCase().includes(q))
-    );
-  }, [agents, search]);
-
-  const toggle = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleAll = () => {
-    if (selected.size === filtered.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(filtered.map((a) => a.id)));
-    }
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      // Update each agent: add or remove the tool
-      const promises = agents.map(async (agent) => {
-        const hasTool = agent.allowedTools?.includes(toolName);
-        const shouldBeAdded = selected.has(agent.id);
-
-        if (hasTool === shouldBeAdded) return; // no change needed
-
-        const nextTools = shouldBeAdded
-          ? [...(agent.allowedTools || []), toolName]
-          : (agent.allowedTools || []).filter((t) => t !== toolName);
-
-        return apiPut(`/agent/agents/${agent.id}/files`, {
-          name: agent.name,
-          role: agent.role,
-          allowedTools: nextTools,
-          allowedSkills: [],
-          toolAutonomy: {
-            ...(agent.toolAutonomy || {}),
-            ...(shouldBeAdded ? { [toolName]: "auto" } : {}),
-          },
-        });
-      });
-
-      await Promise.all(promises);
-      onSaved();
-      onClose();
-    } catch (err: any) {
-      setError(err.message || "فشل الحفظ");
-    } finally {
-      setSaving(false);
-    }
-  };
+  useEffect(() => { if (open) { setSelected(new Set(agents.filter((a) => a.allowedTools?.includes(toolName)).map((a) => a.id))); setSearch(""); setError(null); } }, [open, toolName, agents]);
+  const filtered = useMemo(() => { if (!search.trim()) return agents; const q = search.toLowerCase(); return agents.filter((a) => [a.name, a.role, a.id].some((v) => String(v).toLowerCase().includes(q))); }, [agents, search]);
+  const toggle = (id: string) => setSelected((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const toggleAll = () => { if (selected.size === filtered.length) setSelected(new Set()); else setSelected(new Set(filtered.map((a) => a.id))); };
+  const handleSave = async () => { setSaving(true); setError(null); try { await Promise.all(agents.map(async (agent) => { const has = agent.allowedTools?.includes(toolName); const add = selected.has(agent.id); if (has === add) return; const nt = add ? [...(agent.allowedTools || []), toolName] : (agent.allowedTools || []).filter((t) => t !== toolName); return apiPut(`/agent/agents/${agent.id}/files`, { name: agent.name, role: agent.role, allowedTools: nt, allowedSkills: [], toolAutonomy: { ...(agent.toolAutonomy || {}), ...(add ? { [toolName]: "auto" } : {}) } }); })); onSaved(); onClose(); } catch (err: any) { setError(err.message || "فشل الحفظ"); } finally { setSaving(false); } };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 900 }}>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <AssignIcon color="primary" />
-          <Box>
-            <Typography variant="subtitle1" fontWeight={900}>تعيين الأداة لوكيل</Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ fontFamily: "Consolas, monospace" }}>
-              {toolName}
-            </Typography>
-          </Box>
-        </Stack>
-      </DialogTitle>
-      <DialogContent dividers>
-        {saving && <LinearProgress sx={{ mb: 2 }} />}
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
-        <TextField
-          size="small"
-          fullWidth
-          placeholder="بحث في الوكلاء..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            ),
-          }}
-          sx={{ mb: 2 }}
-        />
-
-        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-          <Typography variant="caption" color="text.secondary">
-            {selected.size} / {filtered.length} محدد
-          </Typography>
-          <Button size="small" onClick={toggleAll} sx={{ fontSize: "0.75rem", textTransform: "none" }}>
-            {selected.size === filtered.length ? "إلغاء تحديد الكل" : "تحديد الكل"}
-          </Button>
-        </Stack>
-
-        <Stack spacing={0.5} sx={{ maxHeight: 360, overflow: "auto" }}>
-          {filtered.map((agent) => {
-            const checked = selected.has(agent.id);
-            const alreadyHas = agent.allowedTools?.includes(toolName);
-            return (
-              <Paper
-                key={agent.id}
-                elevation={0}
-                onClick={() => toggle(agent.id)}
-                sx={{
-                  p: 1.25,
-                  border: "1px solid",
-                  borderColor: checked ? "primary.main" : "divider",
-                  borderRadius: 1.5,
-                  cursor: "pointer",
-                  bgcolor: checked ? "primary.50" : "transparent",
-                  "&:hover": { bgcolor: checked ? "primary.50" : "action.hover" },
-                  transition: "all 0.1s",
-                }}
-              >
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Checkbox checked={checked} size="small" sx={{ p: 0 }} />
-                  <Typography sx={{ fontSize: "1.1rem" }}>{agent.icon || "🤖"}</Typography>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="body2" fontWeight={700} noWrap>{agent.name}</Typography>
-                    <Typography variant="caption" color="text.secondary">{agent.role}</Typography>
-                  </Box>
-                  {alreadyHas && !checked && (
-                    <Chip size="small" label="حالي" color="default" variant="outlined" sx={{ fontSize: "0.6rem", height: 18 }} />
-                  )}
-                  {checked && (
-                    <CheckIcon color="primary" sx={{ fontSize: 18 }} />
-                  )}
-                </Stack>
-              </Paper>
-            );
-          })}
-          {filtered.length === 0 && (
-            <Typography color="text.secondary" textAlign="center" py={3}>
-              لا توجد نتائج
-            </Typography>
-          )}
-        </Stack>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle><div className="flex items-center gap-2"><UserPlus className="size-5 text-primary" /><span>تعيين الأداة لوكيل</span></div></DialogTitle>
+          <DialogDescription className="font-mono text-xs">{toolName}</DialogDescription>
+        </DialogHeader>
+        {saving && <div className="h-0.5 w-full animate-pulse bg-primary" />}
+        {error && <Alert variant="destructive"><AlertCircle className="size-4" /><AlertDescription>{error}</AlertDescription></Alert>}
+        <div className="relative mb-3"><Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input placeholder="بحث في الوكلاء..." value={search} onChange={(e) => setSearch(e.target.value)} className="pr-9" /></div>
+        <div className="mb-2 flex items-center justify-between"><span className="text-xs text-muted-foreground">{selected.size} / {filtered.length} محدد</span><Button size="sm" variant="link" onClick={toggleAll}>{selected.size === filtered.length ? "إلغاء تحديد الكل" : "تحديد الكل"}</Button></div>
+        <div className="max-h-[360px] space-y-1 overflow-auto">{filtered.map((agent) => { const checked = selected.has(agent.id); const already = agent.allowedTools?.includes(toolName); return (<div key={agent.id} onClick={() => toggle(agent.id)} className={cn("flex cursor-pointer items-center gap-2 rounded-xl border p-3 transition-all", checked ? "border-primary bg-primary/5" : "border-border hover:bg-muted")}><div className={cn("flex size-4 shrink-0 items-center justify-center rounded-sm border", checked ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground")}>{checked && <Check className="size-3" />}</div><span className="text-lg">{agent.icon || "🤖"}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{agent.name}</p><span className="text-xs text-muted-foreground">{agent.role}</span></div>{already && !checked && <Badge variant="outline" className="h-4 text-[0.6rem]">حالي</Badge>}</div>); })}</div>
+        <DialogFooter><Button variant="outline" onClick={onClose} disabled={saving}>إلغاء</Button><Button onClick={handleSave} disabled={saving}>{saving ? <LoadingSpinner size="sm" /> : <Check className="size-4" />}{saving ? "جارٍ الحفظ..." : "حفظ"}</Button></DialogFooter>
       </DialogContent>
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} disabled={saving}>إلغاء</Button>
-        <Button variant="contained" onClick={handleSave} disabled={saving} startIcon={saving ? <CircularProgress size={16} /> : <CheckIcon />}>
-          {saving ? "جارٍ الحفظ..." : "حفظ"}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function AgentToolsPage() {
-  const theme = useTheme();
   const navigate = useNavigate();
-  const isDark = theme.palette.mode === "dark";
-
   const [tools, setTools] = useState<ToolDefinition[]>([]);
   const [agents, setAgents] = useState<AgentDefinition[]>([]);
-  const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState(""); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null);
   const [expandedTool, setExpandedTool] = useState<string | null>(null);
   const [assignTool, setAssignTool] = useState<string | null>(null);
 
   const toolToAgents = useMemo(() => {
-    const canonicalByAlias = new Map<string, string>();
-    for (const tool of tools) {
-      canonicalByAlias.set(tool.name, tool.name);
-      for (const alias of tool.aliases || []) {
-        canonicalByAlias.set(alias, tool.name);
-      }
-    }
-
-    const map = new Map<string, AgentToolInfo[]>();
-    for (const agent of agents) {
-      for (const toolName of agent.allowedTools || []) {
-        const canonicalToolName = canonicalByAlias.get(toolName) || toolName;
-        if (!map.has(canonicalToolName)) map.set(canonicalToolName, []);
-        map.get(canonicalToolName)!.push({
-          id: agent.id,
-          name: agent.name,
-          role: agent.role,
-          icon: agent.icon,
-          status: agent.status,
-          autonomy: agent.toolAutonomy?.[toolName] || "auto",
-        });
-      }
-    }
-    return map;
+    const alias = new Map<string, string>(); for (const t of tools) { alias.set(t.name, t.name); for (const a of t.aliases || []) alias.set(a, t.name); }
+    const m = new Map<string, AgentToolInfo[]>(); for (const a of agents) { for (const tn of a.allowedTools || []) { const cn = alias.get(tn) || tn; if (!m.has(cn)) m.set(cn, []); m.get(cn)!.push({ id: a.id, name: a.name, role: a.role, icon: a.icon, status: a.status, autonomy: a.toolAutonomy?.[tn] || "auto" }); } }
+    return m;
   }, [agents, tools]);
-
-  const filteredTools = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return tools;
-    return tools.filter((tool) => {
-      const agentNames = (toolToAgents.get(tool.name) || []).map((a) => a.name).join(" ");
-      return [tool.name, tool.description, tool.sideEffects, agentNames]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(normalized));
-    });
-  }, [tools, query, toolToAgents]);
-
-  const loadAll = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [toolData, agentData] = await Promise.all([
-        apiRequest<{ success: true; tools: ToolDefinition[] }>("agent/tools"),
-        apiRequest<{ success: true; agents: AgentDefinition[] }>("agent-manager/agents"),
-      ]);
-      setTools(toolData.tools || []);
-      setAgents(agentData.agents || []);
-    } catch (err: any) {
-      setError(err.message || "تعذر تحميل الأدوات.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  const filteredTools = useMemo(() => { const n = query.trim().toLowerCase(); if (!n) return tools; return tools.filter((t) => { const an = (toolToAgents.get(t.name) || []).map((a) => a.name).join(" "); return [t.name, t.description, t.sideEffects, an].filter(Boolean).some((v) => String(v).toLowerCase().includes(n)); }); }, [tools, query, toolToAgents]);
+  const loadAll = useCallback(async () => { setLoading(true); setError(null); try { const [td, ad] = await Promise.all([apiRequest<{ success: true; tools: ToolDefinition[] }>("agent/tools"), apiRequest<{ success: true; agents: AgentDefinition[] }>("agent-manager/agents")]); setTools(td.tools || []); setAgents(ad.agents || []); } catch (err: any) { setError(err.message || "تعذر تحميل الأدوات."); } finally { setLoading(false); } }, []);
   useEffect(() => { loadAll(); }, [loadAll]);
+  const readT = filteredTools.filter((t) => !t.sideEffects || t.sideEffects === "read");
+  const writeT = filteredTools.filter((t) => t.sideEffects === "write");
 
-  const readTools = filteredTools.filter((t) => !t.sideEffects || t.sideEffects === "read");
-  const writeTools = filteredTools.filter((t) => t.sideEffects === "write");
-
-  const ToolCard = ({ tool }: { tool: ToolDefinition }) => {
+  function ToolCard({ tool }: { tool: ToolDefinition }) {
     const isExpanded = expandedTool === tool.name;
     const agentList = toolToAgents.get(tool.name) || [];
     const isWrite = tool.sideEffects === "write";
-    const sourceLabel = tool.source === "mcp"
-      ? i18n.t("agentTools.sources.mcp")
-      : i18n.t("agentTools.sources.python");
-
+    const sourceLabel = tool.source === "mcp" ? i18n.t("agentTools.sources.mcp") : i18n.t("agentTools.sources.python");
     return (
-      <Paper
-        elevation={0}
-        sx={{
-          p: 2,
-          borderRadius: 2,
-          border: "1px solid",
-          borderColor: isWrite ? "warning.main" : "divider",
-          bgcolor: isWrite ? alpha(theme.palette.warning.main, 0.03) : "background.paper",
-          transition: "all 0.15s",
-          "&:hover": { borderColor: isWrite ? "warning.main" : "primary.main" },
-        }}
-      >
-        <Stack direction="row" spacing={1.5} alignItems="flex-start">
-          <Avatar
-            sx={{ width: 36, height: 36, bgcolor: isWrite ? "warning.main" : "primary.main", fontSize: 18 }}
-          >
-            <ToolIcon />
-          </Avatar>
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }} flexWrap="wrap">
-              <Typography variant="subtitle2" fontWeight={900} sx={{ fontFamily: "Consolas, monospace" }}>
-                {tool.name}
-              </Typography>
-              <Chip
-                size="small"
-                icon={isWrite ? <WriteIcon sx={{ fontSize: 12 }} /> : <ReadIcon sx={{ fontSize: 12 }} />}
-                label={isWrite ? "كتابة" : "قراءة"}
-                color={isWrite ? "warning" : "primary"}
-                variant="outlined"
-                sx={{ fontSize: "0.65rem", height: 20 }}
-              />
-              {tool.requiresApproval && (
-                <Chip size="small" icon={<GuardIcon sx={{ fontSize: 12 }} />} label="تحتاج موافقة" color="warning" variant="outlined" sx={{ fontSize: "0.65rem", height: 20 }} />
-              )}
-              <Chip size="small" label={sourceLabel} color={tool.source === "mcp" ? "secondary" : "default"} variant="outlined" sx={{ fontSize: "0.65rem", height: 20 }} />
-              {agentList.length > 0 && (
-                <Chip size="small" label={`${agentList.length} وكيل`} color="success" variant="outlined" sx={{ fontSize: "0.65rem", height: 20 }} />
-              )}
-            </Stack>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              {tool.description || "لا يوجد وصف لهذه الأداة."}
-            </Typography>
-
-            {/* Actions */}
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<AssignIcon sx={{ fontSize: 14 }} />}
-                onClick={() => setAssignTool(tool.name)}
-                sx={{ fontSize: "0.72rem", textTransform: "none", borderRadius: 2 }}
-              >
-                تعيين لوكيل
-              </Button>
-            </Stack>
-
-            {/* Agent list (expandable) */}
-            {agentList.length > 0 && (
-              <>
-                <Button
-                  size="small"
-                  startIcon={isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
-                  onClick={() => setExpandedTool(isExpanded ? null : tool.name)}
-                  sx={{ fontSize: "0.75rem", textTransform: "none", color: "text.secondary" }}
-                >
-                  الوكلاء يستخدمون هذه الأداة ({agentList.length})
-                </Button>
-                <Collapse in={isExpanded}>
-                  <Stack spacing={0.75} sx={{ mt: 1 }}>
-                    {agentList.map((agent) => (
-                      <Paper
-                        key={agent.id}
-                        elevation={0}
-                        sx={{
-                          p: 1,
-                          border: "1px solid",
-                          borderColor: "divider",
-                          borderRadius: 1.5,
-                          cursor: "pointer",
-                          "&:hover": { bgcolor: "action.hover" },
-                        }}
-                        onClick={() => navigate(`/admin/ai-agents?agent=${agent.id}`)}
-                      >
-                        <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-                          <Stack direction="row" spacing={1} alignItems="center">
-                            <Typography sx={{ fontSize: "1rem" }}>{agent.icon || "🤖"}</Typography>
-                            <Box>
-                              <Typography variant="body2" fontWeight={700}>{agent.name}</Typography>
-                              <Typography variant="caption" color="text.secondary">{agent.role}</Typography>
-                            </Box>
-                          </Stack>
-                          <Chip
-                            size="small"
-                            label={agent.autonomy === "blocked" ? "محظور" : agent.autonomy === "approval" ? "يحتاج تأكيد" : "تلقائي"}
-                            color={agent.autonomy === "blocked" ? "error" : agent.autonomy === "approval" ? "warning" : "success"}
-                            variant="outlined"
-                            sx={{ fontSize: "0.6rem", height: 18 }}
-                          />
-                        </Stack>
-                      </Paper>
-                    ))}
-                  </Stack>
-                </Collapse>
-              </>
-            )}
-            {agentList.length === 0 && (
-              <Typography variant="caption" color="text.disabled" sx={{ fontStyle: "italic" }}>
-                لا يوجد وكلاء يستخدمون هذه الأداة حالياً
-              </Typography>
-            )}
-          </Box>
-        </Stack>
-      </Paper>
+      <div className={cn("rounded-xl border p-4 transition-all hover:border-primary", isWrite ? "border-amber-600/50 bg-amber-500/[0.03]" : "border-border")}>
+        <div className="flex gap-3">
+          <div className={cn("flex size-9 shrink-0 items-center justify-center rounded-full text-white", isWrite ? "bg-amber-600" : "bg-primary")}><Zap className="size-5" /></div>
+          <div className="min-w-0 flex-1">
+            <div className="mb-1 flex flex-wrap items-center gap-1">
+              <span className="font-mono text-sm font-black">{tool.name}</span>
+              <Badge variant="outline" className={cn("h-5 gap-1 text-[0.65rem]", isWrite ? "border-amber-600 text-amber-600" : "border-primary text-primary")}>{isWrite ? <Lock className="size-3" /> : <Unlock className="size-3" />}{isWrite ? "كتابة" : "قراءة"}</Badge>
+              {tool.requiresApproval && <Badge variant="outline" className="h-5 gap-1 text-[0.65rem] border-amber-600 text-amber-600"><Shield className="size-3" />تحتاج موافقة</Badge>}
+              <Badge variant="outline" className="h-5 text-[0.65rem]">{sourceLabel}</Badge>
+              {agentList.length > 0 && <Badge variant="outline" className="h-5 text-[0.65rem] text-green-600">{agentList.length} وكيل</Badge>}
+            </div>
+            <p className="mb-2 text-sm text-muted-foreground">{tool.description || "لا يوجد وصف لهذه الأداة."}</p>
+            <div className="mb-2"><Button size="sm" variant="outline" onClick={() => setAssignTool(tool.name)} className="h-7 text-[0.72rem]"><UserPlus className="size-3" />تعيين لوكيل</Button></div>
+            {agentList.length > 0 ? (<><Button variant="link" size="sm" onClick={() => setExpandedTool(isExpanded ? null : tool.name)} className="h-6 text-xs text-muted-foreground">{isExpanded ? <ChevronDown className="size-3" /> : <ChevronLeft className="size-3" />}الوكلاء يستخدمون هذه الأداة ({agentList.length})</Button>{isExpanded && <div className="mt-2 space-y-1">{agentList.map((agent) => (<div key={agent.id} className="flex cursor-pointer items-center justify-between rounded-xl border p-2 transition-colors hover:bg-muted" onClick={() => navigate(`/admin/ai-agents?agent=${agent.id}`)}><div className="flex items-center gap-2"><span className="text-base">{agent.icon || "🤖"}</span><div><p className="text-sm font-bold">{agent.name}</p><span className="text-xs text-muted-foreground">{agent.role}</span></div></div><Badge variant="outline" className={cn("h-4 text-[0.6rem]", agent.autonomy === "blocked" ? "border-destructive text-destructive" : agent.autonomy === "approval" ? "border-amber-600 text-amber-600" : "border-green-600 text-green-600")}>{agent.autonomy === "blocked" ? "محظور" : agent.autonomy === "approval" ? "يحتاج تأكيد" : "تلقائي"}</Badge></div>))}</div>}</>) : <p className="text-xs italic text-muted-foreground">لا يوجد وكلاء يستخدمون هذه الأداة حالياً</p>}
+          </div>
+        </div>
+      </div>
     );
-  };
+  }
 
   return (
-    <Box sx={{ direction: "rtl", minHeight: "calc(100vh - 64px)", bgcolor: "background.default", p: { xs: 2, md: 3 } }}>
-      {/* Header */}
-      <Stack direction={{ xs: "column", md: "row" }} spacing={2} justifyContent="space-between" sx={{ mb: 3 }}>
-        <Box>
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-            <ToolIcon color="primary" />
-            <Typography variant="h4" fontWeight={900}>أدوات الوكلاء</Typography>
-          </Stack>
-          <Typography color="text.secondary">
-            كل أداة عبارة عن وحدة عمل يستطيع الوكيل استدعاؤها. هنا تعرف مين بيستخدم أنهي أداة وتقدر تعيّنها.
-          </Typography>
-        </Box>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <TextField
-            size="small"
-            placeholder="بحث في الأدوات أو الوكلاء..."
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            InputProps={{
-              startAdornment: (<InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>),
-            }}
-            sx={{ minWidth: 280 }}
-          />
-          <Tooltip title="تحديث">
-            <IconButton color="primary" onClick={loadAll}>
-              {loading ? <CircularProgress size={20} /> : <RefreshIcon />}
-            </IconButton>
-          </Tooltip>
-        </Stack>
-      </Stack>
+    <div dir="rtl" className="min-h-[calc(100vh-64px)] bg-background p-4 md:p-6">
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <div className="mb-1 flex items-center gap-2"><Wrench className="size-7 text-primary" /><h1 className="text-3xl font-black">أدوات الوكلاء</h1></div>
+          <p className="text-muted-foreground">كل أداة عبارة عن وحدة عمل يستطيع الوكيل استدعاؤها. هنا تعرف مين بيستخدم أنهي أداة وتقدر تعيّنها.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-[280px]"><Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input placeholder="بحث في الأدوات أو الوكلاء..." value={query} onChange={(e) => setQuery(e.target.value)} className="pr-9" /></div>
+          <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" onClick={loadAll}>{loading ? <LoadingSpinner size="sm" /> : <RefreshCw className="size-4" />}</Button></TooltipTrigger><TooltipContent>تحديث</TooltipContent></Tooltip></TooltipProvider>
+        </div>
+      </div>
 
-      {/* Stats */}
-      {!loading && (
-        <Stack direction="row" spacing={2} sx={{ mb: 3 }} flexWrap="wrap">
-          <Paper elevation={0} sx={{ p: 1.5, px: 2, borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
-            <Typography variant="caption" color="text.secondary">إجمالي الأدوات</Typography>
-            <Typography variant="h6" fontWeight={900}>{tools.length}</Typography>
-          </Paper>
-          <Paper elevation={0} sx={{ p: 1.5, px: 2, borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
-            <Typography variant="caption" color="text.secondary">قراءة</Typography>
-            <Typography variant="h6" fontWeight={900} color="primary.main">{tools.filter((t) => !t.sideEffects || t.sideEffects === "read").length}</Typography>
-          </Paper>
-          <Paper elevation={0} sx={{ p: 1.5, px: 2, borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
-            <Typography variant="caption" color="text.secondary">كتابة</Typography>
-            <Typography variant="h6" fontWeight={900} color="warning.main">{tools.filter((t) => t.sideEffects === "write").length}</Typography>
-          </Paper>
-          <Paper elevation={0} sx={{ p: 1.5, px: 2, borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
-            <Typography variant="caption" color="text.secondary">الوكلاء</Typography>
-            <Typography variant="h6" fontWeight={900}>{agents.length}</Typography>
-          </Paper>
-        </Stack>
-      )}
+      {!loading && <div className="mb-6 flex flex-wrap gap-3">
+        <div className="rounded-xl border bg-card p-3"><span className="text-xs text-muted-foreground">إجمالي الأدوات</span><p className="text-lg font-black">{tools.length}</p></div>
+        <div className="rounded-xl border bg-card p-3"><span className="text-xs text-muted-foreground">قراءة</span><p className="text-lg font-black text-primary">{tools.filter((t) => !t.sideEffects || t.sideEffects === "read").length}</p></div>
+        <div className="rounded-xl border bg-card p-3"><span className="text-xs text-muted-foreground">كتابة</span><p className="text-lg font-black text-amber-600">{tools.filter((t) => t.sideEffects === "write").length}</p></div>
+        <div className="rounded-xl border bg-card p-3"><span className="text-xs text-muted-foreground">الوكلاء</span><p className="text-lg font-black">{agents.length}</p></div>
+      </div>}
 
-      {error && <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>{error}</Alert>}
+      {error && <Alert variant="destructive" className="mb-4"><AlertCircle className="size-4" /><AlertDescription>{error}</AlertDescription></Alert>}
 
-      {loading ? (
-        <Paper elevation={0} sx={{ minHeight: 420, display: "grid", placeItems: "center", borderRadius: 2 }}>
-          <CircularProgress />
-        </Paper>
-      ) : filteredTools.length === 0 ? (
-        <Paper elevation={0} sx={{ minHeight: 200, display: "grid", placeItems: "center", borderRadius: 2 }}>
-          <Typography color="text.secondary">لا توجد نتائج لـ &quot;{query}&quot;</Typography>
-        </Paper>
-      ) : (
-        <Stack spacing={4}>
-          {readTools.length > 0 && (
-            <Box>
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-                <ReadIcon color="primary" sx={{ fontSize: 20 }} />
-                <Typography variant="h6" fontWeight={900}>قراءة (آمنة)</Typography>
-                <Chip size="small" label={readTools.length} variant="outlined" />
-              </Stack>
-              <Grid container spacing={2}>
-                {readTools.map((tool) => (
-                  <Grid item xs={12} md={6} key={tool.name}>
-                    <ToolCard tool={tool} />
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          )}
-          {writeTools.length > 0 && (
-            <Box>
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-                <WriteIcon color="warning" sx={{ fontSize: 20 }} />
-                <Typography variant="h6" fontWeight={900}>كتابة (تحتاج موافقة)</Typography>
-                <Chip size="small" label={writeTools.length} variant="outlined" color="warning" />
-              </Stack>
-              <Grid container spacing={2}>
-                {writeTools.map((tool) => (
-                  <Grid item xs={12} md={6} key={tool.name}>
-                    <ToolCard tool={tool} />
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          )}
-        </Stack>
-      )}
+      {loading ? <div className="flex min-h-[420px] items-center justify-center rounded-xl bg-card"><LoadingSpinner size="lg" /></div>
+      : filteredTools.length === 0 ? <div className="flex min-h-[200px] items-center justify-center rounded-xl bg-card"><p className="text-muted-foreground">لا توجد نتائج لـ &quot;{query}&quot;</p></div>
+      : <div className="flex flex-col gap-6">
+          {readT.length > 0 && <div><div className="mb-3 flex items-center gap-2"><Unlock className="size-5 text-primary" /><h2 className="text-base font-black">قراءة (آمنة)</h2><Badge variant="outline">{readT.length}</Badge></div><div className="grid grid-cols-1 gap-3 md:grid-cols-2">{readT.map((t) => (<ToolCard key={t.name} tool={t} />))}</div></div>}
+          {writeT.length > 0 && <div><div className="mb-3 flex items-center gap-2"><Lock className="size-5 text-amber-600" /><h2 className="text-base font-black">كتابة (تحتاج موافقة)</h2><Badge variant="outline" className="border-amber-600 text-amber-600">{writeT.length}</Badge></div><div className="grid grid-cols-1 gap-3 md:grid-cols-2">{writeT.map((t) => (<ToolCard key={t.name} tool={t} />))}</div></div>}
+        </div>}
 
-      {/* Assign Dialog */}
-      <AssignToolDialog
-        open={!!assignTool}
-        toolName={assignTool || ""}
-        agents={agents}
-        onClose={() => setAssignTool(null)}
-        onSaved={loadAll}
-      />
-    </Box>
+      <AssignToolDialog open={!!assignTool} toolName={assignTool || ""} agents={agents} onClose={() => setAssignTool(null)} onSaved={loadAll} />
+    </div>
   );
-}
-
-function alpha(color: string, value: number) {
-  return `${color}${Math.round(value * 255).toString(16).padStart(2, "0")}`;
 }

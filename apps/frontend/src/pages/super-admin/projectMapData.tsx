@@ -279,7 +279,7 @@ export const projectStructure: ProjectNode[] = [
         icon: <ShieldAlert className="w-4 h-4" />,
         description: "سجلات النظام ومراقبة الـ Health واستهلاك السيرفر.",
         businessValue: "الاكتشاف المبكر للمشاكل قبل أن تؤثر على المستخدمين.",
-        details: ["/monitoring", "/super-admin/server-usage"],
+        details: ["/super-admin/server-usage"],
         status: "beta",
       },
     ],

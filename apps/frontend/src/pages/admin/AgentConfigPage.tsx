@@ -1,39 +1,35 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Box,
-  Typography,
-  TextField,
-  IconButton,
-  Switch,
-  Chip,
-  Tooltip,
-  CircularProgress,
-  Alert,
-  Paper,
-  Button,
-  Divider,
-  Card,
-  CardContent,
-  CardHeader,
-  Avatar,
-  Snackbar,
-} from "@mui/material";
-import {
-  Psychology as SoulIcon,
-  Gavel as RulesIcon,
-  Extension as SkillsIcon,
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  Save as SaveIcon,
-  RestartAlt as ResetIcon,
-  LockOutlined as ReadOnlyIcon,
-  EditOutlined as WriteIcon,
-  CheckCircle as EnabledIcon,
-} from "@mui/icons-material";
+  Brain,
+  Scale,
+  Puzzle,
+  Plus,
+  Trash2,
+  Save,
+  RotateCcw,
+  Lock,
+  Pencil,
+  CheckCircle2,
+} from "lucide-react";
+import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { useTheme } from "@/hooks/useTheme";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface Skill {
   name: string;
@@ -49,8 +45,6 @@ interface AgentConfig {
   skills: Skill[];
 }
 
-// ─── Default soul text ────────────────────────────────────────────────────────
-
 const DEFAULT_SOUL = `أنت CEO Agent — مساعد ذكي متخصص في إدارة الأعمال التجارية.
 دورك هو مساعدة صاحب الشركة والمدير في اتخاذ قرارات مبنية على البيانات الفعلية.
 
@@ -59,8 +53,6 @@ const DEFAULT_SOUL = `أنت CEO Agent — مساعد ذكي متخصص في إ�
 - تستخدم الأرقام والإحصائيات عند توفر البيانات
 - تقدم توصيات عملية وقابلة للتنفيذ
 - تكون صادقاً إذا كانت البيانات غير متاحة`;
-
-// ─── Skill group labels ───────────────────────────────────────────────────────
 
 const SKILL_GROUPS: Record<string, string> = {
   "order": "الطلبات",
@@ -75,8 +67,6 @@ function getGroup(name: string) {
   return SKILL_GROUPS[name.split(".")[0]] || "أخرى";
 }
 
-// ─── Skill Card ───────────────────────────────────────────────────────────────
-
 interface SkillCardProps {
   skill: Skill;
   onToggle: (name: string) => void;
@@ -86,87 +76,69 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill, onToggle }) => {
   const paramCount = Object.keys(skill.params || {}).length;
 
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: 2,
-        borderRadius: 2,
-        border: "1.5px solid",
-        borderColor: skill.enabled ? "primary.main" : "divider",
-        bgcolor: skill.enabled ? "primary.50" : "background.paper",
-        transition: "all 0.2s",
-        opacity: skill.enabled ? 1 : 0.65,
-        cursor: "pointer",
-        "&:hover": { borderColor: "primary.main", opacity: 1 },
-      }}
+    <div
+      className={cn(
+        "cursor-pointer rounded-lg border-[1.5px] p-4 transition-all hover:border-primary hover:opacity-100",
+        skill.enabled
+          ? "border-primary bg-primary/5"
+          : "border-border bg-card opacity-65",
+      )}
       onClick={() => onToggle(skill.name)}
     >
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          {/* Name */}
-          <Typography
-            variant="caption"
-            sx={{
-              fontFamily: "monospace",
-              fontSize: "0.72rem",
-              color: skill.enabled ? "primary.main" : "text.disabled",
-              fontWeight: 600,
-              display: "block",
-              mb: 0.4,
-            }}
+      <div className="flex items-start justify-between">
+        <div className="min-w-0 flex-1">
+          <span
+            className={cn(
+              "mb-1 block font-mono text-[0.72rem] font-semibold",
+              skill.enabled ? "text-primary" : "text-muted-foreground/50",
+            )}
           >
             {skill.name}
-          </Typography>
+          </span>
 
-          {/* Arabic description */}
-          <Typography variant="body2" sx={{ fontSize: "0.82rem", lineHeight: 1.5 }}>
+          <p className="text-[0.82rem] leading-relaxed">
             {skill.description}
-          </Typography>
+          </p>
 
-          {/* Badges */}
-          <Box sx={{ display: "flex", gap: 0.5, mt: 1, flexWrap: "wrap" }}>
-            <Chip
-              size="small"
-              icon={skill.readOnly ? <ReadOnlyIcon sx={{ fontSize: 12 }} /> : <WriteIcon sx={{ fontSize: 12 }} />}
-              label={skill.readOnly ? "قراءة فقط" : "يعدّل بيانات"}
-              variant="outlined"
-              sx={{ fontSize: "0.65rem", height: 20 }}
-            />
+          <div className="mt-2 flex flex-wrap gap-1">
+            <Badge
+              variant="outline"
+              className="h-5 text-[0.65rem]"
+            >
+              {skill.readOnly ? <Lock className="mr-0.5 size-3" /> : <Pencil className="mr-0.5 size-3" />}
+              {skill.readOnly ? "قراءة فقط" : "يعدّل بيانات"}
+            </Badge>
             {paramCount > 0 && (
-              <Chip
-                size="small"
-                label={`${paramCount} معامل`}
-                variant="outlined"
-                sx={{ fontSize: "0.65rem", height: 20 }}
-              />
+              <Badge
+                variant="outline"
+                className="h-5 text-[0.65rem]"
+              >
+                {`${paramCount} معامل`}
+              </Badge>
             )}
-          </Box>
-        </Box>
+          </div>
+        </div>
 
-        {/* Toggle */}
         <Switch
-          size="small"
+          size="sm"
           checked={skill.enabled}
-          onChange={() => onToggle(skill.name)}
+          onCheckedChange={() => onToggle(skill.name)}
           onClick={(e) => e.stopPropagation()}
-          color="primary"
         />
-      </Box>
-    </Paper>
+      </div>
+    </div>
   );
 };
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+import { cn } from "@/lib/utils";
 
 const AgentConfigPage: React.FC = () => {
   const [config, setConfig] = useState<AgentConfig>({ soul: "", rules: [], skills: [] });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [snackbar, setSnackbar] = useState<string | null>(null);
   const [newRule, setNewRule] = useState("");
 
-  // ── Load config ────────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -190,7 +162,6 @@ const AgentConfigPage: React.FC = () => {
     })();
   }, []);
 
-  // ── Save ──────────────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
     setSaving(true);
     setError(null);
@@ -210,7 +181,7 @@ const AgentConfigPage: React.FC = () => {
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || "فشل الحفظ");
-      setSnackbar(data.message || "تم الحفظ بنجاح ✅");
+      toast.success(data.message || "تم الحفظ بنجاح ✅");
     } catch (e: any) {
       setError(e.message || "حدث خطأ أثناء الحفظ");
     } finally {
@@ -218,7 +189,6 @@ const AgentConfigPage: React.FC = () => {
     }
   }, [config]);
 
-  // ── Skills toggle ──────────────────────────────────────────────────────────
   const toggleSkill = useCallback((name: string) => {
     setConfig((prev) => ({
       ...prev,
@@ -231,7 +201,6 @@ const AgentConfigPage: React.FC = () => {
   const enabledCount = config.skills.filter((s) => s.enabled).length;
   const totalCount = config.skills.length;
 
-  // ── Rules helpers ──────────────────────────────────────────────────────────
   const addRule = () => {
     const trimmed = newRule.trim();
     if (!trimmed) return;
@@ -246,7 +215,6 @@ const AgentConfigPage: React.FC = () => {
     }));
   };
 
-  // ── Group skills ───────────────────────────────────────────────────────────
   const groupedSkills = config.skills.reduce<Record<string, Skill[]>>((acc, skill) => {
     const g = getGroup(skill.name);
     if (!acc[g]) acc[g] = [];
@@ -254,288 +222,249 @@ const AgentConfigPage: React.FC = () => {
     return acc;
   }, {});
 
-  // ─── Render ──────────────────────────────────────────────────────────────
-
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "60vh" }}>
-        <CircularProgress />
-      </Box>
+      <div className="flex h-[60vh] items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
     );
   }
 
   return (
-    <Box sx={{ maxWidth: 1100, mx: "auto", px: { xs: 2, md: 3 }, py: 3 }}>
-      {/* ── Page header ──────────────────────────────────────────────────── */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-          flexWrap: "wrap",
-          gap: 1,
-        }}
-      >
-        <Box>
-          <Typography variant="h5" fontWeight={700}>
-            إعدادات CEO Agent
-          </Typography>
-          <Typography variant="body2" color="text.secondary" mt={0.3}>
+    <div className="mx-auto max-w-[1100px] space-y-6 px-4 py-6 md:px-6">
+      {/* Page header */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-bold">إعدادات CEO Agent</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
             خصّص شخصية الوكيل، قواعده، والمهارات المسموح له باستخدامها
-          </Typography>
-        </Box>
+          </p>
+        </div>
         <Button
-          variant="contained"
-          startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
+          variant="default"
           onClick={handleSave}
           disabled={saving}
-          sx={{ borderRadius: 2, px: 3 }}
+          className="rounded-lg px-6"
         >
+          {saving ? (
+            <LoadingSpinner size="sm" color="white" className="mr-2" />
+          ) : (
+            <Save className="mr-2 size-4" />
+          )}
           {saving ? "جاري الحفظ..." : "حفظ التغييرات"}
         </Button>
-      </Box>
+      </div>
 
       {error && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
-          {error}
-        </Alert>
+        <div
+          className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          role="alert"
+        >
+          <div className="flex items-center justify-between">
+            <span>{error}</span>
+            <Button variant="ghost" size="icon-xs" onClick={() => setError(null)}>
+              <Trash2 className="size-3" />
+            </Button>
+          </div>
+        </div>
       )}
 
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <div className="space-y-6">
 
-        {/* ══════════════════════════════════════════════════════════════════
-            CARD 1 — Soul (الشخصية)
-        ══════════════════════════════════════════════════════════════════ */}
-        <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3 }}>
-          <CardHeader
-            avatar={
-              <Avatar sx={{ bgcolor: "primary.main", width: 36, height: 36 }}>
-                <SoulIcon sx={{ fontSize: 20 }} />
+        {/* Card 1 — Soul */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Avatar className="size-9 bg-primary">
+                <AvatarFallback>
+                  <Brain className="size-5 text-primary-foreground" />
+                </AvatarFallback>
               </Avatar>
-            }
-            title={<Typography variant="subtitle1" fontWeight={700}>الشخصية (Soul)</Typography>}
-            subheader="حدّد أسلوب الوكيل وشخصيته ودوره — يُدرج في بداية كل محادثة"
-            action={
-              <Tooltip title="استعادة الشخصية الافتراضية">
-                <IconButton
-                  size="small"
-                  onClick={() => setConfig((p) => ({ ...p, soul: DEFAULT_SOUL }))}
-                >
-                  <ResetIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            }
-          />
-          <Divider />
-          <CardContent>
-            <TextField
-              multiline
-              minRows={6}
-              maxRows={16}
-              fullWidth
+              <div className="flex-1">
+                <CardTitle>الشخصية (Soul)</CardTitle>
+                <CardDescription>
+                  حدّد أسلوب الوكيل وشخصيته ودوره — يُدرج في بداية كل محادثة
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setConfig((p) => ({ ...p, soul: DEFAULT_SOUL }))}
+                className="shrink-0"
+              >
+                <RotateCcw className="size-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <Separator />
+          <CardContent className="pt-4">
+            <Textarea
+              rows={6}
               value={config.soul}
               onChange={(e) => setConfig((p) => ({ ...p, soul: e.target.value }))}
               placeholder={DEFAULT_SOUL}
-              variant="outlined"
-              inputProps={{ dir: "rtl", style: { fontFamily: "inherit", lineHeight: 1.7 } }}
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+              className="min-h-[144px] leading-relaxed"
+              dir="rtl"
             />
-            <Typography variant="caption" color="text.disabled" sx={{ mt: 0.5, display: "block" }}>
+            <p className="mt-1 text-xs text-muted-foreground/50">
               {config.soul.length} حرف
-            </Typography>
+            </p>
           </CardContent>
         </Card>
 
-        {/* ══════════════════════════════════════════════════════════════════
-            CARD 2 — Rules (القواعد)
-        ══════════════════════════════════════════════════════════════════ */}
-        <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3 }}>
-          <CardHeader
-            avatar={
-              <Avatar sx={{ bgcolor: "warning.main", width: 36, height: 36 }}>
-                <RulesIcon sx={{ fontSize: 20 }} />
+        {/* Card 2 — Rules */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Avatar className="size-9 bg-warning">
+                <AvatarFallback>
+                  <Scale className="size-5 text-warning-foreground" />
+                </AvatarFallback>
               </Avatar>
-            }
-            title={<Typography variant="subtitle1" fontWeight={700}>القواعد (Rules)</Typography>}
-            subheader="قواعد لا يخالفها الوكيل — مثل: لا تشارك بيانات العملاء، أجب بالعربية دائماً"
-            action={
-              <Chip
-                size="small"
-                label={`${config.rules.length} قاعدة`}
-                color={config.rules.length > 0 ? "warning" : "default"}
-                variant="outlined"
-              />
-            }
-          />
-          <Divider />
-          <CardContent>
+              <div className="flex-1">
+                <CardTitle>القواعد (Rules)</CardTitle>
+                <CardDescription>
+                  قواعد لا يخالفها الوكيل — مثل: لا تشارك بيانات العملاء، أجب بالعربية دائماً
+                </CardDescription>
+              </div>
+              <Badge
+                variant={config.rules.length > 0 ? "outline" : "secondary"}
+                className="shrink-0"
+              >
+                {config.rules.length} قاعدة
+              </Badge>
+            </div>
+          </CardHeader>
+          <Separator />
+          <CardContent className="space-y-4 pt-4">
             {/* Existing rules */}
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mb: 2 }}>
+            <div className="space-y-2">
               {config.rules.length === 0 ? (
-                <Typography variant="body2" color="text.disabled" sx={{ py: 1, textAlign: "center" }}>
+                <p className="py-2 text-center text-sm text-muted-foreground/50">
                   لا توجد قواعد مخصصة — سيتم استخدام القواعد الافتراضية
-                </Typography>
+                </p>
               ) : (
                 config.rules.map((rule, idx) => (
-                  <Box
+                  <div
                     key={idx}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      p: 1.2,
-                      borderRadius: 2,
-                      bgcolor: "background.default",
-                      border: "1px solid",
-                      borderColor: "divider",
-                    }}
+                    className="flex items-center gap-2 rounded-lg border bg-background p-3"
                   >
-                    <Typography variant="body2" color="warning.main" fontWeight={700} sx={{ minWidth: 24 }}>
+                    <span className="min-w-6 text-sm font-bold text-warning">
                       {idx + 1}.
-                    </Typography>
-                    <Typography variant="body2" sx={{ flex: 1, lineHeight: 1.5 }}>
+                    </span>
+                    <span className="flex-1 text-sm leading-relaxed">
                       {rule}
-                    </Typography>
-                    <IconButton
-                      size="small"
-                      color="error"
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
                       onClick={() => deleteRule(idx)}
-                      sx={{ opacity: 0.6, "&:hover": { opacity: 1 } }}
+                      className="opacity-60 hover:opacity-100"
                     >
-                      <DeleteIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                  </Box>
+                      <Trash2 className="size-4 text-destructive" />
+                    </Button>
+                  </div>
                 ))
               )}
-            </Box>
+            </div>
 
             {/* Add rule */}
-            <Box sx={{ display: "flex", gap: 1 }}>
-              <TextField
-                fullWidth
-                size="small"
+            <div className="flex gap-2">
+              <Input
                 placeholder="اكتب قاعدة جديدة..."
                 value={newRule}
                 onChange={(e) => setNewRule(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addRule()}
-                inputProps={{ dir: "rtl" }}
-                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+                dir="rtl"
               />
               <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
+                variant="outline"
                 onClick={addRule}
                 disabled={!newRule.trim()}
-                sx={{ borderRadius: 2, whiteSpace: "nowrap" }}
+                className="whitespace-nowrap"
               >
+                <Plus className="mr-1 size-4" />
                 إضافة
               </Button>
-            </Box>
+            </div>
           </CardContent>
         </Card>
 
-        {/* ══════════════════════════════════════════════════════════════════
-            CARD 3 — Skills (المهارات)
-        ══════════════════════════════════════════════════════════════════ */}
-        <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3 }}>
-          <CardHeader
-            avatar={
-              <Avatar sx={{ bgcolor: "success.main", width: 36, height: 36 }}>
-                <SkillsIcon sx={{ fontSize: 20 }} />
+        {/* Card 3 — Skills */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Avatar className="size-9 bg-success">
+                <AvatarFallback>
+                  <Puzzle className="size-5 text-success-foreground" />
+                </AvatarFallback>
               </Avatar>
-            }
-            title={<Typography variant="subtitle1" fontWeight={700}>المهارات (Skills)</Typography>}
-            subheader="الأدوات التي يستخدمها الوكيل للوصول إلى بيانات الشركة الحقيقية"
-            action={
-              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                <Chip
-                  size="small"
-                  icon={<EnabledIcon sx={{ fontSize: 14 }} />}
-                  label={`${enabledCount} / ${totalCount} مفعّل`}
-                  color={enabledCount > 0 ? "success" : "default"}
-                  variant="outlined"
-                />
+              <div className="flex-1">
+                <CardTitle>المهارات (Skills)</CardTitle>
+                <CardDescription>
+                  الأدوات التي يستخدمها الوكيل للوصول إلى بيانات الشركة الحقيقية
+                </CardDescription>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <Badge
+                  variant={enabledCount > 0 ? "outline" : "secondary"}
+                  className="shrink-0"
+                >
+                  <CheckCircle2 className="mr-1 size-3.5" />
+                  {`${enabledCount} / ${totalCount} مفعّل`}
+                </Badge>
                 <Button
-                  size="small"
-                  variant="text"
+                  size="sm"
+                  variant="ghost"
                   onClick={() =>
                     setConfig((p) => ({
                       ...p,
                       skills: p.skills.map((s) => ({ ...s, enabled: true })),
                     }))
                   }
-                  sx={{ fontSize: "0.72rem" }}
                 >
                   تفعيل الكل
                 </Button>
-              </Box>
-            }
-          />
-          <Divider />
-          <CardContent>
+              </div>
+            </div>
+          </CardHeader>
+          <Separator />
+          <CardContent className="pt-4">
             {Object.entries(groupedSkills).map(([group, skills]) => (
-              <Box key={group} sx={{ mb: 3 }}>
-                <Typography
-                  variant="overline"
-                  color="text.secondary"
-                  sx={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: 1.5, mb: 1, display: "block" }}
-                >
+              <div key={group} className="mb-6">
+                <span className="mb-3 block text-[0.68rem] font-bold uppercase tracking-widest text-muted-foreground">
                   {group}
-                </Typography>
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", lg: "1fr 1fr 1fr" },
-                    gap: 1.5,
-                  }}
-                >
+                </span>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {skills.map((skill) => (
                     <SkillCard key={skill.name} skill={skill} onToggle={toggleSkill} />
                   ))}
-                </Box>
-              </Box>
+                </div>
+              </div>
             ))}
           </CardContent>
         </Card>
 
-      </Box>
+      </div>
 
-      {/* ── Bottom save bar ───────────────────────────────────────────────────── */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "flex-end",
-          mt: 3,
-          pt: 2,
-          borderTop: "1px solid",
-          borderColor: "divider",
-        }}
-      >
+      {/* Bottom save bar */}
+      <div className="flex justify-end border-t pt-4">
         <Button
-          variant="contained"
-          size="large"
-          startIcon={saving ? <CircularProgress size={18} color="inherit" /> : <SaveIcon />}
+          variant="default"
+          size="lg"
           onClick={handleSave}
           disabled={saving}
-          sx={{ borderRadius: 2, px: 4 }}
+          className="rounded-lg px-8"
         >
+          {saving ? (
+            <LoadingSpinner size="sm" color="white" className="mr-2" />
+          ) : (
+            <Save className="mr-2 size-4" />
+          )}
           {saving ? "جاري الحفظ..." : "حفظ جميع التغييرات"}
         </Button>
-      </Box>
-
-      {/* ── Success snackbar ──────────────────────────────────────────────────── */}
-      <Snackbar
-        open={!!snackbar}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert severity="success" onClose={() => setSnackbar(null)} sx={{ borderRadius: 2 }}>
-          {snackbar}
-        </Alert>
-      </Snackbar>
-    </Box>
+      </div>
+    </div>
   );
 };
 

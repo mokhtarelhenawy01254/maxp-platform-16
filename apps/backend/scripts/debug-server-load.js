@@ -46,14 +46,6 @@ try {
 }
 
 try {
-  console.log('  -> simpleMonitor...');
-  require('../services/simpleMonitor');
-  console.log('  OK simpleMonitor');
-} catch (e) {
-  console.log('  FAILED simpleMonitor:', e.message);
-}
-
-try {
   console.log('  -> TelegramBotService...');
   require('../services/TelegramBotService');
   console.log('  OK TelegramBotService');

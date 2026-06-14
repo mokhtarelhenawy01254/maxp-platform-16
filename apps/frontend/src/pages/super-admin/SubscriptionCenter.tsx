@@ -1,65 +1,29 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { Textarea } from "../../components/ui/textarea";
+import { Switch } from "../../components/ui/switch";
+import { Alert, AlertDescription } from "../../components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import {
-  Autocomplete,
-  Box,
-  Typography,
-  Tabs,
-  Tab,
-  Paper,
-  CircularProgress,
-  Alert,
-  Grid,
-  Card,
-  CardContent,
-  Button,
-  Chip,
-  Checkbox,
-  IconButton,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Switch,
-  FormControlLabel,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
-  Tooltip,
-  Collapse,
-  InputAdornment,
-} from "@mui/material";
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "../../components/ui/select";
 import {
-  Star as StarIcon,
-  ShoppingBag as MarketplaceIcon,
-  Storefront as StorefrontIcon,
-  Inventory as BundleIcon,
-  CorporateFare as EnterpriseIcon,
-  Add as AddIcon,
-  Edit as EditIcon,
-  Check as CheckIcon,
-  Close as CloseIcon,
-  Delete as DeleteIcon,
-  Save as SaveIcon,
-  FileDownload as DownloadIcon,
-  FileUpload as UploadIcon,
-  Refresh as RefreshIcon,
-  Search as SearchIcon,
-  Archive as ArchiveIcon,
-  Visibility as VisibilityIcon,
-  CreditCard as CreditCardIcon,
-} from "@mui/icons-material";
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from "../../components/ui/dialog";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "../../components/ui/table";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import { Separator } from "../../components/ui/separator";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "../../components/ui/tooltip";
+import { Progress } from "../../components/ui/progress";
+import { Checkbox } from "../../components/ui/checkbox";
+import { ScrollArea } from "../../components/ui/scroll-area";
 import {
   DeferredResponsiveContainer,
 } from "../../components/ui/DeferredResponsiveContainer";

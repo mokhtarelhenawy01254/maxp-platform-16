@@ -1,67 +1,64 @@
-/**
- * AgentCatalogPage
- *
- * Simplified product catalog management for the AI agent.
- * Provides a quick way for merchants to add/edit/delete products
- * that the bot can use for customer interactions — without needing
- * the full product management page complexity.
- */
-
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Alert,
-  Avatar,
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Divider,
-  Drawer,
-  Fade,
-  IconButton,
-  InputAdornment,
-  LinearProgress,
-  Paper,
-  Skeleton,
-  Snackbar,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TextField,
-  Tooltip,
-  Typography,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material";
-import {
-  Add as AddIcon,
-  Close as CloseIcon,
-  CloudUpload as UploadIcon,
-  ContentCopy as DuplicateIcon,
-  Delete as DeleteIcon,
-  Edit as EditIcon,
+  Plus,
+  X,
+  Upload,
+  Copy,
+  Trash2,
+  Pencil,
   Image as ImageIcon,
-  Inventory2 as StockIcon,
-  Palette as ColorIcon,
-  Refresh as RefreshIcon,
-  Search as SearchIcon,
-  ShoppingBag as CatalogIcon,
-  TrendingUp as PriceIcon,
-} from "@mui/icons-material";
+  Package,
+  Palette,
+  RefreshCw,
+  Search,
+  ShoppingBag,
+  TrendingUp,
+} from "lucide-react";
+import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 import { uploadService } from "../../services/uploadService";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { cn } from "@/lib/utils";
+import { useTheme } from "@/hooks/useTheme";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface ProductVariant {
   id?: string;
@@ -119,7 +116,20 @@ const EMPTY_FORM: ProductFormData = {
   variants: [],
 };
 
-// ─── Stats Card ───────────────────────────────────────────────────────────────
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.innerWidth < breakpoint
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    const handler = (e: MediaQueryListEvent | MediaQueryList) =>
+      setIsMobile(e.matches);
+    handler(mq);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, [breakpoint]);
+  return isMobile;
+}
 
 function StatCard({
   icon,
@@ -132,52 +142,41 @@ function StatCard({
   value: string | number;
   color: string;
 }) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
+  const { derivedTheme } = useTheme();
+  const isDark = derivedTheme === "dark";
 
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: 2.5,
-        borderRadius: 3,
-        border: "1px solid",
+    <div
+      className={cn(
+        "rounded-xl border p-5 transition-all duration-200 hover:-translate-y-0.5",
+        isDark
+          ? "bg-gradient-to-br"
+          : "bg-gradient-to-br",
+      )}
+      style={{
         borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
         background: isDark
           ? `linear-gradient(135deg, rgba(${color},0.12) 0%, rgba(${color},0.04) 100%)`
           : `linear-gradient(135deg, rgba(${color},0.08) 0%, rgba(${color},0.02) 100%)`,
-        transition: "transform 0.2s, box-shadow 0.2s",
-        "&:hover": {
-          transform: "translateY(-2px)",
-          boxShadow: `0 8px 24px rgba(${color},0.15)`,
-        },
       }}
     >
-      <Stack direction="row" spacing={1.5} alignItems="center">
-        <Avatar
-          sx={{
-            bgcolor: `rgba(${color},0.15)`,
-            color: `rgb(${color})`,
-            width: 44,
-            height: 44,
-          }}
+      <div className="flex items-center gap-3">
+        <div
+          className="flex size-11 items-center justify-center rounded-full"
+          style={{ backgroundColor: `rgba(${color},0.15)`, color: `rgb(${color})` }}
         >
           {icon}
-        </Avatar>
-        <Box>
-          <Typography variant="caption" color="text.secondary" fontWeight={600}>
+        </div>
+        <div>
+          <span className="text-xs font-semibold text-muted-foreground">
             {label}
-          </Typography>
-          <Typography variant="h5" fontWeight={900}>
-            {value}
-          </Typography>
-        </Box>
-      </Stack>
-    </Paper>
+          </span>
+          <p className="text-2xl font-black">{value}</p>
+        </div>
+      </div>
+    </div>
   );
 }
-
-// ─── Image Upload Button ──────────────────────────────────────────────────────
 
 function ImageUploadArea({
   previewUrl,
@@ -192,97 +191,65 @@ function ImageUploadArea({
   label: string;
   size?: number;
 }) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
+  const { derivedTheme } = useTheme();
+  const isDark = derivedTheme === "dark";
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) onFileSelect(file);
-    // Reset so re-selecting the same file works
     e.target.value = "";
   };
 
   return (
-    <Box sx={{ position: "relative", width: size, height: size }}>
+    <div className="relative" style={{ width: size, height: size }}>
       <input
         ref={inputRef}
         type="file"
         accept="image/*"
         onChange={handleChange}
-        style={{ display: "none" }}
+        className="hidden"
       />
-      <Box
+      <div
         onClick={() => inputRef.current?.click()}
-        sx={{
-          width: size,
-          height: size,
-          borderRadius: 2.5,
-          border: "2px dashed",
-          borderColor: previewUrl
-            ? "primary.main"
-            : isDark
-              ? "rgba(255,255,255,0.15)"
-              : "rgba(0,0,0,0.12)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "hidden",
-          cursor: "pointer",
-          transition: "all 0.2s",
-          bgcolor: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
-          "&:hover": {
-            borderColor: "primary.main",
-            bgcolor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
-          },
-        }}
+        className={cn(
+          "flex cursor-pointer items-center justify-center overflow-hidden rounded-[10px] border-2 border-dashed transition-all hover:border-primary",
+          previewUrl ? "border-primary" : isDark ? "border-white/15" : "border-black/12",
+        )}
+        style={{ width: size, height: size, backgroundColor: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)" }}
       >
         {previewUrl ? (
-          <Box
-            component="img"
+          <img
             src={previewUrl}
             alt={label}
-            sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+            className="size-full object-cover"
           />
         ) : (
-          <Stack alignItems="center" spacing={0.5}>
-            <UploadIcon sx={{ fontSize: 20, color: "text.secondary" }} />
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontSize: "0.6rem", textAlign: "center", px: 0.5 }}
-            >
+          <div className="flex flex-col items-center gap-0.5">
+            <Upload className="size-5 text-muted-foreground" />
+            <span className="px-0.5 text-center text-[0.6rem] text-muted-foreground">
               {label}
-            </Typography>
-          </Stack>
+            </span>
+          </div>
         )}
-      </Box>
+      </div>
       {previewUrl && onClear && (
-        <IconButton
-          size="small"
+        <Button
+          variant="ghost"
+          size="icon-xs"
           onClick={(e) => {
             e.stopPropagation();
             onClear();
           }}
-          sx={{
-            position: "absolute",
-            top: -8,
-            right: -8,
-            bgcolor: "error.main",
-            color: "white",
-            width: 22,
-            height: 22,
-            "&:hover": { bgcolor: "error.dark" },
-          }}
+          className="absolute -right-2 -top-2 bg-destructive text-white hover:bg-destructive/90"
+          style={{ width: 22, height: 22 }}
         >
-          <CloseIcon sx={{ fontSize: 14 }} />
-        </IconButton>
+          <X className="size-3" />
+        </Button>
       )}
-    </Box>
+    </div>
   );
 }
-
-// ─── Product Form Drawer ──────────────────────────────────────────────────────
 
 function ProductFormDrawer({
   open,
@@ -300,8 +267,7 @@ function ProductFormDrawer({
   saving: boolean;
 }) {
   const { t } = useTranslation();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isMobile = useIsMobile();
 
   const handleField = (field: keyof ProductFormData, value: string) => {
     onChange({ ...formData, [field]: value });
@@ -361,57 +327,43 @@ function ProductFormDrawer({
   const isEditing = !!formData.id;
 
   return (
-    <Drawer
-      anchor={isMobile ? "bottom" : "right"}
-      open={open}
-      onClose={onClose}
-      PaperProps={{
-        sx: {
-          width: isMobile ? "100%" : 460,
-          maxHeight: isMobile ? "92vh" : "100vh",
-          borderRadius: isMobile ? "20px 20px 0 0" : 0,
-        },
-      }}
-    >
-      {/* Header */}
-      <Box
-        sx={{
-          px: 3,
-          py: 2.5,
-          borderBottom: "1px solid",
-          borderColor: "divider",
-        }}
+    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className={cn(
+          "flex flex-col p-0",
+          isMobile ? "h-[92vh] rounded-t-[20px]" : "",
+        )}
+        style={{ maxWidth: isMobile ? "100%" : 460, width: isMobile ? "100%" : 460 }}
       >
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-        >
-          <Stack direction="row" spacing={1} alignItems="center">
-            {isEditing ? (
-              <EditIcon color="primary" />
-            ) : (
-              <AddIcon color="primary" />
-            )}
-            <Typography variant="h6" fontWeight={900}>
-              {isEditing
-                ? t("aiCatalog.editProduct")
-                : t("aiCatalog.addProduct")}
-            </Typography>
-          </Stack>
-          <IconButton onClick={onClose} size="small">
-            <CloseIcon />
-          </IconButton>
-        </Stack>
-      </Box>
+        <SheetHeader className="border-b px-6 py-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {isEditing ? (
+                <Pencil className="size-5 text-primary" />
+              ) : (
+                <Plus className="size-5 text-primary" />
+              )}
+              <SheetTitle className="text-lg font-black">
+                {isEditing
+                  ? t("aiCatalog.editProduct")
+                  : t("aiCatalog.addProduct")}
+              </SheetTitle>
+            </div>
+            <Button variant="ghost" size="icon-sm" onClick={onClose}>
+              <X className="size-4" />
+            </Button>
+          </div>
+        </SheetHeader>
 
-      {saving && <LinearProgress />}
+        {saving && (
+          <div className="h-1 w-full overflow-hidden bg-muted">
+            <div className="h-full w-full animate-pulse bg-primary" />
+          </div>
+        )}
 
-      {/* Form Body */}
-      <Box sx={{ p: 3, overflowY: "auto", flex: 1 }}>
-        <Stack spacing={2.5}>
-          {/* Main Image */}
-          <Stack alignItems="center">
+        <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
+          <div className="flex justify-center">
             <ImageUploadArea
               previewUrl={formData._mainImagePreview || formData.mainImage}
               onFileSelect={handleMainImageFile}
@@ -419,105 +371,97 @@ function ProductFormDrawer({
               label={t("aiCatalog.imageUpload")}
               size={120}
             />
-          </Stack>
+          </div>
 
-          {/* Name */}
-          <TextField
-            label={t("aiCatalog.productName")}
-            value={formData.name}
-            onChange={(e) => handleField("name", e.target.value)}
-            fullWidth
-            required
-            size="small"
-            autoFocus
-          />
-
-          {/* Price + Stock */}
-          <Stack direction="row" spacing={2}>
-            <TextField
-              label={t("aiCatalog.price")}
-              value={formData.price}
-              onChange={(e) => handleField("price", e.target.value)}
-              type="number"
-              fullWidth
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">
+              {t("aiCatalog.productName")} <span className="text-destructive">*</span>
+            </label>
+            <Input
+              value={formData.name}
+              onChange={(e) => handleField("name", e.target.value)}
               required
-              size="small"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">💲</InputAdornment>
-                ),
-              }}
+              autoFocus
             />
-            <TextField
-              label={t("aiCatalog.stock")}
-              value={formData.stock}
-              onChange={(e) => handleField("stock", e.target.value)}
-              type="number"
-              fullWidth
-              size="small"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">📦</InputAdornment>
-                ),
-              }}
+          </div>
+
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label className="mb-1.5 block text-sm font-medium">
+                {t("aiCatalog.price")} <span className="text-destructive">*</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm">💲</span>
+                <Input
+                  value={formData.price}
+                  onChange={(e) => handleField("price", e.target.value)}
+                  type="number"
+                  className="pl-8"
+                  required
+                />
+              </div>
+            </div>
+            <div className="flex-1">
+              <label className="mb-1.5 block text-sm font-medium">
+                {t("aiCatalog.stock")}
+              </label>
+              <div className="relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm">📦</span>
+                <Input
+                  value={formData.stock}
+                  onChange={(e) => handleField("stock", e.target.value)}
+                  type="number"
+                  className="pl-8"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">
+              {t("aiCatalog.sku")}
+            </label>
+            <Input
+              value={formData.sku}
+              onChange={(e) => handleField("sku", e.target.value)}
             />
-          </Stack>
+          </div>
 
-          {/* SKU */}
-          <TextField
-            label={t("aiCatalog.sku")}
-            value={formData.sku}
-            onChange={(e) => handleField("sku", e.target.value)}
-            fullWidth
-            size="small"
-          />
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">
+              {t("aiCatalog.description")}
+            </label>
+            <Textarea
+              value={formData.description}
+              onChange={(e) => handleField("description", e.target.value)}
+              rows={3}
+            />
+          </div>
 
-          {/* Description */}
-          <TextField
-            label={t("aiCatalog.description")}
-            value={formData.description}
-            onChange={(e) => handleField("description", e.target.value)}
-            fullWidth
-            multiline
-            minRows={3}
-            maxRows={6}
-            size="small"
-          />
+          <Separator />
 
-          {/* Variants Section */}
-          <Divider />
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Stack direction="row" spacing={1} alignItems="center">
-              <ColorIcon color="primary" sx={{ fontSize: 20 }} />
-              <Typography variant="subtitle2" fontWeight={800}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Palette className="size-5 text-primary" />
+              <span className="text-sm font-extrabold">
                 {t("aiCatalog.variants")}
-              </Typography>
-            </Stack>
-            <Button
-              size="small"
-              startIcon={<AddIcon />}
-              onClick={addVariant}
-              sx={{ textTransform: "none" }}
-            >
+              </span>
+            </div>
+            <Button size="sm" variant="outline" onClick={addVariant}>
+              <Plus className="mr-1 size-3.5" />
               {t("aiCatalog.addVariant")}
             </Button>
-          </Stack>
-          <Typography variant="caption" color="text.secondary">
+          </div>
+          <p className="text-xs text-muted-foreground">
             {t("aiCatalog.addVariantDesc")}
-          </Typography>
+          </p>
 
           {formData.variants.map((variant, idx) => (
-            <Paper
+            <div
               key={idx}
-              elevation={0}
-              sx={{
-                p: 1.5,
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 2,
-              }}
+              className="rounded-lg border p-3"
             >
-              <Stack direction="row" spacing={1.5} alignItems="center">
+              <div className="flex items-center gap-3">
                 <ImageUploadArea
                   previewUrl={variant._localPreview || variant.imageUrl}
                   onFileSelect={(f) => handleVariantFile(idx, f)}
@@ -531,112 +475,82 @@ function ProductFormDrawer({
                   label={t("aiCatalog.variantImage")}
                   size={64}
                 />
-                <TextField
-                  label={t("aiCatalog.variantColor")}
-                  value={variant.color}
-                  onChange={(e) =>
-                    updateVariant(idx, { color: e.target.value })
-                  }
-                  fullWidth
-                  size="small"
-                  placeholder=""
-                />
-                <IconButton
-                  size="small"
-                  color="error"
+                <div className="flex-1">
+                  <Input
+                    value={variant.color}
+                    onChange={(e) =>
+                      updateVariant(idx, { color: e.target.value })
+                    }
+                    placeholder={t("aiCatalog.variantColor")}
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => removeVariant(idx)}
                 >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Stack>
-            </Paper>
+                  <Trash2 className="size-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
           ))}
-        </Stack>
-      </Box>
+        </div>
 
-      {/* Footer */}
-      <Box
-        sx={{
-          px: 3,
-          py: 2,
-          borderTop: "1px solid",
-          borderColor: "divider",
-        }}
-      >
-        <Stack direction="row" spacing={1.5}>
-          <Button
-            onClick={onClose}
-            disabled={saving}
-            sx={{ flex: 1, textTransform: "none" }}
-          >
-            {t("aiCatalog.cancel")}
-          </Button>
-          <Button
-            variant="contained"
-            onClick={onSave}
-            disabled={saving || !formData.name.trim() || !formData.price}
-            startIcon={
-              saving ? <CircularProgress size={16} /> : undefined
-            }
-            sx={{
-              flex: 2,
-              textTransform: "none",
-              fontWeight: 800,
-              borderRadius: 2,
-            }}
-          >
-            {saving
-              ? "..."
-              : t("aiCatalog.save")}
-          </Button>
-        </Stack>
-      </Box>
-    </Drawer>
+        <SheetFooter className="border-t px-6 py-4">
+          <div className="flex w-full gap-3">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={saving}
+              className="flex-1"
+            >
+              {t("aiCatalog.cancel")}
+            </Button>
+            <Button
+              onClick={onSave}
+              disabled={saving || !formData.name.trim() || !formData.price}
+              className="flex-[2] rounded-lg font-extrabold"
+            >
+              {saving ? (
+                <LoadingSpinner size="sm" color="white" />
+              ) : (
+                t("aiCatalog.save")
+              )}
+            </Button>
+          </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
 export default function AgentCatalogPage() {
   const { t } = useTranslation();
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
+  const { derivedTheme } = useTheme();
+  const isDark = derivedTheme === "dark";
 
-  // Data
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Pagination & search
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // Form
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formData, setFormData] = useState<ProductFormData>({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
 
-  // Delete dialog
   const [deleteTarget, setDeleteTarget] = useState<ProductRecord | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Snackbar
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: "success" | "error";
-  }>({ open: false, message: "", severity: "success" });
-
-  // ── Debounce search ──
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 350);
     return () => clearTimeout(timer);
   }, [search]);
 
-  // ── Fetch products ──
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -674,7 +588,6 @@ export default function AgentCatalogPage() {
     fetchProducts();
   }, [fetchProducts]);
 
-  // ── Stats ──
   const stats = useMemo(() => {
     const total = totalCount;
     const outOfStock = products.filter((p) => p.stock <= 0).length;
@@ -687,14 +600,12 @@ export default function AgentCatalogPage() {
     return { total, outOfStock, avgPrice };
   }, [products, totalCount]);
 
-  // ── Open form for add/edit ──
   const openAddForm = () => {
     setFormData({ ...EMPTY_FORM });
     setDrawerOpen(true);
   };
 
   const openEditForm = (product: ProductRecord) => {
-    // Parse images
     let parsedImages: string[] = [];
     if (product.images) {
       try {
@@ -703,8 +614,6 @@ export default function AgentCatalogPage() {
         /* empty */
       }
     }
-
-    // Parse variants into our simplified form
     const variants: ProductVariant[] = (product.variants || []).map((v) => {
       let img = "";
       if (v.images) {
@@ -731,11 +640,9 @@ export default function AgentCatalogPage() {
     setDrawerOpen(true);
   };
 
-  // ── Save (create or update) ──
   const handleSave = async () => {
     setSaving(true);
     try {
-      // 1. Upload main image if local file exists
       let mainImageUrl = formData.mainImage || "";
       if (formData._mainImageFile) {
         const uploadRes = await uploadService.uploadProductImage(
@@ -746,7 +653,6 @@ export default function AgentCatalogPage() {
         }
       }
 
-      // 2. Upload variant images
       const processedVariants: Array<{
         id?: string;
         color: string;
@@ -767,7 +673,6 @@ export default function AgentCatalogPage() {
         });
       }
 
-      // 3. Build body
       const body: Record<string, unknown> = {
         name: formData.name.trim(),
         price: parseFloat(formData.price) || 0,
@@ -780,10 +685,8 @@ export default function AgentCatalogPage() {
       };
 
       if (formData.id) {
-        // Update existing
         await apiClient.patch(`/products/${formData.id}`, body);
 
-        // Handle variants: create new, update existing
         for (const v of processedVariants) {
           const variantBody: Record<string, unknown> = {
             name: v.color,
@@ -803,7 +706,6 @@ export default function AgentCatalogPage() {
           }
         }
       } else {
-        // Create new
         const createRes = await apiClient.post<{
           success: boolean;
           data: ProductRecord;
@@ -821,7 +723,6 @@ export default function AgentCatalogPage() {
         }
       }
 
-      // Clean up blob URLs
       if (formData._mainImagePreview)
         URL.revokeObjectURL(formData._mainImagePreview);
       formData.variants.forEach((v) => {
@@ -831,266 +732,217 @@ export default function AgentCatalogPage() {
       setDrawerOpen(false);
       setFormData({ ...EMPTY_FORM });
       fetchProducts();
-      setSnackbar({
-        open: true,
-        message: formData.id
+      toast.success(
+        formData.id
           ? t("aiCatalog.editProduct") + " ✓"
-          : t("aiCatalog.addProduct") + " ✓",
-        severity: "success",
-      });
+          : t("aiCatalog.addProduct") + " ✓"
+      );
     } catch (err: any) {
-      setSnackbar({
-        open: true,
-        message: err?.response?.data?.message || err.message || "Error",
-        severity: "error",
-      });
+      toast.error(
+        err?.response?.data?.message || err.message || "Error"
+      );
     } finally {
       setSaving(false);
     }
   };
 
-  // ── Delete ──
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
       await apiClient.delete(`/products/${deleteTarget.id}`);
-      setSnackbar({
-        open: true,
-        message: t("aiCatalog.successDelete"),
-        severity: "success",
-      });
+      toast.success(t("aiCatalog.successDelete"));
       setDeleteTarget(null);
       fetchProducts();
     } catch (err: any) {
-      setSnackbar({
-        open: true,
-        message: err.message || "Error",
-        severity: "error",
-      });
+      toast.error(err.message || "Error");
     } finally {
       setDeleting(false);
     }
   };
 
-  // ── Duplicate ──
   const handleDuplicate = async (product: ProductRecord) => {
     try {
       await apiClient.post(`/products/${product.id}/duplicate`);
-      setSnackbar({
-        open: true,
-        message: t("aiCatalog.successDuplicate"),
-        severity: "success",
-      });
+      toast.success(t("aiCatalog.successDuplicate"));
       fetchProducts();
     } catch (err: any) {
-      setSnackbar({
-        open: true,
-        message: err.message || "Error",
-        severity: "error",
-      });
+      toast.error(err.message || "Error");
     }
   };
 
   return (
-    <Box
-      sx={{
-        direction: "rtl",
-        minHeight: "calc(100vh - 64px)",
-        bgcolor: "background.default",
-        p: { xs: 2, md: 3 },
-      }}
+    <div
+      className="min-h-[calc(100vh-64px)] bg-background p-4 md:p-6"
+      dir="rtl"
     >
-      {/* ── Header ── */}
-      <Fade in timeout={400}>
-        <Box>
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            spacing={2}
-            justifyContent="space-between"
-            alignItems={{ md: "center" }}
-            sx={{ mb: 3 }}
-          >
-            <Box>
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                <CatalogIcon color="primary" sx={{ fontSize: 28 }} />
-                <Typography variant="h4" fontWeight={900}>
-                  {t("aiCatalog.title")}
-                </Typography>
-              </Stack>
-              <Typography color="text.secondary">
-                {t("aiCatalog.subtitle")}
-              </Typography>
-            </Box>
-            <Stack direction="row" spacing={1.5} alignItems="center">
-              <TextField
-                size="small"
+      {/* Header */}
+      <div className="mb-6 animate-in fade-in duration-400">
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="mb-1 flex items-center gap-2">
+              <ShoppingBag className="size-7 text-primary" />
+              <h1 className="text-3xl font-black">{t("aiCatalog.title")}</h1>
+            </div>
+            <p className="text-muted-foreground">{t("aiCatalog.subtitle")}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="relative w-full md:w-[260px]">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
                 placeholder={t("aiCatalog.search")}
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
                   setPage(0);
                 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{ width: { xs: "100%", md: 260 } }}
+                className="pl-8"
               />
-              <Tooltip title={t("aiCatalog.addProduct")}>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={openAddForm}
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 800,
-                    borderRadius: 2,
-                    px: 3,
-                    py: 1,
-                    boxShadow: "0 4px 14px rgba(99,102,241,0.25)",
-                  }}
-                >
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="default"
+                    onClick={openAddForm}
+                    className="rounded-lg px-6 font-extrabold shadow-[0_4px_14px_rgba(99,102,241,0.25)]"
+                  >
+                    <Plus className="mr-1 size-4" />
+                    {t("aiCatalog.addProduct")}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
                   {t("aiCatalog.addProduct")}
-                </Button>
+                </TooltipContent>
               </Tooltip>
-              <Tooltip title="Refresh">
-                <IconButton color="primary" onClick={fetchProducts}>
-                  {loading ? (
-                    <CircularProgress size={20} />
-                  ) : (
-                    <RefreshIcon />
-                  )}
-                </IconButton>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={fetchProducts}
+                  >
+                    {loading ? (
+                      <LoadingSpinner size="sm" />
+                    ) : (
+                      <RefreshCw className="size-5" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Refresh</TooltipContent>
               </Tooltip>
-            </Stack>
-          </Stack>
-        </Box>
-      </Fade>
+            </TooltipProvider>
+          </div>
+        </div>
+      </div>
 
-      {/* ── Stats ── */}
-      <Fade in timeout={600}>
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "repeat(3, 1fr)",
-            },
-            gap: 2,
-            mb: 3,
-          }}
-        >
+      {/* Stats */}
+      <div className="mb-6 animate-in fade-in duration-600">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatCard
-            icon={<CatalogIcon />}
+            icon={<ShoppingBag className="size-5" />}
             label={t("aiCatalog.totalProducts")}
             value={stats.total}
             color="99,102,241"
           />
           <StatCard
-            icon={<StockIcon />}
+            icon={<Package className="size-5" />}
             label={t("aiCatalog.outOfStock")}
             value={stats.outOfStock}
             color="239,68,68"
           />
           <StatCard
-            icon={<PriceIcon />}
+            icon={<TrendingUp className="size-5" />}
             label={t("aiCatalog.avgPrice")}
             value={stats.avgPrice}
             color="34,197,94"
           />
-        </Box>
-      </Fade>
+        </div>
+      </div>
 
-      {/* ── Error ── */}
+      {/* Error */}
       {error && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
-          {error}
-        </Alert>
+        <div
+          className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          role="alert"
+        >
+          <div className="flex items-center justify-between">
+            <span>{error}</span>
+            <Button variant="ghost" size="icon-xs" onClick={() => setError(null)}>
+              <X className="size-3" />
+            </Button>
+          </div>
+        </div>
       )}
 
-      {/* ── Products Table ── */}
-      <Fade in timeout={800}>
-        <Paper
-          elevation={0}
-          sx={{
-            borderRadius: 3,
-            border: "1px solid",
-            borderColor: isDark
-              ? "rgba(255,255,255,0.08)"
-              : "rgba(0,0,0,0.06)",
-            overflow: "hidden",
-          }}
+      {/* Products Table */}
+      <div className="animate-in fade-in duration-800">
+        <div
+          className={cn(
+            "overflow-hidden rounded-xl border",
+            isDark ? "border-white/8" : "border-black/6",
+          )}
         >
-          <TableContainer>
+          <div className="overflow-x-auto">
             <Table>
-              <TableHead>
+              <TableHeader>
                 <TableRow
-                  sx={{
-                    bgcolor: isDark
-                      ? "rgba(255,255,255,0.03)"
-                      : "rgba(0,0,0,0.02)",
-                  }}
+                  className={cn(
+                    isDark ? "bg-white/3" : "bg-black/2",
+                  )}
                 >
-                  <TableCell sx={{ fontWeight: 800, width: 60 }}>
+                  <TableHead className="w-[60px] font-extrabold">
                     {t("aiCatalog.image")}
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 800 }}>
+                  </TableHead>
+                  <TableHead className="font-extrabold">
                     {t("aiCatalog.title")}
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 800 }}>
+                  </TableHead>
+                  <TableHead className="font-extrabold">
                     {t("aiCatalog.sku")}
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 800 }} align="center">
+                  </TableHead>
+                  <TableHead className="text-center font-extrabold">
                     {t("aiCatalog.price")}
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 800 }} align="center">
+                  </TableHead>
+                  <TableHead className="text-center font-extrabold">
                     {t("aiCatalog.stock")}
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 800 }} align="center">
+                  </TableHead>
+                  <TableHead className="text-center font-extrabold">
                     {t("aiCatalog.variants")}
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 800, width: 140 }} align="center">
+                  </TableHead>
+                  <TableHead className="w-[140px] text-center font-extrabold">
                     Actions
-                  </TableCell>
+                  </TableHead>
                 </TableRow>
-              </TableHead>
+              </TableHeader>
               <TableBody>
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={`skeleton-${i}`}>
                       {Array.from({ length: 7 }).map((_, j) => (
                         <TableCell key={j}>
-                          <Skeleton
-                            animation="wave"
-                            height={24}
-                          />
+                          <Skeleton className="h-6 w-full" />
                         </TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : products.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
-                      <Stack alignItems="center" spacing={2}>
-                        <CatalogIcon
-                          sx={{ fontSize: 56, color: "text.disabled" }}
-                        />
-                        <Typography color="text.secondary" fontWeight={600}>
+                    <TableCell colSpan={7} className="py-16 text-center">
+                      <div className="flex flex-col items-center gap-4">
+                        <ShoppingBag className="size-14 text-muted-foreground/50" />
+                        <p className="font-semibold text-muted-foreground">
                           {t("aiCatalog.empty")}
-                        </Typography>
+                        </p>
                         <Button
-                          variant="outlined"
-                          startIcon={<AddIcon />}
+                          variant="outline"
                           onClick={openAddForm}
-                          sx={{ textTransform: "none" }}
                         >
+                          <Plus className="mr-1 size-4" />
                           {t("aiCatalog.addProduct")}
                         </Button>
-                      </Stack>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -1109,122 +961,110 @@ export default function AgentCatalogPage() {
                     return (
                       <TableRow
                         key={product.id}
-                        hover
-                        sx={{
-                          "&:last-child td": { borderBottom: 0 },
-                          cursor: "pointer",
-                          transition: "background 0.15s",
-                        }}
+                        className="cursor-pointer transition-colors"
                         onClick={() => openEditForm(product)}
                       >
-                        {/* Image */}
                         <TableCell>
-                          <Avatar
-                            variant="rounded"
-                            src={thumb}
-                            sx={{
-                              width: 44,
-                              height: 44,
-                              bgcolor: isDark
-                                ? "rgba(255,255,255,0.06)"
-                                : "rgba(0,0,0,0.04)",
-                            }}
-                          >
-                            <ImageIcon sx={{ fontSize: 20 }} />
+                          <Avatar className="size-11 rounded-md">
+                            <AvatarImage src={thumb || undefined} alt={product.name} />
+                            <AvatarFallback
+                              className={cn(
+                                "rounded-md",
+                                isDark ? "bg-white/6" : "bg-black/4",
+                              )}
+                            >
+                              <ImageIcon className="size-5" />
+                            </AvatarFallback>
                           </Avatar>
                         </TableCell>
-                        {/* Name */}
                         <TableCell>
-                          <Typography
-                            variant="body2"
-                            fontWeight={700}
-                            noWrap
-                            sx={{ maxWidth: 220 }}
-                          >
+                          <span className="max-w-[220px] truncate text-sm font-bold">
                             {product.name}
-                          </Typography>
+                          </span>
                         </TableCell>
-                        {/* SKU */}
                         <TableCell>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ fontFamily: "monospace" }}
-                          >
+                          <code className="text-xs text-muted-foreground">
                             {product.sku || "—"}
-                          </Typography>
+                          </code>
                         </TableCell>
-                        {/* Price */}
-                        <TableCell align="center">
-                          <Chip
-                            label={`${product.price?.toFixed(2)}`}
-                            size="small"
-                            color="primary"
-                            variant="outlined"
-                            sx={{ fontWeight: 700, fontSize: "0.75rem" }}
-                          />
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="font-bold text-xs">
+                            {product.price?.toFixed(2)}
+                          </Badge>
                         </TableCell>
-                        {/* Stock */}
-                        <TableCell align="center">
-                          <Chip
-                            label={product.stock}
-                            size="small"
-                            color={product.stock > 0 ? "success" : "error"}
-                            variant="outlined"
-                            sx={{ fontWeight: 700, fontSize: "0.75rem" }}
-                          />
+                        <TableCell className="text-center">
+                          <Badge
+                            variant={product.stock > 0 ? "outline" : "destructive"}
+                            className={cn(
+                              "font-bold text-xs",
+                              product.stock > 0 && "border-success text-success",
+                            )}
+                          >
+                            {product.stock}
+                          </Badge>
                         </TableCell>
-                        {/* Variants */}
-                        <TableCell align="center">
+                        <TableCell className="text-center">
                           {variantCount > 0 ? (
-                            <Chip
-                              icon={<ColorIcon sx={{ fontSize: 14 }} />}
-                              label={variantCount}
-                              size="small"
-                              variant="outlined"
-                              sx={{ fontSize: "0.7rem" }}
-                            />
+                            <Badge variant="outline" className="text-[0.7rem]">
+                              <Palette className="mr-0.5 size-3.5" />
+                              {variantCount}
+                            </Badge>
                           ) : (
-                            <Typography variant="caption" color="text.disabled">
+                            <span className="text-xs text-muted-foreground/50">
                               —
-                            </Typography>
+                            </span>
                           )}
                         </TableCell>
-                        {/* Actions */}
-                        <TableCell align="center">
-                          <Stack
-                            direction="row"
-                            spacing={0.5}
-                            justifyContent="center"
+                        <TableCell className="text-center">
+                          <div
+                            className="flex items-center justify-center gap-1"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <Tooltip title={t("aiCatalog.editProduct")}>
-                              <IconButton
-                                size="small"
-                                color="primary"
-                                onClick={() => openEditForm(product)}
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Duplicate">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDuplicate(product)}
-                              >
-                                <DuplicateIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Delete">
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={() => setDeleteTarget(product)}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </Stack>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    onClick={() => openEditForm(product)}
+                                  >
+                                    <Pencil className="size-3.5 text-primary" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {t("aiCatalog.editProduct")}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    onClick={() => handleDuplicate(product)}
+                                  >
+                                    <Copy className="size-3.5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Duplicate</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    onClick={() => setDeleteTarget(product)}
+                                  >
+                                    <Trash2 className="size-3.5 text-destructive" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Delete</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -1232,34 +1072,62 @@ export default function AgentCatalogPage() {
                 )}
               </TableBody>
             </Table>
-          </TableContainer>
+          </div>
           {!loading && products.length > 0 && (
-            <TablePagination
-              component="div"
-              count={totalCount}
-              page={page}
-              onPageChange={(_, p) => setPage(p)}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={(e) => {
-                setRowsPerPage(parseInt(e.target.value, 10));
-                setPage(0);
-              }}
-              rowsPerPageOptions={[5, 10, 25, 50]}
-              labelRowsPerPage=""
-              sx={{ borderTop: "1px solid", borderColor: "divider" }}
-            />
+            <div className="flex items-center justify-between border-t px-4 py-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {t("rowsPerPage") || "Rows per page:"}
+                </span>
+                <select
+                  value={rowsPerPage}
+                  onChange={(e) => {
+                    setRowsPerPage(parseInt(e.target.value, 10));
+                    setPage(0);
+                  }}
+                  className="rounded-md border border-input bg-background px-2 py-1 text-sm"
+                >
+                  {[5, 10, 25, 50].map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  السابق
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  {t("pagination.page", "صفحة {{page}} من {{total}}", {
+                    page: page + 1,
+                    total: Math.max(1, Math.ceil(totalCount / rowsPerPage)),
+                  })}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= Math.ceil(totalCount / rowsPerPage) - 1}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  التالي
+                </Button>
+              </div>
+            </div>
           )}
-        </Paper>
-      </Fade>
+        </div>
+      </div>
 
-      {/* ── Form Drawer ── */}
+      {/* Form Drawer */}
       <ProductFormDrawer
         open={drawerOpen}
         formData={formData}
         onChange={setFormData}
         onSave={handleSave}
         onClose={() => {
-          // cleanup blob URLs
           if (formData._mainImagePreview)
             URL.revokeObjectURL(formData._mainImagePreview);
           formData.variants.forEach((v) => {
@@ -1270,60 +1138,44 @@ export default function AgentCatalogPage() {
         saving={saving}
       />
 
-      {/* ── Delete Confirm Dialog ── */}
-      <Dialog
+      {/* Delete Confirm Dialog */}
+      <AlertDialog
         open={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        maxWidth="xs"
-        fullWidth
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
       >
-        <DialogTitle fontWeight={900}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <DeleteIcon color="error" />
-            <Typography fontWeight={900}>{t("aiCatalog.deleteConfirm")}</Typography>
-          </Stack>
-        </DialogTitle>
-        <DialogContent>
-          <Typography color="text.secondary">
-            {deleteTarget?.name}
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button
-            onClick={() => setDeleteTarget(null)}
-            disabled={deleting}
-          >
-            {t("aiCatalog.cancel")}
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleDelete}
-            disabled={deleting}
-            startIcon={
-              deleting ? <CircularProgress size={16} /> : <DeleteIcon />
-            }
-          >
-            {deleting ? "..." : "Delete"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* ── Snackbar ── */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          severity={snackbar.severity}
-          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-          sx={{ width: "100%", fontWeight: 600 }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2">
+              <Trash2 className="size-5 text-destructive" />
+              <AlertDialogTitle className="font-black">
+                {t("aiCatalog.deleteConfirm")}
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription>
+              {deleteTarget?.name}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteTarget(null)}>
+              {t("aiCatalog.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <LoadingSpinner size="sm" color="white" />
+              ) : (
+                <>
+                  <Trash2 className="mr-1 size-4" />
+                  Delete
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }

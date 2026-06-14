@@ -1,61 +1,29 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link as RouterLink } from "react-router-dom";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Switch } from "../components/ui/switch";
+import { Checkbox } from "../components/ui/checkbox";
+import { Alert, AlertDescription } from "../components/ui/alert";
 import {
-  Box,
-  Typography,
-  Button,
-  Chip,
-  Alert,
-  CircularProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  MenuItem,
-  Stack,
-  FormControlLabel,
-  Switch,
-  Checkbox,
-  InputAdornment,
-  Autocomplete,
-  Tabs,
-  Tab,
-  Collapse,
-  Divider,
-  Tooltip,
-} from "@mui/material";
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "../components/ui/select";
 import {
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  CheckCircle as CheckCircleIcon,
-  ErrorOutline as ErrorOutlineIcon,
-  Refresh as RefreshIcon,
-  SmartToy as BotIcon,
-  VpnKey as KeyIcon,
-  Bolt as BoltIcon,
-  Psychology as BrainIcon,
-  Face as FaceIcon,
-  Search as SearchIcon,
-  FilterList as FilterListIcon,
-  PlayArrow as PlayArrowIcon,
-  Stop as StopIcon,
-  ImageSearch as ImageSearchIcon,
-  Save as SaveIcon,
-  DragIndicator as DragIndicatorIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Science as ScienceIcon,
-  Timeline as TimelineIcon,
-} from "@mui/icons-material";
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "../components/ui/dialog";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "../components/ui/table";
+import { Separator } from "../components/ui/separator";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "../components/ui/tooltip";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
+import {
+  Plus, Trash2, CheckCircle, XCircle, RefreshCw, Bot, Key, Zap, Brain, User, Search, SlidersHorizontal, Play, Square, ImagePlus, Save, GripVertical, ChevronDown, ChevronUp, FlaskConical, Timeline,
+} from "lucide-react";
 import {
   DndContext,
   KeyboardSensor,

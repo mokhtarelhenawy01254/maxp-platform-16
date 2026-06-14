@@ -239,33 +239,6 @@ class PlatformPartnerService {
       },
     });
 
-    // 2. If not found, auto-enroll if the user is a company owner (or belongs to a company)
-    if (!partner) {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: { company: true },
-      });
-
-      if (user && user.company) {
-        try {
-          await this.registerPartner(userId, {
-            companyName: user.company.name,
-          });
-
-          // Fetch the newly created partner
-          partner = await prisma.platformPartner.findUnique({
-            where: { userId },
-            include: {
-              referredCompanies: { include: { company: true } },
-              subPartners: true,
-            },
-          });
-        } catch (err) {
-          console.error("Failed to auto-enroll partner:", err.message);
-        }
-      }
-    }
-
     if (!partner) {
       throw new Error("Partner not found for this user");
     }

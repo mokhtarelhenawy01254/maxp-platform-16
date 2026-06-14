@@ -1,17 +1,28 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Box, Typography, TextField, IconButton, Avatar, Chip, Tooltip,
-  CircularProgress, Alert, Paper, Divider, Button, Stack,
-  ListItem, ListItemAvatar, ListItemText, ListItemButton, Drawer,
-  useMediaQuery, useTheme,
-} from "@mui/material";
-import {
-  Send as SendIcon, SmartToy as BotIcon, Person as PersonIcon,
-  ArrowBack as BackIcon, Build as BuildIcon,
-} from "@mui/icons-material";
+  Send,
+  Bot,
+  User,
+  ArrowLeft,
+  Wrench,
+} from "lucide-react";
+import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
 import i18n from "../../i18n";
+import { cn } from "@/lib/utils";
+import { useTheme } from "@/hooks/useTheme";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+} from "@/components/ui/sheet";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface CompanyAgent {
   id: string;
@@ -42,9 +53,23 @@ function formatTime(iso: string) {
 const AGENTS_API = "proxy/ai-service/agents";
 const CEO_CHAT_API = "ai/chat/message";
 
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.innerWidth < breakpoint
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    const handler = (e: MediaQueryListEvent | MediaQueryList) =>
+      setIsMobile(e.matches);
+    handler(mq);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 export default function SubAgentsPage() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isMobile = useIsMobile();
 
   const [agents, setAgents] = useState<CompanyAgent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,175 +160,243 @@ export default function SubAgentsPage() {
   };
 
   const agentList = (
-    <Box sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column" }}>
-      <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
-        {i18n.t("subAgents.title")}
-      </Typography>
+    <div className="flex h-full flex-col p-4">
+      <h2 className="mb-4 text-lg font-bold">{i18n.t("subAgents.title")}</h2>
       {loading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}><CircularProgress /></Box>
+        <div className="flex justify-center py-8">
+          <LoadingSpinner size="md" />
+        </div>
       ) : (
-        <Box sx={{ flex: 1, overflow: "auto" }}>
-          <ListItemButton selected={chatMode === "ceo" && !selectedAgent} onClick={handleCeoChat} sx={{ borderRadius: 2, mb: 1 }}>
-            <ListItemAvatar>
-              <Avatar sx={{ bgcolor: "primary.main" }}><BotIcon /></Avatar>
-            </ListItemAvatar>
-            <ListItemText primary={i18n.t("subAgents.ceoAgent")} secondary={i18n.t("subAgents.ceoAgentDesc")} />
-          </ListItemButton>
-          <Divider sx={{ my: 1 }} />
+        <div className="flex-1 space-y-1 overflow-auto">
+          <button
+            onClick={handleCeoChat}
+            className={cn(
+              "mb-2 flex w-full items-center gap-3 rounded-lg p-3 text-right transition-colors",
+              chatMode === "ceo" && !selectedAgent
+                ? "bg-muted"
+                : "hover:bg-muted/50",
+            )}
+          >
+            <Avatar className="size-10 bg-primary">
+              <AvatarFallback>
+                <Bot className="size-5" />
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1 text-right">
+              <p className="text-sm font-medium">{i18n.t("subAgents.ceoAgent")}</p>
+              <p className="text-xs text-muted-foreground">{i18n.t("subAgents.ceoAgentDesc")}</p>
+            </div>
+          </button>
+          <Separator className="my-3" />
           {agents.filter((a) => a.role !== "CEO").map((agent) => (
-            <ListItemButton
+            <button
               key={agent.id}
-              selected={selectedAgent?.id === agent.id}
               onClick={() => handleSelectAgent(agent)}
-              sx={{ borderRadius: 2, mb: 0.5 }}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-lg p-3 text-right transition-colors",
+                selectedAgent?.id === agent.id
+                  ? "bg-muted"
+                  : "hover:bg-muted/50",
+              )}
             >
-              <ListItemAvatar>
-                <Avatar sx={{ bgcolor: agent.status === "ACTIVE" ? "success.main" : "grey.400" }}>
+              <Avatar
+                className={cn(
+                  "size-10",
+                  agent.status === "ACTIVE" ? "bg-success" : "bg-muted-foreground/50",
+                )}
+              >
+                <AvatarFallback>
                   {agent.name?.charAt(0) || "A"}
-                </Avatar>
-              </ListItemAvatar>
-              <ListItemText
-                primary={agent.name}
-                secondary={
-                  <Stack direction="row" spacing={0.5} sx={{ flexWrap: "wrap", gap: 0.5 }} component="span">
-                    <Chip label={agent.role} size="small" color="primary" variant="outlined" />
-                    <Chip label={agent.status} size="small" color={agent.status === "ACTIVE" ? "success" : "default"} />
-                  </Stack>
-                }
-              />
-            </ListItemButton>
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1 text-right">
+                <p className="truncate text-sm font-medium">{agent.name}</p>
+                <div className="mt-0.5 flex flex-wrap gap-1">
+                  <Badge variant="outline" className="text-[0.65rem]">
+                    {agent.role}
+                  </Badge>
+                  <Badge
+                    variant={agent.status === "ACTIVE" ? "default" : "outline"}
+                    className="text-[0.65rem]"
+                  >
+                    {agent.status}
+                  </Badge>
+                </div>
+              </div>
+            </button>
           ))}
-        </Box>
+        </div>
       )}
-    </Box>
+    </div>
   );
 
   const chatPanel = (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <div className="flex h-full flex-col">
       {isMobile && (
-        <Box sx={{ p: 1, borderBottom: 1, borderColor: "divider" }}>
-          <IconButton onClick={() => setDrawerOpen(true)}><BackIcon /></IconButton>
-          <Typography variant="subtitle1" sx={{ display: "inline", mr: 1 }}>
+        <div className="flex items-center gap-2 border-b px-4 py-2">
+          <Button variant="ghost" size="icon-sm" onClick={() => setDrawerOpen(true)}>
+            <ArrowLeft className="size-4" />
+          </Button>
+          <span className="text-sm font-semibold">
             {chatMode === "ceo" ? i18n.t("subAgents.ceoAgent") : selectedAgent?.name || i18n.t("subAgents.chat")}
-          </Typography>
-        </Box>
+          </span>
+        </div>
       )}
-      <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
+      <div className="flex-1 space-y-3 overflow-auto p-4">
         {messages.length === 0 ? (
-          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", opacity: 0.5 }}>
-            <BotIcon sx={{ fontSize: 60, mb: 2 }} />
-            <Typography variant="h6">{i18n.t("subAgents.startChat")}</Typography>
-            <Typography variant="body2" color="text.secondary">
+          <div className="flex h-full flex-col items-center justify-center opacity-50">
+            <Bot className="mb-3 size-14" />
+            <p className="text-lg font-semibold">{i18n.t("subAgents.startChat")}</p>
+            <p className="text-sm text-muted-foreground">
               {chatMode === "ceo"
                 ? i18n.t("subAgents.talkToCeo")
                 : i18n.t("subAgents.askAgent", { name: selectedAgent?.name || i18n.t("subAgents.agent") })}
-            </Typography>
-          </Box>
+            </p>
+          </div>
         ) : (
           messages.map((msg, i) => (
-            <Box key={i} sx={{ display: "flex", justifyContent: msg.role === "user" ? "flex-start" : "flex-end", mb: 2 }}>
-              <Paper elevation={1} sx={{ p: 2, maxWidth: "80%", bgcolor: msg.role === "user" ? "primary.light" : "grey.100" }}>
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                  {msg.role === "user" ? <PersonIcon fontSize="small" /> : <BotIcon fontSize="small" />}
-                  <Typography variant="caption" color="text.secondary">{formatTime(msg.timestamp)}</Typography>
-                </Stack>
-                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>{msg.content}</Typography>
-              </Paper>
-            </Box>
+            <div
+              key={i}
+              className={cn(
+                "flex",
+                msg.role === "user" ? "justify-start" : "justify-end",
+              )}
+            >
+              <div
+                className={cn(
+                  "max-w-[80%] rounded-lg p-3 shadow-sm",
+                  msg.role === "user"
+                    ? "bg-primary/20"
+                    : "bg-muted",
+                )}
+              >
+                <div className="mb-1 flex items-center gap-1.5">
+                  {msg.role === "user" ? (
+                    <User className="size-3.5" />
+                  ) : (
+                    <Bot className="size-3.5" />
+                  )}
+                  <span className="text-xs text-muted-foreground">{formatTime(msg.timestamp)}</span>
+                </div>
+                <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
+              </div>
+            </div>
           ))
         )}
         <div ref={chatEndRef} />
-      </Box>
-      <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
-        <Stack direction="row" spacing={1}>
-          <TextField
-            fullWidth size="small" placeholder={i18n.t("subAgents.placeholder")}
-            value={input} onChange={(e) => setInput(e.target.value)}
+      </div>
+      <div className="border-t p-4">
+        <div className="flex gap-2">
+          <Input
+            placeholder={i18n.t("subAgents.placeholder")}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
             disabled={sending}
-            multiline maxRows={3}
           />
-          <IconButton color="primary" onClick={sendMessage} disabled={sending || !input.trim()}>
-            {sending ? <CircularProgress size={24} /> : <SendIcon />}
-          </IconButton>
-        </Stack>
-      </Box>
-    </Box>
+          <Button
+            size="icon"
+            onClick={sendMessage}
+            disabled={sending || !input.trim()}
+          >
+            {sending ? (
+              <LoadingSpinner size="sm" color="white" />
+            ) : (
+              <Send className="size-4" />
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 
   const agentDetailPanel = selectedAgent && !isMobile ? (
-    <Box sx={{ p: 2, height: "100%", overflow: "auto" }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>{i18n.t("subAgents.agentDetails")}</Typography>
-      <Stack spacing={2}>
-        <Box>
-          <Typography variant="caption" color="text.secondary">{i18n.t("subAgents.name")}</Typography>
-          <Typography variant="body2">{selectedAgent.name}</Typography>
-        </Box>
-        <Box>
-          <Typography variant="caption" color="text.secondary">{i18n.t("subAgents.role")}</Typography>
-          <Chip label={selectedAgent.role} size="small" color="primary" />
-        </Box>
+    <div className="h-full space-y-4 overflow-auto p-4">
+      <h3 className="text-sm font-bold">{i18n.t("subAgents.agentDetails")}</h3>
+      <div className="space-y-3">
+        <div>
+          <span className="text-xs text-muted-foreground">{i18n.t("subAgents.name")}</span>
+          <p className="text-sm">{selectedAgent.name}</p>
+        </div>
+        <div>
+          <span className="text-xs text-muted-foreground">{i18n.t("subAgents.role")}</span>
+          <div className="mt-0.5">
+            <Badge>{selectedAgent.role}</Badge>
+          </div>
+        </div>
         {selectedAgent.model && (
-          <Box>
-            <Typography variant="caption" color="text.secondary">{i18n.t("subAgents.model")}</Typography>
-            <Typography variant="body2">{selectedAgent.model}</Typography>
-          </Box>
+          <div>
+            <span className="text-xs text-muted-foreground">{i18n.t("subAgents.model")}</span>
+            <p className="text-sm">{selectedAgent.model}</p>
+          </div>
         )}
         {selectedAgent.soul && (
-          <Box>
-            <Typography variant="caption" color="text.secondary">{i18n.t("subAgents.instructions")}</Typography>
-            <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", fontSize: "0.75rem", color: "text.secondary" }}>
+          <div>
+            <span className="text-xs text-muted-foreground">{i18n.t("subAgents.instructions")}</span>
+            <p className="text-xs text-muted-foreground whitespace-pre-wrap">
               {selectedAgent.soul.length > 200 ? `${selectedAgent.soul.slice(0, 200)}...` : selectedAgent.soul}
-            </Typography>
-          </Box>
+            </p>
+          </div>
         )}
-        <Divider />
-        <Typography variant="caption" color="text.secondary" sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-          <BuildIcon fontSize="inherit" /> {i18n.t("subAgents.tools")} ({selectedAgent.tools?.length || 0})
-        </Typography>
+        <Separator />
+        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Wrench className="size-3" /> {i18n.t("subAgents.tools")} ({selectedAgent.tools?.length || 0})
+        </span>
         {selectedAgent.tools?.length > 0 ? (
-          <Stack direction="row" spacing={0.5} sx={{ flexWrap: "wrap" }} useFlexGap>
+          <div className="flex flex-wrap gap-1">
             {selectedAgent.tools.map((tool, i) => (
-              <Chip key={i} label={tool} size="small" variant="outlined" />
+              <Badge key={i} variant="outline" className="text-[0.65rem]">
+                {tool}
+              </Badge>
             ))}
-          </Stack>
+          </div>
         ) : (
-          <Typography variant="body2" color="text.secondary">{i18n.t("subAgents.noTools")}</Typography>
+          <p className="text-sm text-muted-foreground">{i18n.t("subAgents.noTools")}</p>
         )}
-      </Stack>
-    </Box>
+      </div>
+    </div>
   ) : null;
 
   if (error) {
     return (
-      <Box sx={{ p: 4 }}>
-        <Alert severity="error" action={<Button size="small" onClick={fetchAgents}>{i18n.t("subAgents.retry")}</Button>}>{error}</Alert>
-      </Box>
+      <div className="p-6">
+        <div
+          className="flex items-center justify-between rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          role="alert"
+        >
+          <span>{error}</span>
+          <Button size="sm" variant="outline" onClick={fetchAgents}>
+            {i18n.t("subAgents.retry")}
+          </Button>
+        </div>
+      </div>
     );
   }
 
   if (isMobile) {
     return (
-      <Box sx={{ height: "calc(100vh - 64px)", display: "flex" }}>
-        <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-          <Box sx={{ width: 300 }}>{agentList}</Box>
-        </Drawer>
+      <div className="flex h-[calc(100vh-64px)]">
+        <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+          <SheetContent side="left" className="w-[300px] p-0">
+            {agentList}
+          </SheetContent>
+        </Sheet>
         {chatPanel}
-      </Box>
+      </div>
     );
   }
 
   return (
-    <Box sx={{ height: "calc(100vh - 64px)", display: "flex" }}>
-      <Paper sx={{ width: 300, borderRadius: 0, borderRight: 1, borderColor: "divider", overflow: "auto" }}>
+    <div className="flex h-[calc(100vh-64px)]">
+      <div className="w-[300px] overflow-auto border-l bg-card">
         {agentList}
-      </Paper>
-      <Box sx={{ flex: 1 }}>{chatPanel}</Box>
+      </div>
+      <div className="flex-1">{chatPanel}</div>
       {agentDetailPanel && (
-        <Paper sx={{ width: 280, borderRadius: 0, borderLeft: 1, borderColor: "divider" }}>
+        <div className="w-[280px] border-r bg-card">
           {agentDetailPanel}
-        </Paper>
+        </div>
       )}
-    </Box>
+    </div>
   );
 }

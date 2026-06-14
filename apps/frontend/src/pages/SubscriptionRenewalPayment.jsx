@@ -1,33 +1,14 @@
 import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Button,
-  Alert,
-  CircularProgress,
-  Grid,
-  Paper,
-  IconButton,
-  TextField,
-  Stepper,
-  Step,
-  StepLabel,
-  Divider,
-} from "@mui/material";
-import {
-  ContentCopy as CopyIcon,
-  CloudUpload as UploadIcon,
-  CheckCircle as CheckIcon,
-  ArrowBack as BackIcon,
-} from "@mui/icons-material";
-import { useAuth } from "../hooks/useAuthSimple";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../services/apiClient";
+import { Copy, Upload, CheckCircle, ArrowLeft } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 const SubscriptionRenewalPayment = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [walletNumbers, setWalletNumbers] = useState([]);
   const [selectedWallet, setSelectedWallet] = useState(null);
@@ -35,361 +16,107 @@ const SubscriptionRenewalPayment = () => {
   const [loading, setLoading] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
   const [subscription, setSubscription] = useState(null);
 
-  const steps = ["اختيار المحفظة", "رفع الإيصال", "تأكيد الإرسال"];
-
-  useEffect(() => {
-    fetchWalletNumbers();
-    fetchSubscription();
-  }, []);
+  useEffect(() => { fetchWalletNumbers(); fetchSubscription(); }, []);
 
   const fetchWalletNumbers = async () => {
     try {
       setLoading(true);
       const response = await apiClient.get("/wallet-payment/wallet-numbers");
-      if (response.data.success) {
-        setWalletNumbers(response.data.data);
-      }
-    } catch (error) {
-      console.error("خطأ في جلب أرقام المحافظ:", error);
-      showSnackbar("خطأ في جلب أرقام المحافظ", "error");
-    } finally {
-      setLoading(false);
-    }
+      if (response.data.success) setWalletNumbers(response.data.data);
+    } catch (error) { toast.error("خطأ في جلب أرقام المحافظ"); } finally { setLoading(false); }
   };
 
-  const fetchSubscription = async () => {
-    try {
-      // بيانات وهمية للاشتراك
-      const mockSubscription = {
-        id: "mock-subscription",
-        price: 7500,
-        currency: "EGP",
-      };
-      setSubscription(mockSubscription);
-    } catch (error) {
-      console.error("خطأ في جلب الاشتراك:", error);
-    }
-  };
+  const fetchSubscription = async () => { setSubscription({ id: "mock-subscription", price: 7500, currency: "EGP" }); };
 
-  const copyToClipboard = (text, walletName) => {
-    navigator.clipboard.writeText(text).then(() => {
-      showSnackbar(`تم نسخ رقم ${walletName}`, "success");
-    });
-  };
+  const copyToClipboard = (text, walletName) => { navigator.clipboard.writeText(text).then(() => toast.success(`تم نسخ رقم ${walletName}`)); };
 
-  const showSnackbar = (message, severity = "success") => {
-    setSnackbar({ open: true, message, severity });
-    setTimeout(() => setSnackbar({ ...snackbar, open: false }), 3000);
-  };
-
-  const handleWalletSelect = (wallet) => {
-    setSelectedWallet(wallet);
-    setActiveStep(1);
-  };
+  const handleWalletSelect = (wallet) => { setSelectedWallet(wallet); setActiveStep(1); };
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        showSnackbar("حجم الملف كبير جداً. الحد الأقصى 5 ميجابايت", "error");
-        return;
-      }
-      if (!file.type.startsWith("image/")) {
-        showSnackbar("يرجى اختيار ملف صورة فقط", "error");
-        return;
-      }
-      setReceiptFile(file);
-      setActiveStep(2);
+      if (file.size > 5 * 1024 * 1024) { toast.error("حجم الملف كبير جداً"); return; }
+      if (!file.type.startsWith("image/")) { toast.error("يرجى اختيار ملف صورة فقط"); return; }
+      setReceiptFile(file); setActiveStep(2);
     }
   };
 
   const handleSubmitReceipt = async () => {
-    if (!receiptFile || !selectedWallet) {
-      showSnackbar("يرجى اختيار المحفظة ورفع الإيصال", "error");
-      return;
-    }
-
+    if (!receiptFile || !selectedWallet) { toast.error("يرجى اختيار المحفظة ورفع الإيصال"); return; }
     try {
       setUploadLoading(true);
-
       const formData = new FormData();
       formData.append("receipt", receiptFile);
       formData.append("walletNumberId", selectedWallet.id);
       formData.append("subscriptionId", subscription?.id || "renewal");
       formData.append("amount", subscription?.price || 7500);
       formData.append("purpose", "subscription_renewal");
-
-      const response = await apiClient.post(
-        "/wallet-payment/submit-receipt",
-        formData,
-      );
-
-      if (response.data.success) {
-        showSnackbar("تم إرسال الإيصال بنجاح! سيتم مراجعته قريباً", "success");
-        setTimeout(() => {
-          navigate("/subscription");
-        }, 2000);
-      } else {
-        showSnackbar(response.data.message || "خطأ في إرسال الإيصال", "error");
-      }
-    } catch (error) {
-      console.error("خطأ في رفع الإيصال:", error);
-      showSnackbar("خطأ في إرسال الإيصال", "error");
-    } finally {
-      setUploadLoading(false);
-    }
+      const response = await apiClient.post("/wallet-payment/submit-receipt", formData);
+      if (response.data.success) { toast.success("تم إرسال الإيصال بنجاح!"); setTimeout(() => navigate("/subscription"), 2000); }
+      else toast.error(response.data.message);
+    } catch (error) { toast.error("خطأ في إرسال الإيصال"); } finally { setUploadLoading(false); }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("ar-EG", {
-      style: "currency",
-      currency: "EGP",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
+  const formatCurrency = (amount) => new Intl.NumberFormat("ar-EG", { style: "currency", currency: "EGP", minimumFractionDigits: 0 }).format(amount);
 
-  if (loading) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="400px"
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
+  if (loading) return <div className="flex justify-center items-center min-h-[400px]"><LoadingSpinner size="lg" /></div>;
 
   return (
-    <Box p={3} maxWidth={900} mx="auto">
-      {/* Header */}
-      <Box display="flex" alignItems="center" mb={3}>
-        <IconButton onClick={() => navigate("/subscription")} sx={{ mr: 2 }}>
-          <BackIcon />
-        </IconButton>
-        <Typography variant="h4">💳 دفع تجديد الاشتراك</Typography>
-      </Box>
+    <div className="p-3 max-w-3xl mx-auto">
+      <div className="flex items-center gap-2 mb-3"><Button variant="ghost" size="icon" onClick={() => navigate("/subscription")}><ArrowLeft className="size-5" /></Button><h1 className="text-2xl font-bold">💳 دفع تجديد الاشتراك</h1></div>
 
-      {/* Stepper */}
-      <Card sx={{ mb: 3 }}>
+      <div className="flex items-center justify-center gap-2 mb-4">
+        {["اختيار المحفظة", "رفع الإيصال", "تأكيد الإرسال"].map((step, i) => (
+          <div key={step} className={`flex items-center gap-1 ${i <= activeStep ? "text-primary font-bold" : "text-muted-foreground"}`}>
+            <span className={`size-6 rounded-full flex items-center justify-center text-xs ${i <= activeStep ? "bg-primary text-primary-foreground" : "bg-muted"}`}>{i + 1}</span>
+            <span className="hidden sm:inline text-sm">{step}</span>
+            {i < 2 && <span className="mx-1 text-muted-foreground">—</span>}
+          </div>
+        ))}
+      </div>
+
+      <Card className="mb-3"><CardContent><p className="text-lg font-bold">المبلغ المطلوب: {formatCurrency(subscription?.price || 7500)}</p><p className="text-sm text-muted-foreground">رسوم تجديد الاشتراك الشهري</p></CardContent></Card>
+
+      <Card className="mb-3">
+        <CardHeader><CardTitle>1️⃣ اختر رقم المحفظة للتحويل</CardTitle></CardHeader>
         <CardContent>
-          <Stepper activeStep={activeStep} alternativeLabel>
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {walletNumbers.map((wallet) => (
+              <div key={wallet.id} className={`rounded-lg border p-3 cursor-pointer transition-colors hover:border-primary ${selectedWallet?.id === wallet.id ? "border-primary border-2" : ""}`} onClick={() => handleWalletSelect(wallet)}>
+                <div className="flex items-center justify-between">
+                  <div><p className="font-bold">{wallet.icon} {wallet.name}</p><p className="text-lg font-mono">{wallet.number}</p></div>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); copyToClipboard(wallet.number, wallet.name); }}><Copy className="size-4" /></Button>
+                    {selectedWallet?.id === wallet.id && <CheckCircle className="size-5 text-green-600" />}
+                  </div>
+                </div>
+              </div>
             ))}
-          </Stepper>
+          </div>
         </CardContent>
       </Card>
 
-      {/* معلومات المبلغ */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            💰 تفاصيل الدفع
-          </Typography>
-          <Typography variant="h5" color="primary" fontWeight="bold">
-            المبلغ المطلوب: {formatCurrency(subscription?.price || 7500)}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            رسوم تجديد الاشتراك الشهري
-          </Typography>
-        </CardContent>
-      </Card>
+      {activeStep >= 1 && <Card className="mb-3"><CardHeader><CardTitle>2️⃣ ارفع صورة إيصال التحويل</CardTitle></CardHeader><CardContent>
+        {selectedWallet && <Alert className="mb-2"><AlertDescription>تم اختيار: {selectedWallet.icon} {selectedWallet.name} - {selectedWallet.number}</AlertDescription></Alert>}
+        <div className="border-2 border-dashed rounded-lg p-6 text-center">
+          <input accept="image/*" className="hidden" id="receipt-upload" type="file" onChange={handleFileChange} />
+          <label htmlFor="receipt-upload"><Button variant="outline" size="lg" asChild><span>{receiptFile ? <><CheckCircle className="size-4" /> تم رفع الإيصال</> : <><Upload className="size-4" /> اختر صورة الإيصال</>}</span></Button></label>
+          {receiptFile && <p className="text-sm mt-1">{receiptFile.name}</p>}
+          <p className="text-xs mt-1">الحد الأقصى: 5 ميجابايت | الصيغ المدعومة: JPG, PNG, GIF</p>
+        </div>
+      </CardContent></Card>}
 
-      {/* Step 1: اختيار المحفظة */}
-      {activeStep >= 0 && (
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              1️⃣ اختر رقم المحفظة للتحويل
-            </Typography>
-
-            <Grid container spacing={2}>
-              {walletNumbers.map((wallet) => (
-                <Grid item xs={12} sm={6} key={wallet.id}>
-                  <Paper
-                    sx={{
-                      p: 2,
-                      border: selectedWallet?.id === wallet.id ? 2 : 1,
-                      borderColor:
-                        selectedWallet?.id === wallet.id
-                          ? "primary.main"
-                          : "divider",
-                      cursor: "pointer",
-                      "&:hover": { borderColor: "primary.main" },
-                    }}
-                    onClick={() => handleWalletSelect(wallet)}
-                  >
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="space-between"
-                    >
-                      <Box>
-                        <Typography variant="subtitle1" fontWeight="bold">
-                          {wallet.icon} {wallet.name}
-                        </Typography>
-                        <Typography
-                          variant="h6"
-                          sx={{ fontFamily: "monospace" }}
-                        >
-                          {wallet.number}
-                        </Typography>
-                      </Box>
-                      <Box>
-                        <IconButton
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            copyToClipboard(wallet.number, wallet.name);
-                          }}
-                          color="primary"
-                          size="small"
-                        >
-                          <CopyIcon />
-                        </IconButton>
-                        {selectedWallet?.id === wallet.id && (
-                          <CheckIcon color="success" sx={{ ml: 1 }} />
-                        )}
-                      </Box>
-                    </Box>
-                  </Paper>
-                </Grid>
-              ))}
-            </Grid>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Step 2: رفع الإيصال */}
-      {activeStep >= 1 && (
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              2️⃣ ارفع صورة إيصال التحويل
-            </Typography>
-
-            {selectedWallet && (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                تم اختيار: {selectedWallet.icon} {selectedWallet.name} -{" "}
-                {selectedWallet.number}
-              </Alert>
-            )}
-
-            <Box
-              sx={{
-                border: "2px dashed",
-                borderColor: receiptFile ? "success.main" : "grey.300",
-                borderRadius: 2,
-                p: 3,
-                textAlign: "center",
-                backgroundColor: receiptFile ? "success.50" : "grey.50",
-              }}
-            >
-              <input
-                accept="image/*"
-                style={{ display: "none" }}
-                id="receipt-upload"
-                type="file"
-                onChange={handleFileChange}
-              />
-              <label htmlFor="receipt-upload">
-                <Button
-                  variant="outlined"
-                  component="span"
-                  startIcon={receiptFile ? <CheckIcon /> : <UploadIcon />}
-                  size="large"
-                  color={receiptFile ? "success" : "primary"}
-                >
-                  {receiptFile ? "تم رفع الإيصال" : "اختر صورة الإيصال"}
-                </Button>
-              </label>
-
-              {receiptFile && (
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  {receiptFile.name}
-                </Typography>
-              )}
-
-              <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                الحد الأقصى: 5 ميجابايت | الصيغ المدعومة: JPG, PNG, GIF
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Step 3: تأكيد الإرسال */}
-      {activeStep >= 2 && (
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              3️⃣ تأكيد وإرسال
-            </Typography>
-
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="body1" gutterBottom>
-                <strong>المحفظة المختارة:</strong> {selectedWallet?.name} -{" "}
-                {selectedWallet?.number}
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                <strong>المبلغ:</strong>{" "}
-                {formatCurrency(subscription?.price || 7500)}
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                <strong>الإيصال:</strong> {receiptFile?.name}
-              </Typography>
-            </Box>
-
-            <Divider sx={{ my: 2 }} />
-
-            <Box textAlign="center">
-              <Button
-                variant="contained"
-                size="large"
-                onClick={handleSubmitReceipt}
-                disabled={uploadLoading || !receiptFile || !selectedWallet}
-                sx={{ px: 4, py: 1.5 }}
-              >
-                {uploadLoading ? (
-                  <>
-                    <CircularProgress size={20} sx={{ mr: 1 }} />
-                    جاري الإرسال...
-                  </>
-                ) : (
-                  "إرسال الإيصال للمراجعة"
-                )}
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Snackbar */}
-      {snackbar.open && (
-        <Alert
-          severity={snackbar.severity}
-          sx={{
-            position: "fixed",
-            bottom: 20,
-            right: 20,
-            zIndex: 1000,
-          }}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-        >
-          {snackbar.message}
-        </Alert>
-      )}
-    </Box>
+      {activeStep >= 2 && <Card><CardHeader><CardTitle>3️⃣ تأكيد وإرسال</CardTitle></CardHeader><CardContent className="text-center">
+        <p className="mb-1"><strong>المحفظة المختارة:</strong> {selectedWallet?.name} - {selectedWallet?.number}</p>
+        <p className="mb-1"><strong>المبلغ:</strong> {formatCurrency(subscription?.price || 7500)}</p>
+        <p className="mb-3"><strong>الإيصال:</strong> {receiptFile?.name}</p>
+        <Button size="lg" disabled={uploadLoading || !receiptFile || !selectedWallet} onClick={handleSubmitReceipt}>
+          {uploadLoading ? <><LoadingSpinner size="sm" /> جاري الإرسال...</> : "إرسال الإيصال للمراجعة"}
+        </Button>
+      </CardContent></Card>}
+    </div>
   );
 };
 

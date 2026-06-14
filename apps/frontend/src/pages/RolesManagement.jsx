@@ -1,660 +1,109 @@
 import React, { useCallback, useEffect, useState } from "react";
 import tokenManager from "../utils/tokenManager";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import { Label } from "../components/ui/label";
+import { Switch } from "../components/ui/switch";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Card, CardContent } from "../components/ui/card";
 import {
-  Box,
-  Typography,
-  Button,
-  Card,
-  CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Switch,
-  FormControlLabel,
-  Alert,
-  Tooltip,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Checkbox,
-  FormGroup,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  CircularProgress,
-} from "@mui/material";
-import Grid from "../components/ui/CompatGrid";
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "../components/ui/select";
 import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  ExpandMore as ExpandMoreIcon,
-  Security as SecurityIcon,
-  Group as GroupIcon,
-  Check as CheckIcon,
-  Lock as LockIcon,
-} from "@mui/icons-material";
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "../components/ui/dialog";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { useAuth } from "../hooks/useAuthSimple";
 import { buildApiUrl } from "../utils/apiHelpers";
-
-/**
- * Roles & Permissions Management Page
- *
- * Manages roles and permissions within a company
- */
+import { Plus, Edit, Trash2, ChevronDown, Shield, Users, Check, Lock } from "lucide-react";
 
 const RolesManagement = () => {
   const { user } = useAuth();
-  const getAuthHeaders = () =>
-    tokenManager.createAuthHeaders({
-      "Content-Type": "application/json",
-    });
+  const getAuthHeaders = () => tokenManager.createAuthHeaders({ "Content-Type": "application/json" });
   const [roles, setRoles] = useState({});
   const [permissions, setPermissions] = useState({});
   const [permissionsLoading, setPermissionsLoading] = useState(true);
   const [permissionsError, setPermissionsError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState(null);
-
-  // Form state
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    permissions: [],
-    isActive: true,
-  });
+  const [expandedCategory, setExpandedCategory] = useState(null);
+  const [formData, setFormData] = useState({ name: "", description: "", permissions: [], isActive: true });
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch roles
   const fetchRoles = useCallback(async () => {
-    if (!user?.companyId) return;
-
-    try {
-      setLoading(true);
-      const response = await fetch(
-        buildApiUrl(`companies/${user.companyId}/roles`),
-        {
-          headers: getAuthHeaders(),
-        },
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        setRoles(data.data);
-        setError(null);
-      } else {
-        setError(data.message || "فشل في جلب الأدوار");
-      }
-    } catch (err) {
-      setError("فشل في جلب البيانات: " + err.message);
-    } finally {
-      setLoading(false);
-    }
+    if (!user?.companyId) return; setLoading(true);
+    try { const r = await fetch(buildApiUrl(`companies/${user.companyId}/roles`), { headers: getAuthHeaders() }); const d = await r.json(); if (d.success) setRoles(d.data); else setError(d.message || "فشل في جلب الأدوار"); } catch (err) { setError("فشل في جلب البيانات: " + err.message); } finally { setLoading(false); }
   }, [user?.companyId]);
 
-  // Fetch permissions
   const fetchPermissions = useCallback(async () => {
-    setPermissionsLoading(true);
-    setPermissionsError(null);
-    try {
-      const response = await fetch(buildApiUrl("permissions"), {
-        headers: getAuthHeaders(),
-      });
-
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setPermissions(data.data || {});
-        setPermissionsError(null);
-      } else {
-        setPermissions({});
-        setPermissionsError(data.message || "تعذر تحميل الصلاحيات المتاحة");
-      }
-    } catch (err) {
-      setPermissions({});
-      setPermissionsError("تعذر تحميل الصلاحيات المتاحة. أعد المحاولة ثم افتح نموذج الدور مرة أخرى.");
-      console.error("Failed to fetch permissions:", err);
-    } finally {
-      setPermissionsLoading(false);
-    }
+    setPermissionsLoading(true); setPermissionsError(null);
+    try { const r = await fetch(buildApiUrl("permissions"), { headers: getAuthHeaders() }); const d = await r.json(); if (r.ok && d.success) setPermissions(d.data || {}); else { setPermissions({}); setPermissionsError(d.message || "تعذر تحميل الصلاحيات المتاحة"); } } catch { setPermissions({}); setPermissionsError("تعذر تحميل الصلاحيات المتاحة"); } finally { setPermissionsLoading(false); }
   }, []);
 
-  useEffect(() => {
-    void fetchRoles();
-    void fetchPermissions();
-  }, [fetchPermissions, fetchRoles]);
+  useEffect(() => { fetchRoles(); fetchPermissions(); }, [fetchPermissions, fetchRoles]);
 
-  // Reset form
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      description: "",
-      permissions: [],
-      isActive: true,
-    });
-    setFormErrors({});
-  };
+  const handlePermissionToggle = (permission) => setFormData(p => ({ ...p, permissions: p.permissions.includes(permission) ? p.permissions.filter(pp => pp !== permission) : [...p.permissions, permission] }));
 
-  // Open new role modal
-  const handleAddRole = () => {
-    resetForm();
-    setModalOpen(true);
-  };
-
-  // Open edit role modal
-  const handleEditRole = (roleKey, role) => {
-    if (role.isBuiltIn) {
-      setError("لا يمكن تعديل الأدوار الأساسية");
-      return;
-    }
-
-    setFormData({
-      name: role.name || "",
-      description: role.description || "",
-      permissions: role.permissions || [],
-      isActive: role.isActive !== undefined ? role.isActive : true,
-    });
-    setSelectedRole({ key: roleKey, ...role });
-    setEditModalOpen(true);
-  };
-
-  // Handle form input changes
-  const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (formErrors[field]) {
-      setFormErrors((prev) => ({ ...prev, [field]: "" }));
-    }
-  };
-
-  // Handle permission toggle
-  const handlePermissionToggle = (permission) => {
-    setFormData((prev) => ({
-      ...prev,
-      permissions: prev.permissions.includes(permission)
-        ? prev.permissions.filter((p) => p !== permission)
-        : [...prev.permissions, permission],
-    }));
-  };
-
-  // Validate form
-  const validateForm = () => {
-    const errors = {};
-
-    if (!formData.name.trim()) {
-      errors.name = "اسم الدور مطلوب";
-    }
-
-    if (!formData.description.trim()) {
-      errors.description = "وصف الدور مطلوب";
-    }
-
-    if (permissionsLoading) {
-      errors.permissions = "انتظر حتى يتم تحميل الصلاحيات أولًا";
-    } else if (permissionsError) {
-      errors.permissions = permissionsError;
-    } else if (formData.permissions.length === 0) {
-      errors.permissions = "يجب اختيار صلاحية واحدة على الأقل";
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  // Submit form (create or update)
   const handleSubmit = async () => {
-    if (!validateForm()) return;
+    const errors = {};
+    if (!formData.name.trim()) errors.name = "اسم الدور مطلوب";
+    if (!formData.description.trim()) errors.description = "وصف الدور مطلوب";
+    if (permissionsLoading) errors.permissions = "انتظر تحميل الصلاحيات";
+    else if (formData.permissions.length === 0) errors.permissions = "يجب اختيار صلاحية واحدة على الأقل";
+    setFormErrors(errors); if (Object.keys(errors).length > 0) return;
 
     setSubmitting(true);
     try {
-      const url = editModalOpen
-        ? buildApiUrl(`companies/${user.companyId}/roles/${selectedRole.key}`)
-        : buildApiUrl(`companies/${user.companyId}/roles`);
-
-      const method = editModalOpen ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: getAuthHeaders(),
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Refresh roles list
-        await fetchRoles();
-
-        // Close modal and reset form
-        setModalOpen(false);
-        setEditModalOpen(false);
-        resetForm();
-        setSelectedRole(null);
-
-        // Show success message
-        setError(null);
-      } else {
-        setError(data.message || "فشل في حفظ الدور");
-      }
-    } catch (err) {
-      setError("فشل في حفظ الدور: " + err.message);
-    } finally {
-      setSubmitting(false);
-    }
+      const url = editModalOpen ? buildApiUrl(`companies/${user.companyId}/roles/${selectedRole.key}`) : buildApiUrl(`companies/${user.companyId}/roles`);
+      const r = await fetch(url, { method: editModalOpen ? "PUT" : "POST", headers: getAuthHeaders(), body: JSON.stringify(formData) });
+      const d = await r.json();
+      if (d.success) { await fetchRoles(); setModalOpen(false); setEditModalOpen(false); setFormData({ name: "", description: "", permissions: [], isActive: true }); setSelectedRole(null); setError(null); } else setError(d.message || "فشل في حفظ الدور");
+    } catch (err) { setError("فشل في حفظ الدور: " + err.message); } finally { setSubmitting(false); }
   };
 
-  // Delete role
   const handleDeleteRole = async (roleKey, role) => {
-    if (role.isBuiltIn) {
-      setError("لا يمكن حذف الأدوار الأساسية");
-      return;
-    }
-
-    if (!window.confirm(`هل أنت متأكد من حذف دور "${role.name}"؟`)) {
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        buildApiUrl(`companies/${user.companyId}/roles/${roleKey}`),
-        {
-          method: "DELETE",
-          headers: getAuthHeaders(),
-        },
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        await fetchRoles();
-        setError(null);
-      } else {
-        setError(data.message || "فشل في حذف الدور");
-      }
-    } catch (err) {
-      setError("فشل في حذف الدور: " + err.message);
-    }
+    if (role.isBuiltIn) { setError("لا يمكن حذف الأدوار الأساسية"); return; }
+    if (!window.confirm(`هل أنت متأكد من حذف دور "${role.name}"؟`)) return;
+    try { const r = await fetch(buildApiUrl(`companies/${user.companyId}/roles/${roleKey}`), { method: "DELETE", headers: getAuthHeaders() }); const d = await r.json(); if (d.success) { await fetchRoles(); setError(null); } else setError(d.message || "فشل في حذف الدور"); } catch (err) { setError("فشل في حذف الدور: " + err.message); }
   };
 
-  // Group permissions by category
-  const groupedPermissions = Object.entries(permissions).reduce(
-    (acc, [permission, details]) => {
-      const category = details.category || "أخرى";
-      if (!acc[category]) {
-        acc[category] = [];
-      }
-      acc[category].push({ name: permission, ...details });
-      return acc;
-    },
-    {},
-  );
+  const groupedPermissions = Object.entries(permissions).reduce((acc, [permission, details]) => { const cat = details.category || "أخرى"; if (!acc[cat]) acc[cat] = []; acc[cat].push({ name: permission, ...details }); return acc; }, {});
 
-  if (loading) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="400px"
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
+  if (loading) return <div className="flex justify-center items-center min-h-[400px]"><LoadingSpinner size="lg" /></div>;
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
-      >
-        <Box>
-          <Typography variant="h4" component="h1">
-            إدارة الأدوار والصلاحيات
-          </Typography>
-          <Typography variant="body2" color="text.secondary" mt={1}>
-            إدارة أدوار المستخدمين وصلاحياتهم في النظام
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleAddRole}
-        >
-          إضافة دور جديد
-        </Button>
-      </Box>
+    <div className="p-3">
+      <div className="flex justify-between items-center mb-3"><div><h1 className="text-2xl font-bold">إدارة الأدوار والصلاحيات</h1><p className="text-sm text-muted-foreground">إدارة أدوار المستخدمين وصلاحياتهم في النظام</p></div><Button onClick={() => { setFormData({ name: "", description: "", permissions: [], isActive: true }); setModalOpen(true); }}><Plus className="size-4" /> إضافة دور جديد</Button></div>
+      {error && <Alert variant="destructive" className="mb-3" onClose={() => setError(null)}><AlertDescription>{error}</AlertDescription></Alert>}
+      {permissionsError && <Alert variant="destructive" className="mb-3"><AlertDescription>{permissionsError}</AlertDescription></Alert>}
 
-      {/* Error Alert */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {Object.entries(roles).map(([roleKey, role]) => <Card key={roleKey} className={`h-full ${role.isBuiltIn ? "border-2 border-blue-200 dark:border-blue-800" : ""} relative`}>
+          {role.isBuiltIn && <div className="absolute top-2 right-2 bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1"><Lock className="size-3" /> أساسي</div>}
+          <CardContent><div className="flex items-center gap-1 mb-2"><Shield className="size-5 text-primary" /><h2 className="text-base font-bold">{role.name}</h2></div>
+            <p className="text-sm text-muted-foreground mb-2">{role.description}</p>
+            <div className="mb-2"><p className="text-xs font-semibold mb-1">الصلاحيات ({role.permissions?.length || 0}):</p><div className="max-h-[120px] overflow-auto flex flex-wrap gap-0.5">{role.permissions?.map((p, i) => <Badge key={i} variant="outline" className="text-xs">{p}</Badge>)}</div></div>
+            <div className="flex justify-between items-center"><Badge variant={role.isActive ? "default" : "secondary"}>{role.isActive ? "نشط" : "غير نشط"}</Badge><div>{!role.isBuiltIn && <><Button variant="ghost" size="icon" onClick={() => { setFormData({ name: role.name, description: role.description, permissions: role.permissions || [], isActive: role.isActive }); setSelectedRole({ key: roleKey, ...role }); setEditModalOpen(true); }}><Edit className="size-4" /></Button><Button variant="ghost" size="icon" onClick={() => handleDeleteRole(roleKey, role)}><Trash2 className="size-4" /></Button></>}</div></div></CardContent></Card>)}
+      </div>
 
-      {permissionsError && (
-        <Alert
-          severity="warning"
-          sx={{ mb: 3 }}
-          action={
-            <Button color="inherit" size="small" onClick={() => void fetchPermissions()}>
-              إعادة المحاولة
-            </Button>
-          }
-        >
-          {permissionsError}
-        </Alert>
-      )}
-
-      {/* Roles Grid */}
-      <Grid container spacing={3}>
-        {Object.entries(roles).map(([roleKey, role]) => (
-          <Grid item xs={12} md={6} lg={4} key={roleKey}>
-            <Card
-              sx={{
-                height: "100%",
-                border: role.isBuiltIn
-                  ? "2px solid #e3f2fd"
-                  : "1px solid #e0e0e0",
-                position: "relative",
-              }}
-            >
-              {role.isBuiltIn && (
-                <Box
-                  sx={{
-                    position: "absolute",
-                    top: 8,
-                    right: 8,
-                    backgroundColor: "#1976d2",
-                    color: "white",
-                    px: 1,
-                    py: 0.5,
-                    borderRadius: 1,
-                    fontSize: "0.75rem",
-                  }}
-                >
-                  <LockIcon sx={{ fontSize: 12, mr: 0.5 }} />
-                  أساسي
-                </Box>
-              )}
-
-              <CardContent>
-                <Box display="flex" alignItems="center" mb={2}>
-                  <SecurityIcon color="primary" sx={{ mr: 1 }} />
-                  <Typography variant="h6" component="h3">
-                    {role.name}
-                  </Typography>
-                </Box>
-
-                <Typography variant="body2" color="text.secondary" mb={2}>
-                  {role.description}
-                </Typography>
-
-                <Box mb={2}>
-                  <Typography variant="subtitle2" mb={1}>
-                    الصلاحيات ({role.permissions?.length || 0}):
-                  </Typography>
-                  <Box sx={{ maxHeight: 120, overflow: "auto" }}>
-                    {role.permissions?.map((permission, index) => (
-                      <Chip
-                        key={index}
-                        label={permission}
-                        size="small"
-                        variant="outlined"
-                        sx={{ mr: 0.5, mb: 0.5 }}
-                      />
-                    ))}
-                  </Box>
-                </Box>
-
-                <Box
-                  display="flex"
-                  justifyContent="space-between"
-                  alignItems="center"
-                >
-                  <Chip
-                    label={role.isActive ? "نشط" : "غير نشط"}
-                    color={role.isActive ? "success" : "default"}
-                    size="small"
-                  />
-
-                  <Box>
-                    {!role.isBuiltIn && (
-                      <>
-                        <Tooltip title="تعديل">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleEditRole(roleKey, role)}
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="حذف">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleDeleteRole(roleKey, role)}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </>
-                    )}
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
-      {/* Add/Edit Role Modal */}
-      <Dialog
-        open={modalOpen || editModalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          setEditModalOpen(false);
-          resetForm();
-          setSelectedRole(null);
-        }}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          {editModalOpen ? "تعديل الدور" : "إضافة دور جديد"}
-        </DialogTitle>
-        <DialogContent>
-          <Grid container spacing={3} sx={{ mt: 1 }}>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="اسم الدور *"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
-                error={!!formErrors.name}
-                helperText={formErrors.name}
-                disabled={submitting}
-              />
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.isActive}
-                    onChange={(e) =>
-                      handleInputChange("isActive", e.target.checked)
-                    }
-                    disabled={submitting}
-                  />
-                }
-                label="نشط"
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="وصف الدور *"
-                multiline
-                rows={2}
-                value={formData.description}
-                onChange={(e) =>
-                  handleInputChange("description", e.target.value)
-                }
-                error={!!formErrors.description}
-                helperText={formErrors.description}
-                disabled={submitting}
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Typography variant="h6" mb={2}>
-                الصلاحيات *
-              </Typography>
-              {formErrors.permissions && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                  {formErrors.permissions}
-                </Alert>
-              )}
-
-              {permissionsLoading ? (
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  gap={1.5}
-                  sx={{ py: 2, color: "text.secondary" }}
-                >
-                  <CircularProgress size={18} />
-                  <Typography variant="body2">
-                    جاري تحميل قائمة الصلاحيات...
-                  </Typography>
-                </Box>
-              ) : permissionsError ? (
-                <Alert
-                  severity="error"
-                  action={
-                    <Button color="inherit" size="small" onClick={() => void fetchPermissions()}>
-                      إعادة التحميل
-                    </Button>
-                  }
-                >
-                  {permissionsError}
-                </Alert>
-              ) : Object.keys(groupedPermissions).length === 0 ? (
-                <Alert severity="info">
-                  لا توجد صلاحيات متاحة حاليًا لهذا الحساب.
-                </Alert>
-              ) : (
-                Object.entries(groupedPermissions).map(
-                  ([category, categoryPermissions]) => (
-                    <Accordion key={category} defaultExpanded>
-                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography
-                          variant="subtitle1"
-                          sx={{ fontWeight: "bold" }}
-                        >
-                          {category} (
-                          {
-                            categoryPermissions.filter((p) =>
-                              formData.permissions.includes(p.name),
-                            ).length
-                          }
-                          /{categoryPermissions.length})
-                        </Typography>
-                      </AccordionSummary>
-                      <AccordionDetails>
-                        <FormGroup>
-                          {categoryPermissions.map((permission) => (
-                            <FormControlLabel
-                              key={permission.name}
-                              control={
-                                <Checkbox
-                                  checked={formData.permissions.includes(
-                                    permission.name,
-                                  )}
-                                  onChange={() =>
-                                    handlePermissionToggle(permission.name)
-                                  }
-                                  disabled={submitting}
-                                />
-                              }
-                              label={
-                                <Box>
-                                  <Typography
-                                    variant="body2"
-                                    sx={{ fontWeight: "medium" }}
-                                  >
-                                    {permission.name}
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                  >
-                                    {permission.description}
-                                  </Typography>
-                                </Box>
-                              }
-                            />
-                          ))}
-                        </FormGroup>
-                      </AccordionDetails>
-                    </Accordion>
-                  ),
-                )
-              )}
-            </Grid>
-          </Grid>
+      <Dialog open={modalOpen || editModalOpen} onOpenChange={o => { if (!o) { setModalOpen(false); setEditModalOpen(false); setFormData({ name: "", description: "", permissions: [], isActive: true }); setSelectedRole(null); } }}>
+        <DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>{editModalOpen ? "تعديل الدور" : "إضافة دور جديد"}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2"><div><Label>اسم الدور *</Label><Input value={formData.name} onChange={e => setFormData(p => ({ ...p, name: e.target.value }))} disabled={submitting} /></div><div className="flex items-end gap-2 pb-1"><Switch checked={formData.isActive} onCheckedChange={v => setFormData(p => ({ ...p, isActive: v }))} disabled={submitting} /><Label>نشط</Label></div></div>
+            <div><Label>وصف الدور *</Label><Textarea value={formData.description} onChange={e => setFormData(p => ({ ...p, description: e.target.value }))} rows={2} disabled={submitting} /></div>
+            <div><h3 className="font-bold mb-2">الصلاحيات *</h3>{formErrors.permissions && <Alert variant="destructive" className="mb-2"><AlertDescription>{formErrors.permissions}</AlertDescription></Alert>}</div>
+            {permissionsLoading ? <div className="flex items-center gap-1 py-2 text-muted-foreground"><LoadingSpinner size="sm" /><span className="text-sm">جاري تحميل قائمة الصلاحيات...</span></div> : Object.entries(groupedPermissions).map(([category, categoryPermissions]) => <div key={category} className="rounded-lg border"><button onClick={() => setExpandedCategory(expandedCategory === category ? null : category)} className="flex items-center justify-between w-full p-2 text-sm font-bold"><span>{category} ({categoryPermissions.filter(p => formData.permissions.includes(p.name)).length}/{categoryPermissions.length})</span><ChevronDown className={`size-4 transition-transform ${expandedCategory === category ? "rotate-180" : ""}`} /></button>{expandedCategory === category && <div className="p-2 grid grid-cols-1 gap-1">{categoryPermissions.map(permission => <label key={permission.name} className="flex items-center gap-2 p-1 rounded hover:bg-muted/50 cursor-pointer"><input type="checkbox" checked={formData.permissions.includes(permission.name)} onChange={() => handlePermissionToggle(permission.name)} disabled={submitting} /><div><p className="text-sm font-medium">{permission.name}</p><p className="text-xs text-muted-foreground">{permission.description}</p></div></label>)}</div>}</div>)}
+          </div>
+          <DialogFooter><Button variant="outline" onClick={() => { setModalOpen(false); setEditModalOpen(false); setFormData({ name: "", description: "", permissions: [], isActive: true }); setSelectedRole(null); }} disabled={submitting}>إلغاء</Button><Button onClick={handleSubmit} disabled={submitting || permissionsLoading}>{submitting ? <LoadingSpinner size="sm" /> : editModalOpen ? "تحديث" : "إنشاء"}</Button></DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setModalOpen(false);
-              setEditModalOpen(false);
-              resetForm();
-              setSelectedRole(null);
-            }}
-            disabled={submitting}
-          >
-            إلغاء
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={submitting || permissionsLoading || Boolean(permissionsError)}
-            startIcon={submitting ? <CircularProgress size={20} /> : null}
-          >
-            {submitting ? "جاري الحفظ..." : editModalOpen ? "تحديث" : "إنشاء"}
-          </Button>
-        </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 };
 

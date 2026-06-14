@@ -174,6 +174,9 @@ const register = async (req, res) => {
       prisma,
       email: normalizedEmail
     });
+    const onboardingPatch = selectedSpecialty
+      ? { currentStep: 3, completedSteps: ['welcome', 'operations'], profile: { workspaceName: trimmedCompanyName, phone: phone || '', industry: selectedSpecialty.slug, currency: 'EGP' } }
+      : { currentStep: 1, completedSteps: ['welcome'], profile: { workspaceName: trimmedCompanyName, phone: phone || '', industry: '' } };
     const { settings: initialCompanySettings } = mergeCompanyOnboardingSettings(
       null,
       {
@@ -186,15 +189,7 @@ const register = async (req, res) => {
           phone: phone || null
         }
       },
-      {
-        currentStep: 1,
-        completedSteps: ['welcome'],
-        profile: {
-          workspaceName: trimmedCompanyName,
-          phone: phone || '',
-          industry: selectedSpecialty?.slug || ''
-        }
-      }
+      onboardingPatch
     );
 
     const seededFunnelSettings = recordCompanyFunnelEvent(

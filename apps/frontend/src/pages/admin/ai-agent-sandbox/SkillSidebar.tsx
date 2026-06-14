@@ -1,8 +1,7 @@
 import React from "react";
-import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography } from "@mui/material";
-import { AutoAwesome } from "@mui/icons-material";
 import { SkillDefinition } from "./hooks/useAgentSandbox";
 import { AgentConfig } from "./types/sandbox.types";
+import { Sparkles } from "lucide-react";
 
 interface SkillSidebarProps {
   selectedAgent: AgentConfig | null;
@@ -10,16 +9,12 @@ interface SkillSidebarProps {
   skills: SkillDefinition[];
 }
 
-export default function SkillSidebar({
-  selectedAgent,
-  onSkillSelect,
-  skills,
-}: SkillSidebarProps) {
+export default function SkillSidebar({ selectedAgent, onSkillSelect, skills }: SkillSidebarProps) {
   if (!selectedAgent) {
     return (
-      <Box sx={{ width: 240, p: 2, color: "text.secondary" }}>
-        <Typography variant="body2">No agent selected</Typography>
-      </Box>
+      <div className="w-60 p-2 text-muted-foreground">
+        <p className="text-sm">No agent selected</p>
+      </div>
     );
   }
 
@@ -28,46 +23,32 @@ export default function SkillSidebar({
 
   if (availableSkills.length === 0) {
     return (
-      <Box sx={{ width: 240, p: 2, color: "text.secondary" }}>
-        <Typography variant="body2">No skills assigned to this agent</Typography>
-      </Box>
+      <div className="w-60 p-2 text-muted-foreground">
+        <p className="text-sm">No skills assigned to this agent</p>
+      </div>
     );
   }
 
   return (
-    <Box sx={{ width: 240, flexShrink: 0 }}>
-      <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: "divider" }}>
-        <Typography variant="subtitle2" fontWeight={600} color="text.primary">
-          Agent Skills ({availableSkills.length})
-        </Typography>
-      </Box>
-      <List sx={{ py: 1 }} disablePadding>
+    <div className="w-60 shrink-0">
+      <div className="px-3 py-1.5 border-b">
+        <p className="text-sm font-semibold">Agent Skills ({availableSkills.length})</p>
+      </div>
+      <div className="py-1">
         {availableSkills.map((skill) => (
-          <ListItem key={skill.id} disablePadding sx={{ px: 2, py: 1, borderRadius: 0 }}>
-            <ListItemButton
-              onClick={() => onSkillSelect(skill.id)}
-              sx={{
-                borderRadius: 0,
-                "&:hover": {
-                  bgcolor: "action.hover",
-                },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 36, color: "primary.main" }}>
-                <AutoAwesome fontSize="small" />
-              </ListItemIcon>
-              <ListItemText
-                primary={skill.name}
-                secondary={
-                  <Typography variant="caption" color="text.secondary">
-                    {skill.description}
-                  </Typography>
-                }
-              />
-            </ListItemButton>
-          </ListItem>
+          <div
+            key={skill.id}
+            className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={() => onSkillSelect(skill.id)}
+          >
+            <Sparkles className="size-4 text-primary shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium truncate">{skill.name}</p>
+              <p className="text-xs text-muted-foreground truncate">{skill.description}</p>
+            </div>
+          </div>
         ))}
-      </List>
-    </Box>
+      </div>
+    </div>
   );
 }

@@ -42,42 +42,6 @@ class SystemManager {
    */
   initializeSystemDefinitions() {
     const systemDefinitions = [
-      {
-        systemName: 'simpleMonitor',
-        displayName: 'Simple Monitor',
-        description: 'مراقبة النظام كل 5 دقائق',
-        category: 'monitoring',
-        defaultEnabled: true,
-        config: {
-          interval: 300000, // 5 minutes
-          aiCalls: 'none',
-          resourceUsage: 'low'
-        }
-      },
-      {
-        systemName: 'simpleAlerts',
-        displayName: 'Simple Alerts',
-        description: 'تنبيهات النظام كل 5 دقائق',
-        category: 'monitoring',
-        defaultEnabled: true,
-        config: {
-          interval: 300000,
-          aiCalls: 'none',
-          resourceUsage: 'low'
-        }
-      },
-      {
-        systemName: 'reportGenerator',
-        displayName: 'Report Generator',
-        description: 'تقارير دورية يومية',
-        category: 'monitoring',
-        defaultEnabled: true,
-        config: {
-          dailyReports: true,
-          aiCalls: 'none',
-          resourceUsage: 'low'
-        }
-      },
       // ✅ New Active Services
       {
         systemName: 'broadcastSchedulerService',
@@ -310,9 +274,6 @@ class SystemManager {
           await this.toggleCentralKeysSystem(isEnabled);
           break;
         // ✅ ADDED: Missing System Handlers
-        case 'simpleMonitor':
-        case 'simpleAlerts':
-        case 'reportGenerator':
         case 'broadcastSchedulerService':
         case 'billingNotificationService':
         case 'turboTrackingScheduler':

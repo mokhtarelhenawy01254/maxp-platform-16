@@ -400,11 +400,6 @@ export const menuGroups = [
         path: "/super-admin/time-tracking",
       },
       {
-        text: "مراقبة الموقتات",
-        icon: <MonitorHeartIcon />,
-        path: "/super-admin/system-monitoring",
-      },
-      {
         text: "إدارة مشاريع التطوير",
         icon: <CodeBracketIcon />,
         path: "/super-admin/dev-projects",

@@ -496,7 +496,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
       { path: "/notifications", label: "الإشعارات" },
       { path: "/reminders", label: "التذكيرات" },
       { path: "/notification-settings", label: "إعدادات التنبيهات" },
-      { path: "/alert-settings", label: "إعدادات التحذيرات" },
+
     ],
     action: "تم تجهيز notification-automation وربط التنبيهات والتذكيرات به.",
   },

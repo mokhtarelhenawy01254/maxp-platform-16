@@ -354,6 +354,12 @@ export default defineConfig(({ mode }) => {
       port: parseInt(env['VITE_PORT'] || '3000'),
       host: true,
       allowedHosts,
+      fs: {
+        allow: [
+          '.',
+          '../../node_modules',
+        ],
+      },
       open: false,
       strictPort: false,
       cors: true,

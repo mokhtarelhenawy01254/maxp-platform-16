@@ -1,546 +1,112 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link as RouterLink, useSearchParams } from "react-router-dom";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Input } from "../components/ui/input";
+import { Alert, AlertDescription } from "../components/ui/alert";
 import {
-  Alert,
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  Divider,
-  MenuItem,
-  Paper,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Typography,
-} from "@mui/material";
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "../components/ui/select";
 import {
-  ArrowBack as ArrowBackIcon,
-  FilterList as FilterListIcon,
-  Refresh as RefreshIcon,
-  VpnKey as KeyIcon,
-} from "@mui/icons-material";
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "../components/ui/table";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
 import tokenManager from "../utils/tokenManager";
 import { buildApiUrl } from "../utils/urlHelper";
+import { ArrowLeft, Filter, RefreshCw, Key } from "lucide-react";
 
-type ProviderLog = {
-  id: string;
-  provider: string;
-  keyId?: string | null;
-  keyName?: string | null;
-  companyId?: string | null;
-  conversationId?: string | null;
-  customerId?: string | null;
-  scope?: string | null;
-  action: string;
-  status: string;
-  latencyMs?: number | null;
-  model?: string | null;
-  message?: string | null;
-  metadata?: Record<string, unknown> | null;
-  createdAt: string;
-};
-
-type ProviderLogSummary = {
-  total: number;
-  success: number;
-  failed: number;
-  warning: number;
-  avgLatencyMs?: number | null;
-  byProvider?: Record<string, number>;
-  byAction?: Record<string, number>;
-  byStatus?: Record<string, number>;
-};
-
-type Filters = {
-  provider: string;
-  keyId: string;
-  companyId: string;
-  action: string;
-  status: string;
-  scope: string;
-  sinceHours: string;
-  limit: string;
-};
-
-const PROVIDERS = [
-  "",
-  "GOOGLE",
-  "GROQ",
-  "OPENROUTER",
-  "NVIDIA",
-  "OPENAI",
-  "ANTHROPIC",
-  "DEEPSEEK",
-  "HUGGINGFACE",
-  "OLLAMA",
-  "CEREBRAS",
-  "GITHUB",
-  "SAMBANOVA",
-  "MISTRAL",
-];
-
+const PROVIDERS = ["", "GOOGLE", "GROQ", "OPENROUTER", "NVIDIA", "OPENAI", "ANTHROPIC", "DEEPSEEK", "HUGGINGFACE", "OLLAMA", "CEREBRAS", "GITHUB", "SAMBANOVA", "MISTRAL"];
 const STATUSES = ["", "success", "failed", "warning", "info"];
 const SCOPES = ["", "runtime", "admin", "diagnostic"];
+const DEFAULT_FILTERS = { provider: "", keyId: "", companyId: "", action: "", status: "", scope: "", sinceHours: "24", limit: "200" };
 
-const DEFAULT_FILTERS: Filters = {
-  provider: "",
-  keyId: "",
-  companyId: "",
-  action: "",
-  status: "",
-  scope: "",
-  sinceHours: "24",
-  limit: "200",
-};
+const statusVariant = (s) => s === "success" ? "default" : s === "failed" ? "destructive" : s === "warning" ? "secondary" : "outline";
+const formatDate = (v) => v ? new Date(v).toLocaleString() : "Never";
+const formatMetadata = (m) => { if (!m || Object.keys(m).length === 0) return ""; try { return JSON.stringify(m, null, 2); } catch { return String(m); } };
 
-const statusColor = (status?: string) => {
-  if (status === "success") return "success";
-  if (status === "failed") return "error";
-  if (status === "warning") return "warning";
-  return "default";
-};
-
-const formatDate = (value?: string | null) => {
-  if (!value) return "Never";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Unknown";
-  return date.toLocaleString();
-};
-
-const formatMetadata = (metadata?: Record<string, unknown> | null) => {
-  if (!metadata || Object.keys(metadata).length === 0) return "";
-  try {
-    return JSON.stringify(metadata, null, 2);
-  } catch {
-    return String(metadata);
-  }
-};
-
-const SummaryCard = ({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) => (
-  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1, minHeight: 86 }}>
-    <Typography variant="caption" color="text.secondary">
-      {label}
-    </Typography>
-    <Typography variant="h6" fontWeight={800} sx={{ mt: 0.5 }}>
-      {value}
-    </Typography>
-  </Paper>
+const SummaryCard = ({ label, value }) => (
+  <div className="rounded-xl border bg-card p-3 min-h-[86px]">
+    <p className="text-xs text-muted-foreground">{label}</p>
+    <p className="text-lg font-bold mt-0.5">{value}</p>
+  </div>
 );
 
 const SuperAdminAIProviderLogs = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialFilters = useMemo<Filters>(() => ({
-    provider: searchParams.get("provider") || DEFAULT_FILTERS.provider,
-    keyId: searchParams.get("keyId") || DEFAULT_FILTERS.keyId,
-    companyId: searchParams.get("companyId") || DEFAULT_FILTERS.companyId,
-    action: searchParams.get("action") || DEFAULT_FILTERS.action,
-    status: searchParams.get("status") || DEFAULT_FILTERS.status,
-    scope: searchParams.get("scope") || DEFAULT_FILTERS.scope,
-    sinceHours: searchParams.get("sinceHours") || DEFAULT_FILTERS.sinceHours,
-    limit: searchParams.get("limit") || DEFAULT_FILTERS.limit,
-  }), [searchParams]);
-
-  const [filters, setFilters] = useState<Filters>(initialFilters);
-  const [logs, setLogs] = useState<ProviderLog[]>([]);
-  const [summary, setSummary] = useState<ProviderLogSummary | null>(null);
+  const initialFilters = useMemo(() => {
+    const f = { ...DEFAULT_FILTERS };
+    Object.keys(f).forEach(k => { const v = searchParams.get(k); if (v) f[k] = v; });
+    return f;
+  }, [searchParams]);
+  const [filters, setFilters] = useState(initialFilters);
+  const [logs, setLogs] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
 
-  const getAuthHeaders = useCallback(
-    () =>
-      tokenManager.createAuthHeaders({
-        "Content-Type": "application/json",
-      }),
-    [],
-  );
+  const getAuthHeaders = useCallback(() => tokenManager.createAuthHeaders({ "Content-Type": "application/json" }), []);
 
-  const buildQuery = useCallback((source: Filters) => {
-    const query = new URLSearchParams();
-    Object.entries(source).forEach(([key, value]) => {
-      const cleanValue = String(value || "").trim();
-      if (cleanValue) {
-        query.set(key, cleanValue);
-      }
-    });
-    return query;
-  }, []);
-
-  const loadLogs = useCallback(async (source: Filters) => {
-    setLoading(true);
-    setError(null);
-
+  const loadLogs = useCallback(async (source) => {
+    setLoading(true); setError(null);
     try {
-      const query = buildQuery(source);
-      const response = await fetch(
-        buildApiUrl(`super-admin/ai/provider-logs?${query.toString()}`),
-        { headers: getAuthHeaders() },
-      );
+      const query = new URLSearchParams(Object.entries(source).filter(([, v]) => String(v || "").trim()));
+      const response = await fetch(buildApiUrl(`super-admin/ai/provider-logs?${query}`), { headers: getAuthHeaders() });
       const payload = await response.json();
+      if (!response.ok || !payload.success) throw new Error(payload.message || "Failed to load provider logs");
+      setLogs(payload.data?.logs || []); setSummary(payload.data?.summary || null);
+    } catch (loadError) { setError(loadError instanceof Error ? loadError.message : "Failed to load provider logs"); }
+    finally { setLoading(false); }
+  }, [getAuthHeaders]);
 
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.message || "Failed to load provider logs");
-      }
+  useEffect(() => { setFilters(initialFilters); loadLogs(initialFilters); }, [initialFilters, loadLogs]);
 
-      setLogs(payload.data?.logs || []);
-      setSummary(payload.data?.summary || null);
-    } catch (loadError) {
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Failed to load provider logs",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [buildQuery, getAuthHeaders]);
+  const applyFilters = () => { const q = new URLSearchParams(Object.entries(filters).filter(([, v]) => String(v || "").trim())); setSearchParams(q); loadLogs(filters); };
+  const resetFilters = () => { setFilters(DEFAULT_FILTERS); setSearchParams(new URLSearchParams()); loadLogs(DEFAULT_FILTERS); };
 
-  useEffect(() => {
-    setFilters(initialFilters);
-    loadLogs(initialFilters);
-  }, [initialFilters, loadLogs]);
-
-  const applyFilters = () => {
-    const query = buildQuery(filters);
-    setSearchParams(query);
-    loadLogs(filters);
-  };
-
-  const resetFilters = () => {
-    setFilters(DEFAULT_FILTERS);
-    setSearchParams(buildQuery(DEFAULT_FILTERS));
-    loadLogs(DEFAULT_FILTERS);
-  };
-
-  const summaryByProvider = summary?.byProvider
-    ? Object.entries(summary.byProvider).slice(0, 4)
-    : [];
-  const summaryByAction = summary?.byAction
-    ? Object.entries(summary.byAction).slice(0, 5)
-    : [];
+  const summaryByProvider = summary?.byProvider ? Object.entries(summary.byProvider).slice(0, 4) : [];
+  const summaryByAction = summary?.byAction ? Object.entries(summary.byAction).slice(0, 5) : [];
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1500, mx: "auto" }}>
-      <Stack
-        direction={{ xs: "column", lg: "row" }}
-        justifyContent="space-between"
-        spacing={2}
-        mb={3}
-      >
-        <Stack spacing={1}>
-          <Button
-            component={RouterLink}
-            to="/super-admin/ai-providers"
-            startIcon={<ArrowBackIcon />}
-            sx={{ alignSelf: "flex-start" }}
-          >
-            Back to AI providers
-          </Button>
-          <Typography variant="h4" fontWeight={800}>
-            AI provider runtime logs
-          </Typography>
-          <Typography color="text.secondary">
-            سجل فعلي لاختيار المفاتيح، نجاح التوليد، فشل الـ fallback، واختبارات المفاتيح.
-          </Typography>
-        </Stack>
+    <div className="p-3 max-w-[1500px] mx-auto">
+      <div className="flex flex-col lg:flex-row justify-between gap-2 mb-3">
+        <div className="space-y-1">
+          <Button variant="link" asChild className="p-0 h-auto"><RouterLink to="/super-admin/ai-providers"><ArrowLeft className="size-4" /> Back to AI providers</RouterLink></Button>
+          <h1 className="text-2xl font-bold">AI provider runtime logs</h1>
+          <p className="text-sm text-muted-foreground">سجل فعلي لاختيار المفاتيح، نجاح التوليد، فشل الـ fallback، واختبارات المفاتيح.</p>
+        </div>
+        <Button variant="outline" onClick={() => loadLogs(filters)} disabled={loading}><RefreshCw className="size-4" /> Refresh</Button>
+      </div>
 
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Button
-            variant="outlined"
-            startIcon={loading ? <CircularProgress size={16} /> : <RefreshIcon />}
-            onClick={() => loadLogs(filters)}
-            disabled={loading}
-          >
-            Refresh
-          </Button>
-        </Stack>
-      </Stack>
+      {error && <Alert variant="destructive" className="mb-2"><AlertDescription>{error}</AlertDescription></Alert>}
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+      <div className="rounded-xl border bg-card p-3 mb-2">
+        <div className="flex flex-col md:flex-row gap-2 flex-wrap items-start">
+          <Select value={filters.provider} onValueChange={v => setFilters(p => ({ ...p, provider: v }))}><SelectTrigger className="min-w-[170px]"><SelectValue placeholder="Provider" /></SelectTrigger><SelectContent>{PROVIDERS.map(p => <SelectItem key={p || "all"} value={p}>{p || "All providers"}</SelectItem>)}</SelectContent></Select>
+          <Input placeholder="Key ID" value={filters.keyId} onChange={e => setFilters(p => ({ ...p, keyId: e.target.value }))} className="min-w-[220px]" />
+          <Input placeholder="Company ID" value={filters.companyId} onChange={e => setFilters(p => ({ ...p, companyId: e.target.value }))} className="min-w-[220px]" />
+          <Input placeholder="Action" value={filters.action} onChange={e => setFilters(p => ({ ...p, action: e.target.value }))} className="min-w-[200px]" />
+          <Select value={filters.status} onValueChange={v => setFilters(p => ({ ...p, status: v }))}><SelectTrigger className="min-w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent>{STATUSES.map(s => <SelectItem key={s || "all"} value={s}>{s || "All statuses"}</SelectItem>)}</SelectContent></Select>
+          <Select value={filters.scope} onValueChange={v => setFilters(p => ({ ...p, scope: v }))}><SelectTrigger className="min-w-[150px]"><SelectValue placeholder="Scope" /></SelectTrigger><SelectContent>{SCOPES.map(s => <SelectItem key={s || "all"} value={s}>{s || "All scopes"}</SelectItem>)}</SelectContent></Select>
+          <Input placeholder="Since hours" value={filters.sinceHours} onChange={e => setFilters(p => ({ ...p, sinceHours: e.target.value }))} className="w-[130px]" />
+          <Input placeholder="Limit" value={filters.limit} onChange={e => setFilters(p => ({ ...p, limit: e.target.value }))} className="w-[110px]" />
+          <Button onClick={applyFilters} disabled={loading}><Filter className="size-4" /> Apply</Button>
+          <Button variant="ghost" onClick={resetFilters} disabled={loading}>Reset</Button>
+        </div>
+      </div>
 
-      <Paper variant="outlined" sx={{ p: 2, borderRadius: 1, mb: 2 }}>
-        <Stack
-          direction={{ xs: "column", md: "row" }}
-          spacing={1.5}
-          alignItems={{ xs: "stretch", md: "center" }}
-          flexWrap="wrap"
-          useFlexGap
-        >
-          <TextField
-            select
-            label="Provider"
-            value={filters.provider}
-            onChange={(event) =>
-              setFilters((current) => ({ ...current, provider: event.target.value }))
-            }
-            sx={{ minWidth: 170 }}
-          >
-            {PROVIDERS.map((provider) => (
-              <MenuItem key={provider || "all"} value={provider}>
-                {provider || "All providers"}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            label="Key ID"
-            value={filters.keyId}
-            onChange={(event) =>
-              setFilters((current) => ({ ...current, keyId: event.target.value }))
-            }
-            sx={{ minWidth: 220 }}
-          />
-          <TextField
-            label="Company ID"
-            value={filters.companyId}
-            onChange={(event) =>
-              setFilters((current) => ({ ...current, companyId: event.target.value }))
-            }
-            sx={{ minWidth: 220 }}
-          />
-          <TextField
-            label="Action"
-            value={filters.action}
-            onChange={(event) =>
-              setFilters((current) => ({ ...current, action: event.target.value }))
-            }
-            placeholder="generation_success"
-            sx={{ minWidth: 200 }}
-          />
-          <TextField
-            select
-            label="Status"
-            value={filters.status}
-            onChange={(event) =>
-              setFilters((current) => ({ ...current, status: event.target.value }))
-            }
-            sx={{ minWidth: 150 }}
-          >
-            {STATUSES.map((status) => (
-              <MenuItem key={status || "all"} value={status}>
-                {status || "All statuses"}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            select
-            label="Scope"
-            value={filters.scope}
-            onChange={(event) =>
-              setFilters((current) => ({ ...current, scope: event.target.value }))
-            }
-            sx={{ minWidth: 150 }}
-          >
-            {SCOPES.map((scope) => (
-              <MenuItem key={scope || "all"} value={scope}>
-                {scope || "All scopes"}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            label="Since hours"
-            value={filters.sinceHours}
-            onChange={(event) =>
-              setFilters((current) => ({ ...current, sinceHours: event.target.value }))
-            }
-            sx={{ width: 130 }}
-          />
-          <TextField
-            label="Limit"
-            value={filters.limit}
-            onChange={(event) =>
-              setFilters((current) => ({ ...current, limit: event.target.value }))
-            }
-            sx={{ width: 110 }}
-          />
-          <Button
-            variant="contained"
-            startIcon={<FilterListIcon />}
-            onClick={applyFilters}
-            disabled={loading}
-          >
-            Apply
-          </Button>
-          <Button variant="text" onClick={resetFilters} disabled={loading}>
-            Reset
-          </Button>
-        </Stack>
-      </Paper>
-
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: "repeat(2, 1fr)",
-            lg: "repeat(5, 1fr)",
-          },
-          gap: 1.5,
-          mb: 2,
-        }}
-      >
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-2">
         <SummaryCard label="Total events" value={summary?.total ?? 0} />
         <SummaryCard label="Success" value={summary?.success ?? 0} />
         <SummaryCard label="Failed" value={summary?.failed ?? 0} />
         <SummaryCard label="Warnings" value={summary?.warning ?? 0} />
-        <SummaryCard
-          label="Avg latency"
-          value={
-            Number.isFinite(Number(summary?.avgLatencyMs))
-              ? `${summary?.avgLatencyMs}ms`
-              : "No samples"
-          }
-        />
-      </Box>
+        <SummaryCard label="Avg latency" value={Number.isFinite(Number(summary?.avgLatencyMs)) ? `${summary?.avgLatencyMs}ms` : "No samples"} />
+      </div>
 
-      {(summaryByProvider.length > 0 || summaryByAction.length > 0) && (
-        <Paper variant="outlined" sx={{ p: 2, borderRadius: 1, mb: 2 }}>
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            spacing={2}
-            divider={<Divider orientation="vertical" flexItem />}
-          >
-            <Box flex={1}>
-              <Typography variant="subtitle2" fontWeight={800} mb={1}>
-                Top providers
-              </Typography>
-              <Stack direction="row" gap={1} useFlexGap flexWrap="wrap">
-                {summaryByProvider.map(([provider, count]) => (
-                  <Chip key={provider} label={`${provider}: ${count}`} variant="outlined" />
-                ))}
-              </Stack>
-            </Box>
-            <Box flex={1}>
-              <Typography variant="subtitle2" fontWeight={800} mb={1}>
-                Top actions
-              </Typography>
-              <Stack direction="row" gap={1} useFlexGap flexWrap="wrap">
-                {summaryByAction.map(([action, count]) => (
-                  <Chip key={action} label={`${action}: ${count}`} variant="outlined" />
-                ))}
-              </Stack>
-            </Box>
-          </Stack>
-        </Paper>
-      )}
-
-      <Paper variant="outlined" sx={{ borderRadius: 1 }}>
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Time</TableCell>
-                <TableCell>Provider</TableCell>
-                <TableCell>Key</TableCell>
-                <TableCell>Action</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Model</TableCell>
-                <TableCell>Latency</TableCell>
-                <TableCell>Scope</TableCell>
-                <TableCell>Message</TableCell>
-                <TableCell>Metadata</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={10}>
-                    <Box p={3} display="flex" justifyContent="center">
-                      <CircularProgress />
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ) : logs.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={10}>
-                    <Alert severity="info">No provider logs match the current filters.</Alert>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                logs.map((log) => {
-                  const metadataText = formatMetadata(log.metadata);
-                  return (
-                    <TableRow key={log.id} hover>
-                      <TableCell sx={{ whiteSpace: "nowrap" }}>
-                        {formatDate(log.createdAt)}
-                      </TableCell>
-                      <TableCell>
-                        <Chip size="small" label={log.provider} variant="outlined" />
-                      </TableCell>
-                      <TableCell sx={{ minWidth: 180 }}>
-                        {log.keyId ? (
-                          <Button
-                            component={RouterLink}
-                            to={`/super-admin/ai-providers/keys/${log.keyId}`}
-                            size="small"
-                            startIcon={<KeyIcon fontSize="small" />}
-                            sx={{ justifyContent: "flex-start", px: 0, textTransform: "none" }}
-                          >
-                            {log.keyName || log.keyId}
-                          </Button>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell>{log.action}</TableCell>
-                      <TableCell>
-                        <Chip
-                          size="small"
-                          label={log.status}
-                          color={statusColor(log.status)}
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell>{log.model || "—"}</TableCell>
-                      <TableCell>
-                        {Number.isFinite(Number(log.latencyMs))
-                          ? `${log.latencyMs}ms`
-                          : "—"}
-                      </TableCell>
-                      <TableCell>{log.scope || "runtime"}</TableCell>
-                      <TableCell sx={{ maxWidth: 340 }}>
-                        <Typography variant="body2" title={log.message || ""} noWrap>
-                          {log.message || "—"}
-                        </Typography>
-                      </TableCell>
-                      <TableCell sx={{ maxWidth: 320 }}>
-                        <Typography
-                          variant="caption"
-                          component="pre"
-                          sx={{
-                            m: 0,
-                            maxHeight: 120,
-                            overflow: "auto",
-                            whiteSpace: "pre-wrap",
-                            fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
-                          }}
-                        >
-                          {metadataText || "—"}
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
-    </Box>
+      <div className="rounded-xl border bg-card">
+        <Table><TableHeader><TableRow><TableHead>Time</TableHead><TableHead>Provider</TableHead><TableHead>Key</TableHead><TableHead>Action</TableHead><TableHead>Status</TableHead><TableHead>Model</TableHead><TableHead>Latency</TableHead><TableHead>Scope</TableHead><TableHead>Message</TableHead><TableHead>Metadata</TableHead></TableRow></TableHeader>
+          <TableBody>{loading ? <TableRow><TableCell colSpan={10} className="text-center py-6"><LoadingSpinner /></TableCell></TableRow> : logs.length === 0 ? <TableRow><TableCell colSpan={10}><Alert><AlertDescription>No provider logs match the current filters.</AlertDescription></Alert></TableCell></TableRow> : logs.map(log => <TableRow key={log.id}><TableCell className="whitespace-nowrap">{formatDate(log.createdAt)}</TableCell><TableCell><Badge variant="outline">{log.provider}</Badge></TableCell><TableCell className="min-w-[180px]">{log.keyId ? <Button variant="link" asChild className="p-0 h-auto text-xs"><RouterLink to={`/super-admin/ai-providers/keys/${log.keyId}`}><Key className="size-3" /> {log.keyName || log.keyId}</RouterLink></Button> : "—"}</TableCell><TableCell>{log.action}</TableCell><TableCell><Badge variant={statusVariant(log.status)}>{log.status}</Badge></TableCell><TableCell>{log.model || "—"}</TableCell><TableCell>{Number.isFinite(Number(log.latencyMs)) ? `${log.latencyMs}ms` : "—"}</TableCell><TableCell>{log.scope || "runtime"}</TableCell><TableCell className="max-w-[340px]"><p className="text-sm truncate" title={log.message || ""}>{log.message || "—"}</p></TableCell><TableCell className="max-w-[320px]"><pre className="m-0 max-h-[120px] overflow-auto whitespace-pre-wrap text-xs font-mono">{formatMetadata(log.metadata) || "—"}</pre></TableCell></TableRow>)}</TableBody></Table>
+      </div>
+    </div>
   );
 };
 

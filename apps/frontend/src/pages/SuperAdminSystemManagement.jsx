@@ -1,44 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuthSimple";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Alert, AlertDescription } from "../components/ui/alert";
 import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Switch,
-  FormControlLabel,
-  Grid,
-  Chip,
-  Alert,
-  Button,
-  CircularProgress,
-  Divider,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  Tooltip,
-} from "@mui/material";
-import {
-  Settings as SettingsIcon,
-  Memory as MemoryIcon,
-  Security as SecurityIcon,
-  Monitor as MonitorIcon,
-  Refresh as RefreshIcon,
-  PowerSettingsNew as PowerIcon,
-  Key as KeyIcon,
-  VpnKey as VpnKeyIcon,
-} from "@mui/icons-material";
-
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from "../components/ui/table";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
 import tokenManager from "../utils/tokenManager";
 import { buildApiUrl } from "../utils/urlHelper";
 
 const SuperAdminSystemManagement = () => {
-  const { user } = useAuth();
   const [systems, setSystems] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -46,385 +18,67 @@ const SuperAdminSystemManagement = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  useEffect(() => {
-    fetchSystems();
-  }, []);
+  useEffect(() => { fetchSystems(); }, []);
 
   const fetchSystems = async () => {
     try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch(buildApiUrl("admin/systems"), {
-        headers: tokenManager.createAuthHeaders({
-          "Content-Type": "application/json",
-        }),
-      });
-
+      setLoading(true); setError(null);
+      const response = await fetch(buildApiUrl("admin/systems"), { headers: tokenManager.createAuthHeaders({ "Content-Type": "application/json" }) });
       const data = await response.json();
-      if (data.success) {
-        setSystems(data.data.systems);
-        setStats(data.data.stats);
-      } else {
-        setError(data.message || "فشل في جلب الأنظمة");
-      }
-    } catch (err) {
-      setError("فشل في الاتصال بالخادم");
-      console.error("Error fetching systems:", err);
-    } finally {
-      setLoading(false);
-    }
+      if (data.success) { setSystems(data.data.systems); setStats(data.data.stats); }
+      else setError(data.message || "فشل في جلب الأنظمة");
+    } catch (err) { setError("فشل في الاتصال بالخادم"); } finally { setLoading(false); }
   };
 
   const toggleSystem = async (systemName, currentStatus) => {
     try {
-      setUpdating((prev) => new Set(prev).add(systemName));
-      setError(null);
-      setSuccess(null);
-
-      const response = await fetch(
-        buildApiUrl(`admin/systems/${systemName}/toggle`),
-        {
-          method: "POST",
-          headers: tokenManager.createAuthHeaders({
-            "Content-Type": "application/json",
-          }),
-          body: JSON.stringify({ isEnabled: !currentStatus }),
-        },
-      );
-
-      const data = await response.json();
-      if (data.success) {
-        setSuccess(`تم ${!currentStatus ? "تفعيل" : "تعطيل"} النظام بنجاح`);
-        await fetchSystems(); // إعادة تحميل البيانات
-      } else {
-        setError(data.message || "فشل في تغيير حالة النظام");
-      }
-    } catch (err) {
-      setError("فشل في الاتصال بالخادم");
-      console.error("Error toggling system:", err);
-    } finally {
-      setUpdating((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(systemName);
-        return newSet;
+      setUpdating(p => new Set(p).add(systemName)); setError(null); setSuccess(null);
+      const response = await fetch(buildApiUrl(`admin/systems/${systemName}/toggle`), {
+        method: "POST", headers: tokenManager.createAuthHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ isEnabled: !currentStatus })
       });
-    }
-  };
-
-  const initializeSystems = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch(buildApiUrl("admin/systems/initialize"), {
-        method: "POST",
-        headers: tokenManager.createAuthHeaders({
-          "Content-Type": "application/json",
-        }),
-      });
-
       const data = await response.json();
-      if (data.success) {
-        setSuccess("تم تهيئة الأنظمة بنجاح");
-        await fetchSystems();
-      } else {
-        setError(data.message || "فشل في تهيئة الأنظمة");
-      }
-    } catch (err) {
-      setError("فشل في الاتصال بالخادم");
-      console.error("Error initializing systems:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getCategoryIcon = (category) => {
-    switch (category) {
-      case "monitoring":
-        return <MonitorIcon />;
-      case "security":
-        return <SecurityIcon />;
-      case "api_keys":
-        return <VpnKeyIcon />;
-      default:
-        return <SettingsIcon />;
-    }
-  };
-
-  const getCategoryColor = (category) => {
-    switch (category) {
-      case "monitoring":
-        return "secondary";
-      case "security":
-        return "error";
-      case "api_keys":
-        return "warning";
-      default:
-        return "default";
-    }
-  };
-
-  const getResourceUsageColor = (usage) => {
-    switch (usage) {
-      case "very_high":
-        return "error";
-      case "high":
-        return "warning";
-      case "medium":
-        return "info";
-      case "low":
-        return "success";
-      case "none":
-        return "default";
-      default:
-        return "default";
-    }
+      if (data.success) { setSuccess(`تم ${!currentStatus ? "تفعيل" : "تعطيل"} النظام بنجاح`); await fetchSystems(); }
+      else setError(data.message || "فشل في تغيير حالة النظام");
+    } catch (err) { setError("فشل في الاتصال بالخادم"); } finally { setUpdating(p => { const n = new Set(p); n.delete(systemName); return n; }); }
   };
 
   const groupedSystems = systems.reduce((acc, system) => {
-    if (!acc[system.category]) {
-      acc[system.category] = [];
-    }
+    if (!acc[system.category]) acc[system.category] = [];
     acc[system.category].push(system);
     return acc;
   }, {});
 
-  if (loading && systems.length === 0) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="400px"
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
+  if (loading && systems.length === 0) return <div className="flex justify-center items-center min-h-[400px]"><LoadingSpinner size="lg" /></div>;
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Box
-        sx={{
-          mb: 3,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <Typography variant="h4" component="h1" sx={{ fontWeight: "bold" }}>
-          🔧 إدارة أنظمة النظام
-        </Typography>
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <Button
-            variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={fetchSystems}
-            disabled={loading}
-          >
-            تحديث
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<SettingsIcon />}
-            onClick={initializeSystems}
-            disabled={loading}
-          >
-            تهيئة الأنظمة
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Alerts */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
-      {success && (
-        <Alert
-          severity="success"
-          sx={{ mb: 2 }}
-          onClose={() => setSuccess(null)}
-        >
-          {success}
-        </Alert>
-      )}
-
-      {/* Statistics */}
-      {stats && (
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={3}>
-            <Card>
-              <CardContent sx={{ textAlign: "center" }}>
-                <Typography variant="h4" color="primary">
-                  {stats.total}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  إجمالي الأنظمة
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Card>
-              <CardContent sx={{ textAlign: "center" }}>
-                <Typography variant="h4" color="success.main">
-                  {stats.enabled}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  أنظمة مفعلة
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Card>
-              <CardContent sx={{ textAlign: "center" }}>
-                <Typography variant="h4" color="error.main">
-                  {stats.disabled}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  أنظمة معطلة
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Card>
-              <CardContent sx={{ textAlign: "center" }}>
-                <Typography variant="h4" color="warning.main">
-                  {Object.keys(stats.byCategory).length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  فئات الأنظمة
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
-
-      {/* Systems by Category */}
+    <div className="p-3">
+      <div className="flex justify-between items-center mb-3"><h1 className="text-2xl font-bold">🔧 إدارة أنظمة النظام</h1><div className="flex gap-2"><Button variant="outline" onClick={fetchSystems} disabled={loading}>تحديث</Button></div></div>
+      {error && <Alert variant="destructive" className="mb-2"><AlertDescription>{error}</AlertDescription></Alert>}
+      {success && <Alert className="mb-2"><AlertDescription>{success}</AlertDescription></Alert>}
+      {stats && <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+        {[{ l: "إجمالي الأنظمة", v: stats.total }, { l: "أنظمة مفعلة", v: stats.enabled, c: "text-green-600" }, { l: "أنظمة معطلة", v: stats.disabled, c: "text-red-600" }, { l: "فئات الأنظمة", v: Object.keys(stats.byCategory).length, c: "text-yellow-600" }].map((c, i) =>
+          <div key={i} className="rounded-xl border bg-card p-4 text-center"><p className={`text-2xl font-bold ${c.c || ""}`}>{c.v}</p><p className="text-sm text-muted-foreground">{c.l}</p></div>
+        )}
+      </div>}
       {Object.entries(groupedSystems).map(([category, categorySystems]) => (
-        <Card key={category} sx={{ mb: 3 }}>
-          <CardContent>
-            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-              {getCategoryIcon(category)}
-              <Typography variant="h6" sx={{ ml: 1, fontWeight: "bold" }}>
-                {category === "monitoring" && "📊 أنظمة المراقبة"}
-                {category === "security" && "🔒 أنظمة الأمان"}
-                {category === "api_keys" && "🔑 أنظمة مفاتيح API"}
-                {category === "general" && "⚙️ أنظمة عامة"}
-              </Typography>
-              <Chip
-                label={`${categorySystems.length} نظام`}
-                size="small"
-                color={getCategoryColor(category)}
-                sx={{ ml: 2 }}
-              />
-            </Box>
-
-            <TableContainer component={Paper} variant="outlined">
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>النظام</TableCell>
-                    <TableCell>الوصف</TableCell>
-                    <TableCell align="center">استهلاك الموارد</TableCell>
-                    <TableCell align="center">الحالة</TableCell>
-                    <TableCell align="center">الإجراءات</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {categorySystems.map((system) => (
-                    <TableRow key={system.systemName}>
-                      <TableCell>
-                        <Typography variant="subtitle2" fontWeight="bold">
-                          {system.displayName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {system.systemName}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {system.description}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        {system.config && (
-                          <Chip
-                            label={system.config.resourceUsage || "غير محدد"}
-                            size="small"
-                            color={getResourceUsageColor(
-                              system.config.resourceUsage,
-                            )}
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell align="center">
-                        <Chip
-                          label={system.isEnabled ? "مفعل" : "معطل"}
-                          color={system.isEnabled ? "success" : "default"}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <Tooltip
-                          title={
-                            system.isEnabled ? "تعطيل النظام" : "تفعيل النظام"
-                          }
-                        >
-                          <span>
-                            <IconButton
-                              onClick={() =>
-                                toggleSystem(
-                                  system.systemName,
-                                  system.isEnabled,
-                                )
-                              }
-                              disabled={updating.has(system.systemName)}
-                              color={system.isEnabled ? "error" : "success"}
-                            >
-                              {updating.has(system.systemName) ? (
-                                <CircularProgress size={20} />
-                              ) : (
-                                <PowerIcon />
-                              )}
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
+        <div key={category} className="rounded-xl border bg-card mb-3">
+          <div className="p-4"><h2 className="text-base font-bold mb-2">{category === "monitoring" ? "📊 أنظمة المراقبة" : category === "security" ? "🔒 أنظمة الأمان" : category === "api_keys" ? "🔑 أنظمة مفاتيح API" : "⚙️ أنظمة عامة"} <Badge>{categorySystems.length} نظام</Badge></h2>
+          <Table><TableHeader><TableRow><TableHead>النظام</TableHead><TableHead>الوصف</TableHead><TableHead className="text-center">استهلاك الموارد</TableHead><TableHead className="text-center">الحالة</TableHead><TableHead className="text-center">الإجراءات</TableHead></TableRow></TableHeader>
+          <TableBody>{categorySystems.map(system => <TableRow key={system.systemName}>
+            <TableCell><p className="font-bold">{system.displayName}</p><p className="text-xs text-muted-foreground">{system.systemName}</p></TableCell>
+            <TableCell><p className="text-sm">{system.description}</p></TableCell>
+            <TableCell className="text-center"><Badge variant="outline">{system.config?.resourceUsage || "غير محدد"}</Badge></TableCell>
+            <TableCell className="text-center"><Badge variant={system.isEnabled ? "default" : "secondary"}>{system.isEnabled ? "مفعل" : "معطل"}</Badge></TableCell>
+            <TableCell className="text-center">
+              <Button variant="ghost" size="sm" disabled={updating.has(system.systemName)} onClick={() => toggleSystem(system.systemName, system.isEnabled)}>
+                {system.isEnabled ? "تعطيل" : "تفعيل"}
+              </Button>
+            </TableCell>
+          </TableRow>)}</TableBody></Table>
+        </div></div>
       ))}
-
-      {systems.length === 0 && !loading && (
-        <Card>
-          <CardContent sx={{ textAlign: "center", py: 4 }}>
-            <Typography variant="h6" color="text.secondary">
-              لا توجد أنظمة مكونة
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<SettingsIcon />}
-              onClick={initializeSystems}
-              sx={{ mt: 2 }}
-            >
-              تهيئة الأنظمة
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-    </Box>
+    </div>
   );
 };
 

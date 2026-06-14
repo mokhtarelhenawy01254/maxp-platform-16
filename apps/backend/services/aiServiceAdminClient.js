@@ -147,6 +147,22 @@ async function testProviderKey({ provider, apiKey, model, messages, prompt, time
   return request('POST', '/admin/test', body);
 }
 
+async function getManagerContext(companyId) {
+  return request('GET', `/admin/manager/context?company_id=${encodeURIComponent(companyId)}`);
+}
+
+async function getTeamMap(companyId) {
+  return request('GET', `/admin/team-map?company_id=${encodeURIComponent(companyId)}`);
+}
+
+async function archiveAgent(agentId, companyId) {
+  return request('DELETE', `/admin/agents/${encodeURIComponent(agentId)}?company_id=${encodeURIComponent(companyId)}`);
+}
+
+async function updateAgent(agentId, companyId, data) {
+  return request('PATCH', `/admin/agents/${encodeURIComponent(agentId)}?company_id=${encodeURIComponent(companyId)}`, data);
+}
+
 module.exports = {
   listTools,
   listAgents,
@@ -161,4 +177,8 @@ module.exports = {
   spawnAgent,
   getAgent,
   updateAgentStatus,
+  getManagerContext,
+  getTeamMap,
+  archiveAgent,
+  updateAgent,
 };

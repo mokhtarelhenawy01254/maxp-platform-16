@@ -1,15 +1,7 @@
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Container,
-  Typography,
-  Card,
-  CardContent,
-  CircularProgress,
-  Alert,
-} from "@mui/material";
 import { apiClient } from "../../services/apiClient";
-import { BookOpenIcon } from "@heroicons/react/24/outline";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import { BookOpen } from "lucide-react";
 
 interface AppExplanation {
   id: string;
@@ -45,65 +37,41 @@ const AppExplanationsPage: React.FC = () => {
   }, []);
 
   return (
-    <Container maxWidth="lg" sx={{ py: 6, direction: "rtl" }}>
-      <Box sx={{ mb: 6, textAlign: "center" }}>
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-          <BookOpenIcon style={{ width: 48, height: 48, color: "#3b82f6" }} />
-        </Box>
-        <Typography variant="h3" fontWeight="bold" gutterBottom>
-          شرح التطبيقات
-        </Typography>
-        <Typography variant="subtitle1" color="text.secondary">
-          دليلك الشامل لاستخدام تطبيقات وخدمات المنصة
-        </Typography>
-      </Box>
+    <div className="max-w-4xl mx-auto py-6 rtl">
+      <div className="mb-6 text-center">
+        <div className="flex justify-center mb-2">
+          <BookOpen className="size-12 text-blue-500" />
+        </div>
+        <h1 className="text-3xl font-bold mb-2">شرح التطبيقات</h1>
+        <p className="text-muted-foreground">دليلك الشامل لاستخدام تطبيقات وخدمات المنصة</p>
+      </div>
 
       {loading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-          <CircularProgress />
-        </Box>
+        <div className="flex justify-center py-8"><LoadingSpinner size="lg" /></div>
       ) : error ? (
-        <Alert severity="error">{error}</Alert>
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">{error}</div>
       ) : explanations.length === 0 ? (
-        <Card sx={{ p: 4, textAlign: "center" }}>
-          <Typography variant="body1" color="text.secondary">
-            لا توجد شروحات متاحة حالياً
-          </Typography>
-        </Card>
+        <div className="rounded-xl border bg-card p-8 text-center">
+          <p className="text-muted-foreground">لا توجد شروحات متاحة حالياً</p>
+        </div>
       ) : (
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div className="space-y-4">
           {explanations.map((exp) => (
-            <Card 
-              key={exp.id} 
-              id={exp.slug}
-              sx={{ 
-                borderRadius: 3,
-                boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
-                overflow: "hidden"
-              }}
-            >
-              <Box sx={{ bgcolor: "primary.main", color: "white", p: 2, px: 3 }}>
-                <Typography variant="h5" fontWeight="bold">
-                  {exp.title}
-                </Typography>
-              </Box>
-              <CardContent sx={{ p: 4 }}>
-                <Box
-                  sx={{
-                    "& h1, & h2, & h3": { mb: 2, mt: 3, fontWeight: "bold" },
-                    "& p": { mb: 2, lineHeight: 1.8 },
-                    "& ul, & ol": { pl: 4, mb: 2 },
-                    "& li": { mb: 1 },
-                    "& img": { maxWidth: "100%", height: "auto", borderRadius: 2, my: 2 },
-                  }}
+            <div key={exp.id} id={exp.slug} className="rounded-xl border bg-card overflow-hidden shadow-sm">
+              <div className="bg-primary text-primary-foreground p-3 px-4">
+                <h2 className="text-lg font-bold">{exp.title}</h2>
+              </div>
+              <div className="p-4">
+                <div
+                  className="prose prose-sm max-w-none dark:prose-invert [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-bold [&_p]:leading-relaxed [&_img]:rounded-lg [&_img]:max-w-full"
                   dangerouslySetInnerHTML={{ __html: exp.content }}
                 />
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
-        </Box>
+        </div>
       )}
-    </Container>
+    </div>
   );
 };
 

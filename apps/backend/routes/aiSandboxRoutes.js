@@ -26,6 +26,7 @@ const aiSandboxLimiter = rateLimit({
   limit: 120,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false },
   message: {
     success: false,
     error: 'AI_SANDBOX_RATE_LIMITED',

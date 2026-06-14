@@ -1,35 +1,25 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Box,
-  Typography,
-  TextField,
-  IconButton,
-  Avatar,
-  Chip,
-  Tooltip,
-  CircularProgress,
-  Alert,
-  Paper,
-  Divider,
-  Button,
-  ButtonBase,
-  Stack,
-} from "@mui/material";
-import {
-  Send as SendIcon,
-  DeleteOutline as ClearIcon,
-  Add as AddIcon,
-  Forum as SessionIcon,
-  SmartToy as BotIcon,
-  Person as PersonIcon,
-  AutoAwesome as SparkleIcon,
-  ContentCopy as CopyIcon,
-} from "@mui/icons-material";
+  Send,
+  Trash2,
+  Plus,
+  MessageSquare,
+  Bot,
+  User,
+  Sparkles,
+  Copy,
+} from "lucide-react";
+import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
 import LinkifiedText from "../../components/common/LinkifiedText";
-
-// ─── Types ───────────────────────────────────────────────────────────────────
+import { cn } from "@/lib/utils";
+import { useTheme } from "@/hooks/useTheme";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -73,8 +63,6 @@ interface ChatSession {
   };
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function formatTime(iso: string) {
   try {
     return new Date(iso).toLocaleTimeString("ar-EG", {
@@ -115,49 +103,25 @@ function formatModelSelection(selection?: ModelSelection | null) {
   return [selection.provider, selection.model].filter(Boolean).join(" / ");
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
 const TypingIndicator: React.FC = () => (
-  <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 2, py: 1 }}>
-    <Avatar
-      sx={{ width: 32, height: 32, bgcolor: "primary.main", fontSize: 16 }}
-    >
-      <BotIcon sx={{ fontSize: 18 }} />
+  <div className="flex items-center gap-2 px-3 py-2">
+    <Avatar className="size-8 bg-primary">
+      <AvatarFallback>
+        <Bot className="size-4" />
+      </AvatarFallback>
     </Avatar>
-    <Paper
-      elevation={0}
-      sx={{
-        px: 2,
-        py: 1.2,
-        borderRadius: "18px 18px 18px 4px",
-        bgcolor: "background.paper",
-        border: "1px solid",
-        borderColor: "divider",
-        display: "flex",
-        gap: 0.5,
-        alignItems: "center",
-      }}
-    >
+    <div className="flex items-center gap-1.5 rounded-[18px_18px_18px_4px] border bg-card px-4 py-2.5">
       {[0, 1, 2].map((i) => (
-        <Box
+        <div
           key={i}
-          sx={{
-            width: 7,
-            height: 7,
-            borderRadius: "50%",
-            bgcolor: "primary.main",
-            opacity: 0.7,
-            animation: "pulse 1.2s ease-in-out infinite",
+          className="size-1.5 animate-pulse rounded-full bg-primary"
+          style={{
             animationDelay: `${i * 0.3}s`,
-            "@keyframes pulse": {
-              "0%, 100%": { transform: "scale(0.7)", opacity: 0.4 },
-              "50%": { transform: "scale(1.2)", opacity: 1 },
-            },
           }}
         />
       ))}
-    </Paper>
-  </Box>
+    </div>
+  </div>
 );
 
 interface MessageBubbleProps {
@@ -177,116 +141,69 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   };
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: isUser ? "row-reverse" : "row",
-        alignItems: "flex-end",
-        gap: 1,
-        px: 2,
-        py: 0.5,
-        "&:hover .copy-btn": { opacity: 1 },
-      }}
+    <div
+      className={cn(
+        "flex items-end gap-2 px-3 py-1 group",
+        isUser ? "flex-row-reverse" : "flex-row",
+      )}
     >
-      {/* Avatar */}
       <Avatar
-        sx={{
-          width: 32,
-          height: 32,
-          flexShrink: 0,
-          bgcolor: isUser ? "secondary.main" : "primary.main",
-          fontSize: 16,
-          mb: 0.5,
-        }}
-      >
-        {isUser ? (
-          <PersonIcon sx={{ fontSize: 18 }} />
-        ) : (
-          <BotIcon sx={{ fontSize: 18 }} />
+        className={cn(
+          "mb-1 size-8 shrink-0",
+          isUser ? "bg-secondary" : "bg-primary",
         )}
+      >
+        <AvatarFallback>
+          {isUser ? (
+            <User className="size-4" />
+          ) : (
+            <Bot className="size-4" />
+          )}
+        </AvatarFallback>
       </Avatar>
 
-      {/* Bubble */}
-      <Box sx={{ maxWidth: "72%", minWidth: 60 }}>
-        <Paper
-          elevation={0}
-          sx={{
-            px: 2,
-            py: 1.5,
-            borderRadius: isUser
-              ? "18px 18px 4px 18px"
-              : "18px 18px 18px 4px",
-            bgcolor: isUser ? "primary.light" : "background.paper",
-            border: isUser ? "none" : "1px solid",
-            borderColor: "divider",
-            color: isUser ? "#111827" : "text.primary",
-            whiteSpace: "pre-wrap",
-            lineHeight: 1.65,
-            fontSize: "0.92rem",
-          }}
+      <div className="min-w-[60px] max-w-[72%]">
+        <div
+          className={cn(
+            "whitespace-pre-wrap px-4 py-2.5 text-sm leading-relaxed",
+            isUser
+              ? "rounded-[18px_18px_4px_18px] bg-primary/20 text-foreground"
+              : "rounded-[18px_18px_18px_4px] border bg-card text-foreground",
+          )}
         >
           <LinkifiedText text={message.content} />
-        </Paper>
+        </div>
 
-        {/* Timestamp + copy */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: isUser ? "flex-end" : "flex-start",
-            alignItems: "center",
-            gap: 0.5,
-            mt: 0.4,
-            px: 0.5,
-          }}
-        >
-          <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.7rem" }}>
-            {formatTime(message.timestamp)}
-          </Typography>
-          <Tooltip title={copied ? "تم النسخ!" : "نسخ"}>
-            <IconButton
-              className="copy-btn"
-              size="small"
-              onClick={handleCopy}
-              sx={{
-                opacity: 0,
-                transition: "opacity 0.2s",
-                p: 0.3,
-                color: "text.disabled",
-              }}
-            >
-              <CopyIcon sx={{ fontSize: 12 }} />
-            </IconButton>
-          </Tooltip>
-          {modelLabel && (
-            <Tooltip
-              title={[
-                message.modelSelection?.keyName ? `Key: ${message.modelSelection.keyName}` : null,
-                message.modelSelection?.selectedPool ? `Pool: ${message.modelSelection.selectedPool}` : null,
-              ].filter(Boolean).join(" · ")}
-            >
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{
-                  fontSize: "0.68rem",
-                  fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
-                  direction: "ltr",
-                  unicodeBidi: "plaintext",
-                }}
-              >
-                {modelLabel}
-              </Typography>
-            </Tooltip>
+        <div
+          className={cn(
+            "mt-1 flex items-center gap-1.5 px-1",
+            isUser ? "justify-end" : "justify-start",
           )}
-        </Box>
-      </Box>
-    </Box>
+        >
+          <span className="text-[0.7rem] text-muted-foreground/50">
+            {formatTime(message.timestamp)}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={handleCopy}
+            className="opacity-0 transition-opacity group-hover:opacity-100"
+          >
+            <Copy className="size-3" />
+          </Button>
+          {modelLabel && (
+            <span className="ltr font-mono text-[0.68rem] text-muted-foreground">
+              {modelLabel}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
 const AIChatPage: React.FC = () => {
+  const { derivedTheme } = useTheme();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -299,13 +216,11 @@ const AIChatPage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // ── Load history & agent status on mount ──────────────────────────────────
   useEffect(() => {
     loadSessions();
     loadStatus();
   }, []);
 
-  // ── Auto-scroll on new messages ───────────────────────────────────────────
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
@@ -428,7 +343,6 @@ const AIChatPage: React.FC = () => {
         });
       }
 
-      // Refresh agent info after first interaction
       if (!agentInfo?.spawned) loadStatus();
     } catch (err: any) {
       const selection = normalizeModelSelection(err?.modelSelection);
@@ -503,278 +417,197 @@ const AIChatPage: React.FC = () => {
     }
   };
 
-  // ─── Render ───────────────────────────────────────────────────────────────
   const agentName = agentInfo?.name || "CEO Agent";
   const agentRole = agentInfo?.role || "CEO";
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        height: "calc(100vh - 64px)",
-        bgcolor: "background.default",
-      }}
-    >
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <Box
-        sx={{
-          px: 3,
-          py: 1.5,
-          borderBottom: "1px solid",
-          borderColor: "divider",
-          bgcolor: "background.paper",
-          display: "flex",
-          alignItems: "center",
-          gap: 2,
-          flexShrink: 0,
-        }}
-      >
+    <div className="flex h-[calc(100vh-64px)] flex-col bg-background">
+      {/* Header */}
+      <div className="flex shrink-0 items-center gap-4 border-b bg-card px-6 py-3">
         <Avatar
-          sx={{
-            width: 40,
-            height: 40,
-            bgcolor: "primary.main",
+          className="size-10"
+          style={{
             background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
           }}
         >
-          <SparkleIcon />
+          <AvatarFallback>
+            <Sparkles className="size-5" />
+          </AvatarFallback>
         </Avatar>
 
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="subtitle1" fontWeight={700} lineHeight={1.2}>
-            {agentName}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
+        <div className="flex-1">
+          <p className="text-base font-bold leading-tight">{agentName}</p>
+          <span className="text-xs text-muted-foreground">
             {agentRole === "CEO" ? "مساعدك الذكي لإدارة الأعمال" : agentRole}
-          </Typography>
-        </Box>
+          </span>
+        </div>
 
-        {/* Model chip */}
         {agentInfo?.spawned && (agentInfo.selectedModel || agentInfo.model) && (
-          <Chip
-            label={`الموديل: ${agentInfo.selectedModel || agentInfo.model}`}
-            size="small"
-            variant="outlined"
-            sx={{ fontFamily: "monospace", fontSize: "0.7rem" }}
-          />
+          <Badge variant="outline" className="font-mono text-[0.7rem]">
+            {`الموديل: ${agentInfo.selectedModel || agentInfo.model}`}
+          </Badge>
         )}
 
         {agentInfo?.selectedProvider && (
-          <Chip
-            label={`المزود: ${agentInfo.selectedProvider}`}
-            size="small"
-            color="primary"
-            variant="outlined"
-            sx={{ fontSize: "0.7rem" }}
-          />
+          <Badge variant="outline" className="text-[0.7rem]">
+            {`المزود: ${agentInfo.selectedProvider}`}
+          </Badge>
         )}
 
-        {/* LLM status */}
-        <Chip
-          size="small"
-          label={agentInfo?.hasLLM ? "LLM متصل" : "وضع تلقائي"}
-          color={agentInfo?.hasLLM ? "success" : "default"}
-          variant="outlined"
-          sx={{ fontSize: "0.7rem" }}
-        />
-
-        {/* Clear button */}
-        {messages.length > 0 && (
-          <Tooltip title="مسح المحادثة">
-            <IconButton size="small" onClick={clearHistory} color="error">
-              <ClearIcon />
-            </IconButton>
-          </Tooltip>
-        )}
-      </Box>
-
-      <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
-        <Box
-          sx={{
-            width: { xs: 116, md: 260 },
-            borderInlineEnd: "1px solid",
-            borderColor: "divider",
-            bgcolor: "background.paper",
-            flexShrink: 0,
-            display: "flex",
-            flexDirection: "column",
-            minHeight: 0,
-          }}
+        <Badge
+          variant={agentInfo?.hasLLM ? "outline" : "secondary"}
+          className={cn(
+            "text-[0.7rem]",
+            agentInfo?.hasLLM && "text-success",
+          )}
         >
-          <Stack direction="row" alignItems="center" spacing={1} sx={{ px: 1.25, py: 1, borderBottom: "1px solid", borderColor: "divider" }}>
-            <SessionIcon fontSize="small" color="primary" />
-            <Typography variant="body2" fontWeight={800} sx={{ display: { xs: "none", md: "block" }, flex: 1 }}>
-              الجلسات
-            </Typography>
-            <Tooltip title="جلسة جديدة">
-              <IconButton size="small" onClick={createSession} disabled={historyLoading}>
-                <AddIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Stack>
+          {agentInfo?.hasLLM ? "LLM متصل" : "وضع تلقائي"}
+        </Badge>
 
-          <Box sx={{ flex: 1, overflowY: "auto", p: 0.75 }}>
+        {messages.length > 0 && (
+          <Button variant="ghost" size="icon-sm" onClick={clearHistory}>
+            <Trash2 className="size-4 text-destructive" />
+          </Button>
+        )}
+      </div>
+
+      <div className="flex min-h-0 flex-1">
+        {/* Sidebar */}
+        <div
+          className={cn(
+            "flex shrink-0 flex-col border-l bg-card",
+            "w-[116px] md:w-[260px]",
+          )}
+        >
+          <div className="flex items-center gap-2 border-b px-3 py-2.5">
+            <MessageSquare className="size-4 text-primary" />
+            <span className="hidden flex-1 text-sm font-extrabold md:block">
+              الجلسات
+            </span>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={createSession}
+              disabled={historyLoading}
+            >
+              <Plus className="size-4" />
+            </Button>
+          </div>
+
+          <div className="flex-1 space-y-2 overflow-y-auto p-2">
             {sessionsLoading ? (
-              <Box sx={{ display: "flex", justifyContent: "center", pt: 2 }}>
-                <CircularProgress size={20} />
-              </Box>
+              <div className="flex justify-center pt-4">
+                <LoadingSpinner size="sm" />
+              </div>
             ) : sessions.length === 0 ? (
-              <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={createSession} sx={{ width: "100%" }}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={createSession}
+                className="w-full"
+              >
+                <Plus className="mr-1 size-3.5" />
                 جديدة
               </Button>
             ) : (
-              <Stack spacing={0.75}>
-                {sessions.map((session) => {
-                  const active = session.id === activeSessionId;
-                  return (
-                    <ButtonBase
-                      key={session.id}
-                      onClick={() => selectSession(session.id)}
-                      sx={{
-                        width: "100%",
-                        display: "block",
-                        textAlign: "inherit",
-                        borderRadius: 1,
-                      }}
-                    >
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          p: 1,
-                          borderRadius: 1,
-                          border: "1px solid",
-                          borderColor: active ? "primary.main" : "divider",
-                          bgcolor: active ? "action.selected" : "background.default",
-                        }}
-                      >
-                        <Typography variant="body2" fontWeight={800} noWrap>
-                          {session.title || "جلسة"}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: { xs: "none", md: "block" } }}>
-                          {formatTime(session.updatedAt || session.createdAt)}
-                        </Typography>
-                      </Paper>
-                    </ButtonBase>
-                  );
-                })}
-              </Stack>
+              sessions.map((session) => {
+                const active = session.id === activeSessionId;
+                return (
+                  <button
+                    key={session.id}
+                    onClick={() => selectSession(session.id)}
+                    className={cn(
+                      "w-full rounded-md border p-2.5 text-right transition-colors",
+                      active
+                        ? "border-primary bg-muted"
+                        : "border-border bg-background",
+                    )}
+                  >
+                    <p className="truncate text-sm font-extrabold">
+                      {session.title || "جلسة"}
+                    </p>
+                    <p className="hidden text-xs text-muted-foreground md:block">
+                      {formatTime(session.updatedAt || session.createdAt)}
+                    </p>
+                  </button>
+                );
+              })
             )}
-          </Box>
-        </Box>
+          </div>
+        </div>
 
-        <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column" }}>
-
-      {/* ── Messages area ──────────────────────────────────────────────────── */}
-      <Box
-        sx={{
-          flex: 1,
-          overflowY: "auto",
-          py: 2,
-          display: "flex",
-          flexDirection: "column",
-          gap: 0.5,
-        }}
-      >
-        {historyLoading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", pt: 6 }}>
-            <CircularProgress size={28} />
-          </Box>
-        ) : messages.length === 0 ? (
-          <Box sx={{ flex: 1 }} aria-hidden="true" />
-        ) : (
-          /* ── Message list ─────────────────────────────────────────────── */
-          <>
-            {messages.map((msg, idx) => (
-              <MessageBubble key={idx} message={msg} />
-            ))}
-            {loading && <TypingIndicator />}
-            <div ref={messagesEndRef} />
-          </>
-        )}
-      </Box>
-
-      {/* ── Error banner ───────────────────────────────────────────────────── */}
-      {error && (
-        <Alert
-          severity="error"
-          onClose={() => setError(null)}
-          sx={{ mx: 2, mb: 1, flexShrink: 0 }}
-        >
-          {error}
-        </Alert>
-      )}
-
-      {/* ── Input area ─────────────────────────────────────────────────────── */}
-      <Box
-        sx={{
-          px: 2,
-          pb: 2,
-          pt: 1,
-          borderTop: "1px solid",
-          borderColor: "divider",
-          bgcolor: "background.paper",
-          flexShrink: 0,
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            gap: 1,
-            alignItems: "flex-end",
-            borderRadius: 3,
-            border: "1.5px solid",
-            borderColor: "divider",
-            bgcolor: "background.default",
-            px: 1.5,
-            py: 0.5,
-            transition: "border-color 0.2s",
-            "&:focus-within": { borderColor: "primary.main" },
-          }}
-        >
-          <TextField
-            inputRef={inputRef}
-            multiline
-            maxRows={6}
-            fullWidth
-            placeholder="اكتب رسالتك هنا... (Enter للإرسال، Shift+Enter لسطر جديد)"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={loading}
-            variant="standard"
-            InputProps={{ disableUnderline: true }}
-            sx={{
-              "& .MuiInputBase-root": { py: 0.8, fontSize: "0.92rem" },
-              "& textarea": { resize: "none" },
-            }}
-          />
-          <IconButton
-            onClick={sendMessage}
-            disabled={!input.trim() || loading}
-            color="primary"
-            sx={{
-              mb: 0.3,
-              bgcolor: input.trim() && !loading ? "primary.main" : "transparent",
-              color: input.trim() && !loading ? "primary.contrastText" : "text.disabled",
-              transition: "all 0.2s",
-              "&:hover": {
-                bgcolor: input.trim() && !loading ? "primary.dark" : "transparent",
-              },
-              "&.Mui-disabled": { bgcolor: "transparent" },
-            }}
-          >
-            {loading ? (
-              <CircularProgress size={20} color="inherit" />
+        {/* Main area */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* Messages area */}
+          <div className="flex flex-1 flex-col gap-1 overflow-y-auto py-4">
+            {historyLoading ? (
+              <div className="flex justify-center pt-12">
+                <LoadingSpinner size="md" />
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="flex-1" aria-hidden="true" />
             ) : (
-              <SendIcon sx={{ transform: "rotate(180deg)" }} />
+              <>
+                {messages.map((msg, idx) => (
+                  <MessageBubble key={idx} message={msg} />
+                ))}
+                {loading && <TypingIndicator />}
+                <div ref={messagesEndRef} />
+              </>
             )}
-          </IconButton>
-        </Box>
-      </Box>
-        </Box>
-      </Box>
-    </Box>
+          </div>
+
+          {/* Error banner */}
+          {error && (
+            <div
+              className="mx-4 mb-2 shrink-0 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+              role="alert"
+            >
+              <div className="flex items-center justify-between">
+                <span>{error}</span>
+                <Button variant="ghost" size="icon-xs" onClick={() => setError(null)}>
+                  <Trash2 className="size-3" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Input area */}
+          <div className="shrink-0 border-t bg-card px-4 pb-4 pt-2">
+            <div className="flex items-end gap-2 rounded-xl border-[1.5px] border-border bg-background px-4 py-1.5 transition-colors focus-within:border-primary">
+              <Textarea
+                ref={inputRef}
+                rows={1}
+                maxLength={undefined}
+                placeholder="اكتب رسالتك هنا... (Enter للإرسال، Shift+Enter لسطر جديد)"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={loading}
+                className="min-h-0 resize-none border-0 bg-transparent p-0 text-[0.92rem] shadow-none focus-visible:ring-0"
+              />
+              <Button
+                size="icon"
+                onClick={sendMessage}
+                disabled={!input.trim() || loading}
+                className={cn(
+                  "mb-0.5 transition-all",
+                  input.trim() && !loading
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-transparent text-muted-foreground",
+                )}
+              >
+                {loading ? (
+                  <LoadingSpinner size="sm" color="white" />
+                ) : (
+                  <Send className="size-4 rotate-180" />
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

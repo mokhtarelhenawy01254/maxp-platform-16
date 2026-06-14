@@ -1,145 +1,78 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Alert,
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  Divider,
-  IconButton,
-  MenuItem,
-  Paper,
-  Snackbar,
-  Stack,
-  Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Tabs,
-  TextField,
-  Tooltip,
-  Typography,
-  Switch,
-  FormControlLabel,
-} from "@mui/material";
-import Grid from "../../components/ui/CompatGrid";
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  ClipboardList,
+  Flag,
+  Inbox,
+  MessageSquare,
+  Play,
+  RefreshCw,
+  Send,
+  Shield,
+  Terminal,
+  UserCheck,
+  UserPlus,
+  Users,
+  Wrench,
+  XCircle,
+} from "lucide-react";
+import { toast } from "sonner";
 import LinkifiedText from "../../components/common/LinkifiedText";
-import {
-  AccountTree as DelegateIcon,
-  AdminPanelSettings as ManagerIcon,
-  Build as ToolIcon,
-  CheckCircle as CompleteIcon,
-  Forum as ChatIcon,
-  Group as TeamIcon,
-  Inbox as InboxIcon,
-  PersonAdd as HireIcon,
-  PlayArrow as CheckoutIcon,
-  Refresh as RefreshIcon,
-  ReportProblem as ConflictIcon,
-  Send as SendIcon,
-  Shield as ShieldIcon,
-  Terminal as JsonIcon,
-  WarningAmber as FailIcon,
-} from "@mui/icons-material";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { cn } from "@/lib/utils";
+
 type AgentStatus = "ACTIVE" | "IDLE" | "THINKING" | "PAUSED" | "INACTIVE";
 
-interface AgentSummary {
-  id: string;
-  name: string;
-  role: string;
-  status: AgentStatus;
-  model?: string | null;
-  templateSlug?: string | null;
-  version?: string | null;
-  allowedTools?: string[];
-  allowedSkills?: string[];
-}
-
-interface AgentProfile {
-  slug: string;
-  name: string;
-  role: string;
-  version?: string;
-  allowedTools: string[];
-  allowedSkills: string[];
-}
-
-interface ToolDefinition {
-  name: string;
-  description: string;
-  sideEffects: "read" | "write";
-  requiresApproval: boolean;
-  handler: string;
-}
-
-interface SkillDefinition {
-  id: string;
-  displayName: string;
-  version?: string;
-  allowedTools: string[];
-}
-
-interface InboxSummary {
-  total: number;
-  active: number;
-  pending: number;
-  checkedOut: number;
-  completed: number;
-  failed: number;
-}
-
-interface ManagerContext {
-  manager: AgentSummary;
-  agents: AgentSummary[];
-  inbox: InboxSummary;
-  profiles: AgentProfile[];
-  tools: ToolDefinition[];
-  skills: SkillDefinition[];
-}
-
-interface AgentTask {
-  id: string;
-  title: string;
-  description: string;
-  priority: string;
-  assignTo?: string | null;
-  agentId?: string | null;
-  status: string;
-  checkedOutBy?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  metadata?: Record<string, unknown>;
-}
-
-interface ChatMessage {
-  role: "user" | "manager";
-  content: string;
-}
-
-interface ApiResult {
-  success: boolean;
-  [key: string]: any;
-}
+interface AgentSummary { id: string; name: string; role: string; status: AgentStatus; model?: string | null; templateSlug?: string | null; version?: string | null; allowedTools?: string[]; allowedSkills?: string[]; }
+interface AgentProfile { slug: string; name: string; role: string; version?: string; allowedTools: string[]; allowedSkills: string[]; }
+interface ToolDefinition { name: string; description: string; sideEffects: "read" | "write"; requiresApproval: boolean; handler: string; }
+interface SkillDefinition { id: string; displayName: string; version?: string; allowedTools: string[]; }
+interface InboxSummary { total: number; active: number; pending: number; checkedOut: number; completed: number; failed: number; }
+interface ManagerContext { manager: AgentSummary; agents: AgentSummary[]; inbox: InboxSummary; profiles: AgentProfile[]; tools: ToolDefinition[]; skills: SkillDefinition[]; }
+interface AgentTask { id: string; title: string; description: string; priority: string; assignTo?: string | null; agentId?: string | null; status: string; checkedOutBy?: string | null; createdAt: string; updatedAt: string; metadata?: Record<string, unknown>; }
+interface ChatMessage { role: "user" | "manager"; content: string; }
+interface ApiResult { success: boolean; [key: string]: any; }
 
 const ROLE_OPTIONS = ["CEO", "SALES", "SUPPORT", "INVENTORY", "PRICING", "MARKETING", "SHIPPING"];
 
 const TOOL_INPUT_EXAMPLES: Record<string, Record<string, unknown>> = {
-  "agent.assign_task": {
-    agentId: "",
-    title: "راجع هدف اختبار من مدير الوكلاء",
-    description: "مهمة تشغيلية قصيرة للتأكد من بروتوكول التفويض.",
-    priority: "medium",
-    conflictKey: "test:agent-manager:task",
-    conflictAction: "review",
-    conflictResource: "agent-manager",
-    conflictScope: "ui-smoke-test",
-  },
+  "agent.assign_task": { agentId: "", title: "راجع هدف اختبار من مدير الوكلاء", description: "مهمة تشغيلية قصيرة للتأكد من بروتوكول التفويض.", priority: "medium", conflictKey: "test:agent-manager:task", conflictAction: "review", conflictResource: "agent-manager", conflictScope: "ui-smoke-test" },
   "product.search": { query: "test", limit: 3 },
   "discount.create_draft": { code: "AI-SMOKE-10", discountPercent: 10, reason: "اختبار مسودة آمنة" },
   "product.updatePrice": { productId: "demo-product", originalPrice: 100, newPrice: 105 },
@@ -149,55 +82,127 @@ const TOOL_INPUT_EXAMPLES: Record<string, Record<string, unknown>> = {
 };
 
 const prettyJson = (value: unknown) => JSON.stringify(value, null, 2);
+const parseJson = (value: string) => { if (!value.trim()) return {}; return JSON.parse(value); };
 
-const parseJson = (value: string) => {
-  if (!value.trim()) return {};
-  return JSON.parse(value);
-};
-
-const statusColor = (status: string) => {
-  if (status === "ACTIVE" || status === "COMPLETED") return "success";
-  if (status === "PENDING" || status === "CHECKED_OUT" || status === "THINKING") return "warning";
-  if (status === "FAILED" || status === "INACTIVE") return "error";
-  return "default";
+const statusBadgeVariant = (status: string) => {
+  if (status === "ACTIVE" || status === "COMPLETED") return "outline";
+  if (status === "PENDING" || status === "CHECKED_OUT" || status === "THINKING") return "outline";
+  if (status === "FAILED" || status === "INACTIVE") return "destructive";
+  return "outline";
 };
 
 const apiRequest = async <T extends ApiResult>(path: string, init: RequestInit = {}): Promise<T> => {
   const extraHeaders = (init.headers || {}) as Record<string, string>;
   const response = await fetch(buildApiUrl(path), {
     ...init,
-    headers: {
-      ...tokenManager.createAuthHeaders(),
-      ...extraHeaders,
-    },
+    headers: { ...tokenManager.createAuthHeaders(), ...extraHeaders },
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.success === false) {
-    throw new Error(data.error || data.message || `Request failed: ${response.status}`);
-  }
+  if (!response.ok || data.success === false) throw new Error(data.error || data.message || `Request failed: ${response.status}`);
   return data as T;
 };
 
+function Metric({ icon, label, value, note }: { icon: React.ReactNode; label: string; value: string; note: string }) {
+  return (
+    <div className="flex h-full flex-col rounded-xl border bg-card p-5 text-card-foreground">
+      <div className="flex items-start justify-between">
+        <div className="flex flex-col">
+          <span className="text-xs text-muted-foreground">{label}</span>
+          <span className="text-2xl font-black">{value}</span>
+          <span className="text-xs text-muted-foreground">{note}</span>
+        </div>
+        <div className="text-primary">{icon}</div>
+      </div>
+    </div>
+  );
+}
+
+function Panel({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="flex h-full flex-col rounded-xl border bg-card p-4 text-card-foreground md:p-5">
+      <div className="mb-3 flex items-center gap-2">
+        <div className="text-primary">{icon}</div>
+        <h3 className="text-base font-black">{title}</h3>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function CodeBlock({ value }: { value: unknown }) {
+  return (
+    <div className="max-h-[520px] overflow-auto rounded-xl bg-[#101828] p-4 text-[#e6edf7]" dir="ltr">
+      <pre className="m-0 font-mono text-xs whitespace-pre-wrap" style={{ fontFamily: "Consolas, monospace" }}>{prettyJson(value)}</pre>
+    </div>
+  );
+}
+
+function TaskTable({ tasks, onAction, working }: { tasks: AgentTask[]; working: boolean; onAction: (task: AgentTask, action: "checkout" | "complete" | "fail") => void }) {
+  if (tasks.length === 0) {
+    return <div className="rounded-xl border-2 border-dashed p-8 text-center text-muted-foreground">لا توجد مهام في inbox حالياً.</div>;
+  }
+
+  return (
+    <div className="rounded-xl border">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/30">
+            <TableHead className="font-bold">المهمة</TableHead><TableHead className="font-bold">الحالة</TableHead><TableHead className="font-bold">الوكيل</TableHead>
+            <TableHead className="font-bold">الأولوية</TableHead><TableHead className="font-bold">قفل التعارض</TableHead><TableHead className="text-center font-bold">إجراءات</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {tasks.map((task) => (
+            <TableRow key={task.id} className="hover:bg-muted/30">
+              <TableCell className="max-w-[360px]">
+                <p className="text-sm font-bold">{task.title}</p>
+                <span className="text-xs text-muted-foreground">{task.description}</span>
+              </TableCell>
+              <TableCell><Badge variant={statusBadgeVariant(task.status)} className="text-[10px]">{task.status}</Badge></TableCell>
+              <TableCell className="font-mono text-xs">{task.agentId || task.assignTo || "unassigned"}</TableCell>
+              <TableCell className="text-sm">{task.priority}</TableCell>
+              <TableCell>
+                {task.metadata?.conflictKey ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="gap-1"><Flag className="size-3" />{String(task.metadata.conflictScope || "locked")}</Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>{String(task.metadata.conflictKey)}</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : <span className="text-xs text-muted-foreground">—</span>}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center justify-center gap-0.5">
+                  <TooltipProvider><Tooltip><TooltipTrigger asChild><span><Button variant="ghost" size="icon-xs" disabled={working || task.status !== "PENDING"} onClick={() => onAction(task, "checkout")}><Play className="size-4 text-primary" /></Button></span></TooltipTrigger><TooltipContent>حجز</TooltipContent></Tooltip></TooltipProvider>
+                  <TooltipProvider><Tooltip><TooltipTrigger asChild><span><Button variant="ghost" size="icon-xs" disabled={working || task.status === "COMPLETED"} onClick={() => onAction(task, "complete")}><CheckCircle2 className="size-4 text-green-600" /></Button></span></TooltipTrigger><TooltipContent>إنهاء</TooltipContent></Tooltip></TooltipProvider>
+                  <TooltipProvider><Tooltip><TooltipTrigger asChild><span><Button variant="ghost" size="icon-xs" disabled={working || task.status === "FAILED"} onClick={() => onAction(task, "fail")}><XCircle className="size-4 text-destructive" /></Button></span></TooltipTrigger><TooltipContent>فشل</TooltipContent></Tooltip></TooltipProvider>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 export default function AgentManagerPage() {
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState("overview");
   const [context, setContext] = useState<ManagerContext | null>(null);
   const [tasks, setTasks] = useState<AgentTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-
   const [chatInput, setChatInput] = useState("جاهزية مدير الوكلاء والمهارات والأدوات الحالية");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-
   const [hireRole, setHireRole] = useState("SUPPORT");
   const [hireTemplate, setHireTemplate] = useState("");
   const [hireName, setHireName] = useState("");
-
   const [delegateGoal, setDelegateGoal] = useState("اختبار تفويض هدف قصير: راجع المنتجات التجريبية وارجع بتقرير جاهزية.");
   const [delegateAutoHire, setDelegateAutoHire] = useState(true);
   const [delegateResult, setDelegateResult] = useState<Record<string, unknown> | null>(null);
-
   const [toolAgentId, setToolAgentId] = useState("");
   const [toolName, setToolName] = useState("agent.read_state");
   const [toolInput, setToolInput] = useState(prettyJson(TOOL_INPUT_EXAMPLES["agent.read_state"]));
@@ -208,13 +213,11 @@ export default function AgentManagerPage() {
   const tools = context?.tools || [];
   const skills = context?.skills || [];
   const manager = context?.manager || null;
-
   const writeTools = useMemo(() => tools.filter((tool) => tool.sideEffects === "write"), [tools]);
   const readTools = useMemo(() => tools.filter((tool) => tool.sideEffects === "read"), [tools]);
 
   const loadAll = async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       const [managerData, inboxData] = await Promise.all([
         apiRequest<{ success: true; context: ManagerContext }>("agent-manager/me"),
@@ -225,603 +228,256 @@ export default function AgentManagerPage() {
       const managerAgentId = managerData.context.manager?.id || "";
       if (!toolAgentId) setToolAgentId(managerAgentId);
       if (!hireTemplate && (managerData.context.profiles || []).length) {
-        const supportTemplate = managerData.context.profiles.find((profile) => profile.role === "SUPPORT");
-        const defaultTemplate = supportTemplate || managerData.context.profiles[0];
-        setHireTemplate(defaultTemplate.slug);
-        setHireRole(defaultTemplate.role);
+        const supportTemplate = managerData.context.profiles.find((p) => p.role === "SUPPORT");
+        const dt = supportTemplate || managerData.context.profiles[0];
+        setHireTemplate(dt.slug); setHireRole(dt.role);
       }
-    } catch (err: any) {
-      setError(err.message || "تعذر تحميل مركز مدير الوكلاء.");
-    } finally {
-      setLoading(false);
-    }
+    } catch (err: any) { setError(err.message || "تعذر تحميل مركز مدير الوكلاء."); }
+    finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { loadAll(); }, []);
 
   const handleTemplateChange = (slug: string) => {
     setHireTemplate(slug);
-    const profile = profiles.find((item) => item.slug === slug);
-    if (profile) {
-      setHireRole(profile.role);
-      if (!hireName) setHireName(profile.name);
-    }
+    const profile = profiles.find((p) => p.slug === slug);
+    if (profile) { setHireRole(profile.role); if (!hireName) setHireName(profile.name); }
   };
 
   const handleToolChange = (nextTool: string) => {
     setToolName(nextTool);
     const example = TOOL_INPUT_EXAMPLES[nextTool] || {};
-    const populatedExample = nextTool === "agent.assign_task" && toolAgentId
-      ? { ...example, agentId: toolAgentId }
-      : example;
-    setToolInput(prettyJson(populatedExample));
+    const pe = nextTool === "agent.assign_task" && toolAgentId ? { ...example, agentId: toolAgentId } : example;
+    setToolInput(prettyJson(pe));
   };
 
   const withWork = async (callback: () => Promise<void>) => {
-    setWorking(true);
-    setError(null);
-    try {
-      await callback();
-    } catch (err: any) {
-      setError(err.message || "فشل تنفيذ العملية.");
-    } finally {
-      setWorking(false);
-    }
+    setWorking(true); setError(null);
+    try { await callback(); } catch (err: any) { setError(err.message || "فشل تنفيذ العملية."); }
+    finally { setWorking(false); }
   };
 
   const sendChat = () => withWork(async () => {
-    const message = chatInput.trim();
-    if (!message) return;
-    setChatMessages((prev) => [...prev, { role: "user", content: message }]);
-    setChatInput("");
-    const data = await apiRequest<{ success: true; reply: string; context: ManagerContext }>("agent-manager/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
-    });
-    setChatMessages((prev) => [...prev, { role: "manager", content: data.reply }]);
-    setContext(data.context);
+    const message = chatInput.trim(); if (!message) return;
+    setChatMessages((p) => [...p, { role: "user", content: message }]); setChatInput("");
+    const data = await apiRequest<{ success: true; reply: string; context: ManagerContext }>("agent-manager/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message }) });
+    setChatMessages((p) => [...p, { role: "manager", content: data.reply }]); setContext(data.context);
   });
 
   const hireAgent = () => withWork(async () => {
-    const data = await apiRequest<{ success: true; agent: AgentSummary }>("agent-manager/hire", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        role: hireRole,
-        name: hireName.trim() || undefined,
-        templateSlug: hireTemplate || undefined,
-      }),
-    });
-    setSuccess(`تم تعيين ${data.agent.name}`);
-    await loadAll();
+    const data = await apiRequest<{ success: true; agent: AgentSummary }>("agent-manager/hire", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: hireRole, name: hireName.trim() || undefined, templateSlug: hireTemplate || undefined }) });
+    toast.success(`تم تعيين ${data.agent.name}`); await loadAll();
   });
 
   const delegate = () => withWork(async () => {
-    const data = await apiRequest<{ success: true; tasks: AgentTask[]; taskCount: number }>("agent-manager/delegate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        goal: delegateGoal.trim(),
-        autoHire: delegateAutoHire,
-        traceId: `ui_delegate_${Date.now()}`,
-      }),
-    });
+    const data = await apiRequest<{ success: true; tasks: AgentTask[]; taskCount: number }>("agent-manager/delegate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ goal: delegateGoal.trim(), autoHire: delegateAutoHire, traceId: `ui_delegate_${Date.now()}` }) });
     setDelegateResult(data as unknown as Record<string, unknown>);
-    setSuccess(`تم تفويض الهدف إلى ${data.taskCount} مهمة`);
-    await loadAll();
+    toast.success(`تم تفويض الهدف إلى ${data.taskCount} مهمة`); await loadAll();
   });
 
   const runTool = () => withWork(async () => {
     const parsedInput = parseJson(toolInput);
-    const data = await apiRequest<ApiResult>("agent-manager/tools/execute", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        agentId: toolAgentId,
-        toolName,
-        input: parsedInput,
-        reasoning: "UI tool lab smoke test",
-        traceId: `ui_tool_${Date.now()}`,
-      }),
-    });
+    const data = await apiRequest<ApiResult>("agent-manager/tools/execute", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ agentId: toolAgentId, toolName, input: parsedInput, reasoning: "UI tool lab smoke test", traceId: `ui_tool_${Date.now()}` }) });
     setToolResult(data);
-    setSuccess(data.status === "PENDING_APPROVAL" ? "تم إنشاء مسودة موافقة آمنة" : "تم تشغيل الأداة");
-    await loadAll();
+    toast.success(data.status === "PENDING_APPROVAL" ? "تم إنشاء مسودة موافقة آمنة" : "تم تشغيل الأداة"); await loadAll();
   });
 
   const taskAction = (task: AgentTask, action: "checkout" | "complete" | "fail") => withWork(async () => {
     const agentId = task.agentId || manager?.id || toolAgentId;
-    const body =
-      action === "complete"
-        ? { agentId, result: { summary: "تم إغلاق مهمة اختبار من مركز المدير" } }
-        : action === "fail"
-          ? { agentId, error: "تم اختبار مسار الفشل من الواجهة" }
-          : { agentId };
-    await apiRequest<ApiResult>(`agent-manager/tasks/${task.id}/${action}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    setSuccess(action === "checkout" ? "تم حجز المهمة" : action === "complete" ? "تم إنهاء المهمة" : "تم تعليم المهمة كفاشلة");
-    await loadAll();
+    const body = action === "complete" ? { agentId, result: { summary: "تم إغلاق مهمة اختبار من مركز المدير" } } : action === "fail" ? { agentId, error: "تم اختبار مسار الفشل من الواجهة" } : { agentId };
+    await apiRequest<ApiResult>(`agent-manager/tasks/${task.id}/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    toast.success(action === "checkout" ? "تم حجز المهمة" : action === "complete" ? "تم إنهاء المهمة" : "تم تعليم المهمة كفاشلة"); await loadAll();
   });
 
   const showBusy = loading && !context;
 
   return (
-    <Box sx={{ direction: "rtl", p: { xs: 2, md: 3 }, bgcolor: "#f7f8fb", minHeight: "100%" }}>
-      <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" spacing={2} sx={{ mb: 2 }}>
-        <Box>
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-            <ManagerIcon color="primary" />
-            <Typography variant="h5" fontWeight={800}>
-              مركز مدير الوكلاء
-            </Typography>
-          </Stack>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            <Chip icon={<ShieldIcon />} label="SOUL / AGENTS / TOOLS" color="primary" variant="outlined" />
-            <Chip icon={<ConflictIcon />} label="قفل تعارضات الكتابة" color="warning" variant="outlined" />
-            <Chip label={manager?.templateSlug || "manager-ceo"} variant="outlined" />
-          </Stack>
-        </Box>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Tooltip title="تحديث بيانات المركز">
-            <IconButton color="primary" onClick={loadAll} disabled={loading || working}>
-              {loading ? <CircularProgress size={20} /> : <RefreshIcon />}
-            </IconButton>
-          </Tooltip>
-          <Chip label={working ? "جارٍ التنفيذ" : "جاهز"} color={working ? "warning" : "success"} />
-        </Stack>
-      </Stack>
+    <div dir="rtl" className="min-h-full bg-[#f7f8fb] p-4 md:p-6 dark:bg-background">
+      <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <Shield className="size-6 text-primary" />
+            <h1 className="text-xl font-black">مركز مدير الوكلاء</h1>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline" className="gap-1"><Terminal className="size-3" />SOUL / AGENTS / TOOLS</Badge>
+            <Badge variant="outline" className="gap-1"><Flag className="size-3" />قفل تعارضات الكتابة</Badge>
+            <Badge variant="outline">{manager?.templateSlug || "manager-ceo"}</Badge>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" onClick={loadAll} disabled={loading || working}>{loading ? <LoadingSpinner size="sm" /> : <RefreshCw className="size-4" />}</Button></TooltipTrigger><TooltipContent>تحديث بيانات المركز</TooltipContent></Tooltip></TooltipProvider>
+          <Badge variant={working ? "outline" : "default"}>{working ? "جارٍ التنفيذ" : "جاهز"}</Badge>
+        </div>
+      </div>
 
-      {error && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+      {error && <Alert variant="destructive" className="mb-4"><AlertCircle className="size-4" /><AlertDescription>{error}</AlertDescription></Alert>}
 
       {showBusy ? (
-        <Paper sx={{ p: 6, borderRadius: 2, textAlign: "center" }}>
-          <CircularProgress />
-        </Paper>
+        <div className="flex items-center justify-center rounded-xl bg-card p-16"><LoadingSpinner size="lg" /></div>
       ) : (
         <>
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={12} md={3}>
-              <Metric icon={<ManagerIcon />} label="المدير" value={manager?.name || "CEO Agent"} note={manager?.status || "ACTIVE"} />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Metric icon={<TeamIcon />} label="الوكلاء" value={String(agents.length)} note={`${profiles.length} قالب`} />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Metric icon={<InboxIcon />} label="المهام النشطة" value={String(context?.inbox?.active || 0)} note={`${context?.inbox?.pending || 0} معلقة`} />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Metric icon={<ToolIcon />} label="الأدوات" value={String(tools.length)} note={`${writeTools.length} كتابة`} />
-            </Grid>
-          </Grid>
+          <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-4">
+            <Metric icon={<Shield className="size-6" />} label="المدير" value={manager?.name || "CEO Agent"} note={manager?.status || "ACTIVE"} />
+            <Metric icon={<Users className="size-6" />} label="الوكلاء" value={String(agents.length)} note={`${profiles.length} قالب`} />
+            <Metric icon={<Inbox className="size-6" />} label="المهام النشطة" value={String(context?.inbox?.active || 0)} note={`${context?.inbox?.pending || 0} معلقة`} />
+            <Metric icon={<Wrench className="size-6" />} label="الأدوات" value={String(tools.length)} note={`${writeTools.length} كتابة`} />
+          </div>
 
-          <Paper sx={{ borderRadius: 2, overflow: "hidden", border: "1px solid", borderColor: "divider" }}>
-            <Tabs
-              value={tab}
-              onChange={(_, value) => setTab(value)}
-              variant="scrollable"
-              scrollButtons="auto"
-              sx={{ borderBottom: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}
-            >
-              <Tab icon={<ManagerIcon />} iconPosition="start" label="نظرة عامة" />
-              <Tab icon={<ChatIcon />} iconPosition="start" label="محادثة المدير" />
-              <Tab icon={<HireIcon />} iconPosition="start" label="تعيين وكيل" />
-              <Tab icon={<DelegateIcon />} iconPosition="start" label="تفويض هدف" />
-              <Tab icon={<InboxIcon />} iconPosition="start" label="Inbox" />
-              <Tab icon={<JsonIcon />} iconPosition="start" label="Tool Lab" />
-            </Tabs>
+          <Tabs value={tab} onValueChange={setTab} className="rounded-xl border bg-card">
+            <TabsList className="w-full overflow-x-auto rounded-none border-b bg-muted/20 p-0" variant="line">
+              <TabsTrigger value="overview" className="gap-1.5 px-4 py-2.5"><Shield className="size-4" />نظرة عامة</TabsTrigger>
+              <TabsTrigger value="chat" className="gap-1.5 px-4 py-2.5"><MessageSquare className="size-4" />محادثة المدير</TabsTrigger>
+              <TabsTrigger value="hire" className="gap-1.5 px-4 py-2.5"><UserPlus className="size-4" />تعيين وكيل</TabsTrigger>
+              <TabsTrigger value="delegate" className="gap-1.5 px-4 py-2.5"><UserCheck className="size-4" />تفويض هدف</TabsTrigger>
+              <TabsTrigger value="inbox" className="gap-1.5 px-4 py-2.5"><Inbox className="size-4" />Inbox</TabsTrigger>
+              <TabsTrigger value="tools" className="gap-1.5 px-4 py-2.5"><Terminal className="size-4" />Tool Lab</TabsTrigger>
+            </TabsList>
 
-            <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: "#fbfcff" }}>
-              {tab === 0 && (
-                <Grid container spacing={2}>
-                  <Grid item xs={12} lg={7}>
-                    <Panel title="فريق الوكلاء" icon={<TeamIcon />}>
-                      <Stack spacing={1.25}>
+            <div className="bg-[#fbfcff] p-4 md:p-5 dark:bg-card">
+              <TabsContent value="overview" className="mt-0">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+                  <div className="lg:col-span-7">
+                    <Panel title="فريق الوكلاء" icon={<Users className="size-5" />}>
+                      <div className="flex flex-col gap-3">
                         {agents.map((agent) => (
-                          <Paper key={agent.id} elevation={0} sx={{ p: 1.5, border: "1px solid", borderColor: "divider", borderRadius: 1.5 }}>
-                            <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={1}>
-                              <Box sx={{ minWidth: 0 }}>
-                                <Typography fontWeight={700}>{agent.name}</Typography>
-                                <Typography variant="caption" color="text.secondary" sx={{ fontFamily: "monospace" }}>
-                                  {agent.id}
-                                </Typography>
-                              </Box>
-                              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                                <Chip size="small" label={agent.role} color="primary" variant="outlined" />
-                                <Chip size="small" label={agent.status} color={statusColor(agent.status) as any} />
-                                <Chip size="small" label={agent.templateSlug || "custom"} variant="outlined" />
-                              </Stack>
-                            </Stack>
-                            <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
-                              {(agent.allowedSkills || []).slice(0, 5).map((skill) => (
-                                <Chip key={skill} size="small" label={skill} variant="outlined" />
-                              ))}
-                            </Stack>
-                          </Paper>
+                          <div key={agent.id} className="rounded-xl border bg-card p-4">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="min-w-0"><p className="text-sm font-bold">{agent.name}</p><span className="font-mono text-xs text-muted-foreground">{agent.id}</span></div>
+                              <div className="flex flex-wrap gap-2">
+                                <Badge variant="outline">{agent.role}</Badge>
+                                <Badge variant={statusBadgeVariant(agent.status)}>{agent.status}</Badge>
+                                <Badge variant="outline">{agent.templateSlug || "custom"}</Badge>
+                              </div>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {(agent.allowedSkills || []).slice(0, 5).map((skill) => (<Badge key={skill} variant="outline" className="text-[10px]">{skill}</Badge>))}
+                            </div>
+                          </div>
                         ))}
-                      </Stack>
+                      </div>
                     </Panel>
-                  </Grid>
-                  <Grid item xs={12} lg={5}>
-                    <Panel title="الملفات والمهارات" icon={<ShieldIcon />}>
-                      <Stack spacing={1.5}>
+                  </div>
+                  <div className="lg:col-span-5">
+                    <Panel title="الملفات والمهارات" icon={<Terminal className="size-5" />}>
+                      <div className="flex flex-col gap-4">
                         {profiles.map((profile) => (
-                          <Box key={profile.slug}>
-                            <Stack direction="row" justifyContent="space-between" spacing={1}>
-                              <Typography fontWeight={700}>{profile.name}</Typography>
-                              <Chip size="small" label={profile.role} variant="outlined" />
-                            </Stack>
-                            <Typography variant="caption" color="text.secondary">
-                              {profile.slug} · {(profile.allowedTools || []).length} tools · {(profile.allowedSkills || []).length} skills
-                            </Typography>
-                          </Box>
+                          <div key={profile.slug}>
+                            <div className="flex items-center justify-between gap-3"><p className="text-sm font-bold">{profile.name}</p><Badge variant="outline">{profile.role}</Badge></div>
+                            <span className="text-xs text-muted-foreground">{profile.slug} · {(profile.allowedTools || []).length} tools · {(profile.allowedSkills || []).length} skills</span>
+                          </div>
                         ))}
-                        <Divider />
-                        <Typography variant="subtitle2" fontWeight={800}>
-                          المهارات الجاهزة
-                        </Typography>
-                        <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-                          {skills.map((skill) => (
-                            <Chip key={skill.id} size="small" label={skill.displayName || skill.id} />
-                          ))}
-                        </Stack>
-                      </Stack>
+                        <Separator /><p className="text-sm font-black">المهارات الجاهزة</p>
+                        <div className="flex flex-wrap gap-2">
+                          {skills.map((skill) => (<Badge key={skill.id} variant="secondary" className="text-[10px]">{skill.displayName || skill.id}</Badge>))}
+                        </div>
+                      </div>
                     </Panel>
-                  </Grid>
-                </Grid>
-              )}
+                  </div>
+                </div>
+              </TabsContent>
 
-              {tab === 1 && (
-                <Panel title="محادثة المدير" icon={<ChatIcon />}>
-                  <Stack spacing={1.5}>
-                    <Box sx={{ minHeight: 260, maxHeight: 420, overflow: "auto", pr: 0.5 }}>
+              <TabsContent value="chat" className="mt-0">
+                <Panel title="محادثة المدير" icon={<MessageSquare className="size-5" />}>
+                  <div className="flex flex-col gap-4">
+                    <div className="max-h-[420px] min-h-[260px] overflow-auto">
                       {chatMessages.length === 0 ? (
-                        <Paper elevation={0} sx={{ p: 3, borderRadius: 1.5, border: "1px dashed", borderColor: "divider", textAlign: "center" }}>
-                          <Typography color="text.secondary">اسأل المدير عن الفريق، الأدوات، المهارات أو الـ inbox.</Typography>
-                        </Paper>
+                        <div className="rounded-xl border-2 border-dashed p-6 text-center text-muted-foreground">اسأل المدير عن الفريق، الأدوات، المهارات أو الـ inbox.</div>
                       ) : (
-                        <Stack spacing={1}>
-                          {chatMessages.map((message, index) => (
-                            <Box key={`${message.role}-${index}`} sx={{ display: "flex", justifyContent: message.role === "user" ? "flex-start" : "flex-end" }}>
-                              <Paper
-                                elevation={0}
-                                sx={{
-                                  p: 1.5,
-                                  maxWidth: "78%",
-                                  borderRadius: 1.5,
-                                  bgcolor: message.role === "user" ? "primary.main" : "background.paper",
-                                  color: message.role === "user" ? "primary.contrastText" : "text.primary",
-                                  border: message.role === "manager" ? "1px solid" : "none",
-                                  borderColor: "divider",
-                                }}
-                              >
-                                <Typography variant="body2" component="div"><LinkifiedText text={message.content} /></Typography>
-                              </Paper>
-                            </Box>
+                        <div className="flex flex-col gap-3">
+                          {chatMessages.map((message, i) => (
+                            <div key={i} className={cn("flex", message.role === "user" ? "justify-start" : "justify-end")}>
+                              <div className={cn("max-w-[78%] rounded-xl p-3 text-sm", message.role === "user" ? "bg-primary text-primary-foreground" : "border bg-card text-card-foreground")}>
+                                <LinkifiedText text={message.content} />
+                              </div>
+                            </div>
                           ))}
-                        </Stack>
+                        </div>
                       )}
-                    </Box>
-                    <Stack direction={{ xs: "column", md: "row" }} spacing={1}>
-                      <TextField
-                        fullWidth
-                        value={chatInput}
-                        onChange={(event) => setChatInput(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" && !event.shiftKey) {
-                            event.preventDefault();
-                            sendChat();
-                          }
-                        }}
-                        placeholder="اكتب للمدير..."
-                        size="small"
-                        multiline
-                        maxRows={3}
-                      />
-                      <Button variant="contained" startIcon={<SendIcon />} onClick={sendChat} disabled={working || !chatInput.trim()}>
-                        إرسال
-                      </Button>
-                    </Stack>
-                  </Stack>
+                    </div>
+                    <div className="flex gap-3">
+                      <Input value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } }} placeholder="اكتب للمدير..." className="flex-1" />
+                      <Button onClick={sendChat} disabled={working || !chatInput.trim()}><Send className="size-4" />إرسال</Button>
+                    </div>
+                  </div>
                 </Panel>
-              )}
+              </TabsContent>
 
-              {tab === 2 && (
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={5}>
-                    <Panel title="تعيين وكيل جديد" icon={<HireIcon />}>
-                      <Stack spacing={2}>
-                        <TextField select label="القالب" value={hireTemplate} onChange={(event) => handleTemplateChange(event.target.value)} fullWidth size="small">
-                          {profiles.map((profile) => (
-                            <MenuItem key={profile.slug} value={profile.slug}>
-                              {profile.name} ({profile.slug})
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                        <TextField select label="الدور" value={hireRole} onChange={(event) => setHireRole(event.target.value)} fullWidth size="small">
-                          {ROLE_OPTIONS.map((role) => (
-                            <MenuItem key={role} value={role}>
-                              {role}
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                        <TextField label="اسم اختياري" value={hireName} onChange={(event) => setHireName(event.target.value)} fullWidth size="small" />
-                        <Button variant="contained" startIcon={<HireIcon />} onClick={hireAgent} disabled={working || !hireRole}>
-                          تعيين الوكيل
-                        </Button>
-                      </Stack>
+              <TabsContent value="hire" className="mt-0">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+                  <div className="md:col-span-5">
+                    <Panel title="تعيين وكيل جديد" icon={<UserPlus className="size-5" />}>
+                      <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-1.5"><Label>القالب</Label><Select value={hireTemplate} onValueChange={handleTemplateChange}><SelectTrigger><SelectValue placeholder="اختر قالباً" /></SelectTrigger><SelectContent>{profiles.map((p) => (<SelectItem key={p.slug} value={p.slug}>{p.name} ({p.slug})</SelectItem>))}</SelectContent></Select></div>
+                        <div className="flex flex-col gap-1.5"><Label>الدور</Label><Select value={hireRole} onValueChange={setHireRole}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{ROLE_OPTIONS.map((r) => (<SelectItem key={r} value={r}>{r}</SelectItem>))}</SelectContent></Select></div>
+                        <div className="flex flex-col gap-1.5"><Label>اسم اختياري</Label><Input value={hireName} onChange={(e) => setHireName(e.target.value)} /></div>
+                        <Button onClick={hireAgent} disabled={working || !hireRole}><UserPlus className="size-4" />تعيين الوكيل</Button>
+                      </div>
                     </Panel>
-                  </Grid>
-                  <Grid item xs={12} md={7}>
-                    <Panel title="القالب المختار" icon={<ShieldIcon />}>
-                      {profiles
-                        .filter((profile) => profile.slug === hireTemplate)
-                        .map((profile) => (
-                          <Stack key={profile.slug} spacing={1.5}>
-                            <Typography variant="h6" fontWeight={800}>{profile.name}</Typography>
-                            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                              <Chip label={profile.role} color="primary" />
-                              <Chip label={`v${profile.version || "1"}`} variant="outlined" />
-                              <Chip label={`${profile.allowedTools.length} tools`} variant="outlined" />
-                              <Chip label={`${profile.allowedSkills.length} skills`} variant="outlined" />
-                            </Stack>
-                            <Divider />
-                            <Typography variant="subtitle2" fontWeight={800}>الأدوات</Typography>
-                            <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-                              {profile.allowedTools.map((tool) => <Chip key={tool} size="small" label={tool} />)}
-                            </Stack>
-                            <Typography variant="subtitle2" fontWeight={800}>المهارات</Typography>
-                            <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-                              {profile.allowedSkills.map((skill) => <Chip key={skill} size="small" label={skill} variant="outlined" />)}
-                            </Stack>
-                          </Stack>
-                        ))}
+                  </div>
+                  <div className="md:col-span-7">
+                    <Panel title="القالب المختار" icon={<Terminal className="size-5" />}>
+                      {profiles.filter((p) => p.slug === hireTemplate).map((profile) => (
+                        <div key={profile.slug} className="flex flex-col gap-3">
+                          <h3 className="text-base font-black">{profile.name}</h3>
+                          <div className="flex flex-wrap gap-2"><Badge>{profile.role}</Badge><Badge variant="outline">v{profile.version || "1"}</Badge><Badge variant="outline">{profile.allowedTools.length} tools</Badge><Badge variant="outline">{profile.allowedSkills.length} skills</Badge></div>
+                          <Separator />
+                          <p className="text-sm font-black">الأدوات</p>
+                          <div className="flex flex-wrap gap-2">{profile.allowedTools.map((t) => (<Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>))}</div>
+                          <p className="text-sm font-black">المهارات</p>
+                          <div className="flex flex-wrap gap-2">{profile.allowedSkills.map((s) => (<Badge key={s} variant="outline" className="text-[10px]">{s}</Badge>))}</div>
+                        </div>
+                      ))}
                     </Panel>
-                  </Grid>
-                </Grid>
-              )}
+                  </div>
+                </div>
+              </TabsContent>
 
-              {tab === 3 && (
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={5}>
-                    <Panel title="تفويض هدف" icon={<DelegateIcon />}>
-                      <Stack spacing={2}>
-                        <TextField
-                          label="الهدف"
-                          value={delegateGoal}
-                          onChange={(event) => setDelegateGoal(event.target.value)}
-                          fullWidth
-                          multiline
-                          minRows={5}
-                        />
-                        <FormControlLabel
-                          control={<Switch checked={delegateAutoHire} onChange={(event) => setDelegateAutoHire(event.target.checked)} />}
-                          label="تعيين الوكلاء الناقصين تلقائياً"
-                        />
-                        <Button variant="contained" startIcon={<DelegateIcon />} onClick={delegate} disabled={working || !delegateGoal.trim()}>
-                          تفويض
-                        </Button>
-                      </Stack>
+              <TabsContent value="delegate" className="mt-0">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+                  <div className="md:col-span-5">
+                    <Panel title="تفويض هدف" icon={<UserCheck className="size-5" />}>
+                      <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-1.5"><Label>الهدف</Label><Textarea value={delegateGoal} onChange={(e) => setDelegateGoal(e.target.value)} rows={6} /></div>
+                        <div className="flex items-center gap-3"><Switch checked={delegateAutoHire} onCheckedChange={(v) => setDelegateAutoHire(v)} id="auto-hire" /><Label htmlFor="auto-hire">تعيين الوكلاء الناقصين تلقائياً</Label></div>
+                        <Button onClick={delegate} disabled={working || !delegateGoal.trim()}><UserCheck className="size-4" />تفويض</Button>
+                      </div>
                     </Panel>
-                  </Grid>
-                  <Grid item xs={12} md={7}>
-                    <Panel title="نتيجة التفويض" icon={<InboxIcon />}>
-                      <CodeBlock value={delegateResult || { inbox: context?.inbox, latestTasks: tasks.slice(-5) }} />
-                    </Panel>
-                  </Grid>
-                </Grid>
-              )}
+                  </div>
+                  <div className="md:col-span-7"><Panel title="نتيجة التفويض" icon={<Inbox className="size-5" />}><CodeBlock value={delegateResult || { inbox: context?.inbox, latestTasks: tasks.slice(-5) }} /></Panel></div>
+                </div>
+              </TabsContent>
 
-              {tab === 4 && (
-                <Panel title="Agent Inbox" icon={<InboxIcon />}>
-                  <TaskTable tasks={tasks} onAction={taskAction} working={working} />
-                </Panel>
-              )}
+              <TabsContent value="inbox" className="mt-0">
+                <Panel title="Agent Inbox" icon={<Inbox className="size-5" />}><TaskTable tasks={tasks} onAction={taskAction} working={working} /></Panel>
+              </TabsContent>
 
-              {tab === 5 && (
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={5}>
-                    <Panel title="تشغيل أداة" icon={<ToolIcon />}>
-                      <Stack spacing={2}>
-                        <TextField select label="الوكيل" value={toolAgentId} onChange={(event) => setToolAgentId(event.target.value)} fullWidth size="small">
-                          {agents.map((agent) => (
-                            <MenuItem key={agent.id} value={agent.id}>
-                              {agent.name} · {agent.role}
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                        <TextField select label="الأداة" value={toolName} onChange={(event) => handleToolChange(event.target.value)} fullWidth size="small">
-                          {tools.map((tool) => (
-                            <MenuItem key={tool.name} value={tool.name}>
-                              {tool.name} · {tool.sideEffects}
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                        <TextField
-                          label="JSON Input"
-                          value={toolInput}
-                          onChange={(event) => setToolInput(event.target.value)}
-                          fullWidth
-                          multiline
-                          minRows={9}
-                          InputProps={{ sx: { fontFamily: "monospace", direction: "ltr" } }}
-                        />
-                        <Button variant="contained" startIcon={<CheckoutIcon />} onClick={runTool} disabled={working || !toolAgentId || !toolName}>
-                          تشغيل الأداة
-                        </Button>
-                      </Stack>
+              <TabsContent value="tools" className="mt-0">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+                  <div className="md:col-span-5">
+                    <Panel title="تشغيل أداة" icon={<Wrench className="size-5" />}>
+                      <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-1.5"><Label>الوكيل</Label><Select value={toolAgentId} onValueChange={setToolAgentId}><SelectTrigger><SelectValue placeholder="اختر وكيلاً" /></SelectTrigger><SelectContent>{agents.map((a) => (<SelectItem key={a.id} value={a.id}>{a.name} · {a.role}</SelectItem>))}</SelectContent></Select></div>
+                        <div className="flex flex-col gap-1.5"><Label>الأداة</Label><Select value={toolName} onValueChange={handleToolChange}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{tools.map((t) => (<SelectItem key={t.name} value={t.name}>{t.name} · {t.sideEffects}</SelectItem>))}</SelectContent></Select></div>
+                        <div className="flex flex-col gap-1.5"><Label>JSON Input</Label><textarea value={toolInput} onChange={(e) => setToolInput(e.target.value)} rows={9} className="w-full rounded-xl border bg-transparent p-3 font-mono text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50" dir="ltr" /></div>
+                        <Button onClick={runTool} disabled={working || !toolAgentId || !toolName}><Play className="size-4" />تشغيل الأداة</Button>
+                      </div>
                     </Panel>
-                  </Grid>
-                  <Grid item xs={12} md={7}>
-                    <Panel title="الأمان والنتيجة" icon={<ShieldIcon />}>
-                      <Stack spacing={2}>
-                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                          <Chip label={`${readTools.length} أدوات قراءة`} color="success" variant="outlined" />
-                          <Chip label={`${writeTools.length} أدوات كتابة بموافقة`} color="warning" variant="outlined" />
-                          <Chip label="رفض تلقائي عند عدم السماح" color="error" variant="outlined" />
-                        </Stack>
+                  </div>
+                  <div className="md:col-span-7">
+                    <Panel title="الأمان والنتيجة" icon={<Shield className="size-5" />}>
+                      <div className="flex flex-col gap-4">
+                        <div className="flex flex-wrap gap-2"><Badge variant="outline">{readTools.length} أدوات قراءة</Badge><Badge variant="outline">{writeTools.length} أدوات كتابة بموافقة</Badge><Badge variant="destructive" className="gap-1"><AlertCircle className="size-3" />رفض تلقائي عند عدم السماح</Badge></div>
                         <CodeBlock value={toolResult || { selectedTool: toolName, result: "لم يتم التشغيل بعد" }} />
-                      </Stack>
+                      </div>
                     </Panel>
-                  </Grid>
-                </Grid>
-              )}
-            </Box>
-          </Paper>
+                  </div>
+                </div>
+              </TabsContent>
+            </div>
+          </Tabs>
         </>
       )}
-
-      <Snackbar open={!!success} autoHideDuration={3500} onClose={() => setSuccess(null)} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
-        <Alert severity="success" onClose={() => setSuccess(null)}>
-          {success}
-        </Alert>
-      </Snackbar>
-    </Box>
-  );
-}
-
-function Metric({ icon, label, value, note }: { icon: React.ReactNode; label: string; value: string; note: string }) {
-  return (
-    <Paper sx={{ p: 2, borderRadius: 2, border: "1px solid", borderColor: "divider", height: "100%" }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Box>
-          <Typography variant="caption" color="text.secondary">{label}</Typography>
-          <Typography variant="h5" fontWeight={800}>{value}</Typography>
-          <Typography variant="caption" color="text.secondary">{note}</Typography>
-        </Box>
-        <Box sx={{ color: "primary.main", display: "flex" }}>{icon}</Box>
-      </Stack>
-    </Paper>
-  );
-}
-
-function Panel({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <Paper elevation={0} sx={{ p: { xs: 1.5, md: 2 }, borderRadius: 2, border: "1px solid", borderColor: "divider", height: "100%", bgcolor: "background.paper" }}>
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-        <Box sx={{ color: "primary.main", display: "flex" }}>{icon}</Box>
-        <Typography variant="h6" fontWeight={800}>{title}</Typography>
-      </Stack>
-      {children}
-    </Paper>
-  );
-}
-
-function CodeBlock({ value }: { value: unknown }) {
-  return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: 2,
-        borderRadius: 1.5,
-        bgcolor: "#101828",
-        color: "#e6edf7",
-        overflow: "auto",
-        maxHeight: 520,
-        direction: "ltr",
-      }}
-    >
-      <Typography component="pre" sx={{ m: 0, fontFamily: "Consolas, monospace", fontSize: 13, whiteSpace: "pre-wrap" }}>
-        {prettyJson(value)}
-      </Typography>
-    </Paper>
-  );
-}
-
-function TaskTable({
-  tasks,
-  onAction,
-  working,
-}: {
-  tasks: AgentTask[];
-  working: boolean;
-  onAction: (task: AgentTask, action: "checkout" | "complete" | "fail") => void;
-}) {
-  if (tasks.length === 0) {
-    return (
-      <Paper elevation={0} sx={{ p: 4, border: "1px dashed", borderColor: "divider", textAlign: "center" }}>
-        <Typography color="text.secondary">لا توجد مهام في inbox حالياً.</Typography>
-      </Paper>
-    );
-  }
-
-  return (
-    <TableContainer sx={{ borderRadius: 1.5, border: "1px solid", borderColor: "divider" }}>
-      <Table size="small">
-        <TableHead>
-          <TableRow sx={{ bgcolor: "#f3f5f9" }}>
-            <TableCell>المهمة</TableCell>
-            <TableCell>الحالة</TableCell>
-            <TableCell>الوكيل</TableCell>
-            <TableCell>الأولوية</TableCell>
-            <TableCell>قفل التعارض</TableCell>
-            <TableCell align="center">إجراءات</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {tasks.map((task) => (
-            <TableRow key={task.id} hover>
-              <TableCell sx={{ maxWidth: 360 }}>
-                <Typography fontWeight={700}>{task.title}</Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                  {task.description}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Chip size="small" label={task.status} color={statusColor(task.status) as any} />
-              </TableCell>
-              <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>
-                {task.agentId || task.assignTo || "unassigned"}
-              </TableCell>
-              <TableCell>{task.priority}</TableCell>
-              <TableCell>
-                {task.metadata?.conflictKey ? (
-                  <Tooltip title={String(task.metadata.conflictKey)}>
-                    <Chip size="small" icon={<ConflictIcon />} label={String(task.metadata.conflictScope || "locked")} color="warning" variant="outlined" />
-                  </Tooltip>
-                ) : (
-                  <Typography variant="caption" color="text.disabled">—</Typography>
-                )}
-              </TableCell>
-              <TableCell align="center">
-                <Stack direction="row" spacing={0.5} justifyContent="center">
-                  <Tooltip title="حجز">
-                    <span>
-                      <IconButton size="small" color="primary" disabled={working || task.status !== "PENDING"} onClick={() => onAction(task, "checkout")}>
-                        <CheckoutIcon fontSize="small" />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip title="إنهاء">
-                    <span>
-                      <IconButton size="small" color="success" disabled={working || task.status === "COMPLETED"} onClick={() => onAction(task, "complete")}>
-                        <CompleteIcon fontSize="small" />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip title="فشل">
-                    <span>
-                      <IconButton size="small" color="error" disabled={working || task.status === "FAILED"} onClick={() => onAction(task, "fail")}>
-                        <FailIcon fontSize="small" />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                </Stack>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+    </div>
   );
 }

@@ -153,3 +153,157 @@ class SandboxEvaluateResponse(BaseModel):
     scores: dict[str, int]
     overall: int
     comment: str = ""
+
+
+class TaskRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    company_id: str
+    agent_id: str
+    title: str
+    description: str | None = None
+    status: str
+    priority: str = "medium"
+    checked_out_by: str | None = None
+    checked_out_at: datetime | None = None
+    completed_at: datetime | None = None
+    created_by: str | None = None
+    parent_task_id: str | None = None
+    trace_id: str | None = None
+    task_metadata: dict[str, Any] | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class TaskCreate(BaseModel):
+    company_id: str = Field(..., min_length=1)
+    agent_id: str | None = None
+    title: str = Field(..., min_length=1)
+    description: str | None = None
+    priority: str = "medium"
+    created_by: str | None = None
+    parent_task_id: str | None = None
+    trace_id: str | None = None
+    metadata: dict[str, Any] | None = None
+
+
+class TaskActionRequest(BaseModel):
+    agent_id: str = Field(..., min_length=1)
+    result: dict[str, Any] | None = None
+    error: str | None = None
+
+
+class DepartmentRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    company_id: str
+    key: str
+    name: str
+    description: str | None = None
+    icon: str | None = None
+    sort_order: int = 100
+
+
+class AgentSummary(BaseModel):
+    id: str
+    name: str
+    role: str
+    status: str = "ACTIVE"
+    model: str | None = None
+    template_slug: str | None = None
+    version: str | None = None
+    allowed_tools: list[str] = []
+    allowed_skills: list[str] = []
+
+
+class ProfileSummary(BaseModel):
+    slug: str
+    name: str
+    role: str
+    version: str | None = None
+    allowed_tools: list[str] = []
+    allowed_skills: list[str] = []
+
+
+class InboxSummary(BaseModel):
+    total: int = 0
+    active: int = 0
+    pending: int = 0
+    checked_out: int = 0
+    completed: int = 0
+    failed: int = 0
+
+
+class ToolSummary(BaseModel):
+    name: str
+    description: str = ""
+    side_effects: str = "read"
+    requires_approval: bool = False
+    handler: str = ""
+
+
+class ManagerContextResponse(BaseModel):
+    manager: AgentSummary | None = None
+    agents: list[AgentSummary] = []
+    profiles: list[ProfileSummary] = []
+    tools: list[ToolSummary] = []
+    skills: list[dict[str, str]] = []
+    inbox: InboxSummary = Field(default_factory=InboxSummary)
+
+
+class TeamMapNode(BaseModel):
+    id: str
+    name: str
+    role: str
+    status: str = "ACTIVE"
+    model: str | None = None
+    template_slug: str | None = Field(default=None, alias="templateSlug")
+    department_name: str | None = Field(default=None, alias="departmentName")
+    department_icon: str | None = Field(default=None, alias="departmentIcon")
+    manager_type: str | None = Field(default=None, alias="managerType")
+    children: list[TeamMapNode] = []
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class TeamMapResponse(BaseModel):
+    success: bool = True
+    tree: list[TeamMapNode] = []
+    agents: list[AgentSummary] = []
+    count: int = 0
+
+
+class AgentFileTool(BaseModel):
+    name: str
+    description: str = ""
+    sideEffects: str = "read"
+
+
+class AgentFileSkill(BaseModel):
+    id: str
+    displayName: str | None = None
+    description: str | None = None
+    allowedTools: list[str] = []
+
+
+class AgentFilesResponse(BaseModel):
+    success: bool = True
+    agent: dict[str, Any]
+    profile: dict[str, Any] | None = None
+    files: dict[str, str]
+    tools: list[AgentFileTool] = []
+    skills: list[AgentFileSkill] = []
+
+
+class AgentFilesSaveRequest(BaseModel):
+    name: str | None = None
+    role: str | None = None
+    model: str | None = None
+    allowedTools: list[str] | None = None
+    allowedSkills: list[str] | None = None
+    soulInstructions: str | None = None
+    agentInstructions: str | None = None
+    toolsInstructions: str | None = None
+    personaInstructions: str | None = None
+    style: str | None = None
+    policies: dict[str, Any] | None = None

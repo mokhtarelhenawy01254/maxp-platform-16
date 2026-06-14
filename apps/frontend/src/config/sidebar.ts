@@ -550,7 +550,7 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/advanced-plan', icon: ClipboardDocumentCheckIcon, label: t('sidebar.developmentPlan') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('analytics-advanced')
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['analytics-advanced', 'analytics-basic'])
         },
 
         // 4️⃣ المنتجات
@@ -636,7 +636,7 @@ export const getSidebarConfig = (
                 { to: '/customers/cashback', icon: CurrencyDollarIcon, label: t('sidebar.cashbackSettings') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان CRM غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('crm-basic')
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['crm-basic', 'crm-lite'])
         },
 
         // 4️⃣.3 المشتريات
@@ -860,7 +860,7 @@ export const getSidebarConfig = (
                 { to: '/analytics', icon: PresentationChartLineIcon, label: t('sidebar.advancedAnalytics') },
             ],
             // 🔒 إخفاء إذا كان غير مفعل
-            hidden: !isAppActive('analytics-advanced')
+            hidden: !isAnyAppActive(['analytics-advanced', 'analytics-basic'])
         },
 
         // 🔟 الدعم الفني
@@ -946,8 +946,8 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 1️⃣4️⃣.5 العميل الذكي AI (للأدمن والمالك)
-        ...(user?.role === 'SUPER_ADMIN' || user?.role === 'COMPANY_ADMIN' || user?.role === 'OWNER' ? [{
+        // 1️⃣4️⃣.5 العميل الذكي AI (للأدمن والمالك - عند تفعيل ai-chat-basic)
+        ...((user?.role === 'SUPER_ADMIN' || user?.role === 'COMPANY_ADMIN' || user?.role === 'OWNER') && isAppActive('ai-chat-basic') ? [{
             id: 'ai-operator',
             title: t('sidebar.aiOperatorSection'),
             icon: SparklesIcon,
@@ -969,18 +969,7 @@ export const getSidebarConfig = (
             ]
         }] : []),
 
-        // 1️⃣5️⃣ إدارة متقدمة (للأدمن)
-        ...(user?.role === 'SUPER_ADMIN' || user?.role === 'COMPANY_ADMIN' || user?.role === 'OWNER' ? [{
-            id: 'admin',
-            title: t('sidebar.advancedAdminSection'),
-            icon: WrenchScrewdriverIcon,
-            items: [
-                { to: '/monitoring', icon: ChartBarIcon, label: t('sidebar.systemMonitoring') },
-                { to: '/alert-settings', icon: ExclamationTriangleIcon, label: t('sidebar.alertSettings') },
-            ]
-        }] : []),
-
-        // 1️⃣6️⃣ إدارة النظام (للسوبر أدمن)
+        // 1️⃣5️⃣ إدارة النظام (للسوبر أدمن)
         ...(user?.role === 'SUPER_ADMIN' ? [{
             id: 'system',
             title: t('sidebar.systemManagementSection'),

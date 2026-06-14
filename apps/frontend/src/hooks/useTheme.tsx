@@ -124,7 +124,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   // Routes that should be forced to dark mode
   const isDarkForced =
     currentPath.startsWith("/monitor-reports") ||
-    currentPath.startsWith("/alert-settings") ||
+
     currentPath.startsWith("/support"); // Force dark mode for all support pages including FAQ
 
   // Analytics routes should NEVER be forced to dark mode - they respect user's theme choice

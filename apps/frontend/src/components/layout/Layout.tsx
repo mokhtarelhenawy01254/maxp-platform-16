@@ -312,6 +312,10 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
         ),
       )
     : 0;
+  const [trialDismissed, setTrialDismissed] = useState(
+    localStorage.getItem("trial-banner-dismissed") === "true",
+  );
+  const showTrialBanner = isTrial && daysRemaining > 0 && !trialDismissed;
   const translateWithFallback = useCallback(
     (key: string, fallback: string, options?: Record<string, unknown>) => {
       const translated = t(key, options);
@@ -328,6 +332,10 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     "billing.upgradeNow",
     "ترقية الحساب الآن",
   );
+  const dismissTrial = useCallback(() => {
+    setTrialDismissed(true);
+    localStorage.setItem("trial-banner-dismissed", "true");
+  }, []);
 
   if (useSuperAdminShell) {
     return (
@@ -602,13 +610,16 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
           />
 
           <div className="flex-1 w-full flex flex-col overflow-hidden">
-            {isTrial ? (
+            {showTrialBanner ? (
               <div className="business-trial-banner">
                 <SparklesIcon className="h-4 w-4" />
                 <span>{trialBannerText}</span>
                 <Link to="/subscription" className="business-trial-banner-link">
                   {upgradeNowText}
                 </Link>
+                <button onClick={dismissTrial} className="mr-auto text-white/60 hover:text-white transition-colors" aria-label="إخفاء">
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
               </div>
             ) : null}
 
@@ -690,17 +701,20 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
            ) : null}
 
            <div className="flex-1 w-full flex flex-col overflow-hidden">
-             {isTrial ? (
-               <div className="business-trial-banner">
-                 <SparklesIcon className="h-4 w-4" />
-                 <span>{trialBannerText}</span>
-                 <Link to="/subscription" className="business-trial-banner-link">
-                   {upgradeNowText}
-                 </Link>
-               </div>
-             ) : null}
+            {showTrialBanner ? (
+                <div className="business-trial-banner">
+                  <SparklesIcon className="h-4 w-4" />
+                  <span>{trialBannerText}</span>
+                  <Link to="/subscription" className="business-trial-banner-link">
+                    {upgradeNowText}
+                  </Link>
+                  <button onClick={dismissTrial} className="mr-auto text-white/60 hover:text-white transition-colors" aria-label="إخفاء">
+                    <XMarkIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : null}
 
-             {headerBlock}
+              {headerBlock}
 
               <main
                 className={`business-shell-main flex-1 overflow-y-auto ${

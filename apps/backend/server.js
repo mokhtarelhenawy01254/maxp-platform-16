@@ -318,8 +318,6 @@ const merchantPortalRoutes = require("./routes/merchantPortalRoutes");
 
 // Partner Program Routes (Title-Based Multi-Level)
 const platformPartnerRoutes = require("./routes/platformPartner.routes");
-const monitoringRoutes = require("./routes/monitoringRoutes");
-
 // Billing System Routes (V1.0)
 const billingRoutes = require("./routes/billingRoutes");
 
@@ -682,7 +680,6 @@ app.use("/api/v1/affiliates", affiliateRoutes);
 app.use("/api/v1/affiliate-settings", affiliateSettingsRoutes);
 app.use("/api/v1/commissions", commissionRoutes);
 app.use("/api/v1/campaign-calculator", campaignCalculatorRoutes);
-app.use("/api/v1/monitor", monitoringRoutes);
 app.use("/api/v1/monitor-admin", monitorRoutes);
 app.use("/api/v1", pageEngagementRoutes);
 app.use("/api/v1/projects", projectRoutes);
@@ -770,14 +767,6 @@ app.use("/api/v1/telegram-settings", telegramSettingsRoutes);
 // Facebook Status
 const facebookStatusRoutes = require("./routes/facebookStatusRoutes");
 app.use("/api/v1/facebook/status", facebookStatusRoutes);
-
-// Monitoring
-try {
-  const monitoringRoutes = require("./routes/monitoringRoutes");
-  app.use("/api/v1/monitor", monitoringRoutes);
-} catch (error) {
-  console.error("❌ [ERROR] Failed to load monitoringRoutes:", error.message);
-}
 
 // Frontend error tracking
 app.use("/api/v1/errors", errorRoutes);

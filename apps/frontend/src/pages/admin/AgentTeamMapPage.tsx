@@ -1,26 +1,14 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
-import {
-  Alert,
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  IconButton,
-  Paper,
-  Stack,
-  Tooltip,
-  Typography,
-  alpha,
-} from "@mui/material";
-import {
-  AccountTree as TreeIcon,
-  ManageAccounts as AgentIcon,
-  OpenInNew as OpenIcon,
-  Refresh as RefreshIcon,
-} from "@mui/icons-material";
+import { GitBranch, Users, ExternalLink, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
+import { useTheme } from "@/hooks/useTheme";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface AgentNode {
   id: string;
@@ -79,122 +67,152 @@ export default function AgentTeamMapPage() {
   }, [loadTree]);
 
   return (
-    <Box sx={{ direction: "rtl", minHeight: "calc(100vh - 64px)", bgcolor: "#f6f7f9", p: { xs: 2, md: 3 } }}>
-      <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" spacing={2} sx={{ mb: 3 }}>
-        <Box>
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-            <TreeIcon color="primary" />
-            <Typography variant="h4" fontWeight={900}>خريطة الوكلاء</Typography>
-          </Stack>
-          <Typography color="text.secondary">
+    <div
+      className="min-h-[calc(100vh-64px)] bg-[#f6f7f9] p-4 md:p-6"
+      dir="rtl"
+    >
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <div className="mb-1 flex items-center gap-2">
+            <GitBranch className="size-7 text-primary" />
+            <h1 className="text-3xl font-black">خريطة الوكلاء</h1>
+          </div>
+          <p className="text-muted-foreground">
             تقسيم شجري يوضح المدير، الفريق المباشر، وأي وكلاء تابعين لوكلاء آخرين.
-          </Typography>
-        </Box>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Button component={RouterLink} to="/admin/ai-agents" variant="outlined" startIcon={<OpenIcon />}>
-            إدارة الملفات
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <RouterLink to="/admin/ai-agents">
+              <ExternalLink className="mr-1 size-4" />
+              إدارة الملفات
+            </RouterLink>
           </Button>
-          <Tooltip title="تحديث الخريطة">
-            <IconButton color="primary" onClick={loadTree}>
-              {loading ? <CircularProgress size={20} /> : <RefreshIcon />}
-            </IconButton>
-          </Tooltip>
-        </Stack>
-      </Stack>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={loadTree}
+          >
+            {loading ? (
+              <LoadingSpinner size="sm" />
+            ) : (
+              <RefreshCw className="size-5" />
+            )}
+          </Button>
+        </div>
+      </div>
 
-      {error && <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>{error}</Alert>}
+      {error && (
+        <div
+          className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          role="alert"
+        >
+          <div className="flex items-center justify-between">
+            <span>{error}</span>
+            <Button variant="ghost" size="icon-xs" onClick={() => setError(null)}>
+              <ExternalLink className="size-3" />
+            </Button>
+          </div>
+        </div>
+      )}
 
-      <Paper elevation={0} sx={{ borderRadius: 2, border: "1px solid", borderColor: "divider", overflow: "auto", minHeight: 560, p: { xs: 2, md: 4 } }}>
+      <div
+        className="min-h-[560px] overflow-auto rounded-lg border bg-card p-4 md:p-8"
+      >
         {loading ? (
-          <Box sx={{ minHeight: 420, display: "grid", placeItems: "center" }}>
-            <CircularProgress />
-          </Box>
+          <div className="grid min-h-[420px] place-items-center">
+            <LoadingSpinner size="lg" />
+          </div>
         ) : tree.length === 0 ? (
-          <Box sx={{ minHeight: 420, display: "grid", placeItems: "center", textAlign: "center" }}>
-            <Typography color="text.secondary">لا يوجد وكلاء بعد.</Typography>
-          </Box>
+          <div className="grid min-h-[420px] place-items-center text-center">
+            <p className="text-muted-foreground">لا يوجد وكلاء بعد.</p>
+          </div>
         ) : (
-          <Stack direction="row" justifyContent="center" alignItems="flex-start" sx={{ minWidth: 980 }}>
+          <div className="flex min-w-[980px] items-start justify-center gap-0">
             {tree.map((node) => (
               <TreeBranch key={node.id} node={node} depth={0} />
             ))}
-          </Stack>
+          </div>
         )}
-      </Paper>
-    </Box>
+      </div>
+    </div>
   );
 }
 
 function TreeBranch({ node, depth }: { node: AgentNode; depth: number }) {
   const children = node.children || [];
   return (
-    <Box sx={{ textAlign: "center", px: 1.5, position: "relative" }}>
+    <div className="relative px-3 text-center">
       <AgentCard node={node} depth={depth} />
       {children.length > 0 && (
         <>
-          <Box sx={{ width: 2, height: 28, bgcolor: "divider", mx: "auto" }} />
-          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "flex-start", position: "relative", pt: 3 }}>
-            <Box
-              sx={{
-                position: "absolute",
-                top: 0,
+          <div className="mx-auto h-7 w-0.5 bg-border" />
+          <div className="relative flex items-start justify-center pt-3">
+            <div
+              className="absolute top-0 h-0.5 bg-border"
+              style={{
                 left: children.length === 1 ? "50%" : 24,
                 right: children.length === 1 ? "50%" : 24,
-                height: 2,
-                bgcolor: "divider",
               }}
             />
             {children.map((child) => (
-              <Box key={child.id} sx={{ position: "relative" }}>
-                <Box sx={{ position: "absolute", top: -24, left: "50%", width: 2, height: 24, bgcolor: "divider" }} />
+              <div key={child.id} className="relative">
+                <div className="absolute left-1/2 top-[-24px] h-6 w-0.5 bg-border" />
                 <TreeBranch node={child} depth={depth + 1} />
-              </Box>
+              </div>
             ))}
-          </Box>
+          </div>
         </>
       )}
-    </Box>
+    </div>
   );
 }
 
 function AgentCard({ node, depth }: { node: AgentNode; depth: number }) {
   const tone = roleTone(node.role);
+  const { derivedTheme } = useTheme();
+  const isDark = derivedTheme === "dark";
+
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        width: 240,
-        minHeight: 126,
-        p: 1.5,
-        borderRadius: 2,
-        border: "1.5px solid",
+    <div
+      className="min-h-[126px] w-[240px] rounded-lg border-[1.5px] p-4"
+      style={{
         borderColor: tone.border,
-        bgcolor: alpha(tone.bg, depth === 0 ? 1 : 0.8),
+        backgroundColor: isDark ? `${tone.bg}22` : tone.bg,
         boxShadow: depth === 0 ? "0 18px 48px rgba(37, 99, 235, 0.12)" : "none",
       }}
     >
-      <Stack spacing={1}>
-        <Stack direction="row" spacing={1} justifyContent="center" alignItems="center">
-          <AgentIcon sx={{ color: tone.border }} />
-          <Typography fontWeight={900} noWrap>{node.name}</Typography>
-        </Stack>
-        <Stack direction="row" spacing={0.75} justifyContent="center" flexWrap="wrap" useFlexGap>
-          <Chip size="small" label={node.role} color={node.role === "CEO" ? "primary" : "default"} />
-          <Chip size="small" label={node.status} variant="outlined" />
-          <Chip size="small" label={node.managerType || (node.role === "CEO" ? "CEO" : "AGENT")} variant="outlined" />
-        </Stack>
+      <div className="space-y-2">
+        <div className="flex items-center justify-center gap-2">
+          <Users className="size-4" style={{ color: tone.border }} />
+          <span className="truncate font-black">{node.name}</span>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-1.5">
+          <Badge variant={node.role === "CEO" ? "default" : "outline"} className="text-xs">
+            {node.role}
+          </Badge>
+          <Badge variant="outline" className="text-xs">
+            {node.status}
+          </Badge>
+          <Badge variant="outline" className="text-xs">
+            {node.managerType || (node.role === "CEO" ? "CEO" : "AGENT")}
+          </Badge>
+        </div>
         {node.departmentName && (
-          <Typography variant="caption" color="text.secondary" noWrap>
+          <p className="truncate text-xs text-muted-foreground">
             {node.departmentIcon || ""} {node.departmentName}
-          </Typography>
+          </p>
         )}
-        <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontFamily: "Consolas, monospace" }} noWrap>
+        <p className="truncate font-mono text-xs text-muted-foreground">
           {node.templateSlug || "custom"} · {node.model || "default"}
-        </Typography>
-        <Button component={RouterLink} to={`/admin/ai-agents?agent=${node.id}`} size="small" variant="text" startIcon={<OpenIcon />}>
-          فتح الوكيل
+        </p>
+        <Button variant="link" size="sm" asChild>
+          <RouterLink to={`/admin/ai-agents?agent=${node.id}`}>
+            <ExternalLink className="mr-1 size-3.5" />
+            فتح الوكيل
+          </RouterLink>
         </Button>
-      </Stack>
-    </Paper>
+      </div>
+    </div>
   );
 }

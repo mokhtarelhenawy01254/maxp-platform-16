@@ -1,3 +1,5 @@
+const path = require('path');
+const fs = require('fs');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const sandboxBridge = require('../services/sandboxBridge');
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
@@ -940,9 +942,6 @@ async function listAgents(req, res) {
     return res.status(500).json({ success: false, error: error.message });
   }
 }
-
-const path = require('path');
-const fs = require('fs');
 
 async function getAgentProfile(req, res) {
   try {

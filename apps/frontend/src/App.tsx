@@ -661,10 +661,7 @@ const NotificationSettings = React.lazy(
   () => import("./pages/NotificationSettings"),
 );
 const Notifications = React.lazy(() => import("./pages/Notifications"));
-const MonitoringDashboard = React.lazy(
-  () => import("./pages/MonitoringDashboard"),
-);
-const AlertSettings = React.lazy(() => import("./pages/AlertSettings"));
+
 const ReportsPage = React.lazy(() => import("./pages/ReportsPage"));
 
 const CompaniesManagement = React.lazy(
@@ -896,9 +893,7 @@ const ProjectMap = React.lazy(() => import("./pages/super-admin/ProjectMap"));
 const TimeTrackingDashboard = React.lazy(
   () => import("./pages/super-admin/TimeTrackingDashboard"),
 );
-const SystemMonitoring = React.lazy(
-  () => import("./pages/super-admin/SystemMonitoring"),
-);
+
 const EscalationHistory = React.lazy(
   () => import("./pages/super-admin/EscalationHistory"),
 );
@@ -1958,14 +1953,7 @@ const AppContent = () => {
                 </Layout>
               }
             />
-            <Route
-              path="/super-admin/system-monitoring"
-              element={
-                <Layout>
-                  <SystemMonitoring />
-                </Layout>
-              }
-            />
+
             <Route
               path="/super-admin/dev/escalations"
               element={
@@ -2128,14 +2116,7 @@ const AppContent = () => {
                 </Layout>
               }
             />
-            <Route
-              path="/super-admin/monitoring"
-              element={
-                <Layout>
-                  <SystemMonitoring />
-                </Layout>
-              }
-            />
+
             <Route
               path="/super-admin/partner-management"
               element={
@@ -2999,22 +2980,8 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
-                <Route
-                  path="/monitoring"
-                  element={
-                    <Layout>
-                      <MonitoringDashboard />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/alert-settings"
-                  element={
-                    <Layout>
-                      <AlertSettings />
-                    </Layout>
-                  }
-                />
+
+
                 <Route
                   path="/monitor-reports"
                   element={
@@ -3023,7 +2990,7 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
-                {/* <Route path="/quality" element={<Layout><QualityDashboard /></Layout>} /> */}
+                
                 <Route
                   path="/companies"
                   element={
@@ -4673,22 +4640,8 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
-                <Route
-                  path="/monitoring"
-                  element={
-                    <Layout>
-                      <MonitoringDashboard />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/alert-settings"
-                  element={
-                    <Layout>
-                      <AlertSettings />
-                    </Layout>
-                  }
-                />
+
+
                 <Route
                   path="/monitor-reports"
                   element={
@@ -4697,7 +4650,7 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
-                {/* <Route path="/quality" element={<Layout><QualityDashboard /></Layout>} /> */}
+                
                 <Route
                   path="/companies"
                   element={
@@ -6322,14 +6275,7 @@ const AppContent = () => {
                   path="/notification-settings"
                   element={<Navigate to="/auth/login" replace />}
                 />
-                <Route
-                  path="/monitoring"
-                  element={<Navigate to="/auth/login" replace />}
-                />
-                <Route
-                  path="/alert-settings"
-                  element={<Navigate to="/auth/login" replace />}
-                />
+
                 <Route
                   path="/comments/*"
                   element={<Navigate to="/auth/login" replace />}

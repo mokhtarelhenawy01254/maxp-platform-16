@@ -190,8 +190,8 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
             />
             <button
               type="button"
-              popoverTarget="shortcuts-popover"
-              popoverTargetAction="toggle"
+              popovertarget="shortcuts-popover"
+              popovertargetaction="toggle"
               className={`inline-flex absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-150`}
               title={String(t('appDashboard.shortcuts'))}
             >

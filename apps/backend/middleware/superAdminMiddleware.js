@@ -147,7 +147,8 @@ const requireSuperAdmin = async (req, res, next) => {
       const originalRole = req.user.role;
       const normalizedRole = normalizeRole(originalRole);
 
-      let rolePermissions = settings.permissions[originalRole] || settings.permissions[normalizedRole];
+      const permissions = settings.permissions || {};
+      let rolePermissions = permissions[originalRole] || permissions[normalizedRole];
 
       console.log(`🔍 [PERMISSION-LOOKUP] Looking for role: ${originalRole}, normalized: ${normalizedRole}`);
       console.log(`🔍 [PERMISSION-LOOKUP] Found permissions:`, rolePermissions ? 'YES' : 'NO');
