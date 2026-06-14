@@ -34,38 +34,6 @@ const STEPS: StepInfo[] = [
     subtitle: "بيانات الشركة والتخصص",
     icon: "02",
   },
-  {
-    id: 3,
-    stepId: "identity",
-    title: "الهوية",
-    subtitle: "طابع الواجهة الأساسي",
-    icon: "03",
-  },
-  {
-    id: 4,
-    stepId: "integrations",
-    title: "الربط",
-    subtitle: "القنوات والتنبيهات",
-    icon: "04",
-  },
-];
-
-const TONE_OPTIONS = [
-  {
-    id: "executive",
-    name: "Executive Blue",
-    description: "أفضل للمبيعات وعمليات الإدارة اليومية.",
-  },
-  {
-    id: "teal",
-    name: "Trust Teal",
-    description: "أهدأ بصريًا ومناسب لخدمة العملاء.",
-  },
-  {
-    id: "graphite",
-    name: "Graphite Slate",
-    description: "مظهر مؤسسي أكثر حيادية للفرق الكبيرة.",
-  },
 ];
 
 type WorkspaceFormState = {
@@ -649,10 +617,6 @@ const OnboardingWizard: React.FC = () => {
     try {
       setIsLoading(true);
 
-      if (currentStep === 2) {
-        await ensureWorkspaceSlug();
-      }
-
       const data = await companyOnboardingService.saveProgress({
         currentStep: nextStep,
         markStepCompleted: currentStepInfo.stepId,
@@ -672,9 +636,13 @@ const OnboardingWizard: React.FC = () => {
     try {
       setIsLoading(true);
 
+      if (currentStep === 2) {
+        await ensureWorkspaceSlug();
+      }
+
       const data = await companyOnboardingService.complete({
         currentStep: totalSteps,
-        markStepCompleted: "integrations",
+        markStepCompleted: "operations",
         profile: buildProfilePayload(),
         channelsDeferred: !workspaceData.whatsappNumber.trim(),
       });
@@ -865,86 +833,9 @@ const OnboardingWizard: React.FC = () => {
     </div>
   );
 
-  const renderIdentity = () => (
-    <div className="business-onboarding-section">
-      <div className="business-onboarding-heading">
-        <h3>اختر نبرة الثيم</h3>
-        <p>
-          كل اختيار يحافظ على نفس Business OS foundation مع اختلاف النبرة
-          البصرية.
-        </p>
-      </div>
-
-      <div className="business-tone-grid">
-        {TONE_OPTIONS.map((tone) => (
-          <button
-            key={tone.id}
-            type="button"
-            className="business-tone-card"
-            data-tone={tone.id}
-            data-selected={workspaceData.tone === tone.id}
-            onClick={() =>
-              setWorkspaceData((prev) => ({
-                ...prev,
-                tone: tone.id,
-              }))
-            }
-          >
-            <div className="business-tone-swatch" />
-            <div className="business-tone-copy">
-              <strong>{tone.name}</strong>
-              <span>{tone.description}</span>
-            </div>
-            {workspaceData.tone === tone.id ? (
-              <CheckIcon className="h-4 w-4" />
-            ) : null}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderIntegrations = () => (
-    <div className="business-onboarding-section">
-      <div className="business-onboarding-heading">
-        <h3>فعّل التنبيهات والقنوات</h3>
-        <p>اربط رقم واتساب الأساسي الآن أو أكمل لاحقًا من الإعدادات.</p>
-      </div>
-
-      <div className="business-auth-field">
-        <label className="business-auth-label" htmlFor="whatsappNumber">
-          رقم واتساب الأساسي
-        </label>
-        <input
-          id="whatsappNumber"
-          name="whatsappNumber"
-          type="tel"
-          value={workspaceData.whatsappNumber}
-          onChange={handleChange}
-          className="business-auth-input business-auth-input--ltr"
-          placeholder="+20 10 0000 0000"
-        />
-        <p className="business-auth-note">
-          يمكنك تخطي هذه الخطوة الآن واستكمال الربط لاحقًا بدون فقدان أي
-          إعدادات.
-        </p>
-      </div>
-
-      <div className="business-onboarding-tip">
-        <strong>نصيحة تنفيذية</strong>
-        <span>
-          بعد إنهاء المعالج، ستكون البيئة جاهزة لإضافة المستخدمين وتفعيل وحدات
-          CRM وHR وSocial Automation.
-        </span>
-      </div>
-    </div>
-  );
-
   const stepRenderers = [
     renderWelcome,
     renderOperations,
-    renderIdentity,
-    renderIntegrations,
   ];
 
   const renderStage = (content: React.ReactNode) => (

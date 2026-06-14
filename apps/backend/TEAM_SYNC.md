@@ -1,3 +1,12 @@
+## [2026-06-14] Onboarding Wizard Simplified to 2 Steps [DONE]
+- **Objective**: Remove "Identity" and "Integration" onboarding steps to streamline the merchant onboarding experience.
+- **Accomplishments**:
+  - **STEPS Array**: Reduced from 4 steps to 2 — only "General Info" and "Branding" remain.
+  - **Removed Components**: Deleted the `Identity` and `Integration` step renders and their supporting state/handlers from `OnboardingWizard.tsx`.
+  - **Progress Bar**: Updated to reflect the new 2-step flow automatically.
+- **Files**:
+  - `apps/frontend/src/pages/onboarding/OnboardingWizard.tsx` [MODIFY]
+
 ## [2026-06-14] Services Startup & Prisma Generator Configuration Fix [DONE]
 - **Objective**: Launch all platform services (backend, frontend, AI service, MCP servers) and fix local Prisma schema generation path errors.
 - **Accomplishments**:
