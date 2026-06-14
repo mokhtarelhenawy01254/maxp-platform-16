@@ -1,24 +1,27 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
+import { Menu, Lightbulb, LogOut } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  AppBar,
-  Toolbar,
-  Box,
-  IconButton,
-  Typography,
-  Badge,
-  Avatar,
-  alpha,
-} from "@mui/material";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
-  Menu as MenuIcon,
-  Lightbulb as LightbulbIcon,
-} from "@mui/icons-material";
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
+import { useAuth } from "../../hooks/useAuthSimple";
 import ThemeToggle from "../ui/theme-toggle";
 import GlobalTimer from "../common/GlobalTimer";
+import { cn } from "@/lib/utils";
 
-type SuperAdminHeaderUser = {
-  firstName?: string | null;
-} | null;
+type SuperAdminHeaderUser = { firstName?: string | null } | null;
 
 interface SuperAdminHeaderProps {
   currentDrawerWidth: number;
@@ -29,7 +32,6 @@ interface SuperAdminHeaderProps {
   activeUsersCount: number;
   onShowActiveUsers: () => void;
   user: SuperAdminHeaderUser;
-  handleProfileMenuOpen: (event: React.MouseEvent<HTMLElement>) => void;
   title: string;
 }
 
@@ -42,141 +44,52 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
   activeUsersCount,
   onShowActiveUsers,
   user,
-  handleProfileMenuOpen,
   title,
 }) => {
-  return (
-    <AppBar
-      position="fixed"
-      sx={{
-        width: { sm: `calc(100% - ${currentDrawerWidth}px)` },
-        mr: { sm: `${currentDrawerWidth}px` },
-        bgcolor: isDark ? alpha("#0f172a", 0.8) : alpha("#fff", 0.8),
-        backdropFilter: "blur(12px)",
-        color: isDark ? "#f1f5f9" : "#1e293b",
-        boxShadow: "none",
-        direction: "rtl",
-        borderBottom: "1px solid",
-        borderColor: isDark ? alpha("#eceef2", 0.1) : "#e2e8f0",
-        transition: (theme) =>
-          theme.transitions.create(["width", "margin"], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
-      }}
-    >
-      <Toolbar sx={{ justifyContent: "space-between", px: { xs: 2, sm: 4 } }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <IconButton
-            onClick={onMobileMenuOpen}
-            aria-label="فتح القائمة الجانبية"
-            sx={{
-              display: { xs: "flex", sm: "none" },
-              color: isDark ? "#94a3b8" : "#64748b",
-            }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <IconButton
-            onClick={onCollapseToggle}
-            aria-label={
-              isCollapsed ? "توسيع القائمة الجانبية" : "طي القائمة الجانبية"
-            }
-            sx={{
-              display: { xs: "none", sm: "flex" },
-              color: isDark ? "#94a3b8" : "#64748b",
-            }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 700,
-              fontSize: "1.1rem",
-              letterSpacing: "-0.01em",
-            }}
-          >
-            {title}
-          </Typography>
-          <Box sx={{ ml: 2, display: { xs: "none", md: "block" } }}>
-            <GlobalTimer />
-          </Box>
-        </Box>
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <IconButton
-            onClick={onShowActiveUsers}
-            aria-label="عرض المستخدمين النشطين"
-            sx={{
-              color:
-                activeUsersCount > 0
-                  ? "#10b981"
-                  : isDark
-                    ? "#94a3b8"
-                    : "#64748b",
-              position: "relative",
-              "&:hover": {
-                bgcolor: isDark
-                  ? alpha("#10b981", 0.1)
-                  : alpha("#10b981", 0.05),
-              },
-            }}
-            title="المستخدمون النشطون"
-          >
-            <Badge
-              badgeContent={activeUsersCount}
-              color="success"
-              sx={{
-                "& .MuiBadge-badge": {
-                  fontSize: "0.65rem",
-                  height: "18px",
-                  minWidth: "18px",
-                  fontWeight: 700,
-                },
-              }}
-            >
-              <LightbulbIcon
-                sx={{
-                  fontSize: 24,
-                  animation:
-                    activeUsersCount > 0
-                      ? "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite"
-                      : "none",
-                  "@keyframes pulse": {
-                    "0%, 100%": { opacity: 1 },
-                    "50%": { opacity: 0.5 },
-                  },
-                }}
-              />
-            </Badge>
-          </IconButton>
+  return (
+    <header
+      className={cn(
+        "fixed top-0 z-40 flex h-16 items-center border-b backdrop-blur-lg transition-all duration-300",
+        isDark ? "bg-[#0f172a]/80 border-white/10" : "bg-white/80 border-gray-200"
+      )}
+      style={{ right: 0, width: `calc(100% - ${currentDrawerWidth}px)` }}
+    >
+      <div className="flex w-full items-center justify-between px-4 sm:px-6">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={onMobileMenuOpen} className="sm:hidden"><Menu className="size-5 text-muted-foreground" /></Button>
+          <Button variant="ghost" size="icon" onClick={onCollapseToggle} className="hidden sm:flex"><Menu className="size-5 text-muted-foreground" /></Button>
+          <h1 className="text-base font-bold tracking-tight">{title}</h1>
+          <div className="hidden md:block"><GlobalTimer /></div>
+        </div>
+        <div className="flex items-center gap-1">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={onShowActiveUsers} className={cn("relative", activeUsersCount > 0 ? "text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10" : "text-muted-foreground")}>
+                  <Lightbulb className={cn("size-6", activeUsersCount > 0 && "animate-pulse")} />
+                  {activeUsersCount > 0 && <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-emerald-500 text-[0.6rem] font-bold text-white">{activeUsersCount}</span>}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>المستخدمون النشطون</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <ThemeToggle />
-          <IconButton
-            size="large"
-            onClick={handleProfileMenuOpen}
-            aria-label="فتح قائمة الحساب"
-            sx={{
-              p: 0.5,
-              border: "2px solid transparent",
-              "&:hover": { borderColor: "#3b82f6" },
-            }}
-          >
-            <Avatar
-              sx={{
-                width: 34,
-                height: 34,
-                bgcolor: "#3b82f6",
-                fontWeight: 700,
-                fontSize: "0.9rem",
-              }}
-            >
-              {user?.firstName?.charAt(0)}
-            </Avatar>
-          </IconButton>
-        </Box>
-      </Toolbar>
-    </AppBar>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="border-2 border-transparent p-0.5 hover:border-primary">
+                <Avatar className="size-8 bg-primary font-bold"><AvatarFallback>{user?.firstName?.charAt(0)}</AvatarFallback></Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[180px]" style={{ backgroundColor: isDark ? "#1e293b" : "#fff", color: isDark ? "#f1f5f9" : "#1e293b", borderColor: isDark ? "rgba(255,255,255,0.1)" : "#e2e8f0" }}>
+              <DropdownMenuItem onClick={() => { logout(); navigate("/auth/login"); }} className="font-semibold text-destructive"><LogOut className="ml-2 size-4" />تسجيل الخروج</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </header>
   );
 };
 

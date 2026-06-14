@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { AdminPageHeader, AdminDataCard, AdminEmptyState } from "@/components/admin";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -131,52 +132,7 @@ function useIsMobile(breakpoint = 640) {
   return isMobile;
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-  color,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-  color: string;
-}) {
-  const { derivedTheme } = useTheme();
-  const isDark = derivedTheme === "dark";
 
-  return (
-    <div
-      className={cn(
-        "rounded-xl border p-5 transition-all duration-200 hover:-translate-y-0.5",
-        isDark
-          ? "bg-gradient-to-br"
-          : "bg-gradient-to-br",
-      )}
-      style={{
-        borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
-        background: isDark
-          ? `linear-gradient(135deg, rgba(${color},0.12) 0%, rgba(${color},0.04) 100%)`
-          : `linear-gradient(135deg, rgba(${color},0.08) 0%, rgba(${color},0.02) 100%)`,
-      }}
-    >
-      <div className="flex items-center gap-3">
-        <div
-          className="flex size-11 items-center justify-center rounded-full"
-          style={{ backgroundColor: `rgba(${color},0.15)`, color: `rgb(${color})` }}
-        >
-          {icon}
-        </div>
-        <div>
-          <span className="text-xs font-semibold text-muted-foreground">
-            {label}
-          </span>
-          <p className="text-2xl font-black">{value}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function ImageUploadArea({
   previewUrl,
@@ -776,90 +732,24 @@ export default function AgentCatalogPage() {
       className="min-h-[calc(100vh-64px)] bg-background p-4 md:p-6"
       dir="rtl"
     >
-      {/* Header */}
-      <div className="mb-6 animate-in fade-in duration-400">
-        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="mb-1 flex items-center gap-2">
-              <ShoppingBag className="size-7 text-primary" />
-              <h1 className="text-3xl font-black">{t("aiCatalog.title")}</h1>
-            </div>
-            <p className="text-muted-foreground">{t("aiCatalog.subtitle")}</p>
+      <AdminPageHeader
+        title={t("aiCatalog.title")}
+        subtitle={t("aiCatalog.subtitle")}
+        icon={<ShoppingBag className="size-7" />}
+        actions={<>
+          <div className="relative w-full md:w-[260px]">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder={t("aiCatalog.search")} value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} className="pl-8" />
           </div>
-          <div className="flex items-center gap-3">
-            <div className="relative w-full md:w-[260px]">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder={t("aiCatalog.search")}
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(0);
-                }}
-                className="pl-8"
-              />
-            </div>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="default"
-                    onClick={openAddForm}
-                    className="rounded-lg px-6 font-extrabold shadow-[0_4px_14px_rgba(99,102,241,0.25)]"
-                  >
-                    <Plus className="mr-1 size-4" />
-                    {t("aiCatalog.addProduct")}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {t("aiCatalog.addProduct")}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={fetchProducts}
-                  >
-                    {loading ? (
-                      <LoadingSpinner size="sm" />
-                    ) : (
-                      <RefreshCw className="size-5" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Refresh</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        </div>
-      </div>
+          <TooltipProvider><Tooltip><TooltipTrigger asChild><Button onClick={openAddForm} className="rounded-lg px-6 font-extrabold shadow-[0_4px_14px_rgba(99,102,241,0.25)]"><Plus className="mr-1 size-4" />{t("aiCatalog.addProduct")}</Button></TooltipTrigger><TooltipContent>{t("aiCatalog.addProduct")}</TooltipContent></Tooltip></TooltipProvider>
+          <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={fetchProducts}>{loading ? <LoadingSpinner size="sm" /> : <RefreshCw className="size-5" />}</Button></TooltipTrigger><TooltipContent>Refresh</TooltipContent></Tooltip></TooltipProvider>
+        </>}
+      />
 
-      {/* Stats */}
-      <div className="mb-6 animate-in fade-in duration-600">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatCard
-            icon={<ShoppingBag className="size-5" />}
-            label={t("aiCatalog.totalProducts")}
-            value={stats.total}
-            color="99,102,241"
-          />
-          <StatCard
-            icon={<Package className="size-5" />}
-            label={t("aiCatalog.outOfStock")}
-            value={stats.outOfStock}
-            color="239,68,68"
-          />
-          <StatCard
-            icon={<TrendingUp className="size-5" />}
-            label={t("aiCatalog.avgPrice")}
-            value={stats.avgPrice}
-            color="34,197,94"
-          />
-        </div>
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <AdminDataCard icon={<ShoppingBag className="size-5" />} label={t("aiCatalog.totalProducts")} value={stats.total} accentColor="99,102,241" />
+        <AdminDataCard icon={<Package className="size-5" />} label={t("aiCatalog.outOfStock")} value={stats.outOfStock} accentColor="239,68,68" />
+        <AdminDataCard icon={<TrendingUp className="size-5" />} label={t("aiCatalog.avgPrice")} value={stats.avgPrice} accentColor="34,197,94" />
       </div>
 
       {/* Error */}

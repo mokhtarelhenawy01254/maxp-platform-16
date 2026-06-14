@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { AdminPageHeader } from "@/components/admin";
 import {
   Dialog,
   DialogContent,
@@ -106,16 +107,15 @@ export default function AgentSkillsPage() {
 
   return (
     <div dir="rtl" className="min-h-[calc(100vh-64px)] bg-background p-4 md:p-6">
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <div className="mb-1 flex items-center gap-2"><Sparkles className="size-7 text-primary" /><h1 className="text-3xl font-black">مهارات الوكلاء</h1></div>
-          <p className="text-muted-foreground">كل مهارة عبارة عن حزمة تعليمات قصيرة مع أدوات محدودة يستخدمها الوكيل داخل دوره.</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <AdminPageHeader
+        title="مهارات الوكلاء"
+        subtitle="كل مهارة عبارة عن حزمة تعليمات قصيرة مع أدوات محدودة يستخدمها الوكيل داخل دوره."
+        icon={<Sparkles className="size-7" />}
+        actions={<>
           <div className="relative"><Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input placeholder="بحث في المهارات" value={query} onChange={(e) => setQuery(e.target.value)} className="w-56 pr-9" /></div>
           <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" onClick={loadAll}>{loading ? <LoadingSpinner size="sm" /> : <RefreshCw className="size-4" />}</Button></TooltipTrigger><TooltipContent>تحديث</TooltipContent></Tooltip></TooltipProvider>
-        </div>
-      </div>
+        </>}
+      />
 
       {error && <Alert variant="destructive" className="mb-4"><AlertCircle className="size-4" /><AlertDescription>{error}</AlertDescription></Alert>}
 

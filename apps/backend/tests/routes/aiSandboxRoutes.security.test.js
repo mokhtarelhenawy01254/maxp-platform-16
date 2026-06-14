@@ -77,25 +77,7 @@ jest.mock('../../services/aiServiceAdminClient', () => ({
     overall: 91,
     comment: 'python evaluation',
   })),
-}));
-
-jest.mock('../../services/sandboxBridge', () => ({
-  getAgentConfig: jest.fn(async () => mockSandboxAgentConfig || null),
-  createSandboxAgentMeta: jest.fn((templateSlug, companyId, config) => ({
-    id: config.id || `${templateSlug}_${companyId}`,
-    name: config.name || templateSlug,
-    role: config.role || 'CUSTOMER_SALES',
-    companyId,
-    templateSlug,
-    allowedTools: config.allowedTools || [],
-    allowedSkills: config.allowedSkills || [],
-    model: config.model || 'default',
-    persona: config.persona || { soulInstructions: '' },
-  })),
-  chatWithSandboxAgent: jest.fn(),
-  listAgents: jest.fn(),
-  listTools: jest.fn(),
-  spawnAgentIfNeeded: jest.fn(),
+  getAgent: jest.fn(async () => mockSandboxAgentConfig || null),
 }));
 
 const AIProviderFactory = { getProvider: jest.fn(() => mockProviderClient), getActiveProvider: jest.fn(() => mockProviderClient) };
@@ -1076,8 +1058,7 @@ describe('AI sandbox route security', () => {
   });
 
   test('normalizes set-like agent tools before sending the selected agent config to Python', async () => {
-    const sandboxBridge = require('../../services/sandboxBridge');
-    sandboxBridge.getAgentConfig.mockResolvedValueOnce({
+    aiServiceAdminClient.getAgent.mockResolvedValueOnce({
       id: 'agent_sales',
       name: 'Sales Agent',
       role: 'SALES',

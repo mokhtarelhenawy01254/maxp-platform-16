@@ -3,27 +3,26 @@ import { useNavigate, useParams } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import {
   Alert,
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  Divider,
-  Paper,
+  AlertDescription,
+} from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
+  TableHeader,
   TableRow,
-  Typography,
-} from "@mui/material";
-import Grid from "@mui/material/GridLegacy";
+} from "@/components/ui/table";
 import {
-  ArrowBack as ArrowBackIcon,
-  Download as DownloadIcon,
-  Email as EmailIcon,
-  Print as PrintIcon,
-} from "@mui/icons-material";
+  ArrowLeft,
+  Download,
+  Mail,
+  Printer,
+} from "lucide-react";
 
 interface OrderInvoiceProps {
   orderId?: string;
@@ -91,14 +90,10 @@ interface InvoiceData {
 
 interface ApiErrorShape {
   response?: {
-    data?: {
-      message?: string;
-    };
+    data?: { message?: string };
   };
   message?: string;
 }
-
-type PaymentStatusColor = "default" | "success" | "warning" | "error" | "info";
 
 const defaultSettings: InvoiceSettings = {
   showCompanyLogo: true,
@@ -169,10 +164,7 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
     try {
       const response = await apiClient.get("/order-invoice-settings");
       if (response.data?.success && response.data?.data) {
-        setSettings((prev) => ({
-          ...prev,
-          ...response.data.data,
-        }));
+        setSettings((prev) => ({ ...prev, ...response.data.data }));
       }
     } catch (err) {
       console.warn("Could not load invoice settings, using defaults.", err);
@@ -190,19 +182,13 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const shouldPrint = urlParams.get("print") === "true";
-
     if (shouldPrint && invoice && !loading) {
-      setTimeout(() => {
-        window.print();
-      }, 1200);
+      setTimeout(() => { window.print(); }, 1200);
     }
   }, [invoice, loading]);
 
   const handlePrint = async () => {
-    if (!invoice) {
-      return;
-    }
-
+    if (!invoice) return;
     try {
       setPrinting(true);
       await apiClient.post(`/order-invoices/${invoice.id}/print`);
@@ -215,10 +201,7 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
   };
 
   const handleEmail = async () => {
-    if (!invoice) {
-      return;
-    }
-
+    if (!invoice) return;
     try {
       await apiClient.post(`/order-invoices/${invoice.id}/email`);
       alert("تم إرسال الفاتورة بنجاح");
@@ -230,26 +213,23 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("ar-EG", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
+      year: "numeric", month: "long", day: "numeric",
     });
   };
 
   const formatCurrency = (amount: number, currency: string = "EGP") => {
     return new Intl.NumberFormat("ar-EG", {
-      style: "currency",
-      currency,
+      style: "currency", currency,
     }).format(amount);
   };
 
-  const getPaymentStatusColor = (status: string): PaymentStatusColor => {
-    const colors: Record<string, PaymentStatusColor> = {
+  const getPaymentStatusColor = (status: string): "default" | "success" | "warning" | "destructive" | "secondary" => {
+    const colors: Record<string, "default" | "success" | "warning" | "destructive" | "secondary"> = {
       PAID: "success",
       COMPLETED: "success",
       PENDING: "warning",
-      CANCELLED: "error",
-      REFUNDED: "info",
+      CANCELLED: "destructive",
+      REFUNDED: "secondary",
       PARTIALLY_PAID: "warning",
     };
     return colors[status] || "default";
@@ -272,19 +252,14 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
     if (explicitTotal !== undefined && explicitTotal !== null) {
       return parseNumber(explicitTotal);
     }
-
     return parseNumber(item.price) * parseNumber(item.quantity);
   };
 
   const normalizedPageSize = settings.pdfPageSize || "A4";
-  const normalizedOrientation =
-    settings.pdfOrientation === "landscape" ? "landscape" : "portrait";
-  const maxWidth =
-    pageWidths[normalizedPageSize]?.[normalizedOrientation] ||
-    pageWidths["A4"]![normalizedOrientation];
+  const normalizedOrientation = settings.pdfOrientation === "landscape" ? "landscape" : "portrait";
+  const maxWidth = pageWidths[normalizedPageSize]?.[normalizedOrientation] || pageWidths["A4"]![normalizedOrientation];
   const primaryColor = settings.primaryColor || defaultSettings.primaryColor;
-  const secondaryColor =
-    settings.secondaryColor || defaultSettings.secondaryColor;
+  const secondaryColor = settings.secondaryColor || defaultSettings.secondaryColor;
   const showCompanyLogo = settings.showCompanyLogo !== false;
   const showTaxBreakdown = settings.showTaxBreakdown !== false;
   const showPaymentMethod = settings.showPaymentMethod !== false;
@@ -292,447 +267,287 @@ const OrderInvoice: React.FC<OrderInvoiceProps> = ({ orderId, invoiceId }) => {
 
   if (loading) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="400px"
-      >
-        <CircularProgress />
-      </Box>
+      <div className="flex justify-center items-center min-h-[400px]">
+        <LoadingSpinner />
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Box p={3}>
-        <Alert severity="error">{error}</Alert>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(-1)}
-          sx={{ mt: 2 }}
-        >
-          رجوع
+      <div className="p-3">
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+        <Button variant="outline" onClick={() => navigate(-1)} className="mt-2">
+          <ArrowLeft className="size-4" /> رجوع
         </Button>
-      </Box>
+      </div>
     );
   }
 
   if (!invoice) {
     return (
-      <Box p={3}>
-        <Alert severity="warning">الفاتورة غير موجودة</Alert>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(-1)}
-          sx={{ mt: 2 }}
-        >
-          رجوع
+      <div className="p-3">
+        <Alert>
+          <AlertDescription>الفاتورة غير موجودة</AlertDescription>
+        </Alert>
+        <Button variant="outline" onClick={() => navigate(-1)} className="mt-2">
+          <ArrowLeft className="size-4" /> رجوع
         </Button>
-      </Box>
+      </div>
     );
   }
 
   return (
-    <Box
+    <div
       dir="rtl"
-      sx={{
-        minHeight: "100vh",
-        bgcolor: "#f8fafc",
-        px: { xs: 2, md: 3 },
-        py: 3,
-        fontFamily: settings.fontFamily || defaultSettings.fontFamily,
-      }}
+      className="min-h-screen px-2 md:px-3 py-3"
+      style={{ backgroundColor: "#f8fafc", fontFamily: settings.fontFamily || defaultSettings.fontFamily }}
     >
-      <Box
-        className="no-print"
-        sx={{ mb: 3, display: "flex", gap: 2, flexWrap: "wrap" }}
-      >
-        <Button
-          variant="outlined"
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(-1)}
-        >
-          رجوع
+      <div className="mb-3 flex gap-2 flex-wrap no-print">
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <ArrowLeft className="size-4" /> رجوع
         </Button>
-        <Button
-          variant="contained"
-          startIcon={<PrintIcon />}
-          onClick={handlePrint}
-          disabled={printing}
-        >
-          طباعة
+        <Button onClick={handlePrint} disabled={printing}>
+          <Printer className="size-4" /> طباعة
         </Button>
-        <Button
-          variant="outlined"
-          startIcon={<EmailIcon />}
-          onClick={handleEmail}
-        >
-          إرسال بالبريد
+        <Button variant="outline" onClick={handleEmail}>
+          <Mail className="size-4" /> إرسال بالبريد
         </Button>
-        <Button
-          variant="outlined"
-          startIcon={<DownloadIcon />}
-          onClick={handlePrint}
-        >
-          تحميل PDF
+        <Button variant="outline" onClick={handlePrint}>
+          <Download className="size-4" /> تحميل PDF
         </Button>
-      </Box>
+      </div>
 
-      <Paper
+      <div
         ref={printRef}
-        sx={{
-          p: { xs: 2.5, md: 4 },
+        className="rounded-xl bg-card text-card-foreground p-2.5 md:p-4 mx-auto"
+        style={{
           maxWidth,
-          mx: "auto",
-          borderRadius: 3,
           boxShadow: "0 20px 60px rgba(15, 23, 42, 0.08)",
           fontFamily: settings.fontFamily || defaultSettings.fontFamily,
         }}
       >
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 3,
-            flexWrap: "wrap",
-            alignItems: "flex-start",
-            pb: 3,
-            borderBottom: `3px solid ${primaryColor}`,
-          }}
+        <div
+          className="flex justify-between gap-3 flex-wrap items-start pb-3"
+          style={{ borderBottom: `3px solid ${primaryColor}` }}
         >
-          <Box sx={{ minWidth: 220 }}>
+          <div className="min-w-[220px]">
             {showCompanyLogo && invoice.companyLogo && (
-              <Box
-                component="img"
+              <img
                 src={invoice.companyLogo}
                 alt={invoice.companyName}
-                sx={{ maxHeight: 84, mb: 2 }}
+                className="max-h-[84px] mb-2"
               />
             )}
-            <Typography
-              variant="h5"
-              fontWeight="bold"
-              sx={{ color: primaryColor }}
-            >
+            <h2 className="text-xl font-bold" style={{ color: primaryColor }}>
               {invoice.companyName}
-            </Typography>
+            </h2>
             {invoice.companyAddress && (
-              <Typography sx={{ color: secondaryColor, mt: 1 }}>
+              <p className="mt-1 text-sm" style={{ color: secondaryColor }}>
                 {invoice.companyAddress}
-              </Typography>
+              </p>
             )}
             {invoice.companyPhone && (
-              <Typography sx={{ color: secondaryColor }}>
+              <p className="text-sm" style={{ color: secondaryColor }}>
                 هاتف: {invoice.companyPhone}
-              </Typography>
+              </p>
             )}
             {invoice.companyEmail && (
-              <Typography sx={{ color: secondaryColor }}>
+              <p className="text-sm" style={{ color: secondaryColor }}>
                 بريد: {invoice.companyEmail}
-              </Typography>
+              </p>
             )}
-          </Box>
+          </div>
 
-          <Box sx={{ minWidth: 220, textAlign: "left" }}>
-            <Typography
-              variant="h4"
-              fontWeight="bold"
-              sx={{ color: primaryColor }}
-            >
+          <div className="min-w-[220px] text-right">
+            <h1 className="text-2xl font-bold" style={{ color: primaryColor }}>
               فاتورة
-            </Typography>
-            <Typography variant="h6" sx={{ mt: 1 }}>
-              {invoice.invoiceNumber}
-            </Typography>
-            <Box sx={{ mt: 2, display: "grid", gap: 1 }}>
-              <Typography variant="body2">
+            </h1>
+            <h3 className="text-lg mt-1">{invoice.invoiceNumber}</h3>
+            <div className="mt-2 grid gap-1">
+              <p className="text-sm">
                 <strong>تاريخ الإصدار:</strong> {formatDate(invoice.issueDate)}
-              </Typography>
+              </p>
               {invoice.dueDate && (
-                <Typography variant="body2">
-                  <strong>تاريخ الاستحقاق:</strong>{" "}
-                  {formatDate(invoice.dueDate)}
-                </Typography>
+                <p className="text-sm">
+                  <strong>تاريخ الاستحقاق:</strong> {formatDate(invoice.dueDate)}
+                </p>
               )}
-              <Box sx={{ mt: 0.5 }}>
-                <Chip
-                  label={getPaymentStatusLabel(invoice.paymentStatus)}
-                  color={getPaymentStatusColor(invoice.paymentStatus)}
-                  size="small"
-                />
-              </Box>
-            </Box>
-          </Box>
-        </Box>
+              <div className="mt-0.5">
+                <Badge variant={getPaymentStatusColor(invoice.paymentStatus)}>
+                  {getPaymentStatusLabel(invoice.paymentStatus)}
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <Grid container spacing={3} sx={{ my: 3 }}>
-          <Grid item xs={12} md={6}>
-            <Typography
-              variant="subtitle2"
-              sx={{ color: secondaryColor }}
-              gutterBottom
-            >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-3">
+          <div>
+            <p className="text-xs font-semibold mb-1" style={{ color: secondaryColor }}>
               الفاتورة إلى
-            </Typography>
-            <Typography variant="body1" fontWeight="bold">
-              {invoice.customerName}
-            </Typography>
+            </p>
+            <p className="text-sm font-bold">{invoice.customerName}</p>
             {invoice.customerPhone && (
-              <Typography variant="body2">
-                هاتف: {invoice.customerPhone}
-              </Typography>
+              <p className="text-sm">هاتف: {invoice.customerPhone}</p>
             )}
             {invoice.customerEmail && (
-              <Typography variant="body2">
-                بريد: {invoice.customerEmail}
-              </Typography>
+              <p className="text-sm">بريد: {invoice.customerEmail}</p>
             )}
             {invoice.customerAddress && (
-              <Typography variant="body2">
-                العنوان: {invoice.customerAddress}
-              </Typography>
+              <p className="text-sm">العنوان: {invoice.customerAddress}</p>
             )}
             {invoice.city && (
-              <Typography variant="body2">المدينة: {invoice.city}</Typography>
+              <p className="text-sm">المدينة: {invoice.city}</p>
             )}
             {invoice.governorate && (
-              <Typography variant="body2">
-                المحافظة: {invoice.governorate}
-              </Typography>
+              <p className="text-sm">المحافظة: {invoice.governorate}</p>
             )}
-          </Grid>
-
-          <Grid item xs={12} md={6} textAlign="left">
-            <Typography
-              variant="subtitle2"
-              sx={{ color: secondaryColor }}
-              gutterBottom
-            >
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-semibold mb-1" style={{ color: secondaryColor }}>
               معلومات الطلب
-            </Typography>
-            <Typography variant="body2">
+            </p>
+            <p className="text-sm">
               <strong>رقم الطلب:</strong> {invoice.order?.orderNumber || "-"}
-            </Typography>
-            <Typography variant="body2">
+            </p>
+            <p className="text-sm">
               <strong>حالة الطلب:</strong> {invoice.order?.status || "-"}
-            </Typography>
+            </p>
             {showPaymentMethod && invoice.paymentMethod && (
-              <Typography variant="body2">
+              <p className="text-sm">
                 <strong>طريقة الدفع:</strong> {invoice.paymentMethod}
-              </Typography>
+              </p>
             )}
-          </Grid>
-        </Grid>
+          </div>
+        </div>
 
         {showOrderItems && (
-          <TableContainer sx={{ mb: 3 }}>
+          <div className="mb-3">
             <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: `${primaryColor}15` }}>
-                  <TableCell>
-                    <strong>#</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>المنتج</strong>
-                  </TableCell>
-                  <TableCell align="center">
-                    <strong>الكمية</strong>
-                  </TableCell>
-                  <TableCell align="right">
-                    <strong>السعر</strong>
-                  </TableCell>
-                  <TableCell align="right">
-                    <strong>الإجمالي</strong>
-                  </TableCell>
+              <TableHeader>
+                <TableRow style={{ backgroundColor: `${primaryColor}15` }}>
+                  <TableHead className="font-bold">#</TableHead>
+                  <TableHead className="font-bold">المنتج</TableHead>
+                  <TableHead className="text-center font-bold">الكمية</TableHead>
+                  <TableHead className="text-right font-bold">السعر</TableHead>
+                  <TableHead className="text-right font-bold">الإجمالي</TableHead>
                 </TableRow>
-              </TableHead>
+              </TableHeader>
               <TableBody>
                 {invoice.order?.orderItems?.map((item, index: number) => (
                   <TableRow key={item.id || `${item.productName}-${index}`}>
                     <TableCell>{index + 1}</TableCell>
                     <TableCell>
-                      <Typography variant="body2" fontWeight="medium">
-                        {item.productName}
-                      </Typography>
-                      {(item.variantName ||
-                        item.productColor ||
-                        item.productSize) && (
-                        <Typography
-                          variant="caption"
-                          sx={{ color: secondaryColor }}
-                        >
-                          {[
-                            item.variantName,
-                            item.productColor,
-                            item.productSize,
-                          ]
-                            .filter(Boolean)
-                            .join(" / ")}
-                        </Typography>
+                      <p className="text-sm font-medium">{item.productName}</p>
+                      {(item.variantName || item.productColor || item.productSize) && (
+                        <p className="text-xs" style={{ color: secondaryColor }}>
+                          {[item.variantName, item.productColor, item.productSize]
+                            .filter(Boolean).join(" / ")}
+                        </p>
                       )}
                     </TableCell>
-                    <TableCell align="center">{item.quantity}</TableCell>
-                    <TableCell align="right">
-                      {formatCurrency(
-                        parseNumber(item.price),
-                        invoice.currency,
-                      )}
+                    <TableCell className="text-center">{item.quantity}</TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(parseNumber(item.price), invoice.currency)}
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell className="text-right">
                       {formatCurrency(getItemTotal(item), invoice.currency)}
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </TableContainer>
+          </div>
         )}
 
-        <Grid container justifyContent="flex-end">
-          <Grid item xs={12} md={6}>
-            <Box
-              sx={{
-                bgcolor: "#f8fafc",
-                border: "1px solid #e2e8f0",
-                p: 2.5,
-                borderRadius: 2,
-              }}
-            >
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Typography>المجموع الفرعي:</Typography>
-                <Typography fontWeight="medium">
-                  {formatCurrency(
-                    parseNumber(invoice.subtotal),
-                    invoice.currency,
-                  )}
-                </Typography>
-              </Box>
-
-              {parseNumber(invoice.discount) > 0 && (
-                <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography>الخصم:</Typography>
-                  <Typography color="error.main" fontWeight="medium">
-                    -{" "}
-                    {formatCurrency(
-                      parseNumber(invoice.discount),
-                      invoice.currency,
-                    )}
-                  </Typography>
-                </Box>
-              )}
-
-              {showTaxBreakdown && parseNumber(invoice.tax) > 0 && (
-                <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography>الضريبة ({invoice.taxRate || 0}%):</Typography>
-                  <Typography fontWeight="medium">
-                    {formatCurrency(parseNumber(invoice.tax), invoice.currency)}
-                  </Typography>
-                </Box>
-              )}
-
-              {parseNumber(invoice.shipping) > 0 && (
-                <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography>الشحن:</Typography>
-                  <Typography fontWeight="medium">
-                    {formatCurrency(
-                      parseNumber(invoice.shipping),
-                      invoice.currency,
-                    )}
-                  </Typography>
-                </Box>
-              )}
-
-              <Divider sx={{ my: 1.5 }} />
-
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="h6" fontWeight="bold">
-                  الإجمالي:
-                </Typography>
-                <Typography
-                  variant="h6"
-                  fontWeight="bold"
-                  sx={{ color: primaryColor }}
-                >
-                  {formatCurrency(
-                    parseNumber(invoice.totalAmount),
-                    invoice.currency,
-                  )}
-                </Typography>
-              </Box>
-            </Box>
-          </Grid>
-        </Grid>
+        <div className="flex justify-end">
+          <div className="w-full md:w-1/2 p-2.5 rounded-lg" style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+            <div className="flex justify-between mb-1">
+              <span className="text-sm">المجموع الفرعي:</span>
+              <span className="text-sm font-medium">
+                {formatCurrency(parseNumber(invoice.subtotal), invoice.currency)}
+              </span>
+            </div>
+            {parseNumber(invoice.discount) > 0 && (
+              <div className="flex justify-between mb-1">
+                <span className="text-sm">الخصم:</span>
+                <span className="text-sm font-medium text-red-500">
+                  - {formatCurrency(parseNumber(invoice.discount), invoice.currency)}
+                </span>
+              </div>
+            )}
+            {showTaxBreakdown && parseNumber(invoice.tax) > 0 && (
+              <div className="flex justify-between mb-1">
+                <span className="text-sm">الضريبة ({invoice.taxRate || 0}%):</span>
+                <span className="text-sm font-medium">
+                  {formatCurrency(parseNumber(invoice.tax), invoice.currency)}
+                </span>
+              </div>
+            )}
+            {parseNumber(invoice.shipping) > 0 && (
+              <div className="flex justify-between mb-1">
+                <span className="text-sm">الشحن:</span>
+                <span className="text-sm font-medium">
+                  {formatCurrency(parseNumber(invoice.shipping), invoice.currency)}
+                </span>
+              </div>
+            )}
+            <Separator className="my-1.5" />
+            <div className="flex justify-between">
+              <h3 className="text-base font-bold">الإجمالي:</h3>
+              <h3 className="text-base font-bold" style={{ color: primaryColor }}>
+                {formatCurrency(parseNumber(invoice.totalAmount), invoice.currency)}
+              </h3>
+            </div>
+          </div>
+        </div>
 
         {(invoice.notes || invoice.terms) && (
-          <Box sx={{ mt: 4 }}>
+          <div className="mt-4">
             {invoice.notes && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                  ملاحظات
-                </Typography>
-                <Typography variant="body2" sx={{ color: secondaryColor }}>
+              <div className="mb-2">
+                <p className="text-xs font-bold mb-1">ملاحظات</p>
+                <p className="text-sm" style={{ color: secondaryColor }}>
                   {invoice.notes}
-                </Typography>
-              </Box>
+                </p>
+              </div>
             )}
-
             {invoice.terms && (
-              <Box>
-                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                  الشروط والأحكام
-                </Typography>
-                <Typography variant="body2" sx={{ color: secondaryColor }}>
+              <div>
+                <p className="text-xs font-bold mb-1">الشروط والأحكام</p>
+                <p className="text-sm" style={{ color: secondaryColor }}>
                   {invoice.terms}
-                </Typography>
-              </Box>
+                </p>
+              </div>
             )}
-          </Box>
+          </div>
         )}
 
-        <Box
-          sx={{
-            mt: 4,
-            pt: 3,
-            borderTop: "1px solid #e2e8f0",
-            textAlign: "center",
-          }}
-        >
-          <Typography variant="body2" sx={{ color: secondaryColor }}>
+        <div className="mt-4 pt-3 text-center" style={{ borderTop: "1px solid #e2e8f0" }}>
+          <p className="text-sm" style={{ color: secondaryColor }}>
             شكراً لتعاملكم معنا
-          </Typography>
+          </p>
           {invoice.printCount > 0 && (
-            <Typography
-              variant="caption"
-              sx={{ mt: 1, display: "block", color: secondaryColor }}
-            >
+            <p className="text-xs mt-1" style={{ color: secondaryColor }}>
               تم طباعة هذه الفاتورة {invoice.printCount} مرة
-            </Typography>
+            </p>
           )}
-        </Box>
-      </Paper>
+        </div>
+      </div>
 
       <style>
         {`
           @media print {
-            .no-print {
-              display: none !important;
-            }
-
-            body {
-              margin: 0;
-              padding: 0;
-              background: #ffffff !important;
-            }
-
-            @page {
-              size: ${normalizedPageSize} ${normalizedOrientation};
-              margin: 1cm;
-            }
+            .no-print { display: none !important; }
+            body { margin: 0; padding: 0; background: #ffffff !important; }
+            @page { size: ${normalizedPageSize} ${normalizedOrientation}; margin: 1cm; }
           }
         `}
       </style>
-    </Box>
+    </div>
   );
 };
 

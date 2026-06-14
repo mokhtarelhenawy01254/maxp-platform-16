@@ -3,7 +3,7 @@ import {
   type CatalogPriceRangeValue,
   type CatalogSortValue,
 } from "./catalogFilters";
-import { buildPathScopedStoreUrl, getBaseDomain } from "../../utils/storeUrl";
+import { getBaseDomain } from "../../utils/storeUrl";
 
 const STOREFRONT_PRODUCT_PATH_PATTERN =
   /^\/(?:store\/)?(?:product|shop\/products)\/([^/?#]+)\/?$/;
@@ -113,11 +113,10 @@ export const buildStorefrontPreviewPath = (
   }
 
   const routePath = normalizeRouteInput(route);
+  const subdomainSlug = companySlug || companyId;
   const previewUrl = customDomain
     ? `https://${customDomain}${routePath}`
-    : companyId && isLocalPreviewDomain(getBaseDomain())
-      ? buildPathScopedStoreUrl(routePath, companyId)
-      : `${isLocalPreviewDomain(getBaseDomain()) ? "http:" : window.location.protocol}//${companySlug}.${getBaseDomain()}${routePath}`;
+    : `${isLocalPreviewDomain(getBaseDomain()) ? "http:" : window.location.protocol}//${subdomainSlug}.${getBaseDomain()}${routePath}`;
   const url = new URL(previewUrl, window.location.origin);
 
   if (options.previewTheme?.trim()) {

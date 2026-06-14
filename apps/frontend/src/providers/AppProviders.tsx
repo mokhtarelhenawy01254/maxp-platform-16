@@ -14,24 +14,7 @@ interface AppProvidersProps {
   children: ReactNode;
 }
 
-const MuiThemeWrapper = React.lazy(() =>
-  import("../components/theme/MuiThemeWrapper").then((module) => ({
-    default: module.MuiThemeWrapper,
-  })),
-);
-
 const LazyGlobalToast = React.lazy(() => import("../components/common/GlobalToast"));
-
-const isPublicPath = (pathname: string): boolean =>
-  pathname === "/" ||
-  pathname.startsWith("/test-public") ||
-  pathname.startsWith("/test-minimal") ||
-  pathname.startsWith("/company-links/") ||
-  pathname.startsWith("/auth/") ||
-  pathname.startsWith("/register/") ||
-  pathname.startsWith("/affiliate-register") ||
-  pathname.startsWith("/payment/") ||
-  pathname.startsWith("/apply/");
 
 const isStorefrontOnlyPath = (pathname: string): boolean =>
   pathname.startsWith("/test-public") ||
@@ -40,7 +23,6 @@ const isStorefrontOnlyPath = (pathname: string): boolean =>
 
 const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   const { pathname } = useLocation();
-  const shouldUseMuiTheme = !isPublicPath(pathname);
   const shouldLoadI18n = !isStorefrontOnlyPath(pathname);
   const shouldRenderGlobalToast = !isStorefrontOnlyPath(pathname);
 
@@ -52,13 +34,7 @@ const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
     }
   }, [shouldLoadI18n]);
 
-  const content = shouldUseMuiTheme
-    ? React.createElement(
-      Suspense,
-      { fallback: children },
-      React.createElement(MuiThemeWrapper, null, children),
-    )
-    : React.createElement(React.Fragment, null, children);
+  const content = children;
 
   const toastNode = shouldRenderGlobalToast
     ? React.createElement(

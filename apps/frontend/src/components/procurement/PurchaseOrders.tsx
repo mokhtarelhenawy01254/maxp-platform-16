@@ -1,39 +1,37 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Chip,
-  Typography,
-  TextField,
-  InputAdornment,
-  Pagination,
-  MenuItem,
-} from "@mui/material";
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Visibility as ViewIcon,
-  CheckCircle as ApproveIcon,
-  Cancel as CancelIcon,
-  Search as SearchIcon,
-} from "@mui/icons-material";
+  Plus,
+  Pencil,
+  Eye,
+  CheckCircle,
+  XCircle,
+  Search,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import {
   ProcurementMobileCard,
   ProcurementMobileState,
 } from "./ProcurementMobileCard";
-import { desktopTableSx, mobileListSx } from "./procurementResponsiveSx";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface PurchaseOrder {
   id: string;
@@ -52,18 +50,15 @@ interface PurchaseOrder {
   };
 }
 
-const statusColors: Record<
-  string,
-  "default" | "primary" | "secondary" | "error" | "warning" | "info" | "success"
-> = {
-  DRAFT: "default",
-  PENDING: "warning",
-  APPROVED: "info",
-  SENT: "primary",
+const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  DRAFT: "outline",
+  PENDING: "secondary",
+  APPROVED: "default",
+  SENT: "default",
   PARTIALLY_RECEIVED: "secondary",
-  RECEIVED: "success",
-  CANCELLED: "error",
-  CLOSED: "default",
+  RECEIVED: "default",
+  CANCELLED: "destructive",
+  CLOSED: "outline",
 };
 
 const statusLabels: Record<string, string> = {
@@ -124,76 +119,59 @@ const PurchaseOrders: React.FC = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box
-        sx={{
-          alignItems: { xs: "stretch", sm: "center" },
-          display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
-          gap: 2,
-          justifyContent: "space-between",
-          mb: 3,
-        }}
-      >
-        <Typography variant="h4">أوامر الشراء</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate("/procurement/purchase-orders/new")}
-          sx={{ alignSelf: { xs: "stretch", sm: "auto" } }}
-        >
-          إنشاء أمر شراء جديد
+    <div className="p-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 justify-between mb-3">
+        <h1 className="text-2xl font-bold">أوامر الشراء</h1>
+        <Button onClick={() => navigate("/procurement/purchase-orders/new")}>
+          <Plus className="size-4" /> إنشاء أمر شراء جديد
         </Button>
-      </Box>
+      </div>
 
-      <Card sx={{ mb: 3 }}>
+      <Card className="mb-3">
         <CardContent>
-          <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
-            <TextField
-              fullWidth
-              placeholder="البحث عن أمر شراء..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <TextField
-              select
-              label="الحالة"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              sx={{ minWidth: { xs: "100%", sm: 200 } }}
-            >
-              <MenuItem value="">الكل</MenuItem>
-              {Object.entries(statusLabels).map(([key, label]) => (
-                <MenuItem key={key} value={key}>
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Box>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder="البحث عن أمر شراء..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <div className="min-w-[200px]">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="الحالة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">الكل</SelectItem>
+                  {Object.entries(statusLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      <TableContainer component={Paper} sx={desktopTableSx}>
+      <div className="hidden md:block rounded-xl border bg-card text-card-foreground">
         <Table>
-          <TableHead>
+          <TableHeader>
             <TableRow>
-              <TableCell>رقم الأمر</TableCell>
-              <TableCell>المورد</TableCell>
-              <TableCell>تاريخ الأمر</TableCell>
-              <TableCell>التسليم المتوقع</TableCell>
-              <TableCell>عدد الأصناف</TableCell>
-              <TableCell>المبلغ الإجمالي</TableCell>
-              <TableCell>الحالة</TableCell>
-              <TableCell>الإجراءات</TableCell>
+              <TableHead>رقم الأمر</TableHead>
+              <TableHead>المورد</TableHead>
+              <TableHead>تاريخ الأمر</TableHead>
+              <TableHead>التسليم المتوقع</TableHead>
+              <TableHead>عدد الأصناف</TableHead>
+              <TableHead>المبلغ الإجمالي</TableHead>
+              <TableHead>الحالة</TableHead>
+              <TableHead>الإجراءات</TableHead>
             </TableRow>
-          </TableHead>
+          </TableHeader>
           <TableBody>
             {orders.map((order) => (
               <TableRow key={order.id}>
@@ -204,75 +182,71 @@ const PurchaseOrders: React.FC = () => {
                 </TableCell>
                 <TableCell>
                   {order.expectedDelivery
-                    ? new Date(order.expectedDelivery).toLocaleDateString(
-                        "ar-EG",
-                      )
+                    ? new Date(order.expectedDelivery).toLocaleDateString("ar-EG")
                     : "-"}
                 </TableCell>
                 <TableCell>{order._count.items}</TableCell>
+                <TableCell>{Number(order.totalAmount).toFixed(2)} EGP</TableCell>
                 <TableCell>
-                  {Number(order.totalAmount).toFixed(2)} EGP
+                  <Badge variant={statusColors[order.status] || "outline"}>
+                    {statusLabels[order.status]}
+                  </Badge>
                 </TableCell>
                 <TableCell>
-                  <Chip
-                    label={statusLabels[order.status]}
-                    color={statusColors[order.status]}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>
-                  <IconButton
-                    size="small"
-                    onClick={() =>
-                      navigate(`/procurement/purchase-orders/${order.id}`)
-                    }
-                    title="عرض التفاصيل"
-                  >
-                    <ViewIcon />
-                  </IconButton>
-                  {(order.status === "DRAFT" || order.status === "PENDING") && (
-                    <>
-                      <IconButton
-                        size="small"
-                        onClick={() =>
-                          navigate(
-                            `/procurement/purchase-orders/${order.id}/edit`,
-                          )
-                        }
-                        title="تعديل"
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleApprove(order.id)}
-                        title="الموافقة"
-                        color="success"
-                      >
-                        <ApproveIcon />
-                      </IconButton>
-                    </>
-                  )}
-                  {order.status !== "RECEIVED" &&
-                    order.status !== "CLOSED" &&
-                    order.status !== "CANCELLED" && (
-                      <IconButton
-                        size="small"
-                        onClick={() => handleCancel(order.id)}
-                        title="إلغاء"
-                        color="error"
-                      >
-                        <CancelIcon />
-                      </IconButton>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        navigate(`/procurement/purchase-orders/${order.id}`)
+                      }
+                      title="عرض التفاصيل"
+                    >
+                      <Eye className="size-4" />
+                    </Button>
+                    {(order.status === "DRAFT" || order.status === "PENDING") && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            navigate(`/procurement/purchase-orders/${order.id}/edit`)
+                          }
+                          title="تعديل"
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleApprove(order.id)}
+                          title="الموافقة"
+                        >
+                          <CheckCircle className="size-4 text-green-600" />
+                        </Button>
+                      </>
                     )}
+                    {order.status !== "RECEIVED" &&
+                      order.status !== "CLOSED" &&
+                      order.status !== "CANCELLED" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleCancel(order.id)}
+                          title="إلغاء"
+                        >
+                          <XCircle className="size-4 text-red-600" />
+                        </Button>
+                      )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
+      </div>
 
-      <Box sx={mobileListSx}>
+      <div className="grid md:hidden gap-2">
         {orders.length === 0 ? (
           <ProcurementMobileState>لا توجد أوامر شراء</ProcurementMobileState>
         ) : (
@@ -283,11 +257,9 @@ const PurchaseOrders: React.FC = () => {
               title={order.supplier.name}
               subtitle={`عدد الأصناف: ${order._count.items}`}
               status={
-                <Chip
-                  label={statusLabels[order.status] || order.status}
-                  color={statusColors[order.status] || "default"}
-                  size="small"
-                />
+                <Badge variant={statusColors[order.status] || "outline"}>
+                  {statusLabels[order.status] || order.status}
+                </Badge>
               }
               fields={[
                 {
@@ -312,70 +284,69 @@ const PurchaseOrders: React.FC = () => {
               ]}
               actions={
                 <>
-                  <IconButton
-                    aria-label="عرض التفاصيل"
-                    size="small"
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() =>
                       navigate(`/procurement/purchase-orders/${order.id}`)
                     }
                     title="عرض التفاصيل"
                   >
-                    <ViewIcon />
-                  </IconButton>
+                    <Eye className="size-4" />
+                  </Button>
                   {(order.status === "DRAFT" || order.status === "PENDING") && (
                     <>
-                      <IconButton
-                        aria-label="تعديل"
-                        size="small"
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() =>
-                          navigate(
-                            `/procurement/purchase-orders/${order.id}/edit`,
-                          )
+                          navigate(`/procurement/purchase-orders/${order.id}/edit`)
                         }
                         title="تعديل"
                       >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        aria-label="الموافقة"
-                        size="small"
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => handleApprove(order.id)}
                         title="الموافقة"
-                        color="success"
                       >
-                        <ApproveIcon />
-                      </IconButton>
+                        <CheckCircle className="size-4 text-green-600" />
+                      </Button>
                     </>
                   )}
                   {order.status !== "RECEIVED" &&
                     order.status !== "CLOSED" &&
                     order.status !== "CANCELLED" && (
-                      <IconButton
-                        aria-label="إلغاء"
-                        size="small"
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => handleCancel(order.id)}
                         title="إلغاء"
-                        color="error"
                       >
-                        <CancelIcon />
-                      </IconButton>
+                        <XCircle className="size-4 text-red-600" />
+                      </Button>
                     )}
                 </>
               }
             />
           ))
         )}
-      </Box>
+      </div>
 
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
-        <Pagination
-          count={totalPages}
-          page={page}
-          onChange={(_, value) => setPage(value)}
-          color="primary"
-        />
-      </Box>
-    </Box>
+      <div className="flex justify-center mt-3">
+        <div className="flex items-center gap-1">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+            السابق
+          </Button>
+          <span className="text-sm px-3">{page} / {totalPages}</span>
+          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+            التالي
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 };
 

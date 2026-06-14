@@ -1,37 +1,30 @@
 import React, { useCallback, useEffect, useState } from "react";
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Chip,
-  Typography,
-  TextField,
-  InputAdornment,
-  Pagination,
-  MenuItem,
-} from "@mui/material";
-import {
-  Add as AddIcon,
-  Visibility as ViewIcon,
-  Payment as PaymentIcon,
-  Search as SearchIcon,
-} from "@mui/icons-material";
+import { Plus, Eye, CreditCard, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import {
   ProcurementMobileCard,
   ProcurementMobileState,
 } from "./ProcurementMobileCard";
-import { desktopTableSx, mobileListSx } from "./procurementResponsiveSx";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface PurchaseInvoice {
   id: string;
@@ -52,15 +45,12 @@ interface PurchaseInvoice {
   };
 }
 
-const statusColors: Record<
-  string,
-  "default" | "primary" | "secondary" | "error" | "warning" | "info" | "success"
-> = {
-  PENDING: "warning",
-  PARTIALLY_PAID: "info",
-  PAID: "success",
-  OVERDUE: "error",
-  CANCELLED: "default",
+const statusColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  PENDING: "secondary",
+  PARTIALLY_PAID: "default",
+  PAID: "default",
+  OVERDUE: "destructive",
+  CANCELLED: "outline",
 };
 
 const statusLabels: Record<string, string> = {
@@ -96,77 +86,58 @@ const PurchaseInvoices: React.FC = () => {
   }, [fetchInvoices]);
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box
-        sx={{
-          alignItems: { xs: "stretch", sm: "center" },
-          display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
-          gap: 2,
-          justifyContent: "space-between",
-          mb: 3,
-        }}
-      >
-        <Typography variant="h4">فواتير الموردين</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate("/procurement/purchase-invoices/new")}
-          sx={{ alignSelf: { xs: "stretch", sm: "auto" } }}
-        >
-          إنشاء فاتورة جديدة
+    <div className="p-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 justify-between mb-3">
+        <h1 className="text-2xl font-bold">فواتير الموردين</h1>
+        <Button onClick={() => navigate("/procurement/purchase-invoices/new")}>
+          <Plus className="size-4" /> إنشاء فاتورة جديدة
         </Button>
-      </Box>
+      </div>
 
-      <Card sx={{ mb: 3 }}>
+      <Card className="mb-3">
         <CardContent>
-          <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
-            <TextField
-              fullWidth
-              placeholder="البحث عن فاتورة..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <TextField
-              select
-              label="الحالة"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              sx={{ minWidth: { xs: "100%", sm: 200 } }}
-            >
-              <MenuItem value="">الكل</MenuItem>
-              {Object.entries(statusLabels).map(([key, label]) => (
-                <MenuItem key={key} value={key}>
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Box>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder="البحث عن فاتورة..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <div className="min-w-[200px]">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="الحالة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">الكل</SelectItem>
+                  {Object.entries(statusLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      <TableContainer component={Paper} sx={desktopTableSx}>
+      <div className="hidden md:block rounded-xl border bg-card text-card-foreground">
         <Table>
-          <TableHead>
+          <TableHeader>
             <TableRow>
-              <TableCell>رقم الفاتورة</TableCell>
-              <TableCell>المورد</TableCell>
-              <TableCell>تاريخ الفاتورة</TableCell>
-              <TableCell>تاريخ الاستحقاق</TableCell>
-              <TableCell>المبلغ الإجمالي</TableCell>
-              <TableCell>المبلغ المدفوع</TableCell>
-              <TableCell>المبلغ المتبقي</TableCell>
-              <TableCell>الحالة</TableCell>
-              <TableCell>الإجراءات</TableCell>
+              <TableHead>رقم الفاتورة</TableHead>
+              <TableHead>المورد</TableHead>
+              <TableHead>تاريخ الفاتورة</TableHead>
+              <TableHead>تاريخ الاستحقاق</TableHead>
+              <TableHead>المبلغ الإجمالي</TableHead>
+              <TableHead>المبلغ المدفوع</TableHead>
+              <TableHead>المبلغ المتبقي</TableHead>
+              <TableHead>الحالة</TableHead>
+              <TableHead>الإجراءات</TableHead>
             </TableRow>
-          </TableHead>
+          </TableHeader>
           <TableBody>
             {invoices.map((invoice) => (
               <TableRow key={invoice.id}>
@@ -180,55 +151,49 @@ const PurchaseInvoices: React.FC = () => {
                     ? new Date(invoice.dueDate).toLocaleDateString("ar-EG")
                     : "-"}
                 </TableCell>
+                <TableCell>{Number(invoice.totalAmount).toFixed(2)} EGP</TableCell>
+                <TableCell>{Number(invoice.paidAmount).toFixed(2)} EGP</TableCell>
+                <TableCell>{Number(invoice.remainingAmount).toFixed(2)} EGP</TableCell>
                 <TableCell>
-                  {Number(invoice.totalAmount).toFixed(2)} EGP
+                  <Badge variant={statusColors[invoice.status] || "outline"}>
+                    {statusLabels[invoice.status]}
+                  </Badge>
                 </TableCell>
                 <TableCell>
-                  {Number(invoice.paidAmount).toFixed(2)} EGP
-                </TableCell>
-                <TableCell>
-                  {Number(invoice.remainingAmount).toFixed(2)} EGP
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={statusLabels[invoice.status]}
-                    color={statusColors[invoice.status]}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>
-                  <IconButton
-                    size="small"
-                    onClick={() =>
-                      navigate(`/procurement/purchase-invoices/${invoice.id}`)
-                    }
-                    title="عرض التفاصيل"
-                  >
-                    <ViewIcon />
-                  </IconButton>
-                  {invoice.status !== "PAID" &&
-                    invoice.status !== "CANCELLED" && (
-                      <IconButton
-                        size="small"
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        navigate(`/procurement/purchase-invoices/${invoice.id}`)
+                      }
+                      title="عرض التفاصيل"
+                    >
+                      <Eye className="size-4" />
+                    </Button>
+                    {invoice.status !== "PAID" && invoice.status !== "CANCELLED" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() =>
                           navigate(
                             `/procurement/supplier-payments/new?invoiceId=${invoice.id}`,
                           )
                         }
                         title="تسجيل دفعة"
-                        color="primary"
                       >
-                        <PaymentIcon />
-                      </IconButton>
+                        <CreditCard className="size-4" />
+                      </Button>
                     )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
+      </div>
 
-      <Box sx={mobileListSx}>
+      <div className="grid md:hidden gap-2">
         {invoices.length === 0 ? (
           <ProcurementMobileState>لا توجد فواتير موردين</ProcurementMobileState>
         ) : (
@@ -239,11 +204,9 @@ const PurchaseInvoices: React.FC = () => {
               title={invoice.supplier.name}
               subtitle={`دفعات: ${invoice._count.payments} | أصناف: ${invoice._count.items}`}
               status={
-                <Chip
-                  label={statusLabels[invoice.status] || invoice.status}
-                  color={statusColors[invoice.status] || "default"}
-                  size="small"
-                />
+                <Badge variant={statusColors[invoice.status] || "outline"}>
+                  {statusLabels[invoice.status] || invoice.status}
+                </Badge>
               }
               fields={[
                 {
@@ -273,48 +236,49 @@ const PurchaseInvoices: React.FC = () => {
               ]}
               actions={
                 <>
-                  <IconButton
-                    aria-label="عرض التفاصيل"
-                    size="small"
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() =>
                       navigate(`/procurement/purchase-invoices/${invoice.id}`)
                     }
                     title="عرض التفاصيل"
                   >
-                    <ViewIcon />
-                  </IconButton>
-                  {invoice.status !== "PAID" &&
-                    invoice.status !== "CANCELLED" && (
-                      <IconButton
-                        aria-label="تسجيل دفعة"
-                        size="small"
-                        onClick={() =>
-                          navigate(
-                            `/procurement/supplier-payments/new?invoiceId=${invoice.id}`,
-                          )
-                        }
-                        title="تسجيل دفعة"
-                        color="primary"
-                      >
-                        <PaymentIcon />
-                      </IconButton>
-                    )}
+                    <Eye className="size-4" />
+                  </Button>
+                  {invoice.status !== "PAID" && invoice.status !== "CANCELLED" && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        navigate(
+                          `/procurement/supplier-payments/new?invoiceId=${invoice.id}`,
+                        )
+                      }
+                      title="تسجيل دفعة"
+                    >
+                      <CreditCard className="size-4" />
+                    </Button>
+                  )}
                 </>
               }
             />
           ))
         )}
-      </Box>
+      </div>
 
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
-        <Pagination
-          count={totalPages}
-          page={page}
-          onChange={(_, value) => setPage(value)}
-          color="primary"
-        />
-      </Box>
-    </Box>
+      <div className="flex justify-center mt-3">
+        <div className="flex items-center gap-1">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+            السابق
+          </Button>
+          <span className="text-sm px-3">{page} / {totalPages}</span>
+          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+            التالي
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 };
 

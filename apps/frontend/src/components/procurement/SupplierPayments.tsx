@@ -1,36 +1,30 @@
 import React, { useCallback, useEffect, useState } from "react";
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Chip,
-  Typography,
-  TextField,
-  InputAdornment,
-  Pagination,
-  MenuItem,
-} from "@mui/material";
-import {
-  Add as AddIcon,
-  Visibility as ViewIcon,
-  Search as SearchIcon,
-} from "@mui/icons-material";
+import { Plus, Eye, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import {
   ProcurementMobileCard,
   ProcurementMobileState,
 } from "./ProcurementMobileCard";
-import { desktopTableSx, mobileListSx } from "./procurementResponsiveSx";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface SupplierPayment {
   id: string;
@@ -67,12 +61,7 @@ const SupplierPayments: React.FC = () => {
   const fetchPayments = useCallback(async () => {
     try {
       const response = await apiClient.get("/procurement/supplier-payments", {
-        params: {
-          page,
-          limit: 20,
-          search: searchTerm,
-          paymentMethod: methodFilter,
-        },
+        params: { page, limit: 20, search: searchTerm, paymentMethod: methodFilter },
       });
       setPayments(response.data.payments);
       setTotalPages(response.data.pagination.totalPages);
@@ -86,75 +75,56 @@ const SupplierPayments: React.FC = () => {
   }, [fetchPayments]);
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box
-        sx={{
-          alignItems: { xs: "stretch", sm: "center" },
-          display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
-          gap: 2,
-          justifyContent: "space-between",
-          mb: 3,
-        }}
-      >
-        <Typography variant="h4">إدارة المدفوعات</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate("/procurement/supplier-payments/new")}
-          sx={{ alignSelf: { xs: "stretch", sm: "auto" } }}
-        >
-          تسجيل دفعة جديدة
+    <div className="p-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 justify-between mb-3">
+        <h1 className="text-2xl font-bold">إدارة المدفوعات</h1>
+        <Button onClick={() => navigate("/procurement/supplier-payments/new")}>
+          <Plus className="size-4" /> تسجيل دفعة جديدة
         </Button>
-      </Box>
+      </div>
 
-      <Card sx={{ mb: 3 }}>
+      <Card className="mb-3">
         <CardContent>
-          <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
-            <TextField
-              fullWidth
-              placeholder="البحث عن دفعة..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <TextField
-              select
-              label="طريقة الدفع"
-              value={methodFilter}
-              onChange={(e) => setMethodFilter(e.target.value)}
-              sx={{ minWidth: { xs: "100%", sm: 200 } }}
-            >
-              <MenuItem value="">الكل</MenuItem>
-              {Object.entries(paymentMethodLabels).map(([key, label]) => (
-                <MenuItem key={key} value={key}>
-                  {label}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Box>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder="البحث عن دفعة..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <div className="min-w-[200px]">
+              <Select value={methodFilter} onValueChange={setMethodFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="طريقة الدفع" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">الكل</SelectItem>
+                  {Object.entries(paymentMethodLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      <TableContainer component={Paper} sx={desktopTableSx}>
+      <div className="hidden md:block rounded-xl border bg-card text-card-foreground">
         <Table>
-          <TableHead>
+          <TableHeader>
             <TableRow>
-              <TableCell>رقم الدفعة</TableCell>
-              <TableCell>المورد</TableCell>
-              <TableCell>رقم الفاتورة</TableCell>
-              <TableCell>تاريخ الدفع</TableCell>
-              <TableCell>المبلغ</TableCell>
-              <TableCell>طريقة الدفع</TableCell>
-              <TableCell>الإجراءات</TableCell>
+              <TableHead>رقم الدفعة</TableHead>
+              <TableHead>المورد</TableHead>
+              <TableHead>رقم الفاتورة</TableHead>
+              <TableHead>تاريخ الدفع</TableHead>
+              <TableHead>المبلغ</TableHead>
+              <TableHead>طريقة الدفع</TableHead>
+              <TableHead>الإجراءات</TableHead>
             </TableRow>
-          </TableHead>
+          </TableHeader>
           <TableBody>
             {payments.map((payment) => (
               <TableRow key={payment.id}>
@@ -168,29 +138,29 @@ const SupplierPayments: React.FC = () => {
                 </TableCell>
                 <TableCell>{Number(payment.amount).toFixed(2)} EGP</TableCell>
                 <TableCell>
-                  <Chip
-                    label={paymentMethodLabels[payment.paymentMethod]}
-                    size="small"
-                  />
+                  <Badge variant="outline">
+                    {paymentMethodLabels[payment.paymentMethod]}
+                  </Badge>
                 </TableCell>
                 <TableCell>
-                  <IconButton
-                    size="small"
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() =>
                       navigate(`/procurement/supplier-payments/${payment.id}`)
                     }
                     title="عرض التفاصيل"
                   >
-                    <ViewIcon />
-                  </IconButton>
+                    <Eye className="size-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
+      </div>
 
-      <Box sx={mobileListSx}>
+      <div className="grid md:hidden gap-2">
         {payments.length === 0 ? (
           <ProcurementMobileState>لا توجد مدفوعات</ProcurementMobileState>
         ) : (
@@ -201,13 +171,9 @@ const SupplierPayments: React.FC = () => {
               title={payment.supplier.name}
               subtitle={payment.purchaseInvoice?.invoiceNumber || "دفعة مقدمة"}
               status={
-                <Chip
-                  label={
-                    paymentMethodLabels[payment.paymentMethod] ||
-                    payment.paymentMethod
-                  }
-                  size="small"
-                />
+                <Badge variant="outline">
+                  {paymentMethodLabels[payment.paymentMethod] || payment.paymentMethod}
+                </Badge>
               }
               fields={[
                 {
@@ -221,37 +187,38 @@ const SupplierPayments: React.FC = () => {
                 },
                 {
                   label: "طريقة الدفع",
-                  value:
-                    paymentMethodLabels[payment.paymentMethod] ||
-                    payment.paymentMethod,
+                  value: paymentMethodLabels[payment.paymentMethod] || payment.paymentMethod,
                 },
               ]}
               actions={
-                <IconButton
-                  aria-label="عرض التفاصيل"
-                  size="small"
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() =>
                     navigate(`/procurement/supplier-payments/${payment.id}`)
                   }
                   title="عرض التفاصيل"
                 >
-                  <ViewIcon />
-                </IconButton>
+                  <Eye className="size-4" />
+                </Button>
               }
             />
           ))
         )}
-      </Box>
+      </div>
 
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
-        <Pagination
-          count={totalPages}
-          page={page}
-          onChange={(_, value) => setPage(value)}
-          color="primary"
-        />
-      </Box>
-    </Box>
+      <div className="flex justify-center mt-3">
+        <div className="flex items-center gap-1">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+            السابق
+          </Button>
+          <span className="text-sm px-3">{page} / {totalPages}</span>
+          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+            التالي
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 };
 

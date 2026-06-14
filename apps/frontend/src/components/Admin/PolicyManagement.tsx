@@ -1,36 +1,43 @@
 import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertAction } from "@/components/ui/alert";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import {
-  Box,
-  Typography,
-  Button,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Table,
+  TableHeader,
   TableBody,
-  TableCell,
-  TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  IconButton,
-  Chip,
-  Switch,
-  FormControlLabel,
-  Alert,
-  CircularProgress,
-  MenuItem,
+  TableCell,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   Select,
-  FormControl,
-  InputLabel,
-} from "@mui/material";
-import Grid from "@mui/material/GridLegacy";
-import { Add, Edit, Delete, Visibility, Schedule } from "@mui/icons-material";
-import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Eye,
+  Clock,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 
 interface Policy {
@@ -48,6 +55,17 @@ interface Policy {
   updatedAt: string;
 }
 
+const getCategoryBadgeVariant = (category: string): "default" | "secondary" | "destructive" | "outline" => {
+  const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+    shipping: "default",
+    return: "secondary",
+    refund: "destructive",
+    privacy: "secondary",
+    terms: "outline",
+  };
+  return variants[category] || "outline";
+};
+
 const PolicyManagement: React.FC = () => {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(false);
@@ -63,8 +81,8 @@ const PolicyManagement: React.FC = () => {
     category: "general",
     tags: "",
     isActive: true,
-    effectiveAt: new Date(),
-    expiresAt: null as Date | null,
+    effectiveAt: new Date().toISOString().slice(0, 16),
+    expiresAt: "",
   });
 
   useEffect(() => {
@@ -92,8 +110,8 @@ const PolicyManagement: React.FC = () => {
           .split(",")
           .map((t) => t.trim())
           .filter(Boolean),
-        effectiveAt: formData.effectiveAt.toISOString(),
-        expiresAt: formData.expiresAt ? formData.expiresAt.toISOString() : null,
+        effectiveAt: new Date(formData.effectiveAt).toISOString(),
+        expiresAt: formData.expiresAt ? new Date(formData.expiresAt).toISOString() : null,
       };
 
       if (editingPolicy) {
@@ -144,8 +162,8 @@ const PolicyManagement: React.FC = () => {
       category: policy.category,
       tags: policy.tags.join(", "),
       isActive: policy.isActive,
-      effectiveAt: new Date(policy.effectiveAt),
-      expiresAt: policy.expiresAt ? new Date(policy.expiresAt) : null,
+      effectiveAt: new Date(policy.effectiveAt).toISOString().slice(0, 16),
+      expiresAt: policy.expiresAt ? new Date(policy.expiresAt).toISOString().slice(0, 16) : "",
     });
     setDialogOpen(true);
   };
@@ -158,20 +176,9 @@ const PolicyManagement: React.FC = () => {
       category: "general",
       tags: "",
       isActive: true,
-      effectiveAt: new Date(),
-      expiresAt: null,
+      effectiveAt: new Date().toISOString().slice(0, 16),
+      expiresAt: "",
     });
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, any> = {
-      shipping: "primary",
-      return: "secondary",
-      refund: "warning",
-      privacy: "info",
-      terms: "default",
-    };
-    return colors[category] || "default";
   };
 
   const isExpired = (policy: Policy) => {
@@ -183,339 +190,301 @@ const PolicyManagement: React.FC = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
-      >
-        <Typography variant="h4">إدارة السياسات</Typography>
+    <div className="p-3">
+      <div className="flex justify-between items-center mb-3">
+        <h1 className="text-2xl font-bold">إدارة السياسات</h1>
         <Button
-          variant="contained"
-          startIcon={<Add />}
           onClick={() => {
             resetForm();
             setDialogOpen(true);
           }}
         >
+          <Plus className="size-4" />
           إضافة سياسة جديدة
         </Button>
-      </Box>
+      </div>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
+        <Alert variant="destructive" className="mb-2">
+          <AlertDescription>{error}</AlertDescription>
+          <AlertAction>
+            <button onClick={() => setError(null)} className="text-current opacity-70 hover:opacity-100">
+              <X className="size-4" />
+            </button>
+          </AlertAction>
         </Alert>
       )}
       {success && (
-        <Alert
-          severity="success"
-          sx={{ mb: 2 }}
-          onClose={() => setSuccess(null)}
-        >
-          {success}
+        <Alert className="mb-2">
+          <AlertDescription>{success}</AlertDescription>
+          <AlertAction>
+            <button onClick={() => setSuccess(null)} className="text-current opacity-70 hover:opacity-100">
+              <X className="size-4" />
+            </button>
+          </AlertAction>
         </Alert>
       )}
 
       {loading ? (
-        <Box display="flex" justifyContent="center" p={4}>
-          <CircularProgress />
-        </Box>
+        <div className="flex justify-center p-4">
+          <LoadingSpinner />
+        </div>
       ) : (
-        <TableContainer component={Paper}>
+        <div className="rounded-xl border bg-card text-card-foreground">
           <Table>
-            <TableHead>
+            <TableHeader>
               <TableRow>
-                <TableCell>العنوان</TableCell>
-                <TableCell>الفئة</TableCell>
-                <TableCell>تاريخ السريان</TableCell>
-                <TableCell>تاريخ الانتهاء</TableCell>
-                <TableCell>الحالة</TableCell>
-                <TableCell>الإصدار</TableCell>
-                <TableCell>الإجراءات</TableCell>
+                <TableHead>العنوان</TableHead>
+                <TableHead>الفئة</TableHead>
+                <TableHead>تاريخ السريان</TableHead>
+                <TableHead>تاريخ الانتهاء</TableHead>
+                <TableHead>الحالة</TableHead>
+                <TableHead>الإصدار</TableHead>
+                <TableHead>الإجراءات</TableHead>
               </TableRow>
-            </TableHead>
+            </TableHeader>
             <TableBody>
               {policies.map((policy) => (
                 <TableRow
                   key={policy.id}
-                  sx={{
-                    bgcolor: isExpired(policy)
-                      ? "error.lighter"
+                  className={
+                    isExpired(policy)
+                      ? "bg-red-50 dark:bg-red-950/20"
                       : isNotYetEffective(policy)
-                        ? "warning.lighter"
-                        : "inherit",
-                  }}
+                        ? "bg-yellow-50 dark:bg-yellow-950/20"
+                        : ""
+                  }
                 >
                   <TableCell>
-                    <Typography variant="body2" fontWeight="bold">
-                      {policy.title}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <p className="text-sm font-bold">{policy.title}</p>
+                    <span className="text-xs text-muted-foreground">
                       {policy.content.substring(0, 80)}...
-                    </Typography>
+                    </span>
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label={policy.category}
-                      size="small"
-                      color={getCategoryColor(policy.category)}
-                    />
+                    <Badge variant={getCategoryBadgeVariant(policy.category)}>
+                      {policy.category}
+                    </Badge>
                   </TableCell>
                   <TableCell>
-                    <Box display="flex" alignItems="center" gap={0.5}>
-                      <Schedule fontSize="small" />
-                      <Typography variant="caption">
-                        {new Date(policy.effectiveAt).toLocaleDateString(
-                          "ar-EG",
-                        )}
-                      </Typography>
-                    </Box>
+                    <div className="flex items-center gap-0.5">
+                      <Clock className="size-4" />
+                      <span className="text-xs">
+                        {new Date(policy.effectiveAt).toLocaleDateString("ar-EG")}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     {policy.expiresAt ? (
-                      <Typography
-                        variant="caption"
-                        color={isExpired(policy) ? "error" : "text.secondary"}
+                      <span
+                        className={`text-xs ${isExpired(policy) ? "text-destructive" : "text-muted-foreground"}`}
                       >
                         {new Date(policy.expiresAt).toLocaleDateString("ar-EG")}
-                      </Typography>
+                      </span>
                     ) : (
-                      <Typography variant="caption" color="text.secondary">
+                      <span className="text-xs text-muted-foreground">
                         بدون انتهاء
-                      </Typography>
+                      </span>
                     )}
                   </TableCell>
                   <TableCell>
-                    <Box display="flex" alignItems="center" gap={1}>
+                    <div className="flex items-center gap-1">
                       <Switch
                         checked={policy.isActive}
-                        onChange={() => handleToggleActive(policy)}
-                        size="small"
+                        onCheckedChange={() => handleToggleActive(policy)}
                       />
                       {isExpired(policy) && (
-                        <Chip label="منتهية" size="small" color="error" />
+                        <Badge variant="destructive">منتهية</Badge>
                       )}
                       {isNotYetEffective(policy) && (
-                        <Chip label="قادمة" size="small" color="warning" />
+                        <Badge variant="secondary">قادمة</Badge>
                       )}
-                    </Box>
+                    </div>
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label={`v${policy.version}`}
-                      size="small"
-                      variant="outlined"
-                    />
+                    <Badge variant="outline">{`v${policy.version}`}</Badge>
                   </TableCell>
                   <TableCell>
-                    <IconButton
-                      size="small"
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => {
                         setViewingPolicy(policy);
                         setViewDialogOpen(true);
                       }}
                     >
-                      <Visibility fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
+                      <Eye className="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => openEditDialog(policy)}
                     >
-                      <Edit fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      color="error"
+                      <Pencil className="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => handleDelete(policy.id)}
                     >
-                      <Delete fontSize="small" />
-                    </IconButton>
+                      <Trash2 className="size-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </TableContainer>
+        </div>
       )}
 
-      <Dialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          {editingPolicy ? "تعديل السياسة" : "إضافة سياسة جديدة"}
-        </DialogTitle>
-        <DialogContent>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12}>
-                <TextField
-                  label="العنوان"
-                  fullWidth
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingPolicy ? "تعديل السياسة" : "إضافة سياسة جديدة"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-12 gap-4 mt-1">
+            <div className="col-span-12">
+              <Label>العنوان</Label>
+              <Input
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
+              />
+            </div>
+            <div className="col-span-12">
+              <Label>المحتوى</Label>
+              <Textarea
+                value={formData.content}
+                onChange={(e) =>
+                  setFormData({ ...formData, content: e.target.value })
+                }
+                rows={6}
+              />
+            </div>
+            <div className="col-span-12 md:col-span-6">
+              <Label>الفئة</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, category: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">عام</SelectItem>
+                  <SelectItem value="shipping">الشحن</SelectItem>
+                  <SelectItem value="return">الإرجاع</SelectItem>
+                  <SelectItem value="refund">الاسترداد</SelectItem>
+                  <SelectItem value="privacy">الخصوصية</SelectItem>
+                  <SelectItem value="terms">الشروط والأحكام</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-12 md:col-span-6">
+              <Label>الوسوم (مفصولة بفواصل)</Label>
+              <Input
+                value={formData.tags}
+                onChange={(e) =>
+                  setFormData({ ...formData, tags: e.target.value })
+                }
+                placeholder="شحن, إرجاع, ضمان"
+              />
+            </div>
+            <div className="col-span-12 md:col-span-6">
+              <Label>تاريخ السريان</Label>
+              <Input
+                type="datetime-local"
+                value={formData.effectiveAt}
+                onChange={(e) =>
+                  setFormData({ ...formData, effectiveAt: e.target.value })
+                }
+              />
+            </div>
+            <div className="col-span-12 md:col-span-6">
+              <Label>تاريخ الانتهاء (اختياري)</Label>
+              <Input
+                type="datetime-local"
+                value={formData.expiresAt}
+                onChange={(e) =>
+                  setFormData({ ...formData, expiresAt: e.target.value })
+                }
+              />
+            </div>
+            <div className="col-span-12">
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, isActive: checked })
                   }
                 />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  label="المحتوى"
-                  fullWidth
-                  multiline
-                  rows={6}
-                  value={formData.content}
-                  onChange={(e) =>
-                    setFormData({ ...formData, content: e.target.value })
-                  }
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>الفئة</InputLabel>
-                  <Select
-                    value={formData.category}
-                    label="الفئة"
-                    onChange={(e) =>
-                      setFormData({ ...formData, category: e.target.value })
-                    }
-                  >
-                    <MenuItem value="general">عام</MenuItem>
-                    <MenuItem value="shipping">الشحن</MenuItem>
-                    <MenuItem value="return">الإرجاع</MenuItem>
-                    <MenuItem value="refund">الاسترداد</MenuItem>
-                    <MenuItem value="privacy">الخصوصية</MenuItem>
-                    <MenuItem value="terms">الشروط والأحكام</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  label="الوسوم (مفصولة بفواصل)"
-                  fullWidth
-                  value={formData.tags}
-                  onChange={(e) =>
-                    setFormData({ ...formData, tags: e.target.value })
-                  }
-                  placeholder="شحن, إرجاع, ضمان"
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <DateTimePicker
-                  label="تاريخ السريان"
-                  value={formData.effectiveAt}
-                  onChange={(date) =>
-                    setFormData({
-                      ...formData,
-                      effectiveAt: date || new Date(),
-                    })
-                  }
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <DateTimePicker
-                  label="تاريخ الانتهاء (اختياري)"
-                  value={formData.expiresAt}
-                  onChange={(date) =>
-                    setFormData({ ...formData, expiresAt: date })
-                  }
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.isActive}
-                      onChange={(e) =>
-                        setFormData({ ...formData, isActive: e.target.checked })
-                      }
-                    />
-                  }
-                  label="نشط"
-                />
-              </Grid>
-            </Grid>
-          </LocalizationProvider>
+                <Label>نشط</Label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={!formData.title || !formData.content}
+            >
+              حفظ
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>إلغاء</Button>
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            disabled={!formData.title || !formData.content}
-          >
-            حفظ
-          </Button>
-        </DialogActions>
       </Dialog>
 
-      <Dialog
-        open={viewDialogOpen}
-        onClose={() => setViewDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>{viewingPolicy?.title}</DialogTitle>
-        <DialogContent>
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{viewingPolicy?.title}</DialogTitle>
+          </DialogHeader>
           {viewingPolicy && (
-            <Box>
-              <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary">
-                    الفئة
-                  </Typography>
-                  <Typography variant="body2">
-                    {viewingPolicy.category}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary">
-                    الإصدار
-                  </Typography>
-                  <Typography variant="body2">
-                    v{viewingPolicy.version}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary">
-                    تاريخ السريان
-                  </Typography>
-                  <Typography variant="body2">
-                    {new Date(viewingPolicy.effectiveAt).toLocaleString(
-                      "ar-EG",
-                    )}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary">
-                    تاريخ الانتهاء
-                  </Typography>
-                  <Typography variant="body2">
+            <div>
+              <div className="grid grid-cols-12 gap-4 mb-2">
+                <div className="col-span-6">
+                  <span className="text-xs text-muted-foreground">الفئة</span>
+                  <p className="text-sm">{viewingPolicy.category}</p>
+                </div>
+                <div className="col-span-6">
+                  <span className="text-xs text-muted-foreground">الإصدار</span>
+                  <p className="text-sm">v{viewingPolicy.version}</p>
+                </div>
+                <div className="col-span-6">
+                  <span className="text-xs text-muted-foreground">تاريخ السريان</span>
+                  <p className="text-sm">
+                    {new Date(viewingPolicy.effectiveAt).toLocaleString("ar-EG")}
+                  </p>
+                </div>
+                <div className="col-span-6">
+                  <span className="text-xs text-muted-foreground">تاريخ الانتهاء</span>
+                  <p className="text-sm">
                     {viewingPolicy.expiresAt
-                      ? new Date(viewingPolicy.expiresAt).toLocaleString(
-                          "ar-EG",
-                        )
+                      ? new Date(viewingPolicy.expiresAt).toLocaleString("ar-EG")
                       : "بدون انتهاء"}
-                  </Typography>
-                </Grid>
-              </Grid>
-              <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
+                  </p>
+                </div>
+              </div>
+              <p className="text-sm whitespace-pre-wrap">
                 {viewingPolicy.content}
-              </Typography>
-            </Box>
+              </p>
+            </div>
           )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
+              إغلاق
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setViewDialogOpen(false)}>إغلاق</Button>
-        </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 };
 

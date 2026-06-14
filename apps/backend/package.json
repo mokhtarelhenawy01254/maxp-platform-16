@@ -4,7 +4,7 @@
   "description": "Chat application backend",
   "main": "server.js",
   "scripts": {
-    "schema:generate": "node ../../node_modules/prisma/build/index.js generate --schema=prisma/schema",
+    "schema:generate": "prisma generate --schema=prisma/schema",
     "kill:ports": "npx -y kill-port 3007 3008 3009 || exit 0",
     "build": "npm run schema:generate",
     "predev": "npm run schema:generate",

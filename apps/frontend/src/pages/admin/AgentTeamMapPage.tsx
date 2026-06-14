@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { AdminPageHeader } from "@/components/admin";
 
 interface AgentNode {
   id: string;
@@ -71,36 +72,15 @@ export default function AgentTeamMapPage() {
       className="min-h-[calc(100vh-64px)] bg-[#f6f7f9] p-4 md:p-6"
       dir="rtl"
     >
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <div className="mb-1 flex items-center gap-2">
-            <GitBranch className="size-7 text-primary" />
-            <h1 className="text-3xl font-black">خريطة الوكلاء</h1>
-          </div>
-          <p className="text-muted-foreground">
-            تقسيم شجري يوضح المدير، الفريق المباشر، وأي وكلاء تابعين لوكلاء آخرين.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <RouterLink to="/admin/ai-agents">
-              <ExternalLink className="mr-1 size-4" />
-              إدارة الملفات
-            </RouterLink>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={loadTree}
-          >
-            {loading ? (
-              <LoadingSpinner size="sm" />
-            ) : (
-              <RefreshCw className="size-5" />
-            )}
-          </Button>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="خريطة الوكلاء"
+        subtitle="تقسيم شجري يوضح المدير، الفريق المباشر، وأي وكلاء تابعين لوكلاء آخرين."
+        icon={<GitBranch className="size-7" />}
+        actions={<>
+          <Button variant="outline" asChild><RouterLink to="/admin/ai-agents"><ExternalLink className="mr-1 size-4" />إدارة الملفات</RouterLink></Button>
+          <Button variant="ghost" size="icon" onClick={loadTree}>{loading ? <LoadingSpinner size="sm" /> : <RefreshCw className="size-5" />}</Button>
+        </>}
+      />
 
       {error && (
         <div

@@ -33,6 +33,14 @@ export const shouldBootstrapStorefront = (
   const pathname = normalizePathname(pathnameInput);
   const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
 
+  // Storefront detection on pure localhost is driven solely by subdomain
+  // (tenant.localhost), never by path alone. Admin routes such as
+  // /products/…, /settings/store/… or /cart MUST NOT bootstrap the
+  // storefront rendering engine on localhost.
+  if (isLocalhost) {
+    return false;
+  }
+
   if (
     pathname === "/store" ||
     pathname.startsWith("/store/") ||
@@ -49,10 +57,6 @@ export const shouldBootstrapStorefront = (
   }
 
   if (isPublicSubdomainBypassPath(pathname)) {
-    return false;
-  }
-
-  if (isLocalhost) {
     return false;
   }
 

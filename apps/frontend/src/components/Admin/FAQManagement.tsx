@@ -1,41 +1,44 @@
 import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertAction } from "@/components/ui/alert";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import {
-  Box,
-  Typography,
-  Button,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Table,
+  TableHeader,
   TableBody,
-  TableCell,
-  TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  IconButton,
-  Chip,
-  Switch,
-  FormControlLabel,
-  Alert,
-  CircularProgress,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-} from "@mui/material";
-import Grid from "@mui/material/GridLegacy";
+  TableCell,
+} from "@/components/ui/table";
 import {
-  Add,
-  Edit,
-  Delete,
-  ArrowUpward,
-  ArrowDownward,
-  ThumbUp,
-  ThumbDown,
-} from "@mui/icons-material";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  ThumbsUp,
+  ThumbsDown,
+  X,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 
@@ -241,234 +244,219 @@ const FAQManagement: React.FC = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
-      >
-        <Typography variant="h4">{tr("faqManagement.title")}</Typography>
+    <div className="p-3">
+      <div className="flex justify-between items-center mb-3">
+        <h1 className="text-2xl font-bold">{tr("faqManagement.title")}</h1>
         <Button
-          variant="contained"
-          startIcon={<Add />}
           onClick={() => {
             resetForm();
             setDialogOpen(true);
           }}
         >
+          <Plus className="size-4" />
           {tr("faqManagement.addNew")}
         </Button>
-      </Box>
+      </div>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
+        <Alert variant="destructive" className="mb-2">
+          <AlertDescription>{error}</AlertDescription>
+          <AlertAction>
+            <button onClick={() => setError(null)} className="text-current opacity-70 hover:opacity-100">
+              <X className="size-4" />
+            </button>
+          </AlertAction>
         </Alert>
       )}
       {success && (
-        <Alert
-          severity="success"
-          sx={{ mb: 2 }}
-          onClose={() => setSuccess(null)}
-        >
-          {success}
+        <Alert className="mb-2">
+          <AlertDescription>{success}</AlertDescription>
+          <AlertAction>
+            <button onClick={() => setSuccess(null)} className="text-current opacity-70 hover:opacity-100">
+              <X className="size-4" />
+            </button>
+          </AlertAction>
         </Alert>
       )}
 
       {loading ? (
-        <Box display="flex" justifyContent="center" p={4}>
-          <CircularProgress />
-        </Box>
+        <div className="flex justify-center p-4">
+          <LoadingSpinner />
+        </div>
       ) : (
-        <TableContainer component={Paper}>
+        <div className="rounded-xl border bg-card text-card-foreground">
           <Table>
-            <TableHead>
+            <TableHeader>
               <TableRow>
-                <TableCell>{tr("faqManagement.order")}</TableCell>
-                <TableCell>{tr("faqManagement.question")}</TableCell>
-                <TableCell>{tr("faqManagement.category")}</TableCell>
-                <TableCell>{tr("faqManagement.rating")}</TableCell>
-                <TableCell>{tr("faqManagement.status")}</TableCell>
-                <TableCell>{tr("faqManagement.version")}</TableCell>
-                <TableCell>{tr("faqManagement.actions")}</TableCell>
+                <TableHead>{tr("faqManagement.order")}</TableHead>
+                <TableHead>{tr("faqManagement.question")}</TableHead>
+                <TableHead>{tr("faqManagement.category")}</TableHead>
+                <TableHead>{tr("faqManagement.rating")}</TableHead>
+                <TableHead>{tr("faqManagement.status")}</TableHead>
+                <TableHead>{tr("faqManagement.version")}</TableHead>
+                <TableHead>{tr("faqManagement.actions")}</TableHead>
               </TableRow>
-            </TableHead>
+            </TableHeader>
             <TableBody>
               {faqs.map((faq) => (
                 <TableRow key={faq.id}>
                   <TableCell>
-                    <Box display="flex" alignItems="center">
-                      <IconButton
-                        size="small"
+                    <div className="flex items-center">
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => handleReorder(faq, "up")}
                         disabled={faq.order === 0}
                       >
-                        <ArrowUpward fontSize="small" />
-                      </IconButton>
-                      <Typography sx={{ mx: 1 }}>{faq.order}</Typography>
-                      <IconButton
-                        size="small"
+                        <ArrowUp className="size-4" />
+                      </Button>
+                      <span className="mx-1">{faq.order}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => handleReorder(faq, "down")}
                       >
-                        <ArrowDownward fontSize="small" />
-                      </IconButton>
-                    </Box>
+                        <ArrowDown className="size-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" fontWeight="bold">
-                      {faq.question}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <p className="text-sm font-bold">{faq.question}</p>
+                    <span className="text-xs text-muted-foreground">
                       {faq.answer.substring(0, 100)}...
-                    </Typography>
+                    </span>
                   </TableCell>
                   <TableCell>
-                    <Chip label={faq.category} size="small" />
+                    <Badge>{faq.category}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Box display="flex" alignItems="center">
-                        <ThumbUp fontSize="small" color="success" />
-                        <Typography variant="caption" ml={0.5}>
-                          {faq.helpful}
-                        </Typography>
-                      </Box>
-                      <Box display="flex" alignItems="center">
-                        <ThumbDown fontSize="small" color="error" />
-                        <Typography variant="caption" ml={0.5}>
-                          {faq.notHelpful}
-                        </Typography>
-                      </Box>
-                    </Box>
+                    <div className="flex items-center gap-1">
+                      <div className="flex items-center">
+                        <ThumbsUp className="size-4 text-green-500" />
+                        <span className="text-xs ml-0.5">{faq.helpful}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <ThumbsDown className="size-4 text-red-500" />
+                        <span className="text-xs ml-0.5">{faq.notHelpful}</span>
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Switch
                       checked={faq.isActive}
-                      onChange={() => handleToggleActive(faq)}
-                      size="small"
+                      onCheckedChange={() => handleToggleActive(faq)}
                     />
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label={`v${faq.version}`}
-                      size="small"
-                      variant="outlined"
-                    />
+                    <Badge variant="outline">{`v${faq.version}`}</Badge>
                   </TableCell>
                   <TableCell>
-                    <IconButton
-                      size="small"
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => openEditDialog(faq)}
                     >
-                      <Edit fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      color="error"
+                      <Pencil className="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => handleDelete(faq.id)}
                     >
-                      <Delete fontSize="small" />
-                    </IconButton>
+                      <Trash2 className="size-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </TableContainer>
+        </div>
       )}
 
-      <Dialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          {editingFaq ? tr("faqManagement.editQuestion") : tr("faqManagement.addNew")}
-        </DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <TextField
-                label={tr("faqManagement.question")}
-                fullWidth
-                multiline
-                rows={2}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingFaq ? tr("faqManagement.editQuestion") : tr("faqManagement.addNew")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-12 gap-4 mt-1">
+            <div className="col-span-12">
+              <Label>{tr("faqManagement.question")}</Label>
+              <Textarea
                 value={formData.question}
                 onChange={(e) =>
                   setFormData({ ...formData, question: e.target.value })
                 }
+                rows={2}
               />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label={tr("faqManagement.answer")}
-                fullWidth
-                multiline
-                rows={4}
+            </div>
+            <div className="col-span-12">
+              <Label>{tr("faqManagement.answer")}</Label>
+              <Textarea
                 value={formData.answer}
                 onChange={(e) =>
                   setFormData({ ...formData, answer: e.target.value })
                 }
+                rows={4}
               />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>{tr("faqManagement.category")}</InputLabel>
-                <Select
-                  value={formData.category}
-                  label={tr("faqManagement.category")}
-                  onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
-                  }
-                >
-                  <MenuItem value="general">{tr("faqManagement.categories.general")}</MenuItem>
-                  <MenuItem value="shipping">{tr("faqManagement.categories.shipping")}</MenuItem>
-                  <MenuItem value="payment">{tr("faqManagement.categories.payment")}</MenuItem>
-                  <MenuItem value="returns">{tr("faqManagement.categories.returns")}</MenuItem>
-                  <MenuItem value="products">{tr("faqManagement.categories.products")}</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                label={tr("faqManagement.tags")}
-                fullWidth
+            </div>
+            <div className="col-span-12 md:col-span-6">
+              <Label>{tr("faqManagement.category")}</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, category: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">{tr("faqManagement.categories.general")}</SelectItem>
+                  <SelectItem value="shipping">{tr("faqManagement.categories.shipping")}</SelectItem>
+                  <SelectItem value="payment">{tr("faqManagement.categories.payment")}</SelectItem>
+                  <SelectItem value="returns">{tr("faqManagement.categories.returns")}</SelectItem>
+                  <SelectItem value="products">{tr("faqManagement.categories.products")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-12 md:col-span-6">
+              <Label>{tr("faqManagement.tags")}</Label>
+              <Input
                 value={formData.tags}
                 onChange={(e) =>
                   setFormData({ ...formData, tags: e.target.value })
                 }
                 placeholder={tr("faqManagement.tagsPlaceholder")}
               />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.isActive}
-                    onChange={(e) =>
-                      setFormData({ ...formData, isActive: e.target.checked })
-                    }
-                  />
-                }
-                label={tr("faqManagement.active")}
-              />
-            </Grid>
-          </Grid>
+            </div>
+            <div className="col-span-12">
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, isActive: checked })
+                  }
+                />
+                <Label>{tr("faqManagement.active")}</Label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              {tr("common.cancel")}
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={!formData.question || !formData.answer}
+            >
+              {tr("common.save")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>{tr("common.cancel")}</Button>
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            disabled={!formData.question || !formData.answer}
-          >
-            {tr("common.save")}
-          </Button>
-        </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 };
 

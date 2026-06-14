@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  Box,
-  Card,
-  CardContent,
-  Divider,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Separator } from "@/components/ui/separator";
 
 interface ProcurementMobileField {
   label: React.ReactNode;
@@ -37,111 +30,55 @@ export function ProcurementMobileCard({
   actions,
 }: ProcurementMobileCardProps) {
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        borderRadius: 3,
-        borderColor: "divider",
-        boxShadow: "0 14px 34px rgba(15, 23, 42, 0.08)",
-        overflow: "hidden",
-      }}
-    >
-      <CardContent sx={{ p: 2.25, "&:last-child": { pb: 2.25 } }}>
-        <Stack spacing={1.75}>
-          <Box
-            sx={{
-              alignItems: "flex-start",
-              display: "flex",
-              gap: 1.5,
-              justifyContent: "space-between",
-            }}
-          >
-            <Box sx={{ minWidth: 0 }}>
+    <div className="rounded-xl border bg-card text-card-foreground shadow-[0_14px_34px_rgba(15,23,42,0.08)] overflow-hidden">
+      <div className="p-2.25">
+        <div className="flex flex-col gap-1.75">
+          <div className="flex items-start justify-between gap-1.5">
+            <div className="min-w-0">
               {eyebrow && (
-                <Typography
-                  color="text.secondary"
-                  sx={{ fontWeight: 700, letterSpacing: "0.04em", mb: 0.5 }}
-                  variant="caption"
-                >
+                <span className="text-xs font-bold tracking-wider text-muted-foreground mb-0.5 block">
                   {eyebrow}
-                </Typography>
+                </span>
               )}
-              <Typography
-                sx={{
-                  fontWeight: 800,
-                  lineHeight: 1.25,
-                  overflowWrap: "anywhere",
-                }}
-                variant="h6"
-              >
-                {title}
-              </Typography>
+              <h6 className="font-extrabold leading-tight break-words">{title}</h6>
               {subtitle && (
-                <Typography
-                  color="text.secondary"
-                  sx={{ mt: 0.5, overflowWrap: "anywhere" }}
-                  variant="body2"
-                >
+                <p className="text-sm text-muted-foreground mt-0.5 break-words">
                   {subtitle}
-                </Typography>
+                </p>
               )}
-            </Box>
-            {status && <Box sx={{ flexShrink: 0 }}>{status}</Box>}
-          </Box>
+            </div>
+            {status && <div className="shrink-0">{status}</div>}
+          </div>
 
           {fields.length > 0 && (
-            <Box
-              sx={{
-                display: "grid",
-                gap: 1.25,
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-              }}
-            >
+            <div className="grid grid-cols-2 gap-1.25">
               {fields.map((field, index) => (
-                <Box
+                <div
                   key={`${String(field.label)}-${index}`}
-                  sx={{
-                    bgcolor: "action.hover",
-                    borderRadius: 2,
-                    gridColumn: field.fullWidth ? "1 / -1" : "auto",
-                    minWidth: 0,
-                    p: 1.25,
-                  }}
+                  className={`rounded-lg bg-muted p-1.25 min-w-0 ${field.fullWidth ? "col-span-full" : ""}`}
                 >
-                  <Typography
-                    color="text.secondary"
-                    sx={{ display: "block", mb: 0.4 }}
-                    variant="caption"
-                  >
+                  <span className="text-xs text-muted-foreground block mb-0.4">
                     {field.label}
-                  </Typography>
-                  <Typography
-                    component="div"
-                    sx={{
-                      fontWeight: field.emphasis ? 800 : 650,
-                      lineHeight: 1.35,
-                      overflowWrap: "anywhere",
-                    }}
-                    variant="body2"
+                  </span>
+                  <div
+                    className={`text-sm leading-tight break-words ${field.emphasis ? "font-extrabold" : "font-semibold"}`}
                   >
                     {field.value}
-                  </Typography>
-                </Box>
+                  </div>
+                </div>
               ))}
-            </Box>
+            </div>
           )}
 
           {actions && (
             <>
-              <Divider />
-              <Box sx={{ display: "flex", gap: 0.5, justifyContent: "end" }}>
-                {actions}
-              </Box>
+              <Separator />
+              <div className="flex gap-0.5 justify-end">{actions}</div>
             </>
           )}
-        </Stack>
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -149,10 +86,10 @@ export function ProcurementMobileState({
   children,
 }: ProcurementMobileStateProps) {
   return (
-    <Card variant="outlined" sx={{ borderRadius: 3 }}>
-      <CardContent sx={{ py: 4, textAlign: "center" }}>
-        <Typography color="text.secondary">{children}</Typography>
-      </CardContent>
-    </Card>
+    <div className="rounded-xl border bg-card text-card-foreground">
+      <div className="py-4 text-center text-muted-foreground text-sm">
+        {children}
+      </div>
+    </div>
   );
 }

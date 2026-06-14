@@ -89,32 +89,6 @@ export const isSubdomain = (): boolean => {
 const normalizeStorePath = (path: string): string =>
   path.startsWith("/") ? path : `/${path}`;
 
-export const toPathScopedStorefrontPath = (path: string): string => {
-  const routeTarget = new URL(normalizeStorePath(path), "https://storefront.local");
-  const nextPath =
-    routeTarget.pathname === "/store" || routeTarget.pathname.startsWith("/store/")
-      ? routeTarget.pathname
-      : routeTarget.pathname === "/"
-        ? "/store"
-        : `/store${routeTarget.pathname}`;
-
-  return `${nextPath}${routeTarget.search}${routeTarget.hash}`;
-};
-
-export const buildPathScopedStoreUrl = (
-  path: string,
-  companyId: string,
-): string => {
-  const scopedPath = toPathScopedStorefrontPath(path);
-  const url = new URL(scopedPath, window.location.origin);
-
-  if (companyId.trim()) {
-    url.searchParams.set("companyId", companyId.trim());
-  }
-
-  return url.toString();
-};
-
 /**
  * Build store URL with subdomain or custom domain
  * @param identifier - Store slug or company ID
@@ -153,11 +127,6 @@ export const buildStoreUrl = (
     return `${window.location.origin}${cleanPath}`;
   }
 
-  if (isLocalLikeDomain(baseDomain) && safeCompanyId) {
-    return buildPathScopedStoreUrl(cleanPath, safeCompanyId);
-  }
-
-  // In both local and production, use subdomain URL for clean links.
   return `${protocol}//${safeIdentifier}.${baseDomain}${cleanPath}`;
 };
 

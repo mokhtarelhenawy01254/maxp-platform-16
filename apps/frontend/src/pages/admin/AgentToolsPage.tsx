@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { AdminPageHeader } from "@/components/admin";
 import {
   Dialog,
   DialogContent,
@@ -132,16 +133,15 @@ export default function AgentToolsPage() {
 
   return (
     <div dir="rtl" className="min-h-[calc(100vh-64px)] bg-background p-4 md:p-6">
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <div className="mb-1 flex items-center gap-2"><Wrench className="size-7 text-primary" /><h1 className="text-3xl font-black">أدوات الوكلاء</h1></div>
-          <p className="text-muted-foreground">كل أداة عبارة عن وحدة عمل يستطيع الوكيل استدعاؤها. هنا تعرف مين بيستخدم أنهي أداة وتقدر تعيّنها.</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <AdminPageHeader
+        title="أدوات الوكلاء"
+        subtitle="كل أداة عبارة عن وحدة عمل يستطيع الوكيل استدعاؤها. هنا تعرف مين بيستخدم أنهي أداة وتقدر تعيّنها."
+        icon={<Wrench className="size-7" />}
+        actions={<>
           <div className="relative min-w-[280px]"><Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input placeholder="بحث في الأدوات أو الوكلاء..." value={query} onChange={(e) => setQuery(e.target.value)} className="pr-9" /></div>
           <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" onClick={loadAll}>{loading ? <LoadingSpinner size="sm" /> : <RefreshCw className="size-4" />}</Button></TooltipTrigger><TooltipContent>تحديث</TooltipContent></Tooltip></TooltipProvider>
-        </div>
-      </div>
+        </>}
+      />
 
       {!loading && <div className="mb-6 flex flex-wrap gap-3">
         <div className="rounded-xl border bg-card p-3"><span className="text-xs text-muted-foreground">إجمالي الأدوات</span><p className="text-lg font-black">{tools.length}</p></div>

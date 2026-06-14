@@ -1,7 +1,6 @@
 const path = require('path');
 const fs = require('fs');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const sandboxBridge = require('../services/sandboxBridge');
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const aiSandboxService = require('../services/aiSandboxService');
 const { calculateCost, getModelCost } = require('../config/modelCosts');
@@ -138,6 +137,28 @@ function compactPromptText(value, maxChars = MAX_SANDBOX_AGENT_INSTRUCTION_CHARS
     .replace(/\n{3,}/g, '\n\n')
     .trim();
   return compacted.length > maxChars ? compacted.slice(0, maxChars).trim() : compacted;
+}
+
+async function getAgentConfig(companyId, agentId) {
+  try {
+    return await aiServiceAdminClient.getAgent(companyId, agentId);
+  } catch {
+    return null;
+  }
+}
+
+function createSandboxAgentMeta(templateSlug, companyId, config) {
+  return {
+    id: config.id || `${templateSlug}_${companyId}`,
+    name: config.name || templateSlug,
+    role: config.role || 'CUSTOMER_SALES',
+    companyId,
+    templateSlug,
+    allowedTools: config.allowedTools || [],
+    allowedSkills: config.allowedSkills || [],
+    model: config.model || 'default',
+    persona: config.persona || { soulInstructions: '' },
+  };
 }
 
 function buildAiServiceAgentConfig(agent) {
@@ -532,7 +553,7 @@ function hydrateSandboxWorkingMemory(companyId, conversationId, sessionMessages 
 }
 
 async function createSandboxRuntimeAgent(companyId, agentId, modelSelection) {
-  const agentConfig = await sandboxBridge.getAgentConfig(companyId, agentId);
+  const agentConfig = await getAgentConfig(companyId, agentId);
   let runtimeAgent = agentConfig;
   if (!runtimeAgent) {
     const prisma = getSharedPrismaClient();
@@ -579,7 +600,7 @@ async function createSandboxRuntimeAgent(companyId, agentId, modelSelection) {
     },
   };
 
-  const sandboxAgent = sandboxBridge.createSandboxAgentMeta(
+  const sandboxAgent = createSandboxAgentMeta(
     runtimeAgent.role === 'CEO' ? 'ceo' : templateSlug,
     companyId,
     sandboxConfig
@@ -1152,7 +1173,7 @@ async function getAgentInfo(companyId, agentId) {
   if (!agentId) return null;
   if (!companyId) return null;
 
-  const agentConfig = await sandboxBridge.getAgentConfig(companyId, agentId);
+  const agentConfig = await getAgentConfig(companyId, agentId);
   if (agentConfig) {
     return {
       name: agentConfig.name,
@@ -1659,7 +1680,7 @@ async function exportSession(req, res) {
 async function listSandboxTools(req, res) {
   try {
     const companyId = req.user?.companyId || req.companyId;
-    const tools = await sandboxBridge.listTools(companyId);
+    const tools = await aiServiceAdminClient.listTools(companyId);
     return res.json({ success: true, tools });
   } catch (error) {
     console.error('[AI-SANDBOX] listSandboxTools error:', error);

@@ -1,3 +1,11 @@
+## [2026-06-14] Backend — Prisma Schema Generation Fails due to Hardcoded Path
+- **Bug/Issue**: Running `npm run schema:generate` failed with `Error: Cannot find module 'H:\maxp-platform\node_modules\prisma\build\index.js'`.
+- **Root Cause**: The script in `apps/backend/package.json` used a hardcoded path `node ../../node_modules/prisma/build/index.js` which assumed `prisma` was installed at the root `node_modules` instead of resolving the local project's devDependency.
+- **Fix**: Replaced the hardcoded script with standard `prisma generate --schema=prisma/schema` which correctly resolves the installed Prisma package in `node_modules/.bin`.
+- **Verification**: Local test run of `npm run schema:generate` succeeded and correctly generated Prisma client to `H:\maxp-platform\apps\backend\prisma\generated\postgresql_v2`.
+- **Affected Files**:
+  - `apps/backend/package.json`
+
 ## [2026-06-13] Backend — Marketplace Validator 400 Error due to Empty Strings and Numeric Types
 - **Bug/Issue**: Saving a marketplace app continued to return HTTP 400 even after removing `.strict()` from the Zod schemas. The frontend sends empty strings `""` for empty text fields (like `slug`, `logo`, `unitName`) and numeric fields as strings (`"199"`) from input fields. Zod's `z.number().nullish()` rejects empty strings and string-numbers, and `z.string().regex(...)` rejects `""` because it doesn't match the regex.
 - **Root Cause**: The `validate` middleware in `marketplaceManagementValidator.js` passed `req.body` directly to `schema.safeParse()`. Zod strictly type-checks without coercion by default unless explicitly configured.

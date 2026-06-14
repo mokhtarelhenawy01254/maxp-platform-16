@@ -1,3 +1,14 @@
+## [2026-06-14] Services Startup & Prisma Generator Configuration Fix [DONE]
+- **Objective**: Launch all platform services (backend, frontend, AI service, MCP servers) and fix local Prisma schema generation path errors.
+- **Accomplishments**:
+  - **Prisma Path Fix**: Resolved a startup failure in `npm run schema:generate` by replacing the hardcoded parent `node_modules` path with standard `prisma generate` in `apps/backend/package.json`.
+  - **Launched Backend & Frontend**: Started the stable Express backend on port 3007 and Vite dev server on port 3001 as background tasks.
+  - **Launched MCP Services**: Started the production `catalog-mcp` service on port 7100 and `skills-mcp` service on port 7101 under python virtual environments, allowing full MCP-driven tool resolution for the AI service.
+- **Files**:
+  - `apps/backend/package.json` [MODIFY]
+  - `apps/backend/Bugs.md` [MODIFY]
+  - `apps/backend/TEAM_SYNC.md` [MODIFY]
+
 ## [2026-06-13] Contextual App Explanations (Video & Text) for Dashboard [DONE]
 - **Objective**: Add contextual, route-based app explanations (videos and texts) to the merchant dashboard header based on the active page.
 - **Accomplishments**:

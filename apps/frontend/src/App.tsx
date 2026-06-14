@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./hooks/useAuthSimple";
 import tokenManager from "./utils/tokenManager";
 import { shouldBootstrapStorefront } from "./bootstrap/requestTarget";
@@ -672,7 +672,6 @@ const EmployeeStatsReport = React.lazy(
   () => import("./pages/EmployeeStatsReport"),
 );
 const RolesManagement = React.lazy(() => import("./pages/RolesManagement"));
-const CompanyDashboard = React.lazy(() => import("./pages/CompanyDashboard"));
 const CompanyLinks = React.lazy(() => import("./pages/CompanyLinks"));
 // PublicCompanyLinks already declared above
 
@@ -2180,11 +2179,11 @@ const AppContent = () => {
               />
             ) : isAuthenticated ? (
               <>
-                <Route
-                  path="/dashboard"
-                  element={<Navigate to="/company-dashboard" replace />}
-                />
                 {/* App Dashboard Routes */}
+                <Route
+                  path="/company-dashboard"
+                  element={<Navigate to="/apps" replace />}
+                />
                 <Route
                   path="/apps"
                   element={
@@ -3028,14 +3027,6 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <RolesManagement />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/company-dashboard"
-                  element={
-                    <Layout>
-                      <CompanyDashboard />
                     </Layout>
                   }
                 />
@@ -4692,14 +4683,6 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/company-dashboard"
-                  element={
-                    <Layout>
-                      <CompanyDashboard />
-                    </Layout>
-                  }
-                />
-                <Route
                   path="/company-links"
                   element={<Navigate to="/my-companies/links" replace />}
                 />
@@ -6194,14 +6177,6 @@ const AppContent = () => {
                   path="/admin/ai-scheduler"
                   element={<Navigate to="/admin/ai-hub?tab=scheduler" replace />}
                 />
-                <Route
-                  path="/"
-                  element={<Navigate to="/company-dashboard" replace />}
-                />
-                <Route
-                  path="*"
-                  element={<Navigate to="/company-dashboard" replace />}
-                />
               </>
             ) : (
               // Redirect unauthenticated users trying to access protected routes
@@ -6379,10 +6354,7 @@ const AppContent = () => {
                   }
                 />
 
-                <Route
-                  path="*"
-                  element={<Navigate to="/auth/login" replace />}
-                />
+                <Route path="*" element={<RedirectToApps />} />
               </>
             )}
           </Routes>
@@ -6390,6 +6362,15 @@ const AppContent = () => {
       </div>
     </PerformanceOptimizer>
   );
+};
+
+// Fallback redirect for unmatched authenticated routes
+const RedirectToApps: React.FC = () => {
+  const navigate = useNavigate();
+  React.useEffect(() => {
+    navigate("/apps", { replace: true });
+  }, [navigate]);
+  return null;
 };
 
 // Main App component with providers
@@ -6402,3 +6383,4 @@ const App = () => {
 };
 
 export default App;
+

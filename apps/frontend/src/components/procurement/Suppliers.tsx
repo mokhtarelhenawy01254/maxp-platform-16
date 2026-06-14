@@ -1,44 +1,44 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Chip,
-  Typography,
-  MenuItem,
-  InputAdornment,
-  Pagination,
-  Rating,
-} from "@mui/material";
-import Grid from "@mui/material/GridLegacy";
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Search as SearchIcon,
-  Visibility as ViewIcon,
-} from "@mui/icons-material";
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  Eye,
+  Star,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import {
   ProcurementMobileCard,
   ProcurementMobileState,
 } from "./ProcurementMobileCard";
-import { desktopTableSx, mobileListSx } from "./procurementResponsiveSx";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Supplier {
   id: string;
@@ -65,6 +65,32 @@ interface Supplier {
   };
 }
 
+const StarRating: React.FC<{
+  value: number;
+  onChange?: (value: number) => void;
+  readonly?: boolean;
+  size?: number;
+}> = ({ value, onChange, readonly, size = 16 }) => {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          disabled={readonly}
+          onClick={() => onChange?.(star)}
+          className={readonly ? "cursor-default" : "cursor-pointer"}
+        >
+          <Star
+            size={size}
+            className={star <= value ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
+          />
+        </button>
+      ))}
+    </div>
+  );
+};
+
 const Suppliers: React.FC = () => {
   const { t, i18n } = useTranslation();
   const tr = (key: string) => String(t(key));
@@ -73,9 +99,7 @@ const Suppliers: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [openViewDialog, setOpenViewDialog] = useState(false);
-  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
-    null,
-  );
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -205,156 +229,109 @@ const Suppliers: React.FC = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }} dir={isRtl ? "rtl" : "ltr"}>
-      <Box
-        sx={{
-          alignItems: "center",
-          display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
-          gap: 2,
-          justifyContent: "space-between",
-          mb: 3,
-        }}
-      >
-        <Typography variant="h4">{t("procurement.suppliers.title")}</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
-          sx={{ alignSelf: { xs: "stretch", sm: "auto" } }}
-        >
-          {t("procurement.suppliers.addNew")}
+    <div className="p-3" dir={isRtl ? "rtl" : "ltr"}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
+        <h1 className="text-2xl font-bold">{t("procurement.suppliers.title")}</h1>
+        <Button onClick={() => handleOpenDialog()}>
+          <Plus className="size-4" /> {t("procurement.suppliers.addNew")}
         </Button>
-      </Box>
+      </div>
 
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <TextField
-            fullWidth
-            placeholder={tr("procurement.suppliers.searchPlaceholder")}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-          />
-        </CardContent>
-      </Card>
+      <div className="rounded-xl border bg-card text-card-foreground mb-3">
+        <div className="p-4">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input
+              placeholder={tr("procurement.suppliers.searchPlaceholder")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+        </div>
+      </div>
 
-      <TableContainer component={Paper} sx={desktopTableSx}>
+      <div className="hidden md:block rounded-xl border bg-card text-card-foreground">
         <Table>
-          <TableHead>
+          <TableHeader>
             <TableRow>
-              <TableCell align={isRtl ? "right" : "left"}>
-                {t("procurement.suppliers.columnName")}
-              </TableCell>
-              <TableCell align={isRtl ? "right" : "left"}>
-                {t("procurement.suppliers.columnContact")}
-              </TableCell>
-              <TableCell align={isRtl ? "right" : "left"}>
-                {t("procurement.suppliers.columnPhone")}
-              </TableCell>
-              <TableCell align={isRtl ? "right" : "left"}>
-                {t("procurement.suppliers.columnEmail")}
-              </TableCell>
-              <TableCell align={isRtl ? "right" : "left"}>
-                {t("procurement.suppliers.columnBalance")}
-              </TableCell>
-              <TableCell align={isRtl ? "right" : "left"}>
-                {t("procurement.suppliers.columnRating")}
-              </TableCell>
-              <TableCell align={isRtl ? "right" : "left"}>
-                {t("procurement.suppliers.columnStatus")}
-              </TableCell>
-              <TableCell align={isRtl ? "right" : "left"}>
-                {t("procurement.suppliers.columnActions")}
-              </TableCell>
+              <TableHead className={isRtl ? "text-right" : "text-left"}>{t("procurement.suppliers.columnName")}</TableHead>
+              <TableHead className={isRtl ? "text-right" : "text-left"}>{t("procurement.suppliers.columnContact")}</TableHead>
+              <TableHead className={isRtl ? "text-right" : "text-left"}>{t("procurement.suppliers.columnPhone")}</TableHead>
+              <TableHead className={isRtl ? "text-right" : "text-left"}>{t("procurement.suppliers.columnEmail")}</TableHead>
+              <TableHead className={isRtl ? "text-right" : "text-left"}>{t("procurement.suppliers.columnBalance")}</TableHead>
+              <TableHead className={isRtl ? "text-right" : "text-left"}>{t("procurement.suppliers.columnRating")}</TableHead>
+              <TableHead className={isRtl ? "text-right" : "text-left"}>{t("procurement.suppliers.columnStatus")}</TableHead>
+              <TableHead className={isRtl ? "text-right" : "text-left"}>{t("procurement.suppliers.columnActions")}</TableHead>
             </TableRow>
-          </TableHead>
+          </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={8} className="text-center">
                   {t("common.loading")}
                 </TableCell>
               </TableRow>
             ) : suppliers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={8} className="text-center">
                   {t("common.noData")}
                 </TableCell>
               </TableRow>
             ) : (
               suppliers.map((supplier) => (
                 <TableRow key={supplier.id}>
-                  <TableCell align={isRtl ? "right" : "left"}>
-                    {supplier.name}
+                  <TableCell>{supplier.name}</TableCell>
+                  <TableCell>{supplier.contactPerson || "-"}</TableCell>
+                  <TableCell>{supplier.phone || supplier.mobile || "-"}</TableCell>
+                  <TableCell>{supplier.email || "-"}</TableCell>
+                  <TableCell>{Number(supplier.currentBalance).toFixed(2)} EGP</TableCell>
+                  <TableCell>
+                    <StarRating value={supplier.rating || 0} readonly />
                   </TableCell>
-                  <TableCell align={isRtl ? "right" : "left"}>
-                    {supplier.contactPerson || "-"}
+                  <TableCell>
+                    <Badge variant={supplier.isActive ? "default" : "secondary"}>
+                      {supplier.isActive
+                        ? t("procurement.suppliers.statusActive")
+                        : t("procurement.suppliers.statusInactive")}
+                    </Badge>
                   </TableCell>
-                  <TableCell align={isRtl ? "right" : "left"}>
-                    {supplier.phone || supplier.mobile || "-"}
-                  </TableCell>
-                  <TableCell align={isRtl ? "right" : "left"}>
-                    {supplier.email || "-"}
-                  </TableCell>
-                  <TableCell align={isRtl ? "right" : "left"}>
-                    {Number(supplier.currentBalance).toFixed(2)} EGP
-                  </TableCell>
-                  <TableCell align={isRtl ? "right" : "left"}>
-                    <Rating
-                      value={supplier.rating || 0}
-                      readOnly
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align={isRtl ? "right" : "left"}>
-                    <Chip
-                      label={
-                        supplier.isActive
-                          ? t("procurement.suppliers.statusActive")
-                          : t("procurement.suppliers.statusInactive")
-                      }
-                      color={supplier.isActive ? "success" : "default"}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align={isRtl ? "right" : "left"}>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleViewDetails(supplier)}
-                      title={tr("procurement.suppliers.viewDetails")}
-                    >
-                      <ViewIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleOpenDialog(supplier)}
-                      title={tr("common.edit")}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDelete(supplier.id)}
-                      title={tr("common.delete")}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleViewDetails(supplier)}
+                        title={tr("procurement.suppliers.viewDetails")}
+                      >
+                        <Eye className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleOpenDialog(supplier)}
+                        title={tr("common.edit")}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(supplier.id)}
+                        title={tr("common.delete")}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
-      </TableContainer>
+      </div>
 
-      <Box sx={mobileListSx}>
+      <div className="grid md:hidden gap-2">
         {loading ? (
           <ProcurementMobileState>{t("common.loading")}</ProcurementMobileState>
         ) : suppliers.length === 0 ? (
@@ -367,15 +344,11 @@ const Suppliers: React.FC = () => {
               title={supplier.name}
               subtitle={supplier.email || supplier.phone || supplier.mobile || "-"}
               status={
-                <Chip
-                  label={
-                    supplier.isActive
-                      ? t("procurement.suppliers.statusActive")
-                      : t("procurement.suppliers.statusInactive")
-                  }
-                  color={supplier.isActive ? "success" : "default"}
-                  size="small"
-                />
+                <Badge variant={supplier.isActive ? "default" : "secondary"}>
+                  {supplier.isActive
+                    ? t("procurement.suppliers.statusActive")
+                    : t("procurement.suppliers.statusInactive")}
+                </Badge>
               }
               fields={[
                 {
@@ -389,9 +362,7 @@ const Suppliers: React.FC = () => {
                 },
                 {
                   label: t("procurement.suppliers.columnRating"),
-                  value: (
-                    <Rating value={supplier.rating || 0} readOnly size="small" />
-                  ),
+                  value: <StarRating value={supplier.rating || 0} readonly />,
                 },
                 {
                   label: t("procurement.suppliers.labelCity"),
@@ -400,326 +371,242 @@ const Suppliers: React.FC = () => {
               ]}
               actions={
                 <>
-                  <IconButton
-                    aria-label={tr("procurement.suppliers.viewDetails")}
-                    size="small"
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => handleViewDetails(supplier)}
                     title={tr("procurement.suppliers.viewDetails")}
                   >
-                    <ViewIcon />
-                  </IconButton>
-                  <IconButton
-                    aria-label={tr("common.edit")}
-                    size="small"
+                    <Eye className="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => handleOpenDialog(supplier)}
                     title={tr("common.edit")}
                   >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    aria-label={tr("common.delete")}
-                    size="small"
+                    <Pencil className="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => handleDelete(supplier.id)}
                     title={tr("common.delete")}
                   >
-                    <DeleteIcon />
-                  </IconButton>
+                    <Trash2 className="size-4" />
+                  </Button>
                 </>
               }
             />
           ))
         )}
-      </Box>
+      </div>
 
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
-        <Pagination
-          count={totalPages}
-          page={page}
-          onChange={(_, value) => setPage(value)}
-          color="primary"
-        />
-      </Box>
+      <div className="flex justify-center mt-3">
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage(page - 1)}
+          >
+            السابق
+          </Button>
+          <span className="text-sm px-3">
+            {page} / {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages}
+            onClick={() => setPage(page + 1)}
+          >
+            التالي
+          </Button>
+        </div>
+      </div>
 
-      <Dialog
-        open={openDialog}
-        onClose={handleCloseDialog}
-        maxWidth="md"
-        fullWidth
-        dir={isRtl ? "rtl" : "ltr"}
-      >
-        <DialogTitle>
-          {selectedSupplier
-            ? t("procurement.suppliers.editTitle")
-            : t("procurement.suppliers.addNew")}
-        </DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label={t("procurement.suppliers.labelName")}
+      <Dialog open={openDialog} onOpenChange={(open) => setOpenDialog(open)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogTitle>
+            {selectedSupplier
+              ? t("procurement.suppliers.editTitle")
+              : t("procurement.suppliers.addNew")}
+          </DialogTitle>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+            <div className="space-y-1">
+              <Label>{t("procurement.suppliers.labelName")}</Label>
+              <Input
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label={t("procurement.suppliers.labelContact")}
+            </div>
+            <div className="space-y-1">
+              <Label>{t("procurement.suppliers.labelContact")}</Label>
+              <Input
                 value={formData.contactPerson}
-                onChange={(e) =>
-                  setFormData({ ...formData, contactPerson: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label={t("procurement.suppliers.labelEmail")}
+            </div>
+            <div className="space-y-1">
+              <Label>{t("procurement.suppliers.labelEmail")}</Label>
+              <Input
                 type="email"
                 value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label={t("procurement.suppliers.labelPhone")}
+            </div>
+            <div className="space-y-1">
+              <Label>{t("procurement.suppliers.labelPhone")}</Label>
+              <Input
                 value={formData.phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label={t("procurement.suppliers.labelMobile")}
+            </div>
+            <div className="space-y-1">
+              <Label>{t("procurement.suppliers.labelMobile")}</Label>
+              <Input
                 value={formData.mobile}
-                onChange={(e) =>
-                  setFormData({ ...formData, mobile: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label={t("procurement.suppliers.labelCity")}
+            </div>
+            <div className="space-y-1">
+              <Label>{t("procurement.suppliers.labelCity")}</Label>
+              <Input
                 value={formData.city}
-                onChange={(e) =>
-                  setFormData({ ...formData, city: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label={t("procurement.suppliers.labelCountry")}
+            </div>
+            <div className="space-y-1">
+              <Label>{t("procurement.suppliers.labelCountry")}</Label>
+              <Input
                 value={formData.country}
-                onChange={(e) =>
-                  setFormData({ ...formData, country: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label={t("procurement.suppliers.labelTaxNumber")}
+            </div>
+            <div className="space-y-1">
+              <Label>{t("procurement.suppliers.labelTaxNumber")}</Label>
+              <Input
                 value={formData.taxNumber}
-                onChange={(e) =>
-                  setFormData({ ...formData, taxNumber: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, taxNumber: e.target.value })}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label={t("procurement.suppliers.labelCommercialRegister")}
+            </div>
+            <div className="space-y-1">
+              <Label>{t("procurement.suppliers.labelCommercialRegister")}</Label>
+              <Input
                 value={formData.commercialRegister}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    commercialRegister: e.target.value,
-                  })
-                }
+                onChange={(e) => setFormData({ ...formData, commercialRegister: e.target.value })}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label={t("procurement.suppliers.labelCreditLimit")}
+            </div>
+            <div className="space-y-1">
+              <Label>{t("procurement.suppliers.labelCreditLimit")}</Label>
+              <Input
                 type="number"
                 value={formData.creditLimit}
-                onChange={(e) =>
-                  setFormData({ ...formData, creditLimit: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, creditLimit: e.target.value })}
               />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label={t("procurement.suppliers.labelAddress")}
-                multiline
+            </div>
+            <div className="space-y-1 col-span-full">
+              <Label>{t("procurement.suppliers.labelAddress")}</Label>
+              <Textarea
                 rows={2}
                 value={formData.address}
-                onChange={(e) =>
-                  setFormData({ ...formData, address: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label={t("procurement.suppliers.labelPaymentTerms")}
-                multiline
+            </div>
+            <div className="space-y-1 col-span-full">
+              <Label>{t("procurement.suppliers.labelPaymentTerms")}</Label>
+              <Textarea
                 rows={2}
                 value={formData.paymentTerms}
-                onChange={(e) =>
-                  setFormData({ ...formData, paymentTerms: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, paymentTerms: e.target.value })}
               />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label={t("procurement.suppliers.labelNotes")}
-                multiline
+            </div>
+            <div className="space-y-1 col-span-full">
+              <Label>{t("procurement.suppliers.labelNotes")}</Label>
+              <Textarea
                 rows={3}
                 value={formData.notes}
-                onChange={(e) =>
-                  setFormData({ ...formData, notes: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               />
-            </Grid>
-            <Grid item xs={12}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <Typography>
-                  {t("procurement.suppliers.labelRating")}
-                </Typography>
-                <Rating
-                  value={formData.rating}
-                  onChange={(_, value) =>
-                    setFormData({ ...formData, rating: value || 0 })
-                  }
-                />
-              </Box>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                select
-                fullWidth
-                label={t("procurement.suppliers.labelStatus")}
-                value={formData.isActive}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    isActive: e.target.value === "true",
-                  })
+            </div>
+            <div className="col-span-full">
+              <Label className="mb-1 block">{t("procurement.suppliers.labelRating")}</Label>
+              <StarRating
+                value={formData.rating}
+                onChange={(value) => setFormData({ ...formData, rating: value })}
+              />
+            </div>
+            <div className="col-span-full">
+              <Label>{t("procurement.suppliers.labelStatus")}</Label>
+              <Select
+                value={formData.isActive ? "true" : "false"}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, isActive: value === "true" })
                 }
               >
-                <MenuItem value="true">
-                  {t("procurement.suppliers.statusActive")}
-                </MenuItem>
-                <MenuItem value="false">
-                  {t("procurement.suppliers.statusInactive")}
-                </MenuItem>
-              </TextField>
-            </Grid>
-          </Grid>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">{t("procurement.suppliers.statusActive")}</SelectItem>
+                  <SelectItem value="false">{t("procurement.suppliers.statusInactive")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseDialog}>{t("common.cancel")}</Button>
+            <Button onClick={handleSubmit}>{t("common.save")}</Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>{t("common.cancel")}</Button>
-          <Button onClick={handleSubmit} variant="contained">
-            {t("common.save")}
-          </Button>
-        </DialogActions>
       </Dialog>
 
-      <Dialog
-        open={openViewDialog}
-        onClose={() => setOpenViewDialog(false)}
-        maxWidth="md"
-        fullWidth
-        dir={isRtl ? "rtl" : "ltr"}
-      >
-        <DialogTitle>{t("procurement.suppliers.viewTitle")}</DialogTitle>
-        <DialogContent>
+      <Dialog open={openViewDialog} onOpenChange={(open) => setOpenViewDialog(open)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogTitle>{t("procurement.suppliers.viewTitle")}</DialogTitle>
           {selectedSupplier && (
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">
-                  {t("procurement.suppliers.columnName")}
-                </Typography>
-                <Typography variant="body1">{selectedSupplier.name}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">
-                  {t("procurement.suppliers.columnContact")}
-                </Typography>
-                <Typography variant="body1">
-                  {selectedSupplier.contactPerson || "-"}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">
-                  {t("procurement.suppliers.columnEmail")}
-                </Typography>
-                <Typography variant="body1">
-                  {selectedSupplier.email || "-"}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">
-                  {t("procurement.suppliers.columnPhone")}
-                </Typography>
-                <Typography variant="body1">
-                  {selectedSupplier.phone || "-"}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">
-                  {t("procurement.suppliers.columnBalance")}
-                </Typography>
-                <Typography variant="body1">
-                  {Number(selectedSupplier.currentBalance).toFixed(2)} EGP
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">
-                  {t("procurement.suppliers.columnRating")}
-                </Typography>
-                <Rating value={selectedSupplier.rating || 0} readOnly />
-              </Grid>
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" color="textSecondary">
-                  {t("procurement.suppliers.labelAddress")}
-                </Typography>
-                <Typography variant="body1">
-                  {selectedSupplier.address || "-"}
-                </Typography>
-              </Grid>
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" color="textSecondary">
-                  {t("procurement.suppliers.labelNotes")}
-                </Typography>
-                <Typography variant="body1">
-                  {selectedSupplier.notes || "-"}
-                </Typography>
-              </Grid>
-            </Grid>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+              <div>
+                <p className="text-xs text-muted-foreground">{t("procurement.suppliers.columnName")}</p>
+                <p className="text-sm">{selectedSupplier.name}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t("procurement.suppliers.columnContact")}</p>
+                <p className="text-sm">{selectedSupplier.contactPerson || "-"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t("procurement.suppliers.columnEmail")}</p>
+                <p className="text-sm">{selectedSupplier.email || "-"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t("procurement.suppliers.columnPhone")}</p>
+                <p className="text-sm">{selectedSupplier.phone || "-"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t("procurement.suppliers.columnBalance")}</p>
+                <p className="text-sm">{Number(selectedSupplier.currentBalance).toFixed(2)} EGP</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t("procurement.suppliers.columnRating")}</p>
+                <StarRating value={selectedSupplier.rating || 0} readonly />
+              </div>
+              <div className="col-span-full">
+                <p className="text-xs text-muted-foreground">{t("procurement.suppliers.labelAddress")}</p>
+                <p className="text-sm">{selectedSupplier.address || "-"}</p>
+              </div>
+              <div className="col-span-full">
+                <p className="text-xs text-muted-foreground">{t("procurement.suppliers.labelNotes")}</p>
+                <p className="text-sm">{selectedSupplier.notes || "-"}</p>
+              </div>
+            </div>
           )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenViewDialog(false)}>{t("common.close")}</Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenViewDialog(false)}>
-            {t("common.close")}
-          </Button>
-        </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 };
 

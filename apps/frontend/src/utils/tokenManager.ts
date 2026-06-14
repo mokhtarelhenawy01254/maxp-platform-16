@@ -60,6 +60,13 @@ export const tokenManager = {
   },
 
   /**
+   * Check if an access token exists in any storage.
+   */
+  hasAccessToken(): boolean {
+    return !!this.getAccessToken();
+  },
+
+  /**
    * Set access token.
    * Keeps the legacy key mirrored temporarily while older screens are migrated.
    */
