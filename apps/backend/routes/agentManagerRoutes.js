@@ -452,6 +452,21 @@ router.put('/agents/:id', async (req, res) => {
   }
 });
 
+// PUT /agents/:id — update agent channels or config
+router.put('/agents/:id', async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
+    if (req.body?.allowedChannels) {
+      const result = await aiServiceAdminClient.updateAgent(req.params.id, companyId, { allowed_channels: req.body.allowedChannels });
+      return res.json(result || { success: true });
+    }
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(502).json({ success: false, error: 'AI service unreachable: ' + (error.message || 'connection failed') });
+  }
+});
+
 // DELETE /agents/:id — archive a sub-agent (not CEO)
 router.delete('/agents/:id', async (req, res) => {
   try {
