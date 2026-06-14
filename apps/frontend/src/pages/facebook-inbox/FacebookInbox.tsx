@@ -2444,8 +2444,8 @@ const getApiError = (error: unknown): ApiErrorLike => {
                 )}
               </div>
 
-              {/* Sticky bottom composer */}
-              <div className="sticky bottom-0 z-10 mt-auto">
+              {/* Bottom composer */}
+              <div>
                 <MessageInput
                   onSendMessage={handleSendMessage}
                   onSendFile={handleSendFile}
