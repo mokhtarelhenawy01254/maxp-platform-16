@@ -1034,6 +1034,21 @@ async function getAgentProfile(req, res) {
       });
     }
 
+    // Fetch all live files from Python service (source of truth after saves)
+    let pyLiveFiles = {};
+    try {
+      const pyResult = await aiServiceAdminClient.getAgentFiles(agentId, companyId);
+      if (pyResult && pyResult.files && typeof pyResult.files === 'object') {
+        pyLiveFiles = pyResult.files;
+      }
+    } catch (_e) {}
+
+    const resolveFile = (key) => {
+      const pyVal = pyLiveFiles[key];
+      if (typeof pyVal === 'string' && pyVal.trim()) return pyVal;
+      return templateFiles[key] || '';
+    };
+
     return res.json({
       success: true,
       agent: {
@@ -1047,10 +1062,10 @@ async function getAgentProfile(req, res) {
         templateSlug: agent.templateSlug || null,
       },
       files: {
-        'SOUL.md': agent.soul || templateFiles['SOUL.md'] || '',
-        'AGENTS.md': templateFiles['AGENTS.md'] || '',
-        'TOOLS.md': templateFiles['TOOLS.md'] || '',
-        'PERSONA.md': templateFiles['PERSONA.md'] || '',
+        'SOUL.md': resolveFile('SOUL.md') || agent.soul || '',
+        'AGENTS.md': resolveFile('AGENTS.md'),
+        'TOOLS.md': resolveFile('TOOLS.md'),
+        'PERSONA.md': resolveFile('PERSONA.md'),
       },
       allowedTools,
       skills: skillDetails,

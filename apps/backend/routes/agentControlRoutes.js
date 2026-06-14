@@ -259,7 +259,7 @@ router.get('/agents/:id/files', async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ error: 'companyId is required' });
-    const result = await aiServiceAdminClient.request('GET', `/admin/agents/${encodeURIComponent(req.params.id)}/files?company_id=${encodeURIComponent(companyId)}`);
+    const result = await aiServiceAdminClient.getAgentFiles(req.params.id, companyId);
     return res.json(result || { success: true, agent: {}, files: {}, tools: [], skills: [] });
   } catch (error) {
     return res.status(502).json({ success: false, error: 'AI service unreachable: ' + (error.message || 'connection failed') });

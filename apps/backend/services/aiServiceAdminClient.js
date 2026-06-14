@@ -159,8 +159,12 @@ async function archiveAgent(agentId, companyId) {
   return request('DELETE', `/admin/agents/${encodeURIComponent(agentId)}?company_id=${encodeURIComponent(companyId)}`);
 }
 
+async function getAgentFiles(agentId, companyId) {
+  return request('GET', `/admin/agents/${encodeURIComponent(agentId)}/files?company_id=${encodeURIComponent(companyId)}`);
+}
+
 async function updateAgent(agentId, companyId, data) {
-  return request('PATCH', `/admin/agents/${encodeURIComponent(agentId)}?company_id=${encodeURIComponent(companyId)}`, data);
+  return request('PUT', `/admin/agents/${encodeURIComponent(agentId)}/files?company_id=${encodeURIComponent(companyId)}`, data);
 }
 
 module.exports = {
@@ -180,5 +184,6 @@ module.exports = {
   getManagerContext,
   getTeamMap,
   archiveAgent,
+  getAgentFiles,
   updateAgent,
 };
