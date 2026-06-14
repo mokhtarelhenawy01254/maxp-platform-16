@@ -940,8 +940,6 @@ export default function Marketplace() {
                 )}
               </div>
               )}
-              </div>
-              )}
             </div>
 
             {/* Content Switcher */}
@@ -1015,88 +1013,87 @@ export default function Marketplace() {
                     const textIcon = shouldUseTextIcon(app.icon) ? app.icon?.trim() : null;
                     const accessKind = getFeatureAccessKind(app.pricingModel);
                     return (
-                      <article
+                      <Card
                         key={app.id}
-                        className={`marketplace-card group flex min-h-[198px] flex-col rounded-2xl p-4 text-right transition-[border-color,background-color,transform] duration-200 hover:-translate-y-0.5 ${
-                          app.isInstalled
-                            ? "marketplace-card-active"
-                            : ""
-                        }`}
+                        className={cn(
+                          "group flex min-h-[198px] flex-col p-4 text-right transition-all hover:-translate-y-0.5",
+                          app.isInstalled && "border-success/50"
+                        )}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <Link
                             to={`/marketplace/${app.slug}`}
                             aria-label={t('marketplace.details') + ' ' + app.name}
-                            className="marketplace-muted rounded-lg p-1 transition-colors duration-200 hover:text-[var(--color-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                            className="rounded-lg p-1 text-muted-foreground transition-colors hover:text-foreground"
                           >
                             <Settings size={17} aria-hidden="true" />
                           </Link>
 
                           <div className="flex min-w-0 flex-1 items-start justify-end gap-3">
                             <div className="min-w-0">
-                              <h3 className="marketplace-strong truncate text-base font-black sm:text-lg">
+                              <h3 className="truncate text-base font-black text-foreground sm:text-lg">
                                 {app.name}
                               </h3>
-                              <div className="marketplace-muted mt-1 text-xs font-bold">
+                              <div className="mt-1 text-xs font-bold text-muted-foreground">
                                 {getDisplayedPrice(app)}
                               </div>
                             </div>
                             <div
-                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl ${app.isInstalled
-                                ? "marketplace-soft-success"
-                                : "marketplace-soft-primary"
-                                }`}
+                              className={cn(
+                                "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl",
+                                app.isInstalled
+                                  ? "bg-success/10 text-success"
+                                  : "bg-primary/10 text-primary"
+                              )}
                             >
                               {textIcon || <Icon size={24} aria-hidden="true" />}
                             </div>
                           </div>
                         </div>
 
-                        <p className="marketplace-muted mt-3 line-clamp-3 text-sm font-semibold leading-6">
+                        <p className="mt-3 line-clamp-3 text-sm font-semibold leading-6 text-muted-foreground">
                           {app.description}
                         </p>
 
                         <div className="mt-3 flex flex-wrap justify-end gap-1.5">
                           {app.isFeatured && (
-                            <span className="marketplace-soft-warning rounded-full border px-2.5 py-1 text-[10px] font-black">
+                            <Badge variant="secondary" className="text-[10px] font-black">
                               {t('marketplace.featured')}
-                            </span>
+                            </Badge>
                           )}
                           {app.isInstalled && (
-                            <span className="marketplace-soft-success inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black">
+                            <Badge variant="secondary" className="inline-flex items-center gap-1 text-[10px] font-black">
                               <Check size={10} strokeWidth={3} aria-hidden="true" />
                               {t('marketplace.installed')}
-                            </span>
+                            </Badge>
                           )}
-                          <span className="marketplace-chip rounded-full px-2.5 py-1 text-[10px] font-black">
+                          <Badge variant="outline" className="text-[10px] font-black">
                             {getFeatureAccessLabel(accessKind)}
-                          </span>
-                          <span className="marketplace-chip rounded-full px-2.5 py-1 text-[10px] font-black">
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px] font-black">
                             {getToolRoleLabel(app, t)}
-                          </span>
+                          </Badge>
                         </div>
 
                         <div className="mt-auto flex items-center justify-between gap-3 pt-4">
                           <Link
                             to={`/marketplace/${app.slug}`}
-                            className="marketplace-muted text-xs font-black transition-colors duration-200 hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                            className="text-xs font-black text-muted-foreground transition-colors hover:text-primary"
                           >
                             {t('marketplace.details')}
                           </Link>
                           {app.isInstalled ? (
                             <div className="flex items-center gap-2">
-                              <span className="inline-flex items-center gap-1 text-xs font-black text-[var(--color-success)]">
+                              <span className="inline-flex items-center gap-1 text-xs font-black text-success">
                                 <Check size={10} strokeWidth={3} />
                                 {t('marketplace.active')}
                               </span>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setConfirmUninstallApp(app);
-                                }}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1 border-red-200 text-xs font-black text-red-500 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+                                onClick={(e) => { e.stopPropagation(); setConfirmUninstallApp(app); }}
                                 disabled={uninstallingApp === app.slug}
-                                className="inline-flex items-center justify-center gap-1 rounded-full border border-red-200 px-3 py-1.5 text-xs font-black text-red-500 transition-colors duration-200 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                               >
                                 {uninstallingApp === app.slug ? (
                                   <Loader2 size={12} className="animate-spin" />
@@ -1104,12 +1101,12 @@ export default function Marketplace() {
                                   <X size={12} strokeWidth={3} />
                                 )}
                                 {t('marketplace.deactivate')}
-                              </button>
+                              </Button>
                             </div>
                           ) : (
-                            <button
-                              type="button"
-                              className="marketplace-primary-action inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-black transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                            <Button
+                              size="sm"
+                              className="gap-1.5 rounded-full px-4 text-xs font-black"
                               onClick={(e) => handleQuickInstall(e, app)}
                               disabled={installingApp === app.slug}
                             >
@@ -1119,10 +1116,10 @@ export default function Marketplace() {
                                 <Zap size={14} className="fill-current" aria-hidden="true" />
                               )}
                               {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
-                            </button>
+                            </Button>
                           )}
                         </div>
-                      </article>
+                      </Card>
                     );
                   })}
                 </div>
@@ -1131,195 +1128,64 @@ export default function Marketplace() {
         </div>
       </div>
       {/* Pricing Choice Dialog */}
-      {showPricingDialog && (() => {
-        const DialogIcon = categoryIcons[showPricingDialog.category] || Package;
-        const dialogTextIcon = shouldUseTextIcon(showPricingDialog.icon)
-          ? showPricingDialog.icon?.trim()
-          : null;
-
-        return (
-          <div
-            className="fixed inset-0 z-[60] flex items-center justify-center overscroll-contain bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none"
-            onClick={() => setShowPricingDialog(null)}
-          >
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="pricing-dialog-title"
-              className="marketplace-panel w-full max-w-md overflow-hidden rounded-2xl animate-in zoom-in-95 duration-200 motion-reduce:animate-none"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="marketplace-soft-primary flex h-12 w-12 items-center justify-center rounded-xl border text-2xl">
+      <Dialog open={!!showPricingDialog} onOpenChange={(open) => !open && setShowPricingDialog(null)}>
+        {showPricingDialog && (() => {
+          const DialogIcon = categoryIcons[showPricingDialog.category] || Package;
+          const dialogTextIcon = shouldUseTextIcon(showPricingDialog.icon)
+            ? showPricingDialog.icon?.trim()
+            : null;
+          return (
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl border bg-primary/10 text-2xl text-primary">
                     {dialogTextIcon || <DialogIcon size={24} aria-hidden="true" />}
                   </div>
                   <div>
-                    <h2 id="pricing-dialog-title" className="marketplace-strong text-xl font-bold">
-                      {showPricingDialog.name}
-                    </h2>
-                    <p className="marketplace-muted text-sm">
-                      {t('marketplace.choosePricing')}
-                    </p>
+                    <DialogTitle>{showPricingDialog.name}</DialogTitle>
+                    <DialogDescription>{t('marketplace.choosePricing')}</DialogDescription>
                   </div>
                 </div>
-
-                <div className="space-y-4">
-                  {/* Subscription Option */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      executeInstall(showPricingDialog, "SUBSCRIPTION");
-                      setShowPricingDialog(null);
-                    }}
-                    disabled={
-                      showPricingDialog.isInstalled &&
-                      showPricingDialog.activePricingModel === "SUBSCRIPTION"
-                    }
-                    className={`group relative w-full overflow-hidden rounded-xl border-2 p-4 text-right transition-[background-color,border-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${showPricingDialog.isInstalled &&
-                      showPricingDialog.activePricingModel === "SUBSCRIPTION"
-                      ? "marketplace-filter-active cursor-default"
-                      : "marketplace-card hover:border-[var(--color-primary)]"
-                      }`}
-                  >
-                    {showPricingDialog.isInstalled &&
-                      showPricingDialog.activePricingModel === "SUBSCRIPTION" && (
-                        <div className="marketplace-primary-action absolute top-0 left-0 text-[10px] px-2 py-0.5 rounded-br-lg font-bold">
-                          {t('marketplace.currentlyActive')}
-                        </div>
-                      )}
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="marketplace-strong font-bold">
-                        {showPricingDialog.activePricingModel === "PAY_PER_USE"
-                          ? t('marketplace.upgradeToMonthly')
-                          : t('marketplace.monthlySubscription')}
-                      </span>
-                      <span className="font-bold text-[var(--color-primary)]">
-                        {(showPricingDialog.monthlyPrice ?? 0) > 0
-                          ? t('marketplace.monthlyPrice', { price: showPricingDialog.monthlyPrice })
-                          : t('marketplace.freePrice')}
-                      </span>
-                    </div>
-                    <p className="marketplace-muted text-xs">
-                      {t('marketplace.subscriptionDesc')}
-                    </p>
-                  </button>
-
-                {/* Pay Per Use Option */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    executeInstall(showPricingDialog, "PAY_PER_USE");
-                    setShowPricingDialog(null);
-                  }}
-                  disabled={
-                    showPricingDialog.isInstalled &&
-                    showPricingDialog.activePricingModel === "PAY_PER_USE"
-                  }
-                  className={`group relative w-full overflow-hidden rounded-xl border-2 p-4 text-right transition-[background-color,border-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-warning)] ${showPricingDialog.isInstalled &&
-                    showPricingDialog.activePricingModel === "PAY_PER_USE"
-                    ? "marketplace-soft-warning cursor-default"
-                    : "marketplace-card hover:border-[var(--color-warning)]"
-                    }`}
-                >
-                    {showPricingDialog.isInstalled &&
-                      showPricingDialog.activePricingModel === "PAY_PER_USE" && (
-                        <div className="absolute top-0 left-0 rounded-br-lg bg-[var(--color-warning)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-warning-foreground)]">
-                          {t('marketplace.currentlyActive')}
-                        </div>
-                      )}
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="marketplace-strong flex items-center gap-1 font-bold">
-                      {t('marketplace.payPerUseLabel')}
-                      <Zap size={14} className="fill-current text-[var(--color-warning)]" aria-hidden="true" />
-                    </span>
-                    <span className="font-bold text-[var(--color-warning)]">
-                      {showPricingDialog.unitPrice || 0} {t('marketplace.currencyUnit')} /{" "}
-                      {showPricingDialog.unitName || t('marketplace.perUnit')}
-                    </span>
-                  </div>
-                  <p className="marketplace-muted text-xs">
-                    {t('marketplace.payPerUseDesc')}
-                  </p>
-                </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowPricingDialog(null)}
-                  className="marketplace-control marketplace-muted mt-6 w-full rounded-xl py-3 text-sm font-medium transition-colors duration-200 hover:text-[var(--color-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
-                >
-                  {t('marketplace.cancel')}
-                </button>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Button variant="outline" className={cn("relative w-full justify-between p-4 text-right", showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "SUBSCRIPTION" && "border-primary bg-primary/5")} onClick={() => { executeInstall(showPricingDialog, "SUBSCRIPTION"); setShowPricingDialog(null); }} disabled={showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "SUBSCRIPTION"}>
+                  {showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "SUBSCRIPTION" && <span className="absolute left-0 top-0 rounded-br-lg bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">{t('marketplace.currentlyActive')}</span>}
+                  <span className="font-bold">{showPricingDialog.activePricingModel === "PAY_PER_USE" ? t('marketplace.upgradeToMonthly') : t('marketplace.monthlySubscription')}</span>
+                  <span className="font-bold text-primary">{(showPricingDialog.monthlyPrice ?? 0) > 0 ? t('marketplace.monthlyPrice', { price: showPricingDialog.monthlyPrice }) : t('marketplace.freePrice')}</span>
+                </Button>
+                <Button variant="outline" className={cn("relative w-full justify-between p-4 text-right", showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "PAY_PER_USE" && "border-warning bg-warning/5")} onClick={() => { executeInstall(showPricingDialog, "PAY_PER_USE"); setShowPricingDialog(null); }} disabled={showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "PAY_PER_USE"}>
+                  {showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "PAY_PER_USE" && <span className="absolute left-0 top-0 rounded-br-lg bg-warning px-2 py-0.5 text-[10px] font-bold text-warning-foreground">{t('marketplace.currentlyActive')}</span>}
+                  <span className="flex items-center gap-1 font-bold">{t('marketplace.payPerUseLabel')}<Zap size={14} className="fill-current text-warning" aria-hidden="true" /></span>
+                  <span className="font-bold text-warning">{showPricingDialog.unitPrice || 0} {t('marketplace.currencyUnit')} / {showPricingDialog.unitName || t('marketplace.perUnit')}</span>
+                </Button>
               </div>
-            </div>
-          </div>
-        );
-      })()}
+            </DialogContent>
+          );
+        })()}
+      </Dialog>
 
       {/* Uninstall Confirmation Dialog */}
-      {confirmUninstallApp && (() => {
-        const app = confirmUninstallApp;
-        return (
-          <div
-            className="fixed inset-0 z-[60] flex items-center justify-center overscroll-contain bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200 motion-reduce:animate-none"
-            onClick={() => setConfirmUninstallApp(null)}
-          >
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="uninstall-dialog-title"
-              className="marketplace-panel w-full max-w-md overflow-hidden rounded-2xl animate-in zoom-in-95 duration-200 motion-reduce:animate-none"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
-                  <AlertTriangle size={28} className="text-red-600" />
-                </div>
-
-                <h2
-                  id="uninstall-dialog-title"
-                  className="text-center text-xl font-black"
-                >
-                  {t('marketplace.deactivateTitle', { name: app.name })}
-                </h2>
-
-                <p className="mt-3 text-center text-sm leading-6 text-[var(--color-muted-foreground)]">
-                  {t('marketplace.deactivateConfirm')}
-                  <br />
-                  {t('marketplace.deactivateWarning')}
-                </p>
-
-                <div className="mt-6 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setConfirmUninstallApp(null)}
-                    disabled={uninstallingApp === app.slug}
-                    className="flex-1 rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm font-black transition-colors duration-200 hover:bg-[var(--color-surface-hover)] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
-                  >
-                    {t('marketplace.goBack')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleUninstall(app)}
-                    disabled={uninstallingApp === app.slug}
-                    className="flex-1 rounded-xl bg-red-600 px-4 py-3 text-sm font-black text-white transition-colors duration-200 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                  >
-                    {uninstallingApp === app.slug ? (
-                      <span className="inline-flex items-center justify-center gap-2">
-                        <Loader2 size={16} className="animate-spin" />
-                        {t('marketplace.activating')}
-                      </span>
-                    ) : (
-                      t('marketplace.confirmDeactivation')
-                    )}
-                  </button>
-                </div>
+      <AlertDialog open={!!confirmUninstallApp} onOpenChange={(open) => !open && setConfirmUninstallApp(null)}>
+        {confirmUninstallApp && (
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
+                <AlertTriangle size={28} className="text-red-600" />
               </div>
-            </div>
-          </div>
-        );
-      })()}
+              <AlertDialogTitle className="text-center">{t('marketplace.deactivateTitle', { name: confirmUninstallApp.name })}</AlertDialogTitle>
+              <AlertDialogDescription className="text-center">{t('marketplace.deactivateConfirm')}<br />{t('marketplace.deactivateWarning')}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="gap-3">
+              <AlertDialogCancel disabled={uninstallingApp === confirmUninstallApp.slug}>{t('marketplace.goBack')}</AlertDialogCancel>
+              <AlertDialogAction onClick={() => handleUninstall(confirmUninstallApp)} disabled={uninstallingApp === confirmUninstallApp.slug} className="bg-red-600 hover:bg-red-700">
+                {uninstallingApp === confirmUninstallApp.slug ? (
+                  <span className="inline-flex items-center justify-center gap-2"><Loader2 size={16} className="animate-spin" />{t('marketplace.activating')}</span>
+                ) : t('marketplace.confirmDeactivation')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        )}
+      </AlertDialog>
     </div>
   );
 }
