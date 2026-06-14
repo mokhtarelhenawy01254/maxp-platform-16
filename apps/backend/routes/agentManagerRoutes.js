@@ -419,6 +419,7 @@ router.get('/agents', async (req, res) => {
           rules: (() => { try { return JSON.parse(a.rules || '[]'); } catch { return []; } })(),
           skills: (() => { try { return JSON.parse(a.skills || '[]'); } catch { return []; } })(),
           channels: (() => { try { return JSON.parse(a.channels || '[]'); } catch { return []; } })(),
+          allowed_channels: (() => { try { return JSON.parse(a.channels || '[]'); } catch { return []; } })(),
           model: a.model || null,
           status: a.status,
           parentId: a.parentId || null,
