@@ -78,7 +78,7 @@ const CompetitorList: React.FC = () => {
 
   const openCreate = () => {
     setEditingId(null);
-    setFormData({ name: '', url: '', platform: 'manual', description: '', notes: '', activityType: '', location: '', targetMarket: '', foundedYear: '', employeeCount: '', strengths: '', weaknesses: '' });
+    setFormData({ name: '', url: '', platform: 'manual', description: '', notes: '', activityType: '', location: '', targetMarket: '', foundedYear: '', strengths: '', weaknesses: '' });
     setSocialLinks(Object.fromEntries(SOCIAL_PLATFORMS.map(p => [p.key, ''])));
     setShowSocialSection(false);
     setFormError('');
