@@ -41,7 +41,9 @@
   "status": {
     "expired": "منتهية",
     "upcoming": "قادمة",
-    "noExpiry": "بدون انتهاء"
+    "noExpiry": "بدون انتهاء",
+    "active": "نشط",
+    "inactive": "معطل"
   },
   "view": {
     "title": "إغلاق",

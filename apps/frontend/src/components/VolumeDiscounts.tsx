@@ -136,7 +136,7 @@ const VolumeDiscounts: React.FC<VolumeDiscountsProps> = ({ productId }) => {
 
   const formatDiscount = (discount: VolumeDiscount) => {
     if (discount.discountType === "percentage") return `${discount.discountValue}%`;
-    return `${discount.discountValue} جنيه`;
+    return `${discount.discountValue}${t("volumeDiscounts.preview.currency")}`;
   };
 
   const formatQuantityRange = (discount: VolumeDiscount) => {
@@ -312,7 +312,7 @@ const VolumeDiscounts: React.FC<VolumeDiscountsProps> = ({ productId }) => {
               <p className="text-sm font-medium">
                 {t("volumeDiscounts.preview.buy")} {formData.minQuantity}
                 {formData.maxQuantity ? ` - ${formData.maxQuantity}` : "+"} {t("volumeDiscounts.preview.pieces")}{t("volumeDiscounts.preview.customerGets")}
-                {t("volumeDiscounts.preview.discount")} {formData.discountValue}{formData.discountType === "percentage" ? "%" : " جنيه"}
+                {t("volumeDiscounts.preview.discount")} {formData.discountValue}{formData.discountType === "percentage" ? "%" : t("volumeDiscounts.preview.currency")}
               </p>
             </div>
           </div>

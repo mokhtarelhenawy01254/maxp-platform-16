@@ -149,7 +149,7 @@ const PolicyManagement: React.FC = () => {
       await apiClient.put(`/policies/${policy.id}`, {
         isActive: !policy.isActive,
       });
-      setSuccess(t("policyManagement.toggleSuccess", { status: !policy.isActive ? t("policyManagement.label.active") : "معطل" }));
+      setSuccess(t("policyManagement.toggleSuccess", { status: !policy.isActive ? t("policyManagement.label.active") : t("policyManagement.status.inactive") }));
       loadPolicies();
     } catch (err: any) {
       setError(err.response?.data?.error || t("policyManagement.statusError"));

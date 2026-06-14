@@ -40,7 +40,8 @@
     "buy": "When buying",
     "pieces": "pieces",
     "discount": "Discount",
-    "customerGets": "Customer gets"
+    "customerGets": "Customer gets",
+    "currency": " EGP"
   },
   "tip": {
     "description": "Make sure quantity ranges do not overlap. The discount will be applied automatically when the product is added to the cart."

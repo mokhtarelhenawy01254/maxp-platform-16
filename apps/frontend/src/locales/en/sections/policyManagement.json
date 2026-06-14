@@ -41,7 +41,9 @@
   "status": {
     "expired": "Expired",
     "upcoming": "Upcoming",
-    "noExpiry": "No Expiry"
+    "noExpiry": "No Expiry",
+    "active": "Active",
+    "inactive": "Inactive"
   },
   "view": {
     "title": "Close",
