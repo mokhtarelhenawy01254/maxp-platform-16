@@ -23,6 +23,7 @@ import {
   Layers3,
   AlertTriangle,
   X,
+  Filter,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -62,6 +63,13 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 interface MarketplaceApp {
   id: string;
@@ -895,8 +903,8 @@ export default function Marketplace() {
               </div>
 
               {showAppFilters && (
-              <div className="mt-3 lg:hidden">
-                <div className="flex gap-2 overflow-x-auto pb-1 scroll-snap-x">
+              <div className="mt-3 flex items-center gap-2 lg:hidden">
+                <div className="flex flex-1 gap-2 overflow-x-auto pb-1 scroll-snap-x">
                   <Badge
                     variant={selectedCategory === "" && selectedCollection === "ALL" && activeTab === "APPS" ? "default" : "outline"}
                     className="cursor-pointer whitespace-nowrap scroll-snap-start text-xs font-black"
@@ -924,20 +932,53 @@ export default function Marketplace() {
                       </Badge>
                     ))}
                 </div>
-                {categories.length > 0 && (
-                <div className="mt-2 flex gap-2 overflow-x-auto pb-1 scroll-snap-x opacity-95">
-                  {categories.map((cat) => (
-                    <Badge
-                      key={cat.category}
-                      variant={selectedCategory === cat.category ? "default" : "outline"}
-                      className="cursor-pointer whitespace-nowrap scroll-snap-start text-xs font-black"
-                      onClick={() => { setSelectedCategory(cat.category); setActiveTab("APPS"); }}
-                    >
-                      {cat.name}
-                    </Badge>
-                  ))}
-                </div>
-                )}
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="sm" className="shrink-0 gap-1.5 text-xs font-black">
+                      <Filter size={14} />
+                      {t('marketplace.filters')}
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-[280px] overflow-y-auto text-right">
+                    <SheetHeader>
+                      <SheetTitle>{t('marketplace.filters')}</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-4 space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedCategory(""); setSelectedCollection("ALL"); setActiveTab("APPS"); }}
+                        className={cn("block w-full rounded-lg px-3 py-2 text-right text-sm font-black transition-colors", selectedCategory === "" && selectedCollection === "ALL" && activeTab === "APPS" ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground")}
+                      >
+                        {t('marketplace.allApps')}
+                      </button>
+                      {toolCollections.filter((c) => c.id !== "ALL").map((collection) => (
+                        <button
+                          key={collection.id}
+                          type="button"
+                          onClick={() => { setSelectedCategory(""); setSelectedCollection(collection.id); setActiveTab("APPS"); }}
+                          className={cn("block w-full rounded-lg px-3 py-2 text-right text-sm font-black transition-colors", selectedCollection === collection.id && activeTab === "APPS" ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground")}
+                        >
+                          {collection.label}
+                        </button>
+                      ))}
+                      <Separator className="my-2" />
+                      {categories.map((cat) => (
+                        <button
+                          key={cat.category}
+                          type="button"
+                          onClick={() => { setSelectedCategory(cat.category); setSelectedCollection("ALL"); setActiveTab("APPS"); }}
+                          className={cn("block w-full rounded-lg px-3 py-2 text-right text-sm font-black transition-colors", selectedCategory === cat.category ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground")}
+                        >
+                          {cat.name}
+                        </button>
+                      ))}
+                      <Separator className="my-2" />
+                      <Link to="/marketplace/themes" className="block rounded-lg px-3 py-2 text-right text-sm font-black text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+                        {t('sidebar.storeThemes')}
+                      </Link>
+                    </div>
+                  </SheetContent>
+                </Sheet>
               </div>
               )}
             </div>
