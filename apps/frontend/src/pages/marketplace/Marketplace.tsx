@@ -32,6 +32,36 @@ import {
   getFeatureAccessKind,
   getFeatureAccessLabel,
 } from "./featureCatalog";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 interface MarketplaceApp {
   id: string;
@@ -651,98 +681,52 @@ export default function Marketplace() {
   );
 
   return (
-    <div className="marketplace-page min-h-screen overflow-x-hidden">
-      <div className="marketplace-shell mx-auto max-w-[1440px] px-4 pb-10 pt-5 sm:px-6 lg:px-8">
-        <header className="marketplace-hero marketplace-divider border-b pb-4 text-right">
+    <div className="min-h-screen overflow-x-hidden">
+      <div className="mx-auto max-w-[1440px] px-4 pb-10 pt-5 sm:px-6 lg:px-8">
+        <Card className="overflow-hidden border p-4 sm:p-6 text-right">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="order-2 lg:order-1">
-              <div className="marketplace-summary-row marketplace-muted flex flex-wrap items-center gap-2 text-xs">
+              <div className="flex flex-wrap items-center justify-center gap-2 text-xs sm:justify-end sm:text-right">
                 {isEnterprise ? (
-                  <span className="marketplace-soft-success inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-bold">
+                  <Badge variant="secondary" className="gap-1.5 border px-3 py-1 font-bold">
                     <Crown size={14} aria-hidden="true" />
                     {t('marketplace.unlimitedActive')}
-                  </span>
+                  </Badge>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={handleSubscribeUnlimited}
-                    className="marketplace-soft-primary inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-bold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
-                  >
+                  <Badge variant="outline" className="cursor-pointer gap-1.5 border px-3 py-1 font-bold transition-colors hover:bg-primary/10" onClick={handleSubscribeUnlimited}>
                     <Crown size={14} aria-hidden="true" />
                     {t('marketplace.unlimitedAccess')}
-                  </button>
+                  </Badge>
                 )}
-                <span className="whitespace-nowrap">{t('marketplace.appCount', { count: apps.length })}</span>
-                <span className="whitespace-nowrap">{t('marketplace.installedCount', { count: installedAppsCount })}</span>
+                <span className="whitespace-nowrap text-muted-foreground">{t('marketplace.appCount', { count: apps.length })}</span>
+                <span className="whitespace-nowrap text-muted-foreground">{t('marketplace.installedCount', { count: installedAppsCount })}</span>
                 {activeSpecialty && (
-                  <span className="marketplace-soft-primary inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-bold">
+                  <Badge variant="outline" className="gap-1.5 border px-3 py-1 font-bold">
                     <Layers3 size={14} aria-hidden="true" />
                     {t('marketplace.yourSpecialty', { name: activeSpecialty.nameAr })}
-                  </span>
+                  </Badge>
                 )}
               </div>
             </div>
 
             <div className="order-1 lg:order-2">
-              <h1 className="marketplace-strong text-3xl font-black leading-tight sm:text-4xl">
+              <h1 className="text-3xl font-black leading-tight text-foreground sm:text-4xl">
                 {t('marketplace.pageTitle')}
               </h1>
-              <p className="marketplace-muted mt-2 max-w-2xl text-sm font-semibold leading-6">
+              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-muted-foreground">
                 {t('marketplace.pageSubtitle')}
               </p>
             </div>
           </div>
 
-          <div className="marketplace-top-tabs mt-4 text-base font-black sm:text-lg">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedCategory("");
-                setSelectedCollection("ALL");
-                setActiveTab("INSTALLED");
-              }}
-              aria-pressed={activeTab === "INSTALLED"}
-              className={`marketplace-top-tab border-b-2 pb-2 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
-                activeTab === "INSTALLED"
-                  ? "marketplace-tab-active"
-                  : "marketplace-tab-idle"
-              }`}
-            >
-              {t('marketplace.installedApps')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedCategory("");
-                setSelectedCollection("ALL");
-                setActiveTab("APPS");
-              }}
-              aria-pressed={activeTab === "APPS"}
-              className={`marketplace-top-tab border-b-2 pb-2 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
-                activeTab === "APPS"
-                  ? "marketplace-tab-active"
-                  : "marketplace-tab-idle"
-              }`}
-            >
-              {t('marketplace.discoverMore')}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedCategory("");
-                setActiveTab("BUNDLES");
-              }}
-              aria-pressed={activeTab === "BUNDLES"}
-              className={`marketplace-top-tab border-b-2 pb-2 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
-                activeTab === "BUNDLES"
-                  ? "marketplace-tab-active"
-                  : "marketplace-tab-idle"
-              }`}
-            >
-              {t('marketplace.savingsBundles')}
-            </button>
-          </div>
-        </header>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "APPS" | "BUNDLES" | "INSTALLED")} className="mt-4">
+            <TabsList className="w-full justify-end">
+              <TabsTrigger value="INSTALLED" onClick={() => { setSelectedCategory(""); setSelectedCollection("ALL"); }}>{t('marketplace.installedApps')}</TabsTrigger>
+              <TabsTrigger value="APPS" onClick={() => { setSelectedCategory(""); setSelectedCollection("ALL"); }}>{t('marketplace.discoverMore')}</TabsTrigger>
+              <TabsTrigger value="BUNDLES" onClick={() => setSelectedCategory("")}>{t('marketplace.savingsBundles')}</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </Card>
 
         <div
           className={`mt-5 grid grid-cols-1 gap-5 ${
@@ -752,7 +736,7 @@ export default function Marketplace() {
           {/* Sidebar */}
           {showAppFilters && (
           <aside className="hidden lg:block lg:self-start">
-            <div className="marketplace-panel sticky top-5 overflow-hidden rounded-2xl py-2 text-right">
+            <Card className="sticky top-5 overflow-hidden py-2 text-right">
               <button
                 type="button"
                 onClick={() => {
@@ -761,11 +745,12 @@ export default function Marketplace() {
                   setActiveTab("APPS");
                 }}
                 aria-pressed={selectedCategory === "" && selectedCollection === "ALL" && activeTab === "APPS"}
-                className={`block w-full border-r-2 px-4 py-2.5 text-right text-sm font-black transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
+                className={cn(
+                  "block w-full px-4 py-2.5 text-right text-sm font-black transition-colors",
                   selectedCategory === "" && selectedCollection === "ALL" && activeTab === "APPS"
-                    ? "marketplace-filter-active"
-                    : "marketplace-filter-idle"
-                }`}
+                    ? "bg-primary/10 text-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                )}
               >
                 {t('marketplace.allApps')}
               </button>
@@ -782,17 +767,18 @@ export default function Marketplace() {
                       setActiveTab("APPS");
                     }}
                     aria-pressed={selectedCollection === collection.id && activeTab === "APPS"}
-                    className={`block w-full border-r-2 px-4 py-2.5 text-right text-sm font-black transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
+                    className={cn(
+                      "block w-full px-4 py-2.5 text-right text-sm font-black transition-colors",
                       selectedCollection === collection.id && activeTab === "APPS"
-                        ? "marketplace-filter-active"
-                        : "marketplace-filter-idle"
-                    }`}
+                        ? "bg-primary/10 text-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                    )}
                   >
                     {collection.label}
                   </button>
                 ))}
 
-              <div className="my-2 h-px bg-[var(--color-border)] opacity-60" />
+              <Separator className="my-2" />
 
               {categories.map((cat) => (
                 <button
@@ -804,25 +790,26 @@ export default function Marketplace() {
                     setActiveTab("APPS");
                   }}
                   aria-pressed={selectedCategory === cat.category}
-                  className={`block w-full border-r-2 px-4 py-2.5 text-right text-sm font-black transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
+                  className={cn(
+                    "block w-full px-4 py-2.5 text-right text-sm font-black transition-colors",
                     selectedCategory === cat.category
-                      ? "marketplace-filter-active"
-                      : "marketplace-filter-idle"
-                  }`}
+                      ? "bg-primary/10 text-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  )}
                 >
                   {cat.name}
                 </button>
               ))}
 
-              <div className="my-2 h-px bg-[var(--color-border)] opacity-60" />
+              <Separator className="my-2" />
 
               <Link
                 to="/marketplace/themes"
-                className="marketplace-filter-idle block px-4 py-2.5 text-right text-sm font-black transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                className="block px-4 py-2.5 text-right text-sm font-black text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 {t('sidebar.storeThemes')}
               </Link>
-            </div>
+            </Card>
           </aside>
           )}
 
