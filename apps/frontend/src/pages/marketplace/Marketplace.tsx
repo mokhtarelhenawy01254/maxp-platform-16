@@ -837,15 +837,15 @@ export default function Marketplace() {
                 </div>
 
                 {showAppFilters && (
-                <div className="marketplace-toolbar grid gap-2 xl:w-[680px]">
-                  <label className="marketplace-toolbar-search relative block">
+                <div className="grid gap-2 xl:w-[680px] xl:grid-cols-[1fr_auto_auto]">
+                  <div className="relative">
                     <span className="sr-only">{t('marketplace.searchPlaceholder')}</span>
                     <Search
-                      className="marketplace-muted pointer-events-none absolute right-4 top-1/2 -translate-y-1/2"
+                      className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
                       size={17}
                       aria-hidden="true"
                     />
-                    <input
+                    <Input
                       id="marketplace-search"
                       name="marketplaceSearch"
                       type="search"
@@ -854,26 +854,26 @@ export default function Marketplace() {
                       placeholder={t('marketplace.searchPlaceholder')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="marketplace-control marketplace-search-input h-10 w-full rounded-xl pr-11 pl-4 text-sm placeholder:text-[var(--color-muted-foreground)] transition-[border-color,box-shadow,background-color] duration-200 focus:outline-none"
+                      className="h-10 w-full pr-11 text-sm"
                     />
-                  </label>
+                  </div>
 
-                  <label className="marketplace-control marketplace-sort-pill marketplace-muted flex h-10 items-center gap-3 rounded-xl px-4 text-sm">
+                  <div className="flex h-10 items-center gap-3 rounded-xl border bg-background px-4 text-sm text-muted-foreground">
                     <span className="whitespace-nowrap font-bold">{t('marketplace.sortLabel')}</span>
                     <select
                       name="marketplaceSort"
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
-                      className="theme-native-control h-full bg-transparent text-sm font-bold text-[var(--color-foreground)] focus:outline-none"
+                      className="h-full bg-transparent text-sm font-bold text-foreground focus:outline-none"
                     >
                       <option value="featured">{t('marketplace.sortFeatured')}</option>
                       <option value="popular">{t('marketplace.sortPopular')}</option>
                       <option value="newest">{t('marketplace.sortNewest')}</option>
                       <option value="price_low">{t('marketplace.sortPriceLow')}</option>
                     </select>
-                  </label>
+                  </div>
 
-                  <button
+                  <Button
                     type="button"
                     onClick={handleInstallAll}
                     disabled={
@@ -881,7 +881,7 @@ export default function Marketplace() {
                       visibleApps.length === 0 ||
                       visibleApps.every((app) => app.isInstalled)
                     }
-                    className="marketplace-primary-action marketplace-toolbar-action inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-black transition-[background-color,box-shadow] duration-200 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                    className="h-10 gap-2 px-4 text-sm font-black"
                   >
                     {isInstallingAll ? (
                       <Loader2 size={16} className="animate-spin" aria-hidden="true" />
@@ -889,88 +889,57 @@ export default function Marketplace() {
                       <Zap size={16} className="fill-current" aria-hidden="true" />
                     )}
                     {t('marketplace.activateAll')}
-                  </button>
+                  </Button>
                 </div>
                 )}
               </div>
 
               {showAppFilters && (
               <div className="mt-3 lg:hidden">
-                <div className="marketplace-mobile-chip-row">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedCategory("");
-                      setSelectedCollection("ALL");
-                      setActiveTab("APPS");
-                    }}
-                    aria-pressed={selectedCategory === "" && selectedCollection === "ALL" && activeTab === "APPS"}
-                    className={`marketplace-mobile-chip rounded-full border px-3 py-1.5 text-xs font-black transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
-                      selectedCategory === "" && selectedCollection === "ALL" && activeTab === "APPS"
-                        ? "marketplace-chip-active"
-                        : "marketplace-chip"
-                    }`}
+                <div className="flex gap-2 overflow-x-auto pb-1 scroll-snap-x">
+                  <Badge
+                    variant={selectedCategory === "" && selectedCollection === "ALL" && activeTab === "APPS" ? "default" : "outline"}
+                    className="cursor-pointer whitespace-nowrap scroll-snap-start text-xs font-black"
+                    onClick={() => { setSelectedCategory(""); setSelectedCollection("ALL"); setActiveTab("APPS"); }}
                   >
                     {t('marketplace.allTools')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedCategory("");
-                      setActiveTab("BUNDLES");
-                    }}
-                    aria-pressed={activeTab === "BUNDLES"}
-                    className={`marketplace-mobile-chip rounded-full border px-3 py-1.5 text-xs font-black transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
-                      activeTab === "BUNDLES"
-                        ? "marketplace-chip-active"
-                        : "marketplace-chip"
-                    }`}
+                  </Badge>
+                  <Badge
+                    variant={activeTab === "BUNDLES" ? "default" : "outline"}
+                    className="cursor-pointer whitespace-nowrap scroll-snap-start text-xs font-black"
+                    onClick={() => { setSelectedCategory(""); setActiveTab("BUNDLES"); }}
                   >
                     {t('marketplace.savingsBundles')}
-                  </button>
+                  </Badge>
                   {toolCollections
                     .filter((collection) => collection.id !== "ALL")
                     .map((collection) => (
-                      <button
-                        type="button"
+                      <Badge
                         key={collection.id}
-                        onClick={() => {
-                          setSelectedCollection(collection.id);
-                          setActiveTab("APPS");
-                        }}
-                        aria-pressed={selectedCollection === collection.id}
-                        className={`marketplace-mobile-chip rounded-full border px-3 py-1.5 text-xs font-black transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
-                          selectedCollection === collection.id && activeTab === "APPS"
-                            ? "marketplace-chip-active"
-                            : "marketplace-chip"
-                        }`}
+                        variant={selectedCollection === collection.id ? "default" : "outline"}
+                        className="cursor-pointer whitespace-nowrap scroll-snap-start text-xs font-black"
+                        onClick={() => { setSelectedCollection(collection.id); setActiveTab("APPS"); }}
                       >
                         {collection.label}
-                      </button>
+                      </Badge>
                     ))}
                 </div>
                 {categories.length > 0 && (
-                <div className="marketplace-mobile-chip-row marketplace-mobile-chip-row-secondary mt-2">
+                <div className="mt-2 flex gap-2 overflow-x-auto pb-1 scroll-snap-x opacity-95">
                   {categories.map((cat) => (
-                    <button
-                      type="button"
+                    <Badge
                       key={cat.category}
-                      onClick={() => {
-                        setSelectedCategory(cat.category);
-                        setActiveTab("APPS");
-                      }}
-                      aria-pressed={selectedCategory === cat.category}
-                      className={`marketplace-mobile-chip rounded-full border px-3 py-1.5 text-xs font-black transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
-                        selectedCategory === cat.category
-                          ? "marketplace-chip-active"
-                          : "marketplace-chip"
-                      }`}
+                      variant={selectedCategory === cat.category ? "default" : "outline"}
+                      className="cursor-pointer whitespace-nowrap scroll-snap-start text-xs font-black"
+                      onClick={() => { setSelectedCategory(cat.category); setActiveTab("APPS"); }}
                     >
                       {cat.name}
-                    </button>
+                    </Badge>
                   ))}
                 </div>
                 )}
+              </div>
+              )}
               </div>
               )}
             </div>
