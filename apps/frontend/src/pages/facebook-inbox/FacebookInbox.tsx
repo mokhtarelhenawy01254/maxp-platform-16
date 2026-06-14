@@ -1804,6 +1804,25 @@ const getApiError = (error: unknown): ApiErrorLike => {
         mainElement.className = originalClasses;
       };
     }
+
+    // 🆕 New apps layout (no <main>, uses app-shell-content instead)
+    const appContent = document.querySelector(".app-shell-content");
+    if (appContent) {
+      const origContentOverflow = appContent.style.overflow;
+      appContent.style.overflow = "hidden";
+
+      // Also constrain the intermediate wrapper (motion-safe:animate-fade-in)
+      const inboxShell = appContent.querySelector(".business-inbox-shell");
+      if (inboxShell && inboxShell.parentElement) {
+        const wrapper = inboxShell.parentElement;
+        wrapper.classList.add("h-full");
+      }
+
+      return () => {
+        appContent.style.overflow = origContentOverflow || "";
+      };
+    }
+
     return undefined;
   }, []);
 
