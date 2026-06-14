@@ -324,8 +324,8 @@ export default function AppDetails() {
     <div className="marketplace-page min-h-screen overflow-x-hidden">
       <div className="mx-auto max-w-[1280px] px-4 pb-10 pt-5 sm:px-6 lg:px-8">
         <Link
-          to="/marketplace"
-          className="marketplace-muted inline-flex items-center gap-2 rounded-xl px-2 py-1 text-sm font-black transition-colors duration-200 hover:text-[var(--color-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+          to={document.referrer.includes('/my-apps') ? '/my-apps' : '/marketplace'}
+          className="inline-flex items-center gap-2 rounded-xl px-2 py-1 text-sm font-black text-muted-foreground transition-colors hover:text-foreground"
         >
           <ChevronRight size={18} aria-hidden="true" />
           العودة إلى التطبيقات
@@ -540,8 +540,9 @@ export default function AppDetails() {
                     </article>
                   ))
                 ) : (
-                  <div className="marketplace-muted col-span-full rounded-2xl border border-dashed border-[var(--color-border)] py-10 text-center text-sm">
-                    لا توجد تفاصيل إضافية للمميزات حالياً
+                  <div className="col-span-full rounded-2xl border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
+                    <Sparkles size={36} className="mx-auto mb-3 text-muted-foreground/40" aria-hidden="true" />
+                    سيتم إضافة تفاصيل الميزات قريباً
                   </div>
                 )}
               </div>

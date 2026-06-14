@@ -1081,7 +1081,7 @@ export default function Marketplace() {
                       <Card
                         key={app.id}
                         className={cn(
-                          "group flex min-h-[198px] flex-col p-4 text-right transition-all hover:-translate-y-0.5",
+                          "group flex min-h-[220px] flex-col p-4 text-right transition-all hover:-translate-y-0.5",
                           app.isInstalled && "border-success/50",
                           app.isFeatured && "border-primary/30 shadow-sm"
                         )}
@@ -1174,14 +1174,14 @@ export default function Marketplace() {
                           ) : (
                             <Button
                               size="sm"
-                              className="gap-1.5 rounded-full px-4 text-xs font-black"
+                              className="gap-1 rounded-full px-3 text-[11px] font-black h-8"
                               onClick={(e) => handleQuickInstall(e, app)}
                               disabled={installingApp === app.slug}
                             >
                               {installingApp === app.slug ? (
-                                <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+                                <Loader2 size={12} className="animate-spin" aria-hidden="true" />
                               ) : (
-                                <Zap size={14} className="fill-current" aria-hidden="true" />
+                                <Zap size={12} className="fill-current" aria-hidden="true" />
                               )}
                               {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
                             </Button>
