@@ -140,12 +140,10 @@ export default function ChannelRoutingPage() {
           }
         }
       }
-      if (hasAnyAssignment) {
-        await apiFetch("/agent-manager/auto-reply", {
-          method: "PUT",
-          body: JSON.stringify({ enabled: true }),
-        });
-      }
+      await apiFetch("/agent-manager/auto-reply", {
+        method: "PUT",
+        body: JSON.stringify({ enabled: hasAnyAssignment }),
+      });
       toast.success(t("aiHub.channelRouting.saved"));
       setDirty(false);
       await load();
