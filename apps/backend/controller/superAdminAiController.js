@@ -2663,8 +2663,7 @@ const EMBEDDING_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/mod
 exports.getProductEmbeddingStatus = async (req, res) => {
     try {
         const { company_id } = req.query;
-        const qs = company_id ? `?company_id=${encodeURIComponent(company_id)}` : '';
-        const result = await aiServiceAdminClient.request('GET', `/admin/product-embeddings/status${qs}`);
+        const result = await aiServiceAdminClient.getProductEmbeddingStatus(company_id || null);
         if (!result) return res.status(502).json({ success: false, message: 'AI service unavailable' });
         res.json({ success: true, data: result });
     } catch (err) {
@@ -2675,7 +2674,7 @@ exports.getProductEmbeddingStatus = async (req, res) => {
 exports.triggerProductEmbeddingSync = async (req, res) => {
     try {
         const { company_id } = req.body;
-        const result = await aiServiceAdminClient.request('POST', '/admin/product-embeddings/sync', { company_id: company_id || null });
+        const result = await aiServiceAdminClient.triggerProductEmbeddingSync(company_id || null);
         if (!result) return res.status(502).json({ success: false, message: 'AI service unavailable' });
         res.json({ success: true, data: result });
     } catch (err) {

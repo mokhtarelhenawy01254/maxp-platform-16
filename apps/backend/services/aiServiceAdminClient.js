@@ -167,6 +167,15 @@ async function updateAgent(agentId, companyId, data) {
   return request('PUT', `/admin/agents/${encodeURIComponent(agentId)}/files?company_id=${encodeURIComponent(companyId)}`, data);
 }
 
+async function getProductEmbeddingStatus(companyId) {
+  const qs = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
+  return request('GET', `/admin/product-embeddings/status${qs}`);
+}
+
+async function triggerProductEmbeddingSync(companyId) {
+  return request('POST', '/admin/product-embeddings/sync', { company_id: companyId || null });
+}
+
 module.exports = {
   listTools,
   listAgents,
@@ -186,4 +195,6 @@ module.exports = {
   archiveAgent,
   getAgentFiles,
   updateAgent,
+  getProductEmbeddingStatus,
+  triggerProductEmbeddingSync,
 };

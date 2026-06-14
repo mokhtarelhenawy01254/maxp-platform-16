@@ -4,7 +4,7 @@ const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 async function runProductEmbeddingSync() {
   console.log('🔄 [EMBEDDING-CRON] Starting product embedding backfill...');
   try {
-    const result = await aiServiceAdminClient.request('POST', '/admin/product-embeddings/sync', {});
+    const result = await aiServiceAdminClient.triggerProductEmbeddingSync(null);
     if (result?.started === false) {
       console.log(`⏭️  [EMBEDDING-CRON] Skipped — already running (${result.reason})`);
     } else {
