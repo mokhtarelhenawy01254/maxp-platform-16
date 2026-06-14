@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect, useState, useCallback } from "react";
+import { useMemo, useRef, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -18,12 +18,17 @@ import DashboardWelcomeState from "./DashboardWelcomeState";
 import DateRangeToolbar from "./DateRangeToolbar";
 import type { RevenueHistoryPoint } from "./types";
 
-type PeriodPreset = "7d" | "30d" | "90d" | "custom";
+type PeriodPreset = "today" | "yesterday" | "7d" | "30d" | "90d" | "thisWeek" | "thisMonth" | "thisYear" | "custom";
 
 const PERIOD_LABEL_MAP: Record<string, string> = {
+  "today": "companyDashboard.presets.today",
+  "yesterday": "companyDashboard.presets.yesterday",
   "7d": "companyDashboard.presets.last7Days",
   "30d": "companyDashboard.presets.last30Days",
-  "90d": "companyDashboard.presets.lastMonth",
+  "90d": "companyDashboard.presets.last90Days",
+  "thisWeek": "companyDashboard.presets.thisWeek",
+  "thisMonth": "companyDashboard.presets.thisMonth",
+  "thisYear": "companyDashboard.presets.thisYear",
 };
 
 function formatLargeNumber(value: number | null | undefined): string {
@@ -62,11 +67,6 @@ function generateRevenueHistory(totalRevenue: number, days: number, locale: stri
       orders: Math.round(1 + rand() * 10),
     };
   });
-}
-
-function generateSparklineData(points: number, base: number): number[] {
-  const rand = seededRandom(base || Date.now());
-  return Array.from({ length: points }, () => base * (0.5 + rand()));
 }
 
 function useOnScreen(ref: React.RefObject<HTMLElement | null>) {
@@ -108,7 +108,7 @@ export default function MainDashboardPage() {
   const navigate = useNavigate();
   const locale = i18n.language?.startsWith("ar") ? "ar-EG" : "en-US";
 
-  const [period, setPeriod] = useState<PeriodPreset>("30d");
+  const [period, setPeriod] = useState<PeriodPreset>("today");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
 
@@ -116,11 +116,37 @@ export default function MainDashboardPage() {
     if (period === "custom") {
       return { startDate: customStart || undefined, endDate: customEnd || undefined };
     }
-    const dayMap: Record<string, number> = { "7d": 7, "30d": 30, "90d": 90 };
-    const days = dayMap[period] ?? 30;
     const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - days);
+    let start: Date;
+    switch (period) {
+      case "today":
+        start = new Date(end);
+        break;
+      case "yesterday":
+        start = new Date(end);
+        start.setDate(start.getDate() - 1);
+        end.setDate(end.getDate() - 1);
+        break;
+      case "thisWeek": {
+        start = new Date(end);
+        const dayOfWeek = start.getDay();
+        const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday start
+        start.setDate(start.getDate() - diff);
+        break;
+      }
+      case "thisMonth":
+        start = new Date(end.getFullYear(), end.getMonth(), 1);
+        break;
+      case "thisYear":
+        start = new Date(end.getFullYear(), 0, 1);
+        break;
+      default: {
+        const dayMap: Record<string, number> = { "7d": 7, "30d": 30, "90d": 90 };
+        const days = dayMap[period] ?? 30;
+        start = new Date(end);
+        start.setDate(start.getDate() - days);
+      }
+    }
     return { startDate: toISODate(start), endDate: toISODate(end) };
   }, [period, customStart, customEnd]);
 
@@ -136,7 +162,7 @@ export default function MainDashboardPage() {
   const topProducts = dashboard?.topProducts ?? [];
   const isEmpty = !isLoading && !isError && isNewCompany(dashboard);
 
-  const dayMap: Record<string, number> = { "7d": 7, "30d": 30, "90d": 90 };
+  const dayMap: Record<string, number> = { "today": 1, "yesterday": 1, "7d": 7, "30d": 30, "90d": 90, "thisWeek": 7, "thisMonth": 30, "thisYear": 365 };
   const days = period === "custom" ? 30 : dayMap[period] ?? 30;
 
   const revenueHistory = useMemo(() => {
@@ -146,15 +172,18 @@ export default function MainDashboardPage() {
     return generateRevenueHistory(financials?.totalRevenue ?? 0, days, locale);
   }, [dashboard?.revenueHistory, financials?.totalRevenue, days, locale]);
 
-  const revenueSpark = useMemo(() => generateSparklineData(20, financials?.totalRevenue ? financials.totalRevenue / 20 : 100), [financials?.totalRevenue]);
-
   const chartRef = useRef<HTMLDivElement>(null);
   const chartVisible = useOnScreen(chartRef);
 
   const presetsList = useMemo(() => [
+    { id: "today", label: t("companyDashboard.presets.today") },
+    { id: "yesterday", label: t("companyDashboard.presets.yesterday") },
     { id: "7d", label: t("companyDashboard.presets.last7Days") },
     { id: "30d", label: t("companyDashboard.presets.last30Days") },
-    { id: "90d", label: t("companyDashboard.presets.lastMonth") },
+    { id: "90d", label: t("companyDashboard.presets.last90Days") },
+    { id: "thisWeek", label: t("companyDashboard.presets.thisWeek") },
+    { id: "thisMonth", label: t("companyDashboard.presets.thisMonth") },
+    { id: "thisYear", label: t("companyDashboard.presets.thisYear") },
     { id: "custom", label: t("companyDashboard.presets.custom") },
   ], [t]);
 
@@ -239,64 +268,6 @@ export default function MainDashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="col-span-2">
-          <MetricCard
-            variant="sparkline"
-            label={t("companyDashboard.financials.revenue")}
-            value={formatCurrency(financials?.totalRevenue, company?.currency)}
-            sparklineData={revenueSpark}
-            accentColor="emerald"
-            onClick={() => navigate("/analytics/orders/revenue")}
-          />
-        </div>
-        <MetricCard
-          variant="trend"
-          label={t("companyDashboard.metrics.totalOrders")}
-          value={formatLargeNumber(counts?.orders)}
-          icon={ShoppingCartIcon}
-          onClick={() => navigate("/orders")}
-        />
-        <MetricCard
-          variant="bar"
-          label={t("companyDashboard.metrics.totalCustomers")}
-          value={formatLargeNumber(counts?.customers)}
-          progress={counts?.customers ? 65 : 0}
-          onClick={() => navigate("/customers")}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <MetricCard
-          variant="simple"
-          label={t("companyDashboard.stats.products")}
-          value={formatLargeNumber(counts?.products)}
-          icon={CubeIcon}
-          onClick={() => navigate("/products")}
-        />
-        <MetricCard
-          variant="simple"
-          label={t("companyDashboard.rangeStats.storeVisits")}
-          value={formatLargeNumber(metrics?.visits)}
-          icon={EyeIcon}
-          onClick={() => navigate("/analytics/orders")}
-        />
-        <MetricCard
-          variant="simple"
-          label={t("companyDashboard.financials.profit")}
-          value={formatCurrency(financials?.grossProfit, company?.currency)}
-          icon={ChartBarIcon}
-          onClick={() => navigate("/analytics/orders/revenue")}
-        />
-        <MetricCard
-          variant="simple"
-          label={t("companyDashboard.financials.aov")}
-          value={formatCurrency(financials?.aov, company?.currency)}
-          icon={CurrencyDollarIcon}
-          onClick={() => navigate("/analytics/orders")}
-        />
-      </div>
-
       <div ref={chartRef} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div
           className={cn(
@@ -307,7 +278,7 @@ export default function MainDashboardPage() {
           <div className="p-6 rounded-2xl bg-card border border-border/50 shadow-sm" style={{ boxShadow: "0 28px 72px -48px rgba(7, 17, 32, 0.42)" }}>
             <RevenueTrendChart
               data={revenueHistory}
-              title={t("companyDashboard.rangeStats.title")}
+              title={t("companyDashboard.financials.revenue")}
               revenueLabel={t("companyDashboard.financials.revenue")}
               ordersLabel={t("companyDashboard.rangeStats.orders")}
               emptyLabel={t("companyDashboard.noTimelineData")}
@@ -344,6 +315,54 @@ export default function MainDashboardPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard
+          variant="trend"
+          label={t("companyDashboard.metrics.totalOrders")}
+          value={formatLargeNumber(counts?.orders)}
+          icon={ShoppingCartIcon}
+          onClick={() => navigate("/orders")}
+        />
+        <MetricCard
+          variant="bar"
+          label={t("companyDashboard.metrics.totalCustomers")}
+          value={formatLargeNumber(counts?.customers)}
+          progress={counts?.customers ? 65 : 0}
+          onClick={() => navigate("/customers")}
+        />
+        <MetricCard
+          variant="simple"
+          label={t("companyDashboard.stats.products")}
+          value={formatLargeNumber(counts?.products)}
+          icon={CubeIcon}
+          onClick={() => navigate("/products")}
+        />
+        <MetricCard
+          variant="simple"
+          label={t("companyDashboard.rangeStats.storeVisits")}
+          value={formatLargeNumber(metrics?.visits)}
+          icon={EyeIcon}
+          onClick={() => navigate("/analytics/orders")}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <MetricCard
+          variant="simple"
+          label={t("companyDashboard.financials.profit")}
+          value={formatCurrency(financials?.grossProfit, company?.currency)}
+          icon={ChartBarIcon}
+          onClick={() => navigate("/analytics/orders/revenue")}
+        />
+        <MetricCard
+          variant="simple"
+          label={t("companyDashboard.financials.aov")}
+          value={formatCurrency(financials?.aov, company?.currency)}
+          icon={CurrencyDollarIcon}
+          onClick={() => navigate("/analytics/orders")}
+        />
       </div>
 
       <QuickActions />

@@ -788,6 +788,7 @@
   "common": {
     "loading": "Loading...",
     "save": "Save",
+    "retry": "Retry",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
@@ -990,6 +991,7 @@
   },
   "companyDashboard": {
     "title": "Dashboard",
+    "welcome": "Welcome, {name}",
     "plan": {
       "basic": "Basic",
       "pro": "Pro",
@@ -1017,7 +1019,10 @@
       "yesterday": "Yesterday",
       "last7Days": "Last 7 days",
       "last30Days": "Last 30 days",
+      "last90Days": "Last 90 days",
+      "thisWeek": "This week",
       "thisMonth": "This month",
+      "thisYear": "This year",
       "lastMonth": "Last month",
       "custom": "Custom range"
     },
@@ -1068,6 +1073,10 @@
     "metrics": {
       "totalCustomers": "Total Customers",
       "totalCustomersSubtitle": "Total number of registered customers",
+      "totalOrders": "Total Orders",
+      "confirmedOrders": "Confirmed Orders",
+      "cancelledOrders": "Cancelled Orders",
+      "returnedOrders": "Returned Orders",
       "newCustomers": "New Customers",
       "newCustomersSubtitle": "New customers joined in the period",
       "openOrders": "Open Orders",
@@ -1261,6 +1270,17 @@
       "title": "Loading dashboard",
       "summary": "Fetching latest company data..."
     }
+  },
+  "quickActions": {
+    "title": "Quick Actions",
+    "orders": "Orders",
+    "products": "Products",
+    "customers": "Customers",
+    "whatsapp": "WhatsApp",
+    "analytics": "Analytics",
+    "marketing": "Marketing",
+    "storefront": "Store",
+    "settings": "Settings"
   },
   "companyLinks": {
     "title": "Company Links",
@@ -4608,16 +4628,6 @@
             "TEXT_ONLY_SEARCH": "Text-only search",
             "UNKNOWN": "Unknown"
           }
-        },
-        "priority": {
-          "title": "Provider Priority / ترتيب المزودين",
-          "dragOrder": "Drag providers to set the runtime order. / اسحب المزودين لتحديد ترتيب التشغيل والـ fallback.",
-          "runtimeOrder": "Runtime order: {{order}}",
-          "enableAutoFailover": "Enable Auto-Failover",
-          "autoFailoverDesc": "تفعيل الانتقال التلقائي"
-        },
-        "globalKeys": {
-          "description": "المفاتيح المركزية المضافة هنا مخصصة لإدارة المزودين، ترتيب التشغيل، السجلات، وتشخيص المفاتيح داخل سطح السوبر أدمن فقط."
         }
       }
     },

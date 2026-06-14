@@ -19,21 +19,21 @@ const extractErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
-const TRIAL_DAYS = 30;
+const TRIAL_DAYS = 0;
 
 const copyByLanguage = {
   ar: {
-    title: "أنشئ حسابك مجاناً",
-    description: "ابدأ تجربتك المجانية لمدة 30 يوم — بدون بطاقة ائتمان.",
+    title: "أنشئ حسابك وابدأ فوراً",
+    description: "أنشئ حسابك وابدأ إدارة أعمالك — بدون فترة تجريبية.",
     eyebrow: "New Member Registration",
     footerText: "لديك حساب بالفعل؟",
     login: "تسجيل الدخول",
     visualTitle: <>قُد أعمالك <br /> نحو <span style={{ color: "var(--auth-accent)" }}>المستقبل</span></>,
-    visualDescription: "ابدأ تجربتك المجانية لمدة 30 يوم. كل الأدوات التي تحتاجها لإدارة أعمالك — منصة واحدة.",
-    visualBadge: "ابدأ مجاناً",
+    visualDescription: "كل الأدوات التي تحتاجها لإدارة أعمالك — منصة واحدة.",
+    visualBadge: "ابدأ الآن",
     stats: [
-      { label: "تجربة مجانية", value: "30 يوم" },
-      { label: "بدون بطاقة", value: "ائتمان" },
+      { label: "ابدأ", value: "فوراً" },
+      { label: "بدون حد", value: "أساسي" },
     ],
     labels: {
       fullName: "الاسم بالكامل",
@@ -54,22 +54,22 @@ const copyByLanguage = {
       register: "فشل في إنشاء الحساب",
     },
     submitLoading: "جاري الإنشاء...",
-    submit: "ابدأ تجربتك المجانية — 30 يوم",
+    submit: "إنشاء الحساب",
     errorTitle: "خطأ في التسجيل",
     languageButton: "English",
   },
   en: {
-    title: "Create your free account",
-    description: "Start your 30-day free trial — no credit card required.",
+    title: "Create your account",
+    description: "Create your account and start managing your business — no trial period.",
     eyebrow: "New Member Registration",
     footerText: "Already have an account?",
     login: "Log in",
     visualTitle: <>Run your business <br /> with a <span style={{ color: "var(--auth-accent)" }}>focused toolkit</span></>,
-    visualDescription: "Start your 30-day free trial. All the tools you need to run your business — one platform.",
-    visualBadge: "Start free",
+    visualDescription: "All the tools you need to run your business — one platform.",
+    visualBadge: "Start now",
     stats: [
-      { label: "Free trial", value: "30 days" },
-      { label: "No credit", value: "card needed" },
+      { label: "Start", value: "instantly" },
+      { label: "No limits", value: "basic plan" },
     ],
     labels: {
       fullName: "Full name",
@@ -90,7 +90,7 @@ const copyByLanguage = {
       register: "Failed to create account",
     },
     submitLoading: "Creating...",
-    submit: "Start your free trial — 30 days",
+    submit: "Create account",
     errorTitle: "Registration error",
     languageButton: "العربية",
   },

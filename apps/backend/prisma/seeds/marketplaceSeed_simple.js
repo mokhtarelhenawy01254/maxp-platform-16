@@ -16,7 +16,7 @@ async function seedMarketplace() {
         icon: '🛒',
         monthlyPrice: 199,
         yearlyPrice: 1990,
-        trialDays: 14,
+        trialDays: 0,
         features: JSON.stringify(['إدارة المنتجات', 'سلة تسوق', 'معالجة الطلبات', 'تقارير المبيعات']),
         isActive: true,
         isFeatured: true,
@@ -30,7 +30,7 @@ async function seedMarketplace() {
         icon: '👥',
         monthlyPrice: 99,
         yearlyPrice: 990,
-        trialDays: 14,
+        trialDays: 0,
         features: JSON.stringify(['إدارة الموظفين', 'الأقسام والمناصب', 'تقارير الموظفين']),
         isActive: true,
         isPopular: true
@@ -43,7 +43,7 @@ async function seedMarketplace() {
         icon: '🤖',
         monthlyPrice: 299,
         yearlyPrice: 2990,
-        trialDays: 14,
+        trialDays: 0,
         features: JSON.stringify(['ردود تلقائية ذكية', 'تحليل المشاعر', 'تقارير الأداء']),
         isActive: true,
         isFeatured: true
@@ -56,7 +56,7 @@ async function seedMarketplace() {
         icon: '💬',
         monthlyPrice: 199,
         yearlyPrice: 1990,
-        trialDays: 14,
+        trialDays: 0,
         features: JSON.stringify(['WhatsApp Business API', 'ردود سريعة', 'قوالب الرسائل']),
         isActive: true,
         isPopular: true
@@ -69,7 +69,7 @@ async function seedMarketplace() {
         icon: '📊',
         monthlyPrice: 149,
         yearlyPrice: 1490,
-        trialDays: 14,
+        trialDays: 0,
         features: JSON.stringify(['إدارة العملاء', 'المحادثات', 'الملاحظات', 'تقارير أساسية']),
         isActive: true
       },
@@ -81,7 +81,7 @@ async function seedMarketplace() {
         icon: '📈',
         monthlyPrice: 199,
         yearlyPrice: 1990,
-        trialDays: 14,
+        trialDays: 0,
         features: JSON.stringify(['تحليلات متقدمة', 'تقارير مخصصة', 'تصدير البيانات']),
         isActive: true
       },

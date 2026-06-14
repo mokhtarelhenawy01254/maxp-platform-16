@@ -74,7 +74,7 @@ const emailTransporter = nodemailer.createTransport({
   }
 });
 
-const initializeRegisteredCompany = async (companyId, trialDays = 7, options = {}) => {
+const initializeRegisteredCompany = async (companyId, trialDays = 0, options = {}) => {
   try {
     const {
       initializeSaasTheme,

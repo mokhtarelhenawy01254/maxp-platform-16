@@ -811,9 +811,6 @@ const PlatformSiteHomepageTemplates = React.lazy(
 const PlatformSignupCoupons = React.lazy(
   () => import("./pages/super-admin/PlatformSignupCoupons"),
 );
-const PlatformOnboardingSettings = React.lazy(
-  () => import("./pages/super-admin/PlatformOnboardingSettings"),
-);
 
 const SuperAdminUsersManagement = React.lazy(
   () => import("./pages/SuperAdminUsersManagement"),
@@ -1864,14 +1861,6 @@ const AppContent = () => {
               element={
                 <Layout>
                   <PlatformSignupCoupons />
-                </Layout>
-              }
-            />
-            <Route
-              path="/super-admin/platform-onboarding"
-              element={
-                <Layout>
-                  <PlatformOnboardingSettings />
                 </Layout>
               }
             />

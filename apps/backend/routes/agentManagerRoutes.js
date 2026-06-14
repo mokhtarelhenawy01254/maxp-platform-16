@@ -440,6 +440,7 @@ router.get('/agents', async (req, res) => {
       ...agent,
       rules: agent.rules || [],
       skills: agent.skills || agent.allowedSkills || [],
+      allowedTools: agent.allowedTools || agent.allowed_tools || [],
       departmentId: agent.departmentId || orgMetaById.get(agent.id)?.departmentId || null,
       departmentKey: agent.departmentKey || orgMetaById.get(agent.id)?.departmentKey || null,
       departmentName: agent.departmentName || orgMetaById.get(agent.id)?.departmentName || null,
@@ -466,6 +467,19 @@ router.put('/agents/:id', async (req, res) => {
       });
     }
     return res.json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /auto-reply — read AI auto-reply state
+router.get('/auto-reply', async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
+    const prisma = getSharedPrismaClient();
+    const setting = await prisma.aiSetting.findUnique({ where: { companyId } });
+    return res.json({ success: true, autoReplyEnabled: setting?.autoReplyEnabled === true });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }

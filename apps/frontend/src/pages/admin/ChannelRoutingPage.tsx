@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Loader2, Save, GitFork } from "lucide-react";
+import { Loader2, Save, GitFork, MessageSquareOff, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -27,14 +27,13 @@ interface ChannelConfig {
   label: string;
   icon: string;
   agentId: string | null;
-  autoReply: boolean;
   toolName: string;
   toolActive: boolean;
 }
 
 const CHANNELS: { key: string; label: string; icon: string; tool: string }[] = [
-  { key: "MESSENGER", label: "Messenger", icon: "💬", tool: "facebook_reply" },
-  { key: "WHATSAPP", label: "WhatsApp", icon: "💚", tool: "whatsapp_send" },
+  { key: "MESSENGER", label: "Messenger", icon: "💬", tool: "facebook.reply" },
+  { key: "WHATSAPP", label: "WhatsApp", icon: "💚", tool: "whatsapp.send" },
   { key: "INSTAGRAM", label: "Instagram", icon: "📸", tool: "" },
   { key: "TELEGRAM", label: "Telegram", icon: "✈️", tool: "" },
   { key: "DASHBOARD", label: "Dashboard", icon: "🖥️", tool: "" },
@@ -55,6 +54,7 @@ export default function ChannelRoutingPage() {
   const isRtl = i18n.language === "ar";
   const [agents, setAgents] = useState<AgentSummary[]>([]);
   const [channelConfigs, setChannelConfigs] = useState<ChannelConfig[]>([]);
+  const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +69,8 @@ export default function ChannelRoutingPage() {
       setAgents(agentsList);
 
       const activeAgents = agentsList.filter((a) => a.status === "ACTIVE");
+      const autoReplyResp = await apiFetch<{ autoReplyEnabled: boolean }>("/agent-manager/auto-reply").catch(() => ({ autoReplyEnabled: true }));
+      setAutoReplyEnabled(autoReplyResp.autoReplyEnabled !== false);
       const configs: ChannelConfig[] = CHANNELS.map((ch) => {
         const assigned = activeAgents.find((a) =>
           (a.allowedChannels || []).map((c) => c.toUpperCase()).includes(ch.key)
@@ -78,7 +80,6 @@ export default function ChannelRoutingPage() {
           label: ch.label,
           icon: ch.icon,
           agentId: assigned?.id || null,
-          autoReply: true,
           toolName: ch.tool,
           toolActive: !ch.tool || activeAgents.some((a) =>
             (a.allowedTools || []).includes(ch.tool)
@@ -102,17 +103,14 @@ export default function ChannelRoutingPage() {
     setDirty(true);
   };
 
-  const handleAutoReplyToggle = (channel: string, enabled: boolean) => {
-    setChannelConfigs((prev) =>
-      prev.map((c) => (c.channel === channel ? { ...c, autoReply: enabled } : c))
-    );
+  const handleAutoReplyToggle = (enabled: boolean) => {
+    setAutoReplyEnabled(enabled);
     setDirty(true);
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const hasAnyAssignment = channelConfigs.some((c) => c.agentId);
       const activeAgents = agents.filter((a) => a.status === "ACTIVE");
       for (const config of channelConfigs) {
         const prevAgent = activeAgents.find((a) =>
@@ -142,7 +140,7 @@ export default function ChannelRoutingPage() {
       }
       await apiFetch("/agent-manager/auto-reply", {
         method: "PUT",
-        body: JSON.stringify({ enabled: hasAnyAssignment }),
+        body: JSON.stringify({ enabled: autoReplyEnabled }),
       });
       toast.success(t("aiHub.channelRouting.saved"));
       setDirty(false);
@@ -188,8 +186,21 @@ export default function ChannelRoutingPage() {
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">{t("aiHub.channelRouting.cardTitle")}</CardTitle>
-          <CardDescription>{t("aiHub.channelRouting.cardDesc")}</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base">{t("aiHub.channelRouting.cardTitle")}</CardTitle>
+              <CardDescription>{t("aiHub.channelRouting.cardDesc")}</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              {autoReplyEnabled ? (
+                <MessageSquare className="size-4 text-green-600" />
+              ) : (
+                <MessageSquareOff className="size-4 text-muted-foreground" />
+              )}
+              <span className="text-sm text-muted-foreground">{t("aiHub.channelRouting.autoReply")}</span>
+              <Switch checked={autoReplyEnabled} onCheckedChange={handleAutoReplyToggle} />
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -197,7 +208,6 @@ export default function ChannelRoutingPage() {
               <TableRow>
                 <TableHead className="w-[200px]">{t("aiHub.channelRouting.channel")}</TableHead>
                 <TableHead>{t("aiHub.channelRouting.agent")}</TableHead>
-                <TableHead className="w-[120px] text-center">{t("aiHub.channelRouting.autoReply")}</TableHead>
                 <TableHead className="w-[140px]">{t("aiHub.channelRouting.toolStatus")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -229,12 +239,6 @@ export default function ChannelRoutingPage() {
                           ))}
                       </SelectContent>
                     </Select>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Switch
-                      checked={config.autoReply}
-                      onCheckedChange={(val) => handleAutoReplyToggle(config.channel, val)}
-                    />
                   </TableCell>
                   <TableCell>
                     {config.toolName ? (

@@ -11,7 +11,7 @@
     "yearlyPrice": 2999,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "trialDays": 0,
     "requiredApps": [],
     "positioning": {
       "audience": "فرق التسويق والمتاجر التي تدير حملات مدفوعة باستمرار.",
@@ -55,7 +55,7 @@
     "yearlyPrice": 2499,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "trialDays": 0,
     "requiredApps": [],
     "positioning": {
       "audience": "أصحاب المتاجر والفرق التي تحتاج قراءة واضحة للأرقام.",
@@ -99,7 +99,7 @@
     "yearlyPrice": 0,
     "unitPrice": 0.5,
     "unitName": "message",
-    "trialDays": 7,
+    "trialDays": 0,
     "requiredApps": [
       "store-basic"
     ],
@@ -145,7 +145,7 @@
     "yearlyPrice": 1999,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "trialDays": 0,
     "requiredApps": [],
     "positioning": {
       "audience": "المتاجر التي تحتاج تشغيل الطلبات والمنتجات من مكان واحد.",
@@ -189,7 +189,7 @@
     "yearlyPrice": 2499,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "trialDays": 0,
     "requiredApps": [],
     "positioning": {
       "audience": "أي متجر يريد واجهة بيع جاهزة أمام العميل.",
@@ -277,7 +277,7 @@
     "yearlyPrice": 3499,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "trialDays": 0,
     "requiredApps": [
       "store-basic"
     ],
@@ -329,7 +329,7 @@
     "yearlyPrice": 1499,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "trialDays": 0,
     "requiredApps": [
       "store-basic"
     ],
@@ -381,7 +381,7 @@
     "yearlyPrice": 1999,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "trialDays": 0,
     "requiredApps": [
       "store-basic"
     ],
@@ -433,7 +433,7 @@
     "yearlyPrice": 1799,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "trialDays": 0,
     "requiredApps": [
       "store-basic"
     ],
@@ -485,7 +485,7 @@
     "yearlyPrice": 1990,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "trialDays": 0,
     "requiredApps": [
       "ecommerce-basic"
     ],
@@ -543,7 +543,7 @@
     "yearlyPrice": 2490,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "trialDays": 0,
     "requiredApps": [
       "ecommerce-basic"
     ],
@@ -601,7 +601,7 @@
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "trialDays": 0,
     "requiredApps": [
       "ecommerce-basic"
     ],
@@ -647,7 +647,7 @@
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "trialDays": 0,
     "requiredApps": [
       "ecommerce-basic"
     ],
@@ -693,7 +693,7 @@
     "yearlyPrice": 1490,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "trialDays": 0,
     "requiredApps": [
       "ecommerce-basic"
     ],
@@ -739,7 +739,7 @@
     "yearlyPrice": 990,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
+    "trialDays": 0,
     "requiredApps": [],
     "positioning": {
       "audience": "الفرق التي تحتاج تذكيرات وتنبيهات تشغيلية بدون متابعة يدوية.",

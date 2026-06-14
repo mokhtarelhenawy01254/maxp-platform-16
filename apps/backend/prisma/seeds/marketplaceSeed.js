@@ -36,7 +36,7 @@ async function seedMarketplace() {
         "installCount": 0,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "📦"
       },
       {
@@ -62,7 +62,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "✈️"
       },
       {
@@ -88,7 +88,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": false,
         "requiredApps": "[\"ai-chat-basic\"]",
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "🧠"
       },
       {
@@ -114,7 +114,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": true,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "🎨"
       },
       {
@@ -140,7 +140,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": true,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "🤖"
       },
       {
@@ -166,7 +166,7 @@ async function seedMarketplace() {
         "installCount": 0,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "🖥️"
       },
       {
@@ -192,7 +192,7 @@ async function seedMarketplace() {
         "installCount": 0,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "🎯"
       },
       {
@@ -218,7 +218,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "🏪"
       },
       {
@@ -244,7 +244,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "📚"
       },
       {
@@ -270,7 +270,7 @@ async function seedMarketplace() {
         "installCount": 0,
         "isPopular": false,
         "requiredApps": "[\"hr-basic\"]",
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "💰"
       },
       {
@@ -296,7 +296,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": true,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "👥"
       },
       {
@@ -322,7 +322,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "⏰"
       },
       {
@@ -348,7 +348,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": true,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "🛒"
       },
       {
@@ -374,7 +374,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": true,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "💬"
       },
       {
@@ -400,7 +400,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": true,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "🔄"
       },
       {
@@ -426,7 +426,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": true,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "🛒"
       },
       {
@@ -452,7 +452,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "📝"
       },
       {
@@ -478,7 +478,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "🛍️"
       },
       {
@@ -504,7 +504,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "💎"
       },
       {
@@ -530,7 +530,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "⏰"
       },
       {
@@ -556,7 +556,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "🔌"
       },
       {
@@ -582,7 +582,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": true,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "💳"
       },
       {
@@ -608,7 +608,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": true,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "📈"
       },
       {
@@ -634,7 +634,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "⚡"
       },
       {
@@ -660,7 +660,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "📅"
       },
       {
@@ -686,7 +686,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "📈"
       },
       {
@@ -712,7 +712,7 @@ async function seedMarketplace() {
         "installCount": 0,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "🏆"
       },
       {
@@ -738,7 +738,7 @@ async function seedMarketplace() {
         "installCount": 0,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "🎮"
       },
       {
@@ -764,7 +764,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": true,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "📢"
       },
       {
@@ -790,7 +790,7 @@ async function seedMarketplace() {
         "installCount": 0,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "📢"
       },
       {
@@ -816,7 +816,7 @@ async function seedMarketplace() {
         "installCount": 0,
         "isPopular": false,
         "requiredApps": "[\"ecommerce-basic\"]",
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "🏪"
       },
       {
@@ -842,7 +842,7 @@ async function seedMarketplace() {
         "installCount": 0,
         "isPopular": true,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "👥"
       },
       {
@@ -868,7 +868,7 @@ async function seedMarketplace() {
         "installCount": 0,
         "isPopular": false,
         "requiredApps": "[\"hr-basic\"]",
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "⏰"
       },
       {
@@ -894,7 +894,7 @@ async function seedMarketplace() {
         "installCount": 0,
         "isPopular": true,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "💬"
       },
       {
@@ -920,7 +920,7 @@ async function seedMarketplace() {
         "installCount": 0,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "✈️"
       },
       {
@@ -946,7 +946,7 @@ async function seedMarketplace() {
         "installCount": 1,
         "isPopular": true,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "📊"
       },
       {
@@ -972,7 +972,7 @@ async function seedMarketplace() {
         "installCount": 0,
         "isPopular": false,
         "requiredApps": null,
-        "trialDays": 14,
+        "trialDays": 0,
         "icon": "📈"
       },
       {
@@ -988,7 +988,7 @@ async function seedMarketplace() {
         "isPublic": true,
         "isPopular": true,
         "category": "ECOMMERCE",
-        "trialDays": 14
+        "trialDays": 0
       },
       {
         "slug": "order-shipping-turbo",
@@ -1003,7 +1003,7 @@ async function seedMarketplace() {
         "isPublic": true,
         "isFeatured": true,
         "category": "ECOMMERCE",
-        "trialDays": 14
+        "trialDays": 0
       },
       {
         "slug": "order-shipping-reports",
@@ -1018,7 +1018,7 @@ async function seedMarketplace() {
         "isPublic": true,
         "isFeatured": false,
         "category": "ANALYTICS",
-        "trialDays": 14
+        "trialDays": 0
       },
       {
         "slug": "order-invoicing",
@@ -1033,7 +1033,7 @@ async function seedMarketplace() {
         "isPublic": true,
         "isPopular": false,
         "category": "FINANCE",
-        "trialDays": 14
+        "trialDays": 0
       }
 
     ];

@@ -22,7 +22,7 @@ import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 import { toast } from "sonner";
 import { useTheme } from "../../hooks/useTheme";
-import { Edit, TrendingUp, Users, Wallet, History, Landmark, Settings, Save, Plus } from "lucide-react";
+import { Edit, Info, TrendingUp, Users, Wallet, History, Landmark, Settings, Save, Plus } from "lucide-react";
 
 const PlatformPartnerManagement = () => {
   const { formatPrice } = useCurrency();

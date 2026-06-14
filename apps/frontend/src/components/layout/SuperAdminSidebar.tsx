@@ -52,7 +52,6 @@ export const menuGroups = [
     { text: i18n.t("superAdmin.sidebar.customerPayments"), icon: <DollarSign className="size-5" />, path: "/super-admin/payments" },
     { text: i18n.t("superAdmin.sidebar.revenueAnalytics"), icon: <BarChart3 className="size-5" />, path: "/super-admin/billing-overview" },
     { text: i18n.t("superAdmin.sidebar.signupCoupons"), icon: <Tag className="size-5" />, path: "/super-admin/platform-signup-coupons" },
-    { text: i18n.t("superAdmin.sidebar.onboarding"), icon: <Sliders className="size-5" />, path: "/super-admin/platform-onboarding" },
   ]},
   { title: i18n.t("superAdmin.sidebar.reportsAnalytics"), icon: <TrendingUp className="size-5" />, items: [
     { text: i18n.t("superAdmin.sidebar.reportsAnalytics"), icon: <BarChart3 className="size-5" />, path: "/super-admin/reports" },

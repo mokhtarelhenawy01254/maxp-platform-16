@@ -1,3 +1,32 @@
+## [2026-06-15] Remove Trial Period, Onboarding Settings Page, Dashboard Refactor, Channel Routing Auto-Reply [DONE]
+- **Objective**: Remove free trial system, delete PlatformOnboardingSettings page, refactor dashboard layout with new period presets, move auto-reply to global toggle in channel routing.
+- **Accomplishments**:
+  - **Trial Days → Zero**: Set `DEFAULT_TRIAL_DAYS=0` in `businessSpecialtyService.js`, `trialDays=0` in marketplace seeds and `SubscriptionCenter.tsx`. Updated `Register.tsx` and `AuthSurface.tsx` text to remove "30-day free trial" messaging.
+  - **PlatformOnboardingSettings Deleted**: Removed the entire Super Admin onboarding settings page, its route in `App.tsx`, and its sidebar menu item.
+  - **Dashboard Refactor**: Replaced old period presets (7d/30d/90d) with extended presets including today, yesterday, thisWeek, thisMonth, thisYear. Reordered metric cards: revenue sparkline/totalOrders row removed, new 4-card grid + 2-card profit row. Added `welcome`, `retry`, `quickActions`, `totalOrders`, `confirmedOrders`, `cancelledOrders`, `returnedOrders` i18n keys.
+  - **Channel Routing Auto-Reply**: Moved auto-reply toggle from per-channel switch to a single global toggle in the card header. Added `GET /auto-reply` endpoint in `agentManagerRoutes.js`. Added `allowedTools` field to agent responses. Fixed tool names (`facebook_reply` → `facebook.reply`, `whatsapp_send` → `whatsapp.send`).
+  - **SheetTrigger asChild**: Enhanced `SheetTrigger` to accept and forward `asChild` prop.
+  - **i18n Updates**: Added ~40 new translation keys across ar/en locales.
+- **Files**:
+  - `apps/backend/services/businessSpecialtyService.js` [MODIFY]
+  - `apps/backend/routes/agentManagerRoutes.js` [MODIFY]
+  - `apps/backend/controller/authController.js` [MODIFY]
+  - `apps/backend/prisma/seeds/marketplaceSeed.js` [MODIFY]
+  - `apps/backend/prisma/seeds/marketplaceSeed_simple.js` [MODIFY]
+  - `apps/backend/catalog/marketplace/apps.json` [MODIFY]
+  - `apps/frontend/src/pages/super-admin/PlatformOnboardingSettings.tsx` [DELETE]
+  - `apps/frontend/src/App.tsx` [MODIFY]
+  - `apps/frontend/src/components/layout/SuperAdminSidebar.tsx` [MODIFY]
+  - `apps/frontend/src/components/auth/AuthSurface.tsx` [MODIFY]
+  - `apps/frontend/src/components/ui/sheet.tsx` [MODIFY]
+  - `apps/frontend/src/pages/auth/Register.tsx` [MODIFY]
+  - `apps/frontend/src/pages/admin/ChannelRoutingPage.tsx` [MODIFY]
+  - `apps/frontend/src/pages/dashboard/MainDashboardPage.tsx` [MODIFY]
+  - `apps/frontend/src/pages/super-admin/PlatformPartnerManagement.tsx` [MODIFY]
+  - `apps/frontend/src/pages/super-admin/SubscriptionCenter.tsx` [MODIFY]
+  - `apps/frontend/src/locales/ar/translation.json` [MODIFY]
+  - `apps/frontend/src/locales/en/translation.json` [MODIFY]
+
 ## [2026-06-14] Unified Inbox Search & Filters Redesign [DONE]
 - **Objective**: Redesign the search and filters section of the Unified Inbox to match the reference layout.
 - **Accomplishments**:

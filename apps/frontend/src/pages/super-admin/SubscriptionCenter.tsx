@@ -322,7 +322,7 @@ const createDefaultMarketplaceFormData = (
   description: "",
   monthlyPrice: 0,
   yearlyPrice: 0,
-  trialDays: 14,
+  trialDays: 0,
   category: "ECOMMERCE",
   isActive: true,
   isPublic: true,

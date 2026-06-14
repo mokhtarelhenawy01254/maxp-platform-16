@@ -87,12 +87,12 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
           ) : (
             <div className="visual-stats-inline">
               <span className="stat-inline">
-                <span className="stat-inline-value">30 يوم</span>
-                <span className="stat-inline-label">تجربة مجانية</span>
+                <span className="stat-inline-value">ابدأ</span>
+                <span className="stat-inline-label">فوراً</span>
               </span>
               <span className="stat-inline">
                 <span className="stat-inline-value">بدون</span>
-                <span className="stat-inline-label">بطاقة ائتمان</span>
+                <span className="stat-inline-label">فترة تجريبية</span>
               </span>
             </div>
           )}

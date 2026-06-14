@@ -1,7 +1,7 @@
 const { getSharedPrismaClient, executeWithRetry } = require('./sharedDatabase');
 const { marketplaceCatalogService } = require('./catalog/marketplaceCatalogService');
 
-const DEFAULT_TRIAL_DAYS = 7;
+const DEFAULT_TRIAL_DAYS = 0;
 const SETTINGS_SYSTEM_NAME = 'platform_onboarding';
 const SETTINGS_DISPLAY_NAME = 'Platform onboarding settings';
 
