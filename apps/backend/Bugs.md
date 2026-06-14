@@ -1,3 +1,14 @@
+## [2026-06-14] Frontend — New Client After Registration Redirected to Subscription Page Instead of Homepage
+
+- **Bug/Issue**: After a new client completed registration (`/auth/register`), instead of being taken to the main/dashboard page, they were kept on the subscription/registration page or redirected incorrectly.
+- **Root Cause**: Race condition between React state and React Router. `registerUser()` calls `setUser(userData)` (async React state update) then immediately calls `navigate("/marketplace")`. At the moment of `navigate()`, `isAuthenticated` was still `false` because the state hadn't re-rendered yet. React Router resolved `/marketplace` inside the non-authenticated route block where it doesn't exist, causing the catch-all `<RedirectToApps />` to fire, landing the user in an incorrect or unexpected location.
+- **Fix**: 
+  1. Wrapped `navigate()` in a 100ms `setTimeout` to allow React to settle `isAuthenticated = true` before the router evaluates routes (mirrors the same pattern used in `ModernLogin.tsx`).
+  2. Replaced hardcoded `NEW_ACCOUNT_DESTINATION` with `getPostAuthDestination(userData)` so role-based routing (OWNER → `/marketplace`, AFFILIATE → `/affiliates/dashboard`, etc.) is respected, with fallback to explicit redirect param or default.
+- **Verification**: After registration completes, user is correctly routed to the appropriate homepage based on their role.
+- **Affected Files**:
+  - `apps/frontend/src/pages/auth/Register.tsx`
+
 ## [2026-06-14] Frontend — Infinite API Request Loop in EmployeeStatsReport (ERR_INSUFFICIENT_RESOURCES)
 - **Bug/Issue**: The browser console showed thousands of repeated `GET /companies/:id/users/statistics` requests, eventually causing `ERR_INSUFFICIENT_RESOURCES` (browser connection pool exhaustion). The app became unresponsive.
 - **Root Cause**: Circular dependency chain in `EmployeeStatsReport.jsx`: `dateRange` (object) was in `useCallback` deps of `calculateDateRange` → every render created a new function reference → `useEffect` (dep on `calculateDateRange`) triggered → `setDateRange(newObj)` → new object reference → second `useEffect` (dep on `dateRange`) triggered → `fetchStatistics()` → loop repeats infinitely.

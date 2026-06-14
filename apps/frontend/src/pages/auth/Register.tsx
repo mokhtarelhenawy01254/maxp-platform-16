@@ -6,6 +6,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
 import { trackPlatformSiteCompleteRegistration } from "../../utils/platformSiteMetaPixel";
+import { getPostAuthDestination } from "../../utils/companyOnboarding";
 
 const NEW_ACCOUNT_DESTINATION = "/marketplace";
 
@@ -154,10 +155,15 @@ const Register: React.FC = () => {
       });
       const urlParams = new URLSearchParams(window.location.search);
       const redirectParam = urlParams.get("redirect");
-      const redirectPath = redirectParam || NEW_ACCOUNT_DESTINATION;
+      // Use getPostAuthDestination so role-based routing (OWNER, AFFILIATE, etc.) is respected,
+      // with fallback to explicit redirect param or the default new-account destination.
+      const postAuthDest = getPostAuthDestination(userData);
+      const redirectPath = redirectParam || postAuthDest || NEW_ACCOUNT_DESTINATION;
 
       trackPlatformSiteCompleteRegistration("auth_register", { destination: redirectPath, role: userData?.role || "UNKNOWN" });
-      navigate(redirectPath);
+      // Small delay to allow the React auth state (isAuthenticated) to settle before
+      // the router evaluates which route block to render (authenticated vs. unauthenticated).
+      setTimeout(() => navigate(redirectPath, { replace: true }), 100);
     } catch (err: any) {
       setError(extractErrorMessage(err, copy.errors.register));
     } finally {
