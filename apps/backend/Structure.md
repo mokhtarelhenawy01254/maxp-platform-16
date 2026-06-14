@@ -1,3 +1,20 @@
+## [2026-06-14] Backend — Fix CompetitorFeature table missing from database
+- **Details**: The `CompetitorFeature` Prisma model existed in `prisma/schema/competitors_features.prisma` but its database table `competitor_features` was never created — no migration existed. The Prisma client had the model (from `prisma generate`) but all API queries failed at runtime because the table didn't exist.
+- **Root Cause Fixed**: The model was defined in `prisma/schema/competitors_features.prisma` but was never included in the manual `schema.prisma` reference file, and no migration SQL was ever committed. On fresh databases, `prisma db push` or `prisma migrate` would skip it. On the server, the table simply didn't exist.
+- **Architecture**:
+  - **`prisma/schema.prisma`** — Added `CompetitorFeature` model block and `features CompetitorFeature[]` relation on `Competitor`.
+  - **`prisma/migrations/add_competitor_features_table/migration.sql`** — New manual migration: `CREATE TABLE "competitor_features"` with indexes on `(competitorId)`, `(competitorId, status)`, `(competitorId, priority)` and FK cascade to `competitors`.
+- **Data Flow**:
+  ```
+  Frontend tab (CompetitorFeatures.tsx) → GET/POST/PUT/DELETE /competitors/:id/features
+  → competitorController.js → competitorFeatureService.js → prisma.competitorFeature.findMany/create/update/delete
+  → competitor_features table (now exists)
+  ```
+- **Affected Files**:
+  - `apps/backend/prisma/schema.prisma` — added model + relation
+  - `apps/backend/prisma/migrations/add_competitor_features_table/migration.sql` (new)
+  - `apps/backend/prisma/migrations/add_competitor_features_table/migration.json` (new)
+
 ## [2026-06-14] Backend — Agent Files Full Per-Company Isolation (AGENTS.md / TOOLS.md / PERSONA.md)
 - **Details**: Extended per-agent file storage to cover all 4 markdown files (SOUL.md, AGENTS.md, TOOLS.md, PERSONA.md), not just SOUL.md. Previously AGENTS.md / TOOLS.md / PERSONA.md were always served from shared template files on disk regardless of any company edits. Now they are stored per-agent in the Python ai-service and fetched live on every profile load.
 - **Root Cause Fixed**: `aiServiceAdminClient.request` was not exported from the module — calling it from `getAgentProfile` threw a silent TypeError, causing the soul fetch to silently fail and fall back to the stale DB value. Fixed by adding `getAgentFiles(agentId, companyId)` as a proper exported function.
