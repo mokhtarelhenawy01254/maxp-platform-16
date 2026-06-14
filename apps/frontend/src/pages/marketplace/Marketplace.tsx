@@ -1076,7 +1076,8 @@ export default function Marketplace() {
                         key={app.id}
                         className={cn(
                           "group flex min-h-[198px] flex-col p-4 text-right transition-all hover:-translate-y-0.5",
-                          app.isInstalled && "border-success/50"
+                          app.isInstalled && "border-success/50",
+                          app.isFeatured && "border-primary/30 shadow-sm"
                         )}
                       >
                         <div className="flex items-start justify-between gap-3">
@@ -1093,7 +1094,7 @@ export default function Marketplace() {
                               <h3 className="truncate text-base font-black text-foreground sm:text-lg">
                                 {app.name}
                               </h3>
-                              <div className="mt-1 text-xs font-bold text-muted-foreground">
+                              <div className="mt-1 text-sm font-bold text-primary">
                                 {getDisplayedPrice(app)}
                               </div>
                             </div>
@@ -1102,7 +1103,9 @@ export default function Marketplace() {
                                 "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl",
                                 app.isInstalled
                                   ? "bg-success/10 text-success"
-                                  : "bg-primary/10 text-primary"
+                                  : app.isFeatured
+                                    ? "bg-primary/15 text-primary ring-1 ring-primary/20"
+                                    : "bg-primary/10 text-primary"
                               )}
                             >
                               {textIcon || <Icon size={24} aria-hidden="true" />}
@@ -1110,18 +1113,18 @@ export default function Marketplace() {
                           </div>
                         </div>
 
-                        <p className="mt-3 line-clamp-3 text-sm font-semibold leading-6 text-muted-foreground">
+                        <p className="mt-3 line-clamp-2 text-sm leading-6 text-muted-foreground">
                           {app.description}
                         </p>
 
-                        <div className="mt-3 flex flex-wrap justify-end gap-1.5">
+                        <div className="mt-3 flex flex-wrap justify-end gap-1">
                           {app.isFeatured && (
-                            <Badge variant="secondary" className="text-[10px] font-black">
+                            <Badge variant="default" className="text-[10px] font-black">
                               {t('marketplace.featured')}
                             </Badge>
                           )}
                           {app.isInstalled && (
-                            <Badge variant="secondary" className="inline-flex items-center gap-1 text-[10px] font-black">
+                            <Badge variant="outline" className="inline-flex items-center gap-1 text-[10px] font-black text-success border-success/30">
                               <Check size={10} strokeWidth={3} aria-hidden="true" />
                               {t('marketplace.installed')}
                             </Badge>
@@ -1129,7 +1132,7 @@ export default function Marketplace() {
                           <Badge variant="outline" className="text-[10px] font-black">
                             {getFeatureAccessLabel(accessKind)}
                           </Badge>
-                          <Badge variant="outline" className="text-[10px] font-black">
+                          <Badge variant="ghost" className="text-[10px] font-black text-muted-foreground">
                             {getToolRoleLabel(app, t)}
                           </Badge>
                         </div>
