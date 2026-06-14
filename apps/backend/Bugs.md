@@ -1,3 +1,11 @@
+## [2026-06-14] Frontend — Infinite API Request Loop in EmployeeStatsReport (ERR_INSUFFICIENT_RESOURCES)
+- **Bug/Issue**: The browser console showed thousands of repeated `GET /companies/:id/users/statistics` requests, eventually causing `ERR_INSUFFICIENT_RESOURCES` (browser connection pool exhaustion). The app became unresponsive.
+- **Root Cause**: Circular dependency chain in `EmployeeStatsReport.jsx`: `dateRange` (object) was in `useCallback` deps of `calculateDateRange` → every render created a new function reference → `useEffect` (dep on `calculateDateRange`) triggered → `setDateRange(newObj)` → new object reference → second `useEffect` (dep on `dateRange`) triggered → `fetchStatistics()` → loop repeats infinitely.
+- **Fix**: Added `useRef` to track `dateRange` for the `"custom"` branch, removed `dateRange` from `useCallback` deps (`[]`). `calculateDateRange` is now stable, breaking the circular loop.
+- **Verification**: Component no longer re-fetches on infinite loop. Only fetches on period change or manual refresh.
+- **Affected Files**:
+  - `apps/frontend/src/pages/EmployeeStatsReport.jsx`
+
 ## [2026-06-14] Backend — Prisma Schema Generation Fails due to Hardcoded Path
 - **Bug/Issue**: Running `npm run schema:generate` failed with `Error: Cannot find module 'H:\maxp-platform\node_modules\prisma\build\index.js'`.
 - **Root Cause**: The script in `apps/backend/package.json` used a hardcoded path `node ../../node_modules/prisma/build/index.js` which assumed `prisma` was installed at the root `node_modules` instead of resolving the local project's devDependency.

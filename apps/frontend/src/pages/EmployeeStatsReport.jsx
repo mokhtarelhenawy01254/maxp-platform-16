@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -27,13 +27,16 @@ const EmployeeStatsReport = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("today");
   const [dateRange, setDateRange] = useState({ startDate: new Date().toISOString().split("T")[0], endDate: new Date().toISOString().split("T")[0] });
 
+  const dateRangeRef = useRef(dateRange);
+  dateRangeRef.current = dateRange;
+
   const calculateDateRange = useCallback((period) => {
     const today = new Date();
-    if (period === "custom") return dateRange;
+    if (period === "custom") return dateRangeRef.current;
     const ranges = { today: [today, today], yesterday: [new Date(today.setDate(today.getDate() - 1)), new Date(today)], last7days: [new Date(today.setDate(today.getDate() - 6)), new Date()], last30days: [new Date(today.setDate(today.getDate() - 29)), new Date()], thisMonth: [new Date(today.getFullYear(), today.getMonth(), 1), new Date()], lastMonth: [new Date(today.getFullYear(), today.getMonth() - 1, 1), new Date(today.getFullYear(), today.getMonth(), 0)] };
     const r = ranges[period] || [today, today];
     return { startDate: r[0].toISOString().split("T")[0], endDate: r[1].toISOString().split("T")[0] };
-  }, [dateRange]);
+  }, []);
 
   useEffect(() => { if (selectedPeriod !== "custom") setDateRange(calculateDateRange(selectedPeriod)); }, [selectedPeriod, calculateDateRange]);
   useEffect(() => { if (user?.companyId) fetchStatistics(); }, [dateRange, user?.companyId]);
