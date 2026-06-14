@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { cn } from "../../lib/utils";
 import "../../pages/auth/authRedesign.css";
 
@@ -53,6 +54,7 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
   visualStats,
   dir = "rtl",
 }) => {
+  const { t } = useTranslation();
   const themeStyle = theme ? THEME_OVERRIDES[theme] : undefined;
   return (
     <div className={cn("elite-auth-container", wide && "elite-auth-container--wide")} dir={dir} style={themeStyle as React.CSSProperties}>
@@ -87,12 +89,12 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
           ) : (
             <div className="visual-stats-inline">
               <span className="stat-inline">
-                <span className="stat-inline-value">ابدأ</span>
-                <span className="stat-inline-label">فوراً</span>
+                <span className="stat-inline-value">{t("auth.visualStart")}</span>
+                <span className="stat-inline-label">{t("auth.visualImmediately")}</span>
               </span>
               <span className="stat-inline">
-                <span className="stat-inline-value">بدون</span>
-                <span className="stat-inline-label">فترة تجريبية</span>
+                <span className="stat-inline-value">{t("auth.visualWithout")}</span>
+                <span className="stat-inline-label">{t("auth.visualTrialPeriod")}</span>
               </span>
             </div>
           )}

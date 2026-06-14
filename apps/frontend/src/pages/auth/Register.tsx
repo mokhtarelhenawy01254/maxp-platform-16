@@ -23,18 +23,10 @@ const TRIAL_DAYS = 0;
 
 const copyByLanguage = {
   ar: {
-    title: "أنشئ حسابك وابدأ فوراً",
-    description: "أنشئ حسابك وابدأ إدارة أعمالك — بدون فترة تجريبية.",
     eyebrow: "New Member Registration",
     footerText: "لديك حساب بالفعل؟",
     login: "تسجيل الدخول",
     visualTitle: <>قُد أعمالك <br /> نحو <span style={{ color: "var(--auth-accent)" }}>المستقبل</span></>,
-    visualDescription: "كل الأدوات التي تحتاجها لإدارة أعمالك — منصة واحدة.",
-    visualBadge: "ابدأ الآن",
-    stats: [
-      { label: "ابدأ", value: "فوراً" },
-      { label: "بدون حد", value: "أساسي" },
-    ],
     labels: {
       fullName: "الاسم بالكامل",
       email: "البريد الإلكتروني",
@@ -54,23 +46,14 @@ const copyByLanguage = {
       register: "فشل في إنشاء الحساب",
     },
     submitLoading: "جاري الإنشاء...",
-    submit: "إنشاء الحساب",
     errorTitle: "خطأ في التسجيل",
     languageButton: "English",
   },
   en: {
-    title: "Create your account",
-    description: "Create your account and start managing your business — no trial period.",
     eyebrow: "New Member Registration",
     footerText: "Already have an account?",
     login: "Log in",
     visualTitle: <>Run your business <br /> with a <span style={{ color: "var(--auth-accent)" }}>focused toolkit</span></>,
-    visualDescription: "All the tools you need to run your business — one platform.",
-    visualBadge: "Start now",
-    stats: [
-      { label: "Start", value: "instantly" },
-      { label: "No limits", value: "basic plan" },
-    ],
     labels: {
       fullName: "Full name",
       email: "Email",
@@ -90,16 +73,26 @@ const copyByLanguage = {
       register: "Failed to create account",
     },
     submitLoading: "Creating...",
-    submit: "Create account",
     errorTitle: "Registration error",
     languageButton: "العربية",
   },
 };
 
 const Register: React.FC = () => {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const language = i18n.language?.startsWith("en") ? "en" : "ar";
-  const copy = copyByLanguage[language];
+  const copy = {
+    ...copyByLanguage[language],
+    title: t("register.title"),
+    description: t("register.description"),
+    visualDescription: t("register.visualDescription"),
+    visualBadge: t("register.visualBadge"),
+    stats: [
+      { label: t("register.statsStartLabel"), value: t("register.statsStartValue") },
+      { label: t("register.statsNoLimitLabel"), value: t("register.statsNoLimitValue") },
+    ],
+    submit: t("register.submit"),
+  };
   const isArabic = language === "ar";
   const [searchParams] = useSearchParams();
   const partnerCode = searchParams.get("partner") || undefined;
