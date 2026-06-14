@@ -39,14 +39,18 @@ const getUnifiedConversations = async (req, res) => {
         // 1. Fetch Facebook/Messenger conversations (from Conversation model)
         // ──────────────────────────────────────────────────────────
         const fbWhere = { companyId };
-        const platformFilter = platform?.toUpperCase();
+        const selectedPlatforms = platform ? platform.toUpperCase().split(',') : [];
+        const hasAll = selectedPlatforms.length === 0 || selectedPlatforms.includes('ALL');
 
-        if (platformFilter && platformFilter !== 'ALL') {
-            fbWhere.channel = platformFilter;
-        }
-        // If no platform specified, include all channels except TEST
-        if (!platform || platform === 'all') {
-            fbWhere.channel = { in: ['FACEBOOK', 'INSTAGRAM', 'WHATSAPP', 'TELEGRAM'] };
+        if (hasAll) {
+            fbWhere.channel = { in: ['FACEBOOK', 'INSTAGRAM', 'WHATSAPP', 'TELEGRAM', 'WEBSITE', 'TEST'] };
+        } else {
+            const nonWaSelected = selectedPlatforms.filter(p => p !== 'WHATSAPP');
+            if (nonWaSelected.length > 0) {
+                fbWhere.channel = { in: nonWaSelected };
+            } else {
+                fbWhere.id = 'none'; // Force no match
+            }
         }
 
         if (status) {
@@ -128,8 +132,8 @@ const getUnifiedConversations = async (req, res) => {
         // ──────────────────────────────────────────────────────────
         // 2. Also fetch WhatsApp contacts if platform includes whatsapp
         // ──────────────────────────────────────────────────────────
-        let whatsappContacts = [];
-        const shouldFetchWhatsApp = !platformFilter || platformFilter === 'ALL' || platformFilter === 'WHATSAPP';
+        const shouldFetchWhatsApp = hasAll || selectedPlatforms.includes('WHATSAPP');
+        const isWhatsAppOnly = !hasAll && selectedPlatforms.includes('WHATSAPP') && selectedPlatforms.length === 1;
 
         if (shouldFetchWhatsApp) {
             try {
@@ -158,8 +162,8 @@ const getUnifiedConversations = async (req, res) => {
                             { isPinned: 'desc' },
                             { lastMessageAt: 'desc' }
                         ],
-                        skip: platformFilter === 'WHATSAPP' ? skip : 0,
-                        take: platformFilter === 'WHATSAPP' ? take : 20,
+                        skip: isWhatsAppOnly ? skip : 0,
+                        take: isWhatsAppOnly ? take : 20,
                         select: {
                             id: true,
                             sessionId: true,
@@ -262,9 +266,9 @@ const getUnifiedConversations = async (req, res) => {
 
         // Merge and sort all conversations
         let allConversations;
-        if (platformFilter === 'WHATSAPP') {
+        if (isWhatsAppOnly) {
             allConversations = normalizedWhatsApp;
-        } else if (platformFilter && platformFilter !== 'ALL') {
+        } else if (!hasAll && !selectedPlatforms.includes('WHATSAPP')) {
             allConversations = normalizedConversations;
         } else {
             // Merge all, sort by lastMessageTime

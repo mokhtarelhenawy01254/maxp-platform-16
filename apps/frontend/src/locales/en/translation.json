@@ -4850,6 +4850,18 @@
     "title": "Unified Inbox",
     "refresh": "Refresh",
     "searchPlaceholder": "Search conversations...",
+    "filters": {
+      "unread": "Unread",
+      "followUp": "Follow-up",
+      "allPlatforms": "All Platforms"
+    },
+    "platforms": {
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "whatsapp": "WhatsApp",
+      "website": "Website",
+      "test": "Test"
+    },
     "tabs": {
       "all": "All",
       "messenger": "Messenger",

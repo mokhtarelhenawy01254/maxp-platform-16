@@ -13,6 +13,8 @@ import {
   PhoneIcon,
   EnvelopeIcon,
   BoltIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import { apiClient } from "../../services/apiClient";
@@ -101,6 +103,44 @@ const platformStyles: Record<string, { label: string; icon: string }> = {
   telegram: { label: "Telegram", icon: "✈️" },
 };
 
+// Custom brand and helper icons for the platforms dropdown
+const FacebookIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg className={className} style={style} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+  </svg>
+);
+
+const InstagramIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+  </svg>
+);
+
+const WhatsAppIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+  </svg>
+);
+
+const GlobeIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"></circle>
+    <line x1="2" y1="12" x2="22" y2="12"></line>
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+  </svg>
+);
+
+const FlaskIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 3h12"></path>
+    <path d="M12 3v15"></path>
+    <path d="M9 12h6"></path>
+    <path d="M18 19c0 1-1 2-2 2H8c-1 0-2-1-2-2 0-.8.4-1.6 1-2l5-6.5V3h4v5.5l5 6.5c.6.4 1 1.2 1 2z"></path>
+  </svg>
+);
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🏗️ Main Component
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -131,8 +171,10 @@ const UnifiedInbox: React.FC = () => {
   const [sending, setSending] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [platformFilter, setPlatformFilter] = useState<string>("all");
-  const [statusFilter] = useState<string>("");
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const [unreadFilter, setUnreadFilter] = useState(false);
+  const [followUpFilter, setFollowUpFilter] = useState(false);
+  const [showPlatformDropdown, setShowPlatformDropdown] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [showProfilePanel, setShowProfilePanel] = useState(true);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
@@ -141,6 +183,31 @@ const UnifiedInbox: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowPlatformDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const getPlatformFilterLabel = () => {
+    if (selectedPlatforms.length === 0) return t("unifiedInbox.filters.allPlatforms");
+    
+    if (selectedPlatforms.length === 1) {
+      return t(`unifiedInbox.platforms.${selectedPlatforms[0]}`);
+    }
+    
+    const firstLabel = t(`unifiedInbox.platforms.${selectedPlatforms[0]}`);
+    return `${firstLabel} + ${selectedPlatforms.length - 1}`;
+  };
 
   // ──────────────────────────────────────────────────────────
   // 📡 Data Fetching
@@ -150,9 +217,16 @@ const UnifiedInbox: React.FC = () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      params.set("platform", platformFilter);
+      
+      if (selectedPlatforms.length > 0) {
+        params.set("platform", selectedPlatforms.join(","));
+      } else {
+        params.set("platform", "all");
+      }
+      
       if (searchQuery) params.set("search", searchQuery);
-      if (statusFilter) params.set("status", statusFilter);
+      if (followUpFilter) params.set("status", "pending");
+      if (unreadFilter) params.set("unreadOnly", "true");
       params.set("limit", "50");
 
       const response = await apiClient.get(
@@ -170,7 +244,7 @@ const UnifiedInbox: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [platformFilter, searchQuery, statusFilter]);
+  }, [selectedPlatforms, searchQuery, followUpFilter, unreadFilter]);
 
   const loadMessages = useCallback(async (conv: UnifiedConversation) => {
     try {
@@ -317,7 +391,7 @@ const UnifiedInbox: React.FC = () => {
   useEffect(() => {
     loadConversations();
     loadQuickReplies();
-  }, [platformFilter, statusFilter]);
+  }, [selectedPlatforms, followUpFilter, unreadFilter]);
 
   useEffect(() => {
     // Real-time updates
@@ -399,63 +473,92 @@ const UnifiedInbox: React.FC = () => {
         <div className="business-inbox-column business-inbox-column--list">
           {/* Header */}
           <div className="business-inbox-header">
-            <div className="business-inbox-header-row mb-3">
-              <h1 className="business-inbox-title">
-                <ChatBubbleLeftRightIcon className="w-6 h-6" />
-                {t("unifiedInbox.title")}
-              </h1>
-              <button
-                onClick={() => loadConversations()}
-                className="business-chip-button"
-                title={t("unifiedInbox.refresh")}
-              >
-                <ArrowPathIcon
-                  className={`w-5 h-5 ${loading ? "animate-spin" : ""}`}
-                />
-              </button>
-            </div>
-
             {/* Search */}
             <div className="business-inbox-search-wrap mb-3">
               <MagnifyingGlassIcon
-                className={`business-inbox-search-icon ${isRtl ? "right-0 left-auto" : ""}`}
+                className={`business-inbox-search-icon ${isRtl ? "right-3 left-auto" : "left-3 right-auto"}`}
               />
               <input
                 type="text"
                 placeholder={t("unifiedInbox.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className={`business-inbox-search ${isRtl ? "pr-10 pl-4" : "pl-10 pr-4 text-left"}`}
+                className={`business-inbox-search ${isRtl ? "pr-9 pl-4" : "pl-9 pr-4 text-left"}`}
               />
             </div>
 
-            {/* Platform Filter Tabs */}
-            <div className="business-inbox-tabs">
-              {[
-                {
-                  key: "all",
-                  label: t("unifiedInbox.tabs.all"),
-                  count: counts.all,
-                },
-                { key: "facebook", label: "💬", count: counts.facebook },
-                { key: "instagram", label: "📷", count: counts.instagram },
-                { key: "whatsapp", label: "📱", count: counts.whatsapp },
-                { key: "telegram", label: "✈️", count: counts.telegram },
-              ].map((tab) => (
+            {/* Filter Chips Row */}
+            <div className="inbox-filter-bar relative flex items-center gap-2 mb-2" dir="rtl">
+              <button
+                type="button"
+                onClick={() => setUnreadFilter(prev => !prev)}
+                className="inbox-filter-chip"
+                data-active={unreadFilter ? "true" : "false"}
+              >
+                {t("unifiedInbox.filters.unread")}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setFollowUpFilter(prev => !prev)}
+                className="inbox-filter-chip"
+                data-active={followUpFilter ? "true" : "false"}
+              >
+                {t("unifiedInbox.filters.followUp")}
+              </button>
+
+              {/* Platform Selector Dropdown */}
+              <div className="relative" ref={dropdownRef}>
                 <button
-                  key={tab.key}
-                  onClick={() => setPlatformFilter(tab.key)}
-                  className="business-inbox-tab"
-                  data-active={platformFilter === tab.key ? "true" : "false"}
+                  type="button"
+                  onClick={() => setShowPlatformDropdown(prev => !prev)}
+                  className="inbox-filter-chip flex items-center gap-1.5"
+                  data-active={showPlatformDropdown || selectedPlatforms.length > 0 ? "true" : "false"}
                 >
-                  {tab.label}
-                  {tab.count > 0 && (
-                    <span className="business-inbox-tab-count">
-                      {tab.count}
-                    </span>
+                  <span>{getPlatformFilterLabel()}</span>
+                  {showPlatformDropdown ? (
+                    <ChevronUpIcon className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronDownIcon className="w-3.5 h-3.5" />
                   )}
                 </button>
-              ))}
+
+                {showPlatformDropdown && (
+                  <div className="inbox-platform-dropdown" style={{ zIndex: 50 }}>
+                    {[
+                      { id: "facebook", label: t("unifiedInbox.platforms.facebook"), icon: FacebookIcon, color: "#1877F2" },
+                      { id: "instagram", label: t("unifiedInbox.platforms.instagram"), icon: InstagramIcon, color: "#E1306C" },
+                      { id: "whatsapp", label: t("unifiedInbox.platforms.whatsapp"), icon: WhatsAppIcon, color: "#25D366" },
+                      { id: "website", label: t("unifiedInbox.platforms.website"), icon: GlobeIcon, color: "#3B82F6" },
+                      { id: "test", label: t("unifiedInbox.platforms.test"), icon: FlaskIcon, color: "#F97316" }
+                    ].map((plat) => {
+                      const isChecked = selectedPlatforms.includes(plat.id);
+                      return (
+                        <div
+                          key={plat.id}
+                          className="inbox-dropdown-item"
+                          onClick={() => {
+                            setSelectedPlatforms(prev =>
+                              prev.includes(plat.id)
+                                ? prev.filter(x => x !== plat.id)
+                                : [...prev, plat.id]
+                            );
+                          }}
+                        >
+                          {/* Checkbox (circle) */}
+                          <div className={`inbox-checkbox-circle ${isChecked ? "checked" : ""}`} />
+                          
+                          {/* Platform Icon */}
+                          <plat.icon className="inbox-platform-icon" style={{ color: plat.color }} />
+                          
+                          {/* Label */}
+                          <span className="inbox-platform-text">{plat.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

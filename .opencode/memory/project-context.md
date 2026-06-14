@@ -23,3 +23,4 @@
 - Admin: /admin/test endpoint, /admin/agent-profiles page, app-explanations routes
 - Translations: Arabic/English sidebar labels (gapAnalysis, competitorReports, competitorSettings)
 - Fixes: 400 errors, 403 errors, merge conflict resolutions
+- Unified Inbox: Redesigned search and filter UI with unread, pending, and platform dropdown controls, and updated backend controller to support multi-platform queries.

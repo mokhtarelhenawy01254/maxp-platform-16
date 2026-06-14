@@ -1,3 +1,18 @@
+## [2026-06-14] Unified Inbox Search & Filters Redesign [DONE]
+- **Objective**: Redesign the search and filters section of the Unified Inbox to match the reference layout.
+- **Accomplishments**:
+  - **Filter Chips UI**: Added toggle chips for "غير مقروء" (Unread) and "تحتاج متابعة" (Needs follow-up).
+  - **Platform Selector Dropdown**: Implemented absolute-positioned platform selection dropdown with circle checkboxes, brand icons, and dynamic display label.
+  - **i18n Localization**: Created translation keys for all filters and platforms in both Arabic and English locales, ensuring zero hardcoded Arabic strings in the source code.
+  - **Backend Controller**: Updated `unifiedInboxController.js` to parse comma-separated platform parameters, construct correct Prisma `in` queries, and handle `WEBSITE` and `TEST` channels.
+  - **CSS Styling**: Added styling rules to `index.css` supporting light and dark modes.
+- **Files**:
+  - `apps/backend/controller/unifiedInboxController.js` [MODIFY]
+  - `apps/frontend/src/pages/unified-inbox/UnifiedInbox.tsx` [MODIFY]
+  - `apps/frontend/src/styles/index.css` [MODIFY]
+  - `apps/frontend/src/locales/ar/translation.json` [MODIFY]
+  - `apps/frontend/src/locales/en/translation.json` [MODIFY]
+
 ## [2026-06-14] Onboarding Wizard Simplified to 2 Steps [DONE]
 - **Objective**: Remove "Identity" and "Integration" onboarding steps to streamline the merchant onboarding experience.
 - **Accomplishments**:
