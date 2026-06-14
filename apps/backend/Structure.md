@@ -1,3 +1,32 @@
+## [2026-06-14] Backend — Agent Files Full Per-Company Isolation (AGENTS.md / TOOLS.md / PERSONA.md)
+- **Details**: Extended per-agent file storage to cover all 4 markdown files (SOUL.md, AGENTS.md, TOOLS.md, PERSONA.md), not just SOUL.md. Previously AGENTS.md / TOOLS.md / PERSONA.md were always served from shared template files on disk regardless of any company edits. Now they are stored per-agent in the Python ai-service and fetched live on every profile load.
+- **Root Cause Fixed**: `aiServiceAdminClient.request` was not exported from the module — calling it from `getAgentProfile` threw a silent TypeError, causing the soul fetch to silently fail and fall back to the stale DB value. Fixed by adding `getAgentFiles(agentId, companyId)` as a proper exported function.
+- **Architecture**:
+  - **`getAgentFiles(agentId, companyId)`** added to `aiServiceAdminClient.js` — calls `GET /admin/agents/:id/files?company_id=...` on the Python ai-service and is properly exported.
+  - **`getAgentProfile()`** in `aiSandboxController.js` — now calls `getAgentFiles` and resolves all 4 files: Python value wins if non-empty, otherwise falls back to template file on disk. No silent failures.
+  - **`GET /agent/agents/:id/files`** route in `agentControlRoutes.js` — was also using the unexported `request` directly; fixed to use `getAgentFiles`.
+  - **Save path** (`PUT /agent/agents/:id/files`) was already forwarding all 4 files to Python correctly — no change needed there.
+  - **Frontend** (`AgentProfilesPage.tsx`) was already sending all 4 files in `draftFiles` on save — no change needed.
+- **Data Flow**:
+  ```
+  Edit any tab (Soul / Agents / Tools) → PUT /agent/agents/:id/files → Python stores all 4 files per agent_id
+  Load profile → GET /ai-sandbox/agents/:id/profile → getAgentFiles() → Python returns per-agent files → fallback to disk template if absent
+  ```
+- **Affected Files**:
+  - `apps/backend/services/aiServiceAdminClient.js` — added `getAgentFiles`, fixed `updateAgent` to use `PUT /files` (was `PATCH /agents/:id`)
+  - `apps/backend/controller/aiSandboxController.js` — `getAgentProfile` now resolves all 4 files from Python
+  - `apps/backend/routes/agentControlRoutes.js` — GET /agents/:id/files uses `getAgentFiles`
+
+## [2026-06-14] Backend + Frontend — AgentProfilesPage Standalone Route
+- **Details**: Created a new standalone admin page at `/admin/agent-profiles` for viewing and editing AI agent profiles. Separate from the AI Sandbox page.
+- **Architecture**:
+  - **Route**: `<Route path="/admin/agent-profiles" element={<Layout fullWidth><AgentProfilesPage /></Layout>} />` added in `App.tsx`.
+  - **`AgentProfilesPage.tsx`** (new): Agent list sidebar + 4-tab main view (Soul / Agents / Tools / Skills). Features: edit mode with Textarea, model selector, status toggle (Switch), search, save/discard. Uses `sandboxApi.getAgentProfile()` and `PUT /agent/agents/:id/files`.
+  - **Skills Tab**: Shows 2 sections — agent template skills (from Python) and company custom skills (from `CompanySkill` DB table).
+- **Affected Files**:
+  - `apps/frontend/src/pages/admin/agent-profiles/AgentProfilesPage.tsx` (new)
+  - `apps/frontend/src/App.tsx` — route added
+
 ## [2026-06-14] Backend + Frontend — Create Skill Feature on AgentProfilesPage
 - **Details**: Added "إنشاء مهارة" (Create Skill) button on the Skills tab of `/admin/agent-profiles`. Opens a slide-over drawer with a full form (name, description, instructions, tools multi-select, enabled toggle). Skills are stored in the `CompanySkill` DB table.
 - **Architecture**:
