@@ -1,13 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Card, Row, Col, Table, Tag, Badge, Spin, Empty, Progress, Select, Statistic } from 'antd';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
-  DollarOutlined,
-  EyeOutlined,
-  InteractionOutlined,
-  CustomerServiceOutlined,
-} from '@ant-design/icons';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
+import {
+  Loader2,
+  DollarSign,
+  Eye,
+  MousePointerClick,
+  Headphones,
+  Inbox,
+} from 'lucide-react';
 import axios from 'axios';
 
 const platformColors = {
@@ -73,7 +91,9 @@ export default function AdIntelligence() {
       dataIndex: 'platform',
       key: 'platform',
       render: (platform) => (
-        <Tag color={platformColors[platform] || '#999'}>{platform?.toUpperCase()}</Tag>
+        <Badge variant="outline" style={{ borderColor: platformColors[platform] || '#999', color: platformColors[platform] || '#999' }}>
+          {platform?.toUpperCase()}
+        </Badge>
       ),
     },
     {
@@ -81,7 +101,10 @@ export default function AdIntelligence() {
       dataIndex: 'status',
       key: 'status',
       render: (status) => (
-        <Badge status={status === 'active' ? 'success' : 'default'} text={status} />
+        <span className="flex items-center gap-1 text-xs">
+          <span className={`h-2 w-2 rounded-full ${status === 'active' ? 'bg-green-500' : 'bg-gray-400'}`} />
+          {status}
+        </span>
       ),
     },
     {
@@ -123,158 +146,190 @@ export default function AdIntelligence() {
     },
   ];
 
-  if (loading) return <Spin size="large" className="flex justify-center mt-10" />;
+  if (loading) return <Loader2 className="animate-spin mx-auto mt-10 size-8" />;
 
   if (!summary || campaigns.length === 0) {
     return (
-      <Empty description={t('competitors.noAdData')} className="mt-10">
-        <Tag color="blue">{t('competitors.addAdData')}</Tag>
-      </Empty>
+      <div className="flex flex-col items-center mt-10 text-muted-foreground">
+        <Inbox className="size-12 mb-2" />
+        <p>{t('competitors.noAdData')}</p>
+        <Badge variant="outline" className="mt-2 border-blue-500 text-blue-500">
+          {t('competitors.addAdData')}
+        </Badge>
+      </div>
     );
   }
+
+  const renderCampaignsTable = () => {
+    if (!campaigns.length) return null;
+    return (
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {campaignColumns.map((col) => (
+                <TableHead key={col.key}>{col.title}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {campaigns.slice(0, 10).map((row) => (
+              <TableRow key={row.id}>
+                {campaignColumns.map((col) => (
+                  <TableCell key={col.key}>{col.render ? col.render(row[col.dataIndex], row) : row[col.dataIndex]}</TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">{t('competitors.adOverview')}</h2>
-        <Select
-          placeholder={t('competitors.filterPlatform')}
-          allowClear
-          style={{ width: 150 }}
-          onChange={setPlatformFilter}
-          options={[
-            { label: 'Facebook', value: 'facebook' },
-            { label: 'Google', value: 'google' },
-            { label: 'TikTok', value: 'tiktok' },
-          ]}
-        />
+        <Select value={platformFilter || ''} onValueChange={(v) => setPlatformFilter(v || null)}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder={t('competitors.filterPlatform')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="facebook">Facebook</SelectItem>
+            <SelectItem value="google">Google</SelectItem>
+            <SelectItem value="tiktok">TikTok</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      <Row gutter={[16, 16]}>
-        <Col xs={24} md={6}>
-          <Card>
-            <Statistic
-              title={t('competitors.totalCampaigns')}
-              value={summary.totalCampaigns}
-              prefix={<CustomerServiceOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} md={6}>
-          <Card>
-            <Statistic
-              title={t('competitors.activeCampaigns')}
-              value={summary.activeCampaigns}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} md={6}>
-          <Card>
-            <Statistic
-              title={t('competitors.totalSpend')}
-              value={summary.totalSpend}
-              prefix={<DollarOutlined />}
-              precision={2}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} md={6}>
-          <Card>
-            <Statistic
-              title={t('competitors.avgCTR')}
-              value={summary.avgCTR}
-              suffix="%"
-              precision={2}
-            />
-          </Card>
-        </Col>
-      </Row>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card size="sm">
+          <CardContent>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Headphones className="size-4" />
+              {t('competitors.totalCampaigns')}
+            </div>
+            <div className="text-2xl font-bold mt-1">{summary.totalCampaigns}</div>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent>
+            <div className="text-sm text-muted-foreground">{t('competitors.activeCampaigns')}</div>
+            <div className="text-2xl font-bold mt-1 text-green-600">{summary.activeCampaigns}</div>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <DollarSign className="size-4" />
+              {t('competitors.totalSpend')}
+            </div>
+            <div className="text-2xl font-bold mt-1">${Number(summary.totalSpend).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+          </CardContent>
+        </Card>
+        <Card size="sm">
+          <CardContent>
+            <div className="text-sm text-muted-foreground">{t('competitors.avgCTR')}</div>
+            <div className="text-2xl font-bold mt-1">{Number(summary.avgCTR).toFixed(2)}%</div>
+          </CardContent>
+        </Card>
+      </div>
 
-      <Row gutter={[16, 16]}>
-        <Col xs={24} md={8}>
-          <Card title={t('competitors.impressions')}>
-            <Statistic
-              value={summary.totalImpressions}
-              formatter={(value) => value?.toLocaleString()}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} md={8}>
-          <Card title={t('competitors.clicks')}>
-            <Statistic value={summary.totalClicks} />
-          </Card>
-        </Col>
-        <Col xs={24} md={8}>
-          <Card title={t('competitors.conversions')}>
-            <Statistic value={summary.totalConversions} />
-          </Card>
-        </Col>
-      </Row>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('competitors.impressions')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{summary.totalImpressions?.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('competitors.clicks')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{summary.totalClicks?.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('competitors.conversions')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{summary.totalConversions?.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+      </div>
 
-      <Card title={t('competitors.platformBreakdown')}>
-        <Row gutter={16}>
-          {summary.platformStats?.map((stat) => (
-            <Col span={8} key={stat.platform}>
-              <div className="text-center p-4 border rounded">
-                <Tag color={platformColors[stat.platform]} style={{ fontSize: 16 }}>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('competitors.platformBreakdown')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-4">
+            {summary.platformStats?.map((stat) => (
+              <div key={stat.platform} className="text-center p-4 border rounded">
+                <Badge variant="outline" style={{ fontSize: 16, borderColor: platformColors[stat.platform], color: platformColors[stat.platform] }}>
                   {stat.platform?.toUpperCase()}
-                </Tag>
+                </Badge>
                 <div className="mt-2">
                   <div className="text-2xl font-bold">
                     {stat.campaignCount} {t('competitors.campaigns')}
                   </div>
-                  <div className="text-gray-400">
+                  <div className="text-muted-foreground">
                     ${stat.totalSpend?.toLocaleString()} {t('competitors.spend')}
                   </div>
                 </div>
               </div>
-            </Col>
-          ))}
-        </Row>
+            ))}
+          </div>
+        </CardContent>
       </Card>
 
-      <Card title={t('competitors.campaigns')}>
-        <Table
-          dataSource={campaigns}
-          columns={campaignColumns}
-          rowKey="id"
-          pagination={{ pageSize: 10 }}
-        />
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('competitors.campaigns')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {renderCampaignsTable()}
+        </CardContent>
       </Card>
 
       {creatives.length > 0 && (
-        <Card title={t('competitors.topCreatives')}>
-          <Row gutter={[16, 16]}>
-            {creatives.slice(0, 6).map((creative) => (
-              <Col xs={24} md={8} key={creative.id}>
-                <Card
-                  cover={creative.imageUrl && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('competitors.topCreatives')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {creatives.slice(0, 6).map((creative) => (
+                <Card key={creative.id}>
+                  {creative.imageUrl && (
                     <img
                       src={creative.imageUrl}
                       alt="ad"
-                      style={{ height: 150, objectFit: 'cover' }}
+                      className="w-full h-[150px] object-cover rounded-t-xl"
                     />
                   )}
-                >
-                  <div className="space-y-2">
+                  <CardContent className="space-y-2">
                     <div className="font-medium">{creative.headline || 'N/A'}</div>
-                    <div className="text-sm text-gray-500 line-clamp-2">
+                    <div className="text-sm text-muted-foreground line-clamp-2">
                       {creative.primaryText?.slice(0, 100)}...
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>
-                        <EyeOutlined /> {creative.impressions?.toLocaleString()}
+                      <span className="flex items-center gap-1">
+                        <Eye className="size-4" /> {creative.impressions?.toLocaleString()}
                       </span>
-                      <span>
-                        <InteractionOutlined /> {creative.clicks?.toLocaleString()}
+                      <span className="flex items-center gap-1">
+                        <MousePointerClick className="size-4" /> {creative.clicks?.toLocaleString()}
                       </span>
                     </div>
-                  </div>
+                  </CardContent>
                 </Card>
-              </Col>
-            ))}
-          </Row>
+              ))}
+            </div>
+          </CardContent>
         </Card>
       )}
     </div>

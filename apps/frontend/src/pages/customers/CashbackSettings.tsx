@@ -9,7 +9,7 @@ import {
   Shield,
   Info,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 interface CustomerLoyaltyTier {
   id: string;

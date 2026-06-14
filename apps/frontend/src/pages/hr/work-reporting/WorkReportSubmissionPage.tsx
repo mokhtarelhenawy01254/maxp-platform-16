@@ -9,7 +9,7 @@ import {
   Sigma,
   Sparkles,
 } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { WorkReportFillContext, WorkReportField, WorkReportFieldValue } from "./types";
 import {

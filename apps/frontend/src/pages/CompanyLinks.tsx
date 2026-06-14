@@ -13,7 +13,7 @@ import {
   Trash2,
   UserRound,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 import {

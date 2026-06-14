@@ -12,7 +12,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import axios from "axios";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { buildApiUrl } from "../../utils/urlHelper";
 
 interface UsageData {

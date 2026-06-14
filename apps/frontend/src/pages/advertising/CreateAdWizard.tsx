@@ -7,7 +7,7 @@
 
 import React, { useState, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import {
   Target,
   DollarSign,

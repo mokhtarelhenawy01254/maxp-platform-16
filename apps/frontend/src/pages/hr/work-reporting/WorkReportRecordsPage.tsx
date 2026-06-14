@@ -9,7 +9,7 @@ import {
   Table2,
   Users,
 } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import {
   Bar,
   BarChart,

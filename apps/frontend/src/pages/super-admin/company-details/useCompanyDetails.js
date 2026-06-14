@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { BarChart3, Boxes, Building2, CalendarClock, Facebook, Receipt, Users, Wallet } from "lucide-react";
 import { apiClient } from "../../../services/apiClient";
 import { tokenManager } from "../../../utils/tokenManager";

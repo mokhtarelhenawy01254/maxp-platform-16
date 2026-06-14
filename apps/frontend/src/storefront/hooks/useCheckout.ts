@@ -8,7 +8,7 @@ import {
   type StorefrontOrderAttributionSnapshot,
 } from '../utils/orderAttribution';
 import { persistPurchaseTracking } from '../utils/purchaseTrackingStorage';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export interface CheckoutData {
   customerName: string;

@@ -12,7 +12,7 @@ import {
   Save,
   RefreshCw,
 } from "lucide-react";
-import { useSnackbar } from "notistack";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -148,8 +148,6 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { enqueueSnackbar } = useSnackbar();
-
   const CATEGORY_LABELS = useMemo(
     () => {
       const translatedSystemLabel = t("common.system");
@@ -275,8 +273,11 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
   );
 
   const showNotice = useCallback((tone: NoticeTone, message: string) => {
-    enqueueSnackbar(message, { variant: tone === "info" ? "default" : tone });
-  }, [enqueueSnackbar]);
+    if (tone === "success") toast.success(message);
+    else if (tone === "error") toast.error(message);
+    else if (tone === "warning") toast.warning(message);
+    else toast(message);
+  }, []);
 
   const fetchTemplates = useCallback(async () => {
     try {

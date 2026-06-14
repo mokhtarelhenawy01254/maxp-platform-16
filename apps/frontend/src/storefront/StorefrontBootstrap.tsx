@@ -32,7 +32,7 @@ import {
 import { getStorefrontScope } from "../utils/storefrontApi";
 
 const LazyToaster = React.lazy(() =>
-  import("react-hot-toast").then((module) => ({ default: module.Toaster })),
+  import("sonner").then((module) => ({ default: module.Toaster })),
 );
 const StorefrontShell = React.lazy(() => import("./StorefrontShell"));
 const STOREFRONT_TOASTER_IDLE_DELAY_MS = 8000;

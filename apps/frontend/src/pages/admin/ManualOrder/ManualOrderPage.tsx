@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import ProductSearchColumn from "./components/ProductSearchColumn";
 import CartColumn from "./components/CartColumn";
 import CheckoutColumn from "./components/CheckoutColumn";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { CartItem } from "./types";
 import {
   InformationCircleIcon,

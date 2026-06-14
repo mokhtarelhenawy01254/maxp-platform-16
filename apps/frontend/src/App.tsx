@@ -18,7 +18,7 @@ const AuthLayout = React.lazy(() => import("./components/layout/AuthLayout"));
 
 
 // Import pages directly
-// const Dashboard = React.lazy(() => import('./pages/dashboard/Dashboard'));
+const MainDashboardPage = React.lazy(() => import("./pages/dashboard/MainDashboardPage"));
 const ModernLogin = React.lazy(() => import("./pages/auth/ModernLogin"));
 
 const Register = React.lazy(() => import("./pages/auth/Register"));
@@ -2196,7 +2196,11 @@ const AppContent = () => {
                 {/* App Dashboard Routes */}
                 <Route
                   path="/company-dashboard"
-                  element={<Navigate to="/apps" replace />}
+                  element={
+                    <Layout>
+                      <MainDashboardPage />
+                    </Layout>
+                  }
                 />
                 <Route
                   path="/apps"

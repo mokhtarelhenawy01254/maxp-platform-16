@@ -5,7 +5,7 @@
  */
 
 import React, { useMemo, useState } from "react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import {
   Activity,
   Send,

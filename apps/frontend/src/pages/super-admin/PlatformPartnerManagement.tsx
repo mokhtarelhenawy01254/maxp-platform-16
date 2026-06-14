@@ -20,7 +20,7 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { Separator } from "../../components/ui/separator";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { useTheme } from "../../hooks/useTheme";
 import { Edit, TrendingUp, Users, Wallet, History, Landmark, Settings, Save, Plus } from "lucide-react";
 

@@ -17,7 +17,7 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit, Trash2, Play, Square } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 const TelegramAutoReply = () => {
   const { t } = useTranslation();

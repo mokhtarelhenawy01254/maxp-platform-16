@@ -15,7 +15,7 @@ import {
 
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,

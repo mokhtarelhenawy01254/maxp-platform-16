@@ -23,7 +23,7 @@ import { useCurrency } from "../../../hooks/useCurrency";
 import analyticsService from "../../../services/analyticsService";
 import cancellationReasonService from "../../../services/cancellationReasonService";
 import { normalizeCancellationReasonOptions } from "../../../services/cancellationReasonUtils";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 type HeroIcon = React.ForwardRefExoticComponent<
   React.PropsWithoutRef<React.SVGProps<SVGSVGElement>> &

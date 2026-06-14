@@ -27,7 +27,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { useSnackbar } from 'notistack';
+import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { format } from 'date-fns';
@@ -204,7 +204,6 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 
 const WhatsAppChatContent: React.FC = () => {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
-  const { enqueueSnackbar } = useSnackbar();
   const { socket } = useSocket();
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -436,14 +435,14 @@ const WhatsAppChatContent: React.FC = () => {
         onSuccess: () => {
           setStatusContent('');
           setStatusDialogOpen(false);
-          enqueueSnackbar('ØªÙ… Ù†Ø´Ø± Ø§Ù„Ø­Ø§Ù„Ø© Ø¨Ù†Ø¬Ø§Ø­', { variant: 'success' });
+          toast.success('ØªÙ… Ù†Ø´Ø± Ø§Ù„Ø­Ø§Ù„Ø© Ø¨Ù†Ø¬Ø§Ø­');
         },
         onError: () => {
-          enqueueSnackbar('ÙØ´Ù„ Ù†Ø´Ø± Ø§Ù„Ø­Ø§Ù„Ø©', { variant: 'error' });
+          toast.error('ÙØ´Ù„ Ù†Ø´Ø± Ø§Ù„Ø­Ø§Ù„Ø©');
         }
       }
     );
-  }, [statusContent, selectedSession, postStatus, enqueueSnackbar]);
+  }, [statusContent, selectedSession, postStatus]);
 
   // Virtual Scrolling for conversations moved/removed in favor of ChatSidebar
   // const conversationsVirtualizer = ...
@@ -717,35 +716,21 @@ const WhatsAppChatContent: React.FC = () => {
                   message.messageType === 'DOCUMENT' ? 'ðŸ“Ž Ù…Ù„Ù' : 'Ø±Ø³Ø§Ù„Ø© Ø¬Ø¯ÙŠØ¯Ø©');
 
           // Show in-app notification (snackbar) - always show this
-          enqueueSnackbar(
-            messageText,
-            {
-              variant: 'info',
-              anchorOrigin: {
-                vertical: 'top',
-                horizontal: 'left',
-              },
-              autoHideDuration: 5000,
-              action: () => (
-                <UiButton
-                  size="sm"
-                  className="h-8 rounded-full"
-                  onClick={() => {
-                    // Find and select the contact from cache
-                    const sessionKey = currentSession === 'all' ? 'all' : currentSession;
-                    const conversationsQuery = queryClient.getQueryData<ConversationsCache>(['whatsapp', 'conversations', sessionKey, 30]);
-                    const currentContacts = conversationsQuery?.pages?.[0]?.conversations ?? [];
-                    const contact = currentContacts.find((c: Contact) => normalizeJid(c.jid) === msgJid);
-                    if (contact) {
-                      setSelectedContact(contact);
-                    }
-                  }}
-                >
-                  ÙØªØ­ Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø©
-                </UiButton>
-              ),
+          toast.info(messageText, {
+            duration: 5000,
+            action: {
+              label: 'ÙØªØ­ Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø©',
+              onClick: () => {
+                const sessionKey = currentSession === 'all' ? 'all' : currentSession;
+                const conversationsQuery = queryClient.getQueryData<ConversationsCache>(['whatsapp', 'conversations', sessionKey, 30]);
+                const currentContacts = conversationsQuery?.pages?.[0]?.conversations ?? [];
+                const contact = currentContacts.find((c: Contact) => normalizeJid(c.jid) === msgJid);
+                if (contact) {
+                  setSelectedContact(contact);
+                }
+              }
             }
-          );
+          });
 
           // Play sound if enabled
           if (notificationSettingsRef.current.notificationSound) {
@@ -830,38 +815,23 @@ const WhatsAppChatContent: React.FC = () => {
               messageType === 'DOCUMENT' ? 'ðŸ“Ž Ù…Ù„Ù' : 'Ø±Ø³Ø§Ù„Ø© Ø¬Ø¯ÙŠØ¯Ø©');
 
       // Show in-app notification (snackbar) - always show this
-      enqueueSnackbar(
-        messageText,
-        {
-          variant: 'info',
-          anchorOrigin: {
-            vertical: 'top',
-            horizontal: 'left',
-          },
-          autoHideDuration: 5000,
-          action: () => (
-            <UiButton
-              size="sm"
-              className="h-8 rounded-full"
-              onClick={() => {
-                // Navigate to the chat if not already there
-                if (sessionId && sessionId !== currentSession) {
-                  setSelectedSession(sessionId);
-                }
-                // Find and select the contact from cache
-                const contact = currentContacts.find((c: Contact) =>
-                  c.name === contactName || c.pushName === contactName
-                );
-                if (contact) {
-                  setSelectedContact(contact);
-                }
-              }}
-            >
-              ÙØªØ­ Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø©
-            </UiButton>
-          ),
+      toast.info(messageText, {
+        duration: 5000,
+        action: {
+          label: 'ÙØªØ­ Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø©',
+          onClick: () => {
+            if (sessionId && sessionId !== currentSession) {
+              setSelectedSession(sessionId);
+            }
+            const contact = currentContacts.find((c: Contact) =>
+              c.name === contactName || c.pushName === contactName
+            );
+            if (contact) {
+              setSelectedContact(contact);
+            }
+          }
         }
-      );
+      });
 
       // Show browser notification if enabled (use data from server or local settings)
       const shouldShowNotification = notificationsEnabled !== undefined ? notificationsEnabled : currentNotificationSettings.browserNotifications;
@@ -1034,7 +1004,7 @@ const WhatsAppChatContent: React.FC = () => {
         markAsReadTimeoutRef.current = null;
       }
     };
-  }, [socket, enqueueSnackbar, queryClient, debouncedMarkAsRead, normalizeContactJid]);
+  }, [socket, queryClient, debouncedMarkAsRead, normalizeContactJid]);
 
   // Mark as read when contact is selected
   useEffect(() => {
@@ -1059,13 +1029,13 @@ const WhatsAppChatContent: React.FC = () => {
 
     // Check authentication
     if (!user?.id) {
-      enqueueSnackbar('ÙŠØ¬Ø¨ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ù„Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ø¦Ù„', { variant: 'error' });
+      toast.error('ÙŠØ¬Ø¨ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ù„Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ø¦Ù„');
       return;
     }
 
     const targetSessionId = selectedContact.sessionId || (selectedSession === 'all' ? null : selectedSession);
     if (!targetSessionId) {
-      enqueueSnackbar('Ø®Ø·Ø£: Ù„Ø§ ÙŠÙ…ÙƒÙ† ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ø¬Ù„Ø³Ø©', { variant: 'error' });
+      toast.error('Ø®Ø·Ø£: Ù„Ø§ ÙŠÙ…ÙƒÙ† ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ø¬Ù„Ø³Ø©');
       return;
     }
 
@@ -1081,7 +1051,7 @@ const WhatsAppChatContent: React.FC = () => {
         setReplyingTo(null);
       },
       onError: (error: unknown) => {
-        enqueueSnackbar(getErrorMessage(error, 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„'), { variant: 'error' });
+        toast.error(getErrorMessage(error, 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„'));
       }
     });
   };
@@ -1092,7 +1062,7 @@ const WhatsAppChatContent: React.FC = () => {
 
     const targetSessionId = selectedContact.sessionId || (selectedSession === 'all' ? null : selectedSession);
     if (!targetSessionId) {
-      enqueueSnackbar('Ø®Ø·Ø£: Ù„Ø§ ÙŠÙ…ÙƒÙ† ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ø¬Ù„Ø³Ø©', { variant: 'error' });
+      toast.error('Ø®Ø·Ø£: Ù„Ø§ ÙŠÙ…ÙƒÙ† ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ø¬Ù„Ø³Ø©');
       return;
     }
 
@@ -1106,7 +1076,7 @@ const WhatsAppChatContent: React.FC = () => {
       userId: user?.id
     }, {
       onError: (error: unknown) => {
-        enqueueSnackbar(getErrorMessage(error, 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø±ÙØ¹ Ø§Ù„Ù…Ù„Ù'), { variant: 'error' });
+        toast.error(getErrorMessage(error, 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø±ÙØ¹ Ø§Ù„Ù…Ù„Ù'));
       }
     });
 
@@ -1123,7 +1093,7 @@ const WhatsAppChatContent: React.FC = () => {
       onConfirm: async () => {
         try {
           await api.post(`/whatsapp/conversations/${contact.jid}/clear`, { sessionId: selectedSession });
-          enqueueSnackbar(t('whatsapp.dialogs.success'), { variant: 'success' });
+          toast.success(t('whatsapp.dialogs.success'));
           if (selectedContact?.jid === contact.jid && targetSessionId) {
             queryClient.setQueryData<MessagesCache>(['whatsapp', 'messages', contact.jid, targetSessionId], old => {
               if (!old) return old;
@@ -1134,7 +1104,7 @@ const WhatsAppChatContent: React.FC = () => {
             });
           }
         } catch (error) {
-          enqueueSnackbar('ÙØ´Ù„ Ù…Ø³Ø­ Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø©', { variant: 'error' });
+          toast.error('ÙØ´Ù„ Ù…Ø³Ø­ Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø©');
         }
         setConfirmData(prev => ({ ...prev, open: false }));
       }
@@ -1182,10 +1152,10 @@ const WhatsAppChatContent: React.FC = () => {
         jid: contact.jid,
         pin: !contact.isPinned
       });
-      enqueueSnackbar(contact.isPinned ? 'ØªÙ… Ø¥Ù„ØºØ§Ø¡ Ø§Ù„ØªØ«Ø¨ÙŠØª' : 'ØªÙ… Ø§Ù„ØªØ«Ø¨ÙŠØª', { variant: 'success' });
+      toast.success(contact.isPinned ? 'ØªÙ… Ø¥Ù„ØºØ§Ø¡ Ø§Ù„ØªØ«Ø¨ÙŠØª' : 'ØªÙ… Ø§Ù„ØªØ«Ø¨ÙŠØª');
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
     } catch (error) {
-      enqueueSnackbar('Ù Ø´Ù„ ØªØ­Ø¯ÙŠØ« Ø­Ø§Ù„Ø© Ø§Ù„ØªØ«Ø¨ÙŠØª', { variant: 'error' });
+      toast.error('Ù Ø´Ù„ ØªØ­Ø¯ÙŠØ« Ø­Ø§Ù„Ø© Ø§Ù„ØªØ«Ø¨ÙŠØª');
     }
   };
 
@@ -1197,10 +1167,10 @@ const WhatsAppChatContent: React.FC = () => {
         jid: contact.jid,
         mute: !contact.isMuted
       });
-      enqueueSnackbar(contact.isMuted ? 'ØªÙ… Ø¥Ù„ØºØ§Ø¡ ÙƒØªÙ… Ø§Ù„ØµÙˆØª' : 'ØªÙ… ÙƒØªÙ… Ø§Ù„ØµÙˆØª', { variant: 'success' });
+      toast.success(contact.isMuted ? 'ØªÙ… Ø¥Ù„ØºØ§Ø¡ ÙƒØªÙ… Ø§Ù„ØµÙˆØª' : 'ØªÙ… ÙƒØªÙ… Ø§Ù„ØµÙˆØª');
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
     } catch (error) {
-      enqueueSnackbar('Ù Ø´Ù„ ØªØ­Ø¯ÙŠØ« Ø­Ø§Ù„Ø© ÙƒØªÙ… Ø§Ù„ØµÙˆØª', { variant: 'error' });
+      toast.error('Ù Ø´Ù„ ØªØ­Ø¯ÙŠØ« Ø­Ø§Ù„Ø© ÙƒØªÙ… Ø§Ù„ØµÙˆØª');
     }
   };
 
@@ -1208,10 +1178,10 @@ const WhatsAppChatContent: React.FC = () => {
     if (!selectedSession) return;
     try {
       await api.post(`/whatsapp/chats/unread`, { sessionId: contact.sessionId || selectedSession, jid: contact.jid, unread: true });
-      enqueueSnackbar('ØªÙ… ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø© ÙƒØºÙŠØ± Ù…Ù‚Ø±ÙˆØ¡Ø©', { variant: 'success' });
+      toast.success('ØªÙ… ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø© ÙƒØºÙŠØ± Ù…Ù‚Ø±ÙˆØ¡Ø©');
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
     } catch (error) {
-      enqueueSnackbar('Ù Ø´Ù„ ØªØ­Ø¯ÙŠØ¯ Ø­Ø§Ù„Ø© Ø§Ù„Ù‚Ø±Ø§Ø¡Ø©', { variant: 'error' });
+      toast.error('Ù Ø´Ù„ ØªØ­Ø¯ÙŠØ¯ Ø­Ø§Ù„Ø© Ø§Ù„Ù‚Ø±Ø§Ø¡Ø©');
     }
   };
 
@@ -1226,12 +1196,12 @@ const WhatsAppChatContent: React.FC = () => {
           messageId: selectedMessageForMenu.messageId
         })
       ));
-      enqueueSnackbar('ØªÙ… Ø¥Ø¹Ø§Ø¯Ø© ØªÙˆØ¬ÙŠÙ‡ Ø§Ù„Ø±Ø³Ø§Ù„Ø©', { variant: 'success' });
+      toast.success('ØªÙ… Ø¥Ø¹Ø§Ø¯Ø© ØªÙˆØ¬ÙŠÙ‡ Ø§Ù„Ø±Ø³Ø§Ù„Ø©');
       setForwardDialogOpen(false);
       setSelectedContactsForForward([]);
       setSelectedMessageForMenu(null);
     } catch (error) {
-      enqueueSnackbar('Ù Ø´Ù„ Ø¥Ø¹Ø§Ø¯Ø© ØªÙˆØ¬ÙŠÙ‡ Ø§Ù„Ø±Ø³Ø§Ù„Ø©', { variant: 'error' });
+      toast.error('Ù Ø´Ù„ Ø¥Ø¹Ø§Ø¯Ø© ØªÙˆØ¬ÙŠÙ‡ Ø§Ù„Ø±Ø³Ø§Ù„Ø©');
     }
   };
 
@@ -1247,7 +1217,7 @@ const WhatsAppChatContent: React.FC = () => {
           fromMe: selectedMessageForMenu.fromMe
         }
       });
-      enqueueSnackbar('ØªÙ… Ø­Ø°Ù  Ø§Ù„Ø±Ø³Ø§Ù„Ø©', { variant: 'success' });
+      toast.success('ØªÙ… Ø­Ø°Ù  Ø§Ù„Ø±Ø³Ø§Ù„Ø©');
 
       // Update messages cache
       queryClient.setQueryData<MessagesCache>(['whatsapp', 'messages', selectedContact.jid, targetSessionId], old => {
@@ -1262,7 +1232,7 @@ const WhatsAppChatContent: React.FC = () => {
       setMessageContextMenu(null);
       setSelectedMessageForMenu(null);
     } catch (error) {
-      enqueueSnackbar('Ù Ø´Ù„ Ø­Ø°Ù  Ø§Ù„Ø±Ø³Ø§Ù„Ø©', { variant: 'error' });
+      toast.error('Ù Ø´Ù„ Ø­Ø°Ù  Ø§Ù„Ø±Ø³Ø§Ù„Ø©');
     }
   };
 
@@ -1277,7 +1247,7 @@ const WhatsAppChatContent: React.FC = () => {
   const handleCopy = () => {
     if (selectedMessageForMenu?.content) {
       navigator.clipboard.writeText(selectedMessageForMenu.content);
-      enqueueSnackbar('ØªÙ… Ù†Ø³Ø® Ø§Ù„Ù†Øµ', { variant: 'success' });
+      toast.success('ØªÙ… Ù†Ø³Ø® Ø§Ù„Ù†Øµ');
       setMessageContextMenu(null);
       setSelectedMessageForMenu(null);
     }
@@ -1395,9 +1365,9 @@ const WhatsAppChatContent: React.FC = () => {
         emoji
       });
       setShowReactionPicker(null);
-      enqueueSnackbar('ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØªÙ Ø§Ø¹Ù„', { variant: 'success' });
+      toast.success('ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØªÙ Ø§Ø¹Ù„');
     } catch (error) {
-      enqueueSnackbar('Ù Ø´Ù„ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØªÙ Ø§Ø¹Ù„', { variant: 'error' });
+      toast.error('Ù Ø´Ù„ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØªÙ Ø§Ø¹Ù„');
     }
   };
 
@@ -1416,10 +1386,10 @@ const WhatsAppChatContent: React.FC = () => {
           fromMe: message.fromMe
         }
       });
-      enqueueSnackbar('ØªÙ… ØªÙ…ÙŠÙŠØ² Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ø¨Ù†Ø¬Ù…Ø©', { variant: 'success' });
+      toast.success('ØªÙ… ØªÙ…ÙŠÙŠØ² Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ø¨Ù†Ø¬Ù…Ø©');
       setMessageContextMenu(null);
     } catch (error) {
-      enqueueSnackbar('Ù Ø´Ù„ ØªÙ…ÙŠÙŠØ² Ø§Ù„Ø±Ø³Ø§Ù„Ø©', { variant: 'error' });
+      toast.error('Ù Ø´Ù„ ØªÙ…ÙŠÙŠØ² Ø§Ù„Ø±Ø³Ø§Ù„Ø©');
     }
   };
 
@@ -1435,10 +1405,10 @@ const WhatsAppChatContent: React.FC = () => {
           fromMe: message.fromMe
         }
       });
-      enqueueSnackbar('ØªÙ… Ø¥Ù„ØºØ§Ø¡ ØªÙ…ÙŠÙŠØ² Ø§Ù„Ø±Ø³Ø§Ù„Ø©', { variant: 'success' });
+      toast.success('ØªÙ… Ø¥Ù„ØºØ§Ø¡ ØªÙ…ÙŠÙŠØ² Ø§Ù„Ø±Ø³Ø§Ù„Ø©');
       setMessageContextMenu(null);
     } catch (error) {
-      enqueueSnackbar('Ù Ø´Ù„ Ø¥Ù„ØºØ§Ø¡ ØªÙ…ÙŠÙŠØ² Ø§Ù„Ø±Ø³Ø§Ù„Ø©', { variant: 'error' });
+      toast.error('Ù Ø´Ù„ Ø¥Ù„ØºØ§Ø¡ ØªÙ…ÙŠÙŠØ² Ø§Ù„Ø±Ø³Ø§Ù„Ø©');
     }
   };
 
@@ -1461,11 +1431,11 @@ const WhatsAppChatContent: React.FC = () => {
         jid: selectedContactForLabel.jid,
         labelId
       });
-      enqueueSnackbar('ØªÙ… Ø¥Ø¶Ø§Ù Ø© Ø§Ù„Ø¹Ù„Ø§Ù…Ø© Ù„Ù„Ù…Ø­Ø§Ø¯Ø«Ø©', { variant: 'success' });
+      toast.success('ØªÙ… Ø¥Ø¶Ø§Ù Ø© Ø§Ù„Ø¹Ù„Ø§Ù…Ø© Ù„Ù„Ù…Ø­Ø§Ø¯Ø«Ø©');
       setLabelDialogOpen(false);
       setSelectedContactForLabel(null);
     } catch (error) {
-      enqueueSnackbar('Ù Ø´Ù„ Ø¥Ø¶Ø§Ù Ø© Ø§Ù„Ø¹Ù„Ø§Ù…Ø©', { variant: 'error' });
+      toast.error('Ù Ø´Ù„ Ø¥Ø¶Ø§Ù Ø© Ø§Ù„Ø¹Ù„Ø§Ù…Ø©');
     }
   };
 
@@ -1475,7 +1445,7 @@ const WhatsAppChatContent: React.FC = () => {
     const targetSessionId = selectedContact.sessionId || selectedSession;
     const validOptions = pollData.options.filter(o => o.trim());
     if (validOptions.length < 2) {
-      enqueueSnackbar('ÙŠØ¬Ø¨ Ø¥Ø¶Ø§Ù Ø© Ø®ÙŠØ§Ø±ÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„', { variant: 'warning' });
+      toast.warning('ÙŠØ¬Ø¨ Ø¥Ø¶Ø§Ù Ø© Ø®ÙŠØ§Ø±ÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„');
       return;
     }
     try {
@@ -1488,11 +1458,11 @@ const WhatsAppChatContent: React.FC = () => {
           selectableCount: pollData.selectableCount
         }
       });
-      enqueueSnackbar('ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø§Ø³ØªØ·Ù„Ø§Ø¹', { variant: 'success' });
+      toast.success('ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø§Ø³ØªØ·Ù„Ø§Ø¹');
       setPollDialogOpen(false);
       setPollData({ question: '', options: ['', ''], selectableCount: 1 });
     } catch (error) {
-      enqueueSnackbar('Ù Ø´Ù„ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø§Ø³ØªØ·Ù„Ø§Ø¹', { variant: 'error' });
+      toast.error('Ù Ø´Ù„ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø§Ø³ØªØ·Ù„Ø§Ø¹');
     }
   };
 
@@ -1502,7 +1472,7 @@ const WhatsAppChatContent: React.FC = () => {
     const targetSessionId = selectedContact.sessionId || selectedSession;
     const validButtons = buttonsData.buttons.filter(b => b.text.trim());
     if (validButtons.length === 0 || validButtons.length > 3) {
-      enqueueSnackbar('ÙŠØ¬Ø¨ Ø¥Ø¶Ø§Ù Ø© 1-3 Ø£Ø²Ø±Ø§Ø±', { variant: 'warning' });
+      toast.warning('ÙŠØ¬Ø¨ Ø¥Ø¶Ø§Ù Ø© 1-3 Ø£Ø²Ø±Ø§Ø±');
       return;
     }
     try {
@@ -1513,11 +1483,11 @@ const WhatsAppChatContent: React.FC = () => {
         buttons: validButtons.map((b, i) => ({ buttonId: `btn_${i}`, buttonText: { displayText: b.text }, type: 1 })),
         footer: buttonsData.footer || undefined
       });
-      enqueueSnackbar('ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ø¨Ø§Ù„Ø£Ø²Ø±Ø§Ø±', { variant: 'success' });
+      toast.success('ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ø¨Ø§Ù„Ø£Ø²Ø±Ø§Ø±');
       setButtonsDialogOpen(false);
       setButtonsData({ text: '', footer: '', buttons: [{ id: '1', text: '' }] });
     } catch (error) {
-      enqueueSnackbar('Ù Ø´Ù„ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ù„Ø©', { variant: 'error' });
+      toast.error('Ù Ø´Ù„ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ù„Ø©');
     }
   };
 
@@ -1541,11 +1511,11 @@ const WhatsAppChatContent: React.FC = () => {
           }))
         }))
       });
-      enqueueSnackbar('ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ù‚Ø§Ø¦Ù…Ø©', { variant: 'success' });
+      toast.success('ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ù‚Ø§Ø¦Ù…Ø©');
       setListDialogOpen(false);
       setListData({ text: '', buttonText: 'Ø§Ø®ØªØ±', title: '', sections: [{ title: 'Ø§Ù„Ù‚Ø³Ù… 1', rows: [{ id: '1', title: '', description: '' }] }] });
     } catch (error) {
-      enqueueSnackbar('Ù Ø´Ù„ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ù‚Ø§Ø¦Ù…Ø©', { variant: 'error' });
+      toast.error('Ù Ø´Ù„ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ù‚Ø§Ø¦Ù…Ø©');
     }
   };
 
@@ -1578,10 +1548,10 @@ const WhatsAppChatContent: React.FC = () => {
           imageUrl: product.imageUrl
         }
       });
-      enqueueSnackbar('ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ù…Ù†ØªØ¬', { variant: 'success' });
+      toast.success('ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ù…Ù†ØªØ¬');
       setCatalogDialogOpen(false);
     } catch (error) {
-      enqueueSnackbar('Ù Ø´Ù„ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ù…Ù†ØªØ¬', { variant: 'error' });
+      toast.error('Ù Ø´Ù„ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ù…Ù†ØªØ¬');
     }
   };
 
@@ -1596,7 +1566,7 @@ const WhatsAppChatContent: React.FC = () => {
       setStarredMessages(res.data.messages || []);
       setStarredMessagesOpen(true);
     } catch (error) {
-      enqueueSnackbar('Ù Ø´Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø±Ø³Ø§Ø¦Ù„ Ø§Ù„Ù…Ù…ÙŠØ²Ø©', { variant: 'error' });
+      toast.error('Ù Ø´Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø±Ø³Ø§Ø¦Ù„ Ø§Ù„Ù…Ù…ÙŠØ²Ø©');
     }
   };
 
@@ -1610,14 +1580,14 @@ const WhatsAppChatContent: React.FC = () => {
             longitude: position.coords.longitude.toString(),
             address: ''
           });
-          enqueueSnackbar('ØªÙ… ØªØ­Ø¯ÙŠØ¯ Ù…ÙˆÙ‚Ø¹Ùƒ Ø§Ù„Ø­Ø§Ù„ÙŠ', { variant: 'success' });
+          toast.success('ØªÙ… ØªØ­Ø¯ÙŠØ¯ Ù…ÙˆÙ‚Ø¹Ùƒ Ø§Ù„Ø­Ø§Ù„ÙŠ');
         },
         (error) => {
-          enqueueSnackbar('Ù Ø´Ù„ ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ù…ÙˆÙ‚Ø¹: ' + error.message, { variant: 'error' });
+          toast.error('Ù Ø´Ù„ ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ù…ÙˆÙ‚Ø¹: ' + error.message);
         }
       );
     } else {
-      enqueueSnackbar('Ø§Ù„Ù…ØªØµÙ Ø­ Ù„Ø§ ÙŠØ¯Ø¹Ù… ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ù…ÙˆÙ‚Ø¹', { variant: 'error' });
+      toast.error('Ø§Ù„Ù…ØªØµÙ Ø­ Ù„Ø§ ÙŠØ¯Ø¹Ù… ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ù…ÙˆÙ‚Ø¹');
     }
   };
 
@@ -1635,11 +1605,11 @@ const WhatsAppChatContent: React.FC = () => {
           address: locationData.address
         }
       });
-      enqueueSnackbar('ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ù…ÙˆÙ‚Ø¹', { variant: 'success' });
+      toast.success('ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ù…ÙˆÙ‚Ø¹');
       setLocationDialogOpen(false);
       setLocationData({ latitude: '', longitude: '', address: '' });
     } catch (error) {
-      enqueueSnackbar('ÙØ´Ù„ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ù…ÙˆÙ‚Ø¹', { variant: 'error' });
+      toast.error('ÙØ´Ù„ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ù…ÙˆÙ‚Ø¹');
     }
   };
 
@@ -1647,22 +1617,22 @@ const WhatsAppChatContent: React.FC = () => {
     if (!window.confirm(`هل أنت متأكد من حظر ${getContactName(contact)}؟`)) return;
     try {
       await api.post('/whatsapp/contacts/block', { sessionId: contact.sessionId || selectedSession, jid: contact.jid });
-      enqueueSnackbar('ØªÙ… Ø­Ø¸Ø± Ø¬Ù‡Ø© Ø§Ù„Ø§ØªØµØ§Ù„', { variant: 'success' });
+      toast.success('ØªÙ… Ø­Ø¸Ø± Ø¬Ù‡Ø© Ø§Ù„Ø§ØªØµØ§Ù„');
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
       setShowContactInfo(false);
     } catch (error) {
-      enqueueSnackbar('ÙØ´Ù„ Ø­Ø¸Ø± Ø¬Ù‡Ø© Ø§Ù„Ø§ØªØµØ§Ù„', { variant: 'error' });
+      toast.error('ÙØ´Ù„ Ø­Ø¸Ø± Ø¬Ù‡Ø© Ø§Ù„Ø§ØªØµØ§Ù„');
     }
   };
 
   const handleUnblockContact = async (contact: Contact) => {
     try {
       await api.post('/whatsapp/contacts/unblock', { sessionId: contact.sessionId || selectedSession, jid: contact.jid });
-      enqueueSnackbar('ØªÙ… Ø¥Ù„ØºØ§Ø¡ Ø­Ø¸Ø± Ø¬Ù‡Ø© Ø§Ù„Ø§ØªØµØ§Ù„', { variant: 'success' });
+      toast.success('ØªÙ… Ø¥Ù„ØºØ§Ø¡ Ø­Ø¸Ø± Ø¬Ù‡Ø© Ø§Ù„Ø§ØªØµØ§Ù„');
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
       setShowContactInfo(false);
     } catch (error) {
-      enqueueSnackbar('ÙØ´Ù„ Ø¥Ù„ØºØ§Ø¡ Ø­Ø¸Ø± Ø¬Ù‡Ø© Ø§Ù„Ø§ØªØµØ§Ù„', { variant: 'error' });
+      toast.error('ÙØ´Ù„ Ø¥Ù„ØºØ§Ø¡ Ø­Ø¸Ø± Ø¬Ù‡Ø© Ø§Ù„Ø§ØªØµØ§Ù„');
     }
   };
 
@@ -1675,9 +1645,9 @@ const WhatsAppChatContent: React.FC = () => {
         groupId: selectedContact.jid,
         duration // 0 = off, 86400 = 24h, 604800 = 7 days, 7776000 = 90 days
       });
-      enqueueSnackbar('ØªÙ… ØªØ­Ø¯ÙŠØ« Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø±Ø³Ø§Ø¦Ù„ Ø§Ù„Ù…Ø¤Ù‚ØªØ©', { variant: 'success' });
+      toast.success('ØªÙ… ØªØ­Ø¯ÙŠØ« Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø±Ø³Ø§Ø¦Ù„ Ø§Ù„Ù…Ø¤Ù‚ØªØ©');
     } catch (error) {
-      enqueueSnackbar('ÙØ´Ù„ ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª', { variant: 'error' });
+      toast.error('ÙØ´Ù„ ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª');
     }
   };
 
@@ -1691,9 +1661,9 @@ const WhatsAppChatContent: React.FC = () => {
       await api.post('/whatsapp/groups/picture', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      enqueueSnackbar('ØªÙ… ØªØ­Ø¯ÙŠØ« ØµÙˆØ±Ø© Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø©', { variant: 'success' });
+      toast.success('ØªÙ… ØªØ­Ø¯ÙŠØ« ØµÙˆØ±Ø© Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø©');
     } catch (error) {
-      enqueueSnackbar('ÙØ´Ù„ ØªØ­Ø¯ÙŠØ« Ø§Ù„ØµÙˆØ±Ø©', { variant: 'error' });
+      toast.error('ÙØ´Ù„ ØªØ­Ø¯ÙŠØ« Ø§Ù„ØµÙˆØ±Ø©');
     }
   };
 
@@ -1704,10 +1674,10 @@ const WhatsAppChatContent: React.FC = () => {
         sessionId: selectedSession,
         inviteCode
       });
-      enqueueSnackbar('ØªÙ… Ù‚Ø¨ÙˆÙ„ Ø§Ù„Ø¯Ø¹ÙˆØ© ÙˆØ§Ù„Ø§Ù†Ø¶Ù…Ø§Ù… Ù„Ù„Ù…Ø¬Ù…ÙˆØ¹Ø©', { variant: 'success' });
+      toast.success('ØªÙ… Ù‚Ø¨ÙˆÙ„ Ø§Ù„Ø¯Ø¹ÙˆØ© ÙˆØ§Ù„Ø§Ù†Ø¶Ù…Ø§Ù… Ù„Ù„Ù…Ø¬Ù…ÙˆØ¹Ø©');
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
     } catch (error) {
-      enqueueSnackbar('ÙØ´Ù„ Ù‚Ø¨ÙˆÙ„ Ø§Ù„Ø¯Ø¹ÙˆØ©', { variant: 'error' });
+      toast.error('ÙØ´Ù„ Ù‚Ø¨ÙˆÙ„ Ø§Ù„Ø¯Ø¹ÙˆØ©');
     }
   };
 
@@ -1855,10 +1825,10 @@ const WhatsAppChatContent: React.FC = () => {
             formData.append('file', blob, 'voice_note.webm');
             try {
               await api.post('/whatsapp/messages/upload-send', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-              enqueueSnackbar('ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØµÙˆØªÙŠØ©', { variant: 'success' });
+              toast.success('ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØµÙˆØªÙŠØ©');
               // Messages reload automatically via socket or refetch
             } catch (error) {
-              enqueueSnackbar('ÙØ´Ù„ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØµÙˆØªÙŠØ©', { variant: 'error' });
+              toast.error('ÙØ´Ù„ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØµÙˆØªÙŠØ©');
             }
           }
         }}
@@ -2197,7 +2167,7 @@ const WhatsAppChatContent: React.FC = () => {
                   <UiButton
                     variant="outline"
                     className="h-11 w-full justify-between rounded-[18px] border-rose-200 bg-[var(--whatsapp-surface-strong)] text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                    onClick={() => enqueueSnackbar('قريباً', { variant: 'info' })}
+                    onClick={() => toast.info('قريباً')}
                   >
                     <span>الإبلاغ عن {selectedContactName}</span>
                     <ShieldAlert className="size-4" />
@@ -2819,7 +2789,7 @@ const WhatsAppChatContent: React.FC = () => {
             : 'WhatsApp'
         }
         onOrderCreated={(orderId) => {
-          enqueueSnackbar(t('whatsapp.dialogs.orderCreated', { orderId }), { variant: 'success' });
+          toast.success(t('whatsapp.dialogs.orderCreated', { orderId }));
         }}
       />
 

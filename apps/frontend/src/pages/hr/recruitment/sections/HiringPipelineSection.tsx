@@ -12,7 +12,7 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 interface PipelineStage {
   id: string;

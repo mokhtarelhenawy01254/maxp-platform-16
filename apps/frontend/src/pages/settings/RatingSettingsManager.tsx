@@ -8,7 +8,7 @@ import {
   Loader,
 } from "lucide-react";
 import { returnService } from "../../services/returnService";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 const RatingSettingsManager: React.FC = () => {
   const [loading, setLoading] = useState(true);

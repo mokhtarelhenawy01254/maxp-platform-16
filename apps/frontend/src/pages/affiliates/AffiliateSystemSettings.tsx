@@ -3,7 +3,7 @@ import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { getBaseDomain } from "../../utils/storeUrl";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { copyAffiliateText } from "./affiliateClipboard";
 import {
   LinkIcon,

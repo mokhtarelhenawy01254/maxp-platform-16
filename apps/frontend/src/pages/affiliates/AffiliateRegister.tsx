@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 interface ApiSuccess<T> {
   success: boolean;

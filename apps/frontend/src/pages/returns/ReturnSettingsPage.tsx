@@ -4,7 +4,7 @@ import {
   ReturnReason,
   ReturnReasonCategory,
 } from "../../services/returnService";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import {
   Plus,
   Edit2,

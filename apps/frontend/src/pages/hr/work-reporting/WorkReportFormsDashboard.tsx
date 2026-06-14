@@ -11,7 +11,7 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { buildMessagingPreset } from "./catalog";
 import { formatArabicDateTime } from "./utils";

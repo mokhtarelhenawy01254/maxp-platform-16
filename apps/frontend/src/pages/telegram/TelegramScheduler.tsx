@@ -16,7 +16,7 @@ import {
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
 import { Plus, XCircle, Clock, RotateCcw } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 const TelegramScheduler = () => {
   const [scheduledMessages, setScheduledMessages] = useState([]);

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { apiClient } from "../../../services/apiClient";
 import { socketService } from "../../../services/socketService";
 import { useAuth } from "../../../hooks/useAuthSimple";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { config } from "../../../config";
 import tokenManager from "../../../utils/tokenManager";
 

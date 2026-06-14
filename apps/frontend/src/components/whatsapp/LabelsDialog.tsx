@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Check, Plus, Tag, Trash2 } from "lucide-react";
-import { useSnackbar } from "notistack";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -56,7 +56,6 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
   initialLabels = [],
   onLabelsUpdated,
 }) => {
-  const { enqueueSnackbar } = useSnackbar();
   const [labels, setLabels] = useState<Label[]>([]);
   const [loading, setLoading] = useState(false);
   const [newLabelName, setNewLabelName] = useState("");
@@ -70,11 +69,11 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
       setLabels(response.data.labels || []);
     } catch (error) {
       console.error("Error loading labels:", error);
-      enqueueSnackbar("فشل تحميل التصنيفات", { variant: "error" });
+      toast.error("فشل تحميل التصنيفات");
     } finally {
       setLoading(false);
     }
-  }, [enqueueSnackbar, sessionId]);
+  }, [sessionId]);
 
   useEffect(() => {
     if (open && sessionId) {
@@ -94,11 +93,11 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
         name: newLabelName,
         color: selectedColor,
       });
-      enqueueSnackbar("تم إنشاء التصنيف", { variant: "success" });
+      toast.success("تم إنشاء التصنيف");
       setNewLabelName("");
       await loadLabels();
     } catch {
-      enqueueSnackbar("فشل إنشاء التصنيف", { variant: "error" });
+      toast.error("فشل إنشاء التصنيف");
     }
   };
 
@@ -109,10 +108,10 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
 
     try {
       await api.delete(`/whatsapp/labels/${labelId}`, { data: { sessionId } });
-      enqueueSnackbar("تم حذف التصنيف", { variant: "success" });
+      toast.success("تم حذف التصنيف");
       await loadLabels();
     } catch {
-      enqueueSnackbar("فشل حذف التصنيف", { variant: "error" });
+      toast.error("فشل حذف التصنيف");
     }
   };
 
@@ -140,7 +139,7 @@ const LabelsDialog: React.FC<LabelsDialogProps> = ({
       }
       onLabelsUpdated?.();
     } catch {
-      enqueueSnackbar("فشل تحديث التصنيف للمحادثة", { variant: "error" });
+      toast.error("فشل تحديث التصنيف للمحادثة");
       setAssignedLabels(
         isAssigned
           ? [...assignedLabels, labelId]

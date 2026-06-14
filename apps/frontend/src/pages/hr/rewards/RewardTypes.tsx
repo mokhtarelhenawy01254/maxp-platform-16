@@ -34,7 +34,7 @@ import {
   TableRow,
 } from "../../../components/ui/table";
 import { Plus, Edit, Trash2, Check, X, AlertCircle } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import api from "../../../services/api";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { ConfirmDialog } from "../../../components/hr/ConfirmDialog";

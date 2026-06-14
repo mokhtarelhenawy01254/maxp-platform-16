@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 import { EGYPT_GOVERNORATES } from "../../constants/egyptGovernorates";
 import { getCompanyId, storefrontApi } from "../../utils/storefrontApi";

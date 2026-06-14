@@ -1,6 +1,4 @@
 import React from "react";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import { XMarkIcon, FunnelIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../../../hooks/useAuthSimple";
 
@@ -107,13 +105,12 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           >
             من تاريخ
           </label>
-          <DatePicker
-            selected={filters.startDate}
-            onChange={(date: Date | null) => handleChange("startDate", date)}
+          <input
+            type="date"
+            value={filters.startDate ? filters.startDate.toISOString().split('T')[0] : ''}
+            onChange={(e) => handleChange("startDate", e.target.value ? new Date(e.target.value) : null)}
             className="business-control-input"
-            placeholderText="اختر تاريخ البداية"
-            dateFormat="dd/MM/yyyy"
-            isClearable
+            max={new Date().toISOString().split('T')[0]}
           />
         </div>
 
@@ -125,14 +122,13 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           >
             إلى تاريخ
           </label>
-          <DatePicker
-            selected={filters.endDate}
-            onChange={(date: Date | null) => handleChange("endDate", date)}
+          <input
+            type="date"
+            value={filters.endDate ? filters.endDate.toISOString().split('T')[0] : ''}
+            onChange={(e) => handleChange("endDate", e.target.value ? new Date(e.target.value) : null)}
             className="business-control-input"
-            placeholderText="اختر تاريخ النهاية"
-            dateFormat="dd/MM/yyyy"
-            minDate={filters.startDate || undefined}
-            isClearable
+            min={filters.startDate ? filters.startDate.toISOString().split('T')[0] : undefined}
+            max={new Date().toISOString().split('T')[0]}
           />
         </div>
       </div>

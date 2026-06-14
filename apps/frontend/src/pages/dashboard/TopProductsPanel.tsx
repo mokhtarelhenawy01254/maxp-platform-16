@@ -1,5 +1,4 @@
 import type { TopProductsPanelProps } from "./types";
-import DashboardSurfaceCard from "./DashboardSurfaceCard";
 
 export default function TopProductsPanel({
   emptyLabel,
@@ -9,18 +8,18 @@ export default function TopProductsPanel({
   title,
 }: TopProductsPanelProps) {
   return (
-    <DashboardSurfaceCard>
-      <h4 className="mb-2 text-sm font-semibold">{title}</h4>
+    <div className="p-5 rounded-2xl bg-gradient-to-br from-card to-muted/20 border border-border/50 shadow-sm">
+      <h4 className="mb-3 text-sm font-semibold text-foreground">{title}</h4>
       {items.length === 0 ? (
         <p className="text-xs text-muted-foreground">{emptyLabel}</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-2.5">
           {items.map((product, idx) => (
             <li
               key={product.name}
               className="flex items-center justify-between text-xs"
             >
-              <span className="truncate">
+              <span className="truncate text-foreground/80">
                 {idx + 1}. {product.name}
               </span>
               <span className="tabular-nums text-muted-foreground">
@@ -30,6 +29,6 @@ export default function TopProductsPanel({
           ))}
         </ul>
       )}
-    </DashboardSurfaceCard>
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import QuantitySelector from './QuantitySelector';
 import Button from './Button';
 import { useCartStore } from '../store/useCartStore';

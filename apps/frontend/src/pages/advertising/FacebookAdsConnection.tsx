@@ -13,7 +13,7 @@ import {
   Users,
   WalletCards,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import { useAuth } from "../../hooks/useAuthSimple";
 import {

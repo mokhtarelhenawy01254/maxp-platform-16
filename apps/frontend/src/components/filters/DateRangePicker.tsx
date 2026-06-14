@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
 import { CalendarIcon } from '@heroicons/react/24/outline';
 
 interface DateRangePickerProps {
@@ -40,13 +38,19 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
         onDateChange(null, null, period);
     };
 
-    const handleCustomDateChange = (dates: [Date | null, Date | null]) => {
-        const [start, end] = dates;
-        setStartDate(start);
-        setEndDate(end);
+    const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const date = e.target.value ? new Date(e.target.value) : null;
+        setStartDate(date);
+        if (date && endDate) {
+            onDateChange(date, endDate, 'custom');
+        }
+    };
 
-        if (start && end) {
-            onDateChange(start, end, 'custom');
+    const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const date = e.target.value ? new Date(e.target.value) : null;
+        setEndDate(date);
+        if (startDate && date) {
+            onDateChange(startDate, date, 'custom');
         }
     };
 
@@ -72,15 +76,23 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             {showCustom && (
                 <div className="flex items-center gap-2 p-4 border border-gray-300 rounded-lg bg-white">
                     <CalendarIcon className="w-5 h-5 text-gray-400" />
-                    <DatePicker
-                        selectsRange
-                        startDate={startDate}
-                        endDate={endDate}
-                        onChange={handleCustomDateChange}
-                        placeholderText="اختر نطاق التاريخ"
+                    <input
+                        type="date"
+                        value={startDate ? startDate.toISOString().split('T')[0] : ''}
+                        onChange={handleStartDateChange}
+                        max={new Date().toISOString().split('T')[0]}
                         className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        dateFormat="yyyy/MM/dd"
-                        maxDate={new Date()}
+                        placeholder="من"
+                    />
+                    <span className="text-gray-500">إلى</span>
+                    <input
+                        type="date"
+                        value={endDate ? endDate.toISOString().split('T')[0] : ''}
+                        onChange={handleEndDateChange}
+                        min={startDate ? startDate.toISOString().split('T')[0] : undefined}
+                        max={new Date().toISOString().split('T')[0]}
+                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="إلى"
                     />
                 </div>
             )}

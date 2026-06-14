@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import {
     MagnifyingGlassIcon,
     ArrowPathIcon,

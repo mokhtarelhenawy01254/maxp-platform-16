@@ -12,7 +12,7 @@ import {
   Sparkles,
   Wallet,
 } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 import { useOptionalAuth } from "../../hooks/useAuthSimple";
 import { Button } from "../../components/ui/button";

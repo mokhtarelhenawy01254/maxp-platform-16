@@ -833,6 +833,7 @@
     "create": "إنشاء",
     "notFound": "غير موجود",
     "refresh": "تحديث",
+    "retry": "إعادة المحاولة",
     "upgrade_now": "ترقية الآن",
     "severity": {
       "low": "منخفض",
@@ -1090,7 +1091,11 @@
       "profitSubtitle": "صافي الربح بعد خصم التكاليف",
       "aovSubtitle": "متوسط قيمة الطلب الواحد",
       "storeVisitsSubtitle": "متابعة الزيارات والاهتمام بالمتجر",
-      "conversionRateSubtitle": "نسبة التحول من الزيارة إلى طلب فعلي"
+      "conversionRateSubtitle": "نسبة التحول من الزيارة إلى طلب فعلي",
+      "totalOrders": "إجمالي الطلبات",
+      "confirmedOrders": "الطلبات المؤكدة",
+      "cancelledOrders": "الطلبات الملغية",
+      "returnedOrders": "الطلبات المرتجعة"
     },
     "labels": {
       "cancelled": "ملغي",
@@ -1243,6 +1248,7 @@
         "adjustIdentity": "ضبط الهوية"
       }
     },
+    "welcome": "مرحباً، {name}",
     "sellableProducts": "منتجات قابلة للبيع حاليًا",
     "publicLinkPending": "الرابط العام لم يُحسم بعد",
     "topProductsEmpty": "لا توجد منتجات بارزة",
@@ -1255,6 +1261,14 @@
     "loading": {
       "title": "جاري تحميل لوحة التحكم",
       "summary": "جلب أحدث بيانات الشركة..."
+    },
+    "welcomeState": {
+      "title": "مرحباً بك في MaxP",
+      "description": "ابدأ بإعداد متجرك. أكمل هذه الخطوات لبدء البيع.",
+      "addProduct": "إضافة منتج",
+      "setupStore": "إعداد المتجر",
+      "connectChannel": "ربط واتساب",
+      "configureSettings": "الإعدادات"
     }
   },
   "companyLinks": {
@@ -4906,18 +4920,6 @@
     "title": "صندوق الوارد الموحد",
     "refresh": "تحديث",
     "searchPlaceholder": "البحث في المحادثات...",
-    "filters": {
-      "unread": "غير مقروء",
-      "followUp": "تحتاج متابعة",
-      "allPlatforms": "جميع المنصات"
-    },
-    "platforms": {
-      "facebook": "فيسبوك",
-      "instagram": "انستقرام",
-      "whatsapp": "واتساب",
-      "website": "الموقع",
-      "test": "تجربة"
-    },
     "tabs": {
       "all": "الكل",
       "messenger": "Messenger",

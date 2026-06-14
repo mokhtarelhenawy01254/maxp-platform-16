@@ -7,7 +7,7 @@ import {
   getCurrentSubdomain,
   isLocalLikeDomain,
 } from "../../utils/storeUrl";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 interface AffiliateProgram {
   commissionType?: string;

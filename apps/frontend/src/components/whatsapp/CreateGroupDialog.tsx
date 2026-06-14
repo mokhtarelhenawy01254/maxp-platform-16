@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Group, Loader2, Search, Users } from "lucide-react";
-import { useSnackbar } from "notistack";
+import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,6 @@ const CreateGroupDialog: React.FC<CreateGroupDialogProps> = ({
   contacts,
   onGroupCreated,
 }) => {
-  const { enqueueSnackbar } = useSnackbar();
   const [subject, setSubject] = useState("");
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -82,14 +81,12 @@ const CreateGroupDialog: React.FC<CreateGroupDialogProps> = ({
 
   const handleCreate = async () => {
     if (!subject.trim()) {
-      enqueueSnackbar("يرجى إدخال اسم المجموعة", { variant: "warning" });
+      toast.warning("يرجى إدخال اسم المجموعة");
       return;
     }
 
     if (selectedParticipants.length === 0) {
-      enqueueSnackbar("يرجى اختيار مشارك واحد على الأقل", {
-        variant: "warning",
-      });
+      toast.warning("يرجى اختيار مشارك واحد على الأقل");
       return;
     }
 
@@ -102,15 +99,14 @@ const CreateGroupDialog: React.FC<CreateGroupDialogProps> = ({
       });
 
       if (response.data.success) {
-        enqueueSnackbar("تم إنشاء المجموعة بنجاح", { variant: "success" });
+        toast.success("تم إنشاء المجموعة بنجاح");
         onGroupCreated(response.data.group);
         reset();
       }
     } catch (error) {
       console.error("Error creating group:", error);
-      enqueueSnackbar(
+      toast.error(
         error.response?.data?.error || "حدث خطأ أثناء إنشاء المجموعة",
-        { variant: "error" },
       );
     } finally {
       setCreating(false);

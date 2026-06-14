@@ -1,5 +1,5 @@
 import React from "react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { storefrontFetch } from "../../utils/storefrontApi";
 import { cn as cx } from "../../lib/utils";
 import { useStorefrontTheme } from "../engine/ThemeProvider";

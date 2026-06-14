@@ -6,7 +6,7 @@ import {
   getCurrentSubdomain,
   isLocalLikeDomain,
 } from "../../utils/storeUrl";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { trackPlatformSiteCompleteRegistration } from "../../utils/platformSiteMetaPixel";
 
 interface ApiSuccess<T> {

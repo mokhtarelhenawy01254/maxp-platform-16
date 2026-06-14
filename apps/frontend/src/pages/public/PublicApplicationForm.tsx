@@ -13,7 +13,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 import { apiClient } from "../../services/apiClient";
-import { toast, Toaster } from "react-hot-toast";
+import { toast, Toaster } from "sonner";
 
 interface Question {
   id: string;

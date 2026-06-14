@@ -19,7 +19,7 @@ import {
   ExclamationTriangleIcon,
   BeakerIcon,
 } from "@heroicons/react/24/outline";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { storefrontSettingsService } from "../../services/storefrontSettingsService";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";

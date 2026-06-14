@@ -22,7 +22,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuthSimple";
 import {
   getFeatureAccessKind,

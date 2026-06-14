@@ -6,7 +6,7 @@ import {
   ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import { apiClient } from "../../services/apiClient";

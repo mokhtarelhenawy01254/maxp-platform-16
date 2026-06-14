@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CheckIcon } from "@heroicons/react/24/outline";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { companyOnboardingService } from "../../services/companyOnboardingService";

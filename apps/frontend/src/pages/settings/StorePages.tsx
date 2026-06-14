@@ -14,7 +14,7 @@ import {
   InformationCircleIcon,
   ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/outline";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import RichTextEditor from "../../components/RichTextEditor";
 import { buildStorefrontPreviewPath } from "../../storefront/utils/paths";
 import i18n from "../../i18n";

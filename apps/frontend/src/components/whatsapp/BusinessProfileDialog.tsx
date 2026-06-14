@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Loader2, Store } from "lucide-react";
-import { useSnackbar } from "notistack";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -35,7 +35,6 @@ const BusinessProfileDialog: React.FC<BusinessProfileDialogProps> = ({
   onClose,
   sessionId,
 }) => {
-  const { enqueueSnackbar } = useSnackbar();
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<BusinessProfile>({
     address: "",
@@ -77,11 +76,11 @@ const BusinessProfileDialog: React.FC<BusinessProfileDialogProps> = ({
         sessionId,
         ...profile,
       });
-      enqueueSnackbar("تم تحديث ملف الأعمال بنجاح", { variant: "success" });
+      toast.success("تم تحديث ملف الأعمال بنجاح");
       onClose();
     } catch (error) {
       console.error("Error updating business profile:", error);
-      enqueueSnackbar("فشل تحديث ملف الأعمال", { variant: "error" });
+      toast.error("فشل تحديث ملف الأعمال");
     } finally {
       setLoading(false);
     }

@@ -33,7 +33,7 @@ import {
   Video,
   XCircle,
 } from "lucide-react";
-import { useSnackbar } from "notistack";
+import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 
 import {
@@ -414,7 +414,6 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { enqueueSnackbar } = useSnackbar();
   const { socket } = useSocket();
   const [searchParams, setSearchParams] = useSearchParams();
   const pageTitle = companyName
@@ -612,11 +611,9 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
 
   const showError = useCallback(
     (error: unknown, fallback: string) => {
-      enqueueSnackbar(getApiErrorMessage(error, fallback), {
-        variant: "error",
-      });
+      toast.error(getApiErrorMessage(error, fallback));
     },
-    [enqueueSnackbar],
+    [],
   );
 
   const resetNewSessionForm = useCallback(() => {
@@ -993,13 +990,9 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         setCurrentPairingCode(null);
         setCurrentPairingPhone(null);
         setQrRefreshed(false);
-        enqueueSnackbar(t("whatsappSettings.dialogs.linkedSuccess"), {
-          variant: "success",
-        });
+        toast.success(t("whatsappSettings.dialogs.linkedSuccess"));
       } else if (data.status === "DISCONNECTED" || data.status === "disconnected") {
-        enqueueSnackbar(t("whatsappSettings.dialogs.disconnectedAlert"), {
-          variant: "warning",
-        });
+        toast.warning(t("whatsappSettings.dialogs.disconnectedAlert"));
       } else if (data.status === "authenticating" || data.status === "AUTHENTICATING") {
         setQrRefreshed(false);
       }
@@ -1052,7 +1045,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       socket.off("whatsapp:sessions:status", handleSessionsStatus);
       socket.off("connect", handleSocketConnect);
     };
-  }, [enqueueSnackbar, socket, t, withCompanyConfig]);
+  }, [socket, t, withCompanyConfig]);
 
   const handleRefresh = async () => {
     try {
@@ -1084,9 +1077,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
 
   const handleCreateSession = async () => {
     if (!newSessionName.trim()) {
-      enqueueSnackbar(t("whatsappSettings.dialogs.sessionName"), {
-        variant: "warning",
-      });
+      toast.warning(t("whatsappSettings.dialogs.sessionName"));
       return;
     }
 
@@ -1155,17 +1146,13 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       resetNewSessionForm();
 
       if (newSessionProvider === "META_CLOUD") {
-        enqueueSnackbar("Meta Cloud API session created.", {
-          variant: "success",
-        });
+        toast.success("Meta Cloud API session created.");
       } else {
         setCurrentQR(createdSession?.qrCode || null);
         setCurrentPairingCode(createdSession?.pairingCode || null);
         setCurrentPairingPhone(createdSession?.phoneNumber || null);
         setQrDialogOpen(true);
-        enqueueSnackbar(t("whatsappSettings.dialogs.sessionCreated"), {
-          variant: "info",
-        });
+        toast.info(t("whatsappSettings.dialogs.sessionCreated"));
       }
     } catch (error) {
       showError(error, t("common.error"));
@@ -1202,7 +1189,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       setCurrentPairingCode(updatedSession?.pairingCode || null);
       setCurrentPairingPhone(updatedSession?.phoneNumber || session.phoneNumber);
       setQrDialogOpen(true);
-      enqueueSnackbar(t("whatsappSettings.connecting"), { variant: "info" });
+      toast.info(t("whatsappSettings.connecting"));
     } catch (error) {
       showError(error, t("common.error"));
     } finally {
@@ -1217,9 +1204,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         undefined,
         withCompanyConfig(),
       );
-      enqueueSnackbar(t("whatsappSettings.dialogs.disconnectedAlert"), {
-        variant: "success",
-      });
+      toast.success(t("whatsappSettings.dialogs.disconnectedAlert"));
       await loadData();
     } catch (error) {
       showError(error, t("common.error"));
@@ -1246,9 +1231,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         ),
       );
       setEditingSession(null);
-      enqueueSnackbar(t("whatsappSettings.dialogs.sessionUpdated"), {
-        variant: "success",
-      });
+      toast.success(t("whatsappSettings.dialogs.sessionUpdated"));
     } catch (error) {
       showError(error, t("common.error"));
     } finally {
@@ -1264,9 +1247,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
     try {
       setSaving(true);
       await apiClient.put("/whatsapp/settings", settings, withCompanyConfig());
-      enqueueSnackbar(t("whatsappSettings.dialogs.settingsSaved"), {
-        variant: "success",
-      });
+      toast.success(t("whatsappSettings.dialogs.settingsSaved"));
     } catch (error) {
       showError(error, t("common.error"));
     } finally {
@@ -1311,9 +1292,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         content: "",
         category: "general",
       });
-      enqueueSnackbar(t("whatsappSettings.dialogs.quickReplySaved"), {
-        variant: "success",
-      });
+      toast.success(t("whatsappSettings.dialogs.quickReplySaved"));
     } catch (error) {
       showError(error, t("common.error"));
     } finally {
@@ -1336,9 +1315,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         },
         withCompanyConfig(),
       );
-      enqueueSnackbar(t("whatsappSettings.dialogs.businessProfileSaved"), {
-        variant: "success",
-      });
+      toast.success(t("whatsappSettings.dialogs.businessProfileSaved"));
     } catch (error) {
       showError(error, t("common.error"));
     } finally {
@@ -1361,9 +1338,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         },
         withCompanyConfig(),
       );
-      enqueueSnackbar(t("whatsappSettings.dialogs.privacySaved"), {
-        variant: "success",
-      });
+      toast.success(t("whatsappSettings.dialogs.privacySaved"));
     } catch (error) {
       showError(error, t("common.error"));
     } finally {
@@ -1386,9 +1361,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         withCompanyConfig(),
       );
       setBlocklist((previous) => previous.filter((item) => item !== jid));
-      enqueueSnackbar(t("whatsappSettings.dialogs.unblockedSuccess"), {
-        variant: "success",
-      });
+      toast.success(t("whatsappSettings.dialogs.unblockedSuccess"));
     } catch (error) {
       showError(error, t("common.error"));
     }
@@ -1413,9 +1386,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       setLabels((previous) => [...previous, response.data.label]);
       setLabelDialogOpen(false);
       setLabelForm({ name: "", color: "#25D366" });
-      enqueueSnackbar(t("whatsappSettings.dialogs.labelCreated"), {
-        variant: "success",
-      });
+      toast.success(t("whatsappSettings.dialogs.labelCreated"));
     } catch (error) {
       showError(error, t("common.error"));
     } finally {
@@ -1439,9 +1410,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         withCompanyConfig(),
       );
       setCurrentStatus(statusText);
-      enqueueSnackbar(t("whatsappSettings.dialogs.statusUpdated"), {
-        variant: "success",
-      });
+      toast.success(t("whatsappSettings.dialogs.statusUpdated"));
     } catch (error) {
       showError(error, t("common.error"));
     } finally {
@@ -1464,9 +1433,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         },
         withCompanyConfig(),
       );
-      enqueueSnackbar(t("whatsappSettings.dialogs.hoursSaved"), {
-        variant: "success",
-      });
+      toast.success(t("whatsappSettings.dialogs.hoursSaved"));
     } catch (error) {
       showError(error, t("common.error"));
     } finally {
@@ -1490,9 +1457,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         setSessions((previous) =>
           previous.filter((session) => session.id !== deleteState.id),
         );
-        enqueueSnackbar(t("whatsappSettings.dialogs.sessionDeleted"), {
-          variant: "success",
-        });
+        toast.success(t("whatsappSettings.dialogs.sessionDeleted"));
       }
 
       if (deleteState.kind === "quickReply") {
@@ -1515,9 +1480,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         setLabels((previous) =>
           previous.filter((label) => label.id !== deleteState.id),
         );
-        enqueueSnackbar(t("whatsappSettings.dialogs.labelDeleted"), {
-          variant: "success",
-        });
+        toast.success(t("whatsappSettings.dialogs.labelDeleted"));
       }
 
       setDeleteState(null);

@@ -4,7 +4,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { useTranslation } from "react-i18next";
 import { useCurrency } from "../../hooks/useCurrency";
 import { getCurrencyByCode } from "../../utils/currency";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import {
   CurrencyDollarIcon,
   MagnifyingGlassIcon,

@@ -14,7 +14,7 @@ import {
   BeakerIcon,
   StarIcon,
 } from "@heroicons/react/24/outline";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import {
   facebookAdsService,
   FacebookAdTest,

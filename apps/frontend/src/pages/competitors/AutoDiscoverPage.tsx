@@ -1,8 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Card, notification } from 'antd';
-import { ApiOutlined } from '@ant-design/icons';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Wifi } from 'lucide-react';
+import { toast } from 'sonner';
 import AutoDiscoverModal from './AutoDiscoverModal';
 
 const AutoDiscoverPage: React.FC = () => {
@@ -12,8 +13,7 @@ const AutoDiscoverPage: React.FC = () => {
 
   const handleAdd = (name: string) => {
     setModalVisible(false);
-    notification.success({
-      message: t('competitors.autoDiscover.addedSuccess'),
+    toast.success(t('competitors.autoDiscover.addedSuccess'), {
       description: name,
     });
     navigate(`/competitors/add?name=${encodeURIComponent(name)}`);
@@ -21,19 +21,20 @@ const AutoDiscoverPage: React.FC = () => {
 
   return (
     <div className="p-6" dir="auto">
-      <Card
-        title={
-          <div className="flex items-center gap-2">
-            <ApiOutlined className="text-blue-500" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wifi className="text-blue-500 size-5" />
             <span>{t('competitors.autoDiscover.title')}</span>
-          </div>
-        }
-      >
-        <AutoDiscoverModal
-          visible={modalVisible}
-          onClose={() => { setModalVisible(false); navigate('/competitors'); }}
-          onAddCompetitor={handleAdd}
-        />
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AutoDiscoverModal
+            visible={modalVisible}
+            onClose={() => { setModalVisible(false); navigate('/competitors'); }}
+            onAddCompetitor={handleAdd}
+          />
+        </CardContent>
       </Card>
     </div>
   );

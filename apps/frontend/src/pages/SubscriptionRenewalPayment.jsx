@@ -6,7 +6,7 @@ import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../services/apiClient";
 import { Copy, Upload, CheckCircle, ArrowLeft } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 const SubscriptionRenewalPayment = () => {
   const navigate = useNavigate();

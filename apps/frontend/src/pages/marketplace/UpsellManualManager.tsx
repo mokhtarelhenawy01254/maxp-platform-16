@@ -13,7 +13,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 
 type JsonRecord = Record<string, unknown>;

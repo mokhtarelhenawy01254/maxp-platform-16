@@ -6,8 +6,10 @@ import {
   ClipboardList,
   Flag,
   Inbox,
+  Loader2,
   MessageSquare,
   Play,
+  Plus,
   RefreshCw,
   Send,
   Shield,
@@ -199,6 +201,14 @@ export default function AgentManagerPage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [hireTemplate, setHireTemplate] = useState("");
   const [hireName, setHireName] = useState("");
+
+  const TEMPLATE_ICON_MAP: Record<string, string> = {
+    sales: "💼", support: "🎧", inventory: "📦", marketing: "📣",
+    facebook: "💬", sas: "📊", ceo: "🧠", competitor: "🔍",
+    analyst: "🔍", order: "🛒", customer: "🤝",
+  };
+  const tplIcon = (slug: string) => { for (const [k, v] of Object.entries(TEMPLATE_ICON_MAP)) { if (slug.includes(k)) return v; } return "🤖"; };
+
   const [delegateGoal, setDelegateGoal] = useState("اختبار تفويض هدف قصير: راجع المنتجات التجريبية وارجع بتقرير جاهزية.");
   const [delegateAutoHire, setDelegateAutoHire] = useState(true);
   const [delegateResult, setDelegateResult] = useState<Record<string, unknown> | null>(null);
@@ -405,32 +415,61 @@ export default function AgentManagerPage() {
               </TabsContent>
 
               <TabsContent value="hire" className="mt-0">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-                  <div className="md:col-span-5">
-                    <Panel title="تعيين وكيل جديد" icon={<UserPlus className="size-5" />}>
-                      <div className="flex flex-col gap-4">
-                        <div className="flex flex-col gap-1.5"><Label>القالب</Label><Select value={hireTemplate} onValueChange={handleTemplateChange}><SelectTrigger><SelectValue placeholder="اختر قالباً" /></SelectTrigger><SelectContent>{profiles.map((p) => (<SelectItem key={p.slug} value={p.slug}>{p.name} ({p.slug})</SelectItem>))}</SelectContent></Select></div>
-                        <div className="flex flex-col gap-1.5"><Label>اسم اختياري</Label><Input value={hireName} onChange={(e) => setHireName(e.target.value)} /></div>
-                        <Button onClick={hireAgent} disabled={working || !hireTemplate}><UserPlus className="size-4" />تعيين الوكيل</Button>
+                <Panel title="تعيين وكيل جديد" icon={<UserPlus className="size-5" />}>
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+                    <div className="lg:col-span-7">
+                      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                        {profiles.map((p) => (
+                          <button key={p.slug} type="button" onClick={() => handleTemplateChange(p.slug)}
+                            className={`flex flex-col items-center gap-1.5 p-3 min-w-[100px] rounded-xl border-2 text-center transition-all shrink-0 ${
+                              hireTemplate === p.slug
+                                ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30"
+                                : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                            }`}
+                          >
+                            <span className={`size-10 flex items-center justify-center rounded-xl text-xl transition-all ${hireTemplate === p.slug ? "bg-indigo-100 dark:bg-indigo-900/40 scale-110" : "bg-slate-100 dark:bg-slate-800"}`}>{tplIcon(p.slug)}</span>
+                            <p className={`text-xs font-semibold leading-tight ${hireTemplate === p.slug ? "text-indigo-700 dark:text-indigo-400" : "text-slate-600 dark:text-slate-400"}`}>{p.name}</p>
+                            <span className="text-[9px] text-slate-400">{p.allowedTools.length} أدوات · {p.allowedSkills.length} مهارات</span>
+                            {hireTemplate === p.slug && <span className="size-1.5 rounded-full bg-indigo-500" />}
+                          </button>
+                        ))}
                       </div>
-                    </Panel>
+                    </div>
+                    <div className="lg:col-span-5 space-y-3">
+                      {(() => {
+                        const selected = profiles.find((p) => p.slug === hireTemplate);
+                        return selected ? (
+                          <>
+                            <div className="flex items-center gap-3 p-3 rounded-xl border bg-slate-50 dark:bg-slate-800/50">
+                              <span className="text-2xl">{tplIcon(selected.slug)}</span>
+                              <div>
+                                <p className="text-sm font-bold">{selected.name}</p>
+                                <div className="flex flex-wrap gap-1.5 mt-1">
+                                  <Badge variant="outline" className="text-[10px]">{selected.role}</Badge>
+                                  <Badge variant="outline" className="text-[10px]">{selected.allowedTools.length} أدوات</Badge>
+                                  <Badge variant="outline" className="text-[10px]">{selected.allowedSkills.length} مهارات</Badge>
+                                </div>
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-[10px] text-slate-400">اسم اختياري</Label>
+                              <Input value={hireName} onChange={(e) => setHireName(e.target.value)} placeholder={selected.name} className="h-9 text-sm mt-1" />
+                            </div>
+                            <Button onClick={hireAgent} disabled={working} className="w-full">
+                              {working ? <Loader2 className="ml-1.5 size-4 animate-spin" /> : <Plus className="ml-1.5 size-4" />}
+                              {working ? "جارٍ التعيين..." : "تعيين الوكيل"}
+                            </Button>
+                          </>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-10 text-center">
+                            <UserPlus className="size-8 text-slate-300 dark:text-slate-700 mb-2" />
+                            <p className="text-sm text-slate-400">اختر قالباً من اليسار</p>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
-                  <div className="md:col-span-7">
-                    <Panel title="القالب المختار" icon={<Terminal className="size-5" />}>
-                      {profiles.filter((p) => p.slug === hireTemplate).map((profile) => (
-                        <div key={profile.slug} className="flex flex-col gap-3">
-                          <h3 className="text-base font-black">{profile.name}</h3>
-                          <div className="flex flex-wrap gap-2"><Badge>{profile.role}</Badge><Badge variant="outline">v{profile.version || "1"}</Badge><Badge variant="outline">{profile.allowedTools.length} tools</Badge><Badge variant="outline">{profile.allowedSkills.length} skills</Badge></div>
-                          <Separator />
-                          <p className="text-sm font-black">الأدوات</p>
-                          <div className="flex flex-wrap gap-2">{profile.allowedTools.map((t) => (<Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>))}</div>
-                          <p className="text-sm font-black">المهارات</p>
-                          <div className="flex flex-wrap gap-2">{profile.allowedSkills.map((s) => (<Badge key={s} variant="outline" className="text-[10px]">{s}</Badge>))}</div>
-                        </div>
-                      ))}
-                    </Panel>
-                  </div>
-                </div>
+                </Panel>
               </TabsContent>
 
               <TabsContent value="delegate" className="mt-0">

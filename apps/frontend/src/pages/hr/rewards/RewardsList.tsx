@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../../services/apiClient";
 import { useAuth } from "../../../hooks/useAuthSimple";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { ConfirmDialog } from "../../../components/hr/ConfirmDialog";
 import {
   canUserApproveReward,

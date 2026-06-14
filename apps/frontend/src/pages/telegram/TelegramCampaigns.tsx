@@ -16,7 +16,7 @@ import {
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
 import { Plus, XCircle, Trash2, Megaphone, ChevronDown, ChevronUp, RefreshCw, CheckCircle, XCircle as FailedIcon, Hourglass } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 const TelegramCampaigns = () => {
   const [campaigns, setCampaigns] = useState([]);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { apiClient } from "../../services/apiClient";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { buildStoreUrl } from "../../utils/storeUrl";
 import {

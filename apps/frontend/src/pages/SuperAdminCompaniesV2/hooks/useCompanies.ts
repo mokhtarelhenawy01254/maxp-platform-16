@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../../services/apiClient";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { extractErrorMessage, enrichCompanies } from "../utils";
 import type { Company, FacebookPageResult, FollowUpOwner, CompanyUser, FollowUpFormData, EmployeeFormData } from "../types";
 

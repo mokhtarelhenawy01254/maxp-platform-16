@@ -19,7 +19,7 @@ import {
 } from "../../../components/ui/select";
 import { Textarea } from "../../../components/ui/textarea";
 import { CheckCircle, AlertTriangle, Calculator, User } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import api from "../../../services/api";
 
 const RewardApplication: React.FC = () => {

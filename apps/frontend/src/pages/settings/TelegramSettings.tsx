@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { telegramService } from "../../services/telegramService";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 import {
   PaperAirplaneIcon,

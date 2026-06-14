@@ -1088,7 +1088,11 @@
       "profitSubtitle": "Net profit after deducting costs",
       "aovSubtitle": "Average value per order",
       "storeVisitsSubtitle": "Track visits and storefront interest",
-      "conversionRateSubtitle": "Visits converted into real orders"
+      "conversionRateSubtitle": "Visits converted into real orders",
+      "totalOrders": "Total Orders",
+      "confirmedOrders": "Confirmed Orders",
+      "cancelledOrders": "Cancelled Orders",
+      "returnedOrders": "Returned Orders"
     },
     "labels": {
       "cancelled": "Cancelled",
@@ -1241,6 +1245,7 @@
         "adjustIdentity": "Adjust identity"
       }
     },
+    "welcome": "Welcome back, {name}",
     "sellableProducts": "Sellable products now",
     "publicLinkPending": "Public link is not set yet",
     "topProductsEmpty": "No top products",
@@ -1260,6 +1265,14 @@
     "loading": {
       "title": "Loading dashboard",
       "summary": "Fetching latest company data..."
+    },
+    "welcomeState": {
+      "title": "Welcome to MaxP",
+      "description": "Set up your store. Complete these steps to start selling.",
+      "addProduct": "Add Product",
+      "setupStore": "Setup Store",
+      "connectChannel": "Connect WhatsApp",
+      "configureSettings": "Settings"
     }
   },
   "companyLinks": {
@@ -4850,18 +4863,6 @@
     "title": "Unified Inbox",
     "refresh": "Refresh",
     "searchPlaceholder": "Search conversations...",
-    "filters": {
-      "unread": "Unread",
-      "followUp": "Follow-up",
-      "allPlatforms": "All Platforms"
-    },
-    "platforms": {
-      "facebook": "Facebook",
-      "instagram": "Instagram",
-      "whatsapp": "WhatsApp",
-      "website": "Website",
-      "test": "Test"
-    },
     "tabs": {
       "all": "All",
       "messenger": "Messenger",

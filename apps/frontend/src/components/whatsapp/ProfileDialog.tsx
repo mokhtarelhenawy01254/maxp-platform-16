@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Camera, Loader2, RefreshCw } from "lucide-react";
-import { useSnackbar } from "notistack";
+import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,6 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({
   currentStatus,
   currentPicture,
 }) => {
-  const { enqueueSnackbar } = useSnackbar();
   const [name, setName] = useState(currentName || "");
   const [status, setStatus] = useState(currentStatus || "");
   const [pictureFile, setPictureFile] = useState<File | null>(null);
@@ -83,11 +82,11 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      enqueueSnackbar("تم تحديث الملف الشخصي بنجاح", { variant: "success" });
+      toast.success("تم تحديث الملف الشخصي بنجاح");
       onClose();
     } catch (error) {
       console.error("Error updating profile:", error);
-      enqueueSnackbar("فشل تحديث الملف الشخصي", { variant: "error" });
+      toast.error("فشل تحديث الملف الشخصي");
     } finally {
       setLoading(false);
     }
@@ -103,13 +102,11 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({
         setName(profile.name || "");
         setStatus(profile.status || "");
         setPicturePreview(profile.profilePicUrl || null);
-        enqueueSnackbar("تمت مزامنة البيانات من واتساب بنجاح", {
-          variant: "success",
-        });
+        toast.success("تمت مزامنة البيانات من واتساب بنجاح");
       }
     } catch (error) {
       console.error("Error syncing profile:", error);
-      enqueueSnackbar("فشل مزامنة البيانات من واتساب", { variant: "error" });
+      toast.error("فشل مزامنة البيانات من واتساب");
     } finally {
       setLoading(false);
     }

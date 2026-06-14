@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import PlatformSiteHomepageTemplates from "../PlatformSiteHomepageTemplates";
 
 const getSettingsMock = jest.fn();

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { MagnifyingGlassIcon, CheckCircleIcon, FunnelIcon, XMarkIcon, XCircleIcon } from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCurrency } from '../../hooks/useCurrency';
 import { useDateFormat } from '../../hooks/useDateFormat';

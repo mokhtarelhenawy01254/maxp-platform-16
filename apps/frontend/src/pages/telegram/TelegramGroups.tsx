@@ -15,7 +15,7 @@ import {
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
 import { Plus, Group, Megaphone, UserPlus, Eye } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 const TelegramGroups = () => {
   const [groups, setGroups] = useState([]);

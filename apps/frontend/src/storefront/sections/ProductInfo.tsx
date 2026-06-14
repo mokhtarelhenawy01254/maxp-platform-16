@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useParams, Link, useLocation } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import VariantSelector from '../components/VariantSelector';
 import QuantitySelector from '../components/QuantitySelector';
 import Button from '../components/Button';

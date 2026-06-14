@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/api";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import {
   Cog6ToothIcon,
   CheckCircleIcon,

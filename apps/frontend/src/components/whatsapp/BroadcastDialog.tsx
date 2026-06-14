@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Loader2, Megaphone, Search } from "lucide-react";
-import { useSnackbar } from "notistack";
+import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -46,7 +46,6 @@ const BroadcastDialog: React.FC<BroadcastDialogProps> = ({
   sessionId,
   contacts,
 }) => {
-  const { enqueueSnackbar } = useSnackbar();
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -87,14 +86,12 @@ const BroadcastDialog: React.FC<BroadcastDialogProps> = ({
 
   const handleSendBroadcast = async () => {
     if (selectedContacts.length === 0) {
-      enqueueSnackbar("يرجى اختيار جهة اتصال واحدة على الأقل", {
-        variant: "warning",
-      });
+      toast.warning("يرجى اختيار جهة اتصال واحدة على الأقل");
       return;
     }
 
     if (!message.trim()) {
-      enqueueSnackbar("يرجى كتابة رسالة", { variant: "warning" });
+      toast.warning("يرجى كتابة رسالة");
       return;
     }
 
@@ -105,16 +102,14 @@ const BroadcastDialog: React.FC<BroadcastDialogProps> = ({
         jids: selectedContacts,
         message,
       });
-      enqueueSnackbar(
+      toast.success(
         `تم إرسال الرسالة إلى ${selectedContacts.length} جهة اتصال`,
-        { variant: "success" },
       );
       reset();
     } catch (error) {
       console.error("Error sending broadcast:", error);
-      enqueueSnackbar(
+      toast.error(
         error.response?.data?.error || "فشل إرسال الرسالة الجماعية",
-        { variant: "error" },
       );
     } finally {
       setLoading(false);

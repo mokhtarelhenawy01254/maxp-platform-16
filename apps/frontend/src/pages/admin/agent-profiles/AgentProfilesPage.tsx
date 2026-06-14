@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Brain, Users, Wrench, Zap, ChevronDown, ChevronRight,
-  Loader2, AlertCircle, Bot, Search, Clock, PenLine, Save, X, Plus,
+  Loader2, AlertCircle, Bot, Search, Clock, PenLine, Save, X, Plus, Trash2,
 } from "lucide-react";
 import { sandboxApi, type AgentProfileResponse, type AgentSkillDetail } from "../ai-agent-sandbox/services/sandboxApi";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
 import tokenManager from "../../../utils/tokenManager";
 import { buildApiUrl } from "../../../utils/urlHelper";
 
@@ -173,11 +174,23 @@ export default function AgentProfilesPage() {
   const [models, setModels] = useState<Array<{ id: string; modelName: string; provider: string }>>([]);
   const [statusSaving, setStatusSaving] = useState(false);
 
+  /* ── Delete agent state ── */
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   /* ── Edit state ── */
   const [editing, setEditing] = useState(false);
   const [draftModel, setDraftModel] = useState("");
+  const [draftName, setDraftName] = useState("");
+  const [draftIcon, setDraftIcon] = useState("🤖");
   const [draftFiles, setDraftFiles] = useState<Record<string, string>>({});
+  const [draftAllowedTools, setDraftAllowedTools] = useState<string[]>([]);
+  const [draftAllowedSkills, setDraftAllowedSkills] = useState<string[]>([]);
   const [profileSaving, setProfileSaving] = useState(false);
+
+  /* ── All available tools & skills ── */
+  const [allTools, setAllTools] = useState<Array<{ name: string; description?: string; sideEffects?: string }>>([]);
+  const [allSkills, setAllSkills] = useState<Array<{ id: string; displayName?: string }>>([]);
 
   /* ── Create agent state ── */
   const [createOpen, setCreateOpen] = useState(false);
@@ -229,6 +242,17 @@ export default function AgentProfilesPage() {
       .then((data) => { if (data) setModels(data.models || []); });
   }, []);
 
+  /* ── Load available tools & skills ── */
+  useEffect(() => {
+    Promise.all([
+      tryApiFetch<{ tools: Array<{ name: string; description?: string; sideEffects?: string }> }>("/agent/tools"),
+      tryApiFetch<{ skills: Array<{ id: string; displayName?: string }> }>("/agent/skills"),
+    ]).then(([t, s]) => {
+      if (t?.tools) setAllTools(t.tools);
+      if (s?.skills) setAllSkills(s.skills);
+    });
+  }, []);
+
   /* ── Load templates ── */
   useEffect(() => {
     if (!createOpen) return;
@@ -255,7 +279,7 @@ export default function AgentProfilesPage() {
     setProfile(null);
     setEditing(false);
     sandboxApi.getAgentProfile(selectedId)
-      .then((data) => { if (!cancelled) { setProfile(data); setDraftModel(data.agent.model || ""); setDraftFiles({ ...data.files }); } })
+      .then((data) => { if (!cancelled) { setProfile(data); setDraftModel(data.agent.model || ""); setDraftName(data.agent.name); setDraftIcon(data.agent.icon || "🤖"); setDraftFiles({ ...data.files }); setDraftAllowedTools(data.allowedTools || []); setDraftAllowedSkills(data.skillIds || []); } })
       .catch((err) => { if (!cancelled) setProfileError(err?.message || "Failed to load profile"); })
       .finally(() => { if (!cancelled) setProfileLoading(false); });
     return () => { cancelled = true; };
@@ -281,9 +305,12 @@ export default function AgentProfilesPage() {
     setProfileSaving(true);
     setProfileError(null);
     const body: Record<string, unknown> = {
-      name: profile.agent.name,
+      name: draftName || profile.agent.name,
       role: profile.agent.role,
       model: draftModel || profile.agent.model,
+      icon: draftIcon,
+      allowedTools: draftAllowedTools,
+      allowedSkills: draftAllowedSkills,
       files: draftFiles,
     };
     const data = await tryApiFetch<{ success: boolean } & Record<string, unknown>>(
@@ -291,8 +318,10 @@ export default function AgentProfilesPage() {
       { method: "PUT", body: JSON.stringify(body) },
     );
     if (data) {
-      setProfile((prev) => prev ? { ...prev, agent: { ...prev.agent, model: draftModel || prev.agent.model }, files: { ...draftFiles } } : prev);
+      setProfile((prev) => prev ? { ...prev, agent: { ...prev.agent, model: draftModel || prev.agent.model, name: draftName || prev.agent.name, icon: draftIcon }, allowedTools: draftAllowedTools, skillIds: draftAllowedSkills, files: { ...draftFiles } } : prev);
+      setAgents((prev) => prev.map((a) => a.id === selectedId ? { ...a, name: draftName || a.name, icon: draftIcon } : a));
       setEditing(false);
+      toast.success("تم حفظ التعديلات بنجاح");
     } else {
       setProfileError("فشل حفظ التعديلات");
     }
@@ -313,7 +342,9 @@ export default function AgentProfilesPage() {
         name: newAgentName.trim(),
         role: selectedTemplate?.role || "CUSTOM",
         templateSlug: newAgentTemplate || null,
-        model: newAgentModel && newAgentModel !== "none" ? newAgentModel : null,
+        model: newAgentModel || null,
+        icon: newAgentIcon,
+        description: newAgentDesc || null,
         allowedTools: selectedTemplate?.allowedTools || null,
         allowedSkills: selectedTemplate?.allowedSkills || null,
       })},
@@ -325,6 +356,7 @@ export default function AgentProfilesPage() {
       setNewAgentIcon("🤖");
       setNewAgentDesc("");
       setNewAgentTemplate(null);
+      toast.success(`تم إنشاء الوكيل ${data.agent.name} بنجاح`);
       sandboxApi.getAgents().then((res) => {
         setAgents(res.agents as AgentItem[]);
         setSelectedId(data.agent.id);
@@ -338,8 +370,31 @@ export default function AgentProfilesPage() {
     setCreating(false);
   };
 
+  /* ── Delete agent ── */
+  const handleDeleteAgent = async () => {
+    if (!deleteConfirm || !selectedId) return;
+    setDeleting(true);
+    setCreateError(null);
+    const data = await tryApiFetch<{ success: boolean }>(`/agent/agents/${selectedId}`, { method: "DELETE" });
+    if (data) {
+      setDeleteConfirm(null);
+      const remaining = agents.filter((a) => a.id !== selectedId);
+      setAgents(remaining);
+      if (remaining.length > 0) setSelectedId(remaining[0].id);
+      else setSelectedId(null);
+      toast.success("تم حذف الوكيل بنجاح");
+    } else {
+      setCreateError("فشل حذف الوكيل");
+    }
+    setDeleting(false);
+  };
+
   const hasChanges = profile && (
     draftModel !== (profile.agent.model || "")
+    || draftName !== (profile.agent.name || "")
+    || draftIcon !== (profile.agent.icon || "🤖")
+    || JSON.stringify(draftAllowedTools) !== JSON.stringify(profile.allowedTools || [])
+    || JSON.stringify(draftAllowedSkills) !== JSON.stringify(profile.skillIds || [])
     || !FILES_EQUAL(draftFiles, profile.files)
   );
 
@@ -420,10 +475,31 @@ export default function AgentProfilesPage() {
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
           {selectedAgent ? (
             <div className="flex items-start gap-3">
-              <span className="text-2xl flex-shrink-0">{selectedAgent.icon || "🤖"}</span>
+              {editing ? (
+                <div className="flex flex-col items-center gap-1">
+                  <div className="grid grid-cols-4 gap-0.5">
+                    {AGENT_ICONS.map((icon) => (
+                      <button key={icon} type="button" onClick={() => { setDraftIcon(icon); if (!editing) setEditing(true); }}
+                        className={`size-7 flex items-center justify-center rounded-md text-sm border transition-all ${
+                          draftIcon === icon
+                            ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 dark:border-indigo-600"
+                            : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                        }`}
+                      >{icon}</button>
+                    ))}
+                  </div>
+                  <span className="text-[8px] text-slate-400">الأيقونة</span>
+                </div>
+              ) : (
+                <span className="text-2xl flex-shrink-0">{selectedAgent.icon || "🤖"}</span>
+              )}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-base font-bold text-slate-800 dark:text-slate-200">{selectedAgent.name}</h1>
+                  {editing ? (
+                    <Input value={draftName} onChange={(e) => setDraftName(e.target.value)} className="h-8 text-base font-bold w-64" />
+                  ) : (
+                    <h1 className="text-base font-bold text-slate-800 dark:text-slate-200">{selectedAgent.name}</h1>
+                  )}
                   {profile && (
                     <>
                       <span className={`inline-block size-2 rounded-full ${active ? "bg-emerald-500" : "bg-slate-300"}`} />
@@ -446,6 +522,11 @@ export default function AgentProfilesPage() {
                 )}
                 {profile?.agent.templateSlug && (
                   <span className="text-xs font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1.5 rounded">{profile.agent.templateSlug}</span>
+                )}
+                {profile && selectedAgent?.role !== "CEO" && (
+                  <button onClick={() => setDeleteConfirm(selectedId)} className="flex items-center justify-center size-8 rounded-lg border border-transparent hover:border-red-200 dark:hover:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-400 hover:text-red-600 transition-all" title="حذف الوكيل">
+                    <Trash2 className="size-3.5" />
+                  </button>
                 )}
               </div>
             </div>
@@ -482,7 +563,7 @@ export default function AgentProfilesPage() {
               </div>
               {hasChanges && (
                 <div className="flex gap-2 shrink-0">
-                  <Button size="sm" variant="outline" className="h-9 text-xs px-3" onClick={() => { setEditing(false); setDraftModel(profile.agent.model || ""); setDraftFiles({ ...profile.files }); }}>
+                  <Button size="sm" variant="outline" className="h-9 text-xs px-3" onClick={() => { setEditing(false); setDraftModel(profile.agent.model || ""); setDraftName(profile.agent.name); setDraftIcon(profile.agent.icon || "🤖"); setDraftAllowedTools(profile.allowedTools || []); setDraftAllowedSkills(profile.skillIds || []); setDraftFiles({ ...profile.files }); }}>
                     <X className="size-3.5 ml-1.5" />تراجع
                   </Button>
                   <Button size="sm" className="h-9 text-xs px-4" onClick={saveProfile} disabled={profileSaving}>
@@ -538,20 +619,92 @@ export default function AgentProfilesPage() {
                 </div>
               )}
 
-              {tab === "tools" && profile.allowedTools.length > 0 && (
-                <div className="max-w-3xl mt-6">
-                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Allowed Tools ({profile.allowedTools.length})</h3>
-                  <div className="flex flex-wrap gap-2">{profile.allowedTools.map((t) => <ToolBadge key={t} name={t} />)}</div>
+              {tab === "tools" && (
+                <div className="max-w-3xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Allowed Tools ({draftAllowedTools.length})</h3>
+                    {!editing && profile && (
+                      <button onClick={() => setEditing(true)} className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 transition-colors px-2 py-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950/30">
+                        <PenLine className="size-3" />تعديل
+                      </button>
+                    )}
+                  </div>
+                  {editing ? (
+                    <div className="space-y-2">
+                      {allTools.length === 0 ? (
+                        <p className="text-sm text-slate-400 italic py-4">جاري تحميل الأدوات...</p>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2">
+                          {allTools.map((tool) => {
+                            const enabled = draftAllowedTools.includes(tool.name);
+                            return (
+                              <button key={tool.name} type="button" onClick={() => { if (!editing) setEditing(true); setDraftAllowedTools((prev) => prev.includes(tool.name) ? prev.filter((t) => t !== tool.name) : [...prev, tool.name]); }}
+                                className={`flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all ${
+                                  enabled
+                                    ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 dark:border-indigo-700"
+                                    : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 opacity-60"
+                                }`}
+                              >
+                                <span className={`size-2 rounded-full flex-shrink-0 ${enabled ? "bg-indigo-500" : "bg-slate-300"}`} />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-semibold truncate">{tool.name}</p>
+                                  {tool.description && <p className="text-[10px] text-slate-500 truncate">{tool.description}</p>}
+                                </div>
+                                {tool.sideEffects === "write" && <span className="text-[8px] text-orange-500 bg-orange-50 dark:bg-orange-950/30 px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">write</span>}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ) : draftAllowedTools.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">{draftAllowedTools.map((t) => <ToolBadge key={t} name={t} />)}</div>
+                  ) : (
+                    <p className="text-sm text-slate-400 italic py-4">لا توجد أدوات مخصصة لهذا الوكيل.</p>
+                  )}
                 </div>
               )}
 
               {tab === "skills" && (
                 <div className="max-w-3xl space-y-3">
-                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Skills ({profile.skills.length})</h3>
-                  {profile.skills.length === 0 ? (
-                    <p className="text-sm text-slate-400 italic">No skills assigned to this agent.</p>
-                  ) : (
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Skills ({draftAllowedSkills.length})</h3>
+                    {!editing && profile && (
+                      <button onClick={() => setEditing(true)} className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 transition-colors px-2 py-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950/30">
+                        <PenLine className="size-3" />تعديل
+                      </button>
+                    )}
+                  </div>
+                  {editing ? (
+                    <div className="space-y-1">
+                      {allSkills.length === 0 ? (
+                        <p className="text-sm text-slate-400 italic py-4">جاري تحميل المهارات...</p>
+                      ) : (
+                        allSkills.map((skill) => {
+                          const enabled = draftAllowedSkills.includes(skill.id);
+                          return (
+                            <button key={skill.id} type="button" onClick={() => { if (!editing) setEditing(true); setDraftAllowedSkills((prev) => prev.includes(skill.id) ? prev.filter((s) => s !== skill.id) : [...prev, skill.id]); }}
+                              className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+                                enabled
+                                  ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 dark:border-indigo-700"
+                                  : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 opacity-60"
+                              }`}
+                            >
+                              <span className={`size-2 rounded-full flex-shrink-0 ${enabled ? "bg-indigo-500" : "bg-slate-300"}`} />
+                              <Zap className={`size-4 flex-shrink-0 ${enabled ? "text-indigo-500" : "text-slate-400"}`} />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-semibold truncate">{skill.displayName || skill.id}</p>
+                                <p className="text-xs text-slate-500 font-mono">{skill.id}</p>
+                              </div>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  ) : profile.skills.length > 0 ? (
                     profile.skills.map((skill) => <SkillCard key={skill.id} skill={skill} />)
+                  ) : (
+                    <p className="text-sm text-slate-400 italic">لم يتم تعيين مهارات لهذا الوكيل.</p>
                   )}
                 </div>
               )}
@@ -729,6 +882,33 @@ export default function AgentProfilesPage() {
               </div>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteConfirm} onOpenChange={(o) => { if (!o && !deleting) setDeleteConfirm(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="size-4" />
+              حذف الوكيل
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-3">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              هل أنت متأكد من حذف الوكيل <strong className="text-slate-800 dark:text-slate-200">{selectedAgent?.name}</strong>؟
+            </p>
+            <p className="text-xs text-slate-400 mt-2">لا يمكن التراجع عن هذا الإجراء. سيتم أرشفة الوكيل بدلاً من حذفه نهائياً.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)} disabled={deleting}>
+              إلغاء
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteAgent} disabled={deleting}>
+              {deleting ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : null}
+              {deleting ? "جارٍ الحذف..." : "تأكيد الحذف"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

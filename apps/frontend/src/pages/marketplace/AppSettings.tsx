@@ -17,7 +17,7 @@ import {
   ShoppingCart,
   Sparkles,
 } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 import {
   applyMarketplaceAppPreset,

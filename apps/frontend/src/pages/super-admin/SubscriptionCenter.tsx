@@ -30,7 +30,7 @@ import {
 import { appSchema, pricingRuleSchema, enterprisePlanSchema } from "../../../backend/validators/marketplaceManagementValidator";
 import { buildApiUrl } from "../../utils/urlHelper";
 import axios from "axios";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import type { StorefrontThemeCatalogItem } from "../../services/storefrontThemeCatalogService";
 import tokenManager from "../../utils/tokenManager";
 import SuperAdminPaymentSettings from "./SuperAdminPaymentSettings";

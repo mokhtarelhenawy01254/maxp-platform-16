@@ -9,7 +9,7 @@ import {
   MegaphoneIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import {
   DEFAULT_PLATFORM_SITE_HOMEPAGE_SETTINGS,
   platformSiteHomepageService,

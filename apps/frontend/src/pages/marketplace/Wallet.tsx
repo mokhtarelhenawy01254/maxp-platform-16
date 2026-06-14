@@ -21,7 +21,7 @@ import {
   AlertCircle,
   Image as ImageIcon,
 } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuthSimple";
 
 interface WalletData {

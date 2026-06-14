@@ -8,7 +8,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { authService } from "../../../../services/authService";
 import { config } from "../../../../config";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { getPrimaryImageUrl } from "../../../../utils/imageUrl";
 import { parseVariantAttributes } from "../utils/variantAttributes";
 

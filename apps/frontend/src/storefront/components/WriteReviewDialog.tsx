@@ -1,6 +1,6 @@
 import React from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { storefrontFetch } from "../../utils/storefrontApi";
 import { useStorefrontTheme } from "../engine/ThemeProvider";
 

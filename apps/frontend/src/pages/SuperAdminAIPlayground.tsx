@@ -14,7 +14,7 @@ import { useTheme } from "../hooks/useTheme";
 import { buildApiUrl } from "../utils/urlHelper";
 import { tokenManager } from "../utils/tokenManager";
 import { Send, Copy, RefreshCw, Bot, Timer, BarChart3 } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 const PROVIDERS = [
   { value: "GOOGLE", label: "Google" }, { value: "GROQ", label: "Groq" }, { value: "CEREBRAS", label: "Cerebras" },

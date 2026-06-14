@@ -18,8 +18,10 @@ import { companyAwareApi } from "../../../../services/companyAwareApi";
 import axios from "axios";
 import { getApiUrl } from "../../../../config/environment";
 import { tokenManager } from "../../../../utils/tokenManager";
-import Lightbox from "react-image-lightbox";
-import "react-image-lightbox/style.css";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 
 interface Asset {
   id: string;
@@ -966,13 +968,24 @@ const DocumentsSection: React.FC = () => {
         </div>
       )}
 
-      {/* Lightbox for images */}
-      {lightbox.open && (
-        <Lightbox
-          mainSrc={lightbox.src}
-          onCloseRequest={() => setLightbox({ open: false, src: "" })}
-        />
-      )}
+      <Dialog open={lightbox.open} onOpenChange={(open) => { if (!open) setLightbox({ open: false, src: "" }); }}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto h-auto p-0 gap-0 bg-transparent shadow-none ring-0 border-0 sm:max-w-[95vw]" showCloseButton={false}>
+          <div className="relative flex items-center justify-center w-full h-full min-h-[50vh]">
+            <button
+              onClick={() => setLightbox({ open: false, src: "" })}
+              className="absolute top-2 right-2 z-50 text-white bg-black/50 hover:bg-black/70 rounded-full p-1.5 transition-colors"
+              aria-label="إغلاق"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+            <img
+              src={lightbox.src}
+              alt="معاينة المستند"
+              className="max-w-full max-h-[85vh] w-auto h-auto object-contain"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -18,7 +18,7 @@ import {
   CurrencyDollarIcon,
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import EnhancedOrderModal from '../../components/orders/EnhancedOrderModal';
 
 type OrderType = 'GUEST' | 'REGULAR';

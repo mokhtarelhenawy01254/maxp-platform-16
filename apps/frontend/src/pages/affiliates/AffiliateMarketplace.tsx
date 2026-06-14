@@ -10,7 +10,7 @@ import {
   ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import {
   buildAffiliateProductUrl,
   type AffiliateStoreProfile,

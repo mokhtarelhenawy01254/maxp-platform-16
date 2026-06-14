@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { apiClient } from "../../../services/apiClient";
 import { useAuth } from "../../../hooks/useAuthSimple";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { OrderDetailsType, Government, Area } from "../types";
 import {
   validateOrderItems,

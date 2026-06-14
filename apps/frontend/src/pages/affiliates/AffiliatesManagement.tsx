@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useTheme } from "../../hooks/useTheme";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import {
   UserGroupIcon,
   PencilIcon,

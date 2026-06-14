@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import LoadingSpinner from "../components/ui/LoadingSpinner";
 import { apiClient } from "../services/apiClient";
 import { Copy, Upload, CheckCircle } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 const PaymentPage = () => {
   const { invoiceId } = useParams();

@@ -4,7 +4,7 @@ import {
   PencilIcon,
   EyeIcon,
 } from "@heroicons/react/24/outline";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import "../../../styles/quill-dark-mode.css";

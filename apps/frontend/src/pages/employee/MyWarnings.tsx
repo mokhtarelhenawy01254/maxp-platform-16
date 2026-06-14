@@ -22,7 +22,7 @@ import {
 } from "../../components/ui/dialog";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDateFormat } from "../../hooks/useDateFormat";
 

@@ -11,7 +11,7 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/solid";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
 
 interface Product {

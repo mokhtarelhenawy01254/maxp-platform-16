@@ -12,7 +12,7 @@ import {
 import { format } from "date-fns";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
 import { useCurrency } from "../../../../hooks/useCurrency";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 interface MaintenanceRecord {
   id: string;

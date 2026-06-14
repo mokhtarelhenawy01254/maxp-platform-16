@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { apiClient } from "../../services/api";
 import {
   CheckCircleIcon,

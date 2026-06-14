@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import {
   Package,
   Check,

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink } from "react-router-dom";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { normalizeMarketplaceAppSettings } from "../../config/marketplaceAppSettings";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { apiClient } from "../../services/apiClient";

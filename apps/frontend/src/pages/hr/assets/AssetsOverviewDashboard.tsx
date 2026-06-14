@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Transition } from "@headlessui/react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import {
   HomeIcon,
@@ -658,67 +663,49 @@ const AssetsOverviewDashboard: React.FC = () => {
             </div>
 
             {/* Quick Navigation Dropdown */}
-            <Menu as="div" className="relative">
-              <Menu.Button className="flex items-center gap-2 px-4 py-2.5 bg-white/60 dark:bg-white/5 border border-violet-200/50 dark:border-white/10 rounded-xl hover:bg-violet-50 dark:hover:bg-white/10 transition-all duration-200 shadow-sm group">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 px-4 py-2.5 bg-white/60 dark:bg-white/5 border border-violet-200/50 dark:border-white/10 rounded-xl hover:bg-violet-50 dark:hover:bg-white/10 transition-all duration-200 shadow-sm group">
                 <Squares2X2Icon className="h-5 w-5 text-violet-500 dark:text-violet-400 group-hover:rotate-90 transition-transform duration-300" />
                 <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 hidden sm:inline">الوصول السريع</span>
                 <ChevronDownIcon className="h-4 w-4 text-gray-400 group-hover:translate-y-0.5 transition-transform" />
-              </Menu.Button>
-
-              <Transition
-                as={React.Fragment}
-                enter="transition ease-out duration-200"
-                enterFrom="transform opacity-0 scale-95 -translate-y-2"
-                enterTo="transform opacity-100 scale-100 translate-y-0"
-                leave="transition ease-in duration-100"
-                leaveFrom="transform opacity-100 scale-100"
-                leaveTo="transform opacity-0 scale-95"
-              >
-                <Menu.Items className="absolute left-0 mt-2 w-72 origin-top-left bg-white dark:bg-[#251854] rounded-2xl shadow-2xl shadow-violet-500/10 border border-violet-100 dark:border-white/10 focus:outline-none p-2 z-50">
-                  <div className="px-3 py-2 border-b border-violet-100/50 dark:border-white/5 mb-1">
-                    <p className="text-[10px] font-bold text-violet-400 uppercase tracking-widest">التنقل عبر الأقسام</p>
-                  </div>
-                  <div className="max-h-80 overflow-y-auto space-y-0.5">
-                    {sections.map((section) => {
-                      const SectionIcon = section.icon;
-                      const isCurrentSection = activeSection === section.id;
-                      return (
-                        <Menu.Item key={section.id}>
-                          {({ active }) => (
-                            <button
-                              onClick={() => setActiveSection(section.id)}
-                              className={`${
-                                isCurrentSection
-                                  ? "bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-200"
-                                  : active
-                                  ? "bg-violet-50 dark:bg-white/10 text-violet-600 dark:text-white"
-                                  : "text-gray-600 dark:text-gray-300"
-                              } group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-150`}
-                            >
-                              <div className={`p-2 rounded-lg transition-colors ${
-                                isCurrentSection
-                                  ? "bg-violet-200/60 dark:bg-violet-500/30"
-                                  : active
-                                  ? "bg-white dark:bg-white/10 shadow-sm"
-                                  : "bg-violet-50/50 dark:bg-white/5"
-                              }`}>
-                                <SectionIcon className={`h-4 w-4 ${
-                                  isCurrentSection ? "text-violet-600 dark:text-violet-300" : "text-violet-400"
-                                }`} />
-                              </div>
-                              <span className="flex-1 text-right font-medium">{section.title}</span>
-                              {isCurrentSection && (
-                                <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse"></div>
-                              )}
-                            </button>
-                          )}
-                        </Menu.Item>
-                      );
-                    })}
-                  </div>
-                </Menu.Items>
-              </Transition>
-            </Menu>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-72 p-2 shadow-2xl shadow-violet-500/10 rounded-2xl">
+                <div className="px-3 py-2 border-b border-violet-100/50 dark:border-white/5 mb-1">
+                  <p className="text-[10px] font-bold text-violet-400 uppercase tracking-widest">التنقل عبر الأقسام</p>
+                </div>
+                <div className="max-h-80 overflow-y-auto space-y-0.5">
+                  {sections.map((section) => {
+                    const SectionIcon = section.icon;
+                    const isCurrentSection = activeSection === section.id;
+                    return (
+                      <DropdownMenuItem
+                        key={section.id}
+                        onSelect={() => setActiveSection(section.id)}
+                        className={`${
+                          isCurrentSection
+                            ? "bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-200 focus:bg-violet-100 dark:focus:bg-violet-500/20"
+                            : "text-gray-600 dark:text-gray-300 focus:bg-violet-50 dark:focus:bg-white/10 focus:text-violet-600 dark:focus:text-white"
+                        } group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-150`}
+                      >
+                        <div className={`p-2 rounded-lg transition-colors ${
+                          isCurrentSection
+                            ? "bg-violet-200/60 dark:bg-violet-500/30"
+                            : "bg-violet-50/50 dark:bg-white/5"
+                        }`}>
+                          <SectionIcon className={`h-4 w-4 ${
+                            isCurrentSection ? "text-violet-600 dark:text-violet-300" : "text-violet-400"
+                          }`} />
+                        </div>
+                        <span className="flex-1 text-right font-medium">{section.title}</span>
+                        {isCurrentSection && (
+                          <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse"></div>
+                        )}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 

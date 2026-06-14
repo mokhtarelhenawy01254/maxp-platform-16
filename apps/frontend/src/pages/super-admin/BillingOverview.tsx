@@ -12,7 +12,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 interface BillingData {
   totalRevenue: number;

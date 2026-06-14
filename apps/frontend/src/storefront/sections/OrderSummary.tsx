@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import Button from "../components/Button";
 import StorefrontProductImage from "../components/StorefrontProductImage";
 import QuantitySelector from "../components/QuantitySelector";

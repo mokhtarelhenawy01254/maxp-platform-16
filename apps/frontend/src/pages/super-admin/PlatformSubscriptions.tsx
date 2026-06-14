@@ -33,7 +33,7 @@ import {
 } from "../../components/ui/select";
 import { useMemo } from "react";
 import { apiClient } from "../../services/apiClient";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 interface Subscription {
   id: string;

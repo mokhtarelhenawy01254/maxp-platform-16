@@ -15,7 +15,7 @@ import {
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { companyAwareApi } from "../../../../services/companyAwareApi";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 interface AssetRequest {
   id: string;

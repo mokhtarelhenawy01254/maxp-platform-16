@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { apiClient } from "../../services/api";
 import { useCompany } from "../../contexts/CompanyContext";
 import { CheckCircleIcon, ArrowPathIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";

@@ -5,7 +5,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import io, { Socket } from "socket.io-client";
 import tokenManager from "../../../utils/tokenManager";
 import { wooCommerceStorage } from "../../../utils/storage";

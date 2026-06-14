@@ -22,7 +22,7 @@ import {
   TrendingUp,
   Wallet,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import MetricCard from "../../components/advertising/dashboard/MetricCard";
 import SelectFilter from "../../components/advertising/dashboard/SelectFilter";

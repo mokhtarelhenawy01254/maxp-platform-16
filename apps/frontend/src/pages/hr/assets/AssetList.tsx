@@ -12,10 +12,15 @@ import {
   ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Transition } from "@headlessui/react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { useCurrency } from "../../../hooks/useCurrency";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import AssetForm from "./AssetForm";
 import AssetAssignmentModal from "./AssetAssignmentModal";
 
@@ -505,56 +510,43 @@ const AssetList: React.FC<AssetListProps> = ({ refreshTrigger }) => {
                 </button>
 
                 {/* Status change */}
-                <Menu as="div" className="relative">
-                  <Menu.Button className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/15 border border-white/10 rounded-xl transition-all font-medium text-sm">
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/15 border border-white/10 rounded-xl transition-all font-medium text-sm">
                     <span className="hidden sm:inline">تغيير الحالة</span>
                     <ChevronDownIcon className="h-4 w-4" />
-                  </Menu.Button>
-                  <Transition
-                    as={React.Fragment}
-                    enter="transition ease-out duration-150"
-                    enterFrom="transform opacity-0 scale-95"
-                    enterTo="transform opacity-100 scale-100"
-                    leave="transition ease-in duration-75"
-                    leaveFrom="transform opacity-100 scale-100"
-                    leaveTo="transform opacity-0 scale-95"
-                  >
-                    <Menu.Items className="absolute bottom-full mb-2 left-0 w-44 origin-bottom-left bg-[#251854] rounded-xl shadow-2xl border border-white/10 p-1 z-50">
-                      {[
-                        { key: "AVAILABLE", label: "متاح", dot: "bg-green-400" },
-                        { key: "MAINTENANCE", label: "صيانة", dot: "bg-yellow-400" },
-                        { key: "RETIRED", label: "تكهين", dot: "bg-gray-400" },
-                        { key: "LOST", label: "مفقود", dot: "bg-red-400" },
-                      ].map((status) => (
-                        <Menu.Item key={status.key}>
-                          {({ active }) => (
-                            <button
-                              className={`${active ? "bg-white/10" : ""} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-right transition-colors`}
-                              onClick={async () => {
-                                const toastId = toast.loading("جاري تحديث الحالة...");
-                                try {
-                                  await Promise.all(
-                                    selectedIds.map((assetId) =>
-                                      companyAwareApi.put(`/hr/assets/${assetId}`, { status: status.key })
-                                    )
-                                  );
-                                  toast.success(`تم تغيير حالة ${selectedIds.length} أصول إلى ${status.label}`, { id: toastId });
-                                  setSelectedIds([]);
-                                  fetchAssets(1, true);
-                                } catch {
-                                  toast.error("فشل في تحديث الحالة", { id: toastId });
-                                }
-                              }}
-                            >
-                              <div className={`w-2 h-2 rounded-full ${status.dot}`}></div>
-                              <span className="flex-1">{status.label}</span>
-                            </button>
-                          )}
-                        </Menu.Item>
-                      ))}
-                    </Menu.Items>
-                  </Transition>
-                </Menu>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent side="top" align="start" className="w-44 bg-[#251854] border border-white/10 p-1">
+                    {[
+                      { key: "AVAILABLE", label: "متاح", dot: "bg-green-400" },
+                      { key: "MAINTENANCE", label: "صيانة", dot: "bg-yellow-400" },
+                      { key: "RETIRED", label: "تكهين", dot: "bg-gray-400" },
+                      { key: "LOST", label: "مفقود", dot: "bg-red-400" },
+                    ].map((status) => (
+                      <DropdownMenuItem
+                        key={status.key}
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-right text-white focus:bg-white/10"
+                        onSelect={async () => {
+                          const toastId = toast.loading("جاري تحديث الحالة...");
+                          try {
+                            await Promise.all(
+                              selectedIds.map((assetId) =>
+                                companyAwareApi.put(`/hr/assets/${assetId}`, { status: status.key })
+                              )
+                            );
+                            toast.success(`تم تغيير حالة ${selectedIds.length} أصول إلى ${status.label}`, { id: toastId });
+                            setSelectedIds([]);
+                            fetchAssets(1, true);
+                          } catch {
+                            toast.error("فشل في تحديث الحالة", { id: toastId });
+                          }
+                        }}
+                      >
+                        <div className={`w-2 h-2 rounded-full ${status.dot}`}></div>
+                        <span className="flex-1">{status.label}</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
                 {/* Clear selection */}
                 <button

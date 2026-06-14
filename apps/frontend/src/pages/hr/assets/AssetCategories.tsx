@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { PlusIcon, TrashIcon, TagIcon, ChatBubbleBottomCenterTextIcon } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../services/companyAwareApi";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 const AssetCategories: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);

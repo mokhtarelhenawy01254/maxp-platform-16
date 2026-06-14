@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { companyAwareApi } from "../../../services/companyAwareApi";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import AssetForm from "./AssetForm";
 import AssetAssignmentModal from "./AssetAssignmentModal";
 

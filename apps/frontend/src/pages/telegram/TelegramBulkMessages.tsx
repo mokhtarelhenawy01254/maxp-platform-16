@@ -15,7 +15,7 @@ import {
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
 import { Plus, Send, XCircle, Eye, RefreshCw, X } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 interface Userbot { id: string; label: string; clientPhone?: string; }
 interface DialogEntry { id: string; name: string; }

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import axios from "axios";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 import SubscriptionCenter from "../SubscriptionCenter";
 

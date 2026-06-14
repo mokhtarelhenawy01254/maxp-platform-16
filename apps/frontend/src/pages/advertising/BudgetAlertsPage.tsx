@@ -7,7 +7,7 @@ import {
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import SelectFilter from "../../components/advertising/dashboard/SelectFilter";
 import MiniMetric from "../../components/advertising/dashboard/MiniMetric";

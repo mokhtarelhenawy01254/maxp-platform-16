@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCurrency } from "../../hooks/useCurrency";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { useTheme } from "../../hooks/useTheme";
 import { createStorageKey, getWithExpiry, setWithExpiry } from "../../utils/storage";
 import {

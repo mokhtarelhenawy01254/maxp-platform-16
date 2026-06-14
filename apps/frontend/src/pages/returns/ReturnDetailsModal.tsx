@@ -15,7 +15,7 @@ import {
   Shield,
   Calendar,
 } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 interface ReturnDetailsModalProps {
   request: ReturnRequest;

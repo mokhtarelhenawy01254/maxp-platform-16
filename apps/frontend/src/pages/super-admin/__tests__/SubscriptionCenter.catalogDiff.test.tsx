@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import axios from "axios";
 import SubscriptionCenter from "../SubscriptionCenter";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 jest.mock("axios");
 jest.mock("react-hot-toast", () => ({

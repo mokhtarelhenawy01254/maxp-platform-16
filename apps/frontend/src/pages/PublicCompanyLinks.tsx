@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { buildApiUrl } from "../utils/urlHelper";
 
 type PublicLink = {

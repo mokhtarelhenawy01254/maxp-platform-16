@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import io, { Socket } from "socket.io-client";
 import { WooOrder, ImportJob, Settings } from "../types";
 import tokenManager from "../../../utils/tokenManager";

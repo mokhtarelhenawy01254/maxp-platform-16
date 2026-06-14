@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Ban, Search, Shield } from "lucide-react";
-import { useSnackbar } from "notistack";
+import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -72,7 +72,6 @@ const PrivacySettingsDialog: React.FC<PrivacySettingsDialogProps> = ({
   sessionId,
   contacts,
 }) => {
-  const { enqueueSnackbar } = useSnackbar();
   const [tabValue, setTabValue] = useState("blocked");
   const [loading, setLoading] = useState(false);
   const [blocklist, setBlocklist] = useState<string[]>([]);
@@ -95,11 +94,11 @@ const PrivacySettingsDialog: React.FC<PrivacySettingsDialogProps> = ({
       setBlocklist(response.data.blocklist || []);
     } catch (error) {
       console.error("Error fetching blocklist:", error);
-      enqueueSnackbar("فشل جلب قائمة المحظورين", { variant: "error" });
+      toast.error("فشل جلب قائمة المحظورين");
     } finally {
       setLoading(false);
     }
-  }, [enqueueSnackbar, sessionId]);
+  }, [sessionId]);
 
   const fetchPrivacySettings = useCallback(async () => {
     setLoading(true);
@@ -130,21 +129,21 @@ const PrivacySettingsDialog: React.FC<PrivacySettingsDialogProps> = ({
   const handleUnblock = async (jid: string) => {
     try {
       await api.post("/whatsapp/contacts/unblock", { sessionId, jid });
-      enqueueSnackbar("تم إلغاء الحظر بنجاح", { variant: "success" });
+      toast.success("تم إلغاء الحظر بنجاح");
       await fetchBlocklist();
     } catch {
-      enqueueSnackbar("فشل إلغاء الحظر", { variant: "error" });
+      toast.error("فشل إلغاء الحظر");
     }
   };
 
   const handleBlock = async (jid: string) => {
     try {
       await api.post("/whatsapp/contacts/block", { sessionId, jid });
-      enqueueSnackbar("تم الحظر بنجاح", { variant: "success" });
+      toast.success("تم الحظر بنجاح");
       setBlockSearchQuery("");
       await fetchBlocklist();
     } catch {
-      enqueueSnackbar("فشل الحظر", { variant: "error" });
+      toast.error("فشل الحظر");
     }
   };
 
@@ -160,9 +159,9 @@ const PrivacySettingsDialog: React.FC<PrivacySettingsDialogProps> = ({
         setting: key,
         value,
       });
-      enqueueSnackbar("تم تحديث الإعدادات", { variant: "success" });
+      toast.success("تم تحديث الإعدادات");
     } catch {
-      enqueueSnackbar("فشل تحديث الإعدادات", { variant: "error" });
+      toast.error("فشل تحديث الإعدادات");
       await fetchPrivacySettings();
     }
   };

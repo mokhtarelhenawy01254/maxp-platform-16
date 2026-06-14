@@ -15,7 +15,7 @@ import {
   ChartBarIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import CreateCompanyModal from "../../components/CreateCompanyModal";
