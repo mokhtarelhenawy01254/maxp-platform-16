@@ -68,6 +68,8 @@ const ModernLogin: React.FC = () => {
         from &&
         from !== "/company-dashboard" &&
         from !== "/apps" &&
+        !from.startsWith("/lp/") &&
+        from !== "/" &&
         !companyNeedsOnboarding(userData?.company)
           ? from
           : postAuthDestination;
