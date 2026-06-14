@@ -4664,6 +4664,16 @@
             "TEXT_ONLY_SEARCH": "بحث نصي فقط",
             "UNKNOWN": "غير معروف"
           }
+        },
+        "priority": {
+          "title": "Provider Priority / ترتيب المزودين",
+          "dragOrder": "اسحب المزودين لتحديد ترتيب التشغيل والـ fallback.",
+          "runtimeOrder": "ترتيب التشغيل: {{order}}",
+          "enableAutoFailover": "Enable Auto-Failover",
+          "autoFailoverDesc": "تفعيل الانتقال التلقائي"
+        },
+        "globalKeys": {
+          "description": "المفاتيح المركزية المضافة هنا مخصصة لإدارة المزودين، ترتيب التشغيل، السجلات، وتشخيص المفاتيح داخل سطح السوبر أدمن فقط."
         }
       }
     },

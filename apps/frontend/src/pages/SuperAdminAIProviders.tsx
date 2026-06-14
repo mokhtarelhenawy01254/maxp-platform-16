@@ -2220,7 +2220,7 @@ const SuperAdminAIProviders = ({
               <div className="min-w-0">
                 <span className="text-base font-black block leading-tight">
                   {standalonePriority
-                    ? "Provider Priority"
+                    ? i18n.t("superAdmin.aiProviders.priority.title")
                     : "AI Keys & Provider Management"}
                 </span>
                 <div className="flex flex-row flex-wrap gap-0.5" style={{ marginTop: 2 }}>
@@ -2235,16 +2235,9 @@ const SuperAdminAIProviders = ({
             <Alert variant="default" className="border-blue-500/50 py-1 items-center">
               <AlertDescription>
                 {standalonePriority ? (
-                  <>
-                    Drag providers to set the runtime order. / اسحب المزودين
-                    لتحديد ترتيب التشغيل والـ fallback.
-                  </>
+                  i18n.t("superAdmin.aiProviders.priority.dragOrder")
                 ) : (
-                  <>
-                    المفاتيح المركزية المضافة هنا مخصصة لإدارة المزودين،
-                    ترتيب التشغيل، السجلات، وتشخيص المفاتيح داخل سطح السوبر
-                    أدمن فقط.
-                  </>
+                  i18n.t("superAdmin.aiProviders.globalKeys.description")
                 )}
               </AlertDescription>
             </Alert>
@@ -2657,14 +2650,14 @@ const SuperAdminAIProviders = ({
           <div className="flex flex-col gap-1">
             <div className="flex flex-col md:flex-row gap-1 items-stretch md:items-center justify-between">
               <div>
-                <span className="text-base font-black block">Provider Priority / ترتيب المزودين</span>
-                <span className="text-sm text-gray-500">Runtime order: {providerPriority.slice(0, 4).join(" > ")}</span>
+                <span className="text-base font-black block">{i18n.t("superAdmin.aiProviders.priority.title")}</span>
+                <span className="text-sm text-gray-500">{i18n.t("superAdmin.aiProviders.priority.runtimeOrder", { order: providerPriority.slice(0, 4).join(" > ") })}</span>
               </div>
               <div className="flex flex-row flex-wrap items-center gap-1">
                 <div className="flex items-center gap-2 mr-1">
                   <div className="text-right">
-                    <span className="text-xs font-black block">Enable Auto-Failover</span>
-                    <span className="text-xs text-gray-500 block">تفعيل الانتقال التلقائي</span>
+                    <span className="text-xs font-black block">{i18n.t("superAdmin.aiProviders.priority.enableAutoFailover")}</span>
+                    <span className="text-xs text-gray-500 block">{i18n.t("superAdmin.aiProviders.priority.autoFailoverDesc")}</span>
                   </div>
                   <Switch
                     size="default"
