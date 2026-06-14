@@ -64,9 +64,10 @@ const ModernLogin: React.FC = () => {
       const userData = await login(formData);
       const postAuthDestination = getPostAuthDestination(userData);
       const redirectPath =
-        postAuthDestination === "/company-dashboard" &&
+        (postAuthDestination === "/company-dashboard" || postAuthDestination === "/apps") &&
         from &&
         from !== "/company-dashboard" &&
+        from !== "/apps" &&
         !companyNeedsOnboarding(userData?.company)
           ? from
           : postAuthDestination;

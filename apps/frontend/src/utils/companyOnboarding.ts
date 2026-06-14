@@ -75,15 +75,7 @@ export const getPostAuthDestination = (user?: UserLike | null): string => {
     return "/super-admin/dev-dashboard";
   }
 
-  if (user?.company?.sidebarLayout === "app-dashboard") {
-    return "/apps";
-  }
-
-  if (isFirstLoginCompanyOwner(user)) {
-    return "/marketplace";
-  }
-
-  return companyNeedsOnboarding(user?.company)
-    ? "/onboarding"
-    : "/company-dashboard";
+  // Bypass onboarding and old dashboard/marketplace entirely
+  // Direct all company users to the Apps page
+  return "/apps";
 };

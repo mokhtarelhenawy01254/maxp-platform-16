@@ -20,7 +20,7 @@ describe("companyOnboarding routing", () => {
     };
 
     expect(isFirstLoginCompanyOwner(user)).toBe(true);
-    expect(getPostAuthDestination(user)).toBe("/marketplace");
+    expect(getPostAuthDestination(user)).toBe("/apps");
   });
 
   test("keeps returning owner accounts on the normal post-auth destination", () => {
@@ -33,7 +33,7 @@ describe("companyOnboarding routing", () => {
     };
 
     expect(isFirstLoginCompanyOwner(user)).toBe(false);
-    expect(getPostAuthDestination(user)).toBe("/company-dashboard");
+    expect(getPostAuthDestination(user)).toBe("/apps");
   });
 
   test("does not override role-specific destinations", () => {

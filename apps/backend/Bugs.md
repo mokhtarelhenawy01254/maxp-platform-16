@@ -1,3 +1,17 @@
+## [2026-06-14] Frontend — Bypass Onboarding Screens for New Users
+
+- **Bug/Issue**: The user requested that the multi-step onboarding wizard (which sets company name, slug, etc.) be completely removed/bypassed so that newly registered users land straight on the Apps page.
+- **Root Cause**: `getPostAuthDestination` routed users with new companies to `/onboarding` (if `companyNeedsOnboarding` was true) or `/marketplace` (if first login owner).
+- **Fix**: 
+  1. Updated `getPostAuthDestination` in `apps/frontend/src/utils/companyOnboarding.ts` to directly return `"/apps"` for all standard company logins, bypassing both `/marketplace` and `/onboarding`.
+  2. Updated `ModernLogin.tsx` redirect logic to preserve the `from` path (deep linking) when the destination is `/apps`.
+  3. Updated `companyOnboarding.test.ts` to reflect the new expected destinations.
+- **Verification**: Tests pass, users logging in or completing registration will now immediately skip onboarding and land on `/apps`.
+- **Affected Files**:
+  - `apps/frontend/src/utils/companyOnboarding.ts`
+  - `apps/frontend/src/pages/auth/ModernLogin.tsx`
+  - `apps/frontend/src/utils/__tests__/companyOnboarding.test.ts`
+
 ## [2026-06-14] Frontend — New Client After Registration Redirected to Subscription Page Instead of Homepage
 
 - **Bug/Issue**: After a new client completed registration (`/auth/register`), instead of being taken to the main/dashboard page, they were kept on the subscription/registration page or redirected incorrectly.
