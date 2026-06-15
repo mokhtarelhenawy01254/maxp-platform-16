@@ -803,7 +803,7 @@ try {
     const prisma = getSharedPrismaClient();
 
     const companies = await prisma.company.findMany({
-      where: { deletedAt: null },
+      where: { isActive: true },
       select: { id: true },
     });
     const companyIds = companies.map((c) => c.id);
