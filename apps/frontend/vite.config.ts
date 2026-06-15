@@ -518,7 +518,7 @@ export default defineConfig(({ mode }) => {
               if (normalizedId.includes('/src/pages/facebook-inbox/') || normalizedId.includes('/src/pages/instagram-inbox/') || normalizedId.includes('/src/pages/unified-inbox/')) return 'route-inbox';
               if (normalizedId.includes('/src/pages/tasks/')) return 'route-tasks';
               if (normalizedId.includes('/src/pages/inventory/')) return 'route-inventory';
-              if (normalizedId.includes('/src/pages/analytics/') || normalizedId.includes('/src/pages/reports/')) return 'route-analytics';
+              if (normalizedId.includes('/src/pages/analytics/') || normalizedId.includes('/src/pages/Analytics/') || normalizedId.includes('/src/pages/reports/')) return 'route-analytics';
               if (normalizedId.includes('/src/pages/support/')) return 'route-support';
               if (normalizedId.includes('/src/pages/telegram/')) return 'route-telegram';
               if (normalizedId.includes('/src/pages/employee/')) return 'route-employee';
@@ -534,7 +534,34 @@ export default defineConfig(({ mode }) => {
               if (normalizedId.includes('/src/pages/profile/')) return 'route-profile';
               if (normalizedId.includes('/src/pages/dashboard/')) return 'route-dashboard';
               if (normalizedId.includes('/src/pages/auth/')) return 'route-auth';
+              if (normalizedId.includes('/src/pages/admin/')) return 'route-admin';
+              if (normalizedId.includes('/src/pages/marketplace/')) return 'route-marketplace';
+              if (normalizedId.includes('/src/pages/subscription/')) return 'route-subscription';
+              if (normalizedId.includes('/src/pages/comments/')) return 'route-comments';
+              if (normalizedId.includes('/src/pages/conversations/')) return 'route-conversations';
+              if (normalizedId.includes('/src/pages/merchants/') || normalizedId.includes('/src/pages/merchant-portal/')) return 'route-merchants';
+              if (normalizedId.includes('/src/pages/public/') || normalizedId.includes('/src/pages/landing/')) return 'route-public';
+              if (normalizedId.includes('/src/pages/themes/')) return 'route-themes';
+              if (normalizedId.includes('/src/pages/platform-integrations/') || normalizedId.includes('/src/pages/platform-partner/') || normalizedId.includes('/src/pages/platform/')) return 'route-platform';
+              if (normalizedId.includes('/src/pages/returns/')) return 'route-returns';
+              if (normalizedId.includes('/src/pages/shipping/')) return 'route-shipping';
+              if (normalizedId.includes('/src/pages/woocommerce/')) return 'route-woocommerce';
+              if (normalizedId.includes('/src/pages/coupons/')) return 'route-coupons';
+              if (normalizedId.includes('/src/pages/appointments/')) return 'route-appointments';
+              if (normalizedId.includes('/src/pages/bulk-search/')) return 'route-bulk-search';
+              if (normalizedId.includes('/src/pages/broadcast/')) return 'route-broadcast';
+              if (normalizedId.includes('/src/pages/whatsapp-inbox/')) return 'route-whatsapp-inbox';
+              if (normalizedId.includes('/src/pages/pos/')) return 'route-pos';
+              if (normalizedId.includes('/src/pages/wallet/')) return 'route-wallet';
+              if (normalizedId.includes('/src/pages/categories/')) return 'route-categories';
+              if (normalizedId.includes('/src/pages/onboarding/')) return 'route-onboarding';
+              if (normalizedId.includes('/src/pages/tickets/')) return 'route-tickets';
+              if (normalizedId.includes('/src/pages/legal/')) return 'route-legal';
+              if (normalizedId.includes('/src/pages/owner/')) return 'route-owner';
+              if (normalizedId.includes('/src/pages/my-custody/')) return 'route-my-custody';
               if (normalizedId.endsWith('/src/pages/LandingPage.tsx') || normalizedId.endsWith('/src/pages/PlatformLandingPage.tsx')) return 'route-landing';
+              // Catch-all for any remaining src/pages/ .tsx/.ts files
+              if (normalizedId.includes('/src/pages/')) return 'route-pages-other';
             }
 
             return getVendorChunkName(normalizedId);
