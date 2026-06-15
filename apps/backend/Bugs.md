@@ -1,3 +1,9 @@
+## [2026-06-15] translation.json — i18n key additions (merge translations post-rebase)
+
+- **Change**: Added new translation keys to `translation.json` (ar/en) for app pricing and dev recommendations features.
+- **No code behavior change** — only translation data.
+- **Files**: `apps/frontend/src/locales/ar/translation.json`, `apps/frontend/src/locales/en/translation.json`
+
 ## [2026-06-15] AppPricingSheet — Hardcoded Arabic strings blocking CI
 
 - **Bug/Issue**: The `AppPricingSheet.tsx` file contained 68 hardcoded Arabic strings using the `isAr ? "..." : "..."` pattern, which caused the CI `Arabic Strings Compliance Check` to fail, blocking all deployments.
