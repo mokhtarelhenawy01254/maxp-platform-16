@@ -186,6 +186,10 @@ async def get_status(company_id: str | None = Query(default=None)) -> dict:
                 for r in rows.fetchall()
             ]
 
+            # Latest update across all embeddings (persisted fallback for last-run display)
+            lu_row = await sess.execute(text("SELECT MAX(updated_at) AS lu FROM ai.product_embeddings"))
+            last_db_update = lu_row.scalar()
+
             # Products that have no embedding yet
             missing_rows = await sess.execute(
                 text(f"""
@@ -217,6 +221,7 @@ async def get_status(company_id: str | None = Query(default=None)) -> dict:
                 "errors": _state["errors"],
                 "company_id": _state["company_id"],
                 "last_error": _state["last_error"],
+                "last_db_update": last_db_update.isoformat() if last_db_update else None,
             },
             "summary": {
                 "total_products": total_products,

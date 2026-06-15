@@ -209,6 +209,10 @@ async def get_knowledge_status(company_id: str | None = Query(default=None)) -> 
         embedded_faqs = sum(s["embedded_faqs"] for s in company_stats)
         embedded_policies = sum(s["embedded_policies"] for s in company_stats)
 
+        async with _db_mod.async_session() as sess2:
+            lu_row = await sess2.execute(text("SELECT MAX(updated_at) AS lu FROM ai.knowledge_embeddings"))
+            last_db_update = lu_row.scalar()
+
         return {
             "job": {
                 "status": _state["status"],
@@ -219,6 +223,7 @@ async def get_knowledge_status(company_id: str | None = Query(default=None)) -> 
                 "errors": _state["errors"],
                 "company_id": _state["company_id"],
                 "last_error": _state["last_error"],
+                "last_db_update": last_db_update.isoformat() if last_db_update else None,
             },
             "summary": {
                 "total_faqs": total_faqs,

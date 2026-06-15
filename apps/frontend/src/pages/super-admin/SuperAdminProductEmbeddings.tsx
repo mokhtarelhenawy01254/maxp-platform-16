@@ -6,7 +6,7 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
 import {
   Database, RefreshCw, Play, CheckCircle, AlertCircle, Clock, Layers,
-  Building2, ChevronDown, ChevronRight, Info, BookOpen,
+  Building2, ChevronDown, ChevronRight, Info, BookOpen, Search,
 } from "lucide-react";
 
 interface JobState {
@@ -18,6 +18,7 @@ interface JobState {
   errors: number;
   company_id: string | null;
   last_error: string | null;
+  last_db_update: string | null;
 }
 
 interface CompanyStat {
@@ -64,9 +65,10 @@ interface KnowledgeStatusData {
   companies: KnowledgeCompanyStat[];
 }
 
-function fmtTs(ts: number | null): string {
-  if (!ts) return "—";
-  return new Date(ts * 1000).toLocaleString("ar-EG", {
+function fmtTs(ts: number | null, iso?: string | null): string {
+  const d = ts ? new Date(ts * 1000) : iso ? new Date(iso) : null;
+  if (!d || isNaN(d.getTime())) return "—";
+  return d.toLocaleString("ar-EG", {
     year: "numeric", month: "short", day: "numeric",
     hour: "2-digit", minute: "2-digit",
   });
@@ -79,6 +81,18 @@ function fmtDuration(start: number | null, end: number | null): string {
   return `${Math.floor(secs / 60)}د ${secs % 60}ث`;
 }
 
+function nextScheduledTime(hour: number, minute: number): string {
+  const now = new Date();
+  const cairo = new Date(now.toLocaleString("en-US", { timeZone: "Africa/Cairo" }));
+  const next = new Date(cairo);
+  next.setHours(hour, minute, 0, 0);
+  if (next <= cairo) next.setDate(next.getDate() + 1);
+  return next.toLocaleString("ar-EG", {
+    weekday: "short", month: "short", day: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+}
+
 const STATUS_CONFIG = {
   idle:    { label: "في الانتظار",  color: "bg-slate-100 text-slate-700", icon: <Clock className="size-3" /> },
   running: { label: "جارٍ الآن",   color: "bg-blue-100 text-blue-700",   icon: <RefreshCw className="size-3 animate-spin" /> },
@@ -88,13 +102,24 @@ const STATUS_CONFIG = {
 
 function JobCard({
   job,
-  nextSchedule,
+  scheduleHour,
+  scheduleMinute,
 }: {
   job: JobState | undefined;
-  nextSchedule: string;
+  scheduleHour: number;
+  scheduleMinute: number;
 }) {
   const statusCfg = STATUS_CONFIG[job?.status ?? "idle"];
   const isRunning = job?.status === "running";
+  const lastRunDisplay = fmtTs(job?.started_at ?? null, null);
+  const finishedDisplay = job?.started_at && job?.finished_at
+    ? fmtTs(null, null).replace("—", "") + fmtTs(job.finished_at, null)
+    : fmtTs(job?.finished_at ?? null, null);
+
+  const lastRunFallback = !job?.started_at && job?.last_db_update
+    ? `آخر تحديث: ${fmtTs(null, job.last_db_update)}`
+    : null;
+
   return (
     <div className="rounded-xl border bg-card p-4 space-y-3">
       <div className="flex items-center gap-2">
@@ -111,12 +136,16 @@ function JobCard({
         </div>
         <div className="rounded-lg bg-muted/40 px-3 py-2">
           <p className="text-xs text-muted-foreground mb-1">آخر تشغيل</p>
-          <p className="text-xs font-medium">{fmtTs(job?.started_at ?? null)}</p>
+          {lastRunFallback ? (
+            <p className="text-xs font-medium text-muted-foreground">{lastRunFallback}</p>
+          ) : (
+            <p className="text-xs font-medium">{lastRunDisplay}</p>
+          )}
         </div>
         <div className="rounded-lg bg-muted/40 px-3 py-2">
           <p className="text-xs text-muted-foreground mb-1">انتهى في</p>
           <p className="text-xs font-medium">
-            {fmtTs(job?.finished_at ?? null)}
+            {fmtTs(job?.finished_at ?? null, null)}
             {job?.started_at && job?.finished_at ? (
               <span className="text-muted-foreground mr-1">
                 ({fmtDuration(job.started_at, job.finished_at)})
@@ -126,7 +155,7 @@ function JobCard({
         </div>
         <div className="rounded-lg bg-muted/40 px-3 py-2">
           <p className="text-xs text-muted-foreground mb-1">التالي المجدول</p>
-          <p className="text-xs font-medium">{nextSchedule}</p>
+          <p className="text-xs font-medium">{nextScheduledTime(scheduleHour, scheduleMinute)}</p>
         </div>
       </div>
 
@@ -162,6 +191,9 @@ const SuperAdminProductEmbeddings: React.FC = () => {
   const [syncing, setSyncing] = useState<string | null>(null);
   const [kSyncing, setKSyncing] = useState(false);
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
+  const [companyMap, setCompanyMap] = useState<Record<string, string>>({});
+  const [productSearch, setProductSearch] = useState("");
+  const [knowledgeSearch, setKnowledgeSearch] = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const kPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -184,9 +216,22 @@ const SuperAdminProductEmbeddings: React.FC = () => {
     } catch { /* silent */ }
   }, []);
 
+  const loadCompanies = useCallback(async () => {
+    try {
+      const { data: res } = await apiClient.get("/admin/companies");
+      if (res?.success && Array.isArray(res.data?.companies)) {
+        const map: Record<string, string> = {};
+        for (const c of res.data.companies) {
+          if (c.id && c.name) map[c.id] = c.name;
+        }
+        setCompanyMap(map);
+      }
+    } catch { /* silent */ }
+  }, []);
+
   useEffect(() => {
-    Promise.all([load(), loadKnowledge()]);
-  }, [load, loadKnowledge]);
+    Promise.all([load(), loadKnowledge(), loadCompanies()]);
+  }, [load, loadKnowledge, loadCompanies]);
 
   // Poll product embeddings
   useEffect(() => {
@@ -249,6 +294,8 @@ const SuperAdminProductEmbeddings: React.FC = () => {
     });
   };
 
+  const companyName = (id: string) => companyMap[id] || id;
+
   const isRunning = data?.job?.status === "running";
   const kIsRunning = kData?.job?.status === "running";
 
@@ -272,6 +319,18 @@ const SuperAdminProductEmbeddings: React.FC = () => {
     if (!missingByCompany[p.company_id]) missingByCompany[p.company_id] = [];
     missingByCompany[p.company_id].push(p);
   }
+
+  const filteredCompanies = companies.filter(c => {
+    if (!productSearch.trim()) return true;
+    const q = productSearch.trim().toLowerCase();
+    return (companyMap[c.company_id] || "").toLowerCase().includes(q) || c.company_id.toLowerCase().includes(q);
+  });
+
+  const filteredKCompanies = kCompanies.filter(c => {
+    if (!knowledgeSearch.trim()) return true;
+    const q = knowledgeSearch.trim().toLowerCase();
+    return (companyMap[c.company_id] || "").toLowerCase().includes(q) || c.company_id.toLowerCase().includes(q);
+  });
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)]" dir="rtl">
@@ -319,7 +378,7 @@ const SuperAdminProductEmbeddings: React.FC = () => {
             </Button>
           </div>
 
-          <JobCard job={job} nextSchedule="كل يوم 3:00 ص" />
+          <JobCard job={job} scheduleHour={3} scheduleMinute={0} />
 
           {summary && (
             <div className="grid grid-cols-3 gap-3">
@@ -341,22 +400,35 @@ const SuperAdminProductEmbeddings: React.FC = () => {
           )}
 
           <div className="rounded-xl border bg-card overflow-hidden">
-            <div className="px-4 py-3 border-b flex items-center gap-2">
-              <Building2 className="size-4 text-muted-foreground" />
-              <span className="text-sm font-semibold">تفاصيل الشركات</span>
-              <Badge variant="secondary" className="mr-auto text-xs">{companies.length} شركة</Badge>
+            <div className="px-4 py-3 border-b space-y-2">
+              <div className="flex items-center gap-2">
+                <Building2 className="size-4 text-muted-foreground" />
+                <span className="text-sm font-semibold">تفاصيل الشركات</span>
+                <Badge variant="secondary" className="mr-auto text-xs">{filteredCompanies.length} / {companies.length} شركة</Badge>
+              </div>
+              <div className="relative">
+                <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="ابحث بالاسم أو الـ ID..."
+                  value={productSearch}
+                  onChange={e => setProductSearch(e.target.value)}
+                  className="w-full rounded-lg border bg-background pr-8 pl-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-ring"
+                />
+              </div>
             </div>
-            {companies.length === 0 ? (
+            {filteredCompanies.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
                 <Layers className="size-8 opacity-40" />
-                <p className="text-sm">لا توجد بيانات</p>
+                <p className="text-sm">{companies.length === 0 ? "لا توجد بيانات" : "لا توجد نتائج للبحث"}</p>
               </div>
             ) : (
               <div className="divide-y">
-                {companies.map(c => {
+                {filteredCompanies.map(c => {
                   const pct = c.total > 0 ? Math.round((c.embedded / c.total) * 100) : 100;
                   const isExpanded = expandedCompanies.has(c.company_id);
                   const companyMissing = missingByCompany[c.company_id] ?? [];
+                  const name = companyMap[c.company_id];
                   return (
                     <div key={c.company_id}>
                       <div className="px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors">
@@ -370,7 +442,13 @@ const SuperAdminProductEmbeddings: React.FC = () => {
                             : <CheckCircle className="size-4 text-green-500" />
                           }
                         </button>
-                        <code className="text-xs text-muted-foreground font-mono truncate w-48 shrink-0">{c.company_id}</code>
+                        <div className="w-48 shrink-0">
+                          {name ? (
+                            <p className="text-xs font-medium truncate">{name}</p>
+                          ) : (
+                            <code className="text-xs text-muted-foreground font-mono truncate block">{c.company_id}</code>
+                          )}
+                        </div>
                         <div className="flex-1 space-y-0.5">
                           <div className="flex justify-between text-xs text-muted-foreground">
                             <span>{c.embedded}/{c.total}</span>
@@ -445,7 +523,7 @@ const SuperAdminProductEmbeddings: React.FC = () => {
             </Button>
           </div>
 
-          <JobCard job={kJob} nextSchedule="كل يوم 3:30 ص" />
+          <JobCard job={kJob} scheduleHour={3} scheduleMinute={30} />
 
           {kSummary && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -473,23 +551,36 @@ const SuperAdminProductEmbeddings: React.FC = () => {
           )}
 
           <div className="rounded-xl border bg-card overflow-hidden">
-            <div className="px-4 py-3 border-b flex items-center gap-2">
-              <Building2 className="size-4 text-muted-foreground" />
-              <span className="text-sm font-semibold">تفاصيل الشركات — المعرفة</span>
-              <Badge variant="secondary" className="mr-auto text-xs">{kCompanies.length} شركة</Badge>
+            <div className="px-4 py-3 border-b space-y-2">
+              <div className="flex items-center gap-2">
+                <Building2 className="size-4 text-muted-foreground" />
+                <span className="text-sm font-semibold">تفاصيل الشركات — المعرفة</span>
+                <Badge variant="secondary" className="mr-auto text-xs">{filteredKCompanies.length} / {kCompanies.length} شركة</Badge>
+              </div>
+              <div className="relative">
+                <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="ابحث بالاسم أو الـ ID..."
+                  value={knowledgeSearch}
+                  onChange={e => setKnowledgeSearch(e.target.value)}
+                  className="w-full rounded-lg border bg-background pr-8 pl-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-ring"
+                />
+              </div>
             </div>
-            {kCompanies.length === 0 ? (
+            {filteredKCompanies.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
                 <Layers className="size-8 opacity-40" />
-                <p className="text-sm">لا توجد بيانات — شغّل المزامنة أولاً</p>
+                <p className="text-sm">{kCompanies.length === 0 ? "لا توجد بيانات — شغّل المزامنة أولاً" : "لا توجد نتائج للبحث"}</p>
               </div>
             ) : (
               <div className="divide-y">
-                {kCompanies.map(c => {
+                {filteredKCompanies.map(c => {
                   const totalK = c.total_faqs + c.total_policies;
                   const embeddedK = c.embedded_faqs + c.embedded_policies;
                   const missingK = c.missing_faqs + c.missing_policies;
                   const pct = totalK > 0 ? Math.round((embeddedK / totalK) * 100) : 100;
+                  const name = companyMap[c.company_id];
                   return (
                     <div key={c.company_id} className="px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors">
                       <div className="text-muted-foreground">
@@ -498,7 +589,13 @@ const SuperAdminProductEmbeddings: React.FC = () => {
                           : <AlertCircle className="size-4 text-amber-500" />
                         }
                       </div>
-                      <code className="text-xs text-muted-foreground font-mono truncate w-48 shrink-0">{c.company_id}</code>
+                      <div className="w-48 shrink-0">
+                        {name ? (
+                          <p className="text-xs font-medium truncate">{name}</p>
+                        ) : (
+                          <code className="text-xs text-muted-foreground font-mono truncate block">{c.company_id}</code>
+                        )}
+                      </div>
                       <div className="flex-1 space-y-0.5">
                         <div className="flex justify-between text-xs text-muted-foreground">
                           <span>
