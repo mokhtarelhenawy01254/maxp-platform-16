@@ -5,23 +5,22 @@ describe('SharedDatabase RLS - SQL Injection Fix', () => {
   const sourcePath = path.resolve(__dirname, '../../services/sharedDatabase.js');
   const source = fs.readFileSync(sourcePath, 'utf8');
 
-  it('لا يستخدم String interpolation\'${companyId}\' في SET app.current_company_id', () => {
-    const match = source.match(/SET\s+app\.current_company_id\s*=\s*'\$\{/);
-    expect(match).toBeNull();
+  it('يستخدم set_config() بدلاً من SET لتمرير companyId بشكل آمن', () => {
+    const line = source.split('\n').find(l => l.includes('current_company_id'));
+    expect(line).toBeDefined();
+    expect(line).toContain("set_config('app.current_company_id'");
   });
 
-  it('يستخدم $executeRaw (وليس $executeRawUnsafe) في SET app.current_company_id', () => {
-    const match = source.match(/SET\s+app\.current_company_id/);
-    expect(match).not.toBeNull();
-
+  it('يستخدم $executeRaw (وليس $executeRawUnsafe) مع set_config', () => {
     const line = source.split('\n').find(l => l.includes('current_company_id'));
     expect(line).toContain('$executeRaw');
     expect(line).not.toContain('$executeRawUnsafe');
     expect(line).toContain('${companyId}');
   });
 
-  it('تستخدم القيمة كـ parameter موضعي وليس كـ string مدمج', () => {
-    const line = source.split('\n').find(l => l.includes('current_company_id'));
-    expect(line).toMatch(/set\s+app\.current_company_id\s*=\s*\$\{companyId\}/i);
+  it('لا يستخدم String interpolation مباشرة داخل SQL', () => {
+    // يجب ألا يكون companyId مدمجاً كـ string في الـ SQL
+    const match = source.match(/set_config\([^)]*'\s*\+\s*companyId/);
+    expect(match).toBeNull();
   });
 });
