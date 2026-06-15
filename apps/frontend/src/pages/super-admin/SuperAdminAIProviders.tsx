@@ -17,6 +17,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "../../components/ui/table";
 import { Separator } from "../../components/ui/separator";
+import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "../../components/ui/tooltip";
