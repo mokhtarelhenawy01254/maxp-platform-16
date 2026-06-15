@@ -385,7 +385,7 @@ export default function AppPricingSheet() {
                     {t("subscription.categoryLabel")}
                   </span>
                   <select
-                    className="rounded-lg border border-slate-200 dark:border-slate-805 bg-white dark:bg-slate-950 px-3 py-2 text-sm font-semibold font-cairo focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm font-semibold font-cairo focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
                   >
@@ -630,7 +630,7 @@ export default function AppPricingSheet() {
                     </p>
 
                     {/* Subscription & Usage details grid */}
-                    <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-950/50 rounded-lg p-3 border border-slate-100 dark:border-slate-850">
+                    <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-950/50 rounded-lg p-3 border border-slate-100 dark:border-slate-800">
                       <div>
                         <div className="text-xs text-slate-400 dark:text-slate-500 mb-1 font-cairo">
                           {t("subscription.subscriptionFee")}
@@ -667,7 +667,7 @@ export default function AppPricingSheet() {
                   </CardContent>
                 </div>
 
-                <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-850 flex items-center justify-between mt-auto">
+                <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between mt-auto">
                   {/* Free Trial Indicators */}
                   <div className="text-xs font-semibold font-cairo flex items-center gap-1.5">
                     {app.trialDays > 0 ? (

@@ -53,6 +53,7 @@
   - **Localization**: Added `appPricingSheet` key to both `ar` and `en` sidebar translation files. Fully localized all strings in `AppPricingSheet.tsx` into `appPricing.json` (for both `ar` and `en` locales) and registered the new schema under `i18n/index.ts`.
   - **Data Source**: Fetches live pricing data from `/api/v1/marketplace/apps` endpoint.
   - **Token Manager Fix**: Resolved a duplicate key `hasAccessToken` in `tokenManager.ts` which was causing Vite build failure.
+  - **Styling Fixes**: Resolved non-standard Tailwind slate colors (changed `slate-805` and `slate-850` to standard `slate-800`) in `AppPricingSheet.tsx`.
 - **Files**:
   - `apps/frontend/src/pages/subscription/AppPricingSheet.tsx` [NEW]
   - `apps/frontend/src/pages/subscription/index.ts` [MODIFY]
