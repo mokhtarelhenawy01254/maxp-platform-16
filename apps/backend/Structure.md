@@ -1,3 +1,43 @@
+## [2026-06-15] Competitor Analysis — Development Recommendations (التوصيات التطويرية) with To-Do Tasks
+- **Details**: Added a comprehensive dev recommendations section within the competitor analysis module. Each competitor now has a dedicated "التوصيات التطويرية" area with detailed notes and a full task management system. The section appears after weaknesses in both the add/edit modal and the competitor detail page overview tab.
+- **Architecture**:
+  - **Prisma Models** (`competitors_dev_recommendations.prisma`):
+    - `CompetitorDevRecommendation` — notes text field, linked 1:1 to Competitor via `competitorId` with cascade delete.
+    - `CompetitorDevTask` — title, description, status (not_started/in_progress/completed), targetDate. Linked to `CompetitorDevRecommendation` via `recommendationId` with cascade delete.
+  - **Backend Service** (`competitorDevRecommendationService.js`): Full CRUD for notes and tasks. Every method verifies `companyId` on the Competitor first to enforce data isolation.
+  - **API Endpoints** (under `/competitors/:id/`):
+    - `GET /dev-recommendations` — returns recommendation record with all tasks.
+    - `PUT /dev-recommendations` — upserts the notes text.
+    - `POST /dev-tasks` — creates a new task.
+    - `PUT /dev-tasks/:taskId` — updates a task (title, description, status, targetDate).
+    - `DELETE /dev-tasks/:taskId` — deletes a task.
+  - **Frontend — CompetitorList.tsx**: Added 8-row textarea for dev notes after weaknesses in the add/edit modal. On submit, calls `PUT /dev-recommendations` with notes after the main competitor is created/updated.
+  - **Frontend — CompetitorDetail.tsx**: Added a full dev recommendations section in the overview tab after weaknesses:
+    - Editable notes textarea with "حفظ" (Save) button and saved feedback.
+    - Task statistics pills showing total / not started / in progress / completed counts.
+    - Task list with status icons (Clock/Play/CheckCircle), color badges, inline edit/delete buttons.
+    - Task modal for create/edit with title, description, status dropdown, and target date picker.
+  - **Database Migration**: Created `competitor_dev_recommendations` and `competitor_dev_tasks` tables with indexes and foreign key constraints. Applied via `apply_competitor_dev_recommendations_migration.js` script.
+- **Data Flow**:
+  ```
+  Add/Edit modal → PUT /competitors/:id/dev-recommendations → upsert notes
+  Detail page → GET /competitors/:id/dev-recommendations → load notes + tasks
+  Task CRUD → POST/PUT/DELETE /competitors/:id/dev-tasks → CRUD with companyId isolation
+  ```
+- **Affected Files**:
+  - `apps/backend/prisma/schema/competitors_dev_recommendations.prisma` (new)
+  - `apps/backend/prisma/schema.prisma` — added models + relation
+  - `apps/backend/prisma/schema/competitors.prisma` — added devRecommendations relation
+  - `apps/backend/prisma/schema/migrations/20260615000000_add_competitor_dev_recommendations/migration.sql` (new)
+  - `apps/backend/services/competitorDevRecommendationService.js` (new)
+  - `apps/backend/controller/competitorController.js` — added 5 controller methods
+  - `apps/backend/routes/competitorRoutes.js` — added 5 routes
+  - `apps/backend/scripts/apply_competitor_dev_recommendations_migration.js` (new)
+  - `apps/frontend/src/pages/competitors/CompetitorList.tsx` — added devNotes field + save logic
+  - `apps/frontend/src/pages/competitors/CompetitorDetail.tsx` — added full dev recommendations UI
+  - `apps/frontend/src/locales/ar/sections/competitors.json` — added translation keys
+  - `apps/frontend/src/locales/en/sections/competitors.json` — added translation keys
+
 ## [2026-06-14] Super Admin — Product Embeddings Sync Page + Cron Job
 - **Details**: Added a complete product-embedding management system: a daily cron job that auto-syncs all product embeddings via the Python ai-service, plus a Super Admin page (under AI Models → "تضمينات المنتجات") showing job status, per-company coverage, and a manual trigger button.
 - **Architecture**:

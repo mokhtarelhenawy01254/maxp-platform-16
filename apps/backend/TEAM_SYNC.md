@@ -1,3 +1,34 @@
+## [2026-06-15] Competitor Analysis — Development Recommendations (التوصيات التطويرية) with To-Do Tasks [DONE]
+- **Objective**: Add a structured "Development Recommendations" section to the competitor analysis module, enabling merchants to document detailed improvement notes and track actionable tasks per competitor.
+- **Accomplishments**:
+  - **Prisma Models**: Created `CompetitorDevRecommendation` (notes text, linked 1:1 to Competitor) and `CompetitorDevTask` (title, description, status enum `not_started/in_progress/completed`, targetDate) with cascade delete on both relations.
+  - **Backend Service** (`competitorDevRecommendationService.js`): Full CRUD for upserting notes and managing tasks. Every operation validates companyId ownership to isolate data per competitor.
+  - **API Endpoints**:
+    - `GET /competitors/:id/dev-recommendations` — fetch notes + tasks
+    - `PUT /competitors/:id/dev-recommendations` — upsert notes
+    - `POST /competitors/:id/dev-tasks` — create task
+    - `PUT /competitors/:id/dev-tasks/:taskId` — update task
+    - `DELETE /competitors/:id/dev-tasks/:taskId` — delete task
+  - **Frontend — CompetitorList.tsx**: Added devNotes textarea (8 rows) after weaknesses in the add/edit modal. On submit, notes saved via PUT dev-recommendations.
+  - **Frontend — CompetitorDetail.tsx**: Added full dev recommendations section in overview tab (after weaknesses) with editable notes (save button with feedback), task stats pills (total/not_started/in_progress/completed), task list with status icons and color badges, and a CRUD modal for tasks (title, description, status dropdown, target date picker).
+  - **i18n**: Added ~25 translation keys in both competitors.json (AR/EN) for fields, placeholders, status badges, confirmations, and error/success messages.
+  - **Database Migration**: Created tables, indexes, and foreign keys via migration script `apply_competitor_dev_recommendations_migration.js`. Applied to maxp_dev.
+  - **Documentation**: Updated `Structure.md` with full feature documentation.
+- **Files**:
+  - `apps/backend/prisma/schema/competitors_dev_recommendations.prisma` [NEW]
+  - `apps/backend/prisma/schema.prisma` [MODIFY]
+  - `apps/backend/prisma/schema/competitors.prisma` [MODIFY]
+  - `apps/backend/prisma/schema/migrations/20260615000000_add_competitor_dev_recommendations/migration.sql` [NEW]
+  - `apps/backend/services/competitorDevRecommendationService.js` [NEW]
+  - `apps/backend/controller/competitorController.js` [MODIFY]
+  - `apps/backend/routes/competitorRoutes.js` [MODIFY]
+  - `apps/backend/scripts/apply_competitor_dev_recommendations_migration.js` [NEW]
+  - `apps/frontend/src/pages/competitors/CompetitorList.tsx` [MODIFY]
+  - `apps/frontend/src/pages/competitors/CompetitorDetail.tsx` [MODIFY]
+  - `apps/frontend/src/locales/ar/sections/competitors.json` [MODIFY]
+  - `apps/frontend/src/locales/en/sections/competitors.json` [MODIFY]
+  - `apps/backend/Structure.md` [MODIFY]
+
 ## [2026-06-15] Unified Inbox RTL/LTR Polish & Translation [DONE]
 - **Objective**: Fix layout alignments, dynamic localizations, and RTL/LTR direction mirroring for the Unified Inbox to match the design reference.
 - **Accomplishments**:
