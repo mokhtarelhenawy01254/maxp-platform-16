@@ -1,7 +1,7 @@
 import { t } from "i18next";
 import { Button } from "../../components/ui/button";
 import type { DashboardIntroBandProps } from "./types";
-import { DashboardStatusStrip } from "./index";
+import DashboardStatusStrip from "./DashboardStatusStrip";
 
 export default function DashboardIntroBand({
   activation,

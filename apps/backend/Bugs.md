@@ -15,6 +15,14 @@
 - **Files Fix 2**:
   - `apps/frontend/src/pages/super-admin/SuperAdminAIProviderPriority.tsx`
 
+## [2026-06-15] Dashboard route — Barrel circular dependency (ReferenceError: Cannot access 'sa')
+
+- **Bug/Issue**: The app crashed on load with `ReferenceError: Cannot access 'sa' before initialization` after the super-admin fixes were deployed. This was a remaining TDZ in the dashboard chunk.
+- **Root Cause**: `DashboardIntroBand.tsx` imported `DashboardStatusStrip` from the barrel (`./index`), but the barrel re-exports `DashboardIntroBand` itself. This created a circular import chain: `index.ts` → `DashboardIntroBand` → `./index` → (tries to resolve DashboardStatusStrip before barrel finishes evaluating). The minifier assigned `sa` to the TDZ-locked binding.
+- **Fix**: Changed `import { DashboardStatusStrip } from "./index"` to `import DashboardStatusStrip from "./DashboardStatusStrip"` (direct import of the default export).
+- **Files**:
+  - `apps/frontend/src/pages/dashboard/DashboardIntroBand.tsx`
+
 ## [2026-06-15] translation.json — i18n key additions (merge translations post-rebase)
 
 - **Change**: Added new translation keys to `translation.json` (ar/en) for app pricing and dev recommendations features.
