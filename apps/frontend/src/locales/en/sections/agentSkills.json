@@ -25,5 +25,17 @@
   "directExecution": "Direct Execution",
   "readOnly": "Read",
   "write": "Write",
-  "approval": "Approval"
+  "approval": "Approval",
+  "createSkill": "Create Skill",
+  "dialogCreateTitle": "Create New Skill",
+  "dialogName": "Name",
+  "dialogNamePlaceholder": "Enter skill name",
+  "dialogDescription": "Description",
+  "dialogDescriptionPlaceholder": "Brief description of the skill",
+  "dialogInstructions": "Instructions",
+  "dialogInstructionsPlaceholder": "Write the instructions the agent will execute...",
+  "dialogTools": "Allowed Tools",
+  "dialogPriority": "Priority",
+  "dialogPriorityPlaceholder": "0",
+  "dialogCreating": "Creating..."
 }

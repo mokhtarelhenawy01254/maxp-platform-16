@@ -12,6 +12,7 @@ import {
   Shield,
   Check,
   AlertCircle,
+  Plus,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -93,6 +94,110 @@ function AssignSkillDialog({ open, skillId, agents, onClose, onSaved }: { open: 
   );
 }
 
+function CreateSkillDialog({ open, tools, onClose, onSaved }: { open: boolean; tools: ToolDefinition[]; onClose: () => void; onSaved: () => void }) {
+  const { t } = useTranslation();
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [instructions, setInstructions] = useState("");
+  const [selectedTools, setSelectedTools] = useState<Set<string>>(new Set());
+  const [priority, setPriority] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [toolSearch, setToolSearch] = useState("");
+
+  useEffect(() => { if (open) { setName(""); setDescription(""); setInstructions(""); setSelectedTools(new Set()); setPriority(0); setError(null); setToolSearch(""); } }, [open]);
+
+  const filteredTools = useMemo(() => {
+    if (!toolSearch.trim()) return tools;
+    const q = toolSearch.toLowerCase();
+    return tools.filter((t) => [t.name, t.description].filter(Boolean).some((v) => String(v).toLowerCase().includes(q)));
+  }, [tools, toolSearch]);
+
+  const toggleTool = (tn: string) => setSelectedTools((p) => { const n = new Set(p); if (n.has(tn)) n.delete(tn); else n.add(tn); return n; });
+
+  const handleCreate = async () => {
+    if (!name.trim()) { setError("اسم المهارة مطلوب"); return; }
+    if (!instructions.trim()) { setError("التعليمات مطلوبة"); return; }
+    setSaving(true); setError(null);
+    try {
+      const response = await fetch(buildApiUrl("agent/skills"), {
+        method: "POST",
+        headers: { ...tokenManager.createAuthHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          description: description.trim(),
+          instructions: instructions.trim(),
+          tools: Array.from(selectedTools),
+          priority,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.success === false) throw new Error(data.error || "فشل إنشاء المهارة");
+      toast.success(t("common.saved"));
+      onSaved();
+      onClose();
+    } catch (err: any) {
+      setError(err.message || t("common.saveError"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle><div className="flex items-center gap-2"><Plus className="size-5 text-primary" /><span>{t("agentSkills.dialogCreateTitle")}</span></div></DialogTitle>
+        </DialogHeader>
+        {saving && <div className="h-0.5 w-full animate-pulse bg-primary" />}
+        {error && <Alert variant="destructive"><AlertCircle className="size-4" /><AlertDescription>{error}</AlertDescription></Alert>}
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="mb-1 block text-sm font-bold">{t("agentSkills.dialogName")}</label>
+            <Input placeholder={t("agentSkills.dialogNamePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-bold">{t("agentSkills.dialogDescription")}</label>
+            <Input placeholder={t("agentSkills.dialogDescriptionPlaceholder")} value={description} onChange={(e) => setDescription(e.target.value)} />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-bold">{t("agentSkills.dialogInstructions")}</label>
+            <textarea
+              className="min-h-[120px] w-full rounded-xl border bg-background p-3 text-sm outline-none focus:ring-2 focus:ring-primary"
+              placeholder={t("agentSkills.dialogInstructionsPlaceholder")}
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-bold">{t("agentSkills.dialogTools")}</label>
+            <div className="relative mb-2"><Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input placeholder={t("agentSkills.search")} value={toolSearch} onChange={(e) => setToolSearch(e.target.value)} className="pr-9" /></div>
+            <div className="max-h-[140px] space-y-1 overflow-auto rounded-xl border p-2">
+              {filteredTools.map((tool) => { const checked = selectedTools.has(tool.name); return (
+                <div key={tool.name} onClick={() => toggleTool(tool.name)} className={cn("flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors", checked ? "bg-primary/10 text-primary" : "hover:bg-muted")}>
+                  <div className={cn("flex size-4 shrink-0 items-center justify-center rounded-sm border", checked ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground")}>{checked && <Check className="size-3" />}</div>
+                  <span className="min-w-0 flex-1 truncate font-mono text-xs">{tool.name}</span>
+                </div>); })}
+              {filteredTools.length === 0 && <p className="py-2 text-center text-xs text-muted-foreground">{t("agentSkills.dialogNoResults")}</p>}
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-bold">{t("agentSkills.dialogPriority")}</label>
+            <Input type="number" min={0} placeholder={t("agentSkills.dialogPriorityPlaceholder")} value={priority} onChange={(e) => setPriority(Number(e.target.value) || 0)} className="w-24" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>{t("common.cancel")}</Button>
+          <Button onClick={handleCreate} disabled={saving}>
+            {saving ? <LoadingSpinner size="sm" /> : <Plus className="size-4" />}
+            {saving ? t("agentSkills.dialogCreating") : t("agentSkills.createSkill")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function AgentSkillsPage() {
   const { t } = useTranslation();
   const [skills, setSkills] = useState<SkillDefinition[]>([]);
@@ -100,6 +205,7 @@ export default function AgentSkillsPage() {
   const [agents, setAgents] = useState<AgentDefinition[]>([]);
   const [selected, setSelected] = useState<SkillDefinition | null>(null);
   const [assignSkill, setAssignSkill] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
   const [query, setQuery] = useState(""); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null);
 
   const toolMap = useMemo(() => new Map(tools.map((t) => [t.name, t])), [tools]);
@@ -115,6 +221,7 @@ export default function AgentSkillsPage() {
         subtitle={t("agentSkills.subtitle")}
         icon={<Sparkles className="size-7" />}
         actions={<>
+          <Button onClick={() => setCreateOpen(true)}><Plus className="size-4" />{t("agentSkills.createSkill")}</Button>
           <div className="relative"><Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input placeholder={t("agentSkills.search")} value={query} onChange={(e) => setQuery(e.target.value)} className="w-56 pr-9" /></div>
           <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" onClick={loadAll}>{loading ? <LoadingSpinner size="sm" /> : <RefreshCw className="size-4" />}</Button></TooltipTrigger><TooltipContent>{t("agentSkills.refresh")}</TooltipContent></Tooltip></TooltipProvider>
         </>}
@@ -153,6 +260,7 @@ export default function AgentSkillsPage() {
       </Dialog>
 
       <AssignSkillDialog open={!!assignSkill} skillId={assignSkill || ""} agents={agents} onClose={() => setAssignSkill(null)} onSaved={loadAll} />
+      <CreateSkillDialog open={createOpen} tools={tools} onClose={() => setCreateOpen(false)} onSaved={loadAll} />
     </div>
   );
 }

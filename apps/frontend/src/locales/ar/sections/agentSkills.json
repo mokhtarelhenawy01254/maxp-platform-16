@@ -25,5 +25,17 @@
   "directExecution": "تشغيل مباشر",
   "readOnly": "قراءة",
   "write": "كتابة",
-  "approval": "موافقة"
+  "approval": "موافقة",
+  "createSkill": "مهارة جديدة",
+  "dialogCreateTitle": "إنشاء مهارة جديدة",
+  "dialogName": "الاسم",
+  "dialogNamePlaceholder": "أدخل اسم المهارة",
+  "dialogDescription": "الوصف",
+  "dialogDescriptionPlaceholder": "وصف مختصر للمهارة",
+  "dialogInstructions": "التعليمات",
+  "dialogInstructionsPlaceholder": "اكتب التعليمات التي سينفذها الوكيل...",
+  "dialogTools": "الأدوات المسموحة",
+  "dialogPriority": "الأولوية",
+  "dialogPriorityPlaceholder": "0",
+  "dialogCreating": "جارٍ الإنشاء..."
 }
