@@ -1,3 +1,18 @@
+## [2026-06-15] Competitor Analysis — Dev Recommendations To-Do List UI Transformation [DONE]
+- **Objective**: Transform the "التوصيات التطويرية" section from a plain textarea notes field into a professional inline To-Do list system with checkbox toggle, strikethrough, stats, and real-time save in both the add/edit modal and competitor detail page.
+- **Accomplishments**:
+  - **Backend Toggle Endpoint**: Added `PUT /competitors/:id/dev-tasks/:taskId/toggle` that flips status between `not_started` and `completed` with full companyId isolation.
+  - **CompetitorList.tsx Modal**: Replaced 8-row textarea with an interactive task list. Users add tasks via input + Enter/button. Tasks save immediately in edit mode; held as `pendingTasks` in create mode and saved after competitor creation. Each task has a circle/check toggle, strikethrough when completed, creation date, and hover delete.
+  - **CompetitorDetail.tsx**: Replaced notes textarea + save button with enhanced task section. Stats bar (total/completed/remaining). Quick-add input. Task rows with CheckCircle2/Circle toggle, strikethrough + muted color when completed, date display, hover edit/delete. Optimistic updates for toggle and delete. Simplified task modal (title + description only).
+  - **UX/UI**: Dark/light mode compatible, smooth transitions, hover effects, accessible focus states, empty state with prompt.
+- **Files**:
+  - `apps/backend/services/competitorDevRecommendationService.js` [MODIFY]
+  - `apps/backend/controller/competitorController.js` [MODIFY]
+  - `apps/backend/routes/competitorRoutes.js` [MODIFY]
+  - `apps/frontend/src/pages/competitors/CompetitorList.tsx` [MODIFY]
+  - `apps/frontend/src/pages/competitors/CompetitorDetail.tsx` [MODIFY]
+  - `apps/backend/Structure.md` [MODIFY]
+
 ## [2026-06-15] Competitor Analysis — Development Recommendations (التوصيات التطويرية) with To-Do Tasks [DONE]
 - **Objective**: Add a structured "Development Recommendations" section to the competitor analysis module, enabling merchants to document detailed improvement notes and track actionable tasks per competitor.
 - **Accomplishments**:

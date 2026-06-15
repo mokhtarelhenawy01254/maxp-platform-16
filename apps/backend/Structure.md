@@ -1,3 +1,31 @@
+## [2026-06-15] Competitor Analysis — Dev Recommendations Transformed to Professional To-Do List UI
+- **Details**: Replaced the plain textarea `notes` field in the "التوصيات التطويرية" section with a full professional To-Do list system in both the add/edit modal and the detail page. Users can now add, check/uncheck (toggle), edit, and delete tasks inline with real-time save.
+- **Architecture**:
+  - **Backend Toggle Endpoint**: Added `PUT /:id/dev-tasks/:taskId/toggle` that flips task status between `not_started` and `completed` with companyId ownership verification. Implemented in service (`toggleTask`), controller (`toggleDevTask`), and route.
+  - **Modal (CompetitorList.tsx)**: Textarea replaced with inline To-Do list:
+    - Text input with Enter-key and button to add tasks immediately via API (edit mode) or hold locally as pending tasks (create mode, saved after competitor creation).
+    - Each task shows a Circle/CheckCircle2 toggle button, title text (strikethrough when completed), creation date, and a hover-reveal delete button.
+    - Pending tasks (create mode) shown in blue with a remove button.
+  - **Detail Page (CompetitorDetail.tsx)**: Enhanced To-Do list section:
+    - Stats bar showing Total / Completed / Remaining counts with colored badges.
+    - Quick-add text input with Enter-key and button support.
+    - Each task row: CheckCircle2 (completed) / Circle (pending) toggle, title with line-through + muted color when done, creation date, hover-reveal edit/delete buttons.
+    - Optimistic UI updates on toggle and delete (instant feedback, revert on error).
+    - Empty state with friendly icon and prompt.
+    - Simplified task modal (title + optional description, removed status/targetDate fields since toggle handles state).
+- **Data Flow**:
+  ```
+  Modal (add task) → POST /competitors/:id/dev-tasks → task appears instantly
+  Toggle checkbox → PUT /competitors/:id/dev-tasks/:taskId/toggle → status flips
+  Create competitor → tasks held as pendingTasks → created after POST returns ID
+  ```
+- **Affected Files**:
+  - `apps/backend/services/competitorDevRecommendationService.js` — added toggleTask
+  - `apps/backend/controller/competitorController.js` — added toggleDevTask
+  - `apps/backend/routes/competitorRoutes.js` — added PUT toggle route
+  - `apps/frontend/src/pages/competitors/CompetitorList.tsx` — replaced textarea with To-Do list
+  - `apps/frontend/src/pages/competitors/CompetitorDetail.tsx` — enhanced task UI with checkbox/strikethrough/stats
+
 ## [2026-06-15] Competitor Analysis — Development Recommendations (التوصيات التطويرية) with To-Do Tasks
 - **Details**: Added a comprehensive dev recommendations section within the competitor analysis module. Each competitor now has a dedicated "التوصيات التطويرية" area with detailed notes and a full task management system. The section appears after weaknesses in both the add/edit modal and the competitor detail page overview tab.
 - **Architecture**:
