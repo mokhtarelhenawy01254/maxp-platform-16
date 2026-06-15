@@ -572,7 +572,22 @@
     "acceptTerms": "أوافق على الشروط والأحكام",
     "alreadyHaveAccount": "لديك حساب بالفعل؟",
     "dontHaveAccount": "ليس لديك حساب؟",
-    "backToLogin": "العودة لتسجيل الدخول"
+    "backToLogin": "العودة لتسجيل الدخول",
+    "visualStart": "ابدأ",
+    "visualImmediately": "فوراً",
+    "visualWithout": "بدون",
+    "visualTrialPeriod": "فترة تجريبية"
+  },
+  "register": {
+    "title": "أنشئ حسابك وابدأ فوراً",
+    "description": "أنشئ حسابك وابدأ إدارة أعمالك — بدون فترة تجريبية.",
+    "visualDescription": "كل الأدوات التي تحتاجها لإدارة أعمالك — منصة واحدة.",
+    "visualBadge": "ابدأ الآن",
+    "statsStartLabel": "ابدأ",
+    "statsStartValue": "فوراً",
+    "statsNoLimitLabel": "بدون حد",
+    "statsNoLimitValue": "أساسي",
+    "submit": "إنشاء الحساب"
   },
   "broadcast": {
     "title": "البث",
@@ -1251,6 +1266,13 @@
       "revenueLabel": "الإيرادات",
       "ordersLabel": "الطلبات",
       "empty": "لا توجد بيانات إيرادات للفترة المحددة"
+    },
+    "orderStats": {
+      "title": "حالة الطلبات",
+      "newOrders": "طلبات جديدة",
+      "viewedOrders": "طلبات تمت مراجعتها",
+      "totalOrders": "إجمالي الطلبات",
+      "requiresAttention": "يحتاج متابعة"
     },
     "loading": {
       "title": "جاري تحميل لوحة التحكم",

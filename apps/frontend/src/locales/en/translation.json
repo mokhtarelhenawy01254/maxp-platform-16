@@ -572,7 +572,22 @@
     "acceptTerms": "I accept the Terms and Conditions",
     "alreadyHaveAccount": "Already have an account?",
     "dontHaveAccount": "Don't have an account?",
-    "backToLogin": "Back to Login"
+    "backToLogin": "Back to Login",
+    "visualStart": "Start",
+    "visualImmediately": "instantly",
+    "visualWithout": "without",
+    "visualTrialPeriod": "trial period"
+  },
+  "register": {
+    "title": "Create your account",
+    "description": "Create your account and start managing your business — no trial period.",
+    "visualDescription": "All the tools you need to run your business — one platform.",
+    "visualBadge": "Start now",
+    "statsStartLabel": "Start",
+    "statsStartValue": "instantly",
+    "statsNoLimitLabel": "No limits",
+    "statsNoLimitValue": "basic plan",
+    "submit": "Create account"
   },
   "broadcast": {
     "title": "Broadcast",
