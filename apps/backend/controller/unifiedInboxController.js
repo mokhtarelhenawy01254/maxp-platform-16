@@ -519,10 +519,15 @@ const sendUnifiedMessage = async (req, res) => {
         }
 
         const { id } = req.params;
-        const { content, type = 'text', platform, sessionId, jid, quotedMessageId } = req.body;
+        const { content, type = 'text', platform, sessionId, jid, quotedMessageId, mediaUrl, mediaFileName } = req.body;
 
-        if (!content) {
+        const isMedia = type.toLowerCase() !== 'text';
+
+        if (!isMedia && !content) {
             return res.status(400).json({ success: false, message: 'Message content is required' });
+        }
+        if (isMedia && !mediaUrl) {
+            return res.status(400).json({ success: false, message: 'Media URL is required for file attachments' });
         }
 
         const prisma = getSharedPrismaClient();
@@ -548,20 +553,35 @@ const sendUnifiedMessage = async (req, res) => {
 
             // Use WhatsApp service to send
             const WhatsAppMessageHandler = require('../services/whatsapp/WhatsAppMessageHandler');
-            const message = await WhatsAppMessageHandler.sendText(sessionId, jid, content, {
-                quotedMessageId
-            });
+            let message;
+
+            if (!isMedia) {
+                message = await WhatsAppMessageHandler.sendText(sessionId, jid, content, {
+                    quotedMessageId
+                });
+            } else if (type.toLowerCase() === 'image') {
+                message = await WhatsAppMessageHandler.sendImage(sessionId, jid, mediaUrl, content || '');
+            } else if (type.toLowerCase() === 'video') {
+                message = await WhatsAppMessageHandler.sendVideo(sessionId, jid, mediaUrl, content || '');
+            } else if (type.toLowerCase() === 'audio') {
+                message = await WhatsAppMessageHandler.sendAudio(sessionId, jid, mediaUrl);
+            } else {
+                message = await WhatsAppMessageHandler.sendDocument(sessionId, jid, mediaUrl, { caption: content || '' });
+            }
 
             return res.json({
                 success: true,
                 data: {
                     id: message?.id || Date.now().toString(),
                     platform: 'whatsapp',
-                    content,
-                    type: 'text',
+                    content: !isMedia ? content : (content || mediaUrl),
+                    type: type.toLowerCase(),
                     isFromCustomer: false,
                     timestamp: new Date(),
-                    status: 'sent'
+                    status: 'sent',
+                    mediaUrl: isMedia ? mediaUrl : null,
+                    mediaType: isMedia ? type.toLowerCase() : null,
+                    mediaFileName: isMedia ? (mediaFileName || 'file') : null
                 }
             });
         }
@@ -577,15 +597,25 @@ const sendUnifiedMessage = async (req, res) => {
         }
 
         // Create message in database
+        const messageData = {
+            conversationId: id,
+            senderId: userId,
+            type: type.toUpperCase(),
+            content: !isMedia ? content : (content || mediaUrl),
+            isFromCustomer: false,
+            isRead: true
+        };
+
+        if (isMedia && mediaUrl) {
+            messageData.attachments = JSON.stringify([{
+                type: type.toLowerCase(),
+                url: mediaUrl,
+                name: mediaFileName || 'file'
+            }]);
+        }
+
         const message = await prisma.message.create({
-            data: {
-                conversationId: id,
-                senderId: userId,
-                type: type.toUpperCase(),
-                content,
-                isFromCustomer: false,
-                isRead: true
-            }
+            data: messageData
         });
 
         // Update conversation
@@ -593,7 +623,7 @@ const sendUnifiedMessage = async (req, res) => {
             where: { id },
             data: {
                 lastMessageAt: new Date(),
-                lastMessagePreview: content.substring(0, 100),
+                lastMessagePreview: !isMedia ? content.substring(0, 100) : (type.toLowerCase() === 'image' ? '📷 صورة' : `📎 ${mediaFileName || 'ملف'}`),
                 lastMessageIsFromCustomer: false,
                 updatedAt: new Date()
             }
@@ -604,33 +634,57 @@ const sendUnifiedMessage = async (req, res) => {
             try {
                 let metadata = {};
                 try { metadata = conversation.metadata ? JSON.parse(conversation.metadata) : {}; } catch (e) { }
-                const facebookApi = require('../services/facebookApi');
-                if (facebookApi && facebookApi.sendMessage && conversation.customer?.facebookId) {
-                    await facebookApi.sendMessage(
+                
+                let actualPageId = metadata.pageId || conversation.facebookPageId || null;
+                let pageAccessToken = metadata.pageAccessToken || null;
+
+                if (!pageAccessToken && actualPageId) {
+                    const { getPageToken } = require('./conversation/conversationShared');
+                    const pageTokenData = await getPageToken(actualPageId);
+                    pageAccessToken = pageTokenData?.pageAccessToken || null;
+                }
+
+                if (!pageAccessToken) {
+                    const facebookPage = await prisma.facebookPage.findFirst({
+                        where: { companyId, status: 'connected' }
+                    });
+                    if (facebookPage) {
+                        actualPageId = facebookPage.pageId;
+                        pageAccessToken = facebookPage.pageAccessToken;
+                    }
+                }
+
+                if (pageAccessToken && conversation.customer?.facebookId) {
+                    const { sendProductionFacebookMessage } = require('../utils/production-facebook-fix');
+                    const payload = !isMedia ? content : mediaUrl;
+                    await sendProductionFacebookMessage(
                         conversation.customer.facebookId,
-                        content,
-                        metadata.pageAccessToken || null
+                        payload,
+                        type.toUpperCase(),
+                        actualPageId,
+                        pageAccessToken
                     );
                 }
             } catch (fbErr) {
                 console.error('⚠️ [UNIFIED] Facebook send error:', fbErr.message);
-                // Message saved in DB, but FB delivery may have failed
             }
         } else if (conversation.channel === 'TELEGRAM') {
             try {
-                let metadata = {};
-                try { metadata = conversation.metadata ? JSON.parse(conversation.metadata) : {}; } catch (e) { }
                 const telegramBotService = require('../services/TelegramBotService');
-                if (telegramBotService && metadata.chatId) {
-                    await telegramBotService.sendMessage(companyId, metadata.chatId, content);
+                const options = {};
+                if (isMedia) {
+                    options.type = type.toLowerCase() === 'image' ? 'photo' : type.toLowerCase();
+                    options.fileUrl = mediaUrl;
+                    if (type.toLowerCase() === 'image') {
+                        options.imageUrls = [mediaUrl];
+                    }
                 }
+                await telegramBotService.sendReply(id, content || '', options);
             } catch (tgErr) {
                 console.error('⚠️ [UNIFIED] Telegram send error:', tgErr.message);
             }
         } else if (conversation.channel === 'INSTAGRAM') {
             try {
-                let metadata = {};
-                try { metadata = conversation.metadata ? JSON.parse(conversation.metadata) : {}; } catch (e) { }
                 const igPage = await prisma.facebookPage.findFirst({
                     where: { companyId, instagramAccountId: { not: null } },
                     select: { pageAccessToken: true, instagramAccountId: true }
@@ -638,9 +692,19 @@ const sendUnifiedMessage = async (req, res) => {
                 if (igPage?.pageAccessToken && igPage?.instagramAccountId && conversation.customer?.instagramId) {
                     const axios = require('axios');
                     const IG_GRAPH_API = `https://graph.facebook.com/v22.0/${igPage.instagramAccountId}/messages`;
+                    
+                    const messagePayload = !isMedia
+                        ? { text: content }
+                        : {
+                            attachment: {
+                                type: type.toLowerCase() === 'image' ? 'image' : 'file',
+                                payload: { url: mediaUrl }
+                            }
+                        };
+
                     await axios.post(IG_GRAPH_API, {
                         recipient: { id: conversation.customer.instagramId },
-                        message: { text: content },
+                        message: messagePayload,
                         access_token: igPage.pageAccessToken
                     }, { timeout: 15000 });
                 }
@@ -658,7 +722,10 @@ const sendUnifiedMessage = async (req, res) => {
                 type: message.type?.toLowerCase(),
                 isFromCustomer: false,
                 timestamp: message.createdAt,
-                status: 'sent'
+                status: 'sent',
+                mediaUrl: isMedia ? mediaUrl : null,
+                mediaType: isMedia ? type.toLowerCase() : null,
+                mediaFileName: isMedia ? (mediaFileName || 'file') : null
             }
         });
 
