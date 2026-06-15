@@ -1,6 +1,4 @@
-import React from "react";
-
-const SuperAdminAIProviders = React.lazy(() => import("./SuperAdminAIProviders"));
+import SuperAdminAIProviders from "./SuperAdminAIProviders";
 
 const SuperAdminAIProviderPriority = () => (
   <SuperAdminAIProviders initialTab="priority" standalonePriority />

@@ -1,9 +1,9 @@
-## [2026-06-15] CompanyDetails sections — Circular dependency crash (ReferenceError: Cannot access 'ea')
+## [2026-06-15] SuperAdmin route chunk — Two TDZ crash fixes (ReferenceError: Cannot access 'ea')
 
-- **Bug/Issue**: Navigating to super-admin company details page (and products page when super-admin chunk loaded) threw `ReferenceError: Cannot access 'ea' before initialization` in the browser console.
-- **Root Cause**: The `company-details/index.js` barrel file re-exported from 8 submodules that each imported shared components (MiniStat, SectionShell, EmptyState, etc.) back from `./index`. This created circular import chains that Rollup could not resolve, causing Temporal Dead Zone (TDZ) access on the minified `ea` variable.
-- **Fix**: Replaced all 8 `import { ... } from "./index"` with direct imports from the actual source files (e.g., `import { MiniStat } from "./MiniStat"`, `import { SectionShell } from "./SectionShell"`), breaking the circular dependency.
-- **Files**:
+- **Bug/Issue**: `route-super-admin` chunk threw `ReferenceError: Cannot access 'ea' before initialization` in the browser console, crashing the entire app on load.
+- **Fix 1 — CompanyDetails circular dependency**: The `company-details/index.js` barrel file re-exported from 8 submodules that each imported shared components (MiniStat, SectionShell, EmptyState, etc.) back from `./index`. This created circular import chains that Rollup could not resolve. Replaced all `import { ... } from "./index"` with direct imports from source files.
+- **Fix 2 — Same-chunk dynamic import TDZ**: `SuperAdminAIProviderPriority.tsx` used `React.lazy(() => import("./SuperAdminAIProviders"))` to dynamically import a module in the same `route-super-admin` chunk. Since `manualChunks` puts both `.tsx` files in the same chunk, Rollup cannot create a separate lazy chunk — the dynamic import evaluates eagerly inside the module wrapping, and the target module's export (`ea` after minification) is accessed before initialization. Replaced `React.lazy` with a direct static import since both files are already in the same eagerly-loaded chunk.
+- **Files Fix 1**:
   - `apps/frontend/src/pages/super-admin/company-details/CompanyActivationCenter.jsx`
   - `apps/frontend/src/pages/super-admin/company-details/CompanyBillingSection.jsx`
   - `apps/frontend/src/pages/super-admin/company-details/CompanyHeroCard.jsx`
@@ -12,6 +12,8 @@
   - `apps/frontend/src/pages/super-admin/company-details/CompanyTeamSection.jsx`
   - `apps/frontend/src/pages/super-admin/company-details/CompanyUsageSection.jsx`
   - `apps/frontend/src/pages/super-admin/company-details/CompanyWalletSection.jsx`
+- **Files Fix 2**:
+  - `apps/frontend/src/pages/super-admin/SuperAdminAIProviderPriority.tsx`
 
 ## [2026-06-15] translation.json — i18n key additions (merge translations post-rebase)
 
