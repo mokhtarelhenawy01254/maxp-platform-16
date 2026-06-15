@@ -20,6 +20,7 @@ import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import { apiClient } from "../../services/apiClient";
 import { socketService } from "../../services/socketService";
 import { useTranslation } from "react-i18next";
+import EmojiPicker from "emoji-picker-react";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📋 Types
@@ -187,11 +188,15 @@ const UnifiedInbox: React.FC = () => {
   const [showProfilePanel, setShowProfilePanel] = useState(true);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [quickReplies, setQuickReplies] = useState<any[]>([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<{ url: string; name: string; type: string } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -326,8 +331,53 @@ const UnifiedInbox: React.FC = () => {
     [loadMessages, loadCustomerProfile],
   );
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingFile(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await apiClient.post("/api/v1/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.data?.success || response.data?.filePath) {
+        const filePath = response.data.filePath;
+        const fullUrl = response.data.fullUrl || `${window.location.origin}${filePath}`;
+        
+        let type = "document";
+        if (file.type.startsWith("image/")) {
+          type = "image";
+        } else if (file.type.startsWith("video/")) {
+          type = "video";
+        } else if (file.type.startsWith("audio/")) {
+          type = "audio";
+        }
+
+        setAttachedFile({
+          url: fullUrl,
+          name: file.name,
+          type: type,
+        });
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
   const handleSendMessage = async () => {
-    if (!selectedConversation || !newMessage.trim()) return;
+    if (!selectedConversation) return;
+    if (!newMessage.trim() && !attachedFile) return;
 
     setSending(true);
     try {
@@ -335,6 +385,12 @@ const UnifiedInbox: React.FC = () => {
         content: newMessage.trim(),
         platform: selectedConversation.platform,
       };
+
+      if (attachedFile) {
+        body.type = attachedFile.type;
+        body.mediaUrl = attachedFile.url;
+        body.mediaFileName = attachedFile.name;
+      }
 
       if (selectedConversation.metadata?.["sessionId"]) {
         body.sessionId = selectedConversation.metadata["sessionId"];
@@ -352,6 +408,7 @@ const UnifiedInbox: React.FC = () => {
       if (response.data?.success) {
         setMessages((prev) => [...prev, response.data.data]);
         setNewMessage("");
+        setAttachedFile(null);
         setTimeout(() => scrollToBottom(), 100);
 
         // Update conversation preview
@@ -360,7 +417,9 @@ const UnifiedInbox: React.FC = () => {
             c.id === selectedConversation.id
               ? {
                   ...c,
-                  lastMessage: newMessage.trim(),
+                  lastMessage: attachedFile
+                    ? (attachedFile.type === "image" ? "📷 صورة" : `📎 ${attachedFile.name}`)
+                    : newMessage.trim(),
                   lastMessageTime: new Date().toISOString(),
                   lastMessageIsFromCustomer: false,
                 }
@@ -982,8 +1041,52 @@ const UnifiedInbox: React.FC = () => {
                 </div>
               )}
 
+              {/* Attachment Preview */}
+              {attachedFile && (
+                <div className="px-5 py-2 flex items-center gap-2" style={{ borderTop: '1px solid var(--business-card-border)', background: 'color-mix(in srgb, var(--color-primary) 5%, var(--color-background))' }}>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {attachedFile.type === 'image' ? (
+                      <img src={attachedFile.url} alt={attachedFile.name} className="w-10 h-10 rounded-lg object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'color-mix(in srgb, var(--color-primary) 15%, white)' }}>
+                        <PaperClipIcon className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate" style={{ color: 'var(--color-foreground)' }}>{attachedFile.name}</p>
+                      <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>{attachedFile.type}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setAttachedFile(null)} className="business-chip-button shrink-0">
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Emoji Picker */}
+              {showEmojiPicker && (
+                <div className="px-5 py-2" style={{ borderTop: '1px solid var(--business-card-border)' }}>
+                  <EmojiPicker
+                    onEmojiClick={(emojiData: any) => {
+                      setNewMessage((prev: string) => prev + emojiData.emoji);
+                      setShowEmojiPicker(false);
+                    }}
+                    width="100%"
+                    height={350}
+                  />
+                </div>
+              )}
+
               {/* Message Input */}
               <div className="business-chat-composer px-5 py-3">
+                {/* Hidden file input */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
+                />
                 <div className="flex items-center gap-2">
                   {/* Actions */}
                   <div className="flex items-center gap-0.5">
@@ -995,13 +1098,16 @@ const UnifiedInbox: React.FC = () => {
                       <BoltIcon className="w-5 h-5" />
                     </button>
                     <button
-                      className="business-chip-button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`business-chip-button ${uploadingFile ? 'animate-pulse' : ''}`}
                       title={t("unifiedInbox.attachFile")}
+                      disabled={uploadingFile}
                     >
                       <PaperClipIcon className="w-5 h-5" />
                     </button>
                     <button
-                      className="business-chip-button"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      className={`business-chip-button ${showEmojiPicker ? 'text-primary' : ''}`}
                       title={t("unifiedInbox.emoji")}
                     >
                       <FaceSmileIcon className="w-5 h-5" />
@@ -1020,20 +1126,20 @@ const UnifiedInbox: React.FC = () => {
                           handleSendMessage();
                         }
                       }}
-                      placeholder={t("unifiedInbox.inputPlaceholder", {
+                      placeholder={uploadingFile ? "جاري رفع الملف..." : t("unifiedInbox.inputPlaceholder", {
                         platform: t(`unifiedInbox.platforms.${selectedConversation.platform}`, {
                           defaultValue: platformStyles[selectedConversation.platform]?.label || t("common.platform")
                         }),
                       })}
                       className="business-chat-input"
-                      disabled={sending}
+                      disabled={sending || uploadingFile}
                     />
                   </div>
 
                   {/* Send */}
                   <button
                     onClick={handleSendMessage}
-                    disabled={!newMessage.trim() || sending}
+                    disabled={(!newMessage.trim() && !attachedFile) || sending || uploadingFile}
                     className="business-icon-button text-white p-2.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
                     style={{
                       background:
