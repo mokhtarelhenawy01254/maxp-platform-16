@@ -1,3 +1,20 @@
+## [2026-06-15] Competitor Analysis — Dev Recommendations Clean UI: Removed Trash/Delete Icon, Added Smooth Animations
+- **Details**: Removed the Trash2 (delete) icon entirely from the dev recommendations To-Do list in both the modal and detail page. The delete button and its hover-reveal behavior (`opacity-0 group-hover:opacity-100`) are gone. All related code (`handleDeleteTask`, `deleteTask` function) removed. Added smooth `transition-all duration-300 ease-in-out` animations on task rows, checkbox toggle (Circle↔CheckCircle2), and strikethrough text. Checkbox button includes `active:scale-90` press feedback.
+- **Architecture**:
+  - **Modal (CompetitorList.tsx)**:
+    - Removed Trash2 button from pending tasks (create mode) and loaded tasks (edit mode).
+    - Removed `handleDeleteTask` function entirely.
+    - Added `transition-all duration-300 ease-in-out` on task rows, checkboxes, and title text.
+  - **Detail Page (CompetitorDetail.tsx)**:
+    - Removed Trash2 button from task rows (the edit Pencil icon remains).
+    - Removed `deleteTask` function and its optimistic update logic.
+    - Removed `Trash2` from lucide-react import.
+    - Added `transition-all duration-300 ease-in-out` on task rows, `transform transition-transform duration-200 active:scale-90` on checkbox button for tactile feedback.
+  - **UX Result**: Clean interface relying only on the checkbox system (Circle → CheckCircle2) for task management. Tasks can be added and toggled but not deleted — when a task is completed it shows strikethrough + muted color.
+- **Affected Files**:
+  - `apps/frontend/src/pages/competitors/CompetitorList.tsx` — removed delete button + handler, added smooth transitions
+  - `apps/frontend/src/pages/competitors/CompetitorDetail.tsx` — removed delete button + handler + Trash2 import, added smooth animations
+
 ## [2026-06-15] Competitor Analysis — Dev Recommendations Transformed to Professional To-Do List UI
 - **Details**: Replaced the plain textarea `notes` field in the "التوصيات التطويرية" section with a full professional To-Do list system in both the add/edit modal and the detail page. Users can now add, check/uncheck (toggle), edit, and delete tasks inline with real-time save.
 - **Architecture**:

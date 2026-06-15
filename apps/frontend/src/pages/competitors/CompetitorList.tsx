@@ -150,16 +150,6 @@ const CompetitorList: React.FC = () => {
     }
   };
 
-  const handleDeleteTask = (task: DevTask) => {
-    if (editingId) {
-      apiClient.delete(`/competitors/${editingId}/dev-tasks/${task.id}`).then(() => {
-        setDevTasks(prev => prev.filter(t => t.id !== task.id));
-      }).catch(() => {});
-    } else {
-      setPendingTasks(prev => prev.filter(t => t !== task.title));
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) {
@@ -504,32 +494,39 @@ const CompetitorList: React.FC = () => {
                   </div>
                   <div className="max-h-48 overflow-y-auto space-y-1">
                     {pendingTasks.map((title, idx) => (
-                      <div key={`pending-${idx}`} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-sm group">
+                      <div key={`pending-${idx}`} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-sm transition-all duration-300">
                         <Circle size={14} className="text-gray-300 shrink-0" />
                         <span className="flex-1">{title}</span>
-                        <button type="button" onClick={() => setPendingTasks(prev => prev.filter((_, i) => i !== idx))} className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900">
-                          <Trash2 size={12} className="text-red-400" />
-                        </button>
                       </div>
                     ))}
                     {(editingId ? devTasks : []).map(task => (
-                      <div key={task.id} className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm group transition-colors ${task.status === 'completed' ? 'bg-green-50 dark:bg-green-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                        <button type="button" onClick={() => handleToggleTask(task)} className="shrink-0">
+                      <div
+                        key={task.id}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-all duration-300 ease-in-out ${
+                          task.status === 'completed'
+                            ? 'bg-green-50 dark:bg-green-900/20'
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                        }`}
+                      >
+                        <button type="button" onClick={() => handleToggleTask(task)} className="shrink-0 focus:outline-none">
                           {task.status === 'completed' ? (
-                            <CheckCircle2 size={16} className="text-green-500" />
+                            <CheckCircle2 size={16} className="text-green-500 transition-all duration-300 hover:text-green-600" />
                           ) : (
-                            <Circle size={16} className="text-gray-300 hover:text-blue-400" />
+                            <Circle size={16} className="text-gray-300 dark:text-gray-600 transition-all duration-300 hover:text-blue-400" />
                           )}
                         </button>
-                        <span className={`flex-1 ${task.status === 'completed' ? 'line-through text-gray-400 dark:text-gray-500' : ''}`}>
+                        <span
+                          className={`flex-1 transition-all duration-300 ease-in-out ${
+                            task.status === 'completed'
+                              ? 'line-through text-gray-400 dark:text-gray-500'
+                              : 'text-gray-800 dark:text-gray-200'
+                          }`}
+                        >
                           {task.title}
                         </span>
                         <span className="text-[10px] text-gray-400 hidden sm:inline">
                           {new Date(task.createdAt).toLocaleDateString()}
                         </span>
-                        <button type="button" onClick={() => handleDeleteTask(task)} className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900 transition-opacity">
-                          <Trash2 size={12} className="text-red-400" />
-                        </button>
                       </div>
                     ))}
                     {((editingId ? devTasks : []).length === 0 && pendingTasks.length === 0) && (

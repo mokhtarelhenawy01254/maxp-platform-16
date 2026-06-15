@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, RefreshCw, BarChart2, TrendingUp, Scale, History, Settings, Instagram, Share2, Crosshair, Lightbulb, Plus, Pencil, Trash2, X, AlertTriangle, CheckCircle2, Circle } from 'lucide-react';
+import { ArrowLeft, ExternalLink, RefreshCw, BarChart2, TrendingUp, Scale, History, Settings, Instagram, Share2, Crosshair, Lightbulb, Plus, Pencil, X, AlertTriangle, CheckCircle2, Circle } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import CompetitorFeatures from './CompetitorFeatures';
 
@@ -161,13 +161,6 @@ const CompetitorDetail: React.FC = () => {
     } catch {
       setTaskError(editingTask ? 'Failed to update task' : 'Failed to create task');
     }
-  };
-
-  const deleteTask = async (taskId: string) => {
-    if (!id) return;
-    if (!confirm(t('competitors.devRecommendations.confirmDelete'))) return;
-    setDevRec(prev => prev ? { ...prev, tasks: prev.tasks.filter(t => t.id !== taskId) } : prev);
-    apiClient.delete(`/competitors/${id}/dev-tasks/${taskId}`).catch(() => fetchDevRecommendations());
   };
 
   const generateReport = async (type: string) => {
@@ -379,7 +372,7 @@ const CompetitorDetail: React.FC = () => {
                 {devRec.tasks.map(task => (
                   <div
                     key={task.id}
-                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 ${
+                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-300 ease-in-out border border-transparent hover:border-gray-200 dark:hover:border-gray-700 ${
                       task.status === 'completed'
                         ? 'bg-green-50/50 dark:bg-green-900/10'
                         : 'hover:bg-gray-50 dark:hover:bg-gray-800/30'
@@ -387,19 +380,19 @@ const CompetitorDetail: React.FC = () => {
                   >
                     <button
                       onClick={() => handleToggleTask(task)}
-                      className="shrink-0 focus:outline-none"
+                      className="shrink-0 focus:outline-none transform transition-transform duration-200 active:scale-90"
                       title={task.status === 'completed' ? t('competitors.devRecommendations.statuses.not_started') : t('competitors.devRecommendations.statuses.completed')}
                     >
                       {task.status === 'completed' ? (
-                        <CheckCircle2 size={20} className="text-green-500 transition-all duration-200 hover:text-green-600" />
+                        <CheckCircle2 size={20} className="text-green-500 transition-all duration-300 ease-in-out hover:text-green-600" />
                       ) : (
-                        <Circle size={20} className="text-gray-300 dark:text-gray-600 hover:text-blue-400 transition-all duration-200" />
+                        <Circle size={20} className="text-gray-300 dark:text-gray-600 transition-all duration-300 ease-in-out hover:text-blue-400" />
                       )}
                     </button>
 
                     <div className="flex-1 min-w-0">
                       <span
-                        className={`text-sm block transition-all duration-200 ${
+                        className={`text-sm block transition-all duration-300 ease-in-out ${
                           task.status === 'completed'
                             ? 'line-through text-gray-400 dark:text-gray-500'
                             : 'text-gray-800 dark:text-gray-200'
@@ -412,20 +405,13 @@ const CompetitorDetail: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                    <div className="flex gap-0.5">
                       <button
                         onClick={() => openEditTask(task)}
-                        className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                        className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
                         title={t('competitors.devRecommendations.editTask')}
                       >
                         <Pencil size={14} className="text-gray-400" />
-                      </button>
-                      <button
-                        onClick={() => deleteTask(task.id)}
-                        className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900"
-                        title={t('competitors.devRecommendations.deleteTask')}
-                      >
-                        <Trash2 size={14} className="text-red-400" />
                       </button>
                     </div>
                   </div>
