@@ -1,9 +1,15 @@
 ## [2026-06-15] SuperAdminAIProviderPriority — Circular dependency crash
 
-- **Bug/Issue**: Navigating to `/super-admin/ai-providers/provider-priority` threw `ReferenceError: Cannot access 'Y' before initialization` in the browser console.
-- **Root Cause**: `SuperAdminAIProviderPriority.tsx` imported `SuperAdminAIProviders` via a static (direct) import while both components were also being lazy-loaded in `App.tsx`. This created a circular dependency in the Vite chunk graph, causing the export to be referenced before it was initialized.
-- **Fix**: Replaced the static import with `React.lazy(() => import(...))` inside `SuperAdminAIProviderPriority.tsx`, breaking the circular dependency.
-- **Files**: `apps/frontend/src/pages/SuperAdminAIProviderPriority.tsx`
+- **Bug/Issue**: Navigating to `/super-admin/ai-providers/provider-priority` threw `ReferenceError: Cannot access 'Y' before initialization` in the browser console. The error also appeared on the products route when the SuperAdminAIProviders chunk was loaded.
+- **Root Cause**: `SuperAdminAIProviders.tsx` and related SuperAdminAI pages were placed directly in `src/pages/` instead of `src/pages/super-admin/`. Because the Vite `manualChunks` configuration only matches subdirectories (e.g., `/src/pages/super-admin/`), these files did not match any route chunk rule, causing Vite/Rollup to create chunk boundaries that introduced a circular dependency in the module graph.
+- **Fix**: Moved all SuperAdminAI pages (`SuperAdminAIProviders`, `SuperAdminAIProviderPriority`, `SuperAdminAIProviderLogs`, `SuperAdminAIKeyDetails`, `SuperAdminAIPlayground`) from `src/pages/` to `src/pages/super-admin/`. This ensures they match the `route-super-admin` manualChunks rule, are properly grouped with other super-admin pages, and the chunk graph no longer has circular references.
+- **Files**:
+  - `apps/frontend/src/pages/super-admin/SuperAdminAIProviders.tsx`
+  - `apps/frontend/src/pages/super-admin/SuperAdminAIProviderPriority.tsx`
+  - `apps/frontend/src/pages/super-admin/SuperAdminAIProviderLogs.tsx`
+  - `apps/frontend/src/pages/super-admin/SuperAdminAIKeyDetails.tsx`
+  - `apps/frontend/src/pages/super-admin/SuperAdminAIPlayground.tsx`
+  - `apps/frontend/src/App.tsx` (updated import paths)
 
 ## [2026-06-15] AgentSkillsPage — Hardcoded Arabic strings
 
