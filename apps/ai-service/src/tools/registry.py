@@ -23,6 +23,7 @@ from src.tools import (
     product_tools,
     sales_tools,
 )
+from src.tools.knowledge_search import knowledge_search as _knowledge_search_fn
 from src.tools.names import canonical_tool_name
 from src.tools.vector_product_search import vector_product_search
 
@@ -1221,6 +1222,37 @@ async def scheduler_create_job(input_data: SchedulerCreateJobInput) -> dict[str,
     }, input_data.company_id or "")
 
 
+class KnowledgeSearchInput(BaseModel):
+    query: str = Field(description="Natural-language question or topic to search for in company FAQs and policies")
+    source_type: str | None = Field(default=None, description="Filter: 'faq', 'policy', or omit for both")
+    limit: int = Field(default=5, description="Max results to return")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+async def knowledge_search(input_data: KnowledgeSearchInput) -> dict[str, Any]:
+    results = await _knowledge_search_fn(
+        company_id=input_data.company_id or "",
+        query=input_data.query,
+        source_type=input_data.source_type,
+        limit=input_data.limit,
+    )
+    if not results:
+        return {"found": False, "results": [], "message": "لم يتم العثور على معلومات ذات صلة في قاعدة المعرفة."}
+    return {"found": True, "results": results, "count": len(results)}
+
+
+knowledge_search_tool = FunctionTool(
+    name="knowledge_search",
+    description=(
+        "Search the company's knowledge base (FAQs and policies) using semantic similarity. "
+        "Use this to answer questions about store policies, shipping rules, return procedures, "
+        "or any topic a customer might ask that isn't about a specific product or order."
+    ),
+    func=knowledge_search,
+    input_model=KnowledgeSearchInput,
+)
+
+
 async def knowledge_create_faq(input_data: KnowledgeCreateFaqInput) -> dict[str, Any]:
     return _write_result("knowledge.create_faq", {
         "question": input_data.question,
@@ -1440,6 +1472,7 @@ CORE_TOOLS: list[FunctionTool] = [
     inventory_check_tool,
     customer_info_tool,
     shipping_rates_tool,
+    knowledge_search_tool,
     agent_handoff_to_tool,
     unlock_advanced_tools_tool,
 ]
@@ -1522,6 +1555,7 @@ ROLE_TOOLS: dict[str, list[str]] = {
         "customer_info",
         "shipping_rates",
         "shipping_update",
+        "knowledge_search",
         "whatsapp_send",
         "agent_handoff_to",
     ],
@@ -1574,6 +1608,7 @@ ROLE_TOOLS: dict[str, list[str]] = {
         "order_create_draft",
         "order_create_confirmed",
         "shipping_rates",
+        "knowledge_search",
         "facebook_reply",
         "agent_handoff_to",
     ],

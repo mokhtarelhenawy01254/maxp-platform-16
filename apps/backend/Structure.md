@@ -1,3 +1,28 @@
+## [2026-06-15] AI — Knowledge Embeddings (FAQs & Policies Semantic Search)
+- **Details**: Added full semantic search for company knowledge base (FAQs and policies) via a new `ai.knowledge_embeddings` pgvector table. The AI agent can now answer customer questions about store policies, shipping, returns, and FAQs using vector similarity search instead of exact keyword matching. Daily cron job backfills at 03:30 Cairo time. Super Admin page updated to show both product and knowledge embedding sections.
+- **Architecture**:
+  - **DB Migration** (`apps/ai-service/migrations/versions/0013_knowledge_embeddings.py`): Creates `ai.knowledge_embeddings` table with `vector(768)` column, UNIQUE constraint on `(source_id, source_type)`, IVFFlat index for cosine similarity, and btree index on `company_id`.
+  - **Python tool** (`apps/ai-service/src/tools/knowledge_search.py`): `knowledge_search(company_id, query, source_type, limit)` — generates 768-dim embedding via `EpisodicMemoryService`, queries `ai.knowledge_embeddings` with `<=>` cosine operator, filters at `min_score=0.35`, returns `[{source_type, title, content, category, score}]`.
+  - **Tool registration** (`apps/ai-service/src/tools/registry.py`): `KnowledgeSearchInput`, `knowledge_search` async function, `knowledge_search_tool` (FunctionTool). Added to `CORE_TOOLS`, `SUPPORT`, and `FACEBOOK_SALES_SUPPORT` role tools.
+  - **Admin API** (`apps/ai-service/src/api/admin/knowledge_embeddings.py`): `GET /admin/knowledge-embeddings/status` (per-company stats: total/embedded/missing FAQs+policies), `POST /admin/knowledge-embeddings/sync` (asyncio background backfill from `public.faqs` + `public.policies`). Rate-limited at 0.7s/request with pseudo-embedding detection and 35s retry on 429.
+  - **Node.js client** (`apps/backend/services/aiServiceAdminClient.js`): `getKnowledgeEmbeddingStatus(companyId)`, `triggerKnowledgeEmbeddingSync(companyId)`.
+  - **Controller** (`apps/backend/controller/superAdminAiController.js`): `getKnowledgeEmbeddingStatus`, `triggerKnowledgeEmbeddingSync` handlers.
+  - **Routes** (`apps/backend/routes/superAdminRoutes.js`): `GET /ai/knowledge-embeddings/status`, `POST /ai/knowledge-embeddings/sync`.
+  - **Cron** (`apps/backend/cron/productEmbeddingCron.js`): Added `runKnowledgeEmbeddingSync()`, scheduled at `30 3 * * *` (03:30 Cairo). Both product + knowledge crons exported.
+  - **Frontend** (`apps/frontend/src/pages/super-admin/SuperAdminProductEmbeddings.tsx`): Page now has two sections — product embeddings (unchanged) and a new knowledge embeddings section showing per-company FAQ+policy coverage, progress bars, missing count badges, per-company sync buttons, and the cron job status card (next run: 3:30 AM). Both sections poll every 4s while a sync is running.
+- **Embed text format**: `"{question}. {answer}"` for FAQs, `"{title}. {content}"` for policies — truncated to 800 chars before embedding.
+- **Affected Files**:
+  - `apps/ai-service/migrations/versions/0013_knowledge_embeddings.py` — new DB migration
+  - `apps/ai-service/src/tools/knowledge_search.py` — new semantic search tool
+  - `apps/ai-service/src/api/admin/knowledge_embeddings.py` — new admin API endpoints
+  - `apps/ai-service/src/api/admin/__init__.py` — registered knowledge_embeddings_router
+  - `apps/ai-service/src/tools/registry.py` — added knowledge_search_tool to CORE_TOOLS + SUPPORT + FACEBOOK_SALES_SUPPORT
+  - `apps/backend/services/aiServiceAdminClient.js` — added getKnowledgeEmbeddingStatus, triggerKnowledgeEmbeddingSync
+  - `apps/backend/controller/superAdminAiController.js` — added knowledge embedding controllers
+  - `apps/backend/routes/superAdminRoutes.js` — added knowledge embedding routes
+  - `apps/backend/cron/productEmbeddingCron.js` — added knowledge cron at 03:30
+  - `apps/frontend/src/pages/super-admin/SuperAdminProductEmbeddings.tsx` — added knowledge section
+
 ## [2026-06-15] Competitor Analysis — Dev Recommendations Clean UI: Removed Trash/Delete Icon, Added Smooth Animations
 - **Details**: Removed the Trash2 (delete) icon entirely from the dev recommendations To-Do list in both the modal and detail page. The delete button and its hover-reveal behavior (`opacity-0 group-hover:opacity-100`) are gone. All related code (`handleDeleteTask`, `deleteTask` function) removed. Added smooth `transition-all duration-300 ease-in-out` animations on task rows, checkbox toggle (Circle↔CheckCircle2), and strikethrough text. Checkbox button includes `active:scale-90` press feedback.
 - **Architecture**:

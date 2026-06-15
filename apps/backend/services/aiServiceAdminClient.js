@@ -176,6 +176,15 @@ async function triggerProductEmbeddingSync(companyId) {
   return request('POST', '/admin/product-embeddings/sync', { company_id: companyId || null });
 }
 
+async function getKnowledgeEmbeddingStatus(companyId) {
+  const qs = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
+  return request('GET', `/admin/knowledge-embeddings/status${qs}`);
+}
+
+async function triggerKnowledgeEmbeddingSync(companyId) {
+  return request('POST', '/admin/knowledge-embeddings/sync', { company_id: companyId || null });
+}
+
 module.exports = {
   listTools,
   listAgents,
@@ -197,4 +206,6 @@ module.exports = {
   updateAgent,
   getProductEmbeddingStatus,
   triggerProductEmbeddingSync,
+  getKnowledgeEmbeddingStatus,
+  triggerKnowledgeEmbeddingSync,
 };

@@ -367,6 +367,16 @@ router.post(
     checkPermission("canAccessSettings"),
     superAdminAiController.triggerProductEmbeddingSync,
 );
+router.get(
+    "/ai/knowledge-embeddings/status",
+    checkPermission("canAccessSettings"),
+    superAdminAiController.getKnowledgeEmbeddingStatus,
+);
+router.post(
+    "/ai/knowledge-embeddings/sync",
+    checkPermission("canAccessSettings"),
+    superAdminAiController.triggerKnowledgeEmbeddingSync,
+);
 
 const {
   uploadDevTaskFile,

@@ -2681,3 +2681,25 @@ exports.triggerProductEmbeddingSync = async (req, res) => {
         res.status(500).json({ success: false, message: err?.message || 'Failed to trigger sync' });
     }
 };
+
+exports.getKnowledgeEmbeddingStatus = async (req, res) => {
+    try {
+        const { company_id } = req.query;
+        const result = await aiServiceAdminClient.getKnowledgeEmbeddingStatus(company_id || null);
+        if (!result) return res.status(502).json({ success: false, message: 'AI service unavailable' });
+        res.json({ success: true, data: result });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err?.message || 'Failed to get status' });
+    }
+};
+
+exports.triggerKnowledgeEmbeddingSync = async (req, res) => {
+    try {
+        const { company_id } = req.body;
+        const result = await aiServiceAdminClient.triggerKnowledgeEmbeddingSync(company_id || null);
+        if (!result) return res.status(502).json({ success: false, message: 'AI service unavailable' });
+        res.json({ success: true, data: result });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err?.message || 'Failed to trigger sync' });
+    }
+};
