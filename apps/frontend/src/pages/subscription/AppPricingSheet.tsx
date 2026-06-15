@@ -44,9 +44,8 @@ type SortField = "name" | "monthlyPrice" | "unitPrice" | "trialDays";
 type SortOrder = "asc" | "desc" | null;
 
 export default function AppPricingSheet() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const isAr = i18n.language === "ar";
 
   // State
   const [apps, setApps] = useState<MarketplaceApp[]>([]);
@@ -73,13 +72,13 @@ export default function AppPricingSheet() {
         }
       } catch (error) {
         console.error("Error fetching apps pricing:", error);
-        toast.error(isAr ? "خطأ في جلب بيانات تسعير التطبيقات" : "Failed to load apps pricing");
+        toast.error(t("subscription.appsPricingError"));
       } finally {
         setLoading(false);
       }
     };
     fetchApps();
-  }, [isAr]);
+  }, [i18n.language]);
 
   // Extract all unique categories
   const categories = useMemo(() => {
@@ -105,20 +104,9 @@ export default function AppPricingSheet() {
 
   // Handle category name translation or mapping
   const getCategoryLabel = (cat: string) => {
-    if (cat === "ALL") return isAr ? "الكل" : "All";
-    
-    // Translation dictionary for common categories
-    const mapping: Record<string, { ar: string; en: string }> = {
-      MESSAGING: { ar: "التواصل والرسائل", en: "Messaging & Chat" },
-      ECOMMERCE: { ar: "التجارة الإلكترونية", en: "E-Commerce" },
-      ANALYTICS: { ar: "التحليلات والتقارير", en: "Analytics" },
-      CRM: { ar: "إدارة العملاء", en: "CRM" },
-      MARKETING: { ar: "التسويق الرقمي", en: "Digital Marketing" },
-      STOREFRONT: { ar: "واجهة المتجر", en: "Storefront" },
-      THEME: { ar: "قوالب وثيمات", en: "Themes & Templates" },
-    };
-
-    return isAr ? mapping[cat]?.ar || cat : mapping[cat]?.en || cat;
+    if (cat === "ALL") return t("subscription.all");
+    const translated = t(`subscription.categories.${cat}`);
+    return translated !== `subscription.categories.${cat}` ? translated : cat;
   };
 
   // Pricing model display helper
@@ -127,19 +115,19 @@ export default function AppPricingSheet() {
       case "FREE":
         return (
           <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
-            {isAr ? "مجاني" : "Free"}
+            {t("subscription.free")}
           </Badge>
         );
       case "PAY_PER_USE":
         return (
           <Badge className="bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900">
-            {isAr ? "حسب الاستخدام" : "Pay-as-you-go"}
+            {t("subscription.payAsYouGo")}
           </Badge>
         );
       case "SUBSCRIPTION":
         return (
           <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-900">
-            {isAr ? "اشتراك" : "Subscription"}
+            {t("subscription.subscription")}
           </Badge>
         );
       default:
@@ -189,8 +177,8 @@ export default function AppPricingSheet() {
         let valB: any = "";
 
         if (sortField === "name") {
-          valA = isAr ? a.name : a.nameEn || a.name;
-          valB = isAr ? b.name : b.nameEn || b.name;
+          valA = i18n.language === "ar" ? a.name : a.nameEn || a.name;
+          valB = i18n.language === "ar" ? b.name : b.nameEn || b.name;
         } else if (sortField === "monthlyPrice") {
           valA = a.pricingModel === "SUBSCRIPTION" ? a.monthlyPrice || 0 : a.pricingModel === "FREE" ? 0 : -1;
           valB = b.pricingModel === "SUBSCRIPTION" ? b.monthlyPrice || 0 : b.pricingModel === "FREE" ? 0 : -1;
@@ -211,33 +199,33 @@ export default function AppPricingSheet() {
     }
 
     return result;
-  }, [apps, searchQuery, selectedCategory, selectedPricingModel, sortField, sortOrder, isAr]);
+  }, [apps, searchQuery, selectedCategory, selectedPricingModel, sortField, sortOrder, i18n.language]);
 
   // Export to CSV Functionality
   const exportToCSV = () => {
     try {
-      const headers = isAr
-        ? ["اسم التطبيق", "التصنيف", "الموديل السعري", "سعر الاشتراك الشهري", "سعر الاستخدام الإضافي", "الفترة المجانية (أيام)", "حالة التثبيت"]
-        : ["App Name", "Category", "Pricing Model", "Monthly Sub Price", "Usage Unit Price", "Free Trial (Days)", "Installation Status"];
+      const headers = [
+        t("subscription.csvAppName"),
+        t("subscription.csvCategory"),
+        t("subscription.csvPricingModel"),
+        t("subscription.csvMonthlySubPrice"),
+        t("subscription.csvUsageUnitPrice"),
+        t("subscription.csvFreeTrialDays"),
+        t("subscription.csvInstallationStatus"),
+      ];
 
       const rows = processedApps.map((app) => [
-        isAr ? app.name : app.nameEn || app.name,
+        i18n.language === "ar" ? app.name : app.nameEn || app.name,
         getCategoryLabel(app.category),
         app.pricingModel === "FREE"
-          ? isAr
-            ? "مجاني"
-            : "Free"
+          ? t("subscription.free")
           : app.pricingModel === "PAY_PER_USE"
-            ? isAr
-              ? "حسب الاستخدام"
-              : "Pay-as-you-go"
-            : isAr
-              ? "اشتراك"
-              : "Subscription",
-        app.pricingModel === "SUBSCRIPTION" ? `${app.monthlyPrice} ج` : "0",
-        app.unitPrice ? `${app.unitPrice} ج / ${app.unitName || ""}` : "-",
+            ? t("subscription.payAsYouGo")
+            : t("subscription.subscription"),
+        app.pricingModel === "SUBSCRIPTION" ? `${app.monthlyPrice} ${t("subscription.egp")}` : "0",
+        app.unitPrice ? `${app.unitPrice} ${t("subscription.egp")} / ${app.unitName || ""}` : "-",
         app.trialDays > 0 ? `${app.trialDays}` : "0",
-        app.isInstalled ? (isAr ? "مفعل" : "Installed") : isAr ? "غير مفعل" : "Not Installed",
+        app.isInstalled ? t("subscription.installed") : t("subscription.notInstalled"),
       ]);
 
       const csvContent =
@@ -252,9 +240,9 @@ export default function AppPricingSheet() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast.success(isAr ? "تم تصدير ملف إكسيل بنجاح" : "Pricing sheet exported successfully");
+      toast.success(t("subscription.exportSuccess"));
     } catch (error) {
-      toast.error(isAr ? "خطأ أثناء تصدير الملف" : "Failed to export CSV file");
+      toast.error(t("subscription.exportError"));
     }
   };
 
@@ -273,12 +261,10 @@ export default function AppPricingSheet() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-extrabold text-slate-900 dark:text-slate-50 tracking-tight font-cairo">
-                {isAr ? "جدول تسعير التطبيقات" : "Apps Pricing Sheet"}
+                {t("subscription.pageTitle")}
               </h1>
               <p className="text-slate-600 dark:text-slate-400 mt-2">
-                {isAr
-                  ? "لوحة بيانات تفاعلية لاستكشاف ومقارنة خطط وأسعار جميع أدوات المنصة."
-                  : "Interactive dashboard to explore and compare pricing metrics of all platform tools."}
+                {t("subscription.pageDescription")}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -289,7 +275,7 @@ export default function AppPricingSheet() {
                 disabled={loading || processedApps.length === 0}
               >
                 <FileSpreadsheet size={18} />
-                {isAr ? "تصدير إلى Excel" : "Export to Excel"}
+                {t("subscription.exportToExcel")}
               </Button>
             </div>
           </div>
@@ -303,7 +289,7 @@ export default function AppPricingSheet() {
             <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
             <CardHeader className="pb-2">
               <CardDescription className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase">
-                {isAr ? "إجمالي الأدوات" : "Total Apps"}
+                {t("subscription.totalApps")}
               </CardDescription>
               <CardTitle className="text-3xl font-bold font-cairo text-slate-800 dark:text-slate-100 flex items-center justify-between">
                 {loading ? <Skeleton className="h-9 w-16" /> : stats.total}
@@ -316,7 +302,7 @@ export default function AppPricingSheet() {
             <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
             <CardHeader className="pb-2">
               <CardDescription className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase">
-                {isAr ? "الأدوات المفعلة" : "Activated Apps"}
+                {t("subscription.activatedApps")}
               </CardDescription>
               <CardTitle className="text-3xl font-bold font-cairo text-slate-800 dark:text-slate-100 flex items-center justify-between">
                 {loading ? <Skeleton className="h-9 w-16" /> : stats.installed}
@@ -329,14 +315,14 @@ export default function AppPricingSheet() {
             <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-indigo-500 to-violet-500" />
             <CardHeader className="pb-2">
               <CardDescription className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase">
-                {isAr ? "متوسط اشتراك الأدوات" : "Average Subscription Fee"}
+                {t("subscription.avgSubFee")}
               </CardDescription>
               <CardTitle className="text-3xl font-bold font-cairo text-slate-800 dark:text-slate-100 flex items-center justify-between">
                 {loading ? (
                   <Skeleton className="h-9 w-24" />
                 ) : (
                   <span>
-                    {stats.avgSubPrice} <span className="text-sm font-medium">{isAr ? "ج/شهرياً" : "EGP/mo"}</span>
+                    {stats.avgSubPrice} <span className="text-sm font-medium">{t("subscription.egpPerMonth")}</span>
                   </span>
                 )}
                 <DollarSign className="text-indigo-500/80" size={24} />
@@ -348,7 +334,7 @@ export default function AppPricingSheet() {
             <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-amber-500 to-orange-500" />
             <CardHeader className="pb-2">
               <CardDescription className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase">
-                {isAr ? "أدوات بفترة تجربة" : "Free Trial Support"}
+                {t("subscription.freeTrialSupport")}
               </CardDescription>
               <CardTitle className="text-3xl font-bold font-cairo text-slate-800 dark:text-slate-100 flex items-center justify-between">
                 {loading ? <Skeleton className="h-9 w-16" /> : stats.withTrial}
@@ -367,7 +353,7 @@ export default function AppPricingSheet() {
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
                 <Input
                   type="text"
-                  placeholder={isAr ? "بحث باسم التطبيق أو الوصف..." : "Search app name or description..."}
+                  placeholder={t("subscription.searchPlaceholder")}
                   className="pr-10 pl-4 border-slate-200 dark:border-slate-800 dark:bg-slate-950 font-cairo"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -379,31 +365,31 @@ export default function AppPricingSheet() {
                 {/* Pricing Model Filter */}
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-slate-600 dark:text-slate-400 font-cairo">
-                    {isAr ? "نوع الدفع:" : "Pricing:"}
+                    {t("subscription.pricingLabel")}
                   </span>
                   <select
                     className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm font-semibold font-cairo focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     value={selectedPricingModel}
                     onChange={(e) => setSelectedPricingModel(e.target.value)}
                   >
-                    <option value="ALL">{isAr ? "الكل" : "All"}</option>
-                    <option value="FREE">{isAr ? "مجاني" : "Free"}</option>
-                    <option value="SUBSCRIPTION">{isAr ? "اشتراك" : "Subscription"}</option>
-                    <option value="PAY_PER_USE">{isAr ? "حسب الاستخدام" : "Pay-as-you-go"}</option>
+                    <option value="ALL">{t("subscription.all")}</option>
+                    <option value="FREE">{t("subscription.free")}</option>
+                    <option value="SUBSCRIPTION">{t("subscription.subscription")}</option>
+                    <option value="PAY_PER_USE">{t("subscription.payAsYouGo")}</option>
                   </select>
                 </div>
 
                 {/* Category Filter */}
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-slate-600 dark:text-slate-400 font-cairo">
-                    {isAr ? "التصنيف:" : "Category:"}
+                    {t("subscription.categoryLabel")}
                   </span>
                   <select
                     className="rounded-lg border border-slate-200 dark:border-slate-805 bg-white dark:bg-slate-950 px-3 py-2 text-sm font-semibold font-cairo focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
                   >
-                    <option value="ALL">{isAr ? "كل الأقسام" : "All Categories"}</option>
+                    <option value="ALL">{t("subscription.allCategories")}</option>
                     {categories.map((cat) => (
                       <option key={cat} value={cat}>
                         {getCategoryLabel(cat)}
@@ -420,7 +406,7 @@ export default function AppPricingSheet() {
                     className="h-8 font-cairo text-xs px-3"
                     onClick={() => setViewMode("sheet")}
                   >
-                    {isAr ? "عرض جدول" : "Sheet View"}
+                    {t("subscription.sheetView")}
                   </Button>
                   <Button
                     variant={viewMode === "grid" ? "default" : "ghost"}
@@ -428,7 +414,7 @@ export default function AppPricingSheet() {
                     className="h-8 font-cairo text-xs px-3"
                     onClick={() => setViewMode("grid")}
                   >
-                    {isAr ? "عرض بطاقات" : "Card View"}
+                    {t("subscription.cardView")}
                   </Button>
                 </div>
               </div>
@@ -451,12 +437,10 @@ export default function AppPricingSheet() {
           <Card className="border-none shadow-md bg-white dark:bg-slate-900 py-16 text-center">
             <Package className="mx-auto text-slate-300 dark:text-slate-700 mb-4" size={64} />
             <CardTitle className="text-xl font-bold font-cairo mb-2 text-slate-800 dark:text-slate-200">
-              {isAr ? "لا توجد نتائج مطابقة" : "No results found"}
+              {t("subscription.noResultsFound")}
             </CardTitle>
             <CardDescription className="font-cairo">
-              {isAr
-                ? "جرب تعديل خيارات التصفية أو كتابة مصطلح بحث آخر."
-                : "Try adjusting your filters or typing another search term."}
+              {t("subscription.noResultsHint")}
             </CardDescription>
           </Card>
         ) : viewMode === "sheet" ? (
@@ -471,22 +455,22 @@ export default function AppPricingSheet() {
                       onClick={() => handleSort("name")}
                     >
                       <div className="flex items-center gap-1">
-                        {isAr ? "اسم التطبيق" : "App Name"}
+                        {t("subscription.appName")}
                         {renderSortIcon("name")}
                       </div>
                     </th>
                     <th className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300 font-cairo">
-                      {isAr ? "الوصف" : "Description"}
+                      {t("subscription.description")}
                     </th>
                     <th className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300 font-cairo">
-                      {isAr ? "نموذج التسعير" : "Pricing Model"}
+                      {t("subscription.pricingModel")}
                     </th>
                     <th
                       className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300 font-cairo cursor-pointer hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors"
                       onClick={() => handleSort("monthlyPrice")}
                     >
                       <div className="flex items-center gap-1">
-                        {isAr ? "سعر الاشتراك" : "Subscription Price"}
+                        {t("subscription.subscriptionPrice")}
                         {renderSortIcon("monthlyPrice")}
                       </div>
                     </th>
@@ -495,7 +479,7 @@ export default function AppPricingSheet() {
                       onClick={() => handleSort("unitPrice")}
                     >
                       <div className="flex items-center gap-1">
-                        {isAr ? "السعر حسب الاستخدام" : "Usage Pricing"}
+                        {t("subscription.usagePricing")}
                         {renderSortIcon("unitPrice")}
                       </div>
                     </th>
@@ -504,15 +488,15 @@ export default function AppPricingSheet() {
                       onClick={() => handleSort("trialDays")}
                     >
                       <div className="flex items-center gap-1">
-                        {isAr ? "الفترة المجانية" : "Free Trial"}
+                        {t("subscription.freeTrial")}
                         {renderSortIcon("trialDays")}
                       </div>
                     </th>
                     <th className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300 font-cairo">
-                      {isAr ? "حالة التثبيت" : "Status"}
+                      {t("subscription.status")}
                     </th>
                     <th className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300 font-cairo text-center">
-                      {isAr ? "الإجراء" : "Action"}
+                      {t("subscription.action")}
                     </th>
                   </tr>
                 </thead>
@@ -530,7 +514,7 @@ export default function AppPricingSheet() {
                             <Layers size={18} />
                           </div>
                           <div>
-                            <div className="text-sm font-bold">{isAr ? app.name : app.nameEn || app.name}</div>
+                            <div className="text-sm font-bold">{i18n.language === "ar" ? app.name : app.nameEn || app.name}</div>
                             <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
                               {getCategoryLabel(app.category)}
                             </div>
@@ -546,10 +530,10 @@ export default function AppPricingSheet() {
                       <td className="px-6 py-4 text-sm font-bold text-slate-800 dark:text-slate-200 font-cairo">
                         {app.pricingModel === "SUBSCRIPTION" ? (
                           <span>
-                            {app.monthlyPrice} <span className="text-xs font-normal text-slate-400">{isAr ? "ج/شهرياً" : "EGP/mo"}</span>
+                            {app.monthlyPrice} <span className="text-xs font-normal text-slate-400">{t("subscription.egpPerMonth")}</span>
                           </span>
                         ) : app.pricingModel === "FREE" ? (
-                          <span className="text-emerald-600 dark:text-emerald-400">{isAr ? "مجاني" : "Free"}</span>
+                          <span className="text-emerald-600 dark:text-emerald-400">{t("subscription.free")}</span>
                         ) : (
                           <span className="text-slate-400">-</span>
                         )}
@@ -558,9 +542,9 @@ export default function AppPricingSheet() {
                         {app.unitPrice ? (
                           <div className="flex items-center gap-1.5 font-bold">
                             <span>
-                              {app.unitPrice} <span className="text-xs font-normal text-slate-400">{isAr ? "ج" : "EGP"}</span>
+                              {app.unitPrice} <span className="text-xs font-normal text-slate-400">{t("subscription.egp")}</span>
                             </span>
-                            <span className="text-xs font-normal text-slate-400">/ {app.unitName || (isAr ? "وحدة" : "unit")}</span>
+                            <span className="text-xs font-normal text-slate-400">/ {app.unitName || t("subscription.unit")}</span>
                           </div>
                         ) : (
                           <span className="text-slate-400">-</span>
@@ -571,12 +555,12 @@ export default function AppPricingSheet() {
                           <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
                             <Clock size={14} />
                             <span>
-                              {app.trialDays} {isAr ? "يوم" : "days"}
+                              {app.trialDays} {t("subscription.days")}
                             </span>
                           </div>
                         ) : (
                           <span className="text-slate-400 dark:text-slate-500 text-xs">
-                            {isAr ? "لا يوجد" : "None"}
+                            {t("subscription.none")}
                           </span>
                         )}
                       </td>
@@ -584,12 +568,12 @@ export default function AppPricingSheet() {
                         {app.isInstalled ? (
                           <Badge className="bg-emerald-100 text-emerald-800 border-none dark:bg-emerald-900/30 dark:text-emerald-400 flex items-center gap-1 w-fit">
                             <CheckCircle size={12} />
-                            {isAr ? "مفعل" : "Installed"}
+                            {t("subscription.installed")}
                           </Badge>
                         ) : (
                           <Badge variant="secondary" className="text-slate-400 dark:bg-slate-800 dark:text-slate-500 flex items-center gap-1 w-fit">
                             <XCircle size={12} />
-                            {isAr ? "غير مفعل" : "Inactive"}
+                            {t("subscription.inactive")}
                           </Badge>
                         )}
                       </td>
@@ -601,7 +585,7 @@ export default function AppPricingSheet() {
                           onClick={() => navigate(`/marketplace?app=${app.slug}`)}
                         >
                           <span className="flex items-center gap-1.5">
-                            {isAr ? "تفاصيل" : "Details"}
+                            {t("subscription.details")}
                             <ExternalLink size={12} />
                           </span>
                         </Button>
@@ -629,7 +613,7 @@ export default function AppPricingSheet() {
                         </div>
                         <div>
                           <CardTitle className="text-base font-bold font-cairo text-slate-800 dark:text-slate-100">
-                            {isAr ? app.name : app.nameEn || app.name}
+                            {i18n.language === "ar" ? app.name : app.nameEn || app.name}
                           </CardTitle>
                           <CardDescription className="text-xs font-cairo">
                             {getCategoryLabel(app.category)}
@@ -649,15 +633,15 @@ export default function AppPricingSheet() {
                     <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-950/50 rounded-lg p-3 border border-slate-100 dark:border-slate-850">
                       <div>
                         <div className="text-xs text-slate-400 dark:text-slate-500 mb-1 font-cairo">
-                          {isAr ? "سعر الاشتراك" : "Subscription Fee"}
+                          {t("subscription.subscriptionFee")}
                         </div>
                         <div className="text-sm font-bold font-cairo text-slate-800 dark:text-slate-200">
                           {app.pricingModel === "SUBSCRIPTION" ? (
                             <span>
-                              {app.monthlyPrice} <span className="text-xs font-normal text-slate-400">{isAr ? "ج/شهرياً" : "EGP/mo"}</span>
+                            {app.monthlyPrice} <span className="text-xs font-normal text-slate-400">{t("subscription.egpPerMonth")}</span>
                             </span>
                           ) : app.pricingModel === "FREE" ? (
-                            <span className="text-emerald-600 dark:text-emerald-400">{isAr ? "مجاني" : "Free"}</span>
+                          <span className="text-emerald-600 dark:text-emerald-400">{t("subscription.free")}</span>
                           ) : (
                             <span className="text-slate-400">-</span>
                           )}
@@ -666,13 +650,13 @@ export default function AppPricingSheet() {
 
                       <div>
                         <div className="text-xs text-slate-400 dark:text-slate-500 mb-1 font-cairo">
-                          {isAr ? "حسب الاستخدام" : "Usage Pricing"}
+                          {t("subscription.usagePricing")}
                         </div>
                         <div className="text-sm font-bold font-cairo text-slate-800 dark:text-slate-200">
                           {app.unitPrice ? (
                             <span>
-                              {app.unitPrice} <span className="text-xs font-normal text-slate-400">{isAr ? "ج" : "EGP"}</span>
-                              <span className="text-xs font-normal text-slate-400">/{app.unitName || "وحدة"}</span>
+                              {app.unitPrice} <span className="text-xs font-normal text-slate-400">{t("subscription.egp")}</span>
+                              <span className="text-xs font-normal text-slate-400">/{app.unitName || t("subscription.unit")}</span>
                             </span>
                           ) : (
                             <span className="text-slate-400">-</span>
@@ -689,11 +673,11 @@ export default function AppPricingSheet() {
                     {app.trialDays > 0 ? (
                       <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
                         <Clock size={12} />
-                        {app.trialDays} {isAr ? "يوم فترة تجربة" : "days trial"}
+                        {app.trialDays} {t("subscription.daysTrial")}
                       </span>
                     ) : (
                       <span className="text-slate-400 dark:text-slate-500">
-                        {isAr ? "بدون فترة تجريبية" : "No trial period"}
+                        {t("subscription.noTrialPeriod")}
                       </span>
                     )}
                   </div>
@@ -703,7 +687,7 @@ export default function AppPricingSheet() {
                     {app.isInstalled && (
                       <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
                         <CheckCircle size={14} />
-                        {isAr ? "مفعل" : "Installed"}
+                        {t("subscription.installed")}
                       </span>
                     )}
                     <Button
@@ -712,7 +696,7 @@ export default function AppPricingSheet() {
                       className="font-cairo text-xs h-8 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-950/20"
                       onClick={() => navigate(`/marketplace?app=${app.slug}`)}
                     >
-                      {isAr ? "إدارة التطبيق" : "Manage App"}
+                      {t("subscription.manageApp")}
                     </Button>
                   </div>
                 </div>

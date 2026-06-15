@@ -1,3 +1,14 @@
+## [2026-06-15] AppPricingSheet — Hardcoded Arabic strings blocking CI
+
+- **Bug/Issue**: The `AppPricingSheet.tsx` file contained 68 hardcoded Arabic strings using the `isAr ? "..." : "..."` pattern, which caused the CI `Arabic Strings Compliance Check` to fail, blocking all deployments.
+- **Root Cause**: The developer used `isAr` boolean from `i18n.language` instead of `useTranslation().t()` for i18n, leaving Arabic literals directly in the JSX/TSX source.
+- **Fix**: Replaced all `isAr ? "..." : "..."` ternaries with `t("subscription.keyName")` calls, created `subscription.json` locale files for both ar and en, and registered them in `i18n/index.ts`.
+- **Files**:
+  - `apps/frontend/src/pages/subscription/AppPricingSheet.tsx`
+  - `apps/frontend/src/i18n/index.ts`
+  - `apps/frontend/src/locales/ar/sections/subscription.json`
+  - `apps/frontend/src/locales/en/sections/subscription.json`
+
 ## [2026-06-15] SuperAdminAIProviderPriority — Circular dependency crash
 
 - **Bug/Issue**: Navigating to `/super-admin/ai-providers/provider-priority` threw `ReferenceError: Cannot access 'Y' before initialization` in the browser console. The error also appeared on the products route when the SuperAdminAIProviders chunk was loaded.
