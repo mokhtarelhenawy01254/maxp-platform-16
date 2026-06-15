@@ -1,5 +1,6 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const episodicMemoryService = { generateEmbeddingAsync: async () => null };
+const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const getPrisma = () => getSharedPrismaClient();
 
 function _buildFaqEmbeddingText(faq) {
@@ -185,6 +186,11 @@ const createFAQ = async (req, res) => {
 
     await refreshFaqVectorKnowledge(faq);
     await refreshFaqKnowledgeForCompany(companyId);
+    aiServiceAdminClient.embedKnowledgeItem({
+      sourceId: faq.id, sourceType: 'faq', companyId,
+      title: faq.question, content: faq.answer,
+      category: faq.category || '', tags: faq.tags || '',
+    }).catch(() => {});
 
     res.status(201).json({
       id: faq.id,
@@ -230,6 +236,11 @@ const updateFAQ = async (req, res) => {
 
     await refreshFaqVectorKnowledge(faq);
     await refreshFaqKnowledgeForCompany(faq.companyId);
+    aiServiceAdminClient.embedKnowledgeItem({
+      sourceId: faq.id, sourceType: 'faq', companyId: faq.companyId,
+      title: faq.question, content: faq.answer,
+      category: faq.category || '', tags: faq.tags || '',
+    }).catch(() => {});
 
     res.json({
       id: faq.id,
@@ -265,6 +276,7 @@ const deleteFAQ = async (req, res) => {
     const deletedFaq = await getPrisma().faq.delete({ where: { id: faqId } });
 
     await refreshFaqKnowledgeForCompany(deletedFaq.companyId);
+    aiServiceAdminClient.deleteKnowledgeEmbeddingItem(faqId, 'faq').catch(() => {});
 
     res.json({ message: 'تم حذف السؤال بنجاح' });
   } catch (error) {

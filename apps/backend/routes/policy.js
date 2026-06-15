@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const episodicMemoryService = { generateEmbeddingAsync: async () => null };
+const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const { requireAuth } = require('../middleware/auth');
 
 const getPrisma = () => getSharedPrismaClient();
@@ -100,6 +101,11 @@ router.post('/', requireAuth, async (req, res) => {
     });
 
     _autoEmbedPolicy(policy).catch(() => {});
+    aiServiceAdminClient.embedKnowledgeItem({
+      sourceId: policy.id, sourceType: 'policy', companyId,
+      title: policy.title, content: policy.content,
+      category: policy.category || '', tags: policy.tags || '',
+    }).catch(() => {});
     res.status(201).json(serializePolicy(policy));
   } catch (error) {
     console.error('Error creating policy:', error);
@@ -128,6 +134,11 @@ router.put('/:id', requireAuth, async (req, res) => {
     });
 
     _autoEmbedPolicy(policy).catch(() => {});
+    aiServiceAdminClient.embedKnowledgeItem({
+      sourceId: policy.id, sourceType: 'policy', companyId: policy.companyId,
+      title: policy.title, content: policy.content,
+      category: policy.category || '', tags: policy.tags || '',
+    }).catch(() => {});
     res.json(serializePolicy(policy));
   } catch (error) {
     console.error('Error updating policy:', error);
@@ -144,6 +155,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
 
     await getPrisma().policy.delete({ where: { id } });
+    aiServiceAdminClient.deleteKnowledgeEmbeddingItem(id, 'policy').catch(() => {});
 
     res.json({ message: 'تم حذف السياسة بنجاح' });
   } catch (error) {

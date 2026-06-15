@@ -241,3 +241,104 @@ async def trigger_knowledge_sync(body: KnowledgeSyncRequest) -> dict:
         return {"started": False, "reason": "already_running", "job": _state}
     asyncio.create_task(_run_knowledge_backfill(body.company_id))
     return {"started": True, "company_id": body.company_id}
+
+
+class EmbedItemRequest(BaseModel):
+    source_id: str
+    source_type: str  # 'faq' | 'policy'
+    company_id: str
+    title: str
+    content: str
+    category: str = ""
+    tags: str = ""
+
+
+@router.post("/knowledge-embeddings/embed-item")
+async def embed_knowledge_item(body: EmbedItemRequest) -> dict:
+    import math
+    from src.memory.episodic_memory import EpisodicMemoryService
+    svc = EpisodicMemoryService()
+
+    embed_text = f"{body.title}. {body.content}".strip(". ")[:800]
+
+    retries = 0
+    vec = None
+    while retries < 3:
+        try:
+            res = await svc.generate_embedding_with_provider(text=embed_text)
+            vec = res.get("vector")
+            if not vec or len(vec) != 768:
+                break
+            if math.sqrt(sum(x * x for x in vec)) < 0.01:
+                await asyncio.sleep(35)
+                retries += 1
+                continue
+            break
+        except Exception as e:
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                await asyncio.sleep(35)
+                retries += 1
+                continue
+            raise HTTPException(status_code=500, detail=f"Embedding failed: {e}")
+
+    if not vec or len(vec) != 768 or math.sqrt(sum(x * x for x in vec)) < 0.01:
+        raise HTTPException(status_code=503, detail="Could not generate a valid embedding (rate limit or quota)")
+
+    vec_str = "[" + ",".join(str(x) for x in vec) + "]"
+    try:
+        await _db_mod.init_db()
+    except Exception:
+        pass
+
+    async with _db_mod.async_session() as sess:
+        await sess.execute(text("""
+            INSERT INTO ai.knowledge_embeddings
+                (id, company_id, source_id, source_type, title, content,
+                 category, tags, embed_text, text_embedding)
+            VALUES (gen_random_uuid()::text, :cid, :sid, :stype, :title,
+                    :content, :category, :tags, :embed_text, CAST(:vec AS vector))
+            ON CONFLICT (source_id, source_type) DO UPDATE SET
+                title          = EXCLUDED.title,
+                content        = EXCLUDED.content,
+                text_embedding = EXCLUDED.text_embedding,
+                embed_text     = EXCLUDED.embed_text,
+                category       = EXCLUDED.category,
+                updated_at     = now()
+        """), {
+            "cid": body.company_id,
+            "sid": body.source_id,
+            "stype": body.source_type,
+            "title": body.title[:500],
+            "content": body.content[:1000],
+            "category": body.category[:200],
+            "tags": body.tags[:200],
+            "embed_text": embed_text[:500],
+            "vec": vec_str,
+        })
+        await sess.commit()
+
+    logger.info("knowledge_item_embedded", source_id=body.source_id, source_type=body.source_type)
+    return {"ok": True, "source_id": body.source_id, "source_type": body.source_type}
+
+
+class DeleteItemRequest(BaseModel):
+    source_id: str
+    source_type: str
+
+
+@router.delete("/knowledge-embeddings/item")
+async def delete_knowledge_item(body: DeleteItemRequest) -> dict:
+    try:
+        await _db_mod.init_db()
+    except Exception:
+        pass
+
+    async with _db_mod.async_session() as sess:
+        result = await sess.execute(text("""
+            DELETE FROM ai.knowledge_embeddings
+            WHERE source_id = :sid AND source_type = :stype
+        """), {"sid": body.source_id, "stype": body.source_type})
+        await sess.commit()
+
+    logger.info("knowledge_item_deleted", source_id=body.source_id, source_type=body.source_type)
+    return {"ok": True, "source_id": body.source_id, "source_type": body.source_type}

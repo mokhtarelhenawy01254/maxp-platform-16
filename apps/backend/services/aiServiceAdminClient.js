@@ -185,6 +185,25 @@ async function triggerKnowledgeEmbeddingSync(companyId) {
   return request('POST', '/admin/knowledge-embeddings/sync', { company_id: companyId || null });
 }
 
+async function embedKnowledgeItem({ sourceId, sourceType, companyId, title, content, category = '', tags = '' }) {
+  return request('POST', '/admin/knowledge-embeddings/embed-item', {
+    source_id: sourceId,
+    source_type: sourceType,
+    company_id: companyId,
+    title,
+    content,
+    category: category || '',
+    tags: tags || '',
+  });
+}
+
+async function deleteKnowledgeEmbeddingItem(sourceId, sourceType) {
+  return request('DELETE', '/admin/knowledge-embeddings/item', {
+    source_id: sourceId,
+    source_type: sourceType,
+  });
+}
+
 module.exports = {
   listTools,
   listAgents,
@@ -208,4 +227,6 @@ module.exports = {
   triggerProductEmbeddingSync,
   getKnowledgeEmbeddingStatus,
   triggerKnowledgeEmbeddingSync,
+  embedKnowledgeItem,
+  deleteKnowledgeEmbeddingItem,
 };

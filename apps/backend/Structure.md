@@ -1,3 +1,19 @@
+## [2026-06-15] AI — Knowledge Embeddings Auto-Trigger on FAQ/Policy Create, Update, Delete
+- **Details**: Knowledge embeddings are now generated automatically whenever a FAQ or policy is created or updated — no need to wait for the 3:30 AM cron job. Deletions also clean up the corresponding embedding row immediately.
+- **Architecture**:
+  - **Python AI service** (`src/api/admin/knowledge_embeddings.py`):
+    - Added `POST /admin/knowledge-embeddings/embed-item` — embeds a single FAQ or policy item (fire-and-forget friendly). Accepts `{source_id, source_type, company_id, title, content, category, tags}`. Uses ON CONFLICT DO UPDATE so it handles both create and update.
+    - Added `DELETE /admin/knowledge-embeddings/item` — deletes a single embedding by `{source_id, source_type}`.
+  - **Node.js client** (`services/aiServiceAdminClient.js`): Added `embedKnowledgeItem({sourceId, sourceType, companyId, title, content, category, tags})` and `deleteKnowledgeEmbeddingItem(sourceId, sourceType)`.
+  - **FAQ controller** (`controller/faqController.js`): After create/update, calls `embedKnowledgeItem` fire-and-forget. After delete, calls `deleteKnowledgeEmbeddingItem` fire-and-forget.
+  - **Policy routes** (`routes/policy.js`): Same pattern — embed after create/update, delete embedding after policy delete.
+  - **Behavior**: Response to the user is not delayed — embedding happens in background (~1-2s after the API call returns). If Gemini rate limit is hit, the item will be backfilled by the next 3:30 AM cron run.
+- **Affected Files**:
+  - `apps/ai-service/src/api/admin/knowledge_embeddings.py` — added embed-item + delete endpoints
+  - `apps/backend/services/aiServiceAdminClient.js` — added embedKnowledgeItem, deleteKnowledgeEmbeddingItem
+  - `apps/backend/controller/faqController.js` — added auto-embed hooks on create/update/delete
+  - `apps/backend/routes/policy.js` — added auto-embed hooks on create/update/delete
+
 ## [2026-06-15] AI — Knowledge Embeddings (FAQs & Policies Semantic Search)
 - **Details**: Added full semantic search for company knowledge base (FAQs and policies) via a new `ai.knowledge_embeddings` pgvector table. The AI agent can now answer customer questions about store policies, shipping, returns, and FAQs using vector similarity search instead of exact keyword matching. Daily cron job backfills at 03:30 Cairo time. Super Admin page updated to show both product and knowledge embedding sections.
 - **Architecture**:
