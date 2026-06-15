@@ -59,12 +59,7 @@ export const tokenManager = {
     };
   },
 
-  /**
-   * Check if an access token exists in any storage.
-   */
-  hasAccessToken(): boolean {
-    return !!this.getAccessToken();
-  },
+
 
   /**
    * Set access token.
