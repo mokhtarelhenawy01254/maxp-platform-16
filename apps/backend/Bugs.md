@@ -1,3 +1,20 @@
+## [2026-06-15] SuperAdminAIProviderPriority — Circular dependency crash
+
+- **Bug/Issue**: Navigating to `/super-admin/ai-providers/provider-priority` threw `ReferenceError: Cannot access 'Y' before initialization` in the browser console.
+- **Root Cause**: `SuperAdminAIProviderPriority.tsx` imported `SuperAdminAIProviders` via a static (direct) import while both components were also being lazy-loaded in `App.tsx`. This created a circular dependency in the Vite chunk graph, causing the export to be referenced before it was initialized.
+- **Fix**: Replaced the static import with `React.lazy(() => import(...))` inside `SuperAdminAIProviderPriority.tsx`, breaking the circular dependency.
+- **Files**: `apps/frontend/src/pages/SuperAdminAIProviderPriority.tsx`
+
+## [2026-06-15] AgentSkillsPage — Hardcoded Arabic strings
+
+- **Bug/Issue**: Three user-facing error strings ("اسم المهارة مطلوب", "التعليمات مطلوبة", "فشل إنشاء المهارة") were hardcoded in Arabic instead of using i18n `t()` calls.
+- **Root Cause**: Direct string literals in validation and error-handling code paths.
+- **Fix**: Added three new translation keys (`errorNameRequired`, `errorInstructionsRequired`, `errorCreateFailed`) to `agentSkills.json` in both ar and en locales and replaced the hardcoded strings with `t("agentSkills.errorNameRequired")` etc.
+- **Files**:
+  - `apps/frontend/src/pages/admin/AgentSkillsPage.tsx`
+  - `apps/frontend/src/locales/ar/sections/agentSkills.json`
+  - `apps/frontend/src/locales/en/sections/agentSkills.json`
+
 ## [2026-06-15] Unified Inbox — RTL Layout and Translation Issues
 
 - **Bug/Issue**: The platform selector dropdown and filter bar in the Unified Inbox did not match the required design for RTL (Arabic) users, with icons/text/checkboxes laid out left-to-right, hardcoded English statuses, and a backwards send button icon in English.
