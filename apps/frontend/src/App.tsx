@@ -737,19 +737,19 @@ const SuperAdminServerUsage = React.lazy(
 );
 const SalaryUpdates = React.lazy(() => import("./pages/hr/SalaryUpdates"));
 const SuperAdminAIProviders = React.lazy(
-  () => import("./pages/SuperAdminAIProviders"),
+  () => import("./pages/super-admin/SuperAdminAIProviders"),
 ); // New Page
 const SuperAdminAIProviderPriority = React.lazy(
-  () => import("./pages/SuperAdminAIProviderPriority"),
+  () => import("./pages/super-admin/SuperAdminAIProviderPriority"),
 );
 const SuperAdminAIProviderLogs = React.lazy(
-  () => import("./pages/SuperAdminAIProviderLogs"),
+  () => import("./pages/super-admin/SuperAdminAIProviderLogs"),
 );
 const SuperAdminAIKeyDetails = React.lazy(
-  () => import("./pages/SuperAdminAIKeyDetails"),
+  () => import("./pages/super-admin/SuperAdminAIKeyDetails"),
 );
 const SuperAdminAIPlayground = React.lazy(
-  () => import("./pages/SuperAdminAIPlayground"),
+  () => import("./pages/super-admin/SuperAdminAIPlayground"),
 );
 // Super Admin AI Agent Config
 const SuperAdminAgentConfig = React.lazy(

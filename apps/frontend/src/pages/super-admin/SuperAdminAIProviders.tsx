@@ -1,26 +1,26 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link as RouterLink } from "react-router-dom";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Switch } from "../components/ui/switch";
-import { Checkbox } from "../components/ui/checkbox";
-import { Alert, AlertDescription } from "../components/ui/alert";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { Switch } from "../../components/ui/switch";
+import { Checkbox } from "../../components/ui/checkbox";
+import { Alert, AlertDescription } from "../../components/ui/alert";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "../components/ui/select";
+} from "../../components/ui/select";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "../components/ui/dialog";
+} from "../../components/ui/dialog";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "../components/ui/table";
-import { Separator } from "../components/ui/separator";
+} from "../../components/ui/table";
+import { Separator } from "../../components/ui/separator";
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
-} from "../components/ui/tooltip";
-import LoadingSpinner from "../components/ui/LoadingSpinner";
+} from "../../components/ui/tooltip";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import {
   Plus, Trash2, CheckCircle, XCircle, RefreshCw, Bot, Key, Zap, Brain, User, Search, SlidersHorizontal, Play, Square, ImagePlus, Save, GripVertical, ChevronDown, ChevronUp, FlaskConical, Clock,
 } from "lucide-react";
@@ -40,11 +40,11 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useTheme } from "../hooks/useTheme";
-import i18n from "../i18n";
+import { useTheme } from "../../hooks/useTheme";
+import i18n from "../../i18n";
 
-import tokenManager from "../utils/tokenManager";
-import { buildApiUrl } from "../utils/urlHelper";
+import tokenManager from "../../utils/tokenManager";
+import { buildApiUrl } from "../../utils/urlHelper";
 
 const PROVIDERS = [
   {

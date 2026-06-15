@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link as RouterLink, useParams } from "react-router-dom";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
-import { Input } from "../components/ui/input";
-import { Textarea } from "../components/ui/textarea";
-import { Alert, AlertDescription } from "../components/ui/alert";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
+import { Alert, AlertDescription } from "../../components/ui/alert";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "../components/ui/table";
-import LoadingSpinner from "../components/ui/LoadingSpinner";
-import tokenManager from "../utils/tokenManager";
-import { buildApiUrl } from "../utils/urlHelper";
+} from "../../components/ui/table";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import tokenManager from "../../utils/tokenManager";
+import { buildApiUrl } from "../../utils/urlHelper";
 import { ArrowLeft, CheckCircle, MessageSquare, XCircle, ExternalLink, RefreshCw, FlaskConical, AlertTriangle, Info } from "lucide-react";
 
 const statusColor = (s) => s === "healthy" || s === "success" ? "default" : s === "warning" || s === "inactive" ? "secondary" : s === "critical" || s === "failed" ? "destructive" : "outline";
