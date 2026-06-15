@@ -44,6 +44,22 @@
   - `apps/frontend/src/locales/en/sections/competitors.json` [MODIFY]
   - `apps/backend/Structure.md` [MODIFY]
 
+## [2026-06-15] App Pricing Sheet Page — Billing & Subscriptions [DONE]
+- **Objective**: Add an Excel-like app pricing sheet page under the Billing & Subscriptions section showing all marketplace apps with their pricing models (subscription, pay-per-use, free trial).
+- **Accomplishments**:
+  - **New Page `AppPricingSheet.tsx`**: Built a full-featured pricing table with KPI dashboard cards (total apps, paid, pay-per-use, free), search/filter/sort, and CSV export with Arabic BOM support.
+  - **Route Registration**: Added `/subscription/pricing` route to both authenticated router sections in `App.tsx`.
+  - **Sidebar Integration**: Added "App Pricing Sheet" link under the Billing section in `sidebar.ts`.
+  - **Localization**: Added `appPricingSheet` key to both `ar` and `en` sidebar translation files.
+  - **Data Source**: Fetches live pricing data from `/api/v1/marketplace/apps` endpoint.
+- **Files**:
+  - `apps/frontend/src/pages/subscription/AppPricingSheet.tsx` [NEW]
+  - `apps/frontend/src/pages/subscription/index.ts` [MODIFY]
+  - `apps/frontend/src/App.tsx` [MODIFY]
+  - `apps/frontend/src/config/sidebar.ts` [MODIFY]
+  - `apps/frontend/src/locales/ar/sections/sidebar.json` [MODIFY]
+  - `apps/frontend/src/locales/en/sections/sidebar.json` [MODIFY]
+
 ## [2026-06-15] Unified Inbox RTL/LTR Polish & Translation [DONE]
 - **Objective**: Fix layout alignments, dynamic localizations, and RTL/LTR direction mirroring for the Unified Inbox to match the design reference.
 - **Accomplishments**:

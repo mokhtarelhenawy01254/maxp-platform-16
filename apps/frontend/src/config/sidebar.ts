@@ -380,6 +380,7 @@ export const getSidebarConfig = (
                     { to: '/my-apps', icon: CheckCircleIcon, label: t('sidebar.activatedApps') },
                     { to: '/billing/wallet', icon: WalletIcon, label: t('sidebar.wallet') },
                     { to: '/subscription', icon: CreditCardIcon, label: t('sidebar.subscription') },
+                    { to: '/subscription/pricing', icon: ClipboardDocumentListIcon, label: t('sidebar.appPricingSheet') },
                 ],
             },
             {
@@ -905,6 +906,7 @@ export const getSidebarConfig = (
                 { to: '/invoices', icon: DocumentTextIcon, label: t('sidebar.myInvoices') },
                 { to: '/payments', icon: BanknotesIcon, label: t('sidebar.myPayments') },
                 { to: '/subscription', icon: CreditCardIcon, label: t('sidebar.mySubscription') },
+                { to: '/subscription/pricing', icon: ClipboardDocumentListIcon, label: t('sidebar.appPricingSheet') },
             ]
         },
 

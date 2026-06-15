@@ -971,6 +971,9 @@ const MySubscription = React.lazy(
   () => import("./pages/subscription/MySubscription"),
 );
 const UsageStats = React.lazy(() => import("./pages/subscription/UsageStats"));
+const AppPricingSheet = React.lazy(
+  () => import("./pages/subscription/AppPricingSheet"),
+);
 
 // Knowledge base admin components
 const FAQManagement = React.lazy(
@@ -2319,6 +2322,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <UsageStats />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/subscription/pricing"
+                  element={
+                    <Layout>
+                      <AppPricingSheet />
                     </Layout>
                   }
                 />
@@ -4336,6 +4347,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <MySubscription />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/subscription/pricing"
+                  element={
+                    <Layout>
+                      <AppPricingSheet />
                     </Layout>
                   }
                 />
