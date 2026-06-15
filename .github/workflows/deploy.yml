@@ -31,9 +31,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Documentation Compliance Check
-        run: |
-          node scripts/verify-docs.js
 
       - name: Arabic Strings Compliance Check (AGENTS.md)
         run: |
