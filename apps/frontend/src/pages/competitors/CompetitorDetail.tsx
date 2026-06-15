@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, RefreshCw, BarChart2, TrendingUp, Scale, History, Settings, Instagram, Share2, Crosshair, Lightbulb, Plus, Pencil, Trash2, X, AlertTriangle, CheckCircle, Clock, Play } from 'lucide-react';
+import { ArrowLeft, ExternalLink, RefreshCw, BarChart2, TrendingUp, Scale, History, Settings, Instagram, Share2, Crosshair, Lightbulb, Plus, Pencil, Trash2, X, AlertTriangle, CheckCircle2, Circle } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import CompetitorFeatures from './CompetitorFeatures';
 
@@ -49,7 +49,6 @@ interface DevTask {
 
 interface DevRecommendation {
   id: string;
-  notes: string | null;
   tasks: DevTask[];
 }
 
@@ -64,9 +63,7 @@ const CompetitorDetail: React.FC = () => {
   const [reports, setReports] = useState<CompetitorReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [devRec, setDevRec] = useState<DevRecommendation | null>(null);
-  const [editingNotes, setEditingNotes] = useState('');
-  const [savingNotes, setSavingNotes] = useState(false);
-  const [notesSaved, setNotesSaved] = useState(false);
+  const [newTaskText, setNewTaskText] = useState('');
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [editingTask, setEditingTask] = useState<DevTask | null>(null);
   const [taskForm, setTaskForm] = useState({ title: '', description: '', status: 'not_started', targetDate: '' });
@@ -96,7 +93,6 @@ const CompetitorDetail: React.FC = () => {
       const res = await apiClient.get(`/competitors/${id}/dev-recommendations`);
       if (res.data.success) {
         setDevRec(res.data.data);
-        setEditingNotes(res.data.data.notes || '');
       }
     } catch {
       console.error('Failed to fetch dev recommendations');
@@ -106,19 +102,27 @@ const CompetitorDetail: React.FC = () => {
   useEffect(() => { fetchData(); }, [id]);
   useEffect(() => { if (id) fetchDevRecommendations(); }, [id]);
 
-  const saveNotes = async () => {
+  const handleAddTask = () => {
+    const text = newTaskText.trim();
+    if (!text || !id) return;
+    apiClient.post(`/competitors/${id}/dev-tasks`, { title: text, status: 'not_started' }).then(res => {
+      if (res.data.success) {
+        setNewTaskText('');
+        fetchDevRecommendations();
+      }
+    }).catch(() => {});
+  };
+
+  const handleToggleTask = (task: DevTask) => {
     if (!id) return;
-    setSavingNotes(true);
-    try {
-      await apiClient.put(`/competitors/${id}/dev-recommendations`, { notes: editingNotes });
-      setNotesSaved(true);
-      setTimeout(() => setNotesSaved(false), 2000);
-      fetchDevRecommendations();
-    } catch {
-      console.error('Failed to save notes');
-    } finally {
-      setSavingNotes(false);
-    }
+    apiClient.put(`/competitors/${id}/dev-tasks/${task.id}/toggle`).then(res => {
+      if (res.data.success) {
+        setDevRec(prev => prev ? {
+          ...prev,
+          tasks: prev.tasks.map(t => t.id === task.id ? { ...t, status: res.data.data.status } : t),
+        } : prev);
+      }
+    }).catch(() => {});
   };
 
   const openAddTask = () => {
@@ -134,7 +138,7 @@ const CompetitorDetail: React.FC = () => {
       title: task.title,
       description: task.description || '',
       status: task.status,
-      targetDate: task.targetDate ? task.targetDate.split('T')[0] : '',
+      targetDate: '',
     });
     setTaskError('');
     setShowTaskModal(true);
@@ -160,13 +164,10 @@ const CompetitorDetail: React.FC = () => {
   };
 
   const deleteTask = async (taskId: string) => {
+    if (!id) return;
     if (!confirm(t('competitors.devRecommendations.confirmDelete'))) return;
-    try {
-      await apiClient.delete(`/competitors/${id}/dev-tasks/${taskId}`);
-      fetchDevRecommendations();
-    } catch {
-      console.error('Failed to delete task');
-    }
+    setDevRec(prev => prev ? { ...prev, tasks: prev.tasks.filter(t => t.id !== taskId) } : prev);
+    apiClient.delete(`/competitors/${id}/dev-tasks/${taskId}`).catch(() => fetchDevRecommendations());
   };
 
   const generateReport = async (type: string) => {
@@ -177,23 +178,6 @@ const CompetitorDetail: React.FC = () => {
     } catch {
       console.error('Failed to generate report');
     }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed': return <CheckCircle size={16} className="text-green-500" />;
-      case 'in_progress': return <Play size={16} className="text-blue-500" />;
-      default: return <Clock size={16} className="text-gray-400" />;
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const classes: Record<string, string> = {
-      not_started: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-      in_progress: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-      completed: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-    };
-    return classes[status] || classes.not_started;
   };
 
   const getTaskStats = () => {
@@ -342,94 +326,112 @@ const CompetitorDetail: React.FC = () => {
             </div>
           )}
 
-          {/* Dev Recommendations */}
+          {/* Dev Recommendations — Professional To-Do List */}
           <div className="border rounded-lg p-4 dark:border-gray-700 border-blue-200 dark:border-blue-800">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-blue-600 dark:text-blue-400">{t('competitors.devRecommendations.title')}</h3>
-              <button
-                onClick={saveNotes}
-                disabled={savingNotes}
-                className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                  notesSaved
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                    : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
-                }`}
-              >
-                {savingNotes ? '...' : notesSaved ? t('competitors.devRecommendations.notesSaved') : t('common.save')}
+              <button onClick={openAddTask} className="flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                <Plus size={14} /> {t('competitors.devRecommendations.addTask')}
               </button>
             </div>
 
-            <textarea
-              value={editingNotes}
-              onChange={e => { setEditingNotes(e.target.value); setNotesSaved(false); }}
-              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 text-sm whitespace-pre-wrap"
-              rows={8}
-              placeholder={t('competitors.devRecommendations.notesPlaceholder')}
-            />
+            {/* Stats Bar */}
+            <div className="flex flex-wrap gap-2 mb-4 text-xs">
+              <span className="px-2.5 py-1 bg-gray-100 dark:bg-gray-800 rounded-full font-medium">
+                {t('competitors.devRecommendations.stats.total')} <span className="text-blue-600 dark:text-blue-400">{taskStats.total}</span>
+              </span>
+              <span className="px-2.5 py-1 bg-gray-100 dark:bg-gray-800 rounded-full font-medium">
+                {t('competitors.devRecommendations.stats.completed')} <span className="text-green-600 dark:text-green-400">{taskStats.completed}</span>
+              </span>
+              <span className="px-2.5 py-1 bg-gray-100 dark:bg-gray-800 rounded-full font-medium">
+                {t('competitors.devRecommendations.stats.notStarted')} <span className="text-amber-600 dark:text-amber-400">{taskStats.notStarted}</span>
+              </span>
+            </div>
 
-            {/* Task Stats */}
-            {devRec?.tasks?.length > 0 && (
-              <div className="flex gap-3 mt-3 text-xs">
-                <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-full">
-                  {t('competitors.devRecommendations.stats.total')}: {taskStats.total}
-                </span>
-                <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-500">
-                  {t('competitors.devRecommendations.stats.notStarted')}: {taskStats.notStarted}
-                </span>
-                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded-full text-blue-700 dark:text-blue-300">
-                  {t('competitors.devRecommendations.stats.inProgress')}: {taskStats.inProgress}
-                </span>
-                <span className="px-2 py-1 bg-green-100 dark:bg-green-900 rounded-full text-green-700 dark:text-green-300">
-                  {t('competitors.devRecommendations.stats.completed')}: {taskStats.completed}
-                </span>
+            {/* Quick Add Input */}
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                value={newTaskText}
+                onChange={e => setNewTaskText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddTask(); } }}
+                className="flex-1 px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 text-sm"
+                placeholder={t('competitors.devRecommendations.notesPlaceholder')}
+              />
+              <button
+                onClick={handleAddTask}
+                disabled={!newTaskText.trim()}
+                className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Plus size={18} />
+              </button>
+            </div>
+
+            {/* Tasks List */}
+            {(!devRec?.tasks || devRec.tasks.length === 0) ? (
+              <div className="text-center py-6">
+                <div className="text-3xl mb-2 opacity-30">📋</div>
+                <p className="text-sm text-gray-500">{t('competitors.devRecommendations.noTasks')}</p>
+                <p className="text-xs text-gray-400 mt-1">{t('competitors.devRecommendations.notesPlaceholder')}</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {devRec.tasks.map(task => (
+                  <div
+                    key={task.id}
+                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 ${
+                      task.status === 'completed'
+                        ? 'bg-green-50/50 dark:bg-green-900/10'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/30'
+                    }`}
+                  >
+                    <button
+                      onClick={() => handleToggleTask(task)}
+                      className="shrink-0 focus:outline-none"
+                      title={task.status === 'completed' ? t('competitors.devRecommendations.statuses.not_started') : t('competitors.devRecommendations.statuses.completed')}
+                    >
+                      {task.status === 'completed' ? (
+                        <CheckCircle2 size={20} className="text-green-500 transition-all duration-200 hover:text-green-600" />
+                      ) : (
+                        <Circle size={20} className="text-gray-300 dark:text-gray-600 hover:text-blue-400 transition-all duration-200" />
+                      )}
+                    </button>
+
+                    <div className="flex-1 min-w-0">
+                      <span
+                        className={`text-sm block transition-all duration-200 ${
+                          task.status === 'completed'
+                            ? 'line-through text-gray-400 dark:text-gray-500'
+                            : 'text-gray-800 dark:text-gray-200'
+                        }`}
+                      >
+                        {task.title}
+                      </span>
+                      <span className="text-[10px] text-gray-400">
+                        {new Date(task.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                      <button
+                        onClick={() => openEditTask(task)}
+                        className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                        title={t('competitors.devRecommendations.editTask')}
+                      >
+                        <Pencil size={14} className="text-gray-400" />
+                      </button>
+                      <button
+                        onClick={() => deleteTask(task.id)}
+                        className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900"
+                        title={t('competitors.devRecommendations.deleteTask')}
+                      >
+                        <Trash2 size={14} className="text-red-400" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
-
-            {/* Tasks Section */}
-            <div className="mt-4 pt-4 border-t dark:border-gray-700">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300">{t('competitors.devRecommendations.tasks')}</h4>
-                <button onClick={openAddTask} className="flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                  <Plus size={14} /> {t('competitors.devRecommendations.addTask')}
-                </button>
-              </div>
-
-              {(!devRec?.tasks || devRec.tasks.length === 0) ? (
-                <p className="text-sm text-gray-500 text-center py-4">{t('competitors.devRecommendations.noTasks')}</p>
-              ) : (
-                <div className="space-y-2">
-                  {devRec.tasks.map(task => (
-                    <div key={task.id} className="flex items-start gap-3 p-3 border rounded-lg dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                      <div className="mt-0.5">{getStatusIcon(task.status)}</div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{task.title}</span>
-                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${getStatusBadge(task.status)}`}>
-                            {t(`competitors.devRecommendations.statuses.${task.status}`)}
-                          </span>
-                        </div>
-                        {task.description && (
-                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{task.description}</p>
-                        )}
-                        {task.targetDate && (
-                          <p className="text-xs text-gray-400 mt-1">
-                            {t('competitors.devRecommendations.targetDate')}: {new Date(task.targetDate).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex gap-1 shrink-0">
-                        <button onClick={() => openEditTask(task)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-                          <Pencil size={14} className="text-gray-400" />
-                        </button>
-                        <button onClick={() => deleteTask(task.id)} className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900">
-                          <Trash2 size={14} className="text-red-400" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Price Comparison */}
@@ -591,29 +593,8 @@ const CompetitorDetail: React.FC = () => {
                   value={taskForm.description}
                   onChange={e => setTaskForm(p => ({ ...p, description: e.target.value }))}
                   className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 text-sm"
-                  rows={3}
+                  rows={2}
                   placeholder={t('competitors.devRecommendations.taskDescriptionPlaceholder')}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{t('competitors.devRecommendations.taskStatus')}</label>
-                <select
-                  value={taskForm.status}
-                  onChange={e => setTaskForm(p => ({ ...p, status: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
-                >
-                  <option value="not_started">{t('competitors.devRecommendations.statuses.not_started')}</option>
-                  <option value="in_progress">{t('competitors.devRecommendations.statuses.in_progress')}</option>
-                  <option value="completed">{t('competitors.devRecommendations.statuses.completed')}</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{t('competitors.devRecommendations.targetDate')}</label>
-                <input
-                  type="date"
-                  value={taskForm.targetDate}
-                  onChange={e => setTaskForm(p => ({ ...p, targetDate: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
                 />
               </div>
               {taskError && (

@@ -103,6 +103,28 @@ class CompetitorDevRecommendationService {
     return updated;
   }
 
+  static async toggleTask(companyId, competitorId, taskId) {
+    const competitor = await getPrisma().competitor.findFirst({ where: { id: competitorId, companyId } });
+    if (!competitor) return null;
+
+    const task = await getPrisma().competitorDevTask.findFirst({
+      where: {
+        id: taskId,
+        recommendation: { competitorId },
+      },
+    });
+    if (!task) return null;
+
+    const newStatus = task.status === 'completed' ? 'not_started' : 'completed';
+
+    const updated = await getPrisma().competitorDevTask.update({
+      where: { id: taskId },
+      data: { status: newStatus },
+    });
+
+    return updated;
+  }
+
   static async deleteTask(companyId, competitorId, taskId) {
     const competitor = await getPrisma().competitor.findFirst({ where: { id: competitorId, companyId } });
     if (!competitor) return false;

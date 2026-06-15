@@ -529,6 +529,19 @@ exports.updateDevTask = async (req, res) => {
   }
 };
 
+exports.toggleDevTask = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { taskId } = req.params;
+    const task = await CompetitorDevRecommendationService.toggleTask(companyId, req.params.id, taskId);
+    if (!task) return res.status(404).json({ success: false, error: t('competitor.feature_not_found') });
+    res.json({ success: true, data: task });
+  } catch (error) {
+    console.error('Error toggling dev task:', error);
+    res.status(500).json({ success: false, error: t('competitor.feature_update_failed') });
+  }
+};
+
 exports.deleteDevTask = async (req, res) => {
   try {
     const { companyId } = req.user;

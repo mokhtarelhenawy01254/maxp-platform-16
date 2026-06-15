@@ -30,6 +30,7 @@ router.get('/:id/dev-recommendations', controller.getDevRecommendations);
 router.put('/:id/dev-recommendations', controller.upsertDevRecommendationNotes);
 router.post('/:id/dev-tasks', controller.addDevTask);
 router.put('/:id/dev-tasks/:taskId', controller.updateDevTask);
+router.put('/:id/dev-tasks/:taskId/toggle', controller.toggleDevTask);
 router.delete('/:id/dev-tasks/:taskId', controller.deleteDevTask);
 
 router.get('/:id/price-compare', controller.priceCompare);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Search, RefreshCw, Plus, Pencil, Trash2, X, AlertTriangle, ExternalLink, Eye } from 'lucide-react';
+import { Search, RefreshCw, Plus, Pencil, Trash2, X, AlertTriangle, ExternalLink, Eye, CheckCircle2, Circle } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 
 interface SocialProfile {
@@ -26,6 +26,13 @@ interface Competitor {
   createdAt: string;
   socialProfiles: SocialProfile[];
   _count: { products: number; ads: number; reports: number };
+}
+
+interface DevTask {
+  id: string;
+  title: string;
+  status: string;
+  createdAt: string;
 }
 
 const SOCIAL_PLATFORMS = [
@@ -59,6 +66,9 @@ const CompetitorList: React.FC = () => {
   const [showSocialSection, setShowSocialSection] = useState(false);
   const [formError, setFormError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [devTasks, setDevTasks] = useState<DevTask[]>([]);
+  const [newTaskText, setNewTaskText] = useState('');
+  const [pendingTasks, setPendingTasks] = useState<string[]>([]);
 
   const fetchCompetitors = useCallback(async () => {
     setIsLoading(true);
@@ -82,6 +92,9 @@ const CompetitorList: React.FC = () => {
     setSocialLinks(Object.fromEntries(SOCIAL_PLATFORMS.map(p => [p.key, ''])));
     setShowSocialSection(false);
     setFormError('');
+    setDevTasks([]);
+    setPendingTasks([]);
+    setNewTaskText('');
     setShowModal(true);
   };
 
@@ -93,6 +106,14 @@ const CompetitorList: React.FC = () => {
       targetMarket: c.targetMarket || '', foundedYear: c.foundedYear?.toString() || '',
       strengths: c.strengths || '', weaknesses: c.weaknesses || '', devNotes: '',
     });
+    setPendingTasks([]);
+    setNewTaskText('');
+    setDevTasks([]);
+    apiClient.get(`/competitors/${c.id}/dev-recommendations`).then(res => {
+      if (res.data.success && res.data.data?.tasks) {
+        setDevTasks(res.data.data.tasks);
+      }
+    }).catch(() => {});
     const links: Record<string, string> = Object.fromEntries(SOCIAL_PLATFORMS.map(p => [p.key, '']));
     if (c.socialProfiles) {
       c.socialProfiles.forEach(sp => { if (links.hasOwnProperty(sp.platform)) links[sp.platform] = sp.profileUrl || ''; });
@@ -101,6 +122,42 @@ const CompetitorList: React.FC = () => {
     setShowSocialSection(c.socialProfiles?.length > 0);
     setFormError('');
     setShowModal(true);
+  };
+
+  const handleAddTask = () => {
+    const text = newTaskText.trim();
+    if (!text) return;
+    if (editingId) {
+      apiClient.post(`/competitors/${editingId}/dev-tasks`, { title: text, status: 'not_started' }).then(res => {
+        if (res.data.success) {
+          setDevTasks(prev => [res.data.data, ...prev]);
+          setNewTaskText('');
+        }
+      }).catch(() => {});
+    } else {
+      setPendingTasks(prev => [text, ...prev]);
+      setNewTaskText('');
+    }
+  };
+
+  const handleToggleTask = (task: DevTask) => {
+    if (editingId) {
+      apiClient.put(`/competitors/${editingId}/dev-tasks/${task.id}/toggle`).then(res => {
+        if (res.data.success) {
+          setDevTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: res.data.data.status } : t));
+        }
+      }).catch(() => {});
+    }
+  };
+
+  const handleDeleteTask = (task: DevTask) => {
+    if (editingId) {
+      apiClient.delete(`/competitors/${editingId}/dev-tasks/${task.id}`).then(() => {
+        setDevTasks(prev => prev.filter(t => t.id !== task.id));
+      }).catch(() => {});
+    } else {
+      setPendingTasks(prev => prev.filter(t => t !== task.title));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -120,8 +177,10 @@ const CompetitorList: React.FC = () => {
         const res = await apiClient.post('/competitors', { ...formData, socialProfiles });
         if (res.data?.data?.id) competitorId = res.data.data.id;
       }
-      if (competitorId && formData.devNotes) {
-        await apiClient.put(`/competitors/${competitorId}/dev-recommendations`, { notes: formData.devNotes });
+      if (competitorId && pendingTasks.length > 0) {
+        for (const title of pendingTasks) {
+          await apiClient.post(`/competitors/${competitorId}/dev-tasks`, { title, status: 'not_started' });
+        }
       }
       setShowModal(false);
       fetchCompetitors();
@@ -421,18 +480,62 @@ const CompetitorList: React.FC = () => {
                 </div>
               </div>
 
-              {/* Dev Recommendations */}
+              {/* Dev Recommendations — To-Do List */}
               <div className="border-t pt-4">
                 <h3 className="text-sm font-bold mb-3 text-blue-600 dark:text-blue-400">{t('competitors.devRecommendations.title')}</h3>
-                <div>
-                  <label className="block text-sm font-medium mb-1">{t('competitors.devRecommendations.notes')}</label>
-                  <textarea
-                    value={formData.devNotes}
-                    onChange={e => setFormData(p => ({ ...p, devNotes: e.target.value }))}
-                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 text-sm whitespace-pre-wrap"
-                    rows={8}
-                    placeholder={t('competitors.devRecommendations.notesPlaceholder')}
-                  />
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newTaskText}
+                      onChange={e => setNewTaskText(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddTask(); } }}
+                      className="flex-1 px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 text-sm"
+                      placeholder={t('competitors.devRecommendations.notesPlaceholder')}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddTask}
+                      disabled={!newTaskText.trim()}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto space-y-1">
+                    {pendingTasks.map((title, idx) => (
+                      <div key={`pending-${idx}`} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-sm group">
+                        <Circle size={14} className="text-gray-300 shrink-0" />
+                        <span className="flex-1">{title}</span>
+                        <button type="button" onClick={() => setPendingTasks(prev => prev.filter((_, i) => i !== idx))} className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900">
+                          <Trash2 size={12} className="text-red-400" />
+                        </button>
+                      </div>
+                    ))}
+                    {(editingId ? devTasks : []).map(task => (
+                      <div key={task.id} className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm group transition-colors ${task.status === 'completed' ? 'bg-green-50 dark:bg-green-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                        <button type="button" onClick={() => handleToggleTask(task)} className="shrink-0">
+                          {task.status === 'completed' ? (
+                            <CheckCircle2 size={16} className="text-green-500" />
+                          ) : (
+                            <Circle size={16} className="text-gray-300 hover:text-blue-400" />
+                          )}
+                        </button>
+                        <span className={`flex-1 ${task.status === 'completed' ? 'line-through text-gray-400 dark:text-gray-500' : ''}`}>
+                          {task.title}
+                        </span>
+                        <span className="text-[10px] text-gray-400 hidden sm:inline">
+                          {new Date(task.createdAt).toLocaleDateString()}
+                        </span>
+                        <button type="button" onClick={() => handleDeleteTask(task)} className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900 transition-opacity">
+                          <Trash2 size={12} className="text-red-400" />
+                        </button>
+                      </div>
+                    ))}
+                    {((editingId ? devTasks : []).length === 0 && pendingTasks.length === 0) && (
+                      <p className="text-xs text-gray-400 text-center py-3">{t('competitors.devRecommendations.noTasks')}</p>
+                    )}
+                  </div>
                 </div>
               </div>
 
