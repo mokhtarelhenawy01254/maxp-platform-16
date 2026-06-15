@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const LOCALES_DIR = path.join(__dirname, '../frontend/src/locales');
+const LOCALES_DIR = path.join(__dirname, '../apps/frontend/src/locales');
 
 function getAllKeys(obj, prefix = '') {
   let keys = [];

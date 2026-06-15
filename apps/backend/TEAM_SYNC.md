@@ -44,14 +44,15 @@
   - `apps/frontend/src/locales/en/sections/competitors.json` [MODIFY]
   - `apps/backend/Structure.md` [MODIFY]
 
-## [2026-06-15] App Pricing Sheet Page — Billing & Subscriptions [DONE]
-- **Objective**: Add an Excel-like app pricing sheet page under the Billing & Subscriptions section showing all marketplace apps with their pricing models (subscription, pay-per-use, free trial).
+## [2026-06-15] App Pricing Sheet Page — Billing & Subscriptions & Localization [DONE]
+- **Objective**: Add an Excel-like app pricing sheet page under the Billing & Subscriptions section showing all marketplace apps with their pricing models (subscription, pay-per-use, free trial), localize it fully, and resolve build/compilation blockages.
 - **Accomplishments**:
   - **New Page `AppPricingSheet.tsx`**: Built a full-featured pricing table with KPI dashboard cards (total apps, paid, pay-per-use, free), search/filter/sort, and CSV export with Arabic BOM support.
   - **Route Registration**: Added `/subscription/pricing` route to both authenticated router sections in `App.tsx`.
   - **Sidebar Integration**: Added "App Pricing Sheet" link under the Billing section in `sidebar.ts`.
-  - **Localization**: Added `appPricingSheet` key to both `ar` and `en` sidebar translation files.
+  - **Localization**: Added `appPricingSheet` key to both `ar` and `en` sidebar translation files. Fully localized all strings in `AppPricingSheet.tsx` into `appPricing.json` (for both `ar` and `en` locales) and registered the new schema under `i18n/index.ts`.
   - **Data Source**: Fetches live pricing data from `/api/v1/marketplace/apps` endpoint.
+  - **Token Manager Fix**: Resolved a duplicate key `hasAccessToken` in `tokenManager.ts` which was causing Vite build failure.
 - **Files**:
   - `apps/frontend/src/pages/subscription/AppPricingSheet.tsx` [NEW]
   - `apps/frontend/src/pages/subscription/index.ts` [MODIFY]
@@ -59,6 +60,10 @@
   - `apps/frontend/src/config/sidebar.ts` [MODIFY]
   - `apps/frontend/src/locales/ar/sections/sidebar.json` [MODIFY]
   - `apps/frontend/src/locales/en/sections/sidebar.json` [MODIFY]
+  - `apps/frontend/src/locales/ar/sections/appPricing.json` [NEW]
+  - `apps/frontend/src/locales/en/sections/appPricing.json` [NEW]
+  - `apps/frontend/src/i18n/index.ts` [MODIFY]
+  - `apps/frontend/src/utils/tokenManager.ts` [MODIFY]
 
 ## [2026-06-15] Unified Inbox RTL/LTR Polish & Translation [DONE]
 - **Objective**: Fix layout alignments, dynamic localizations, and RTL/LTR direction mirroring for the Unified Inbox to match the design reference.
