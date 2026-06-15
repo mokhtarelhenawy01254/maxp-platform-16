@@ -1,3 +1,12 @@
+## [2026-06-15] Fix — Alembic Duplicate Revision 0013 Causing Deployment Failure
+- **Details**: CI/CD deployment was failing with `Multiple head revisions are present for given argument 'head'` because both `0013_approval_request_metadata.py` (server-side) and `0013_knowledge_embeddings.py` (created locally by mistake) had the same revision ID `0013`. The `del` command in Git Bash on Windows does not delete files — it is a CMD-only command. The file was not actually deleted despite appearing to succeed.
+- **Root Cause**: Used `del` in a Bash context on Windows instead of `rm` (Bash) or `Remove-Item` (PowerShell). The file persisted locally and was included in the deployment tarball, giving Alembic two competing `0013` revision heads.
+- **Fix**: Deleted `0013_knowledge_embeddings.py` using PowerShell `Remove-Item`. The correct chain is now `0012 → 0013 (approval_request_metadata) → 0014 (knowledge_embeddings)`.
+- **Lesson**: On Windows, always use `Remove-Item` (PowerShell) or `rm` (Git Bash) to delete files — never `del` in Bash scripts.
+- **Affected Files**:
+  - `apps/ai-service/migrations/versions/0013_knowledge_embeddings.py` — deleted (was duplicate revision)
+  - `apps/ai-service/migrations/versions/0014_knowledge_embeddings.py` — correct file, revision 0014, down_revision 0013
+
 ## [2026-06-15] AI — Knowledge Embeddings Auto-Trigger on FAQ/Policy Create, Update, Delete
 - **Details**: Knowledge embeddings are now generated automatically whenever a FAQ or policy is created or updated — no need to wait for the 3:30 AM cron job. Deletions also clean up the corresponding embedding row immediately.
 - **Architecture**:
