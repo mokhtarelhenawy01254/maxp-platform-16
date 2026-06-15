@@ -5,7 +5,8 @@ import {
   Download,
   FlaskConical,
   ClipboardCheck,
-  ArrowLeftRight
+  ArrowLeftRight,
+  LayoutList
 } from "lucide-react";
 import type { AgentConfig, ModelConfig } from "../types/sandbox.types";
 import type { CentralKeyConfig } from "../types/sandbox.types";
@@ -19,6 +20,7 @@ interface HeaderBarProps {
   centralKeys?: CentralKeyConfig[];
   onAgentChange: (agentId: string) => void;
   onModelChange: (model: string, provider: string, keyId?: string | null) => void;
+  onSessions?: () => void;
   onEvaluate: () => void;
   onCompare?: () => void;
   onExport?: () => void;
@@ -34,6 +36,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   centralKeys = [],
   onAgentChange,
   onModelChange,
+  onSessions,
   onEvaluate,
   onCompare,
   onExport,
@@ -76,7 +79,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   }
 
   return (
-    <div className="px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-3 bg-white dark:bg-slate-900 text-xs select-none">
+    <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-800 flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-3 bg-white dark:bg-slate-900 text-xs select-none">
       <div className="flex items-center gap-2 min-w-0">
         <FlaskConical className="size-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
         <span className="font-bold text-slate-800 dark:text-slate-200 truncate">AI Agent Sandbox</span>
@@ -95,7 +98,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         <select
           value={agent.id}
           onChange={(e) => onAgentChange(e.target.value)}
-          className="rounded-md border border-slate-200 dark:border-slate-800 bg-background px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-650 font-medium w-full sm:w-auto max-w-[140px] sm:max-w-none truncate"
+          className="rounded-md border border-slate-200 dark:border-slate-800 bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-650 font-medium w-full sm:w-auto max-w-[160px] sm:max-w-[200px] truncate"
         >
           {agents.map((a) => (
             <option key={a.id} value={a.id}>
@@ -113,7 +116,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
             const selected = models.find((m) => optionValue(m) === e.target.value);
             if (selected) onModelChange(selected.model, selected.provider, selected.keyId || null);
           }}
-          className="rounded-md border border-slate-200 dark:border-slate-800 bg-background px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-650 font-medium w-full sm:w-auto max-w-[160px] sm:max-w-none truncate"
+          className="rounded-md border border-slate-200 dark:border-slate-800 bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-650 font-medium w-full sm:w-auto max-w-[180px] sm:max-w-[240px] truncate"
         >
           {models.map((m) => (
             <option
@@ -165,6 +168,18 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
           <ClipboardCheck className="size-3.5 text-indigo-600 dark:text-indigo-400" />
           <span>Evaluate</span>
         </Button>
+
+        {onSessions && (
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onSessions}
+            className="size-8 hover:bg-slate-100 dark:hover:bg-slate-800"
+            title="Toggle sessions sidebar"
+          >
+            <LayoutList className="size-4 text-slate-650" />
+          </Button>
+        )}
 
         {onExport && (
           <Button

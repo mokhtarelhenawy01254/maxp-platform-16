@@ -226,7 +226,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full min-w-0 bg-slate-50/20 dark:bg-slate-905">
+    <div className="flex-1 flex flex-col h-full min-w-0 bg-slate-50/20 dark:bg-slate-905 overflow-hidden">
       {/* Scrollable Chat Message History */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.map((msg) => {
@@ -273,7 +273,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                   ))}
                   
                   {text && (
-                    <p className="whitespace-pre-wrap leading-relaxed">
+                    <p className="whitespace-pre-wrap leading-relaxed pr-7">
                       {text}
                     </p>
                   )}
@@ -281,7 +281,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                   {/* Copy Button */}
                   <button
                     onClick={() => copyToClipboard(msg.content, msg.id)}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded shadow-xs"
+                    className="absolute top-2 end-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded shadow-xs z-10"
                     title={t("aiHub.sandbox.chat.copyMessage")}
                     aria-label={t("aiHub.sandbox.chat.copyMessage")}
                   >

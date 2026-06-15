@@ -133,7 +133,7 @@ const AIAgentSandboxPage: React.FC = () => {
   };
 
   return (
-    <div className="h-[calc(100dvh-140px)] md:h-[calc(100vh-140px)] flex flex-col bg-slate-50/20 dark:bg-slate-950 overflow-hidden relative p-2 md:p-4 md:m-6 bg-background border rounded-xl shadow-sm">
+    <div className="h-[calc(100dvh-116px)] md:h-[calc(100vh-100px)] flex flex-col bg-slate-50/20 dark:bg-slate-950 overflow-hidden relative md:p-1 bg-background border-y md:border rounded-none md:rounded-xl shadow-sm">
       {/* Top Header Controls */}
       <HeaderBar
         agent={selectedAgent}
@@ -222,7 +222,7 @@ const AIAgentSandboxPage: React.FC = () => {
 
 
        {/* Mobile Bottom Navigation */}
-       <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-2 flex justify-around items-center pb-safe">
+       <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-2 flex justify-around items-center pb-safe shrink-0">
          <button 
            onClick={() => setActiveMobilePanel('sessions')}
            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${activeMobilePanel === 'sessions' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 scale-105' : 'text-slate-500 opacity-70'}`}
