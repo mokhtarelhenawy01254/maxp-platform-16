@@ -261,6 +261,46 @@
     "confidence": "Confidence",
     "category": "Category"
   },
+  "devRecommendations": {
+    "title": "Development Recommendations",
+    "notes": "Detailed Notes",
+    "notesPlaceholder": "Write your development notes here...\nExample:\n- Features the competitor has\n- Ideas we want to implement\n- Suggested improvements\n- Observed strengths\n- Competitive advantages worth implementing\n- Strategic observations\n- Lessons learned",
+    "notesSaved": "Notes saved successfully",
+    "tasks": "Development To-Do List",
+    "addTask": "Add Task",
+    "editTask": "Edit Task",
+    "deleteTask": "Delete Task",
+    "taskTitle": "Task Title",
+    "taskTitlePlaceholder": "Enter task title",
+    "taskDescription": "Task Description",
+    "taskDescriptionPlaceholder": "Enter task description",
+    "taskStatus": "Status",
+    "targetDate": "Target Date",
+    "statuses": {
+      "not_started": "Not Started",
+      "in_progress": "In Progress",
+      "completed": "Completed"
+    },
+    "noTasks": "No development tasks yet",
+    "noNotes": "No development recommendations yet",
+    "confirmDelete": "Are you sure you want to delete this task?",
+    "taskAdded": "Task added successfully",
+    "taskUpdated": "Task updated successfully",
+    "taskDeleted": "Task deleted successfully",
+    "titleRequired": "Task title is required",
+    "stats": {
+      "total": "Total Tasks",
+      "notStarted": "Not Started",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "whatWeLike": "What we liked about the competitor",
+    "whatToImplement": "What we recommend to implement",
+    "whatIsDone": "What has been implemented",
+    "whatInProgress": "What is in progress",
+    "futureIdeas": "Deferred or future ideas",
+    "priorities": "Development priorities"
+  },
   "features": {
     "title": "Feature Ideas",
     "addFeature": "Add Feature Idea",

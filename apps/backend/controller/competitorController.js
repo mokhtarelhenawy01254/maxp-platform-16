@@ -1,5 +1,6 @@
 const CompetitorService = require('../services/competitorService');
 const CompetitorFeatureService = require('../services/competitorFeatureService');
+const CompetitorDevRecommendationService = require('../services/competitorDevRecommendationService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { t } = require('../services/i18n');
 const getPrisma = () => getSharedPrismaClient();
@@ -474,6 +475,69 @@ exports.deleteFeature = async (req, res) => {
     res.json({ success: true, message: t('competitor.feature_delete_success') });
   } catch (error) {
     console.error('Error deleting feature:', error);
+    res.status(500).json({ success: false, error: t('competitor.feature_delete_failed') });
+  }
+};
+
+exports.getDevRecommendations = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const recommendation = await CompetitorDevRecommendationService.getByCompetitorId(companyId, req.params.id);
+    if (!recommendation) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.json({ success: true, data: recommendation });
+  } catch (error) {
+    console.error('Error fetching dev recommendations:', error);
+    res.status(500).json({ success: false, error: t('competitor.get_failed') });
+  }
+};
+
+exports.upsertDevRecommendationNotes = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { notes } = req.body;
+    const recommendation = await CompetitorDevRecommendationService.upsertNotes(companyId, req.params.id, notes);
+    if (!recommendation) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.json({ success: true, data: recommendation });
+  } catch (error) {
+    console.error('Error saving dev recommendations:', error);
+    res.status(500).json({ success: false, error: t('competitor.update_failed') });
+  }
+};
+
+exports.addDevTask = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const task = await CompetitorDevRecommendationService.addTask(companyId, req.params.id, req.body);
+    if (!task) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.status(201).json({ success: true, data: task });
+  } catch (error) {
+    console.error('Error adding dev task:', error);
+    res.status(500).json({ success: false, error: t('competitor.feature_create_failed') });
+  }
+};
+
+exports.updateDevTask = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { taskId } = req.params;
+    const task = await CompetitorDevRecommendationService.updateTask(companyId, req.params.id, taskId, req.body);
+    if (!task) return res.status(404).json({ success: false, error: t('competitor.feature_not_found') });
+    res.json({ success: true, data: task });
+  } catch (error) {
+    console.error('Error updating dev task:', error);
+    res.status(500).json({ success: false, error: t('competitor.feature_update_failed') });
+  }
+};
+
+exports.deleteDevTask = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { taskId } = req.params;
+    const deleted = await CompetitorDevRecommendationService.deleteTask(companyId, req.params.id, taskId);
+    if (!deleted) return res.status(404).json({ success: false, error: t('competitor.feature_not_found') });
+    res.json({ success: true, message: t('competitor.feature_delete_success') });
+  } catch (error) {
+    console.error('Error deleting dev task:', error);
     res.status(500).json({ success: false, error: t('competitor.feature_delete_failed') });
   }
 };

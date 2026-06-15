@@ -261,6 +261,46 @@
     "confidence": "الثقة",
     "category": "التصنيف"
   },
+  "devRecommendations": {
+    "title": "التوصيات التطويرية",
+    "notes": "ملاحظات تفصيلية",
+    "notesPlaceholder": "اكتب ملاحظاتك التطويرية هنا...\nمثال:\n- المميزات الموجودة لدى المنافس\n- الأفكار التي نرغب في تطبيقها\n- التحسينات المقترحة\n- نقاط القوة التي تم رصدها\n- المزايا التنافسية\n- الملاحظات الاستراتيجية\n- الدروس المستفادة",
+    "notesSaved": "تم حفظ الملاحظات",
+    "tasks": "قائمة المهام التطويرية",
+    "addTask": "إضافة مهمة",
+    "editTask": "تعديل المهمة",
+    "deleteTask": "حذف المهمة",
+    "taskTitle": "عنوان المهمة",
+    "taskTitlePlaceholder": "أدخل عنوان المهمة",
+    "taskDescription": "وصف المهمة",
+    "taskDescriptionPlaceholder": "أدخل وصف المهمة",
+    "taskStatus": "حالة التنفيذ",
+    "targetDate": "تاريخ مستهدف",
+    "statuses": {
+      "not_started": "لم يبدأ",
+      "in_progress": "قيد التنفيذ",
+      "completed": "مكتمل"
+    },
+    "noTasks": "لا توجد مهام تطويرية بعد",
+    "noNotes": "لم يتم إضافة توصيات تطويرية بعد",
+    "confirmDelete": "هل أنت متأكد من حذف هذه المهمة؟",
+    "taskAdded": "تم إضافة المهمة بنجاح",
+    "taskUpdated": "تم تحديث المهمة بنجاح",
+    "taskDeleted": "تم حذف المهمة بنجاح",
+    "titleRequired": "عنوان المهمة مطلوب",
+    "stats": {
+      "total": "إجمالي المهام",
+      "notStarted": "لم يبدأ",
+      "inProgress": "قيد التنفيذ",
+      "completed": "مكتمل"
+    },
+    "whatWeLike": "ما أعجبنا لدى المنافس",
+    "whatToImplement": "ما نوصي بتطبيقه",
+    "whatIsDone": "ما تم تنفيذه",
+    "whatInProgress": "ما قيد التنفيذ",
+    "futureIdeas": "أفكار مؤجلة أو مستقبلية",
+    "priorities": "الأولويات التطويرية"
+  },
   "features": {
     "title": "أفكار الميزات",
     "addFeature": "إضافة فكرة ميزة",

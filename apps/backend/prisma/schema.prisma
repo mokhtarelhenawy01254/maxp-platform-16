@@ -1524,6 +1524,38 @@ model CompetitorFeature {
   @@map("competitor_features")
 }
 
+// --- From: competitors_dev_recommendations.prisma ---
+model CompetitorDevRecommendation {
+  id           String     @id @default(cuid())
+  competitorId String
+  notes        String?    @db.Text
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  competitor   Competitor @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  tasks        CompetitorDevTask[]
+
+  @@index([competitorId])
+  @@map("competitor_dev_recommendations")
+}
+
+model CompetitorDevTask {
+  id               String                     @id @default(cuid())
+  recommendationId String
+  title            String
+  description      String?                    @db.Text
+  status           String                     @default("not_started")
+  targetDate       DateTime?
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+
+  recommendation   CompetitorDevRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+
+  @@index([recommendationId])
+  @@index([recommendationId, status])
+  @@map("competitor_dev_tasks")
+}
+
 // --- From: competitors_platforms.prisma ---
 model CompetitorAmazonData {
   id               String   @id @default(cuid())
@@ -1826,6 +1858,7 @@ model Competitor {
   adCampaigns    CompetitorAdCampaign[]
   adIntelligence CompetitorAdIntelligence[]
   features       CompetitorFeature[]
+  devRecommendations CompetitorDevRecommendation[]
 
   @@unique([companyId, slug])
   @@index([companyId])

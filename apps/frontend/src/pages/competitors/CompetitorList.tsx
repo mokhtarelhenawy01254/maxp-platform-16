@@ -51,7 +51,7 @@ const CompetitorList: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '', url: '', platform: 'manual', description: '', notes: '',
     activityType: '', location: '', targetMarket: '',
-    foundedYear: '', strengths: '', weaknesses: '',
+    foundedYear: '', strengths: '', weaknesses: '', devNotes: '',
   });
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>(
     Object.fromEntries(SOCIAL_PLATFORMS.map(p => [p.key, '']))
@@ -78,7 +78,7 @@ const CompetitorList: React.FC = () => {
 
   const openCreate = () => {
     setEditingId(null);
-    setFormData({ name: '', url: '', platform: 'manual', description: '', notes: '', activityType: '', location: '', targetMarket: '', foundedYear: '', strengths: '', weaknesses: '' });
+    setFormData({ name: '', url: '', platform: 'manual', description: '', notes: '', activityType: '', location: '', targetMarket: '', foundedYear: '', strengths: '', weaknesses: '', devNotes: '' });
     setSocialLinks(Object.fromEntries(SOCIAL_PLATFORMS.map(p => [p.key, ''])));
     setShowSocialSection(false);
     setFormError('');
@@ -91,7 +91,7 @@ const CompetitorList: React.FC = () => {
       name: c.name, url: c.url || '', platform: c.platform, description: '', notes: '',
       activityType: c.activityType || '', location: c.location || '',
       targetMarket: c.targetMarket || '', foundedYear: c.foundedYear?.toString() || '',
-      strengths: c.strengths || '', weaknesses: c.weaknesses || '',
+      strengths: c.strengths || '', weaknesses: c.weaknesses || '', devNotes: '',
     });
     const links: Record<string, string> = Object.fromEntries(SOCIAL_PLATFORMS.map(p => [p.key, '']));
     if (c.socialProfiles) {
@@ -113,10 +113,15 @@ const CompetitorList: React.FC = () => {
       .filter(([, url]) => url && url.trim())
       .map(([platform, url]) => ({ platform, url: url.trim() }));
     try {
+      let competitorId = editingId;
       if (editingId) {
         await apiClient.put(`/competitors/${editingId}`, { ...formData, socialProfiles });
       } else {
-        await apiClient.post('/competitors', { ...formData, socialProfiles });
+        const res = await apiClient.post('/competitors', { ...formData, socialProfiles });
+        if (res.data?.data?.id) competitorId = res.data.data.id;
+      }
+      if (competitorId && formData.devNotes) {
+        await apiClient.put(`/competitors/${competitorId}/dev-recommendations`, { notes: formData.devNotes });
       }
       setShowModal(false);
       fetchCompetitors();
@@ -413,6 +418,21 @@ const CompetitorList: React.FC = () => {
                     />
                     <p className="text-xs text-gray-400 mt-1">اكتب كل نقطة في سطر منفصل</p>
                   </div>
+                </div>
+              </div>
+
+              {/* Dev Recommendations */}
+              <div className="border-t pt-4">
+                <h3 className="text-sm font-bold mb-3 text-blue-600 dark:text-blue-400">{t('competitors.devRecommendations.title')}</h3>
+                <div>
+                  <label className="block text-sm font-medium mb-1">{t('competitors.devRecommendations.notes')}</label>
+                  <textarea
+                    value={formData.devNotes}
+                    onChange={e => setFormData(p => ({ ...p, devNotes: e.target.value }))}
+                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 text-sm whitespace-pre-wrap"
+                    rows={8}
+                    placeholder={t('competitors.devRecommendations.notesPlaceholder')}
+                  />
                 </div>
               </div>
 

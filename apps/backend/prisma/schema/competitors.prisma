@@ -32,6 +32,7 @@ model Competitor {
   adCampaigns     CompetitorAdCampaign[]
   adIntelligence  CompetitorAdIntelligence[]
   features        CompetitorFeature[]
+  devRecommendations CompetitorDevRecommendation[]
 
   @@unique([companyId, slug])
   @@index([companyId])

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, RefreshCw, BarChart2, TrendingUp, Scale, History, Settings, Instagram, Share2, Crosshair, Lightbulb } from 'lucide-react';
+import { ArrowLeft, ExternalLink, RefreshCw, BarChart2, TrendingUp, Scale, History, Settings, Instagram, Share2, Crosshair, Lightbulb, Plus, Pencil, Trash2, X, AlertTriangle, CheckCircle, Clock, Play } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import CompetitorFeatures from './CompetitorFeatures';
 
@@ -38,6 +38,21 @@ interface CompetitorReport {
   generatedAt: string;
 }
 
+interface DevTask {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  targetDate: string | null;
+  createdAt: string;
+}
+
+interface DevRecommendation {
+  id: string;
+  notes: string | null;
+  tasks: DevTask[];
+}
+
 const CompetitorDetail: React.FC = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
@@ -48,6 +63,14 @@ const CompetitorDetail: React.FC = () => {
   const [ads, setAds] = useState<CompetitorAd[]>([]);
   const [reports, setReports] = useState<CompetitorReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [devRec, setDevRec] = useState<DevRecommendation | null>(null);
+  const [editingNotes, setEditingNotes] = useState('');
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<DevTask | null>(null);
+  const [taskForm, setTaskForm] = useState({ title: '', description: '', status: 'not_started', targetDate: '' });
+  const [taskError, setTaskError] = useState('');
 
   const fetchData = async () => {
     if (!id) return;
@@ -67,7 +90,84 @@ const CompetitorDetail: React.FC = () => {
     }
   };
 
+  const fetchDevRecommendations = async () => {
+    if (!id) return;
+    try {
+      const res = await apiClient.get(`/competitors/${id}/dev-recommendations`);
+      if (res.data.success) {
+        setDevRec(res.data.data);
+        setEditingNotes(res.data.data.notes || '');
+      }
+    } catch {
+      console.error('Failed to fetch dev recommendations');
+    }
+  };
+
   useEffect(() => { fetchData(); }, [id]);
+  useEffect(() => { if (id) fetchDevRecommendations(); }, [id]);
+
+  const saveNotes = async () => {
+    if (!id) return;
+    setSavingNotes(true);
+    try {
+      await apiClient.put(`/competitors/${id}/dev-recommendations`, { notes: editingNotes });
+      setNotesSaved(true);
+      setTimeout(() => setNotesSaved(false), 2000);
+      fetchDevRecommendations();
+    } catch {
+      console.error('Failed to save notes');
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
+  const openAddTask = () => {
+    setEditingTask(null);
+    setTaskForm({ title: '', description: '', status: 'not_started', targetDate: '' });
+    setTaskError('');
+    setShowTaskModal(true);
+  };
+
+  const openEditTask = (task: DevTask) => {
+    setEditingTask(task);
+    setTaskForm({
+      title: task.title,
+      description: task.description || '',
+      status: task.status,
+      targetDate: task.targetDate ? task.targetDate.split('T')[0] : '',
+    });
+    setTaskError('');
+    setShowTaskModal(true);
+  };
+
+  const handleTaskSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!taskForm.title.trim()) {
+      setTaskError(t('competitors.devRecommendations.titleRequired'));
+      return;
+    }
+    try {
+      if (editingTask) {
+        await apiClient.put(`/competitors/${id}/dev-tasks/${editingTask.id}`, taskForm);
+      } else {
+        await apiClient.post(`/competitors/${id}/dev-tasks`, taskForm);
+      }
+      setShowTaskModal(false);
+      fetchDevRecommendations();
+    } catch {
+      setTaskError(editingTask ? 'Failed to update task' : 'Failed to create task');
+    }
+  };
+
+  const deleteTask = async (taskId: string) => {
+    if (!confirm(t('competitors.devRecommendations.confirmDelete'))) return;
+    try {
+      await apiClient.delete(`/competitors/${id}/dev-tasks/${taskId}`);
+      fetchDevRecommendations();
+    } catch {
+      console.error('Failed to delete task');
+    }
+  };
 
   const generateReport = async (type: string) => {
     if (!id) return;
@@ -77,6 +177,34 @@ const CompetitorDetail: React.FC = () => {
     } catch {
       console.error('Failed to generate report');
     }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed': return <CheckCircle size={16} className="text-green-500" />;
+      case 'in_progress': return <Play size={16} className="text-blue-500" />;
+      default: return <Clock size={16} className="text-gray-400" />;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const classes: Record<string, string> = {
+      not_started: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+      in_progress: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+      completed: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+    };
+    return classes[status] || classes.not_started;
+  };
+
+  const getTaskStats = () => {
+    if (!devRec?.tasks?.length) return { total: 0, notStarted: 0, inProgress: 0, completed: 0 };
+    const tasks = devRec.tasks;
+    return {
+      total: tasks.length,
+      notStarted: tasks.filter(t => t.status === 'not_started').length,
+      inProgress: tasks.filter(t => t.status === 'in_progress').length,
+      completed: tasks.filter(t => t.status === 'completed').length,
+    };
   };
 
   if (isLoading) {
@@ -97,6 +225,8 @@ const CompetitorDetail: React.FC = () => {
     { key: 'reports', label: t('competitors.reportsTab') },
   ] as const;
 
+  const taskStats = getTaskStats();
+
   return (
     <div className="p-6" dir="auto">
       <div className="flex items-center gap-3 mb-6">
@@ -110,7 +240,7 @@ const CompetitorDetail: React.FC = () => {
             {competitor.url.replace(/^https?:\/\//, '').slice(0, 40)}
           </a>
         )}
-        <button onClick={fetchData} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 ml-auto">
+        <button onClick={() => { fetchData(); fetchDevRecommendations(); }} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 ml-auto">
           <RefreshCw size={18} />
         </button>
       </div>
@@ -130,78 +260,33 @@ const CompetitorDetail: React.FC = () => {
           </div>
         )}
         <div className="flex gap-2 mr-auto">
-          <button
-            onClick={() => navigate(`/competitors/${id}/price-compare`)}
-            className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
-            title={t('competitors.comparison')}
-          >
-            <Scale size={14} />
-            {t('competitors.comparison')}
+          <button onClick={() => navigate(`/competitors/${id}/price-compare`)} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800" title={t('competitors.comparison')}>
+            <Scale size={14} /> {t('competitors.comparison')}
           </button>
-          <button
-            onClick={() => navigate('/competitors/gap-analysis')}
-            className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
-            title={t('competitors.gapAnalysis')}
-          >
-            <BarChart2 size={14} />
-            {t('competitors.gapAnalysis')}
+          <button onClick={() => navigate('/competitors/gap-analysis')} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800" title={t('competitors.gapAnalysis')}>
+            <BarChart2 size={14} /> {t('competitors.gapAnalysis')}
           </button>
-          <button
-            onClick={() => navigate(`/competitors/${id}/products/${competitor.products?.[0]?.id}/price-history`)}
-            className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
-            title={t('competitors.priceHistory')}
-            disabled={!competitor.products?.length}
-          >
-            <History size={14} />
-            {t('competitors.priceHistory')}
+          <button onClick={() => navigate(`/competitors/${id}/products/${competitor.products?.[0]?.id}/price-history`)} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800" title={t('competitors.priceHistory')} disabled={!competitor.products?.length}>
+            <History size={14} /> {t('competitors.priceHistory')}
           </button>
-          <button
-            onClick={() => navigate('/competitors/settings')}
-            className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
-            title={t('competitors.settings')}
-          >
+          <button onClick={() => navigate('/competitors/settings')} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800" title={t('competitors.settings')}>
             <Settings size={14} />
           </button>
           <div className="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-1" />
-          <button
-            onClick={() => navigate(`/competitors/${id}/social`)}
-            className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-pink-600 border-pink-200"
-            title={t('competitors.social.overview')}
-          >
-            <Instagram size={14} />
-            {t('competitors.social.overview')}
+          <button onClick={() => navigate(`/competitors/${id}/social`)} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-pink-600 border-pink-200" title={t('competitors.social.overview')}>
+            <Instagram size={14} /> {t('competitors.social.overview')}
           </button>
-          <button
-            onClick={() => navigate(`/competitors/${id}/ads`)}
-            className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-blue-600 border-blue-200"
-            title={t('competitors.ads.overview')}
-          >
-            <Share2 size={14} />
-            {t('competitors.ads.overview')}
+          <button onClick={() => navigate(`/competitors/${id}/ads`)} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-blue-600 border-blue-200" title={t('competitors.ads.overview')}>
+            <Share2 size={14} /> {t('competitors.ads.overview')}
           </button>
-          <button
-            onClick={() => navigate(`/competitors/${id}/platforms`)}
-            className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-green-600 border-green-200"
-            title={t('competitors.platforms.techStack')}
-          >
-            <TrendingUp size={14} />
-            {t('competitors.platforms.techStack')}
+          <button onClick={() => navigate(`/competitors/${id}/platforms`)} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-green-600 border-green-200" title={t('competitors.platforms.techStack')}>
+            <TrendingUp size={14} /> {t('competitors.platforms.techStack')}
           </button>
-          <button
-            onClick={() => navigate(`/competitors/${id}/battlecard`)}
-            className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-purple-600 border-purple-200"
-            title={t('competitors.battlecard.title')}
-          >
-            <BarChart2 size={14} />
-            {t('competitors.battlecard.title')}
+          <button onClick={() => navigate(`/competitors/${id}/battlecard`)} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-purple-600 border-purple-200" title={t('competitors.battlecard.title')}>
+            <BarChart2 size={14} /> {t('competitors.battlecard.title')}
           </button>
-          <button
-            onClick={() => navigate('/competitors/auto-discover')}
-            className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-yellow-600 border-yellow-200"
-            title={t('competitors.autoDiscover.title')}
-          >
-            <Crosshair size={14} />
-            {t('competitors.autoDiscover.title')}
+          <button onClick={() => navigate('/competitors/auto-discover')} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-yellow-600 border-yellow-200" title={t('competitors.autoDiscover.title')}>
+            <Crosshair size={14} /> {t('competitors.autoDiscover.title')}
           </button>
         </div>
       </div>
@@ -256,6 +341,98 @@ const CompetitorDetail: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Dev Recommendations */}
+          <div className="border rounded-lg p-4 dark:border-gray-700 border-blue-200 dark:border-blue-800">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-blue-600 dark:text-blue-400">{t('competitors.devRecommendations.title')}</h3>
+              <button
+                onClick={saveNotes}
+                disabled={savingNotes}
+                className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                  notesSaved
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                    : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
+                }`}
+              >
+                {savingNotes ? '...' : notesSaved ? t('competitors.devRecommendations.notesSaved') : t('common.save')}
+              </button>
+            </div>
+
+            <textarea
+              value={editingNotes}
+              onChange={e => { setEditingNotes(e.target.value); setNotesSaved(false); }}
+              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 text-sm whitespace-pre-wrap"
+              rows={8}
+              placeholder={t('competitors.devRecommendations.notesPlaceholder')}
+            />
+
+            {/* Task Stats */}
+            {devRec?.tasks?.length > 0 && (
+              <div className="flex gap-3 mt-3 text-xs">
+                <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-full">
+                  {t('competitors.devRecommendations.stats.total')}: {taskStats.total}
+                </span>
+                <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-500">
+                  {t('competitors.devRecommendations.stats.notStarted')}: {taskStats.notStarted}
+                </span>
+                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded-full text-blue-700 dark:text-blue-300">
+                  {t('competitors.devRecommendations.stats.inProgress')}: {taskStats.inProgress}
+                </span>
+                <span className="px-2 py-1 bg-green-100 dark:bg-green-900 rounded-full text-green-700 dark:text-green-300">
+                  {t('competitors.devRecommendations.stats.completed')}: {taskStats.completed}
+                </span>
+              </div>
+            )}
+
+            {/* Tasks Section */}
+            <div className="mt-4 pt-4 border-t dark:border-gray-700">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300">{t('competitors.devRecommendations.tasks')}</h4>
+                <button onClick={openAddTask} className="flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  <Plus size={14} /> {t('competitors.devRecommendations.addTask')}
+                </button>
+              </div>
+
+              {(!devRec?.tasks || devRec.tasks.length === 0) ? (
+                <p className="text-sm text-gray-500 text-center py-4">{t('competitors.devRecommendations.noTasks')}</p>
+              ) : (
+                <div className="space-y-2">
+                  {devRec.tasks.map(task => (
+                    <div key={task.id} className="flex items-start gap-3 p-3 border rounded-lg dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                      <div className="mt-0.5">{getStatusIcon(task.status)}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{task.title}</span>
+                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${getStatusBadge(task.status)}`}>
+                            {t(`competitors.devRecommendations.statuses.${task.status}`)}
+                          </span>
+                        </div>
+                        {task.description && (
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{task.description}</p>
+                        )}
+                        {task.targetDate && (
+                          <p className="text-xs text-gray-400 mt-1">
+                            {t('competitors.devRecommendations.targetDate')}: {new Date(task.targetDate).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <button onClick={() => openEditTask(task)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+                          <Pencil size={14} className="text-gray-400" />
+                        </button>
+                        <button onClick={() => deleteTask(task.id)} className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900">
+                          <Trash2 size={14} className="text-red-400" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Price Comparison */}
           <div className="border rounded-lg p-4 dark:border-gray-700">
             <h3 className="font-semibold mb-2">{t('competitors.priceComparison')}</h3>
             {products.length > 0 ? (
@@ -285,9 +462,7 @@ const CompetitorDetail: React.FC = () => {
               {products.map(p => (
                 <div key={p.id} className="border rounded-lg p-3 dark:border-gray-700">
                   <div className="flex gap-3">
-                    {p.image && (
-                      <img src={p.image} alt={p.name} className="w-16 h-16 rounded object-cover" />
-                    )}
+                    {p.image && <img src={p.image} alt={p.name} className="w-16 h-16 rounded object-cover" />}
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-sm truncate">{p.name}</h4>
                       <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
@@ -298,11 +473,7 @@ const CompetitorDetail: React.FC = () => {
                         <span className={`text-xs px-1.5 py-0.5 rounded ${p.isAvailable ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'}`}>
                           {p.isAvailable ? t('competitors.available') : t('competitors.unavailable')}
                         </span>
-                        {p.url && (
-                          <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-blue-500">
-                            <ExternalLink size={12} />
-                          </a>
-                        )}
+                        {p.url && <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-blue-500"><ExternalLink size={12} /></a>}
                       </div>
                     </div>
                   </div>
@@ -321,19 +492,13 @@ const CompetitorDetail: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {ads.map(a => (
                 <div key={a.id} className="border rounded-lg p-3 dark:border-gray-700">
-                  {a.creativeUrl && (
-                    <img src={a.creativeUrl} alt="Ad" className="w-full h-40 object-cover rounded mb-2" />
-                  )}
+                  {a.creativeUrl && <img src={a.creativeUrl} alt="Ad" className="w-full h-40 object-cover rounded mb-2" />}
                   {a.headline && <h4 className="font-semibold text-sm">{a.headline}</h4>}
                   {a.copy && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-3">{a.copy}</p>}
                   <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
                     <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">{a.platform}</span>
                     <span>{a.status}</span>
-                    {a.destinationUrl && (
-                      <a href={a.destinationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 flex items-center gap-1">
-                        <ExternalLink size={12} />
-                      </a>
-                    )}
+                    {a.destinationUrl && <a href={a.destinationUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 flex items-center gap-1"><ExternalLink size={12} /></a>}
                   </div>
                 </div>
               ))}
@@ -345,10 +510,7 @@ const CompetitorDetail: React.FC = () => {
       {tab === 'social' && (
         <div className="text-center py-12 text-gray-500">
           <p>{t('competitors.social.noSocialProfiles')}</p>
-          <button
-            onClick={() => navigate(`/competitors/${id}/social`)}
-            className="mt-2 text-blue-500 hover:underline text-sm"
-          >
+          <button onClick={() => navigate(`/competitors/${id}/social`)} className="mt-2 text-blue-500 hover:underline text-sm">
             {t('competitors.social.overview')}
           </button>
         </div>
@@ -364,10 +526,7 @@ const CompetitorDetail: React.FC = () => {
       {tab === 'platforms' && (
         <div className="text-center py-12 text-gray-500">
           <p>{t('competitors.platforms.noPlatformData')}</p>
-          <button
-            onClick={() => navigate(`/competitors/${id}/platforms`)}
-            className="mt-2 text-blue-500 hover:underline text-sm"
-          >
+          <button onClick={() => navigate(`/competitors/${id}/platforms`)} className="mt-2 text-blue-500 hover:underline text-sm">
             {t('competitors.platforms.techStack')}
           </button>
         </div>
@@ -401,6 +560,78 @@ const CompetitorDetail: React.FC = () => {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Task Modal */}
+      {showTaskModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowTaskModal(false)}>
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold">{editingTask ? t('competitors.devRecommendations.editTask') : t('competitors.devRecommendations.addTask')}</h2>
+              <button onClick={() => setShowTaskModal(false)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleTaskSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">{t('competitors.devRecommendations.taskTitle')} *</label>
+                <input
+                  type="text"
+                  value={taskForm.title}
+                  onChange={e => setTaskForm(p => ({ ...p, title: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
+                  placeholder={t('competitors.devRecommendations.taskTitlePlaceholder')}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{t('competitors.devRecommendations.taskDescription')}</label>
+                <textarea
+                  value={taskForm.description}
+                  onChange={e => setTaskForm(p => ({ ...p, description: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 text-sm"
+                  rows={3}
+                  placeholder={t('competitors.devRecommendations.taskDescriptionPlaceholder')}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{t('competitors.devRecommendations.taskStatus')}</label>
+                <select
+                  value={taskForm.status}
+                  onChange={e => setTaskForm(p => ({ ...p, status: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
+                >
+                  <option value="not_started">{t('competitors.devRecommendations.statuses.not_started')}</option>
+                  <option value="in_progress">{t('competitors.devRecommendations.statuses.in_progress')}</option>
+                  <option value="completed">{t('competitors.devRecommendations.statuses.completed')}</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">{t('competitors.devRecommendations.targetDate')}</label>
+                <input
+                  type="date"
+                  value={taskForm.targetDate}
+                  onChange={e => setTaskForm(p => ({ ...p, targetDate: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
+                />
+              </div>
+              {taskError && (
+                <div className="flex items-center gap-2 text-red-500 text-sm">
+                  <AlertTriangle size={16} />
+                  {taskError}
+                </div>
+              )}
+              <div className="flex gap-2 justify-end pt-2 border-t">
+                <button type="button" onClick={() => setShowTaskModal(false)} className="px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
+                  {t('common.cancel')}
+                </button>
+                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  {editingTask ? t('common.save') : t('common.create')}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
