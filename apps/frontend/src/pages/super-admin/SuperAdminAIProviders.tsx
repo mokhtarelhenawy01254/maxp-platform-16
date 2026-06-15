@@ -46,6 +46,19 @@ import i18n from "../../i18n";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
 
+const BotIcon = ({ color, fontSize, className: cn }: { color?: string; fontSize?: string; className?: string }) => (
+  <Bot className={`${cn || ""} ${color === "primary" ? "text-indigo-500" : color === "success" ? "text-green-500" : color === "error" ? "text-red-500" : color === "warning" ? "text-amber-500" : color === "info" ? "text-blue-500" : color === "secondary" ? "text-gray-500" : "text-current"} ${fontSize === "small" ? "h-4 w-4" : "h-5 w-5"}`} />
+);
+const BoltIcon = ({ color, fontSize, className: cn }: { color?: string; fontSize?: string; className?: string }) => (
+  <Zap className={`${cn || ""} ${color === "primary" ? "text-indigo-500" : color === "success" ? "text-green-500" : color === "error" ? "text-red-500" : color === "warning" ? "text-amber-500" : color === "info" ? "text-blue-500" : color === "secondary" ? "text-gray-500" : "text-current"} ${fontSize === "small" ? "h-4 w-4" : "h-5 w-5"}`} />
+);
+const BrainIcon = ({ color, fontSize, className: cn }: { color?: string; fontSize?: string; className?: string }) => (
+  <Brain className={`${cn || ""} ${color === "primary" ? "text-indigo-500" : color === "success" ? "text-green-500" : color === "error" ? "text-red-500" : color === "warning" ? "text-amber-500" : color === "info" ? "text-blue-500" : color === "secondary" ? "text-gray-500" : "text-current"} ${fontSize === "small" ? "h-4 w-4" : "h-5 w-5"}`} />
+);
+const FaceIcon = ({ color, fontSize, className: cn }: { color?: string; fontSize?: string; className?: string }) => (
+  <User className={`${cn || ""} ${color === "primary" ? "text-indigo-500" : color === "success" ? "text-green-500" : color === "error" ? "text-red-500" : color === "warning" ? "text-amber-500" : color === "info" ? "text-blue-500" : color === "secondary" ? "text-gray-500" : "text-current"} ${fontSize === "small" ? "h-4 w-4" : "h-5 w-5"}`} />
+);
+
 const PROVIDERS = [
   {
     value: "GOOGLE",
@@ -3186,18 +3199,5 @@ const SuperAdminAIProviders = ({
     </div>
   );
 };
-
-const BotIcon = ({ color, fontSize, className: cn }: { color?: string; fontSize?: string; className?: string }) => (
-  <Bot className={`${cn || ""} ${color === "primary" ? "text-indigo-500" : color === "success" ? "text-green-500" : color === "error" ? "text-red-500" : color === "warning" ? "text-amber-500" : color === "info" ? "text-blue-500" : color === "secondary" ? "text-gray-500" : "text-current"} ${fontSize === "small" ? "h-4 w-4" : "h-5 w-5"}`} />
-);
-const BoltIcon = ({ color, fontSize, className: cn }: { color?: string; fontSize?: string; className?: string }) => (
-  <Zap className={`${cn || ""} ${color === "primary" ? "text-indigo-500" : color === "success" ? "text-green-500" : color === "error" ? "text-red-500" : color === "warning" ? "text-amber-500" : color === "info" ? "text-blue-500" : color === "secondary" ? "text-gray-500" : "text-current"} ${fontSize === "small" ? "h-4 w-4" : "h-5 w-5"}`} />
-);
-const BrainIcon = ({ color, fontSize, className: cn }: { color?: string; fontSize?: string; className?: string }) => (
-  <Brain className={`${cn || ""} ${color === "primary" ? "text-indigo-500" : color === "success" ? "text-green-500" : color === "error" ? "text-red-500" : color === "warning" ? "text-amber-500" : color === "info" ? "text-blue-500" : color === "secondary" ? "text-gray-500" : "text-current"} ${fontSize === "small" ? "h-4 w-4" : "h-5 w-5"}`} />
-);
-const FaceIcon = ({ color, fontSize, className: cn }: { color?: string; fontSize?: string; className?: string }) => (
-  <User className={`${cn || ""} ${color === "primary" ? "text-indigo-500" : color === "success" ? "text-green-500" : color === "error" ? "text-red-500" : color === "warning" ? "text-amber-500" : color === "info" ? "text-blue-500" : color === "secondary" ? "text-gray-500" : "text-current"} ${fontSize === "small" ? "h-4 w-4" : "h-5 w-5"}`} />
-);
 
 export default SuperAdminAIProviders;
