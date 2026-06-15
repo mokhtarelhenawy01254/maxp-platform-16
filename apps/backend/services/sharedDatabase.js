@@ -201,12 +201,7 @@ function createStablePrismaClient() {
           } else {
             // Use a transaction to ensure SET and QUERY are on the same connection
             return await client.$transaction(async (tx) => {
-              // PostgreSQL does not accept parameters in SET, so we validate and safely interpolate the company id.
-              const cid = String(companyId);
-              if (!/^[a-zA-Z0-9_-]+$/.test(cid)) {
-                throw new Error(`Invalid companyId for RLS context: ${cid}`);
-              }
-              await tx.$executeRawUnsafe(`SET app.current_company_id = '${cid}'`);
+              await tx.$executeRaw`SELECT set_config('app.current_company_id', ${companyId}, true)`;
               return query(args);
             }, {
               maxWait: INTERACTIVE_TRANSACTION_MAX_WAIT,

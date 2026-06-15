@@ -6200,6 +6200,10 @@ const AppContent = () => {
             ) : (
               // Redirect unauthenticated users trying to access protected routes
               <>
+                <Route
+                  path="/admin/*"
+                  element={<Navigate to="/auth/login" replace />}
+                />
                 <Route path="/" element={<PlatformLandingPage />} />
                 <Route
                   path="/store-settings"
