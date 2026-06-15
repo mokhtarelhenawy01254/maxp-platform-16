@@ -15,6 +15,17 @@
 - **Files Fix 2**:
   - `apps/frontend/src/pages/super-admin/SuperAdminAIProviderPriority.tsx`
 
+## [2026-06-15] Dashboard route — Barrel circular dependency + missing manualChunks (ReferenceError: Cannot access 'sa')
+
+- **Bug/Issue**: The app crashed on load with `ReferenceError: Cannot access 'sa' before initialization` (previously `ea`) even after the super-admin TDZ fixes. The `sa` variable was from dashboard files that were incorrectly grouped into the default chunk because `vite.config.ts` had no manualChunks rule for `dashboard/`.
+- **Root Cause 1 — Dashboard barrel**: `DashboardIntroBand.tsx` imported `DashboardStatusStrip` from the barrel (`./index`), but the barrel re-exports `DashboardIntroBand` itself, creating a circular import chain.
+- **Root Cause 2 — Missing manualChunks rule**: The `dashboard/` directory was not listed in `manualChunks`, so all its `.tsx` files fell into the default chunk alongside App.tsx, AdminAppBootstrap, hooks, and utilities. This created a massive default chunk where Rollup could not guarantee safe evaluation ordering, leading to the TDZ.
+- **Fix 1**: Changed `import { DashboardStatusStrip } from "./index"` to `import DashboardStatusStrip from "./DashboardStatusStrip"`.
+- **Fix 2**: Added `if (normalizedId.includes('/src/pages/dashboard/')) return 'route-dashboard';` to `vite.config.ts` manualChunks.
+- **Files**:
+  - `apps/frontend/src/pages/dashboard/DashboardIntroBand.tsx`
+  - `apps/frontend/vite.config.ts`
+
 ## [2026-06-15] translation.json — i18n key additions (merge translations post-rebase)
 
 - **Change**: Added new translation keys to `translation.json` (ar/en) for app pricing and dev recommendations features.

@@ -532,6 +532,7 @@ export default defineConfig(({ mode }) => {
               if (normalizedId.includes('/src/storefront/components/')) return 'storefront-components';
               if (normalizedId.includes('/src/storefront/')) return 'route-storefront';
               if (normalizedId.includes('/src/pages/profile/')) return 'route-profile';
+              if (normalizedId.includes('/src/pages/dashboard/')) return 'route-dashboard';
               if (normalizedId.includes('/src/pages/auth/')) return 'route-auth';
               if (normalizedId.endsWith('/src/pages/LandingPage.tsx') || normalizedId.endsWith('/src/pages/PlatformLandingPage.tsx')) return 'route-landing';
             }
