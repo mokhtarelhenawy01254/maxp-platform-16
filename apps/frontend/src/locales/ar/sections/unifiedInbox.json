@@ -2,6 +2,19 @@
   "title": "صندوق الوارد الموحد",
   "refresh": "تحديث",
   "searchPlaceholder": "البحث في المحادثات...",
+  "filters": {
+    "unread": "غير مقروء",
+    "followUp": "تحتاج متابعة",
+    "allPlatforms": "جميع المنصات"
+  },
+  "platforms": {
+    "facebook": "فيسبوك",
+    "instagram": "انستجرام",
+    "whatsapp": "واتساب",
+    "telegram": "تيليجرام",
+    "website": "الموقع",
+    "test": "تجربة"
+  },
   "tabs": {
     "all": "الكل",
     "messenger": "Messenger",
@@ -17,6 +30,9 @@
   "you": "أنت: ",
   "status": {
     "active": "نشط",
+    "pending": "معلق",
+    "resolved": "محلول",
+    "closed": "مغلق",
     "read": "مقروء"
   },
   "profile": "بيانات العميل",

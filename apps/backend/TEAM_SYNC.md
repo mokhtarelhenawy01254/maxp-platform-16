@@ -1,3 +1,17 @@
+## [2026-06-15] Unified Inbox RTL/LTR Polish & Translation [DONE]
+- **Objective**: Fix layout alignments, dynamic localizations, and RTL/LTR direction mirroring for the Unified Inbox to match the design reference.
+- **Accomplishments**:
+  - **Filter Bar RTL Alignment**: Positioned and ordered the filter chips row to match the design in RTL mode (with the Platform dropdown appearing rightmost, followed by "Follow Up" then "Unread").
+  - **Dropdown RTL Mirroring**: Configured dropdown items to render elements from right to left in RTL: **Name** (rightmost) → **Icon** (middle) → **Checkbox** (leftmost). Aligned the platform dropdown container to be right-aligned (`right: 0`, `left: auto`) when in RTL mode.
+  - **Dynamic Status Translation**: Replaced hardcoded status display with fully dynamic translations for all backend statuses (`active`, `pending`, `resolved`, `closed`).
+  - **Send Icon Direction Fix**: Made the PaperAirplaneIcon orientation dynamically rotate based on RTL/LTR (`isRtl ? "rotate-180" : ""`) so it points in the correct direction of sending.
+  - **Explicit Card Alignment**: Added explicit RTL right-alignment for names and messages inside the conversation cards.
+- **Files**:
+  - `apps/frontend/src/pages/unified-inbox/UnifiedInbox.tsx` [MODIFY]
+  - `apps/frontend/src/styles/index.css` [MODIFY]
+  - `apps/frontend/src/locales/ar/sections/unifiedInbox.json` [MODIFY]
+  - `apps/frontend/src/locales/en/sections/unifiedInbox.json` [MODIFY]
+
 ## [2026-06-15] Remove Trial Period, Onboarding Settings Page, Dashboard Refactor, Channel Routing Auto-Reply [DONE]
 - **Objective**: Remove free trial system, delete PlatformOnboardingSettings page, refactor dashboard layout with new period presets, move auto-reply to global toggle in channel routing.
 - **Accomplishments**:

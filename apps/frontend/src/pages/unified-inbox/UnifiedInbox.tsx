@@ -101,12 +101,14 @@ const platformStyles: Record<string, { label: string; icon: string }> = {
   instagram: { label: "Instagram", icon: "📷" },
   whatsapp: { label: "WhatsApp", icon: "📱" },
   telegram: { label: "Telegram", icon: "✈️" },
+  website: { label: "Website", icon: "🌐" },
+  test: { label: "Test Platform", icon: "🧪" },
 };
 
 // Custom brand and helper icons for the platforms dropdown
 const FacebookIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
   <svg className={className} style={style} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+    <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
   </svg>
 );
 
@@ -121,6 +123,12 @@ const InstagramIcon = ({ className, style }: { className?: string; style?: React
 const WhatsAppIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
   <svg className={className} style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+  </svg>
+);
+
+const TelegramIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg className={className} style={style} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-1-.65-.35-1 .22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.69-.52.36-1 .53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.24.35-.49.97-.74 3.79-1.65 6.32-2.74 7.59-3.27 3.61-1.5 4.35-1.76 4.84-1.77.11 0 .35.03.5.16.13.12.17.28.19.39.02.1.02.2.01.3z"/>
   </svg>
 );
 
@@ -455,7 +463,7 @@ const UnifiedInbox: React.FC = () => {
     return (
       <span className="business-platform-indicator" data-platform={platform}>
         <span className={isRtl ? "ml-1" : "mr-1"}>{style.icon}</span>
-        {style.label}
+        {t(`unifiedInbox.platforms.${platform}`, { defaultValue: style.label })}
       </span>
     );
   };
@@ -488,47 +496,42 @@ const UnifiedInbox: React.FC = () => {
             </div>
 
             {/* Filter Chips Row */}
-            <div className="inbox-filter-bar relative flex items-center gap-2 mb-2" dir="rtl">
-              <button
-                type="button"
-                onClick={() => setUnreadFilter(prev => !prev)}
-                className="inbox-filter-chip"
-                data-active={unreadFilter ? "true" : "false"}
-              >
-                {t("unifiedInbox.filters.unread")}
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => setFollowUpFilter(prev => !prev)}
-                className="inbox-filter-chip"
-                data-active={followUpFilter ? "true" : "false"}
-              >
-                {t("unifiedInbox.filters.followUp")}
-              </button>
-
-              {/* Platform Selector Dropdown */}
+            <div
+              className="inbox-filter-bar relative flex items-center gap-2 mb-2"
+              style={{ flexDirection: isRtl ? "row-reverse" : "row", justifyContent: isRtl ? "flex-end" : "flex-start" }}
+            >
+              {/* Platform Selector Dropdown — shown first in RTL (rightmost) */}
               <div className="relative" ref={dropdownRef}>
                 <button
                   type="button"
                   onClick={() => setShowPlatformDropdown(prev => !prev)}
                   className="inbox-filter-chip flex items-center gap-1.5"
-                  data-active={showPlatformDropdown || selectedPlatforms.length > 0 ? "true" : "false"}
+                  data-active={selectedPlatforms.length > 0 ? "true" : "false"}
                 >
-                  <span>{getPlatformFilterLabel()}</span>
-                  {showPlatformDropdown ? (
-                    <ChevronUpIcon className="w-3.5 h-3.5" />
+                  {isRtl ? (
+                    <>
+                      <ChevronDownIcon className={`w-3.5 h-3.5 transition-transform ${showPlatformDropdown ? "rotate-180" : ""}`} />
+                      <span>{getPlatformFilterLabel()}</span>
+                    </>
                   ) : (
-                    <ChevronDownIcon className="w-3.5 h-3.5" />
+                    <>
+                      <span>{getPlatformFilterLabel()}</span>
+                      <ChevronDownIcon className={`w-3.5 h-3.5 transition-transform ${showPlatformDropdown ? "rotate-180" : ""}`} />
+                    </>
                   )}
                 </button>
 
                 {showPlatformDropdown && (
-                  <div className="inbox-platform-dropdown" style={{ zIndex: 50 }}>
+                  <div
+                    className="inbox-platform-dropdown"
+                    dir={isRtl ? "rtl" : "ltr"}
+                    style={{ zIndex: 100 }}
+                  >
                     {[
                       { id: "facebook", label: t("unifiedInbox.platforms.facebook"), icon: FacebookIcon, color: "#1877F2" },
                       { id: "instagram", label: t("unifiedInbox.platforms.instagram"), icon: InstagramIcon, color: "#E1306C" },
                       { id: "whatsapp", label: t("unifiedInbox.platforms.whatsapp"), icon: WhatsAppIcon, color: "#25D366" },
+                      { id: "telegram", label: t("unifiedInbox.platforms.telegram"), icon: TelegramIcon, color: "#0088cc" },
                       { id: "website", label: t("unifiedInbox.platforms.website"), icon: GlobeIcon, color: "#3B82F6" },
                       { id: "test", label: t("unifiedInbox.platforms.test"), icon: FlaskIcon, color: "#F97316" }
                     ].map((plat) => {
@@ -545,20 +548,43 @@ const UnifiedInbox: React.FC = () => {
                             );
                           }}
                         >
-                          {/* Checkbox (circle) */}
-                          <div className={`inbox-checkbox-circle ${isChecked ? "checked" : ""}`} />
-                          
-                          {/* Platform Icon */}
-                          <plat.icon className="inbox-platform-icon" style={{ color: plat.color }} />
-                          
-                          {/* Label */}
-                          <span className="inbox-platform-text">{plat.label}</span>
+                          {isRtl ? (
+                            <>
+                              <span className="inbox-platform-text">{plat.label}</span>
+                              <plat.icon className="inbox-platform-icon" style={{ color: plat.color }} />
+                              <div className={`inbox-checkbox-circle ${isChecked ? "checked" : ""}`} />
+                            </>
+                          ) : (
+                            <>
+                              <div className={`inbox-checkbox-circle ${isChecked ? "checked" : ""}`} />
+                              <plat.icon className="inbox-platform-icon" style={{ color: plat.color }} />
+                              <span className="inbox-platform-text">{plat.label}</span>
+                            </>
+                          )}
                         </div>
                       );
                     })}
                   </div>
                 )}
               </div>
+
+              <button
+                type="button"
+                onClick={() => setFollowUpFilter(prev => !prev)}
+                className="inbox-filter-chip"
+                data-active={followUpFilter ? "true" : "false"}
+              >
+                {t("unifiedInbox.filters.followUp")}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setUnreadFilter(prev => !prev)}
+                className="inbox-filter-chip"
+                data-active={unreadFilter ? "true" : "false"}
+              >
+                {t("unifiedInbox.filters.unread")}
+              </button>
             </div>
           </div>
 
@@ -629,7 +655,7 @@ const UnifiedInbox: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-0.5">
                         <h3
-                          className={`font-semibold text-sm truncate ${isRtl ? "" : "text-left"}`}
+                          className={`font-semibold text-sm truncate ${isRtl ? "text-right" : "text-left"}`}
                           style={{ color: "var(--color-foreground)" }}
                         >
                           {conv.contactName || t("unifiedInbox.unknown")}
@@ -643,7 +669,7 @@ const UnifiedInbox: React.FC = () => {
                       </div>
 
                       <p
-                        className={`text-xs truncate leading-5 ${isRtl ? "" : "text-left"}`}
+                        className={`text-xs truncate leading-5 ${isRtl ? "text-right" : "text-left"}`}
                         style={{ color: "var(--color-muted-foreground)" }}
                       >
                         {conv.lastMessageIsFromCustomer
@@ -715,9 +741,9 @@ const UnifiedInbox: React.FC = () => {
                           className="text-xs"
                           style={{ color: "var(--color-muted-foreground)" }}
                         >
-                          {selectedConversation.status === "active"
-                            ? t("unifiedInbox.status.active")
-                            : selectedConversation.status}
+                          {t(`unifiedInbox.status.${selectedConversation.status.toLowerCase()}`, {
+                            defaultValue: selectedConversation.status
+                          })}
                         </span>
                       </div>
                     </div>
@@ -931,7 +957,7 @@ const UnifiedInbox: React.FC = () => {
                       <button
                         key={reply.id}
                         onClick={() => useQuickReply(reply)}
-                        className="w-full rounded-2xl border px-3 py-2 text-right text-sm transition-colors truncate"
+                        className={`w-full rounded-2xl border px-3 py-2 ${isRtl ? "text-right" : "text-left"} text-sm transition-colors truncate`}
                         style={{
                           borderColor: "var(--business-card-border)",
                           background:
@@ -995,9 +1021,9 @@ const UnifiedInbox: React.FC = () => {
                         }
                       }}
                       placeholder={t("unifiedInbox.inputPlaceholder", {
-                        platform:
-                          platformStyles[selectedConversation.platform]
-                            ?.label || t("common.platform"),
+                        platform: t(`unifiedInbox.platforms.${selectedConversation.platform}`, {
+                          defaultValue: platformStyles[selectedConversation.platform]?.label || t("common.platform")
+                        }),
                       })}
                       className="business-chat-input"
                       disabled={sending}
@@ -1017,7 +1043,7 @@ const UnifiedInbox: React.FC = () => {
                     {sending ? (
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                     ) : (
-                      <PaperAirplaneIcon className="w-5 h-5 rotate-180" />
+                      <PaperAirplaneIcon className={`w-5 h-5 ${isRtl ? "rotate-180" : ""}`} />
                     )}
                   </button>
                 </div>
@@ -1059,19 +1085,19 @@ const UnifiedInbox: React.FC = () => {
                 >
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-2xl">💬</span>
-                    <span className="text-xs">Messenger</span>
+                    <span className="text-xs">{t("unifiedInbox.platforms.facebook")}</span>
                   </div>
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-2xl">📷</span>
-                    <span className="text-xs">Instagram</span>
+                    <span className="text-xs">{t("unifiedInbox.platforms.instagram")}</span>
                   </div>
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-2xl">📱</span>
-                    <span className="text-xs">WhatsApp</span>
+                    <span className="text-xs">{t("unifiedInbox.platforms.whatsapp")}</span>
                   </div>
                   <div className="flex flex-col items-center gap-1">
                     <span className="text-2xl">✈️</span>
-                    <span className="text-xs">Telegram</span>
+                    <span className="text-xs">{t("unifiedInbox.platforms.telegram")}</span>
                   </div>
                 </div>
               </div>

@@ -2,6 +2,19 @@
   "title": "Unified Inbox",
   "refresh": "Refresh",
   "searchPlaceholder": "Search conversations...",
+  "filters": {
+    "unread": "Unread",
+    "followUp": "Follow Up",
+    "allPlatforms": "All Platforms"
+  },
+  "platforms": {
+    "facebook": "Messenger",
+    "instagram": "Instagram",
+    "whatsapp": "WhatsApp",
+    "telegram": "Telegram",
+    "website": "Website",
+    "test": "Test Platform"
+  },
   "tabs": {
     "all": "All",
     "messenger": "Messenger",
@@ -17,6 +30,9 @@
   "you": "You: ",
   "status": {
     "active": "Active",
+    "pending": "Pending",
+    "resolved": "Resolved",
+    "closed": "Closed",
     "read": "Read"
   },
   "profile": "Customer Profile",

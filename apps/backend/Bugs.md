@@ -1,3 +1,19 @@
+## [2026-06-15] Unified Inbox — RTL Layout and Translation Issues
+
+- **Bug/Issue**: The platform selector dropdown and filter bar in the Unified Inbox did not match the required design for RTL (Arabic) users, with icons/text/checkboxes laid out left-to-right, hardcoded English statuses, and a backwards send button icon in English.
+- **Root Cause**: The filter bar had hardcoded directions or default flex direction ordering, the dropdown items were fixed in LTR layout, and statuses like pending, resolved, closed, and the send icon were not dynamically flipped or translated.
+- **Fix**:
+  1. Reordered the filter chips in RTL so the platform dropdown is rightmost, followed by "Follow Up" and then "Unread".
+  2. Dynamically flipped the layout order of dropdown items (label → icon → checkbox in RTL vs checkbox → icon → label in LTR).
+  3. Added full translations for all statuses and translated them dynamically in the conversation header.
+  4. Dynamically rotated the send paper airplane icon based on RTL direction.
+- **Verification**: All Vite/Vitest integration tests pass, and TypeScript compile succeeds.
+- **Affected Files**:
+  - `apps/frontend/src/pages/unified-inbox/UnifiedInbox.tsx`
+  - `apps/frontend/src/styles/index.css`
+  - `apps/frontend/src/locales/ar/sections/unifiedInbox.json`
+  - `apps/frontend/src/locales/en/sections/unifiedInbox.json`
+
 ## [2026-06-14] Marketplace — Convert to shadcn/ui components
 
 - **Changes**:
