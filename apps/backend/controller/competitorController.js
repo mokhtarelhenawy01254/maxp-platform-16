@@ -72,32 +72,33 @@ exports.create = async (req, res) => {
       }
     }
 
-    // Transaction to create competitor and related social profiles
-    const createdCompetitor = await getSharedPrismaClient().$transaction(async (tx) => {
-      const comp = await tx.competitor.create({
-        data: {
-          name,
-          slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
-          url,
-          platform: platform || 'manual',
-          logo,
-          description,
-          notes,
-          activityType,
-          location,
-          targetMarket,
-          foundedYear: foundedYear ? parseInt(foundedYear) : undefined,
-          employeeCount,
-          strengths,
-          weaknesses,
-          companyId,
-        },
-      });
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-      if (socialProfiles && socialProfiles.length) {
+    const comp = await getPrisma().competitor.create({
+      data: {
+        name,
+        slug,
+        url,
+        platform: platform || 'manual',
+        logo,
+        description,
+        notes,
+        activityType,
+        location,
+        targetMarket,
+        foundedYear: foundedYear ? parseInt(foundedYear) : undefined,
+        employeeCount,
+        strengths,
+        weaknesses,
+        companyId,
+      },
+    });
+
+    if (socialProfiles && socialProfiles.length) {
+      try {
         await Promise.all(
           socialProfiles.map((p) =>
-            tx.competitorSocialProfile.create({
+            getPrisma().competitorSocialProfile.create({
               data: {
                 platform: p.platform,
                 profileUrl: p.url,
@@ -107,12 +108,14 @@ exports.create = async (req, res) => {
             })
           )
         );
+      } catch (socialError) {
+        console.error('Error creating social profiles (competitor still created):', socialError);
       }
+    }
 
-      return tx.competitor.findUnique({
-        where: { id: comp.id },
-        include: { socialProfiles: true },
-      });
+    const createdCompetitor = await getPrisma().competitor.findUnique({
+      where: { id: comp.id },
+      include: { socialProfiles: true },
     });
 
     res.status(201).json({ success: true, data: createdCompetitor });

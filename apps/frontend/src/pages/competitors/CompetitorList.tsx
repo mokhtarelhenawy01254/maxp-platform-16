@@ -95,7 +95,7 @@ const CompetitorList: React.FC = () => {
     });
     const links: Record<string, string> = Object.fromEntries(SOCIAL_PLATFORMS.map(p => [p.key, '']));
     if (c.socialProfiles) {
-      c.socialProfiles.forEach(sp => { if (links.hasOwnProperty(sp.platform)) links[sp.platform] = sp.profileUrl; });
+      c.socialProfiles.forEach(sp => { if (links.hasOwnProperty(sp.platform)) links[sp.platform] = sp.profileUrl || ''; });
     }
     setSocialLinks(links);
     setShowSocialSection(c.socialProfiles?.length > 0);
