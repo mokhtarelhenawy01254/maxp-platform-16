@@ -37,5 +37,8 @@
   "dialogTools": "الأدوات المسموحة",
   "dialogPriority": "الأولوية",
   "dialogPriorityPlaceholder": "0",
-  "dialogCreating": "جارٍ الإنشاء..."
+  "dialogCreating": "جارٍ الإنشاء...",
+  "errorNameRequired": "اسم المهارة مطلوب",
+  "errorInstructionsRequired": "التعليمات مطلوبة",
+  "errorCreateFailed": "فشل إنشاء المهارة"
 }

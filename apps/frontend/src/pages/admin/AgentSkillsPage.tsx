@@ -116,8 +116,8 @@ function CreateSkillDialog({ open, tools, onClose, onSaved }: { open: boolean; t
   const toggleTool = (tn: string) => setSelectedTools((p) => { const n = new Set(p); if (n.has(tn)) n.delete(tn); else n.add(tn); return n; });
 
   const handleCreate = async () => {
-    if (!name.trim()) { setError("اسم المهارة مطلوب"); return; }
-    if (!instructions.trim()) { setError("التعليمات مطلوبة"); return; }
+    if (!name.trim()) { setError(t("agentSkills.errorNameRequired")); return; }
+    if (!instructions.trim()) { setError(t("agentSkills.errorInstructionsRequired")); return; }
     setSaving(true); setError(null);
     try {
       const response = await fetch(buildApiUrl("agent/skills"), {
@@ -132,7 +132,7 @@ function CreateSkillDialog({ open, tools, onClose, onSaved }: { open: boolean; t
         }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok || data.success === false) throw new Error(data.error || "فشل إنشاء المهارة");
+      if (!response.ok || data.success === false) throw new Error(data.error || t("agentSkills.errorCreateFailed"));
       toast.success(t("common.saved"));
       onSaved();
       onClose();

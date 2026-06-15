@@ -37,5 +37,8 @@
   "dialogTools": "Allowed Tools",
   "dialogPriority": "Priority",
   "dialogPriorityPlaceholder": "0",
-  "dialogCreating": "Creating..."
+  "dialogCreating": "Creating...",
+  "errorNameRequired": "Skill name is required",
+  "errorInstructionsRequired": "Instructions are required",
+  "errorCreateFailed": "Failed to create skill"
 }
