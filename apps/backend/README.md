@@ -31,9 +31,9 @@
 - The deploy helper script has been aligned with the safer Bash parsing logic already used in the GitHub Actions workflow.
 
 ## Key Docs
-- `backend/Bugs.md`: chronological incident, fix, and validation log.
-- `backend/Structure.md`: architecture-level view of recent backend and operations changes.
-- `backend/TEAM_SYNC.md`: execution log for repo sync, QA, and deployment-related activity.
+- `backend/docs/`: domain-specific documentation (storefront, orders, whatsapp, hr, infrastructure).
+- `docs/`: project-level design docs and plans.
+- `frontend/docs/`: frontend-specific feature docs.
 
 ## AI Shipping Pricing Stack
 - `backend/tests/services/CoreAIAgent.catalogVariantContext.test.js`: also covers governorate-only follow-ups both with and without grounded product context.

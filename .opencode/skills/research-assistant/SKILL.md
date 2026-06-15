@@ -14,7 +14,7 @@ description: Use for conducting research, gathering information from the codebas
 
 ### 2. Identify Sources
 - **Codebase**: Source files, configs, tests, documentation
-- **Internal Docs**: AGENTS.md, README, Structure.md, TEAM_SYNC.md
+- **Internal Docs**: AGENTS.md, README, docs/ directories (backend/docs/, frontend/docs/, ai-service/docs/)
 - **Git History**: Commits, PRs, branches
 - **External**: Web searches, official docs, API references
 - **User**: Ask clarifying questions when needed

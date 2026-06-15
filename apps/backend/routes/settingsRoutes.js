@@ -53,7 +53,7 @@ const mockAuth = (req, res, next) => {
 // Get company settings
 router.get('/company', async (req, res) => {
   try {
-    const companyId = req.query.companyId || req.user?.companyId || 'cmd5c0c9y0000ymzdd7wtv7ib';
+    const companyId = req.user?.companyId;
 
     const company = await getSharedPrismaClient().company.findUnique({
       where: { id: companyId },
@@ -129,7 +129,7 @@ router.get('/company', async (req, res) => {
 // Update company settings
 router.put('/company', async (req, res) => {
   try {
-    const companyId = req.body.companyId || req.user?.companyId || 'cmd5c0c9y0000ymzdd7wtv7ib';
+    const companyId = req.user?.companyId;
     const newSettings = req.body.settings || {};
 
     //console.log('Updating company settings:', companyId, newSettings);

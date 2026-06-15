@@ -12,15 +12,14 @@ const path = require('path');
 
 // Configuration
 const REQUIRED_DOC_FILES = [
-    'apps/backend/Bugs.md',
-    'apps/backend/Structure.md', 
-    'apps/backend/TEAM_SYNC.md',
-    // Domain-specific doc files (any of these count as documentation)
+    // Domain-specific doc directories (any file in these counts as documentation)
     'apps/backend/docs/storefront/',
     'apps/backend/docs/orders/',
     'apps/backend/docs/whatsapp/',
     'apps/backend/docs/hr/',
     'apps/backend/docs/infrastructure/',
+    'apps/frontend/docs/',
+    'apps/ai-service/docs/',
 ];
 
 const BYPASS_FLAG = '[no-doc]';
@@ -90,9 +89,9 @@ function main() {
             });
             console.error('');
             console.error('💡 To fix this:');
-            console.error('   1. Update relevant documentation files with your changes');
-            console.error('   2. Commit the documentation updates');
-            console.error(`   3. Or add "${BYPASS_FLAG}" to your commit message if docs aren't needed`);
+        console.error('   1. Update relevant documentation files in apps/backend/docs/, apps/frontend/docs/, or apps/ai-service/docs/');
+        console.error('   2. Commit the documentation updates');
+        console.error(`   3. Or add "${BYPASS_FLAG}" to your commit message if docs aren't needed`);
             console.error('');
             console.error('📝 Changed files that require documentation:');
             changedFiles.filter(file => 

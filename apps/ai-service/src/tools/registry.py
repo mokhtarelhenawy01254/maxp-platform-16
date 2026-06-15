@@ -1,31 +1,158 @@
 from __future__ import annotations
 
-import asyncio
-import base64
-import ipaddress
-import socket
-from datetime import datetime, timedelta
-from typing import Any, Literal
-from urllib.parse import urlparse
+from typing import Any
 
-import httpx
 from agent_framework import FunctionInvocationContext, FunctionTool
 from pydantic import BaseModel, Field
-from sqlalchemy import text
 
-import src.db.session as _db_mod
 from src.mcp_integration.registry import get_mcp_registry
-from src.tools import (
-    competitor_tools,
-    customer_tools,
-    governance_tools,
-    order_tools,
-    product_tools,
-    sales_tools,
+from src.skills.integration import SKILL_TOOLS, get_skill_tool_names
+from src.tools.definitions.agents import (
+    AgentHandoffToInput,
+    AgentSpawnInput,
+    agent_handoff_to,
+    agent_handoff_to_tool,
+    agent_spawn,
+    agent_spawn_tool,
+)
+from src.tools.definitions.audit import (
+    AuditReadInput,
+    audit_read,
+    audit_read_tool,
+)
+from src.tools.definitions.competitor import (
+    CompetitorGenerateReportInput,
+    CompetitorGetAdsInput,
+    CompetitorGetProductsInput,
+    CompetitorPriceCompareInput,
+    CompetitorSearchInput,
+    competitor_generate_report,
+    competitor_generate_report_tool,
+    competitor_get_ads,
+    competitor_get_ads_tool,
+    competitor_get_products,
+    competitor_get_products_tool,
+    competitor_price_compare,
+    competitor_price_compare_tool,
+    competitor_search,
+    competitor_search_tool,
+)
+from src.tools.definitions.customer import (
+    CustomerInfoInput,
+    CustomerTopBuyersInput,
+    customer_info,
+    customer_info_tool,
+    customer_top_buyers,
+    customer_top_buyers_tool,
+)
+from src.tools.definitions.facebook import (
+    FacebookReplyInput,
+    facebook_reply,
+    facebook_reply_tool,
+)
+from src.tools.definitions.governance import (
+    FacebookAdCreateDraftInput,
+    KnowledgeCreateFaqInput,
+    KnowledgeCreatePolicyInput,
+    MessageBroadcastInput,
+    SchedulerCreateJobInput,
+    facebook_ad_create_draft,
+    facebook_ad_create_draft_tool,
+    knowledge_create_faq,
+    knowledge_create_faq_tool,
+    knowledge_create_policy,
+    knowledge_create_policy_tool,
+    message_broadcast,
+    message_broadcast_tool,
+    scheduler_create_job,
+    scheduler_create_job_tool,
+)
+from src.tools.definitions.hr import (
+    HrAttendanceTodayInput,
+    hr_attendance_today,
+    hr_attendance_today_tool,
+)
+from src.tools.definitions.inventory import (
+    InventoryAdjustInput,
+    InventoryCheckInput,
+    inventory_adjust,
+    inventory_adjust_tool,
+    inventory_check,
+    inventory_check_tool,
+)
+from src.tools.definitions.order import (
+    OrderCancelInput,
+    OrderCreateConfirmedInput,
+    OrderCreateDraftInput,
+    OrderLookupInput,
+    OrderRecentListInput,
+    OrderRefundInput,
+    OrderSummaryInput,
+    order_cancel,
+    order_cancel_tool,
+    order_create_confirmed,
+    order_create_confirmed_tool,
+    order_create_draft,
+    order_create_draft_tool,
+    order_lookup,
+    order_lookup_tool,
+    order_recent_list,
+    order_recent_list_tool,
+    order_refund,
+    order_refund_tool,
+    order_summary,
+    order_summary_tool,
+)
+from src.tools.definitions.product import (
+    CategoryListInput,
+    ProductCreateInput,
+    ProductLowStockInput,
+    ProductPerformanceInput,
+    ProductSearchInput,
+    ProductTopSellingInput,
+    ProductUpdatePriceInput,
+    category_list,
+    category_list_tool,
+    product_create,
+    product_create_tool,
+    product_low_stock,
+    product_low_stock_tool,
+    product_performance,
+    product_performance_tool,
+    product_search,
+    product_search_tool,
+    product_top_selling,
+    product_top_selling_tool,
+    product_update_price,
+    product_update_price_tool,
+)
+from src.tools.definitions.sales import (
+    CompanySnapshotInput,
+    DiscountCreateDraftInput,
+    DiscountCreateInput,
+    SalesRevenueInput,
+    WhatsappSendInput,
+    company_snapshot,
+    company_snapshot_tool,
+    discount_create,
+    discount_create_draft,
+    discount_create_draft_tool,
+    discount_create_tool,
+    sales_revenue,
+    sales_revenue_tool,
+    whatsapp_send,
+    whatsapp_send_tool,
+)
+from src.tools.definitions.shipping import (
+    ShippingRatesInput,
+    ShippingUpdateInput,
+    shipping_rates,
+    shipping_rates_tool,
+    shipping_update,
+    shipping_update_tool,
 )
 from src.tools.knowledge_search import knowledge_search as _knowledge_search_fn
 from src.tools.names import canonical_tool_name
-from src.tools.vector_product_search import vector_product_search
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1446,6 +1573,7 @@ hr_attendance_today_tool = FunctionTool(
 class UnlockAdvancedToolsInput(BaseModel):
     reason: str = Field(description="Reason why advanced tools are needed for the current task")
 
+
 async def unlock_advanced_tools(
     input_data: UnlockAdvancedToolsInput,
     ctx: FunctionInvocationContext | None = None,
@@ -1458,12 +1586,14 @@ async def unlock_advanced_tools(
         "unlocked_tools": [t.name for t in ADVANCED_TOOLS],
     }
 
+
 unlock_advanced_tools_tool = FunctionTool(
     name="unlock_advanced_tools",
     description="Unlock advanced analysis and reporting tools when the user request requires deep data mining or competitor research.",
     func=unlock_advanced_tools,
     input_model=UnlockAdvancedToolsInput,
 )
+
 
 CORE_TOOLS: list[FunctionTool] = [
     product_search_tool,
@@ -1493,12 +1623,10 @@ ADVANCED_TOOLS: list[FunctionTool] = [
     hr_attendance_today_tool,
 ]
 
-# All read-only tools
 READ_TOOLS: list[FunctionTool] = CORE_TOOLS + ADVANCED_TOOLS + [
     category_list_tool,
 ]
 
-# All write tools that require merchant approval before execution.
 WRITE_TOOLS: list[FunctionTool] = [
     product_create_tool,
     product_update_price_tool,
@@ -1528,117 +1656,46 @@ DIRECT_WRITE_TOOLS: list[FunctionTool] = [
 for _direct_write_tool in DIRECT_WRITE_TOOLS:
     _direct_write_tool.approval_mode = "never_require"
 
-# Skill tools (progressive disclosure — load_skill, read_skill_resource)
-from src.skills.integration import SKILL_TOOLS, get_skill_tool_names
+# Auto-discover all tools from domain definitions
+from src.tools.definitions.product import __all_tools__ as _product_tools_defs
+from src.tools.definitions.order import __all_tools__ as _order_tools_defs
+from src.tools.definitions.shipping import __all_tools__ as _shipping_tools_defs
+from src.tools.definitions.inventory import __all_tools__ as _inventory_tools_defs
+from src.tools.definitions.customer import __all_tools__ as _customer_tools_defs
+from src.tools.definitions.sales import __all_tools__ as _sales_tools_defs
+from src.tools.definitions.competitor import __all_tools__ as _competitor_tools_defs
+from src.tools.definitions.facebook import __all_tools__ as _facebook_tools_defs
+from src.tools.definitions.governance import __all_tools__ as _governance_tools_defs
+from src.tools.definitions.agents import __all_tools__ as _agents_tools_defs
+from src.tools.definitions.audit import __all_tools__ as _audit_tools_defs
+from src.tools.definitions.hr import __all_tools__ as _hr_tools_defs
 
-# All tools (including manager tools for template resolution)
-ALL_TOOLS: dict[str, FunctionTool] = {t.name: t for t in READ_TOOLS + WRITE_TOOLS + DIRECT_WRITE_TOOLS + SKILL_TOOLS + [
-    whatsapp_send_tool,
-    facebook_reply_tool,
-    agent_handoff_to_tool,
-]}
+_ALL_DOMAIN_TOOLS: list[FunctionTool] = []
+for _batch in [
+    _product_tools_defs, _order_tools_defs, _shipping_tools_defs,
+    _inventory_tools_defs, _customer_tools_defs, _sales_tools_defs,
+    _competitor_tools_defs, _facebook_tools_defs, _governance_tools_defs,
+    _agents_tools_defs, _audit_tools_defs, _hr_tools_defs,
+]:
+    _ALL_DOMAIN_TOOLS.extend(_batch)
+
+ALL_TOOLS: dict[str, FunctionTool] = {}
+for _t in _ALL_DOMAIN_TOOLS + list(SKILL_TOOLS):
+    ALL_TOOLS[_t.name] = _t
+ALL_TOOLS[unlock_advanced_tools_tool.name] = unlock_advanced_tools_tool
 
 
 def get_read_tools() -> list[FunctionTool]:
     return list(READ_TOOLS)
 
 
-# Backward-compatible name map used by the DB-backed agent registry.
 _ALL_TOOLS = ALL_TOOLS
 
-# Role-specific tool names stored in company_agents.skills.
-ROLE_TOOLS: dict[str, list[str]] = {
-    "SUPPORT": [
-        "product_search",
-        "order_lookup",
-        "order_cancel",
-        "customer_info",
-        "shipping_rates",
-        "shipping_update",
-        "knowledge_search",
-        "whatsapp_send",
-        "agent_handoff_to",
-    ],
-    "ORDER": [
-        "order_lookup",
-        "order_summary",
-        "order_recent_list",
-        "order_create_draft",
-        "order_create_confirmed",
-        "order_cancel",
-        "order_refund",
-    ],
-    "SALES": [
-        "product_search",
-        "product_top_selling",
-        "product_performance",
-        "customer_info",
-        "inventory_check",
-        "order_create_draft",
-        "order_create_confirmed",
-        "discount_create_draft",
-        "whatsapp_send",
-        "shipping_rates",
-    ],
-    "INVENTORY": [
-        "product_search",
-        "product_low_stock",
-        "product_create",
-        "inventory_check",
-        "inventory_adjust",
-        "product_update_price",
-        "discount_create_draft",
-        "audit_read",
-    ],
-    "MARKETING": [
-        "product_search",
-        "inventory_check",
-        "sales_revenue",
-        "company_snapshot",
-        "facebook_ad_create_draft",
-        "message_broadcast",
-        "audit_read",
-    ],
-    "FACEBOOK_SALES_SUPPORT": [
-        "product_search",
-        "category_list",
-        "inventory_check",
-        "customer_info",
-        "order_lookup",
-        "order_create_draft",
-        "order_create_confirmed",
-        "shipping_rates",
-        "knowledge_search",
-        "facebook_reply",
-        "agent_handoff_to",
-    ],
-    "SAS_SALES": [
-        "product_search",
-        "inventory_check",
-        "order_create_draft",
-        "order_lookup",
-        "shipping_rates",
-        "facebook_reply",
-    ],
-    "COMPETITOR": [
-        "competitor_search",
-        "competitor_get_products",
-        "competitor_price_compare",
-        "competitor_get_ads",
-        "competitor_generate_report",
-        "product_search",
-        "inventory_check",
-        "audit_read",
-    ],
-    "CEO": [],
-}
-
-# Manager tools (agent.spawn, agent.list_agents, agent.run_task, agent.handoff)
-# live in manager_tools.py and are attached to the CEO, not persisted per sub-agent.
+from src.tools.role_config import load_role_tools
+ROLE_TOOLS: dict[str, list[str]] = load_role_tools()
 
 
 def get_tools_for_role(role: str) -> list[FunctionTool]:
-    """Return FunctionTool objects appropriate for a given agent role."""
     role_upper = role.upper()
     tool_names = ROLE_TOOLS.get(role_upper, [])
     if not tool_names and role_upper not in ROLE_TOOLS:
@@ -1647,7 +1704,6 @@ def get_tools_for_role(role: str) -> list[FunctionTool]:
 
 
 def get_tool_names_for_role(role: str) -> list[str]:
-    """Return tool names for DB persistence."""
     role_upper = role.upper()
     tool_names = ROLE_TOOLS.get(role_upper, [])
     if not tool_names and role_upper not in ROLE_TOOLS:
@@ -1656,12 +1712,10 @@ def get_tool_names_for_role(role: str) -> list[str]:
 
 
 def get_tool_name_list(tools: list[FunctionTool]) -> list[str]:
-    """Extract names from FunctionTool objects."""
     return [tool.name for tool in tools]
 
 
 def resolve_tools_from_names(names: list[str]) -> list[FunctionTool]:
-    """Resolve stored tool names back to FunctionTool objects."""
     resolved: list[FunctionTool] = []
     seen: set[str] = set()
     for name in names:
@@ -1678,7 +1732,6 @@ def get_write_tools() -> list[FunctionTool]:
 
 
 def get_all_tools() -> list[FunctionTool]:
-    """Return ALL_TOOLS, including manager tools (lazy import to avoid circular deps)."""
     from src.tools.manager_tools import get_manager_tools
     return list(ALL_TOOLS.values()) + get_manager_tools() + get_mcp_tools()
 
@@ -1692,10 +1745,6 @@ async def _mcp_gateway_placeholder(input_data: dict[str, Any]) -> dict[str, Any]
 
 
 def get_mcp_tools() -> list[FunctionTool]:
-    """Return discovered MCP tools as SDK FunctionTool descriptors.
-
-    Execution is still routed through ToolGateway by sdk_gateway.wrap_tool_for_gateway.
-    """
     tools: list[FunctionTool] = []
     for tool in get_mcp_registry().get_all_tools():
         name = str(tool.get("name") or "")

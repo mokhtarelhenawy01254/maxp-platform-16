@@ -147,27 +147,17 @@ class TestMigrationSprint5:
     def test_no_ai_service_router_in_node(self):
         """aiServiceRouter.js should be removed"""
         node_path = self._get_node_ai_path("aiServiceRouter.js")
-        # After Sprint 5, this file should NOT exist
-        # Currently it exists, so this test documents the goal
-        # Uncomment after migration:
-        # assert not node_path.exists(), "aiServiceRouter should be removed from Node.js"
-        assert node_path.exists()  # Pre-migration: exists
+        assert not node_path.exists(), "aiServiceRouter should be removed from Node.js"
 
     def test_no_dual_write_bridge(self):
         """aiServiceKeyBridge.js should be removed"""
         node_path = self._get_node_ai_path("aiServiceKeyBridge.js")
-        # After Sprint 5, this should NOT exist
-        # Uncomment after migration:
-        # assert not node_path.exists(), "aiServiceKeyBridge should be removed"
-        assert node_path.exists()  # Pre-migration: exists
+        assert not node_path.exists(), "aiServiceKeyBridge should be removed"
 
     def test_base_agent_in_python_only(self):
         """BaseAgent.js should be migrated to Python"""
         node_path = self._get_node_ai_path("BaseAgent.js")
-        # After Sprint 5, this should NOT exist
-        # Uncomment after migration:
-        # assert not node_path.exists(), "BaseAgent should be in Python only"
-        assert node_path.exists()  # Pre-migration: exists
+        assert not node_path.exists(), "BaseAgent should be in Python only"
 
 
 class TestSDKUsage2026:

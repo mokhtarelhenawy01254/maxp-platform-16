@@ -706,7 +706,6 @@ const SuperAdminStaffCompanyAccess = React.lazy(
   () => import("./pages/super-admin/StaffCompanyAccess"),
 );
 const Changelog = React.lazy(() => import("./pages/super-admin/Changelog"));
-const TeamPortal = React.lazy(() => import("./pages/super-admin/TeamPortal"));
 const SuperAdminWhatsAppOverview = React.lazy(
   () => import("./pages/super-admin/SuperAdminWhatsAppOverview"),
 );
@@ -1563,14 +1562,6 @@ const AppContent = () => {
               element={
                 <Layout>
                   <SuperAdminDashboard />
-                </Layout>
-              }
-            />
-            <Route
-              path="/super-admin/team-portal"
-              element={
-                <Layout>
-                  <TeamPortal />
                 </Layout>
               }
             />

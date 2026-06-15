@@ -4,7 +4,6 @@ const superAdminController = require("../controller/superAdminController");
 const superAdminAiController = require("../controller/superAdminAiController");
 const devTaskIntegrationController = require("../controller/devTaskIntegrationController");
 const storePagesController = require("../controller/storePagesController");
-const docsController = require("../controller/docsController");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
 const { TOOLS } = { TOOLS: {} };
 const { t } = require("../services/i18n");
@@ -22,9 +21,6 @@ const { cacheMiddleware } = require("../middleware/performanceOptimization");
 router.use(addPublicCORS);
 router.use(authenticateToken);
 router.use(requireSuperAdmin);
-
-// 📄 Documentation Files
-router.get("/docs/:filename", docsController.getDocumentation);
 
 // 📊 System Stats
 router.get(

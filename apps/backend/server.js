@@ -794,16 +794,28 @@ try {
   );
 }
 
-// Start Dreamer Worker (background AI memory consolidation)
 // Start Dreamer Worker (background AI memory consolidation via Python)
-try {
-  const DreamerWorker = require("./workers/dreamerWorker");
-  const dreamerWorker = new DreamerWorker();
-  dreamerWorker.start();
-  console.log("✅ [DREAMER] AI memory consolidation worker scheduled");
-} catch (error) {
-  console.error("❌ [DREAMER] Failed to start Dreamer Worker:", error.message);
-}
+(async () => {
+  try {
+    const DreamerWorker = require("./workers/dreamerWorker");
+    const { getSharedPrismaClient } = require("./services/sharedDatabase");
+    const dreamerWorker = new DreamerWorker();
+    const prisma = getSharedPrismaClient();
+
+    const companies = await prisma.company.findMany({
+      where: { deletedAt: null },
+      select: { id: true },
+    });
+    const companyIds = companies.map((c) => c.id);
+
+    dreamerWorker.start({ companyIds, runOnStart: true });
+    console.log(
+      `✅ [DREAMER] Memory consolidation scheduled for ${companyIds.length} companies (every 6h)`,
+    );
+  } catch (error) {
+    console.error("❌ [DREAMER] Failed to start Dreamer Worker:", error.message);
+  }
+})();
 
 // Start Agentic RAG Knowledge Evaluation Scheduler
 try {

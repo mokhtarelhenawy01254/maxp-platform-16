@@ -1666,7 +1666,7 @@ async function updateGlobalFilterSettings(req, res) {
     if (!user || (!user.companyId && user.role !== 'SUPER_ADMIN')) {
       return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
-    const companyId = user.companyId || req.body.companyId;
+    const companyId = user.companyId;
 
     const { autoFilterEnabled, negativeKeywords, negativeCommentAction } = req.body;
 

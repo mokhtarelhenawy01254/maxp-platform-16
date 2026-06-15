@@ -201,7 +201,7 @@ function createStablePrismaClient() {
           } else {
             // Use a transaction to ensure SET and QUERY are on the same connection
             return await client.$transaction(async (tx) => {
-              await tx.$executeRawUnsafe(`SET app.current_company_id = '${companyId}'`);
+              await tx.$executeRaw`SET app.current_company_id = ${companyId}`;
               return query(args);
             }, {
               maxWait: INTERACTIVE_TRANSACTION_MAX_WAIT,

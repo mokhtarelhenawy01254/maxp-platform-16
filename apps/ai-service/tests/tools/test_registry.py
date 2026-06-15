@@ -109,8 +109,8 @@ async def test_product_search_uses_image_embedding_when_image_is_provided(monkey
         captured.update(kwargs)
         return [{"name": "Visual Match", "score": 0.91}]
 
-    monkeypatch.setattr("src.tools.registry.vector_product_search", fake_vector_product_search)
-
+    import src.tools.definitions.product as _prod_def
+    monkeypatch.setattr(_prod_def, "vector_product_search", fake_vector_product_search)
     result = await product_search(ProductSearchInput(
         query="do you have this?",
         image_bytes="aGVsbG8=",
@@ -138,8 +138,9 @@ async def test_product_search_downloads_image_url_for_visual_search(monkeypatch)
         captured.update(kwargs)
         return [{"name": "URL Visual Match", "score": 0.88}]
 
-    monkeypatch.setattr("src.tools.registry._download_image_url", fake_download_image_url)
-    monkeypatch.setattr("src.tools.registry.vector_product_search", fake_vector_product_search)
+    import src.tools.definitions.product as _prod_def
+    monkeypatch.setattr(_prod_def, "_download_image_url", fake_download_image_url)
+    monkeypatch.setattr(_prod_def, "vector_product_search", fake_vector_product_search)
 
     result = await product_search(ProductSearchInput(
         query="is this available?",
@@ -429,7 +430,8 @@ async def test_facebook_reply_forwards_image_fields(monkeypatch):
         })
         return {"success": True, "messageType": message_type}
 
-    monkeypatch.setattr("src.tools.registry.governance_tools.send_facebook_reply", fake_send_facebook_reply)
+    import src.tools.definitions.facebook as _fb_def
+    monkeypatch.setattr(_fb_def.governance_tools, "send_facebook_reply", fake_send_facebook_reply)
 
     result = await facebook_reply(FacebookReplyInput(
         recipient_id="psid_1",
@@ -628,7 +630,8 @@ async def test_competitor_generate_report_executes_backend_after_sdk_approval(mo
             "type": report_type,
         }
 
-    monkeypatch.setattr("src.tools.registry.competitor_tools.generate_report", mock_generate_report)
+    import src.tools.definitions.competitor as _comp_def
+    monkeypatch.setattr(_comp_def.competitor_tools, "generate_report", mock_generate_report)
 
     result = await competitor_generate_report(CompetitorGenerateReportInput(
         competitor_id="cmp_1",

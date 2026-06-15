@@ -496,6 +496,7 @@ class TestBuild:
         from src.tools.registry import CORE_TOOLS
 
         cfg.allowed_tools = []
+        cfg.allowed_skills = []
         agent = BaseAgent(cfg)
         with patch("src.tools.registry.CORE_TOOLS", CORE_TOOLS):
             tools = agent._resolve_tools()

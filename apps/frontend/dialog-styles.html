@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>أشكال النوافذ المنبثقة</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Manrope:wght@300;400;500;600;700;800&display=swap');
+  body { font-family: 'Cairo', sans-serif; background: #f4f8fc; }
+</style>
+</head>
+<body class="p-6">
+  <div class="mx-auto max-w-6xl">
+    <div class="mb-6 text-center">
+      <h1 class="text-3xl font-black tracking-tight text-[#0f1b2d]">أشكال النوافذ المنبثقة</h1>
+      <p class="mt-2 text-[#647991]">اضغط على أي بطاقة وشوف الشكل مكبر — اضغط على "إغلاق" أو برا عشان ترجع</p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+
+      <!-- A: Default -->
+      <div class="overflow-hidden rounded-xl border border-[#c9d6e4] bg-white shadow-sm cursor-pointer hover:-translate-y-1 transition-all" onclick="show('a')">
+        <div class="border-b border-[#c9d6e4] bg-[#f4f8fc] px-4 py-2"><span class="font-bold text-sm">A — الافتراضي</span><span class="mr-2 text-xs text-[#647991]">(الحالي)</span></div>
+        <div class="p-4">
+          <div class="rounded-xl border border-[#c9d6e4] bg-white p-4 shadow-sm">
+            <div class="mb-3 flex items-center gap-2"><div class="h-3 flex-1 rounded bg-gray-200"></div><div class="size-5 rounded bg-blue-500"></div></div>
+            <div class="mb-3 flex gap-2"><span class="rounded-full border px-2 py-0.5 text-[0.6rem] bg-gray-50">ID</span><span class="rounded-full border px-2 py-0.5 text-[0.6rem] bg-gray-50">v1</span></div>
+            <div class="mb-3 h-10 rounded bg-gray-100"></div>
+            <div class="mb-3 rounded-xl border p-3"><div class="h-4 w-24 rounded bg-gray-200"></div></div>
+            <div class="rounded-xl bg-[#101828] p-3"><div class="h-16 rounded bg-gray-700/50"></div></div>
+          </div>
+        </div>
+        <div class="border-t border-[#c9d6e4] bg-[#f4f8fc] p-3 text-center text-xs text-[#647991]">rounded-xl · bg-popover · ring-1</div>
+      </div>
+
+      <!-- B: Premium Glass -->
+      <div class="overflow-hidden rounded-3xl border-none bg-white/95 shadow-2xl cursor-pointer backdrop-blur-md hover:-translate-y-1 transition-all" onclick="show('b')">
+        <div class="border-b border-gray-100 px-4 py-2"><span class="font-bold text-sm">B — زجاجي فاخر</span></div>
+        <div class="p-4">
+          <div class="overflow-hidden rounded-3xl border-none bg-white/95 p-0 shadow-2xl backdrop-blur-md">
+            <div class="bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent p-5 text-center">
+              <div class="mx-auto mb-3 flex size-14 items-center justify-center rounded-2xl bg-white shadow-xl shadow-blue-500/10"><div class="size-6 rounded bg-blue-500"></div></div>
+              <div class="mx-auto mb-1 h-5 w-32 rounded bg-gray-200"></div>
+              <div class="mx-auto h-3 w-48 rounded bg-gray-100"></div>
+            </div>
+            <div class="space-y-3 p-5">
+              <div class="flex gap-2"><span class="rounded-full border px-2 py-0.5 text-[0.6rem] bg-white">ID</span><span class="rounded-full border px-2 py-0.5 text-[0.6rem] bg-white">v1</span></div>
+              <div class="rounded-2xl border p-3"><div class="h-4 w-20 rounded bg-gray-200"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="border-t border-gray-100 bg-gray-50/50 p-3 text-center text-xs text-[#647991]">rounded-[2.5rem] · backdrop-blur · border-none</div>
+      </div>
+
+      <!-- C: App Panel -->
+      <div class="overflow-hidden rounded-[28px] border border-gray-200 bg-gradient-to-br from-white to-gray-50 shadow-sm cursor-pointer hover:-translate-y-1 transition-all" onclick="show('c')">
+        <div class="border-b border-gray-200 px-4 py-2"><span class="font-bold text-sm">C — لوحة التطبيقات</span></div>
+        <div class="p-4">
+          <div class="overflow-hidden rounded-[28px] border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-0">
+            <div class="flex items-center justify-between border-b border-gray-200 bg-white/55 p-4"><div class="h-5 w-28 rounded bg-gray-200"></div><div class="size-6 rounded-full bg-gray-200"></div></div>
+            <div class="space-y-3 p-4">
+              <div class="rounded-xl bg-gray-50 p-3"><div class="h-4 w-16 rounded bg-gray-200"></div></div>
+            </div>
+            <div class="flex justify-end gap-2 border-t border-gray-200 bg-white/55 p-4"><div class="h-8 w-16 rounded-lg bg-gray-200"></div><div class="h-8 w-16 rounded-lg bg-blue-500"></div></div>
+          </div>
+        </div>
+        <div class="border-t border-gray-200 bg-gray-50/50 p-3 text-center text-xs text-[#647991]">rounded-[28px] · app-panel-bg · header/footer</div>
+      </div>
+
+      <!-- D: Task Modal -->
+      <div class="overflow-hidden rounded-[30px] border border-gray-200/60 bg-white shadow-[0_20px_80px_-40px_rgba(15,23,42,0.6)] cursor-pointer hover:-translate-y-1 transition-all" onclick="show('d')">
+        <div class="border-b border-gray-200/60 px-4 py-2"><span class="font-bold text-sm">D — بطاقة المهام</span></div>
+        <div class="p-4">
+          <div class="overflow-hidden rounded-[30px] border border-gray-200/60 bg-white p-0 shadow-sm">
+            <div class="flex items-center justify-between border-b border-gray-200/60 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent p-4">
+              <div class="h-5 w-32 rounded bg-gray-200"></div>
+            </div>
+            <div class="space-y-2 p-4">
+              <div class="flex items-center gap-3 rounded-xl border p-3"><div class="size-8 rounded-lg bg-blue-100"></div><div class="flex-1"><div class="h-4 w-24 rounded bg-gray-200"></div><div class="mt-1 h-3 w-32 rounded bg-gray-100"></div></div></div>
+              <div class="flex items-center gap-3 rounded-xl border p-3"><div class="size-8 rounded-lg bg-green-100"></div><div class="flex-1"><div class="h-4 w-20 rounded bg-gray-200"></div><div class="mt-1 h-3 w-28 rounded bg-gray-100"></div></div></div>
+            </div>
+            <div class="flex justify-end gap-2 border-t border-gray-200/60 bg-gray-50/80 p-4"><div class="h-8 w-20 rounded-lg bg-gray-200"></div><div class="h-8 w-20 rounded-lg bg-blue-500"></div></div>
+          </div>
+        </div>
+        <div class="border-t border-gray-200/60 bg-gray-50/50 p-3 text-center text-xs text-[#647991]">rounded-[30px] · ظل قوي · موبايل bottom-sheet</div>
+      </div>
+
+      <!-- E: Bottom Sheet -->
+      <div class="overflow-hidden rounded-t-[1.75rem] border border-[#c9d6e4] bg-white shadow-2xl cursor-pointer hover:-translate-y-1 transition-all" onclick="show('e')">
+        <div class="rounded-t-[1.75rem] border-b border-[#c9d6e4] bg-gray-50 px-4 py-2"><span class="font-bold text-sm">E — منزلق من تحت</span></div>
+        <div class="p-4">
+          <div class="overflow-hidden rounded-t-[1.75rem] border border-[#c9d6e4] bg-white shadow-sm">
+            <div class="flex justify-center pt-3"><div class="mx-auto h-1.5 w-14 rounded-full bg-gray-300"></div></div>
+            <div class="flex items-center justify-between border-b border-gray-100 p-4"><div class="h-5 w-24 rounded bg-gray-200"></div></div>
+            <div class="space-y-2 p-4">
+              <div class="h-20 rounded-xl bg-gray-50"></div>
+            </div>
+            <div class="border-t border-gray-100 p-4"><div class="h-10 w-full rounded-xl bg-blue-500"></div></div>
+          </div>
+        </div>
+        <div class="border-t border-[#c9d6e4] bg-gray-50 p-3 text-center text-xs text-[#647991]">موبايل: slide-up · ديسكتوب: يتوسط</div>
+      </div>
+
+      <!-- F: Full Screen -->
+      <div class="overflow-hidden rounded-[1.5rem] border border-[#ead8cf] bg-[linear-gradient(180deg,#fffdfa_0%,#f8efe8_100%)] shadow-[0_20px_80px_-40px_rgba(79,59,66,0.3)] cursor-pointer hover:-translate-y-1 transition-all" onclick="show('f')">
+        <div class="border-b border-[#ead8cf] px-4 py-2"><span class="font-bold text-sm">F — شاشة كاملة</span></div>
+        <div class="p-4">
+          <div class="overflow-hidden rounded-[1.5rem] border border-[#ead8cf] bg-[linear-gradient(180deg,#fffdfa_0%,#f8efe8_100%)] p-0 shadow-sm">
+            <div class="flex items-center justify-between border-b border-[#ead8cf] p-4"><div class="h-5 w-20 rounded bg-[#ead8cf]"></div></div>
+            <div class="grid grid-cols-2 gap-1 p-2"><div class="aspect-square rounded-lg bg-[#ead8cf]/50"></div><div class="aspect-square rounded-lg bg-[#ead8cf]/30"></div></div>
+            <div class="border-t border-[#ead8cf] p-4"><div class="h-4 w-3/4 rounded bg-[#ead8cf]/50"></div></div>
+          </div>
+        </div>
+        <div class="border-t border-[#ead8cf] bg-[#f8efe8]/50 p-3 text-center text-xs text-[#3f2f35]/60">موبايل: full-screen · ديسكتوب: كبير</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Full preview modals - hidden by default with inline style -->
+  <div id="modal-a" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-sm" style="display:none" onclick="if(event.target===this)hide('a')">
+    <div class="w-full max-w-lg rounded-xl border border-[#c9d6e4] bg-white p-0 shadow-lg ring-1 ring-[#0f1b2d]/10">
+      <div class="border-b border-[#c9d6e4] p-4"><h2 class="text-base font-bold">النافذة الافتراضية (A)</h2></div>
+      <div class="space-y-4 p-4">
+        <div class="flex flex-wrap gap-2"><span class="inline-flex items-center gap-1 rounded-full border border-[#c9d6e4] px-2 py-0.5 text-xs">ID</span><span class="inline-flex rounded-full border border-[#c9d6e4] px-2 py-0.5 text-xs">v1</span><span class="inline-flex items-center gap-1 rounded-full border border-[#c9d6e4] px-2 py-0.5 text-xs">تشغيل مباشر</span></div>
+        <p class="text-sm text-gray-500">نص الوصف الخاص بالمهارة.</p>
+        <div><h4 class="mb-2 text-sm font-black">الأدوات داخل المهارة</h4><div class="flex flex-col gap-2"><div class="flex items-start justify-between gap-3 rounded-xl border border-[#c9d6e4] p-3"><div><p class="font-mono text-sm font-bold">tool_name</p><span class="text-xs text-gray-500">وصف الأداة</span></div><span class="inline-flex h-5 items-center rounded-full border border-[#c9d6e4] px-2 text-[0.6rem]">قراءة</span></div></div></div>
+        <div><div class="mb-2 flex items-center gap-2"><h4 class="text-sm font-black">SKILL.md</h4></div><div class="max-h-[160px] overflow-auto rounded-xl bg-[#101828] p-4 text-[#e6edf7]" dir="ltr"><pre class="m-0 whitespace-pre-wrap font-mono text-xs">محتوى المهارة...</pre></div></div>
+      </div>
+      <div class="-mx-4 -mb-4 flex justify-end rounded-b-xl border-t border-[#c9d6e4] bg-gray-50/50 p-4">
+        <button class="rounded-lg border border-[#c9d6e4] px-4 py-2 text-sm hover:bg-gray-50" onclick="hide('a')">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-b" class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4 backdrop-blur-sm" style="display:none" onclick="if(event.target===this)hide('b')">
+    <div class="w-full max-w-lg overflow-hidden rounded-[2.5rem] border-none bg-white/95 p-0 shadow-2xl backdrop-blur-md" dir="rtl">
+      <div class="bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent p-6 text-center">
+        <div class="mx-auto mb-3 flex size-16 items-center justify-center rounded-2xl bg-white shadow-xl shadow-blue-500/10"><span class="text-2xl">✨</span></div>
+        <h2 class="text-xl font-black tracking-tight">اسم المهارة</h2>
+        <p class="mt-1 text-sm text-gray-500">وصف مختصر للمهارة</p>
+      </div>
+      <div class="space-y-4 p-6">
+        <div class="flex flex-wrap gap-2"><span class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium">skill_name</span><span class="inline-flex rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium">v1</span></div>
+        <div class="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm"><div class="flex size-8 items-center justify-center rounded-xl bg-blue-50">🔧</div><div><p class="text-sm font-bold">tool_name</p><span class="text-xs text-gray-500">وصف الأداة</span></div><span class="mr-auto rounded-full bg-green-50 px-2 py-0.5 text-[0.6rem] text-green-700">قراءة</span></div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-gray-100 bg-gray-50/50 p-4">
+        <button class="rounded-xl border border-gray-200 bg-white px-5 py-2 text-sm shadow-sm hover:bg-gray-50" onclick="hide('b')">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-c" class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4 backdrop-blur-sm" style="display:none" onclick="if(event.target===this)hide('c')">
+    <div class="w-full max-w-lg overflow-hidden rounded-[28px] border border-gray-200 bg-gradient-to-br from-white to-gray-50/80 p-0 shadow-lg">
+      <div class="flex items-center justify-between border-b border-gray-200 bg-white/55 p-4"><h2 class="text-base font-bold">تفاصيل المهارة</h2><button class="size-6 rounded-full bg-gray-100 flex items-center justify-center text-xs" onclick="hide('c')">✕</button></div>
+      <div class="space-y-4 p-4">
+        <div class="flex flex-wrap gap-2"><span class="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium">skill_name</span><span class="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium">v1</span></div>
+        <p class="text-sm text-gray-500">وصف المهارة الكامل مع شرح استخداماتها.</p>
+        <div class="rounded-xl bg-gray-50 p-3"><h4 class="mb-2 text-xs font-bold text-gray-500">الأدوات</h4><div class="flex items-center justify-between rounded-lg bg-white p-2.5 text-sm"><span class="font-mono text-xs font-bold">tool_name</span><span class="rounded-full bg-gray-100 px-2 py-0.5 text-[0.6rem]">قراءة</span></div></div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-gray-200 bg-white/55 p-4">
+        <button class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm" onclick="hide('c')">إلغاء</button>
+        <button class="rounded-lg bg-blue-500 px-4 py-2 text-sm text-white">حفظ</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-d" class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4 backdrop-blur-sm" style="display:none" onclick="if(event.target===this)hide('d')">
+    <div class="w-full max-w-lg overflow-hidden rounded-[30px] border border-gray-200/60 bg-white p-0 shadow-[0_48px_140px_-72px_rgba(15,23,42,0.92)]">
+      <div class="flex items-center justify-between border-b border-gray-200/60 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent p-4"><h2 class="text-base font-bold">محرر المهارة</h2></div>
+      <div class="max-h-[360px] space-y-3 overflow-auto p-4">
+        <div class="flex items-center gap-3 rounded-xl border border-gray-200/60 p-3"><div class="flex size-9 items-center justify-center rounded-xl bg-blue-50">🔧</div><div class="flex-1"><p class="text-sm font-bold">اسم الأداة</p><span class="text-xs text-gray-500">وصف الأداة</span></div><span class="rounded-full border px-2 py-0.5 text-[0.6rem]">قراءة</span></div>
+        <div class="flex items-center gap-3 rounded-xl border border-gray-200/60 p-3"><div class="flex size-9 items-center justify-center rounded-xl bg-green-50">⚙️</div><div class="flex-1"><p class="text-sm font-bold">أداة أخرى</p><span class="text-xs text-gray-500">وصف</span></div><span class="rounded-full border border-amber-600/30 bg-amber-50 px-2 py-0.5 text-[0.6rem] text-amber-600">موافقة</span></div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-gray-200/60 bg-gray-50/80 p-4 backdrop-blur">
+        <button class="rounded-xl border border-gray-200/60 bg-white px-5 py-2 text-sm shadow-sm" onclick="hide('d')">إلغاء</button>
+        <button class="rounded-xl bg-blue-500 px-5 py-2 text-sm text-white shadow-sm">حفظ</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-e" class="fixed inset-0 z-50 flex items-end justify-center bg-black/20 p-0 backdrop-blur-sm sm:items-center sm:p-4" style="display:none" onclick="if(event.target===this)hide('e')">
+    <div class="w-full max-w-lg overflow-hidden rounded-t-[1.75rem] border border-[#c9d6e4] bg-white shadow-2xl sm:rounded-[1.5rem]">
+      <div class="flex justify-center pt-3 sm:hidden"><div class="mx-auto h-1.5 w-14 rounded-full bg-gray-300"></div></div>
+      <div class="flex items-center justify-between border-b border-gray-100 p-4"><h2 class="text-base font-bold">اختيار أداة</h2><button onclick="hide('e')" class="text-gray-400 text-lg">✕</button></div>
+      <div class="space-y-2 p-4">
+        <div class="flex cursor-pointer items-center gap-3 rounded-xl border border-blue-500/30 bg-blue-50/50 p-3"><div class="flex size-5 items-center justify-center rounded-sm border border-blue-500 bg-blue-500 text-white"><span class="text-[0.5rem]">✓</span></div><span class="font-mono text-sm">tool_name</span></div>
+        <div class="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-100 p-3"><div class="flex size-5 items-center justify-center rounded-sm border border-gray-300"></div><span class="font-mono text-sm">another_tool</span></div>
+      </div>
+      <div class="border-t border-gray-100 p-4">
+        <button class="w-full rounded-xl bg-blue-500 py-3 text-sm font-bold text-white" onclick="hide('e')">تأكيد</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-f" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-0 backdrop-blur-sm sm:p-6" style="display:none" onclick="if(event.target===this)hide('f')">
+    <div class="h-full w-full overflow-hidden rounded-none border-0 bg-[linear-gradient(180deg,#fffdfa_0%,#f8efe8_100%)] text-[#3f2f35] shadow-none sm:h-auto sm:max-h-[90vh] sm:w-full sm:max-w-4xl sm:rounded-[1.5rem] sm:border sm:border-[#ead8cf] sm:shadow-[0_40px_120px_-50px_rgba(79,59,66,0.45)]">
+      <div class="flex items-center justify-between border-b border-[#ead8cf] p-4"><div class="flex items-center gap-2"><div class="flex size-9 items-center justify-center rounded-xl bg-[#3f2f35] text-white text-xs">M</div><h2 class="font-bold">اسم المهارة</h2></div><button class="flex size-8 items-center justify-center rounded-full border border-[#ead8cf] bg-white/92" onclick="hide('f')">✕</button></div>
+      <div class="overflow-auto p-4" style="max-height: calc(90vh - 140px);">
+        <p class="mb-4 text-sm leading-relaxed">وصف المهارة مع تفاصيل استخدامها.</p>
+        <div class="flex items-center justify-between rounded-xl border border-[#ead8cf] bg-white/80 p-3 mb-3"><span class="font-mono text-sm font-bold">tool_name</span><span class="rounded-full border border-[#ead8cf] bg-white/80 px-2 py-0.5 text-[0.6rem]">قراءة</span></div>
+        <div class="rounded-xl border border-[#ead8cf] bg-white/80 p-4"><h4 class="mb-2 text-sm font-bold">SKILL.md</h4><div class="rounded-lg bg-[#101828] p-3 text-[#e6edf7]"><pre class="text-xs">skill content...</pre></div></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function show(id) {
+      document.querySelectorAll('[id^="modal-"]').forEach(m => m.style.display = 'none');
+      document.getElementById('modal-' + id).style.display = 'flex';
+    }
+    function hide(id) {
+      document.getElementById('modal-' + id).style.display = 'none';
+    }
+  </script>
+</body>
+</html>

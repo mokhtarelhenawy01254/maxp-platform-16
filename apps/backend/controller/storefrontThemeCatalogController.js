@@ -14,8 +14,6 @@ const runWithoutTenantContext = (operation) =>
 const resolveCompanyId = (req) =>
   req.user?.effectiveCompanyId ||
   req.user?.companyId ||
-  req.query?.companyId ||
-  req.body?.companyId ||
   null;
 
 const resolveCurrentThemeId = async (companyId) => {

@@ -4,8 +4,40 @@ Corrections, insights, and knowledge gaps captured during development.
 
 **Categories**: correction | insight | knowledge_gap | best_practice
 
+## [LRN-20260615-001] insight
+
+**Logged**: 2026-06-15
+
+**Topic**: GitHub Actions deploy SSH timeout — transient runner IP issue
+
+**Insight**: When the `Deploy to Server` workflow fails with `ssh: connect to host *** port ***: Connection timed out` (exit code 255), the cause is usually the GitHub Actions runner IP changing. The server firewall blocks the new IP. This is often transient — re-running the workflow after a few seconds usually picks a different runner IP that's already whitelisted.
+
+**Fix**: Simply re-run the failed workflow (`gh run rerun <run-id>` or use the GitHub UI). If it fails multiple times in a row, whitelist the runner IP printed in the "Get Runner IP" step.
+
+### Metadata
+- Source: user_feedback
+- Related Files: `.github/workflows/deploy.yml`
+- Tags: deploy, ssh, ci, transient
+
+## [LRN-20260615-002] insight
+
+**Logged**: 2026-06-15
+
+**Topic**: Vite manualChunks — all lazy-imported pages MUST have a manualChunks rule
+
+**Insight**: Any page imported via `React.lazy(() => import("./pages/XXX/..."))` that doesn't have a matching manualChunks rule in `vite.config.ts` will be bundled into the DEFAULT chunk alongside `App.tsx`. This creates **same-chunk dynamic imports**, which cause Temporal Dead Zone (TDZ) errors (`ReferenceError: Cannot access 'X' before initialization`) at runtime.
+
+**Root cause pattern**: `App.tsx` lives in the default chunk. `React.lazy(() => import("./pages/admin/..."))` targets a module also in the default chunk (no manualChunks rule for `admin/`). Rollup cannot create a separate chunk for the lazy import, so it evaluates the module synchronously inside the default chunk, causing TDZ.
+
+**Fix**: Every directory under `src/pages/` that has `React.lazy` imports in `App.tsx` must have a corresponding manualChunks rule. Add a catch-all rule for any remaining unmatched pages: `if (normalizedId.includes('/src/pages/')) return 'route-pages-other';`
+
+### Metadata
+- Source: debugging_session
+- Related Files: `apps/frontend/vite.config.ts`, `apps/frontend/src/App.tsx`
+- Tags: vite, rollup, tdz, manualChunks, bundling, build
+
 ---
-## [LRN-20260423-001] correction
+
 
 **Logged**: 2026-04-23T21:34:59.4577936+02:00
 **Priority**: high

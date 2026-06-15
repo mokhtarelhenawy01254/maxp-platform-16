@@ -72,10 +72,7 @@ function Get-Category {
         $RelativePath -eq "TOOLS.md" -or
         $RelativePath -eq "CHANGELOG.md" -or
         $RelativePath -like "frontend/docs/*" -or
-        $RelativePath -like "backend/docs/*" -or
-        $RelativePath -eq "backend/Bugs.md" -or
-        $RelativePath -eq "backend/Structure.md" -or
-        $RelativePath -eq "backend/TEAM_SYNC.md"
+        $RelativePath -like "backend/docs/*"
     ) {
         return "Ignored"
     }

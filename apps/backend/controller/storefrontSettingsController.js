@@ -47,8 +47,6 @@ const deepMerge = (target, source) => {
 const resolveCompanyId = (req) =>
   req.user?.effectiveCompanyId ||
   req.user?.companyId ||
-  req.query?.companyId ||
-  req.body?.companyId ||
   null;
 
 const runStorefrontSettingsQuery = async (operation) =>

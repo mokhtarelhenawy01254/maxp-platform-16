@@ -1,0 +1,86 @@
+# Role-to-tool mapping for agent progressive exposure.
+# Edit this file to change which tools each agent role can access.
+# Keys are role names (uppercase), values are lists of tool names.
+
+roles:
+  SUPPORT:
+    - product_search
+    - order_lookup
+    - order_cancel
+    - customer_info
+    - shipping_rates
+    - shipping_update
+    - whatsapp_send
+    - agent_handoff_to
+
+  ORDER:
+    - order_lookup
+    - order_summary
+    - order_recent_list
+    - order_create_draft
+    - order_create_confirmed
+    - order_cancel
+    - order_refund
+
+  SALES:
+    - product_search
+    - product_top_selling
+    - product_performance
+    - customer_info
+    - inventory_check
+    - order_create_draft
+    - order_create_confirmed
+    - discount_create_draft
+    - whatsapp_send
+    - shipping_rates
+
+  INVENTORY:
+    - product_search
+    - product_low_stock
+    - product_create
+    - inventory_check
+    - inventory_adjust
+    - product_update_price
+    - discount_create_draft
+    - audit_read
+
+  MARKETING:
+    - product_search
+    - inventory_check
+    - sales_revenue
+    - company_snapshot
+    - facebook_ad_create_draft
+    - message_broadcast
+    - audit_read
+
+  FACEBOOK_SALES_SUPPORT:
+    - product_search
+    - category_list
+    - inventory_check
+    - customer_info
+    - order_lookup
+    - order_create_draft
+    - order_create_confirmed
+    - shipping_rates
+    - facebook_reply
+    - agent_handoff_to
+
+  SAS_SALES:
+    - product_search
+    - inventory_check
+    - order_create_draft
+    - order_lookup
+    - shipping_rates
+    - facebook_reply
+
+  COMPETITOR:
+    - competitor_search
+    - competitor_get_products
+    - competitor_price_compare
+    - competitor_get_ads
+    - competitor_generate_report
+    - product_search
+    - inventory_check
+    - audit_read
+
+  CEO: []

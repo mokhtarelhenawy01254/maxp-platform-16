@@ -98,6 +98,10 @@ ignore = ["E501", "RUF001"]
 "tests/**/*.py" = ["B", "SIM"]
 "migrations/**/*.py" = ["E", "F", "I", "N", "UP", "B"]
 "src/intent/schema.py" = ["N815"]
+"src/db/models/ai_setting.py" = ["N815"]
+"src/db/models/faq.py" = ["N815"]
+"src/db/models/policy.py" = ["N815"]
+"src/db/models/product.py" = ["N815"]
 
 [tool.ruff.format]
 quote-style = "double"

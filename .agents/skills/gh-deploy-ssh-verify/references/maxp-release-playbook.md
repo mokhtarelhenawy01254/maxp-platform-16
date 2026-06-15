@@ -29,11 +29,10 @@ gh run view <run-id> --log-failed
 - The repo uses HTTPS Git remote by default.
 - `gh auth status` should pass before relying on `gh run ...` or PR operations.
 - Production workflow runs `node scripts/verify-docs.js` before deployment.
-- If shipped changes touch runtime code, update one of:
-  - `backend/Bugs.md`
-  - `backend/Structure.md`
-  - `backend/TEAM_SYNC.md`
-  - or a matching domain doc under `backend/docs/storefront/`, `backend/docs/orders/`, `backend/docs/whatsapp/`, `backend/docs/hr/`, `backend/docs/infrastructure/`
+- If shipped changes touch runtime code, update docs in one of:
+  - `backend/docs/storefront/`, `backend/docs/orders/`, `backend/docs/whatsapp/`, `backend/docs/hr/`, `backend/docs/infrastructure/`
+  - `frontend/docs/`
+  - `apps/ai-service/docs/`
 - Only use the `[no-doc]` commit-message bypass when the user explicitly wants that tradeoff.
 
 ## Test Commands

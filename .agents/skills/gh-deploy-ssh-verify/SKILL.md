@@ -18,7 +18,7 @@ Use this skill for the full ship loop: quality gate, GitHub publish, Actions fol
 
 2. Prepare a safe release
 - Never stage unrelated user changes.
-- If code changes are being shipped, satisfy `scripts/verify-docs.js` by updating `backend/Bugs.md`, `backend/Structure.md`, `backend/TEAM_SYNC.md`, or a matching `backend/docs/...` file unless the user explicitly wants a `[no-doc]` bypass.
+- If code changes are being shipped, satisfy `scripts/verify-docs.js` by updating a matching doc file under `backend/docs/`, `frontend/docs/`, or `apps/ai-service/docs/` unless the user explicitly wants a `[no-doc]` bypass.
 - Review whether the diff changes behavior. If it does, run focused tests and add regression coverage when no nearby test already protects that behavior.
 - Prefer the narrowest reliable test set first, then widen only when risk or failures require it.
 

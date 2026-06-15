@@ -25,13 +25,7 @@ const {
   getStatus,
 } = require('../controller/aiAgentChatController');
 
-router.use((req, res, next) => {
-  if (process.env.NODE_ENV === 'development') {
-    next();
-  } else {
-    requireAuth(req, res, next);
-  }
-});
+router.use(requireAuth);
 
 router.post('/message', sendMessage);
 router.post('/rag-preview', previewRag);

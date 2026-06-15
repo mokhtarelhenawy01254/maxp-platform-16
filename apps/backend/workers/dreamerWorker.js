@@ -280,13 +280,23 @@ class DreamerWorker {
   }
 
   /**
-   * Starts the background scheduler without running an unsafe all-tenant job on boot.
+   * Starts the background scheduler, running consolidateMemory for each companyId.
    */
-  start({ intervalMs = 6 * 60 * 60 * 1000, runOnStart = false } = {}) {
+  start({ intervalMs = 6 * 60 * 60 * 1000, runOnStart = false, companyIds = [] } = {}) {
     if (this.interval) return this.interval;
 
-    const runScheduled = () => {
-      console.log('[DreamerWorker] Scheduled consolidation is waiting for explicit company scope');
+    const runScheduled = async () => {
+      if (companyIds.length === 0) {
+        console.warn('[DreamerWorker] No companyIds provided — scheduler skipping');
+        return;
+      }
+      for (const companyId of companyIds) {
+        try {
+          await this.run(companyId);
+        } catch (error) {
+          console.error(`[DreamerWorker] Failed to consolidate company ${companyId}: ${error.message}`);
+        }
+      }
     };
 
     if (runOnStart) {

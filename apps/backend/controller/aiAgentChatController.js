@@ -17,10 +17,10 @@ const RagKnowledgeEvaluationSchedulerService = require('../services/rag/RagKnowl
  */
 async function sendMessage(req, res) {
   try {
-    const companyId = req.user?.companyId || req.body?.companyId;
-    const userId = req.user?.id || req.body?.userId;
+    const companyId = req.user?.companyId;
+    const userId = req.user?.id;
 
-    if (!(companyId && userId) && process.env.NODE_ENV !== 'development') {
+    if (!companyId || !userId) {
       return res.status(401).json({ success: false, error: 'Authentication required' });
     }
 

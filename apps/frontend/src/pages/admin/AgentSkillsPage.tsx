@@ -247,15 +247,28 @@ export default function AgentSkillsPage() {
       )}
 
       <Dialog open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader><DialogTitle>{selected?.displayName || selected?.id}</DialogTitle></DialogHeader>
-          {selected && <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap gap-2"><Badge variant="outline" className="gap-1"><Sparkles className="size-3" />{selected.id}</Badge><Badge variant="outline">v{selected.version || "1"}</Badge><Badge variant="outline" className="gap-1"><Shield className="size-3" />{selected.requiresHumanApproval ? t("agentSkills.needsApproval") : t("agentSkills.directExecution")}</Badge></div>
-            <p className="text-sm text-muted-foreground">{selected.description || t("agentSkills.noDescriptionDetail")}</p>
-            <div><h4 className="mb-2 text-sm font-black">{t("agentSkills.toolsTitle")}</h4><div className="flex flex-col gap-2">{(selected.allowedTools || []).map((tn) => { const t = toolMap.get(tn); return (<div key={tn} className="flex items-start justify-between gap-3 rounded-xl border p-3"><div className="min-w-0"><p className="font-mono text-sm font-bold">{tn}</p><span className="text-xs text-muted-foreground">{t?.description || t("agentSkills.noToolDescription")}</span></div><div className="flex shrink-0 gap-1"><Badge variant="outline" className="h-5 text-[0.6rem]">{t?.sideEffects === "write" ? t("agentSkills.write") : t("agentSkills.readOnly")}</Badge>{t?.requiresApproval && <Badge variant="outline" className="h-5 text-[0.6rem] border-amber-600 text-amber-600">{t("agentSkills.approval")}</Badge>}</div></div>); })}</div></div>
-            <div><div className="mb-2 flex items-center gap-2"><FileText className="size-4 text-primary" /><h4 className="text-sm font-black">{t("agentSkills.skillMdTitle")}</h4></div><div className="max-h-[360px] overflow-auto rounded-xl bg-[#101828] p-4 text-[#e6edf7]" dir="ltr"><pre className="m-0 whitespace-pre-wrap font-mono text-xs" style={{ fontFamily: "Consolas, monospace" }}>{selected.skillMd || "No SKILL.md content available."}</pre></div></div>
-          </div>}
-          <DialogFooter><Button variant="outline" onClick={() => setSelected(null)}>{t("common.close")}</Button></DialogFooter>
+        <DialogContent showCloseButton={false} className="sm:max-w-lg overflow-hidden rounded-[2.5rem] border-none bg-white/95 p-0 shadow-2xl backdrop-blur-md dark:bg-gray-900/95">
+          {selected && <>
+            <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6 text-center">
+              <div className="mx-auto mb-3 flex size-16 items-center justify-center rounded-2xl bg-white shadow-xl shadow-primary/10 dark:bg-gray-800">
+                <Sparkles className="size-7 text-primary" />
+              </div>
+              <h2 className="text-xl font-black tracking-tight">{selected.displayName || selected.id}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{selected.description || t("agentSkills.noDescriptionDetail")}</p>
+              <div className="mt-3 flex flex-wrap justify-center gap-2">
+                <Badge variant="outline" className="gap-1 bg-white/80 dark:bg-gray-800/80"><Sparkles className="size-3" />{selected.id}</Badge>
+                <Badge variant="outline" className="bg-white/80 dark:bg-gray-800/80">v{selected.version || "1"}</Badge>
+                <Badge variant="outline" className="gap-1 bg-white/80 dark:bg-gray-800/80"><Shield className="size-3" />{selected.requiresHumanApproval ? t("agentSkills.needsApproval") : t("agentSkills.directExecution")}</Badge>
+              </div>
+            </div>
+            <div className="space-y-4 p-6">
+              <div><h4 className="mb-3 text-sm font-black">{t("agentSkills.toolsTitle")}</h4><div className="flex flex-col gap-2">{(selected.allowedTools || []).map((tn) => { const t = toolMap.get(tn); return (<div key={tn} className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800"><div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Zap className="size-4" /></div><div className="min-w-0 flex-1"><p className="text-sm font-bold">{tn}</p><span className="text-xs text-muted-foreground">{t?.description || t("agentSkills.noToolDescription")}</span></div><div className="flex shrink-0 gap-1">{t?.sideEffects === "write" ? <Badge variant="outline" className="h-5 text-[0.6rem] bg-white dark:bg-gray-700">{t("agentSkills.write")}</Badge> : <Badge variant="outline" className="h-5 text-[0.6rem] bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">{t("agentSkills.readOnly")}</Badge>}{t?.requiresApproval && <Badge variant="outline" className="h-5 text-[0.6rem] border-amber-600 text-amber-600 bg-amber-50 dark:bg-amber-900/30">{t("agentSkills.approval")}</Badge>}</div></div>); })}</div></div>
+              <div><div className="mb-2 flex items-center gap-2"><FileText className="size-4 text-primary" /><h4 className="text-sm font-black">{t("agentSkills.skillMdTitle")}</h4></div><div className="max-h-[280px] overflow-auto rounded-xl bg-[#101828] p-4 text-[#e6edf7]" dir="ltr"><pre className="m-0 whitespace-pre-wrap font-mono text-xs" style={{ fontFamily: "Consolas, monospace" }}>{selected.skillMd || "No SKILL.md content available."}</pre></div></div>
+            </div>
+            <div className="flex justify-end border-t border-gray-100 bg-gray-50/50 p-4 backdrop-blur dark:border-gray-800 dark:bg-gray-900/50">
+              <Button variant="outline" onClick={() => setSelected(null)} className="rounded-xl">{t("common.close")}</Button>
+            </div>
+          </>}
         </DialogContent>
       </Dialog>
 

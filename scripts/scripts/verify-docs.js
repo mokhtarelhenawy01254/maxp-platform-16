@@ -12,10 +12,7 @@ const path = require('path');
 
 // Configuration
 const REQUIRED_DOC_FILES = [
-    'backend/Bugs.md',
-    'backend/Structure.md', 
-    'backend/TEAM_SYNC.md',
-    // Domain-specific doc files (any of these count as documentation)
+    // Domain-specific doc directories (any file in these counts as documentation)
     'backend/docs/storefront/',
     'backend/docs/orders/',
     'backend/docs/whatsapp/',

@@ -301,32 +301,6 @@ class TestDecisionUnification:
         # This is a Node.js concept. Python is always "primary" when running.
         assert settings.default_llm_provider in ("anthropic", "openai", "google")
 
-    def test_node_js_legacy_ai_components_still_exist(self):
-        """
-        CHECK: These Node.js AI components still exist and should be migrated:
-        - modelManager.js (3026 lines, model routing + key rotation)
-        - providerBudgetLedgerService.js (budget enforcement)
-        - policyEnforcementEngine.js (policy validation)
-        - agentToolRegistry.js (tool definitions)
-        """
-        backend_path = Path("../../../../apps/backend/legacy-ai-agent/aiAgent")
-
-        components = [
-            ("modelManager.js", ["route_tasks_to_model", "get_next_key"]),
-            ("providerBudgetLedgerService.js", ["dailyTokenLimit", "checkBudget"]),
-            ("policyEnforcementEngine.js", ["enforcePolicy", "validateAction"]),
-            ("agentToolRegistry.js", ["getToolDescriptions", "getNativeToolDefinitions"]),
-            ("DAGPlannerExecutor.js", ["buildDAG", "executePlan"]),
-        ]
-
-        for filename, keywords in components:
-            filepath = (backend_path / filename).resolve()
-            if filepath.exists():
-                content = filepath.read_text(encoding="utf-8")
-                for keyword in keywords:
-                    assert keyword in content, \
-                        f"{filename} missing '{keyword}' - may have been partially migrated"
-
     def test_python_ai_service_has_intent_module(self):
         """
         VERIFY: Python AI service has intent classification module

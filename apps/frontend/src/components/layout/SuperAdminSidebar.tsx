@@ -26,7 +26,6 @@ interface SuperAdminSidebarProps {
 export const menuGroups = [
   { title: i18n.t("superAdmin.sidebar.home"), icon: <LayoutDashboard className="size-5" />, items: [
     { text: i18n.t("superAdmin.sidebar.dashboard"), icon: <LayoutDashboard className="size-5" />, path: "/super-admin/dashboard" },
-    { text: i18n.t("superAdmin.sidebar.teamPortal"), icon: <Users className="size-5" />, path: "/super-admin/team-portal" },
     { text: i18n.t("superAdmin.sidebar.changelog"), icon: <History className="size-5" />, path: "/super-admin/changelog" },
   ]},
   { title: i18n.t("superAdmin.sidebar.companies"), icon: <Building2 className="size-5" />, items: [
