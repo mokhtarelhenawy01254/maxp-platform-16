@@ -3,7 +3,9 @@ import { Badge } from "../../../components/ui/badge"
 import { Button } from "../../../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card"
 import { Skeleton } from "../../../components/ui/skeleton"
-import { InfoLine, StatusBadge, EmptyState } from "./index"
+import { InfoLine } from "./InfoLine"
+import { StatusBadge } from "./StatusBadge"
+import { EmptyState } from "./EmptyState"
 import { formatDate, formatNumber, getRoleLabel } from "./helpers"
 
 export function CompanyTeamSection({

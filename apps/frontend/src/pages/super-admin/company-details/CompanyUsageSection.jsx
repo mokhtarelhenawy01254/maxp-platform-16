@@ -1,7 +1,9 @@
 import { BarChart3, Package } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { Badge } from "../../../components/ui/badge";
-import { MiniStat, SectionShell, EmptyState } from "./index";
+import { MiniStat } from "./MiniStat";
+import { SectionShell } from "./SectionShell";
+import { EmptyState } from "./EmptyState";
 import {
   formatDate,
   formatNumber,

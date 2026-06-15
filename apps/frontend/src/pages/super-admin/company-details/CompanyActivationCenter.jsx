@@ -15,7 +15,11 @@ import { Alert, AlertDescription, AlertTitle } from "../../../components/ui/aler
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Skeleton } from "../../../components/ui/skeleton";
-import { MiniStat, SectionShell, EmptyState, ActivationItemRow, SectionSubheader } from "./index";
+import { MiniStat } from "./MiniStat";
+import { SectionShell } from "./SectionShell";
+import { EmptyState } from "./EmptyState";
+import { ActivationItemRow } from "./ActivationItemRow";
+import { SectionSubheader } from "./SectionSubheader";
 import {
   formatNumber,
   formatCurrency,

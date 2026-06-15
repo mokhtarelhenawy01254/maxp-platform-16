@@ -2,7 +2,8 @@ import { CalendarDays } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
-import { MiniStat, SectionShell } from "./index";
+import { MiniStat } from "./MiniStat";
+import { SectionShell } from "./SectionShell";
 import {
   formatDate,
   formatNumber,

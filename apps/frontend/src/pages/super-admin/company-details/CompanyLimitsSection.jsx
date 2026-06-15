@@ -1,6 +1,8 @@
 import { cn } from "../../../lib/utils";
 import { Badge } from "../../../components/ui/badge";
-import { MiniStat, SectionShell, UsageBar, getUsageTone } from "./index";
+import { MiniStat } from "./MiniStat";
+import { SectionShell } from "./SectionShell";
+import { UsageBar, getUsageTone } from "./UsageBar";
 import { formatNumber, formatLimit } from "./helpers";
 
 export function CompanyLimitsSection({ review, limitEntries }) {

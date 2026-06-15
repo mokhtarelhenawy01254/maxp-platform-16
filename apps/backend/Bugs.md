@@ -1,3 +1,18 @@
+## [2026-06-15] CompanyDetails sections — Circular dependency crash (ReferenceError: Cannot access 'ea')
+
+- **Bug/Issue**: Navigating to super-admin company details page (and products page when super-admin chunk loaded) threw `ReferenceError: Cannot access 'ea' before initialization` in the browser console.
+- **Root Cause**: The `company-details/index.js` barrel file re-exported from 8 submodules that each imported shared components (MiniStat, SectionShell, EmptyState, etc.) back from `./index`. This created circular import chains that Rollup could not resolve, causing Temporal Dead Zone (TDZ) access on the minified `ea` variable.
+- **Fix**: Replaced all 8 `import { ... } from "./index"` with direct imports from the actual source files (e.g., `import { MiniStat } from "./MiniStat"`, `import { SectionShell } from "./SectionShell"`), breaking the circular dependency.
+- **Files**:
+  - `apps/frontend/src/pages/super-admin/company-details/CompanyActivationCenter.jsx`
+  - `apps/frontend/src/pages/super-admin/company-details/CompanyBillingSection.jsx`
+  - `apps/frontend/src/pages/super-admin/company-details/CompanyHeroCard.jsx`
+  - `apps/frontend/src/pages/super-admin/company-details/CompanyLimitsSection.jsx`
+  - `apps/frontend/src/pages/super-admin/company-details/CompanySubscriptionSection.jsx`
+  - `apps/frontend/src/pages/super-admin/company-details/CompanyTeamSection.jsx`
+  - `apps/frontend/src/pages/super-admin/company-details/CompanyUsageSection.jsx`
+  - `apps/frontend/src/pages/super-admin/company-details/CompanyWalletSection.jsx`
+
 ## [2026-06-15] translation.json — i18n key additions (merge translations post-rebase)
 
 - **Change**: Added new translation keys to `translation.json` (ar/en) for app pricing and dev recommendations features.

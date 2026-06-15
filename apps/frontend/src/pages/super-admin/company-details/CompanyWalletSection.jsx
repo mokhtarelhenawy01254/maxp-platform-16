@@ -1,7 +1,9 @@
 import { ArrowUpCircle, Wallet as WalletIcon } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
-import { MiniStat, SectionShell, EmptyState } from "./index";
+import { MiniStat } from "./MiniStat";
+import { SectionShell } from "./SectionShell";
+import { EmptyState } from "./EmptyState";
 import {
   formatDate,
   formatDateTime,

@@ -1,7 +1,8 @@
 import { Globe, Mail, Phone, ShieldCheck } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
 import { Card, CardContent } from "../../../components/ui/card";
-import { StatusBadge, InfoLine } from "./index";
+import { StatusBadge } from "./StatusBadge";
+import { InfoLine } from "./InfoLine";
 import { getStatusMeta, normalizeWebsite } from "./helpers";
 
 export function CompanyHeroCard({ company, review, ownerUser }) {
