@@ -451,3 +451,103 @@ When AI reply generation returns empty text, return a structured error outside t
 - Tags: ai-chat, agents, fallback, user-correction
 
 ---
+
+## [LRN-20260616-001] best_practice
+
+**Logged**: 2026-06-16
+**Priority**: critical
+**Status**: active
+**Area**: frontend / ci
+
+### Summary
+NEVER use `any` type in frontend TypeScript. CI strictly blocks pushes with `@typescript-eslint/no-explicit-any` errors.
+
+### Details
+When writing sort/filter logic that handles mixed data, using `let x: any` triggers a CI lint error that blocks the GitHub Actions build. Always declare the narrowest possible union type (e.g. `string | number`, `string | null`).
+
+### Suggested Action
+Before writing `any`, ask: "What are the actual possible values here?" and use a union type. Run `npx eslint <file>` before staging.
+
+### Metadata
+- Source: error
+- Related Files: apps/frontend/src/pages/subscription/AppPricingSheet.tsx
+- Tags: typescript, eslint, ci, any-type
+
+---
+
+## [LRN-20260616-002] best_practice
+
+**Logged**: 2026-06-16
+**Priority**: critical
+**Status**: active
+**Area**: frontend / ci
+
+### Summary
+All variables and functions used inside `useEffect` MUST be in its dependency array or ESLint blocks CI.
+
+### Details
+The `react-hooks/exhaustive-deps` ESLint rule is enforced in CI as an error. If a `useEffect` uses `t` (from `useTranslation`), `dispatch`, `navigate`, or any external function/variable, it MUST appear in the dependency array. Missing deps = CI failure.
+
+### Suggested Action
+After writing any `useEffect`, scan its body for every external reference and add them to `[]`. Run `npx eslint src/...` before committing.
+
+### Metadata
+- Source: error
+- Related Files: apps/frontend/src/pages/subscription/AppPricingSheet.tsx
+- Tags: react, hooks, eslint, useEffect, ci
+
+---
+
+## [LRN-20260616-003] best_practice
+
+**Logged**: 2026-06-16
+**Priority**: critical
+**Status**: active
+**Area**: frontend / ci
+
+### Summary
+`node scripts/verify-docs.js` runs in CI and BLOCKS any push where source code changed without a corresponding documentation update.
+
+### Details
+The script compares changed source files (`.ts`, `.tsx`, `.json`) against docs in `apps/frontend/docs/`, `apps/backend/docs/`, `apps/ai-service/docs/`. If source changed with no doc staged, CI fails with exit code 1.
+
+**Two valid solutions**:
+1. Create/update a `.md` file in the relevant `docs/` folder.
+2. Add `[no-doc]` to the commit message if no docs truly needed.
+
+### Suggested Action
+For every feature/fix, create `apps/frontend/docs/<feature-name>.md` BEFORE pushing. Code change + doc file = one atomic commit.
+
+### Metadata
+- Source: error
+- Related Files: scripts/verify-docs.js, apps/frontend/docs/
+- Tags: documentation, compliance, ci, verify-docs
+
+---
+
+## [LRN-20260616-004] best_practice
+
+**Logged**: 2026-06-16
+**Priority**: high
+**Status**: active
+**Area**: frontend / ci
+
+### Summary
+After any i18n change, auto-generated `translation.json` files MUST be staged and committed BEFORE `git pull --rebase`.
+
+### Details
+`npm run build` runs `i18n:merge` which auto-generates `src/locales/ar/translation.json` and `src/locales/en/translation.json`. These are tracked by git. If unstaged when `git pull --rebase` runs, git throws `error: cannot pull with rebase: You have unstaged changes`.
+
+**Correct sequence**:
+1. Edit `sections/*.json`
+2. `npm run build` (auto-merges translations)
+3. `git add apps/frontend/src/locales/*/translation.json`
+4. Commit everything together
+5. `git pull --rebase && git push`
+
+### Metadata
+- Source: error
+- Related Files: apps/frontend/src/locales/ar/translation.json, apps/frontend/src/locales/en/translation.json
+- Tags: i18n, translations, git, rebase, build
+
+---
