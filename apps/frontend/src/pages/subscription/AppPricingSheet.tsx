@@ -598,7 +598,7 @@ export default function AppPricingSheet() {
                           variant="ghost"
                           size="sm"
                           className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-bold font-cairo hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20"
-                          onClick={() => navigate(`/marketplace?app=${app.slug}`)}
+                          onClick={() => window.open(`/marketplace?app=${app.slug}`, '_blank')}
                         >
                           <span className="flex items-center gap-1.5">
                             {t("subscription.details")}
@@ -719,7 +719,7 @@ export default function AppPricingSheet() {
                       variant="outline"
                       size="sm"
                       className="font-cairo text-xs h-8 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-950/20"
-                      onClick={() => navigate(`/marketplace?app=${app.slug}`)}
+                      onClick={() => window.open(`/marketplace?app=${app.slug}`, '_blank')}
                     >
                       {t("subscription.manageApp")}
                     </Button>
@@ -728,7 +728,7 @@ export default function AppPricingSheet() {
                         variant="ghost"
                         size="sm"
                         className="font-cairo text-xs h-8 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 hover:bg-amber-50/50 dark:hover:bg-amber-950/20"
-                        onClick={() => navigate(`/super-admin/marketplace-management?tab=apps`)}
+                        onClick={() => window.open(`/super-admin/marketplace-management?tab=apps`, '_blank')}
                       >
                         {t("subscription.editPricing")}
                       </Button>
