@@ -132,6 +132,7 @@ const getUnifiedConversations = async (req, res) => {
         // ──────────────────────────────────────────────────────────
         // 2. Also fetch WhatsApp contacts if platform includes whatsapp
         // ──────────────────────────────────────────────────────────
+        let whatsappContacts = [];
         const shouldFetchWhatsApp = hasAll || selectedPlatforms.includes('WHATSAPP');
         const isWhatsAppOnly = !hasAll && selectedPlatforms.includes('WHATSAPP') && selectedPlatforms.length === 1;
 
