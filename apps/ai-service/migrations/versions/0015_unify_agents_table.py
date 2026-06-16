@@ -44,26 +44,7 @@ def upgrade() -> None:
     # Step 3: Add indexes
     op.create_index("ix_agents_department_id", "agents", ["department_id"], schema="ai")
 
-    # Step 4: Sanitize invalid JSON channels before migration
-    op.execute("""
-        DO $$
-        DECLARE
-            r RECORD;
-        BEGIN
-            FOR r IN SELECT id, channels FROM ai.company_agents
-                     WHERE channels IS NOT NULL AND channels != '' AND left(channels, 1) = '['
-            LOOP
-                BEGIN
-                    PERFORM r.channels::jsonb;
-                EXCEPTION WHEN OTHERS THEN
-                    UPDATE ai.company_agents SET channels = '[]'::jsonb WHERE id = r.id;
-                END;
-            END LOOP;
-        END;
-        $$;
-    """)
-
-    # Step 5: Migrate data from ai.company_agents to ai.agents
+    # Step 4: Migrate data from ai.company_agents to ai.agents
     # Use DISTINCT ON to deduplicate (company_id, name) pairs in the source
     op.execute("""
         INSERT INTO ai.agents (id, company_id, name, role, description, icon, soul, rules,
@@ -88,7 +69,7 @@ def upgrade() -> None:
             '[]'::jsonb,
             CASE
                 WHEN ca.channels IS NULL OR ca.channels = '' THEN '[]'::jsonb
-                WHEN left(ca.channels, 1) = '[' THEN ca.channels::jsonb
+                WHEN left(ca.channels, 1) = '[' AND right(ca.channels, 1) = ']' THEN ca.channels::jsonb
                 ELSE '[]'::jsonb
             END,
             '{}'::jsonb,
@@ -113,7 +94,7 @@ def upgrade() -> None:
         )
     """)
 
-    # Step 6: Update existing agents with CompanyAgent fields where missing
+    # Step 5: Update existing agents with CompanyAgent fields where missing
     op.execute("""
         UPDATE ai.agents a
         SET
@@ -131,7 +112,7 @@ def upgrade() -> None:
                OR a.department_id IS NULL OR a.manager_type IS NULL)
     """)
 
-    # Step 7: Drop CompanyAgent table (all data now in agents)
+    # Step 6: Drop CompanyAgent table (all data now in agents)
     op.drop_index("ix_company_agents_company_id", table_name="company_agents", schema="ai", if_exists=True)
     op.drop_index("ix_company_agents_department_id", table_name="company_agents", schema="ai", if_exists=True)
     op.drop_table("company_agents", schema="ai")
