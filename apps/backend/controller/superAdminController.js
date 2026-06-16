@@ -6427,6 +6427,129 @@ const compareEvaluations = async (req, res) => {
   }
 };
 
+const globalSearch = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.trim().length < 2) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const query = q.trim();
+    const prisma = getPrisma();
+
+    const [companies, users, devProjects, devTasks, subscriptions, aiKeys, tickets] = await Promise.all([
+      prisma.company.findMany({
+        where: {
+          OR: [
+            { name: { contains: query, mode: "insensitive" } },
+            { email: { contains: query, mode: "insensitive" } },
+            { phone: { contains: query, mode: "insensitive" } },
+            { slug: { contains: query, mode: "insensitive" } },
+          ],
+        },
+        select: { id: true, name: true, email: true, logo: true, slug: true, isActive: true },
+        take: 8,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.user.findMany({
+        where: {
+          OR: [
+            { firstName: { contains: query, mode: "insensitive" } },
+            { lastName: { contains: query, mode: "insensitive" } },
+            { email: { contains: query, mode: "insensitive" } },
+          ],
+        },
+        select: { id: true, firstName: true, lastName: true, email: true, avatar: true, role: true, isActive: true },
+        take: 8,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.devProject.findMany({
+        where: {
+          OR: [
+            { name: { contains: query, mode: "insensitive" } },
+            { description: { contains: query, mode: "insensitive" } },
+          ],
+        },
+        select: { id: true, name: true, description: true, status: true, color: true },
+        take: 8,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.devTask.findMany({
+        where: {
+          OR: [
+            { title: { contains: query, mode: "insensitive" } },
+            { description: { contains: query, mode: "insensitive" } },
+          ],
+        },
+        select: { id: true, title: true, status: true, priority: true, projectId: true },
+        take: 8,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.platformSubscription.findMany({
+        where: {
+          company: {
+            name: { contains: query, mode: "insensitive" },
+          },
+        },
+        select: { id: true, plan: true, status: true, company: { select: { id: true, name: true, logo: true } } },
+        take: 5,
+        orderBy: { nextBillingDate: "asc" },
+      }),
+      prisma.aiKey.findMany({
+        where: {
+          OR: [
+            { name: { contains: query, mode: "insensitive" } },
+            { provider: { contains: query, mode: "insensitive" } },
+          ],
+        },
+        select: { id: true, name: true, provider: true, isActive: true, keyType: true },
+        take: 5,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.supportTicket.findMany({
+        where: {
+          OR: [
+            { subject: { contains: query, mode: "insensitive" } },
+            { ticketId: { contains: query, mode: "insensitive" } },
+          ],
+        },
+        select: { id: true, ticketId: true, subject: true, status: true, category: true, priority: true },
+        take: 5,
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
+
+    const results = [];
+
+    if (companies.length) {
+      results.push({ type: "companies", label: "الشركات", labelEn: "Companies", icon: "Building2", items: companies.map((c) => ({ id: c.id, title: c.name, subtitle: c.email || c.slug, image: c.logo, status: c.isActive ? "active" : "inactive", link: "/super-admin/companies" })) });
+    }
+    if (users.length) {
+      results.push({ type: "users", label: "المستخدمين", labelEn: "Users", icon: "Users", items: users.map((u) => ({ id: u.id, title: `${u.firstName} ${u.lastName}`, subtitle: u.email, status: u.isActive ? "active" : "inactive", link: "/super-admin/users" })) });
+    }
+    if (devProjects.length) {
+      results.push({ type: "projects", label: "المشاريع", labelEn: "Projects", icon: "Code2", items: devProjects.map((p) => ({ id: p.id, title: p.name, subtitle: p.description?.substring(0, 80), status: p.status, link: "/super-admin/dev-projects", color: p.color })) });
+    }
+    if (devTasks.length) {
+      results.push({ type: "tasks", label: "المهام", labelEn: "Tasks", icon: "BarChart3", items: devTasks.map((t) => ({ id: t.id, title: t.title, subtitle: `#${t.status}`, status: t.status, link: "/super-admin/dev-tasks" })) });
+    }
+    if (subscriptions.length) {
+      results.push({ type: "subscriptions", label: "الاشتراكات", labelEn: "Subscriptions", icon: "DollarSign", items: subscriptions.map((s) => ({ id: s.id, title: s.company?.name || "", subtitle: s.plan, status: s.status, link: "/super-admin/subscriptions" })) });
+    }
+    if (aiKeys.length) {
+      results.push({ type: "aiKeys", label: "مفاتيح AI", labelEn: "AI Keys", icon: "Key", items: aiKeys.map((k) => ({ id: k.id, title: k.name, subtitle: k.provider, status: k.isActive ? "active" : "inactive", link: "/super-admin/ai-providers" })) });
+    }
+    if (tickets.length) {
+      results.push({ type: "tickets", label: "تذاكر الدعم", labelEn: "Support Tickets", icon: "Ticket", items: tickets.map((t) => ({ id: t.id, title: t.subject, subtitle: t.ticketId, status: t.status, link: "/admin/support" })) });
+    }
+
+    return res.json({ success: true, data: results });
+  } catch (error) {
+    console.error("[SA-GLOBAL-SEARCH] Error:", error.message);
+    return res.status(500).json({ success: false, error: "Search failed" });
+  }
+};
+
 module.exports = {
   triggerImageCompression,
   getImageCompressionStatus,
@@ -6494,4 +6617,5 @@ module.exports = {
   getMemberEvaluations,
   calculateEvaluation,
   compareEvaluations,
+  globalSearch,
 };

@@ -20,6 +20,7 @@ import {
 import { useAuth } from "../../hooks/useAuthSimple";
 import ThemeToggle from "../ui/theme-toggle";
 import GlobalTimer from "../common/GlobalTimer";
+import GlobalSearch from "./GlobalSearch";
 import { cn } from "@/lib/utils";
 
 type SuperAdminHeaderUser = { firstName?: string | null } | null;
@@ -60,13 +61,14 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
       style={{ right: 0, width: `calc(100% - ${currentDrawerWidth}px)` }}
     >
       <div className="flex w-full items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-shrink-0">
           <Button variant="ghost" size="icon" onClick={onMobileMenuOpen} className="sm:hidden"><Menu className="size-5 text-muted-foreground" /></Button>
           <Button variant="ghost" size="icon" onClick={onCollapseToggle} className="hidden sm:flex"><Menu className="size-5 text-muted-foreground" /></Button>
-          <h1 className="text-base font-bold tracking-tight">{title}</h1>
+          <h1 className="text-base font-bold tracking-tight truncate max-w-[120px] lg:max-w-[200px]">{title}</h1>
           <div className="hidden md:block"><GlobalTimer /></div>
         </div>
-        <div className="flex items-center gap-1">
+        <GlobalSearch />
+        <div className="flex items-center gap-1 flex-shrink-0">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>

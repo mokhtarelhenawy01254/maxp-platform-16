@@ -789,4 +789,7 @@ router.get('/dev/evaluations/member/:memberId', superAdminController.getMemberEv
 router.post('/dev/evaluations/calculate', superAdminController.calculateEvaluation);
 router.post('/dev/evaluations/compare', superAdminController.compareEvaluations);
 
+// 🔍 Global Search - super admin only
+router.get("/global-search", superAdminController.globalSearch);
+
 module.exports = router;
