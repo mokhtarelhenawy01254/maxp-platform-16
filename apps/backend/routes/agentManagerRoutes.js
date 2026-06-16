@@ -213,7 +213,6 @@ const router = express.Router();
 router.use(verifyToken.authenticateToken);
 
 const getCompanyId = (req) => req.user?.companyId || req.companyId;
-const sqlQuote = (value = '') => String(value).replace(/'/g, "''");
 
 // 2026: Department/org metadata now comes from ai-service AgentRead (departmentId, departmentKey, etc.)
 // This function is kept as a thin wrapper for backward compatibility.
@@ -383,50 +382,17 @@ router.get('/agents', async (req, res) => {
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
     const context = await agentManagerService.getManagerContext(companyId);
     const byId = new Map((context.agents || []).map(agent => [agent.id, agent]));
-    const orgMetaById = await loadAgentOrgMetadata(companyId);
-
-    try {
-      // 2026: skip direct Prisma company_agents read; ai-service API already provides agent data
-      const rows = [];
-      for (const a of rows) {
-        byId.set(a.id, {
-          ...(byId.get(a.id) || {}),
-          id: a.id,
-          name: a.name,
-          role: a.role,
-          icon: a.icon || '🤖',
-          description: a.description || '',
-          soul: a.soul || '',
-          rules: (() => { try { return JSON.parse(a.rules || '[]'); } catch { return []; } })(),
-          skills: (() => { try { return JSON.parse(a.skills || '[]'); } catch { return []; } })(),
-          channels: (() => { try { return JSON.parse(a.channels || '[]'); } catch { return []; } })(),
-          allowed_channels: (() => { try { return JSON.parse(a.channels || '[]'); } catch { return []; } })(),
-          allowedChannels: (() => { try { return JSON.parse(a.channels || '[]'); } catch { return []; } })(),
-          model: a.model || null,
-          status: a.status,
-          parentId: a.parentId || null,
-          templateSlug: a.templateSlug || null,
-          createdBy: a.createdBy || null,
-          createdAt: a.createdAt,
-          departmentId: orgMetaById.get(a.id)?.departmentId || null,
-          departmentKey: orgMetaById.get(a.id)?.departmentKey || null,
-          departmentName: orgMetaById.get(a.id)?.departmentName || null,
-          departmentIcon: orgMetaById.get(a.id)?.departmentIcon || null,
-          managerType: orgMetaById.get(a.id)?.managerType || null,
-        });
-      }
-    } catch (_) {}
-
+    // 2026: agent data (including department info) comes from ai-service API
     const agents = [...byId.values()].map(agent => ({
       ...agent,
       rules: agent.rules || [],
       skills: agent.skills || agent.allowedSkills || [],
       allowedTools: agent.allowedTools || agent.allowed_tools || [],
-      departmentId: agent.departmentId || orgMetaById.get(agent.id)?.departmentId || null,
-      departmentKey: agent.departmentKey || orgMetaById.get(agent.id)?.departmentKey || null,
-      departmentName: agent.departmentName || orgMetaById.get(agent.id)?.departmentName || null,
-      departmentIcon: agent.departmentIcon || orgMetaById.get(agent.id)?.departmentIcon || null,
-      managerType: agent.managerType || orgMetaById.get(agent.id)?.managerType || (agent.role === 'CEO' ? 'CEO' : 'AGENT'),
+      departmentId: agent.departmentId || agent.department_id || null,
+      departmentKey: agent.departmentKey || agent.department_key || null,
+      departmentName: agent.departmentName || agent.department_name || null,
+      departmentIcon: agent.departmentIcon || agent.department_icon || null,
+      managerType: agent.managerType || agent.manager_type || (agent.role === 'CEO' ? 'CEO' : 'AGENT'),
     }));
     return res.json({ success: true, agents, count: agents.length });
   } catch (error) {
