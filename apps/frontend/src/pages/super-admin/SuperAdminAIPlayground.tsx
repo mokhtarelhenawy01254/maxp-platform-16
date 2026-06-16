@@ -16,6 +16,7 @@ import { buildApiUrl } from "../../utils/urlHelper";
 import { tokenManager } from "../../utils/tokenManager";
 import { Send, Copy, RefreshCw, Bot, Timer, BarChart3, Radio } from "lucide-react";
 import { toast } from "sonner";
+import i18n from "../../i18n";
 
 const PROVIDERS = [
   { value: "GOOGLE", label: "Google" }, { value: "GROQ", label: "Groq" }, { value: "CEREBRAS", label: "Cerebras" },
@@ -124,10 +125,10 @@ const SuperAdminAIPlayground = () => {
             <div><Label className="text-xs">Temperature: {temperature}</Label><input type="range" min={0} max={2} step={0.1} value={temperature} onChange={e => setTemperature(parseFloat(e.target.value))} className="w-full" /></div>
           </div>
           <Input placeholder="System Prompt (optional)" value={systemPrompt} onChange={e => setSystemPrompt(e.target.value)} />
-          <Textarea placeholder="اكتب prompt هنا... (Ctrl+Enter للإرسال)" rows={4} value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") handleSend(); }} />
+          <Textarea placeholder={i18n.t("aiPlayground.promptPlaceholder")} rows={4} value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") handleSend(); }} />
           <div className="flex items-center gap-4">
-            <Button onClick={handleSend} disabled={loading || !prompt.trim()}><Send className="size-4" /> {loading ? "جارٍ الإرسال..." : "إرسال"}</Button>
-            {loading && <Button variant="destructive" onClick={handleStop}><Radio className="size-4" /> إيقاف</Button>}
+            <Button onClick={handleSend} disabled={loading || !prompt.trim()}><Send className="size-4" /> {loading ? i18n.t("aiPlayground.sending") : i18n.t("aiPlayground.send")}</Button>
+            {loading && <Button variant="destructive" onClick={handleStop}><Radio className="size-4" /> {i18n.t("aiPlayground.stop")}</Button>}
             <div className="flex items-center gap-2 mr-auto">
               <Label className="text-xs cursor-pointer">Streaming</Label>
               <Switch checked={streaming} onCheckedChange={setStreaming} />
@@ -140,15 +141,15 @@ const SuperAdminAIPlayground = () => {
 
       {(displayReply || loading) && <Card className={`${isDark ? "bg-card border-border" : ""}`}><CardContent className="space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-1">
-          <h2 className="text-base font-semibold">الرد</h2>
+          <h2 className="text-base font-semibold">{i18n.t("aiPlayground.reply")}</h2>
           <div className="flex items-center gap-1 flex-wrap">
             {displayMeta.latencyMs != null && <Badge variant="outline"><Timer className="size-3" /> {displayMeta.latencyMs}ms</Badge>}
             {displayMeta.totalTokens != null && <Badge variant="outline"><BarChart3 className="size-3" /> {displayMeta.totalTokens} tokens</Badge>}
-            {displayReply && <Button variant="ghost" size="icon" onClick={() => { navigator.clipboard.writeText(displayReply).then(() => toast.success("تم النسخ")); }}><Copy className="size-4" /></Button>}
+            {displayReply && <Button variant="ghost" size="icon" onClick={() => { navigator.clipboard.writeText(displayReply).then(() => toast.success(i18n.t("aiPlayground.copied"))); }}><Copy className="size-4" /></Button>}
           </div>
         </div>
         <div className="p-3 bg-muted/50 rounded-lg border max-h-[500px] overflow-auto whitespace-pre-wrap text-left font-mono text-sm leading-relaxed">
-          {displayReply || (loading ? <span className="italic text-muted-foreground">جارٍ استقبال الرد...</span> : <span className="italic text-muted-foreground">(رد فارغ)</span>)}
+          {displayReply || (loading ? <span className="italic text-muted-foreground">{i18n.t("aiPlayground.receivingReply")}</span> : <span className="italic text-muted-foreground">{i18n.t("aiPlayground.emptyReply")}</span>)}
           {loading && <span className="animate-pulse">▌</span>}
         </div>
         <div className="flex flex-wrap gap-1">

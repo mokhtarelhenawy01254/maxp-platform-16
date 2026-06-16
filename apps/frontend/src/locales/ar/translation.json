@@ -6209,5 +6209,15 @@
     "errorPause": "خطأ في إيقاف الاستيراد",
     "errorResume": "خطأ في استئناف الاستيراد",
     "errorCancel": "خطأ في إلغاء الاستيراد"
+  },
+  "aiPlayground": {
+    "sending": "جارٍ الإرسال...",
+    "send": "إرسال",
+    "stop": "إيقاف",
+    "copied": "تم النسخ",
+    "receivingReply": "جارٍ استقبال الرد...",
+    "emptyReply": "(رد فارغ)",
+    "reply": "الرد",
+    "promptPlaceholder": "اكتب prompt هنا... (Ctrl+Enter للإرسال)"
   }
 }

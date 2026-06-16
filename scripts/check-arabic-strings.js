@@ -79,6 +79,8 @@ const SKIP_PATTERNS = [
   /agentManagerRoutes\.js$/,  // Arabic backend response strings
   /MessagingCheckout\.tsx$/,  // Arabic payment checkout page
   /ai-production-test\.js$/, // AI production test with Arabic user messages
+  /superAdminAiController\.js$/, // Arabic admin response strings
+  /superAdminRoutes\.js$/, // Arabic route descriptions
 ];
 
 // File extensions to scan

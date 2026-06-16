@@ -6153,5 +6153,15 @@
     "errorPause": "Error pausing import",
     "errorResume": "Error resuming import",
     "errorCancel": "Error cancelling import"
+  },
+  "aiPlayground": {
+    "sending": "Sending...",
+    "send": "Send",
+    "stop": "Stop",
+    "copied": "Copied",
+    "receivingReply": "Receiving reply...",
+    "emptyReply": "(empty reply)",
+    "reply": "Reply",
+    "promptPlaceholder": "Type prompt here... (Ctrl+Enter to send)"
   }
 }
