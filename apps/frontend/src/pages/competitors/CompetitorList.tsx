@@ -548,10 +548,10 @@ const CompetitorList: React.FC = () => {
                     </button>
                   </div>
                   <div className="max-h-48 overflow-y-auto space-y-1">
-                    {pendingTasks.map(({ title }, idx) => (
+                    {pendingTasks.map(({ title, completed }, idx) => (
                       <div
                         key={`pending-${idx}`}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm bg-blue-50 dark:bg-blue-900/20"
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm bg-blue-50 dark:bg-blue-900/20 ${completed ? 'opacity-60' : ''}`}
                       >
                         {editingTaskId === `pending-${idx}` ? (
                           <>
@@ -572,7 +572,18 @@ const CompetitorList: React.FC = () => {
                           </>
                         ) : (
                           <>
-                            <span className="flex-1 text-gray-800 dark:text-gray-200">{title}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePendingTask(idx)}
+                              className="shrink-0 focus:outline-none"
+                            >
+                              {completed ? (
+                                <CheckCircle2 size={16} className="text-green-500" />
+                              ) : (
+                                <Circle size={16} className="text-gray-300 dark:text-gray-600" />
+                              )}
+                            </button>
+                            <span className={`flex-1 ${completed ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}>{title}</span>
                             <button
                               type="button"
                               onClick={() => handleStartEditPending(idx, title)}
@@ -596,7 +607,7 @@ const CompetitorList: React.FC = () => {
                     {(editingId ? devTasks : []).map(task => (
                       <div
                         key={task.id}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800 ${task.status === 'completed' ? 'opacity-60' : ''}`}
                       >
                         {editingTaskId === task.id ? (
                           <>
@@ -617,7 +628,18 @@ const CompetitorList: React.FC = () => {
                           </>
                         ) : (
                           <>
-                            <span className="flex-1 text-gray-800 dark:text-gray-200">{task.title}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleTask(task)}
+                              className="shrink-0 focus:outline-none"
+                            >
+                              {task.status === 'completed' ? (
+                                <CheckCircle2 size={16} className="text-green-500" />
+                              ) : (
+                                <Circle size={16} className="text-gray-300 dark:text-gray-600" />
+                              )}
+                            </button>
+                            <span className={`flex-1 ${task.status === 'completed' ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}>{task.title}</span>
                             <span className="text-[10px] text-gray-400 hidden sm:inline">
                               {new Date(task.createdAt).toLocaleDateString()}
                             </span>
