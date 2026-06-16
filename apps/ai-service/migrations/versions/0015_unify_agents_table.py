@@ -67,11 +67,7 @@ def upgrade() -> None:
             '{}'::jsonb,
             '[]'::jsonb,
             '[]'::jsonb,
-            CASE
-                WHEN ca.channels IS NULL OR ca.channels = '' THEN '[]'::jsonb
-                WHEN left(ca.channels, 1) = '[' AND right(ca.channels, 1) = ']' THEN ca.channels::jsonb
-                ELSE '[]'::jsonb
-            END,
+            COALESCE(ca.channels, '[]'::jsonb),
             '{}'::jsonb,
             '{}'::jsonb,
             ca.parent_id,
