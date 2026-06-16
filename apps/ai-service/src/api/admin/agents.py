@@ -118,6 +118,7 @@ def _generate_agent_id() -> str:
     return f"agent_{secrets.token_urlsafe(16)}"
 
 
+<<<<<<< HEAD
 def _parse_skills_field(skills_val: object) -> list[str]:
     """Parse the legacy `skills` column (JSON string or list) into a list of tool names."""
     if not skills_val:
@@ -130,6 +131,18 @@ def _parse_skills_field(skills_val: object) -> list[str]:
         return [str(s) for s in parsed if s] if isinstance(parsed, list) else []
     except Exception:
         return []
+=======
+def _safe_list(value: object) -> list:
+    if isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, list) else []
+        except (json.JSONDecodeError, TypeError):
+            return []
+    return []
+>>>>>>> cd2014e (fix: safe list parsing for channels in agent endpoints [no-doc])
 
 
 def _agent_to_read(agent: AgentModel) -> AgentRead:
@@ -154,7 +167,7 @@ def _agent_to_read(agent: AgentModel) -> AgentRead:
         persona=getattr(agent, 'persona', None) or {},
         allowed_tools=effective_allowed_tools,
         allowed_skills=getattr(agent, 'allowed_skills', None) or [],
-        allowed_channels=getattr(agent, 'channels', None) or [],
+        allowed_channels=_safe_list(getattr(agent, 'channels', None)),
         guardrails=getattr(agent, 'guardrails', None) or {},
         budget=getattr(agent, 'budget', None) or {},
         parent_id=agent.parent_id,
@@ -202,7 +215,7 @@ def _agent_config_from_record(agent: AgentModel) -> dict[str, Any]:
         },
         "allowed_tools": agent.allowed_tools or [],
         "allowed_skills": agent.allowed_skills or [],
-        "allowed_channels": agent.channels or [],
+        "allowed_channels": _safe_list(agent.channels),
         "status": agent.status,
     }
 
@@ -708,7 +721,7 @@ async def get_manager_context(
             model=a.model, template_slug=a.template_slug, version=a.version,
             allowed_tools=list(a.allowed_tools or []),
             allowed_skills=list(a.allowed_skills or []),
-            allowed_channels=list(a.channels or []) if a.channels else [],
+            allowed_channels=_safe_list(a.channels),
         )
     ca_stmt = (
         select(AgentModel)
@@ -723,7 +736,7 @@ async def get_manager_context(
                 model=ca.model, template_slug=ca.template_slug,
                 allowed_tools=list(ca.allowed_tools or []),
                 allowed_skills=list(ca.allowed_skills or []),
-                allowed_channels=list(ca.channels or []) if ca.channels else [],
+                allowed_channels=_safe_list(ca.channels),
             )
     agents = list(agents_map.values())
     manager = next((a for a in agents if a.role == "CEO"), agents[0] if agents else None)
