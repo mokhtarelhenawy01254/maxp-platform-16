@@ -48,11 +48,11 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ children, fullWidth
   const title = menuGroups.find((g) => g.items.some((i) => matchesSuperAdminNavigationPath(location.pathname, i.path)))?.title || t("superAdmin.controlPanel");
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden" dir="rtl" style={{ backgroundColor: isDark ? "#0f172a" : "#f8fafc" }}>
+    <div className="flex h-screen overflow-hidden" dir="rtl" style={{ backgroundColor: isDark ? "#0f172a" : "#f8fafc" }}>
       <SuperAdminHeader currentDrawerWidth={cw} isDark={isDark} isCollapsed={isCollapsed} onCollapseToggle={() => setIsCollapsed(!isCollapsed)}
         onMobileMenuOpen={() => setMobileOpen(true)} activeUsersCount={activeCount} onShowActiveUsers={() => setShowActive(true)} user={u} title={title} />
       <SuperAdminSidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} user={u} isDark={isDark} handleProfileMenuOpen={() => {}} />
-      <main className="flex-1 overflow-x-hidden pt-16 transition-all duration-300" style={{ width: `calc(100% - ${cw}px)` }}>
+      <main className="flex-1 overflow-y-auto overflow-x-hidden pt-16 transition-all duration-300" style={{ width: `calc(100% - ${cw}px)` }}>
         <div className="w-full px-4 py-6 sm:px-8" style={{ maxWidth: fullWidth ? "none" : "1400px", margin: fullWidth ? 0 : "0 auto" }}>{children}</div>
       </main>
       {showActive && <ActiveUsersMonitor isOpen={showActive} onClose={() => setShowActive(false)} />}

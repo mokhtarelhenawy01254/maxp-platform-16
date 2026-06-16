@@ -60,7 +60,7 @@ export default function AIHubLayout() {
       </div>
 
       {/* Main Workspace Area */}
-      <div className="flex-1 bg-slate-50/20 overflow-hidden">
+      <div className="flex-1 bg-slate-50/20 overflow-y-auto">
         <React.Suspense fallback={
           <div className="flex h-[400px] items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>

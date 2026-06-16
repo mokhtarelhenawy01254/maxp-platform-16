@@ -233,7 +233,7 @@ const ProjectMap = () => {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-slate-50 dark:bg-slate-900" dir="rtl">
+    <div className="p-6 bg-slate-50 dark:bg-slate-900" dir="rtl">
       <div className="w-full">
         <div className="mb-8 text-center sm:text-right">
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3 justify-center sm:justify-start">

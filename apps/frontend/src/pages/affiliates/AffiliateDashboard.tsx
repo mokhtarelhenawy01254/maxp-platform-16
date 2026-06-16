@@ -433,7 +433,7 @@ const AffiliateDashboard: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen ${isDark ? "bg-gray-900" : "bg-gray-50"} px-3 pb-24 pt-4 sm:p-6`}
+      className={`${isDark ? "bg-gray-900" : "bg-gray-50"} px-3 pb-24 pt-4 sm:p-6`}
     >
       <div className="w-full space-y-4 sm:space-y-6">
         <div>

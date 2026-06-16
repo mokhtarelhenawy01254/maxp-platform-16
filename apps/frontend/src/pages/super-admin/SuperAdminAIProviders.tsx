@@ -131,6 +131,10 @@ const DEFAULT_BASE_URLS: Record<string, string> = {
 const DEFAULT_MODELS: Record<string, string> = {
   GOOGLE: "gemini-2.5-flash",
   DEEPSEEK: "deepseek-v4-flash",
+  OPENAI: "gpt-4o-mini",
+  ANTHROPIC: "claude-sonnet-4-20250514",
+  HUGGINGFACE: "mistralai/Mistral-7B-Instruct-v0.3",
+  OLLAMA: "llama3.2",
   GROQ: "llama-3.3-70b-versatile",
   OPENROUTER: "openrouter/auto",
   NVIDIA: "openai/gpt-oss-120b",
@@ -268,6 +272,11 @@ const EMBEDDING_MODELS = [
   {
     id: "gemini-embedding-2",
     labelKey: "superAdmin.aiProviders.embedding.models.geminiEmbedding2",
+    isMultimodal: true,
+  },
+  {
+    id: "gemini-embedding-005",
+    labelKey: "superAdmin.aiProviders.embedding.models.geminiEmbedding005",
     isMultimodal: true,
   },
 ];
@@ -1263,6 +1272,21 @@ const SuperAdminAIProviders = ({
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-refresh dashboard every 30s when the dashboard tab is active
+  useEffect(() => {
+    if (activeTab !== "dashboard") return;
+    const interval = setInterval(() => {
+      fetch(buildApiUrl("super-admin/ai/provider-dashboard"), {
+        headers: getAuthHeaders(),
+      })
+        .then(r => r.json())
+        .then(d => { if (d.success) setProviderDashboard(d.data); })
+        .catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   useEffect(() => {
     if (keys.length > 0) {

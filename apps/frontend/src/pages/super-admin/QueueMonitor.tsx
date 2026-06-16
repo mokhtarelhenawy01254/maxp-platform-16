@@ -148,7 +148,7 @@ export default function QueueMonitor() {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-slate-50/50 min-h-screen" dir="rtl">
+    <div className="p-6 space-y-6 bg-slate-50/50" dir="rtl">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}

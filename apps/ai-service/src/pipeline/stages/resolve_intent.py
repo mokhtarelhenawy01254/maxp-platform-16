@@ -119,4 +119,24 @@ async def resolve_intent(ctx: PipelineContext) -> PipelineContext:
         if ctx.agent and hasattr(ctx.agent, "default_options") and isinstance(ctx.agent.default_options, dict):
             ctx.system_prompt = ctx.agent.default_options.get("instructions")
 
+    # 5. Append available tool descriptions to the system prompt so the agent
+    # knows what tools it can use and when. This bridges the gap between the
+    # pipeline's intent classification and the model's awareness of tool capabilities.
+    if ctx.native_tools and ctx.system_prompt:
+        try:
+            tool_lines = []
+            for tool in ctx.native_tools:
+                name = tool.get("name") if isinstance(tool, dict) else getattr(tool, "name", "")
+                desc = tool.get("description") if isinstance(tool, dict) else getattr(tool, "description", "")
+                if name:
+                    tool_lines.append(f"- {name}: {desc}" if desc else f"- {name}")
+            if tool_lines:
+                ctx.system_prompt += (
+                    "\n\n## الأدوات المتاحة (Available Tools)\nيمكنك استخدام الأدوات التالية للرد على العملاء. "
+                    "استخدم الأداة المناسبة عندما يطلب العميل الخدمة المرتبطة بها.\n"
+                )
+                ctx.system_prompt += "\n".join(tool_lines)
+        except Exception as exc:
+            logger.warning("tool_descriptions_failed", error=str(exc))
+
     return ctx

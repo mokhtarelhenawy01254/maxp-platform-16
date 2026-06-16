@@ -320,7 +320,7 @@ const TicketDetails: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+    <div className="bg-gray-50 p-6 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
       <div className="w-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">

@@ -4921,7 +4921,10 @@
       "aiProviders": "AI Providers & Keys",
       "ceoAgentSettings": "CEO Agent Settings",
       "providerLogs": "Provider Logs"
-    }
+    },
+    "globalSearchPlaceholder": "Search everything...",
+    "globalSearchHint": "Type at least 2 characters to search across all modules",
+    "searchResults": "Search Results"
   },
   "tasks": {
     "title": "Tasks",

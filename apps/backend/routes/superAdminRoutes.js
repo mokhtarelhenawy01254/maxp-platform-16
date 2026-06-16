@@ -344,6 +344,11 @@ router.post(
     superAdminAiController.playgroundChat,
 );
 router.get(
+    "/ai/playground/chat/stream",
+    checkPermission("canAccessSettings"),
+    superAdminAiController.playgroundChatStream,
+);
+router.get(
     "/ai/embedding/models",
     checkPermission("canAccessSettings"),
     superAdminAiController.getEmbeddingModels,

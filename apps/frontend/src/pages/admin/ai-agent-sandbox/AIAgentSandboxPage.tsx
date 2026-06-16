@@ -1,13 +1,10 @@
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState } from "react";
 import {
   X,
-  ChevronLeft,
-  ChevronRight,
   AlertTriangle,
   CheckCircle2,
   MessageSquare,
   LayoutList,
-  GripVertical,
   Sparkles
 } from "lucide-react";
 import { useAgentSandbox } from "./hooks/useAgentSandbox";
@@ -16,7 +13,6 @@ import { SessionList } from "./components/SessionList";
 import { ChatArea } from "./components/ChatArea";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { HeaderBar } from "./components/HeaderBar";
-import { StatusBar } from "./components/StatusBar";
 import { Button } from "@/components/ui/button";
 import AgentProfilePanel from "./components/AgentProfilePanel";
 import type { SandboxTraceSummary } from "./types/sandbox.types";
@@ -77,38 +73,20 @@ const AIAgentSandboxPage: React.FC = () => {
     }).catch(() => {});
   }, [selectedAgent?.id]);
 
-  // Media query states implemented directly via window check / resize listener or basic defaults
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
-  const [inspectorOpen, setInspectorOpen] = useState<boolean>(() => window.innerWidth >= 1440);
-  const [activeMobilePanel, setActiveMobilePanel] = useState<'sessions' | 'chat' | 'inspector'>('chat');
-  const [inspectorWidth, setInspectorWidth] = useState(288);
-  const [inspectorResizing, setInspectorResizing] = useState(false);
+  // Mobile-style overlay toggles
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
 
-  const handleInspectorResizeStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setInspectorResizing(true);
-    const startX = e.clientX;
-    const startWidth = inspectorWidth;
-
-    const handleMouseMove = (ev: MouseEvent) => {
-      const delta = ev.clientX - startX;
-      const newWidth = Math.min(Math.max(startWidth + delta, 180), 600);
-      setInspectorWidth(newWidth);
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSidebarOpen(false);
+        setInspectorOpen(false);
+      }
     };
-
-    const handleMouseUp = () => {
-      setInspectorResizing(false);
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-    document.body.style.cursor = "ew-resize";
-    document.body.style.userSelect = "none";
-  }, [inspectorWidth]);
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
 
 
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -183,7 +161,13 @@ const AIAgentSandboxPage: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-slate-50/20 dark:bg-slate-950 overflow-hidden relative md:p-1 bg-background border-y md:border rounded-none md:rounded-xl shadow-sm">
+    <div className="h-full flex flex-col bg-background overflow-hidden relative">
+      <style>{`
+        @keyframes slide-from-left { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        @keyframes slide-from-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        @keyframes overlay-fade-in { from { opacity: 0; } to { opacity: 1; } }
+      `}</style>
+
       {/* Top Header Controls */}
       <HeaderBar
         agent={selectedAgent}
@@ -198,84 +182,117 @@ const AIAgentSandboxPage: React.FC = () => {
           setSelectedProvider(provider);
           setSelectedKeyId(keyId || null);
         }}
-        onSessions={() => setSidebarOpen((p) => !p)}
+        onSessions={() => setSidebarOpen(true)}
         onEvaluate={handleEvaluate}
         onExport={() => setExportDialogOpen(true)}
         onAgentProfile={() => setAgentProfileDialogOpen(true)}
         isStreaming={isStreaming}
       />
 
-       {/* Main Sandbox Workspace */}
-       <div className="flex-1 flex overflow-hidden relative">
-         {/* Left Session Pane */}
-         <div className={`transition-all duration-300 ${activeMobilePanel === 'sessions' ? 'flex' : 'hidden'} md:flex`}>
-           <SessionList
-             sessions={sessions}
-             activeSessionId={activeSessionId}
-             onSelectSession={(id) => {
-               setActiveSessionId(id);
-               setActiveMobilePanel('chat');
-             }}
-             onCreateSession={createSession}
-             onDeleteSession={deleteSession}
-             onUpdateTitle={updateSessionTitle}
-             formatCost={formatCost}
-             collapsed={!sidebarOpen}
-             isSessionsLoading={isSessionsLoading}
-           />
-         </div>
- 
-         {/* Sidebar Toggle Tab */}
-         <div className="hidden md:flex w-7 min-w-[28px] border-r border-slate-200 dark:border-slate-800 flex-col justify-center items-center bg-white dark:bg-slate-900 select-none">
-           <button
-             onClick={() => setSidebarOpen((p) => !p)}
-             className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-650"
-             title={sidebarOpen ? "Hide sessions" : "Show sessions"}
-           >
-             {sidebarOpen ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
-           </button>
-         </div>
- 
-         {/* Central Chat Board */}
-         <div className={`flex-1 transition-all duration-300 ${activeMobilePanel === 'chat' ? 'flex' : 'hidden'} md:flex`}>
-           <ChatArea
-             messages={activeSession?.messages || []}
-             agent={selectedAgent}
-             model={selectedModel}
-             providers={models}
-             isLoading={isLoading}
-             isStreaming={isStreaming}
-             canSend={canUseSelectedCentralModel}
-             typingStage={typingStage}
-             activeToolCalls={activeToolCalls}
-             onSendMessage={sendMessage}
-           />
-         </div>
- 
-           {/* Right Toggle Column: Drag handle + collapse toggle */}
-          <div className="hidden md:flex w-8 min-w-[32px] border-l border-r border-slate-200 dark:border-slate-800 flex-col bg-white dark:bg-slate-900 select-none relative">
-            {/* Resize drag handle */}
-            <div
-              onMouseDown={handleInspectorResizeStart}
-              className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-indigo-400/30 active:bg-indigo-400/50 transition-colors z-10"
-              title="Drag to resize"
+      {/* Main workspace - single column chat */}
+      <div className="flex-1 flex overflow-hidden relative">
+        <ChatArea
+          messages={activeSession?.messages || []}
+          agent={selectedAgent}
+          model={selectedModel}
+          providers={models}
+          isLoading={isLoading}
+          isStreaming={isStreaming}
+          canSend={canUseSelectedCentralModel}
+          typingStage={typingStage}
+          activeToolCalls={activeToolCalls}
+          onSendMessage={sendMessage}
+        />
+      </div>
+
+      {/* Bottom Navigation - persistent mobile-style tab bar */}
+      <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-shrink-0 select-none">
+        <div className="flex justify-around items-center py-1.5 px-2">
+          <button
+            onClick={() => { setSidebarOpen(true); setInspectorOpen(false); }}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-0 flex-1 max-w-24 ${
+              sidebarOpen
+                ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/20"
+                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+            }`}
+          >
+            <LayoutList className="size-5" />
+            <span className="text-[10px] font-medium">Sessions</span>
+          </button>
+          <button
+            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-0 flex-1 max-w-24 ${
+              !sidebarOpen && !inspectorOpen
+                ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/20"
+                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+            }`}
+          >
+            <MessageSquare className="size-5" />
+            <span className="text-[10px] font-medium">Chat</span>
+          </button>
+          <button
+            onClick={() => { setInspectorOpen(true); setSidebarOpen(false); }}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-0 flex-1 max-w-24 ${
+              inspectorOpen
+                ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/20"
+                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+            }`}
+          >
+            <Sparkles className="size-5" />
+            <span className="text-[10px] font-medium">Inspector</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Sessions Overlay Drawer */}
+      {sidebarOpen && (
+        <div className="absolute inset-0 z-40 flex" style={{ animation: 'overlay-fade-in 200ms ease-out' }}>
+          <div
+            className="bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col relative"
+            style={{ animation: 'slide-from-left 250ms ease-out', width: 300, minWidth: 300 }}
+          >
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="absolute top-3 right-3 z-10 size-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X className="size-4" />
+            </button>
+            <SessionList
+              sessions={sessions}
+              activeSessionId={activeSessionId}
+              onSelectSession={(id) => {
+                setActiveSessionId(id);
+                setSidebarOpen(false);
+              }}
+              onCreateSession={createSession}
+              onDeleteSession={deleteSession}
+              onUpdateTitle={updateSessionTitle}
+              formatCost={formatCost}
+              collapsed={false}
+              isSessionsLoading={isSessionsLoading}
+              width={300}
             />
-            <div className="flex-1 flex flex-col justify-center items-center gap-1">
-              <button
-                onClick={() => setInspectorOpen((p) => !p)}
-                className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-650"
-                title={inspectorOpen ? "Hide activity log" : "Show activity log"}
-              >
-                {inspectorOpen ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
-              </button>
-              {inspectorOpen && (
-                <GripVertical className="size-3 text-slate-300 dark:text-slate-700" />
-              )}
-            </div>
           </div>
-  
-          {/* Right Activity Log / Inspector Pane */}
-          <div className={`${inspectorResizing ? "" : "transition-all duration-300"} ${activeMobilePanel === 'inspector' ? 'flex' : 'hidden'} md:flex`}>
+          <div
+            className="flex-1 bg-slate-900/30 dark:bg-slate-950/50 backdrop-blur-sm"
+            onClick={() => setSidebarOpen(false)}
+            style={{ animation: 'overlay-fade-in 200ms ease-out' }}
+          />
+        </div>
+      )}
+
+      {/* Inspector Overlay Drawer */}
+      {inspectorOpen && (
+        <div className="absolute inset-0 z-40 flex flex-row-reverse" style={{ animation: 'overlay-fade-in 200ms ease-out' }}>
+          <div
+            className="bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col"
+            style={{ animation: 'slide-from-right 250ms ease-out' }}
+          >
+            <button
+              onClick={() => setInspectorOpen(false)}
+              className="absolute top-1 right-1 z-10 size-7 flex items-center justify-center rounded-lg bg-white/90 dark:bg-slate-900/90 shadow-sm border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X className="size-4" />
+            </button>
             <InspectorPanel
               tools={toolsMetadata.map((t) => ({ name: t.name, description: t.description, sideEffect: t.sideEffects || "read", enabled: true, inputSchema: undefined }))}
               activityLog={activityLog}
@@ -290,40 +307,17 @@ const AIAgentSandboxPage: React.FC = () => {
               providerName={selectedProvider}
               conversationMessages={activeSession?.messages || []}
               agentSkills={skills}
-              collapsed={!inspectorOpen}
-              width={inspectorWidth}
+              collapsed={false}
+              width={320}
             />
           </div>
-       </div>
-
-       {/* Footer Stats status bar */}
-       {/* StatusBar removed as requested */}
-
-
-       {/* Mobile Bottom Navigation */}
-       <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-2 flex justify-around items-center pb-safe shrink-0">
-         <button 
-           onClick={() => setActiveMobilePanel('sessions')}
-           className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${activeMobilePanel === 'sessions' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 scale-105' : 'text-slate-500 opacity-70'}`}
-         >
-           <LayoutList className="size-5" />
-           <span className="text-[10px] font-medium">Sessions</span>
-         </button>
-         <button 
-           onClick={() => setActiveMobilePanel('chat')}
-           className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${activeMobilePanel === 'chat' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 scale-105' : 'text-slate-500 opacity-70'}`}
-         >
-           <MessageSquare className="size-5" />
-           <span className="text-[10px] font-medium">Chat</span>
-         </button>
-          <button 
-            onClick={() => setActiveMobilePanel('inspector')}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${activeMobilePanel === 'inspector' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 scale-105' : 'text-slate-500 opacity-70'}`}
-          >
-            <Sparkles className="size-5" />
-            <span className="text-[10px] font-medium">Skills</span>
-          </button>
+          <div
+            className="flex-1 bg-slate-900/30 dark:bg-slate-950/50 backdrop-blur-sm"
+            onClick={() => setInspectorOpen(false)}
+            style={{ animation: 'overlay-fade-in 200ms ease-out' }}
+          />
         </div>
+      )}
 
       {/* Export Session Modal overlay */}
       {exportDialogOpen && (

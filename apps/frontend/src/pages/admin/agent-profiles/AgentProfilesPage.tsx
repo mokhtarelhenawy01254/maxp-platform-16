@@ -470,7 +470,7 @@ export default function AgentProfilesPage() {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-y-auto">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
           {selectedAgent ? (

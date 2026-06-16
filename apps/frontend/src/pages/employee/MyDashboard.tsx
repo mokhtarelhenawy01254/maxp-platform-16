@@ -231,7 +231,7 @@ const MyDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen space-y-4 bg-gray-50/50 dark:bg-gray-900/50">
+      <div className="flex flex-col items-center justify-center space-y-4 bg-gray-50/50 dark:bg-gray-900/50">
         <div className="relative">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary"></div>
           <div className="absolute top-0 left-0 animate-pulse rounded-full h-16 w-16 bg-primary/10"></div>
@@ -243,7 +243,7 @@ const MyDashboard: React.FC = () => {
 
   if (!employee) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen space-y-6">
+      <div className="flex flex-col items-center justify-center space-y-6">
         <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-2xl text-center">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">عذراً، لم يتم العثور على بيانات الموظف</h2>
@@ -264,7 +264,7 @@ const MyDashboard: React.FC = () => {
   ].length;
 
   return (
-    <div className="p-4 md:p-8 space-y-8 bg-[#f8faff] dark:bg-gray-950 min-h-screen font-inter" dir="rtl">
+    <div className="p-4 md:p-8 space-y-8 bg-[#f8faff] dark:bg-gray-950 font-inter" dir="rtl">
       {/* Header with Welcome & Quick Info */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">

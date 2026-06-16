@@ -261,7 +261,7 @@ const WhatsAppInbox: React.FC = () => {
   return (
     <div
       dir={copy.isArabic ? 'rtl' : 'ltr'}
-      className="flex h-[calc(100vh-64px)] overflow-hidden bg-slate-100 dark:bg-slate-950"
+      className="flex h-[calc(100vh-64px)] overflow-y-auto bg-slate-100 dark:bg-slate-950"
     >
       <aside className="hidden w-80 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:flex">
         <div className="border-b border-slate-200 px-5 py-5 dark:border-slate-800">

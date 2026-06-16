@@ -144,7 +144,11 @@ async function testProviderKey({ provider, apiKey, model, messages, prompt, time
   if (messages) body.messages = messages;
   if (prompt) body.prompt = prompt;
   if (timeoutMs) body.timeout_ms = timeoutMs;
-  return request('POST', '/admin/test', body);
+  const result = await request('POST', '/admin/test', body);
+  if (!result) {
+    return { success: false, error: 'AI service returned an error (check connectivity or auth token)', latency_ms: 0, model: '', reply: null };
+  }
+  return result;
 }
 
 async function getManagerContext(companyId) {

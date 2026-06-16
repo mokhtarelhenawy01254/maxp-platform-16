@@ -863,6 +863,17 @@ export function useAgentSandbox() {
           for (const entry of traceLogEntries) {
             addActivityLog(entry);
           }
+          if (pipelineTrace.activeSkill) {
+            addActivityLog({
+              id: generateId(),
+              timestamp: new Date().toISOString(),
+              type: "plan",
+              icon: "🟣" as any,
+              title: "Skill Activated",
+              details: `${pipelineTrace.activeSkill.skillId}${pipelineTrace.activeSkill.requiresHumanApproval ? " (requires approval)" : ""}`,
+              metadata: pipelineTrace.activeSkill as any,
+            });
+          }
         }
 
         if (finalUsedFallbackKey) {

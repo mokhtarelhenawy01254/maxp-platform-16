@@ -449,7 +449,7 @@ const TicketDetails: React.FC = () => {
 
     return (
       <div
-        className="support-ticket-theme bg-slate-100 h-screen font-sans relative overflow-hidden dark:bg-gray-950"
+        className="support-ticket-theme bg-slate-100 font-sans relative dark:bg-gray-950"
         dir="rtl"
       >
         {notification && (
@@ -460,7 +460,7 @@ const TicketDetails: React.FC = () => {
         )}
 
         {/* Main 3-Column Layout - Full Height */}
-        <div className="flex h-screen">
+        <div className="flex">
           {/* COLUMN 1: Tickets List (Right in RTL) */}
           <div className="w-80 bg-white border-l border-slate-200 flex flex-col flex-shrink-0">
             {/* Header */}
@@ -1064,7 +1064,7 @@ const TicketDetails: React.FC = () => {
   // USER VIEW (Original Layout)
   // =========================================================================
   return (
-    <div className="support-ticket-theme h-screen bg-gray-50 flex flex-col dark:bg-gray-950">
+    <div className="support-ticket-theme bg-gray-50 flex flex-col dark:bg-gray-950">
       <div className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-4 flex flex-col overflow-hidden">
         {/* Header */}
         <div className="mb-6">

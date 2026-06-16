@@ -1,12 +1,172 @@
 const { getSharedPrismaClient, safeQuery } = require('../services/sharedDatabase');
-const aiRuntimeService = { getModelManager: () => ({ clearAllCaches: async () => {}, previewNextKeySimple: async () => ({}), testAiKey: async () => ({ success: true }) }) };
-const AIProviderFactory = {};
-const { getModelCapabilities, decorateModel } = { getModelCapabilities: () => ({}), decorateModel: (p, s) => s };
-const aiProviderLogService = { listProviderLogs: async () => [], getProviderLogSummary: async () => ({}), recordProviderEvent: async () => {} };
-const providerBudgetLedgerService = { getBudgetSnapshot: async () => ({}) };
-const providerCatalogService = { listProviderCatalog: async () => [] };
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
-const { isRetiredGeminiModelName, isUnstableGeminiAliasModelName, GEMINI_EMBEDDING_MODELS, GEMINI_EMBEDDING_DIMENSIONS, DEFAULT_GEMINI_EMBEDDING_MODEL } = { isRetiredGeminiModelName: () => false, isUnstableGeminiAliasModelName: () => false, GEMINI_EMBEDDING_MODELS: new Set(['text-embedding-004']), GEMINI_EMBEDDING_DIMENSIONS: { 'text-embedding-004': { default: 768, options: [768, 1536] } }, DEFAULT_GEMINI_EMBEDDING_MODEL: 'text-embedding-004' };
+
+// ── Real ModelManager proxy (communicates with DB + Python ai-service) ─
+const aiRuntimeService = {
+  getModelManager: () => ({
+    clearAllCaches: async () => {
+      try {
+        await getSharedPrismaClient().globalAiConfig.updateMany({ data: { updatedAt: new Date() } });
+      } catch { /* best-effort */ }
+    },
+    previewNextKeySimple: async (companyId, opts = {}) => {
+      try { return await aiServiceAdminClient.getManagerContext(companyId) || {}; }
+      catch { return {}; }
+    },
+    testAiKey: async (id) => {
+      try {
+        const prisma = getSharedPrismaClient();
+        const key = await prisma.aiKey.findUnique({ where: { id }, select: { id: true, provider: true, apiKey: true, baseUrl: true } });
+        if (!key) return { ok: false, status: 'failed', error: 'Key not found', key_id: id };
+        return await aiServiceAdminClient.testProviderKey({ provider: key.provider, apiKey: key.apiKey });
+      } catch { return { ok: false, status: 'failed', error: 'Test request failed', key_id: id }; }
+    },
+  }),
+};
+
+const AIProviderFactory = {};
+
+// ── Prisma-backed AI Provider Log Service ───────────────────────────────
+const aiProviderLogService = {
+  listProviderLogs: async (filters = {}) => {
+    try {
+      const prisma = getSharedPrismaClient();
+      const where = {};
+      if (filters.provider) where.provider = filters.provider;
+      if (filters.keyId) where.keyId = filters.keyId;
+      if (filters.status) where.status = filters.status;
+      if (filters.scope) where.scope = filters.scope;
+      if (filters.action) where.action = filters.action;
+      if (filters.startDate || filters.endDate) {
+        where.createdAt = {};
+        if (filters.startDate) where.createdAt.gte = new Date(filters.startDate);
+        if (filters.endDate) where.createdAt.lte = new Date(filters.endDate);
+      }
+      return await prisma.aiProviderLog.findMany({
+        where, orderBy: { createdAt: 'desc' },
+        take: Math.min(filters.limit || 200, 1000),
+        skip: filters.offset || 0,
+      });
+    } catch { return []; }
+  },
+  getProviderLogSummary: async (filters = {}) => {
+    try {
+      const prisma = getSharedPrismaClient();
+      const where = {};
+      if (filters.provider) where.provider = filters.provider;
+      if (filters.scope) where.scope = filters.scope;
+      const logs = await prisma.aiProviderLog.findMany({
+        where, select: { status: true, latencyMs: true },
+      });
+      let success = 0, failed = 0, warning = 0, rateLimit = 0;
+      const latencies = [];
+      for (const log of logs) {
+        if (log.status === 'success') success++;
+        else if (log.status === 'failed') failed++;
+        else if (log.status === 'warning') warning++;
+        if (log.latencyMs) latencies.push(log.latencyMs);
+      }
+      return {
+        total: logs.length, success, failed, warning, rateLimit,
+        avgLatencyMs: latencies.length ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : null,
+      };
+    } catch { return { total: 0, success: 0, failed: 0, warning: 0, rateLimit: 0, avgLatencyMs: null }; }
+  },
+  recordProviderEvent: async (event) => {
+    try {
+      const prisma = getSharedPrismaClient();
+      await prisma.aiProviderLog.create({ data: event });
+    } catch { /* best-effort */ }
+  },
+};
+
+// ── Prisma-backed Budget Ledger Service ─────────────────────────────────
+const providerBudgetLedgerService = {
+  getBudgetSnapshot: async (selection) => {
+    try {
+      if (!selection?.keyId) return { limited: false, allowed: true, severity: 'unconfigured' };
+      const prisma = getSharedPrismaClient();
+      const key = await prisma.aiKey.findUnique({
+        where: { id: selection.keyId },
+        select: { maxRequestsPerDay: true, currentUsage: true },
+      });
+      if (!key) return { limited: false, allowed: true, severity: 'unconfigured' };
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+      const todayLogs = await prisma.aiProviderLog.count({
+        where: { keyId: selection.keyId, createdAt: { gte: today, lt: tomorrow } },
+      });
+      const limited = key.maxRequestsPerDay > 0;
+      const ratio = limited ? todayLogs / key.maxRequestsPerDay : 0;
+      return {
+        limited, allowed: !limited || todayLogs < key.maxRequestsPerDay,
+        severity: !limited ? 'unconfigured' : ratio >= 1 ? 'exhausted' : ratio >= 0.8 ? 'watch' : 'ready',
+        limits: { rpd: key.maxRequestsPerDay },
+        usage: { day: { requests: todayLogs } }, penalty: null,
+      };
+    } catch { return { limited: false, allowed: true, severity: 'unconfigured' }; }
+  },
+};
+
+// ── Provider Catalog Service ────────────────────────────────────────────
+const PROVIDER_CATALOG = {
+  GOOGLE: { provider: 'GOOGLE', label: 'Google Gemini', adapter: 'GoogleProvider', defaultModel: 'gemini-2.5-flash', baseUrl: null, strength: 'vision, reasoning, long context', freeTierHint: 'Free tier available', limitHints: { rpm: 10, rph: 600, rpd: 1500 }, notes: ['Strong multimodal models', 'Free tier available'] },
+  DEEPSEEK: { provider: 'DEEPSEEK', label: 'DeepSeek (V3/R1)', adapter: 'OpenAICompatProvider', defaultModel: 'deepseek-v4-flash', baseUrl: 'https://api.deepseek.com', strength: 'open-weight, cost-efficient', limitHints: { rpm: 30, rph: 1000, rpd: 10000 }, notes: ['Low cost per token', 'Good reasoning models'] },
+  OPENAI: { provider: 'OPENAI', label: 'OpenAI (GPT)', adapter: 'OpenAICompatProvider', defaultModel: 'gpt-4o-mini', baseUrl: 'https://api.openai.com/v1', strength: 'broadest catalog, multimodal', limitHints: { rpm: 500, rph: 10000, rpd: 100000 }, notes: ['Industry standard', 'Most model variety'] },
+  ANTHROPIC: { provider: 'ANTHROPIC', label: 'Anthropic (Claude)', adapter: 'OpenAICompatProvider', defaultModel: 'claude-sonnet-4-20250514', baseUrl: 'https://api.anthropic.com/v1', strength: 'best coding models', limitHints: { rpm: 50, rph: 1000, rpd: 10000 }, notes: ['Excellent code generation', 'Long context windows'] },
+  HUGGINGFACE: { provider: 'HUGGINGFACE', label: 'Hugging Face (Hub)', adapter: 'OpenAICompatProvider', defaultModel: 'mistralai/Mistral-7B-Instruct-v0.3', baseUrl: 'https://api-inference.huggingface.co/v1', strength: 'open-source hub', limitHints: { rpm: 30, rph: 300, rpd: 1000 }, notes: ['Thousands of models', 'Community-driven'] },
+  OLLAMA: { provider: 'OLLAMA', label: 'Ollama (Local)', adapter: 'OllamaProvider', defaultModel: 'llama3.2', baseUrl: 'https://ollama.maxp.online', strength: 'self-hosted, private', limitHints: { rpm: 60, rph: 3600, rpd: 86400 }, notes: ['No data leaves your infra', 'Custom models supported'] },
+  GROQ: { provider: 'GROQ', label: 'Groq (LPU)', adapter: 'OpenAICompatProvider', defaultModel: 'llama-3.3-70b-versatile', baseUrl: 'https://api.groq.com/openai/v1', strength: 'ultra-low latency (LPU)', freeTierHint: 'Free tier available', limitHints: { rpm: 30, rph: 1440, rpd: 10000 }, notes: ['Fastest inference speeds', 'Free tier available'] },
+  OPENROUTER: { provider: 'OPENROUTER', label: 'OpenRouter', adapter: 'OpenAICompatProvider', defaultModel: 'openrouter/auto', baseUrl: 'https://openrouter.ai/api/v1', strength: '75+ providers, unified API', limitHints: { rpm: 100, rph: 6000, rpd: 100000 }, notes: ['Access to long-tail models', 'Automatic fallback'] },
+  NVIDIA: { provider: 'NVIDIA', label: 'NVIDIA NIM', adapter: 'OpenAICompatProvider', defaultModel: 'openai/gpt-oss-120b', baseUrl: 'https://integrate.api.nvidia.com/v1', strength: 'enterprise GPU cloud', limitHints: { rpm: 50, rph: 1000, rpd: 5000 }, notes: ['High-throughput inference', 'NVIDIA GPU optimization'] },
+  CEREBRAS: { provider: 'CEREBRAS', label: 'Cerebras', adapter: 'OpenAICompatProvider', defaultModel: 'qwen-3-235b-a22b-instruct-2507', baseUrl: 'https://api.cerebras.ai/v1', strength: 'wafer-scale chips', limitHints: { rpm: 60, rph: 2000, rpd: 10000 }, notes: ['Fast inference', 'Competitive pricing'] },
+  GITHUB: { provider: 'GITHUB', label: 'GitHub Models', adapter: 'OpenAICompatProvider', defaultModel: 'gpt-4o', baseUrl: 'https://models.github.ai/inference', strength: 'developer ecosystem', limitHints: { rpm: 30, rph: 1000, rpd: 5000 }, notes: ['Integrated with GitHub', 'Good for dev workflows'] },
+  SAMBANOVA: { provider: 'SAMBANOVA', label: 'SambaNova', adapter: 'OpenAICompatProvider', defaultModel: 'DeepSeek-V3.1', baseUrl: 'https://api.sambanova.ai/v1', strength: 'fast open-source inference', limitHints: { rpm: 30, rph: 1000, rpd: 5000 }, notes: ['Optimized for open models', 'Low latency'] },
+  MISTRAL: { provider: 'MISTRAL', label: 'Mistral', adapter: 'OpenAICompatProvider', defaultModel: 'mistral-large-latest', baseUrl: 'https://api.mistral.ai/v1', strength: 'EU leader, open-weight', limitHints: { rpm: 30, rph: 1000, rpd: 5000 }, notes: ['Strong multilingual models', 'EU data residency'] },
+};
+
+const providerCatalogService = {
+  listProviderCatalog: (providerPriority = []) => {
+    const entries = Object.entries(PROVIDER_CATALOG);
+    if (!providerPriority?.length) return entries.map(([, v], i) => ({ ...v, priority: i }));
+    const ordered = []; const seen = new Set();
+    for (const p of providerPriority) {
+      const entry = PROVIDER_CATALOG[p];
+      if (entry && !seen.has(p)) { ordered.push({ ...entry, priority: ordered.length }); seen.add(p); }
+    }
+    for (const [key, entry] of entries) {
+      if (!seen.has(key)) ordered.push({ ...entry, priority: ordered.length });
+    }
+    return ordered;
+  },
+};
+
+// ── Model Capabilities Map ──────────────────────────────────────────────
+const MODEL_CAPABILITIES = {
+  'gemini-2.5-flash': { tools: true, toolChoice: true, structuredOutputs: true, nativeToolCalling: true, agentReady: true, confidence: 'high', strengths: ['Fast, capable, multimodal'] },
+  'gemini-2.5-pro': { tools: true, toolChoice: true, structuredOutputs: true, nativeToolCalling: true, agentReady: true, confidence: 'high', strengths: ['Deep reasoning, long context'] },
+  'deepseek-v4-flash': { tools: true, toolChoice: true, structuredOutputs: true, nativeToolCalling: false, agentReady: false, confidence: 'medium', strengths: ['Cost-efficient, fast'], warnings: ['No native tool calling, uses chat-compat'] },
+  'deepseek-v4-pro': { tools: true, toolChoice: true, structuredOutputs: true, nativeToolCalling: false, agentReady: false, confidence: 'medium', strengths: ['Deep reasoning'], warnings: ['No native tool calling'] },
+  'gpt-4o-mini': { tools: true, toolChoice: true, structuredOutputs: true, nativeToolCalling: true, agentReady: true, confidence: 'high', strengths: ['Fast, cheap, capable'] },
+  'claude-sonnet-4-20250514': { tools: true, toolChoice: true, structuredOutputs: true, nativeToolCalling: true, agentReady: true, confidence: 'high', strengths: ['Excellent coding, tool use'] },
+  'llama-3.3-70b-versatile': { tools: true, toolChoice: true, structuredOutputs: true, nativeToolCalling: true, agentReady: true, confidence: 'high', strengths: ['Fast inference via Groq LPU'] },
+};
+
+function getModelCapabilities(provider, modelName) {
+  if (!modelName) return {};
+  const nm = modelName.toLowerCase();
+  for (const [key, caps] of Object.entries(MODEL_CAPABILITIES)) {
+    if (key.toLowerCase() === nm || nm.includes('-') && key.toLowerCase().startsWith(nm.split('-')[0])) return caps;
+  }
+  return {};
+}
+
+function decorateModel(provider, serialized) {
+  const caps = getModelCapabilities(provider, serialized?.modelName);
+  return { ...serialized, agentSuitability: caps };
+}
+
+const { isRetiredGeminiModelName, isUnstableGeminiAliasModelName, GEMINI_EMBEDDING_MODELS, GEMINI_EMBEDDING_DIMENSIONS, DEFAULT_GEMINI_EMBEDDING_MODEL } = { isRetiredGeminiModelName: () => false, isUnstableGeminiAliasModelName: () => false, GEMINI_EMBEDDING_MODELS: new Set(['text-embedding-004', 'gemini-embedding-005']), GEMINI_EMBEDDING_DIMENSIONS: { 'text-embedding-004': { default: 768, options: [768, 1536] }, 'gemini-embedding-005': { default: 768, options: [768, 1536] } }, DEFAULT_GEMINI_EMBEDDING_MODEL: 'text-embedding-004' };
 
 const SUPPORTED_AI_PROVIDERS = new Set([
     'GOOGLE',
@@ -42,7 +202,7 @@ const DEFAULT_PROVIDER_MODELS = {
     GOOGLE: 'gemini-2.5-flash',
     DEEPSEEK: 'deepseek-v4-flash',
     OPENAI: 'gpt-4o-mini',
-    ANTHROPIC: 'claude-3-5-sonnet-20241022',
+    ANTHROPIC: 'claude-sonnet-4-20250514',
     HUGGINGFACE: 'mistralai/Mistral-7B-Instruct-v0.3',
     OLLAMA: 'llama3.2',
     GROQ: 'llama-3.3-70b-versatile',
@@ -60,6 +220,36 @@ const DEFAULT_PRODUCT_LANDING_IMAGE_MODEL = 'black-forest-labs/flux.1-dev';
 const EMBEDDING_MODES = new Set(['SYSTEM_DEFAULT', 'SPECIFIC_KEY']);
 const SUPPORTED_EMBEDDING_MODELS = Array.from(GEMINI_EMBEDDING_MODELS);
 const REQUIRED_EMBEDDING_DIMENSION = GEMINI_EMBEDDING_DIMENSIONS[DEFAULT_GEMINI_EMBEDDING_MODEL]?.default || 768;
+
+// ── Cost estimates (USD per 1K input/output tokens) ────────────────────
+const COST_ESTIMATES = {
+  'gemini-2.5-flash': { input: 0.00015, output: 0.00060 },
+  'gemini-2.5-pro': { input: 0.00125, output: 0.00500 },
+  'deepseek-v4-flash': { input: 0.00027, output: 0.00110 },
+  'deepseek-v4-pro': { input: 0.00100, output: 0.00400 },
+  'gpt-4o-mini': { input: 0.00015, output: 0.00060 },
+  'gpt-4o': { input: 0.00250, output: 0.01000 },
+  'claude-sonnet-4-20250514': { input: 0.00300, output: 0.01500 },
+  'llama-3.3-70b-versatile': { input: 0.00059, output: 0.00079 },
+  'openrouter/auto': { input: 0.00050, output: 0.00150 },
+  'openai/gpt-oss-120b': { input: 0.00090, output: 0.00090 },
+  'mistral-large-latest': { input: 0.00200, output: 0.00600 },
+  'qwen-3-235b-a22b-instruct-2507': { input: 0.00010, output: 0.00040 },
+  'DeepSeek-V3.1': { input: 0.00050, output: 0.00150 },
+};
+
+function estimateCost(modelName, inputTokens, outputTokens) {
+  const rates = COST_ESTIMATES[modelName];
+  if (!rates) return null;
+  return {
+    inputCost: (inputTokens / 1000) * rates.input,
+    outputCost: (outputTokens / 1000) * rates.output,
+    totalCost: ((inputTokens / 1000) * rates.input) + ((outputTokens / 1000) * rates.output),
+    rateInput: rates.input,
+    rateOutput: rates.output,
+  };
+}
+
 
 function getPrisma() {
     return getSharedPrismaClient();
@@ -1308,6 +1498,8 @@ exports.getProviderDashboard = async (req, res) => {
                             ? 'watch'
                             : 'ready';
 
+            const costEstimate = activeModel ? estimateCost(activeModel, 1000, 500) : null;
+
             return {
                 ...providerMeta,
                 priority: providerPriority.indexOf(providerMeta.provider) >= 0
@@ -1319,6 +1511,7 @@ exports.getProviderDashboard = async (req, res) => {
                 exhaustedKeyCount: exhaustedKeys.length,
                 watchKeyCount: watchKeys.length,
                 activeModel,
+                costEstimate,
                 latestSuccessKey: latestSuccessKey
                     ? {
                         id: latestSuccessKey.id,
@@ -1328,7 +1521,18 @@ exports.getProviderDashboard = async (req, res) => {
                     }
                     : null,
                 stats24h: logStats,
-                healthStatus
+                healthStatus,
+                healthScore: (() => {
+                    if (logStats.total === 0) return activeKeys.length > 0 ? 85 : 0;
+                    const successRate = logStats.success / logStats.total;
+                    const rateLimitPenalty = Math.min(logStats.rateLimit * 5, 30);
+                    const latencyScore = logStats.avgLatencyMs
+                        ? Math.max(0, 100 - (logStats.avgLatencyMs / 20))
+                        : 50;
+                    return Math.round(Math.max(0, Math.min(100,
+                        (successRate * 60) + (latencyScore * 0.25) - rateLimitPenalty
+                    )));
+                })(),
             };
         });
 
@@ -1873,9 +2077,9 @@ exports.testAIKey = async (req, res) => {
         const result = await aiRuntimeService.getModelManager().testAiKey(id);
 
         if (!result) {
-            return res.status(404).json({
+            return res.status(502).json({
                 success: false,
-                message: 'AI key not found'
+                message: 'AI service is unavailable or returned an error. Check AI_SERVICE_URL and service token configuration.'
             });
         }
 
@@ -1887,9 +2091,48 @@ exports.testAIKey = async (req, res) => {
             });
         }
 
+        const testOk = result.success === true;
+
+        try {
+            const prisma = getSharedPrismaClient();
+            const key = await prisma.aiKey.findUnique({ where: { id } });
+            if (key) {
+                const usage = parseAiKeyUsage(key.usage);
+                usage.routing = {
+                    ...(usage.routing || {}),
+                    lastTestStatus: testOk ? 'success' : 'failed',
+                    lastTestedAt: new Date().toISOString(),
+                    lastTestProvider: result.provider || key.provider,
+                    lastTestModel: result.model || null,
+                    lastTestLatencyMs: result.latency_ms || null,
+                    lastTestError: result.error || null,
+                    testCount: Number((usage.routing || {}).testCount || 0) + 1,
+                };
+                await prisma.aiKey.update({
+                    where: { id },
+                    data: { usage: JSON.stringify(usage) }
+                });
+
+                await aiProviderLogService.recordProviderEvent({
+                    provider: key.provider,
+                    keyId: key.id,
+                    keyName: key.name,
+                    companyId: key.companyId || null,
+                    action: 'key.test',
+                    status: testOk ? 'success' : 'failed',
+                    latencyMs: result.latency_ms || null,
+                    model: result.model || null,
+                    message: testOk ? 'Super admin key test succeeded' : (result.error || 'Super admin key test failed'),
+                    metadata: { source: 'super_admin_key_test' },
+                });
+            }
+        } catch (dbError) {
+            logAiAdminError('Error persisting AI key test result:', dbError);
+        }
+
         res.json({
             success: true,
-            message: result.ok ? 'AI key test succeeded' : 'AI key test failed',
+            message: testOk ? 'AI key test succeeded' : 'AI key test failed',
             data: result
         });
     } catch (error) {
@@ -2451,6 +2694,116 @@ exports.getOpenRouterModels = async (req, res) => {
  * POST /super-admin/ai/playground/chat
  * Body: { provider, model?, prompt, systemPrompt?, temperature?, maxTokens? }
  */
+
+// ── OpenAI-compatible streaming helper ─────────────────────────────────
+async function* openaiStream(url, apiKey, messages, options = {}) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: options.model,
+      messages,
+      temperature: options.temperature ?? 0.7,
+      max_tokens: options.maxTokens ?? 2048,
+      stream: true,
+    }),
+  });
+  if (!response.ok) throw new Error(`Provider returned HTTP ${response.status}`);
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed === 'data: [DONE]') continue;
+      if (trimmed.startsWith('data: ')) {
+        try {
+          const parsed = JSON.parse(trimmed.slice(6));
+          const delta = parsed.choices?.[0]?.delta?.content || '';
+          if (delta) yield delta;
+        } catch { /* skip malformed chunk */ }
+      }
+    }
+  }
+}
+
+/**
+ * AI Playground — streaming chat via SSE.
+ * GET /super-admin/ai/playground/chat/stream
+ * Query: provider, model?, prompt, systemPrompt?, temperature?, maxTokens?
+ */
+exports.playgroundChatStream = async (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+
+  try {
+    let { provider, model, prompt, systemPrompt, temperature, maxTokens } = req.query;
+
+    provider = normalizeProvider(provider);
+    if (!provider || !isSupportedProvider(provider)) {
+      res.write(`data: ${JSON.stringify({ error: `Unsupported provider: ${provider}` })}\n\n`);
+      return res.end();
+    }
+    if (!prompt || !trimString(prompt)) {
+      res.write(`data: ${JSON.stringify({ error: 'Prompt is required' })}\n\n`);
+      return res.end();
+    }
+    prompt = trimString(prompt);
+
+    const prisma = getPrisma();
+    const keys = await prisma.aiKey.findMany({
+      where: { provider, isActive: true, companyId: null },
+      include: { aiModelConfigs: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (keys.length === 0) {
+      res.write(`data: ${JSON.stringify({ error: `No active keys found for provider: ${provider}` })}\n\n`);
+      return res.end();
+    }
+
+    const key = keys[0];
+    const resolvedModel = model || key.aiModelConfigs?.[0]?.modelName || DEFAULT_PROVIDER_MODELS[provider] || DEFAULT_PROVIDER_MODELS.GOOGLE;
+    const temp = Number.isFinite(Number(temperature)) ? Math.max(0, Math.min(2, Number(temperature))) : 0.7;
+    const maxTk = Number.isFinite(Number(maxTokens)) ? Math.max(1, Math.min(128000, Number(maxTokens))) : 2048;
+
+    const messages = [];
+    if (systemPrompt && trimString(systemPrompt)) messages.push({ role: 'system', content: trimString(systemPrompt) });
+    messages.push({ role: 'user', content: prompt });
+
+    const baseUrl = key.baseUrl || DEFAULT_PROVIDER_BASE_URLS[provider];
+    const url = baseUrl ? `${baseUrl.replace(/\/$/, '')}/chat/completions` : null;
+    if (!url) {
+      res.write(`data: ${JSON.stringify({ error: 'No base URL configured for streaming' })}\n\n`);
+      return res.end();
+    }
+
+    const startedAt = Date.now();
+    let fullReply = '';
+
+    for await (const chunk of openaiStream(url, key.apiKey, messages, { model: resolvedModel, temperature: temp, maxTokens: maxTk })) {
+      fullReply += chunk;
+      res.write(`data: ${JSON.stringify({ chunk, reply: fullReply })}\n\n`);
+    }
+
+    const latencyMs = Date.now() - startedAt;
+    res.write(`data: ${JSON.stringify({ done: true, latencyMs, provider, model: resolvedModel })}\n\n`);
+  } catch (error) {
+    logAiAdminError('Playground stream error:', error);
+    res.write(`data: ${JSON.stringify({ error: sanitizeAiAdminErrorMessage(error?.message || 'Stream failed') })}\n\n`);
+  }
+
+  res.end();
+};
+
 exports.playgroundChat = async (req, res) => {
     const prisma = getPrisma();
     const startedAt = Date.now();

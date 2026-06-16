@@ -286,6 +286,90 @@ def test_agent_chat_creates_approval_draft_for_awaiting_tool(monkeypatch):
     assert create_mock.await_args.kwargs["channel"] == "facebook"
 
 
+def test_agent_chat_pipeline_trace_includes_active_skill(monkeypatch):
+    mock_session = AsyncMock(spec=AsyncSession)
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = None
+    mock_result.mappings().one_or_none.return_value = None
+    mock_session.execute = AsyncMock(return_value=mock_result)
+
+    class _Agent:
+        id = "agent_fb"
+        role = "FACEBOOK_SALES_SUPPORT"
+        _last_model_selection = None
+        allowed_skills = ["catalog-search"]
+
+        async def ensure_client(self):
+            return object()
+
+        async def process_task(self, _task):
+            return {
+                "status": "SUCCESS",
+                "result": {
+                    "reply": "Found 3 laptops under 30000 EGP.",
+                    "tools": [{
+                        "tool": "product_search",
+                        "status": "success",
+                        "success": True,
+                        "name": "product_search",
+                    }],
+                    "pipeline_trace": {
+                        "activeSkill": {
+                            "skillId": "catalog-search",
+                            "requiresHumanApproval": False,
+                            "maxToolCount": 2,
+                        },
+                        "toolPlan": {
+                            "intent": "product.search",
+                            "primaryTool": "product_search",
+                            "allowedTools": ["product_search"],
+                        },
+                        "toolExecutions": [{
+                            "name": "product_search",
+                            "params": {"query": "laptops under 30000"},
+                            "output": {"count": 3},
+                            "success": True,
+                        }],
+                    },
+                },
+            }
+
+    async def fake_from_template(cls, template_slug, company_id, overrides=None, session=None):
+        return _Agent()
+
+    monkeypatch.setattr(
+        "src.api.admin.agents.BaseAgent.from_template",
+        classmethod(fake_from_template),
+    )
+
+    app = _create_test_app(mock_session)
+    with TestClient(app) as client:
+        response = client.post(
+            "/admin/agents/chat",
+            headers={"Authorization": "Bearer test-service-token"},
+            json={
+                "company_id": "comp_test",
+                "agent_id": "agent_fb",
+                "message": "search laptops under 30000",
+                "thread_id": "thread_1",
+                "agent_config": {
+                    "id": "agent_fb",
+                    "role": "FACEBOOK_SALES_SUPPORT",
+                    "templateSlug": "facebook-sales-support-agent",
+                    "allowedTools": ["product_search"],
+                    "allowedSkills": ["catalog-search"],
+                },
+            },
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["pipeline_trace"]["activeSkill"]["skillId"] == "catalog-search"
+    assert body["pipeline_trace"]["activeSkill"]["requiresHumanApproval"] is False
+    assert body["pipeline_trace"]["activeSkill"]["maxToolCount"] == 2
+    assert body["pipeline_trace"]["toolPlan"]["intent"] == "product.search"
+
+
 def test_sandbox_evaluate_response_uses_python_llm_client(monkeypatch):
     mock_session = AsyncMock(spec=AsyncSession)
 

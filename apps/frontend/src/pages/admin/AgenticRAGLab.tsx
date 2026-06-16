@@ -762,7 +762,7 @@ const AgenticRAGLab: React.FC = () => {
   const isRtl = i18n.dir() === "rtl";
 
   return (
-    <div className={`p-4 md:p-6 w-full min-h-screen text-slate-900 dark:text-slate-100 bg-background ${isRtl ? "rtl" : "ltr"}`}>
+    <div className={`p-4 md:p-6 w-full text-slate-900 dark:text-slate-100 bg-background ${isRtl ? "rtl" : "ltr"}`}>
       {/* Premium Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-6 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-3">

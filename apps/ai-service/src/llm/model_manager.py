@@ -19,9 +19,10 @@ logger = structlog.get_logger(__name__)
 
 SUPPORTED_PROVIDER_ORDER = [
     "GOOGLE", "GROQ", "OPENROUTER", "NVIDIA", "DEEPSEEK",
-    "OPENAI", "ANTHROPIC", "HUGGINGFACE", "OLLAMA"
+    "OPENAI", "ANTHROPIC", "HUGGINGFACE", "OLLAMA",
+    "CEREBRAS", "GITHUB", "SAMBANOVA", "MISTRAL"
 ]
-DEFAULT_PROVIDER_PRIORITY = ["GOOGLE", "GROQ", "OPENROUTER", "NVIDIA"]
+DEFAULT_PROVIDER_PRIORITY = ["GOOGLE", "GROQ", "OPENROUTER"]
 
 RETIRED_GEMINI_MODEL_NAMES = {
     "gemini-1.0-pro", "gemini-pro", "gemini-flash",
@@ -424,12 +425,18 @@ class ModelManager:
 
     def _default_model_for_provider(self, provider: str) -> str:
         defaults = {
-            "DEEPSEEK": "deepseek-chat",
+            "DEEPSEEK": "deepseek-v4-flash",
             "OPENAI": "gpt-4o-mini",
+            "ANTHROPIC": "claude-sonnet-4-20250514",
+            "HUGGINGFACE": "mistralai/Mistral-7B-Instruct-v0.3",
             "OLLAMA": "llama3.2",
             "GROQ": "llama-3.3-70b-versatile",
             "OPENROUTER": "openrouter/auto",
-            "NVIDIA": "meta/llama-3.1-70b-instruct",
+            "NVIDIA": "openai/gpt-oss-120b",
+            "CEREBRAS": "qwen-3-235b-a22b-instruct-2507",
+            "GITHUB": "gpt-4o",
+            "SAMBANOVA": "DeepSeek-V3.1",
+            "MISTRAL": "mistral-large-latest",
         }
         return defaults.get(provider, "gemini-2.5-flash")
 

@@ -2,9 +2,11 @@
 
 import "@testing-library/jest-dom/vitest";
 import React from "react";
-import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi, afterAll } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import AIAgentSandboxPage from "../AIAgentSandboxPage";
+import { InspectorPanel } from "../components/InspectorPanel";
 import { useAgentSandbox } from "../hooks/useAgentSandbox";
 
 vi.mock("../hooks/useAgentSandbox", () => ({
@@ -24,6 +26,12 @@ const selectedAgent = {
 describe("AIAgentSandboxPage", () => {
   beforeAll(() => {
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
+    vi.stubGlobal("innerWidth", 1920);
+    Object.defineProperty(window, "innerWidth", { value: 1920, configurable: true });
+  });
+
+  afterAll(() => {
+    Object.defineProperty(window, "innerWidth", { value: 1024, configurable: true });
   });
 
   afterEach(() => {
@@ -73,8 +81,8 @@ describe("AIAgentSandboxPage", () => {
         },
       ],
       toolsMetadata: [
-        { name: "agent.spawn", description: "Spawn agent", sideEffect: "write" },
-        { name: "product.search", description: "Search products", sideEffect: "read" },
+        { name: "agent.spawn", description: "Spawn agent", sideEffects: "write" },
+        { name: "product.search", description: "Search products", sideEffects: "read" },
       ],
       quickScenarios: [],
       costBreakdown: [],
@@ -98,8 +106,11 @@ describe("AIAgentSandboxPage", () => {
     });
   });
 
-  test("classifies dot-named write tools correctly in the inspector", () => {
+  test("classifies dot-named write tools correctly in the inspector", async () => {
+    const user = userEvent.setup();
     render(<AIAgentSandboxPage />);
+
+    await user.click(screen.getByText("Inspector"));
 
     expect(screen.getByText("agent.spawn")).toBeInTheDocument();
     expect(screen.getByText("product.search")).toBeInTheDocument();
@@ -151,52 +162,77 @@ describe("AIAgentSandboxPage", () => {
     expect(screen.getAllByText(/Inactive/).length).toBeGreaterThan(0);
   });
 
-  test("shows Python run trace summary for the latest assistant message", () => {
-    (useAgentSandbox as vi.Mock).mockReturnValueOnce({
-      ...(useAgentSandbox as vi.Mock).getMockImplementation()?.(),
-      activeSession: {
-        id: "session_trace",
-        title: "Trace session",
-        agentId: selectedAgent.id,
+  test("shows active skill from pipeline trace in the InspectorPanel", async () => {
+    const user = userEvent.setup();
+    render(<InspectorPanel
+      tools={[
+        { name: "product_search", description: "Search", sideEffect: "read", enabled: true },
+      ]}
+      activityLog={[]}
+      traceSummary={{
+        runtime: "python-agent",
         model: "gemini-2.5-flash",
         provider: "GOOGLE",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        messageCount: 1,
-        toolCallCount: 1,
-        totalCost: 0,
-        totalTokens: 0,
-        avgLatency: 0,
-        messages: [{
-          id: "assistant_trace",
-          role: "assistant",
-          content: "Tool-backed reply",
-          timestamp: new Date().toISOString(),
-          runtime: "python-agent",
-          model: "gemini-2.5-flash",
-          provider: "GOOGLE",
-          toolCalls: [{ id: "tool_1", name: "inventory_check", input: {}, status: "success", timestamp: new Date().toISOString() }],
-          metadata: {
-            intentClassification: {
-              intent: "inventory.check",
-              confidence: 0.91,
-              confidenceLevel: "high",
-              ambiguous: false,
-            },
-            toolPlan: {
-              intent: "inventory.check",
-              primaryTool: "inventory_check",
-              reason: "classified by model",
-            },
-          },
-        }],
-      },
-    });
+        toolCalls: [{ id: "t1", name: "product_search", input: {}, status: "success", timestamp: new Date().toISOString() }],
+        pipelineTrace: {
+          activeSkill: { skillId: "catalog-search", requiresHumanApproval: false, maxToolCount: 2 },
+          intentClassification: { intent: "product.search", confidence: 0.95, confidenceLevel: "high", ambiguous: false },
+          toolPlan: { intent: "product.search", primaryTool: "product_search", reason: "catalog search" },
+        },
+      }}
+      onClearLog={vi.fn()}
+      agentName="Test Agent"
+      agentRole="SALES"
+      agentDescription=""
+      modelName="gemini-2.5-flash"
+      providerName="GOOGLE"
+      conversationMessages={[]}
+      agentSkills={[]}
+      collapsed={false}
+      width={288}
+    />);
 
-    render(<AIAgentSandboxPage />);
+    // Switch to System tab where active skill is shown in prompt sections
+    await user.click(screen.getByText("System")); // tab=2
+    expect(screen.getByText("ACTIVE SKILL — Last Turn")).toBeInTheDocument();
+    expect(screen.getByText(/catalog-search/)).toBeInTheDocument();
+  });
 
-    expect(screen.getByText("Run trace")).toBeInTheDocument();
-    expect(screen.getByText("Python")).toBeInTheDocument();
+  test("shows Python run trace summary for the latest assistant message", async () => {
+    const user = userEvent.setup();
+    render(<InspectorPanel
+      tools={[
+        { name: "inventory_check", description: "Check inventory", sideEffect: "read", enabled: true },
+      ]}
+      activityLog={[]}
+      traceSummary={{
+        runtime: "python-agent",
+        model: "gemini-2.5-flash",
+        provider: "GOOGLE",
+        keyName: "",
+        keyId: "",
+        toolCalls: [{ id: "tool_1", name: "inventory_check", input: {}, status: "success", timestamp: new Date().toISOString() }],
+        pipelineTrace: {
+          intentClassification: { intent: "inventory.check", confidence: 0.91, confidenceLevel: "high", ambiguous: false },
+          toolPlan: { intent: "inventory.check", primaryTool: "inventory_check", reason: "classified by model" },
+        },
+      }}
+      onClearLog={vi.fn()}
+      agentName="Test Agent"
+      agentRole="SALES"
+      agentDescription=""
+      modelName="gemini-2.5-flash"
+      providerName="GOOGLE"
+      conversationMessages={[]}
+      agentSkills={[]}
+      collapsed={false}
+      width={320}
+    />);
+
+    await user.click(screen.getByText("Log"));
+
+    expect(screen.getByText("aiHub.sandbox.trace.title")).toBeInTheDocument();
+    expect(screen.getByText("aiHub.sandbox.trace.pythonRuntime")).toBeInTheDocument();
     expect(screen.getByText(/inventory\.check/)).toBeInTheDocument();
     expect(screen.getAllByText(/inventory_check/).length).toBeGreaterThan(0);
   });

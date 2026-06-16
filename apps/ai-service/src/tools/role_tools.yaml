@@ -21,6 +21,7 @@ roles:
     - order_create_confirmed
     - order_cancel
     - order_refund
+    - shipping_rates
 
   SALES:
     - product_search

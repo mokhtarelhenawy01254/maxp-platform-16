@@ -223,7 +223,7 @@ const ManualOrderPage = () => {
 
   return (
     <div
-      className="relative flex h-[calc(100dvh-64px)] min-h-[560px] flex-col overflow-hidden bg-slate-50 p-3 dark:bg-gray-900 sm:p-4 lg:h-[calc(100vh-64px)]"
+      className="relative flex h-[calc(100dvh-64px)] min-h-[560px] flex-col overflow-y-auto bg-slate-50 p-3 dark:bg-gray-900 sm:p-4 lg:h-[calc(100vh-64px)]"
       dir="rtl"
     >
       <header className="mb-3 flex shrink-0 items-start justify-between gap-3">
@@ -326,9 +326,9 @@ const ManualOrderPage = () => {
         </div>
       )}
 
-      <div className="grid min-h-0 flex-1 grid-cols-12 gap-3 overflow-hidden lg:gap-4">
+      <div className="grid min-h-0 flex-1 grid-cols-12 gap-3 overflow-y-auto lg:gap-4">
         <div
-          className={`col-span-12 min-h-0 overflow-hidden lg:col-span-5 ${
+          className={`col-span-12 min-h-0 overflow-y-auto lg:col-span-5 ${
             activeMobilePanel === "products" ? "block" : "hidden lg:block"
           }`}
         >
@@ -339,7 +339,7 @@ const ManualOrderPage = () => {
         </div>
 
         <div
-          className={`col-span-12 min-h-0 overflow-hidden lg:col-span-3 ${
+          className={`col-span-12 min-h-0 overflow-y-auto lg:col-span-3 ${
             activeMobilePanel === "cart" ? "block" : "hidden lg:block"
           }`}
         >
@@ -351,7 +351,7 @@ const ManualOrderPage = () => {
         </div>
 
         <div
-          className={`col-span-12 min-h-0 overflow-hidden lg:col-span-4 ${
+          className={`col-span-12 min-h-0 overflow-y-auto lg:col-span-4 ${
             activeMobilePanel === "checkout" ? "block" : "hidden lg:block"
           }`}
         >

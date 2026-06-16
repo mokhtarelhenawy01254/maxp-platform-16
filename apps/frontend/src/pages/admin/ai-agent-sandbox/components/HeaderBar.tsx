@@ -82,7 +82,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   }
 
   return (
-    <div className="px-3 py-2 border-b border-slate-200 dark:border-slate-800 flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-3 bg-white dark:bg-slate-900 text-xs select-none">
+    <div className="px-2 py-1.5 border-b border-slate-200 dark:border-slate-800 flex flex-col gap-1 md:flex-row md:flex-wrap md:items-center md:gap-2 bg-white dark:bg-slate-900 text-xs select-none">
       <div className="flex items-center gap-2 min-w-0">
         <FlaskConical className="size-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
         <span className="font-bold text-slate-800 dark:text-slate-200 truncate">AI Agent Sandbox</span>
@@ -101,7 +101,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         <select
           value={agent.id}
           onChange={(e) => onAgentChange(e.target.value)}
-          className="rounded-md border border-slate-200 dark:border-slate-800 bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-650 font-medium w-full sm:w-auto max-w-[160px] sm:max-w-[200px] truncate"
+          className="rounded-md border border-slate-200 dark:border-slate-800 bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-650 font-medium w-full sm:w-auto max-w-[130px] sm:max-w-[200px] truncate"
         >
           {agents.map((a) => (
             <option key={a.id} value={a.id}>
@@ -119,7 +119,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
             const selected = models.find((m) => optionValue(m) === e.target.value);
             if (selected) onModelChange(selected.model, selected.provider, selected.keyId || null);
           }}
-          className="rounded-md border border-slate-200 dark:border-slate-800 bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-650 font-medium w-full sm:w-auto max-w-[180px] sm:max-w-[240px] truncate"
+          className="rounded-md border border-slate-200 dark:border-slate-800 bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-650 font-medium w-full sm:w-auto max-w-[140px] sm:max-w-[240px] truncate"
         >
           {models.map((m) => (
             <option
@@ -141,7 +141,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
       )}
 
       {visibleCentralKeys.length > 0 && (
-        <div className="flex items-center gap-1.5">
+        <div className="hidden sm:flex items-center gap-1.5">
           <select
             value=""
             disabled
@@ -166,10 +166,10 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
           variant="outline"
           onClick={onEvaluate}
           disabled={isStreaming}
-          className="h-8 text-xs font-semibold flex items-center gap-1.5 px-3 border-slate-200 dark:border-slate-850"
+          className="h-8 text-xs font-semibold flex items-center gap-1.5 px-2 sm:px-3 border-slate-200 dark:border-slate-850"
         >
           <ClipboardCheck className="size-3.5 text-indigo-600 dark:text-indigo-400" />
-          <span>Evaluate</span>
+          <span className="hidden sm:inline">Evaluate</span>
         </Button>
 
         {onSessions && (

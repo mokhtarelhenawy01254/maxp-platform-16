@@ -526,7 +526,7 @@ const PosPage = () => {
   };
 
   return (
-    <div className="h-screen bg-gray-100 dark:bg-gray-900 flex" dir="rtl">
+    <div className="bg-gray-100 dark:bg-gray-900 flex" dir="rtl">
       <div className="flex-1 flex flex-col">
         <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-4 py-3 flex gap-4">
           <div className="relative flex-1">

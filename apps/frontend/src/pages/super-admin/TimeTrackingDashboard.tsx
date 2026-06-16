@@ -208,7 +208,7 @@ const TimeTrackingDashboard: React.FC = () => {
   if (loading) {
     return (
       <div
-        className={`flex items-center justify-center h-screen ${isDark ? "bg-gray-900" : "bg-gray-50"}`}
+        className={`flex items-center justify-center h-64 ${isDark ? "bg-gray-900" : "bg-gray-50"}`}
       >
         <div className="text-center">
           <RefreshCw className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
@@ -222,7 +222,7 @@ const TimeTrackingDashboard: React.FC = () => {
 
   return (
     <div
-      className={`p-6 w-full min-h-screen transition-colors ${isDark ? "bg-gray-900" : "bg-gray-50"}`}
+      className={`p-6 w-full transition-colors ${isDark ? "bg-gray-900" : "bg-gray-50"}`}
       dir="rtl"
     >
       {/* Header */}

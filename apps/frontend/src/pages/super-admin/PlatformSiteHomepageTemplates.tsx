@@ -151,7 +151,7 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
     return (
       <div
         dir="rtl"
-        className="min-h-screen bg-slate-50 p-6 dark:bg-slate-900"
+        className="bg-slate-50 p-6 dark:bg-slate-900"
       >
         <div className="mx-auto flex h-[60vh] max-w-7xl items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
           <div className="flex items-center gap-3 text-slate-700 dark:text-slate-200">
@@ -164,7 +164,7 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-slate-50 p-6 dark:bg-slate-900">
+    <div dir="rtl" className="bg-slate-50 p-6 dark:bg-slate-900">
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">

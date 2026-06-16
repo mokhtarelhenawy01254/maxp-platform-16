@@ -99,6 +99,11 @@ export interface PipelineTrace {
     keyId?: string | null;
     keyName?: string | null;
   } | null;
+  activeSkill?: {
+    skillId: string;
+    requiresHumanApproval: boolean;
+    maxToolCount: number;
+  } | null;
 }
 
 export interface ChatMessage {

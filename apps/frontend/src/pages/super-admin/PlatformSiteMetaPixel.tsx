@@ -163,7 +163,7 @@ const PlatformSiteMetaPixel: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+      <div className="bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
           <ArrowPathIcon className="h-5 w-5 animate-spin" />
           <span>جاري تحميل إعدادات Meta Pixel للموقع العام...</span>
@@ -173,7 +173,7 @@ const PlatformSiteMetaPixel: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="bg-slate-50 dark:bg-slate-950">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>

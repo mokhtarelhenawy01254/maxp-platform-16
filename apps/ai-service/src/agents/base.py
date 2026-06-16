@@ -391,6 +391,17 @@ class BaseAgent:
         from src.tools.registry import get_all_tools, unlock_advanced_tools_tool
 
         if not self.allowed_tools:
+            # Fallback: populate from role_tools.yaml when agent has no explicit tools
+            if not self.allowed_skills and self.role:
+                try:
+                    from src.tools.role_config import get_tool_names_for_role
+                    role_tools = get_tool_names_for_role(str(self.role).upper())
+                    if role_tools:
+                        self.allowed_tools = list(role_tools)
+                        logger.info("resolved_tools_from_role", role=self.role, count=len(self.allowed_tools))
+                except Exception as exc:
+                    logger.warning("role_tools_resolve_failed", role=self.role, error=str(exc))
+
             # When skills are configured without explicit tools, derive tools from skill manifests.
             # This enables the "skills-first" pattern: the agent discovers tools via load_skill()
             # while the gateway still authorizes only what the skills declare.
@@ -1225,6 +1236,7 @@ def _planned_tool_entries(execution_plan: dict[str, Any] | None) -> list[dict[st
 
 
 def _build_pipeline_trace(ctx: PipelineContext, model_selection: dict[str, Any] | None = None) -> dict[str, Any]:
+    active_skill = _trace_attr(ctx, "active_skill_context")
     plan = _trace_attr(ctx, "relevance_plan")
     planned_entries = _planned_tool_entries(_trace_attr(ctx, "execution_plan"))
     params_by_tool: dict[str, dict[str, Any]] = {}
@@ -1253,6 +1265,7 @@ def _build_pipeline_trace(ctx: PipelineContext, model_selection: dict[str, Any] 
 
     selection = model_selection if isinstance(model_selection, dict) else {}
     return {
+        "activeSkill": active_skill,
         "intentClassification": {
             "intent": _trace_attr(plan, "intent"),
             "confidence": _trace_attr(plan, "confidence", 0),

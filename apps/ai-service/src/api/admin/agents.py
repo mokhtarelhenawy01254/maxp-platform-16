@@ -357,6 +357,20 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
         config=raw_config,
     )
     template_slug = cfg.get("template_slug")
+    allowed_tools = cfg.get("allowed_tools") or []
+    allowed_skills = cfg.get("allowed_skills") or []
+
+    # Auto-populate allowed_tools from role config if not explicitly set
+    if not allowed_tools and cfg.get("role"):
+        try:
+            from src.tools.role_config import get_tool_names_for_role
+            role_tools = get_tool_names_for_role(str(cfg["role"]).upper())
+            if role_tools:
+                allowed_tools = list(role_tools)
+                logger.info("auto_populated_tools_from_role", role=cfg["role"], count=len(allowed_tools))
+        except Exception as exc:
+            logger.warning("role_tools_fallback_failed", role=cfg["role"], error=str(exc))
+
     overrides = {
         "id": cfg["id"],
         "name": cfg["name"],
@@ -366,8 +380,8 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
         "key_id": cfg.get("key_id") or cfg.get("keyId"),
         "persona": cfg.get("persona") or {},
         "policies": cfg.get("policies") or {},
-        "allowed_tools": cfg.get("allowed_tools") or [],
-        "allowed_skills": cfg.get("allowed_skills") or [],
+        "allowed_tools": allowed_tools,
+        "allowed_skills": allowed_skills,
         "instructions": cfg.get("instructions") or {},
         "status": cfg.get("status") or "ACTIVE",
         "version": cfg.get("version"),

@@ -439,7 +439,7 @@ const MessengerChat: React.FC = () => {
     : [];
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex bg-gray-50">
       {/* قائمة المحادثات */}
       <div className="w-80 bg-white border-l border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">

@@ -231,7 +231,7 @@ const SuperAdminDashboard = () => {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-slate-50/30 p-6 dark:bg-slate-950/20 lg:p-10" dir="rtl">
+    <div className="relative w-full bg-slate-50/30 p-6 dark:bg-slate-950/20 lg:p-10" dir="rtl">
       {/* Background Cinematic Glows */}
       <div className="pointer-events-none absolute -right-20 -top-20 size-[500px] rounded-full bg-primary/5 blur-[120px]" />
       <div className="pointer-events-none absolute -bottom-20 -left-20 size-[500px] rounded-full bg-indigo-500/5 blur-[120px]" />

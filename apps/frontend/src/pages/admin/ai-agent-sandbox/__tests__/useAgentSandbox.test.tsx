@@ -11,6 +11,12 @@ const sandboxApiMock = vi.hoisted(() => ({
   getSession: vi.fn(),
   createSession: vi.fn(),
   streamMessage: vi.fn(),
+  getTools: vi.fn(),
+  getAgentProfile: vi.fn(),
+  evaluateResponse: vi.fn(),
+  deleteSession: vi.fn(),
+  updateSessionTitle: vi.fn(),
+  exportSession: vi.fn(),
 }));
 
 vi.mock("../services/sandboxApi", () => ({
@@ -65,6 +71,10 @@ describe("useAgentSandbox", () => {
           isActive: true,
         },
       ],
+    });
+    sandboxApiMock.getTools.mockResolvedValue({
+      success: true,
+      tools: [],
     });
     sandboxApiMock.listSessions.mockResolvedValue({
       success: true,
@@ -124,6 +134,70 @@ describe("useAgentSandbox", () => {
     expect(result.current.error).toBe("AI_SANDBOX_EMPTY_REPLY: The selected model returned no assistant text");
     expect(result.current.activityLog.some((entry) => (
       entry.type === "error" && entry.details === "AI_SANDBOX_EMPTY_REPLY: The selected model returned no assistant text"
+    ))).toBe(true);
+  });
+
+  test("adds skill activation entry to activity log when pipeline trace has activeSkill", async () => {
+    sandboxApiMock.streamMessage.mockImplementation(async (
+      _sessionId: string,
+      _message: string,
+      _agentId: string,
+      _model: string,
+      _provider: string,
+      _keyId: string | null,
+      _attachments: unknown,
+      onEvent?: (event: Record<string, unknown>) => void
+    ) => {
+      onEvent?.({
+        type: "agent_reply",
+        reply: "Found 3 laptops.",
+        isIncremental: false,
+      });
+      onEvent?.({
+        done: true,
+        tokens: { input: 1, output: 2, total: 3 },
+        latencyMs: 25,
+        model: "gemini-2.5-flash",
+        provider: "GOOGLE",
+        keyId: "central_key",
+        keyName: "Central Key",
+        cost: 0,
+        sessionId: "session_1",
+        runtime: "python-agent",
+        pipelineTrace: {
+          activeSkill: {
+            skillId: "catalog-search",
+            requiresHumanApproval: false,
+            maxToolCount: 2,
+          },
+          toolPlan: {
+            intent: "product.search",
+            primaryTool: "product_search",
+            allowedTools: ["product_search"],
+            reason: "classified by model",
+          },
+          toolExecutions: [{
+            name: "product_search",
+            params: { query: "laptops" },
+            output: { count: 3 },
+            success: true,
+          }],
+        },
+      });
+    });
+
+    const { result } = renderHook(() => useAgentSandbox());
+
+    await waitFor(() => {
+      expect(result.current.isSessionsLoading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.sendMessage("search laptops");
+    });
+
+    expect(result.current.activityLog.some((entry) => (
+      entry.title === "Skill Activated" && entry.details?.includes("catalog-search")
     ))).toBe(true);
   });
 

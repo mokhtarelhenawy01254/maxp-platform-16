@@ -174,7 +174,7 @@ const MyTickets: React.FC = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* 3-Column Layout */}
       <div className="flex-1 flex overflow-hidden">
         {/* Column 1: Tickets Sidebar */}

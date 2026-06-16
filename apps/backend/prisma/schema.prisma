@@ -2606,6 +2606,10 @@ enum GlobalAiProvider {
   GROQ
   OPENROUTER
   NVIDIA
+  CEREBRAS
+  GITHUB
+  SAMBANOVA
+  MISTRAL
 }
 
 enum StockAlertType {
@@ -2997,6 +3001,10 @@ enum GlobalAiConfigsDefaultProvider {
   GROQ
   OPENROUTER
   NVIDIA
+  CEREBRAS
+  GITHUB
+  SAMBANOVA
+  MISTRAL
 
   @@map("global_ai_configs_defaultProvider")
 }

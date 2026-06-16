@@ -24,6 +24,7 @@ interface SessionListProps {
   formatCost: (cost: number) => string;
   collapsed?: boolean;
   isSessionsLoading?: boolean;
+  width?: number;
 }
 
 export const SessionList: React.FC<SessionListProps> = ({
@@ -36,6 +37,7 @@ export const SessionList: React.FC<SessionListProps> = ({
   formatCost,
   collapsed = false,
   isSessionsLoading = false,
+  width = 256,
 }) => {
   const [search, setSearch] = React.useState("");
   const [editingId, setEditingId] = React.useState<string | null>(null);
@@ -83,9 +85,8 @@ export const SessionList: React.FC<SessionListProps> = ({
 
   return (
     <div
-      className={`h-full flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 overflow-hidden ${
-        collapsed ? "w-0 min-w-0" : "w-64 min-w-64"
-      }`}
+      className="h-full flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-all duration-300 overflow-hidden"
+      style={{ width: collapsed ? 0 : width, minWidth: collapsed ? 0 : width }}
     >
       {/* Header & Add Button */}
       <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 space-y-2.5">

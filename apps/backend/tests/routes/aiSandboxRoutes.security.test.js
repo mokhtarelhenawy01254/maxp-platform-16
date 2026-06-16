@@ -696,6 +696,11 @@ describe('AI sandbox route security', () => {
           output: { status: 'NOT_FOUND' },
           success: true,
         }],
+        activeSkill: {
+          skillId: 'catalog-search',
+          requiresHumanApproval: false,
+          maxToolCount: 2,
+        },
       },
     };
 
@@ -716,11 +721,17 @@ describe('AI sandbox route security', () => {
       params: { product_name_or_sku: 'black shoes' },
       output: { status: 'NOT_FOUND' },
     }));
+    expect(response.body.pipelineTrace.activeSkill).toEqual({
+      skillId: 'catalog-search',
+      requiresHumanApproval: false,
+      maxToolCount: 2,
+    });
 
     const assistantCreate = mockPrisma.aiSandboxMessage.create.mock.calls
       .map(([arg]) => arg)
       .find(arg => arg.data.role === 'assistant');
     expect(assistantCreate.data.metadata.pipelineTrace.toolPlan.primaryTool).toBe('inventory_check');
+    expect(assistantCreate.data.metadata.pipelineTrace.activeSkill.skillId).toBe('catalog-search');
   });
 
   test('preserves awaiting approval status from Python tool results in sandbox tool calls', async () => {

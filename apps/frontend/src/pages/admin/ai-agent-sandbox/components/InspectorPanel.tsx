@@ -85,6 +85,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   const pipelineTrace = traceSummary?.pipelineTrace || null;
   const intent = pipelineTrace?.intentClassification?.intent || pipelineTrace?.toolPlan?.intent || null;
   const plannedTool = pipelineTrace?.toolPlan?.primaryTool || null;
+  const activeSkill = pipelineTrace?.activeSkill || null;
   const executedTools = pipelineTrace?.toolExecutions?.map((tool) => tool.name).filter(Boolean) || [];
   const messageTools = traceSummary?.toolCalls?.map((tool) => tool.name).filter(Boolean) || [];
   const toolNames = executedTools.length > 0 ? executedTools : messageTools;
@@ -112,6 +113,11 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
     s.push({ key: "header", label: "SYSTEM — Agent Identity", color: "text-indigo-400", content:
       `You are ${agentName}, the ${agentRole} agent.\nDescription: ${agentDescription}`
     });
+    if (activeSkill) {
+      s.push({ key: "activeSkill", label: "ACTIVE SKILL — Last Turn", color: "text-purple-400", content:
+        `  Skill: ${activeSkill.skillId}\n  Requires Approval: ${activeSkill.requiresHumanApproval}\n  Max Tool Count: ${activeSkill.maxToolCount}`
+      });
+    }
     s.push({ key: "routing", label: "Agent Routing", color: "text-sky-400", content:
       `  Role: ${agentRole}\n  Name: ${agentName}\n  Model: ${modelName || (traceSummary ? `${traceSummary.provider}/${traceSummary.model}` : "not set")}`
     });
@@ -327,6 +333,15 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
                       {toolNames.length > 0 ? toolNames.join(", ") : t("aiHub.sandbox.trace.none")}
                     </span>
                   </div>
+                  {activeSkill && (
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-semibold text-purple-500">Active Skill</span>
+                      <span className="min-w-0 break-all text-right font-mono text-purple-600 dark:text-purple-400">
+                        {activeSkill.skillId}
+                        {activeSkill.requiresHumanApproval && " (requires approval)"}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {pipelineTrace?.toolPlan?.reason && (
