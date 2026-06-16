@@ -4243,6 +4243,11 @@ select {
 .business-inbox-shell {
   flex: 1;
   min-height: 0;
+  height: 100%;
+}
+
+.app-shell-content:has(.business-inbox-shell) {
+  overflow: hidden;
 }
 
 [data-theme="business-os-enterprise"] .business-inbox-stage {
