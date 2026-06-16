@@ -118,8 +118,26 @@ def _generate_agent_id() -> str:
     return f"agent_{secrets.token_urlsafe(16)}"
 
 
+def _parse_skills_field(skills_val: object) -> list[str]:
+    """Parse the legacy `skills` column (JSON string or list) into a list of tool names."""
+    if not skills_val:
+        return []
+    if isinstance(skills_val, list):
+        return [str(s) for s in skills_val if s]
+    try:
+        import json as _json
+        parsed = _json.loads(skills_val)
+        return [str(s) for s in parsed if s] if isinstance(parsed, list) else []
+    except Exception:
+        return []
+
+
 def _agent_to_read(agent: AgentModel) -> AgentRead:
     dept = getattr(agent, 'department', None)
+    skills_raw = getattr(agent, 'skills', None)
+    # Fallback: if allowed_tools is empty but legacy `skills` column has data, use it
+    raw_allowed = getattr(agent, 'allowed_tools', None) or []
+    effective_allowed_tools = raw_allowed or _parse_skills_field(skills_raw)
     return AgentRead(
         id=agent.id,
         company_id=agent.company_id,
@@ -129,12 +147,12 @@ def _agent_to_read(agent: AgentModel) -> AgentRead:
         icon=getattr(agent, 'icon', None),
         soul=getattr(agent, 'soul', None),
         rules=getattr(agent, 'rules', None),
-        skills_raw=getattr(agent, 'skills', None),
+        skills_raw=skills_raw,
         template_slug=agent.template_slug,
         status=agent.status,
         model=agent.model,
         persona=getattr(agent, 'persona', None) or {},
-        allowed_tools=getattr(agent, 'allowed_tools', None) or [],
+        allowed_tools=effective_allowed_tools,
         allowed_skills=getattr(agent, 'allowed_skills', None) or [],
         allowed_channels=getattr(agent, 'channels', None) or [],
         guardrails=getattr(agent, 'guardrails', None) or {},
