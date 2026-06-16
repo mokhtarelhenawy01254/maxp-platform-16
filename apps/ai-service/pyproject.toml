@@ -85,6 +85,9 @@ addopts = [
     "--strict-markers",
     "--strict-config",
 ]
+markers = [
+    "live: tests that call real LLM APIs (deselected by default, run with -m live)",
+]
 
 [tool.ruff]
 line-length = 100
@@ -150,3 +153,4 @@ disallow_untyped_defs = false
 disallow_incomplete_defs = false
 no_implicit_optional = false
 check_untyped_defs = false
+
