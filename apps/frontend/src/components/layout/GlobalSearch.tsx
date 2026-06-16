@@ -34,6 +34,16 @@ const iconMap: Record<string, React.ReactNode> = {
   Ticket: <Ticket className="size-4" />,
 };
 
+const typeLabelKeyMap: Record<string, string> = {
+  companies: "superAdmin.companies",
+  users: "superAdmin.users",
+  projects: "superAdmin.sidebar.devProjects",
+  tasks: "superAdmin.sidebar.tasks",
+  subscriptions: "superAdmin.subscriptions",
+  aiKeys: "superAdmin.evaluation.aiProviders",
+  tickets: "superAdmin.sidebar.allTickets",
+};
+
 const statusColorMap: Record<string, string> = {
   active: "bg-emerald-500",
   inactive: "bg-gray-400",
@@ -207,7 +217,7 @@ const GlobalSearch: React.FC = () => {
                       isDark ? "text-gray-400 bg-[#0f172a]/50" : "text-gray-500 bg-gray-50"
                     )}>
                       {iconMap[group.icon] || <Search className="size-3.5" />}
-                      <span>{isRtl ? group.label : group.labelEn}</span>
+                      <span>{typeLabelKeyMap[group.type] ? t(typeLabelKeyMap[group.type]) : group.type}</span>
                       <span className={cn(
                         "ml-auto text-[10px] px-1.5 py-0.5 rounded-full",
                         isDark ? "bg-white/5 text-gray-400" : "bg-gray-200 text-gray-500"

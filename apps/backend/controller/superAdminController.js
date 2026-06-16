@@ -6522,25 +6522,25 @@ const globalSearch = async (req, res) => {
     const results = [];
 
     if (companies.length) {
-      results.push({ type: "companies", label: "الشركات", labelEn: "Companies", icon: "Building2", items: companies.map((c) => ({ id: c.id, title: c.name, subtitle: c.email || c.slug, image: c.logo, status: c.isActive ? "active" : "inactive", link: "/super-admin/companies" })) });
+      results.push({ type: "companies", icon: "Building2", items: companies.map((c) => ({ id: c.id, title: c.name, subtitle: c.email || c.slug, image: c.logo, status: c.isActive ? "active" : "inactive", link: "/super-admin/companies" })) });
     }
     if (users.length) {
-      results.push({ type: "users", label: "المستخدمين", labelEn: "Users", icon: "Users", items: users.map((u) => ({ id: u.id, title: `${u.firstName} ${u.lastName}`, subtitle: u.email, status: u.isActive ? "active" : "inactive", link: "/super-admin/users" })) });
+      results.push({ type: "users", icon: "Users", items: users.map((u) => ({ id: u.id, title: `${u.firstName} ${u.lastName}`, subtitle: u.email, status: u.isActive ? "active" : "inactive", link: "/super-admin/users" })) });
     }
     if (devProjects.length) {
-      results.push({ type: "projects", label: "المشاريع", labelEn: "Projects", icon: "Code2", items: devProjects.map((p) => ({ id: p.id, title: p.name, subtitle: p.description?.substring(0, 80), status: p.status, link: "/super-admin/dev-projects", color: p.color })) });
+      results.push({ type: "projects", icon: "Code2", items: devProjects.map((p) => ({ id: p.id, title: p.name, subtitle: p.description?.substring(0, 80), status: p.status, link: "/super-admin/dev-projects", color: p.color })) });
     }
     if (devTasks.length) {
-      results.push({ type: "tasks", label: "المهام", labelEn: "Tasks", icon: "BarChart3", items: devTasks.map((t) => ({ id: t.id, title: t.title, subtitle: `#${t.status}`, status: t.status, link: "/super-admin/dev-tasks" })) });
+      results.push({ type: "tasks", icon: "BarChart3", items: devTasks.map((t) => ({ id: t.id, title: t.title, subtitle: `#${t.status}`, status: t.status, link: "/super-admin/dev-tasks" })) });
     }
     if (subscriptions.length) {
-      results.push({ type: "subscriptions", label: "الاشتراكات", labelEn: "Subscriptions", icon: "DollarSign", items: subscriptions.map((s) => ({ id: s.id, title: s.company?.name || "", subtitle: s.plan, status: s.status, link: "/super-admin/subscriptions" })) });
+      results.push({ type: "subscriptions", icon: "DollarSign", items: subscriptions.map((s) => ({ id: s.id, title: s.company?.name || "", subtitle: s.plan, status: s.status, link: "/super-admin/subscriptions" })) });
     }
     if (aiKeys.length) {
-      results.push({ type: "aiKeys", label: "مفاتيح AI", labelEn: "AI Keys", icon: "Key", items: aiKeys.map((k) => ({ id: k.id, title: k.name, subtitle: k.provider, status: k.isActive ? "active" : "inactive", link: "/super-admin/ai-providers" })) });
+      results.push({ type: "aiKeys", icon: "Key", items: aiKeys.map((k) => ({ id: k.id, title: k.name, subtitle: k.provider, status: k.isActive ? "active" : "inactive", link: "/super-admin/ai-providers" })) });
     }
     if (tickets.length) {
-      results.push({ type: "tickets", label: "تذاكر الدعم", labelEn: "Support Tickets", icon: "Ticket", items: tickets.map((t) => ({ id: t.id, title: t.subject, subtitle: t.ticketId, status: t.status, link: "/admin/support" })) });
+      results.push({ type: "tickets", icon: "Ticket", items: tickets.map((t) => ({ id: t.id, title: t.subject, subtitle: t.ticketId, status: t.status, link: "/admin/support" })) });
     }
 
     return res.json({ success: true, data: results });
