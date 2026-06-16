@@ -63,7 +63,10 @@ class AgentCreate(BaseModel):
 
 class AgentUpdate(BaseModel):
     name: str | None = None
+    description: str | None = None
     model: str | None = None
+    soul: str | None = None
+    rules: str | None = None
     allowed_tools: list[str] | None = None
     allowed_skills: list[str] | None = None
     allowed_channels: list[str] | None = None

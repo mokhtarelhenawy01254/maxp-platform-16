@@ -495,7 +495,7 @@ class BaseAgent:
             return self._system_prompt_cache
 
         variables = {
-            "company_name": self.company_id,
+            "company_name": self.persona.get("company_name") or self.company_id,
             "agent_id": self.id,
             "agent_name": self.name,
             "agent_role": self.role,

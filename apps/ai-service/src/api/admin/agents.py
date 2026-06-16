@@ -201,6 +201,19 @@ def _instructions_from_persona(persona: dict[str, Any]) -> dict[str, str]:
 
 
 def _agent_config_from_record(agent: AgentModel) -> dict[str, Any]:
+    # Merge soul/rules from dedicated columns into persona.soulInstructions
+    # so _instructions_from_persona() picks them up for the system prompt.
+    soul_col = getattr(agent, 'soul', None) or ''
+    rules_col = getattr(agent, 'rules', None) or ''
+    if rules_col:
+        soul_text = f"{soul_col}\n\n## القواعد والسياسات\n{rules_col}" if soul_col else f"## القواعد والسياسات\n{rules_col}"
+    else:
+        soul_text = soul_col
+
+    base_persona = dict(agent.persona or {})
+    if soul_text:
+        base_persona['soulInstructions'] = soul_text
+
     return {
         "id": agent.id,
         "name": agent.name,
@@ -208,7 +221,7 @@ def _agent_config_from_record(agent: AgentModel) -> dict[str, Any]:
         "company_id": agent.company_id,
         "template_slug": agent.template_slug,
         "model": agent.model,
-        "persona": agent.persona or {},
+        "persona": base_persona,
         "policies": {
             "guardrails": agent.guardrails or {},
             "budget": agent.budget or {},
@@ -265,6 +278,14 @@ def _memory_context_with_provider_controls(
 
 
 async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> BaseAgent:
+    # Look up company display name so it appears correctly in the system prompt
+    _company_name_row = await session.execute(
+        text("SELECT name FROM public.companies WHERE id = :cid LIMIT 1"),
+        {"cid": body.company_id},
+    )
+    _company_name_rec = _company_name_row.mappings().one_or_none()
+    _company_display_name: str = (_company_name_rec["name"] if _company_name_rec else None) or body.company_id
+
     # Try Python-managed agents table first
     result = await session.execute(
         select(AgentModel).where(
@@ -276,6 +297,9 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
     db_agent = result.scalar_one_or_none()
     request_config = dict(body.agent_config or {})
     raw_config = _agent_config_from_record(db_agent) if db_agent else {}
+    # Inject company display name into persona so it reaches the prompt template
+    if raw_config:
+        raw_config.setdefault("persona", {})["company_name"] = _company_display_name
 
     # Fallback: read from ai.agents with new fields (previously from public.company_agents)
     if not db_agent:
@@ -302,6 +326,7 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
                     "soulInstructions": ca["soul"] or "",
                     "agentInstructions": "",
                     "toolsInstructions": "",
+                    "company_name": _company_display_name,
                 },
                 "policies": {},
                 "allowed_tools": [],
@@ -848,8 +873,14 @@ async def update_agent(
 
     if body.name is not None:
         agent.name = body.name
+    if body.description is not None:
+        agent.description = body.description
     if body.model is not None:
         agent.model = body.model
+    if body.soul is not None:
+        agent.soul = body.soul
+    if body.rules is not None:
+        agent.rules = body.rules
     if body.allowed_tools is not None:
         agent.allowed_tools = body.allowed_tools
     if body.allowed_skills is not None:
