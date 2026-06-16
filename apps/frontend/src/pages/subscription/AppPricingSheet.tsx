@@ -80,7 +80,7 @@ export default function AppPricingSheet() {
       }
     };
     fetchApps();
-  }, [i18n.language]);
+  }, [i18n.language, t]);
 
   // Extract all unique categories
   const categories = useMemo(() => {
@@ -175,8 +175,8 @@ export default function AppPricingSheet() {
     // Sorting
     if (sortOrder && sortField) {
       result.sort((a, b) => {
-        let valA: any = "";
-        let valB: any = "";
+        let valA: string | number = "";
+        let valB: string | number = "";
 
         if (sortField === "name") {
           valA = i18n.language === "ar" ? a.name : a.nameEn || a.name;

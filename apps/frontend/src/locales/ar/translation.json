@@ -4686,6 +4686,19 @@
     "csvUsageUnitPrice": "سعر الاستخدام الإضافي",
     "csvFreeTrialDays": "الفترة المجانية (أيام)",
     "csvInstallationStatus": "حالة التثبيت",
+    "csvYearlySubPrice": "سعر الاشتراك السنوي",
+    "yearlyPrice": "الاشتراك السنوي",
+    "egpPerYear": "ج/سنوياً",
+    "editPricing": "تعديل التسعير",
+    "units": {
+      "message": "رسالة",
+      "request": "طلب",
+      "order": "أوردر",
+      "user": "مستخدم",
+      "session": "جلسة",
+      "GB": "جيجا",
+      "month": "شهر"
+    },
     "categories": {
       "MESSAGING": "التواصل والرسائل",
       "ECOMMERCE": "التجارة الإلكترونية",
