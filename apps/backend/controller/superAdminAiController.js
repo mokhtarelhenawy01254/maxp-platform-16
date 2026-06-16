@@ -27,6 +27,7 @@ const SUPPORTED_AI_PROVIDERS = new Set([
 const DEFAULT_PROVIDER_PRIORITY = ['GOOGLE', 'GROQ', 'CEREBRAS', 'OPENROUTER', 'NVIDIA', 'MISTRAL', 'SAMBANOVA', 'GITHUB'];
 
 const DEFAULT_PROVIDER_BASE_URLS = {
+    DEEPSEEK: 'https://api.deepseek.com',
     GROQ: 'https://api.groq.com/openai/v1',
     OLLAMA: 'https://ollama.maxp.online',
     OPENROUTER: 'https://openrouter.ai/api/v1',
@@ -39,7 +40,7 @@ const DEFAULT_PROVIDER_BASE_URLS = {
 
 const DEFAULT_PROVIDER_MODELS = {
     GOOGLE: 'gemini-2.5-flash',
-    DEEPSEEK: 'deepseek-chat',
+    DEEPSEEK: 'deepseek-v4-flash',
     OPENAI: 'gpt-4o-mini',
     ANTHROPIC: 'claude-3-5-sonnet-20241022',
     HUGGINGFACE: 'mistralai/Mistral-7B-Instruct-v0.3',

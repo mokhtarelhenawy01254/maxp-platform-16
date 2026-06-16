@@ -12,6 +12,8 @@ const MODEL_COSTS_PER_M = {
   'gemini-2.0-flash': { input: 0.075, output: 0.30 },
   'gemini-1.5-pro': { input: 0.625, output: 2.50 },
   'gemini-1.5-flash': { input: 0.075, output: 0.30 },
+  'deepseek-v4-flash': { input: 0.14, output: 0.28 },
+  'deepseek-v4-pro': { input: 0.435, output: 0.87 },
   'deepseek-chat': { input: 0.14, output: 0.28 },
   'deepseek-coder': { input: 0.14, output: 0.28 },
   'llama-3.3-70b': { input: 0.59, output: 0.79 },

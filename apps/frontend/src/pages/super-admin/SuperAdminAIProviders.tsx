@@ -117,6 +117,7 @@ const PROVIDERS = [
 ];
 
 const DEFAULT_BASE_URLS: Record<string, string> = {
+  DEEPSEEK: "https://api.deepseek.com",
   GROQ: "https://api.groq.com/openai/v1",
   OLLAMA: "https://ollama.maxp.online",
   OPENROUTER: "https://openrouter.ai/api/v1",
@@ -129,6 +130,7 @@ const DEFAULT_BASE_URLS: Record<string, string> = {
 
 const DEFAULT_MODELS: Record<string, string> = {
   GOOGLE: "gemini-2.5-flash",
+  DEEPSEEK: "deepseek-v4-flash",
   GROQ: "llama-3.3-70b-versatile",
   OPENROUTER: "openrouter/auto",
   NVIDIA: "openai/gpt-oss-120b",
@@ -156,8 +158,14 @@ const GOOGLE_GEMINI_MODELS = [
   "gemma-4-26b-a4b-it",
 ];
 
+const DEEPSEEK_MODELS = [
+  "deepseek-v4-flash",
+  "deepseek-v4-pro",
+];
+
 const STATIC_PROVIDER_MODELS: Record<string, string[]> = {
   GOOGLE: GOOGLE_GEMINI_MODELS,
+  DEEPSEEK: DEEPSEEK_MODELS,
   GROQ: [DEFAULT_MODELS["GROQ"] ?? ""].filter(Boolean),
   NVIDIA: [DEFAULT_MODELS["NVIDIA"] ?? ""].filter(Boolean),
 
@@ -3187,6 +3195,28 @@ const SuperAdminAIProviders = ({
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   {formData.provider === "NVIDIA" ? "Use the NVIDIA NIM model id from docs, or keep the default." : "Use a Groq model id, or keep the default."}
+                </p>
+              </div>
+            )}
+
+            {formData.provider === "DEEPSEEK" && (
+              <div>
+                <Label>DeepSeek Model</Label>
+                <Select
+                  value={formData.defaultModel}
+                  onValueChange={(value) => setFormData({ ...formData, defaultModel: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(STATIC_PROVIDER_MODELS["DEEPSEEK"] || []).map((model) => (
+                      <SelectItem key={model} value={model}>{model}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">
+                  <strong>deepseek-v4-flash</strong> recommended. <code>deepseek-chat</code> deprecated on 2026/07/24.
                 </p>
               </div>
             )}
