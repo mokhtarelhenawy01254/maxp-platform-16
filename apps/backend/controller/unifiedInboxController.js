@@ -177,13 +177,15 @@ const getUnifiedConversations = async (req, res) => {
                             category: true,
                             unreadCount: true,
                             lastMessageAt: true,
+                            lastMessagePreview: true,
+                            lastMessageIsFromMe: true,
                             isPinned: true,
                             isMuted: true,
                             whatsAppSession: {
                                 select: { name: true, phoneNumber: true }
                             },
                             customer: {
-                                select: { firstName: true, lastName: true, status: true }
+                                select: { id: true, firstName: true, lastName: true, status: true }
                             }
                         }
                     });
@@ -242,13 +244,13 @@ const getUnifiedConversations = async (req, res) => {
             platformIcon: '📱',
             contactName: contact.name || contact.pushName || contact.phoneNumber,
             contactAvatar: contact.profilePicUrl || null,
-            contactId: contact.id,
+            contactId: contact.customer?.id || contact.id,
             contactEmail: null,
             contactPhone: contact.phoneNumber,
-            lastMessage: '',
+            lastMessage: contact.lastMessagePreview || '',
             lastMessageType: 'TEXT',
             lastMessageTime: contact.lastMessageAt,
-            lastMessageIsFromCustomer: false,
+            lastMessageIsFromCustomer: !contact.lastMessageIsFromMe,
             unreadCount: contact.unreadCount || 0,
             status: 'active',
             assignedTo: null,
@@ -284,11 +286,18 @@ const getUnifiedConversations = async (req, res) => {
 
         // ──────────────────────────────────────────────────────────
         // 4. Get platform counts
+        // WhatsApp count comes from WhatsAppContact (actual data source), not Conversation
         // ──────────────────────────────────────────────────────────
-        const [fbCount, igCount, waCount, tgCount, unrepliedCount] = await Promise.all([
+        const waSessionIds = whatsappContacts.length > 0
+            ? [...new Set(whatsappContacts.map(c => c.sessionId))]
+            : (await prisma.whatsAppSession.findMany({ where: { companyId }, select: { id: true } })).map(s => s.id);
+
+        const [fbCount, igCount, waCountRaw, tgCount, unrepliedCount] = await Promise.all([
             prisma.conversation.count({ where: { companyId, channel: 'FACEBOOK', status: { in: ['ACTIVE', 'PENDING'] } } }),
             prisma.conversation.count({ where: { companyId, channel: 'INSTAGRAM', status: { in: ['ACTIVE', 'PENDING'] } } }),
-            prisma.conversation.count({ where: { companyId, channel: 'WHATSAPP', status: { in: ['ACTIVE', 'PENDING'] } } }),
+            waSessionIds.length > 0
+                ? prisma.whatsAppContact.count({ where: { sessionId: { in: waSessionIds }, isArchived: false } })
+                : Promise.resolve(0),
             prisma.conversation.count({ where: { companyId, channel: 'TELEGRAM', status: { in: ['ACTIVE', 'PENDING'] } } }),
             prisma.conversation.count({
                 where: {
@@ -299,6 +308,7 @@ const getUnifiedConversations = async (req, res) => {
                 }
             })
         ]);
+        const waCount = waCountRaw;
 
         res.json({
             success: true,

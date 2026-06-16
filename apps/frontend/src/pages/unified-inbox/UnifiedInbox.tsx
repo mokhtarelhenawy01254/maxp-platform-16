@@ -191,18 +191,24 @@ const UnifiedInbox: React.FC = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [attachedFile, setAttachedFile] = useState<{ url: string; name: string; type: string } | null>(null);
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Close dropdown on click outside
+  // Close dropdowns on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowPlatformDropdown(false);
+      }
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
+        setShowActionsMenu(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -321,8 +327,11 @@ const UnifiedInbox: React.FC = () => {
   const selectConversation = useCallback(
     (conv: UnifiedConversation) => {
       setSelectedConversation(conv);
+      setShowActionsMenu(false);
+      setSendError(null);
       loadMessages(conv);
-      if (conv.contactId && !conv.id.startsWith("wa_")) {
+      // Load customer profile for all platforms if contactId exists
+      if (conv.contactId) {
         loadCustomerProfile(conv.contactId);
       } else {
         setCustomerProfile(null);
@@ -380,6 +389,7 @@ const UnifiedInbox: React.FC = () => {
     if (!newMessage.trim() && !attachedFile) return;
 
     setSending(true);
+    setSendError(null);
     try {
       const body: any = {
         content: newMessage.trim(),
@@ -427,12 +437,43 @@ const UnifiedInbox: React.FC = () => {
           ),
         );
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Error sending message:", error);
+      const msg = error?.response?.data?.message || error?.message || (i18n.language === "ar" ? "فشل إرسال الرسالة، حاول مرة أخرى" : "Failed to send message, please try again");
+      setSendError(msg);
+      // Auto-clear error after 5 seconds
+      setTimeout(() => setSendError(null), 5000);
     } finally {
       setSending(false);
     }
   };
+
+  // ── Conversation quick actions ──
+  const handleMarkResolved = useCallback(async () => {
+    if (!selectedConversation) return;
+    setShowActionsMenu(false);
+    try {
+      await apiClient.put(`/api/v1/conversations/${selectedConversation.id}`, { status: "resolved" });
+      setConversations(prev => prev.filter(c => c.id !== selectedConversation.id));
+      setSelectedConversation(null);
+    } catch (err) {
+      console.error("Error marking resolved:", err);
+    }
+  }, [selectedConversation]);
+
+  const handleDeleteConversation = useCallback(async () => {
+    if (!selectedConversation) return;
+    const confirmMsg = i18n.language === "ar" ? "هل أنت متأكد من حذف هذه المحادثة؟" : "Are you sure you want to delete this conversation?";
+    if (!window.confirm(confirmMsg)) return;
+    setShowActionsMenu(false);
+    try {
+      await apiClient.delete(`/api/v1/conversations/${selectedConversation.id}`);
+      setConversations(prev => prev.filter(c => c.id !== selectedConversation.id));
+      setSelectedConversation(null);
+    } catch (err) {
+      console.error("Error deleting conversation:", err);
+    }
+  }, [selectedConversation, i18n.language]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -458,7 +499,7 @@ const UnifiedInbox: React.FC = () => {
   useEffect(() => {
     loadConversations();
     loadQuickReplies();
-  }, [selectedPlatforms, followUpFilter, unreadFilter]);
+  }, [loadConversations, loadQuickReplies]);
 
   useEffect(() => {
     // Real-time updates
@@ -817,9 +858,58 @@ const UnifiedInbox: React.FC = () => {
                     >
                       <UserCircleIcon className="w-5 h-5" />
                     </button>
-                    <button className="business-chip-button">
-                      <EllipsisVerticalIcon className="w-5 h-5" />
-                    </button>
+                    <div className="relative" ref={actionsMenuRef}>
+                      <button
+                        className="business-chip-button"
+                        onClick={() => setShowActionsMenu(prev => !prev)}
+                        title={i18n.language === "ar" ? "خيارات" : "Options"}
+                      >
+                        <EllipsisVerticalIcon className="w-5 h-5" />
+                      </button>
+                      {showActionsMenu && (
+                        <div
+                          className="inbox-platform-dropdown"
+                          style={{
+                            top: "calc(100% + 6px)",
+                            [isRtl ? "left" : "right"]: 0,
+                            left: isRtl ? 0 : "auto",
+                            right: isRtl ? "auto" : 0,
+                            minWidth: 180,
+                            zIndex: 200,
+                          }}
+                        >
+                          <button
+                            className="inbox-dropdown-item w-full"
+                            onClick={handleMarkResolved}
+                          >
+                            <span style={{ color: "var(--business-success)" }}>✓</span>
+                            <span className="inbox-platform-text">
+                              {i18n.language === "ar" ? "تحديد كمحلول" : "Mark as Resolved"}
+                            </span>
+                          </button>
+                          <button
+                            className="inbox-dropdown-item w-full"
+                            onClick={() => { setShowActionsMenu(false); setShowProfilePanel(p => !p); }}
+                          >
+                            <span>👤</span>
+                            <span className="inbox-platform-text">
+                              {i18n.language === "ar" ? (showProfilePanel ? "إخفاء البروفايل" : "عرض البروفايل") : (showProfilePanel ? "Hide Profile" : "Show Profile")}
+                            </span>
+                          </button>
+                          <div style={{ height: 1, background: "var(--business-card-border)", margin: "4px 8px" }} />
+                          <button
+                            className="inbox-dropdown-item w-full"
+                            onClick={handleDeleteConversation}
+                            style={{ color: "var(--business-danger, #ef4444)" }}
+                          >
+                            <span>🗑️</span>
+                            <span className="inbox-platform-text">
+                              {i18n.language === "ar" ? "حذف المحادثة" : "Delete Conversation"}
+                            </span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -994,7 +1084,34 @@ const UnifiedInbox: React.FC = () => {
                 )}
               </div>
 
+              {/* Send Error Banner */}
+              {sendError && (
+                <div
+                  className="px-5 py-2 text-sm flex items-center gap-2"
+                  style={{
+                    borderTop: "1px solid var(--business-card-border)",
+                    background: "color-mix(in srgb, var(--business-danger, #ef4444) 8%, var(--color-background))",
+                    color: "var(--business-danger, #ef4444)",
+                  }}
+                >
+                  <span>⚠️</span>
+                  <span>{sendError}</span>
+                  <button
+                    onClick={() => setSendError(null)}
+                    className="ml-auto"
+                    style={{ color: "inherit", opacity: 0.7 }}
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
               {/* Quick Replies Panel */}
+              {showQuickReplies && quickReplies.length === 0 && (
+                <div className="business-chat-composer px-5 py-3 text-sm" style={{ color: "var(--color-muted-foreground)" }}>
+                  {i18n.language === "ar" ? "لا توجد قوالب ردود سريعة بعد" : "No quick replies defined yet"}
+                </div>
+              )}
               {showQuickReplies && quickReplies.length > 0 && (
                 <div className="business-chat-composer max-h-40 overflow-y-auto">
                   <div className="p-3 space-y-1">
@@ -1029,10 +1146,10 @@ const UnifiedInbox: React.FC = () => {
                         >
                           {reply.title}
                         </span>
-                        <span
-                          className="mr-2"
-                          style={{ color: "var(--color-muted-foreground)" }}
-                        >
+                          <span
+                            className={isRtl ? "ml-2" : "mr-2"}
+                            style={{ color: "var(--color-muted-foreground)" }}
+                          >
                           — {reply.content.substring(0, 50)}
                         </span>
                       </button>
