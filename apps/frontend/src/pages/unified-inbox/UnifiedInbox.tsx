@@ -1097,7 +1097,7 @@ const UnifiedInbox: React.FC = () => {
                                 </div>
                               )}
 
-                              {/* Media */}
+                              {/* Media from mediaUrl */}
                               {msg.mediaUrl &&
                                 (msg.type === "image" ||
                                   msg.mediaType?.includes("image")) && (
@@ -1108,8 +1108,26 @@ const UnifiedInbox: React.FC = () => {
                                   />
                                 )}
 
-                              {/* Text content */}
-                              {msg.content && (
+                              {/* Media from content URL */}
+                              {(() => {
+                                if (msg.mediaUrl) return null;
+                                if (!msg.content || !msg.content.startsWith("http")) return null;
+                                const url = msg.content.split(/[\s\n]/)[0];
+                                const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?|$)/i.test(url) || url.includes("fbcdn") || url.includes("cdninstagram");
+                                if (!isImage) return null;
+                                return (
+                                  <img
+                                    src={url}
+                                    alt=""
+                                    className="rounded-lg max-w-full mb-1.5 cursor-pointer hover:opacity-90"
+                                    loading="lazy"
+                                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                                  />
+                                );
+                              })()}
+
+                              {/* Text content (hide if it's a media URL shown above) */}
+                              {msg.content && !(msg.content.startsWith("http") && (msg.content.includes("fbcdn") || msg.content.includes("cdninstagram") || /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(msg.content.split(/[\s\n]/)[0]))) && (
                                 <p
                                   className="text-sm leading-relaxed whitespace-pre-wrap"
                                   style={{
