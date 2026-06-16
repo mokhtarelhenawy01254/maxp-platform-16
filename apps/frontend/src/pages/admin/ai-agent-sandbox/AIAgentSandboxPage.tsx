@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import {
   X,
   ChevronLeft,
@@ -7,9 +7,11 @@ import {
   CheckCircle2,
   MessageSquare,
   LayoutList,
+  GripVertical,
   Sparkles
 } from "lucide-react";
 import { useAgentSandbox } from "./hooks/useAgentSandbox";
+import { sandboxApi } from "./services/sandboxApi";
 import { SessionList } from "./components/SessionList";
 import { ChatArea } from "./components/ChatArea";
 import { InspectorPanel } from "./components/InspectorPanel";
@@ -38,8 +40,10 @@ const AIAgentSandboxPage: React.FC = () => {
     centralKeys,
     costBreakdown,
     selectedAgent,
+    skills,
     typingStage,
     activeToolCalls,
+    toolsMetadata,
     setSelectedAgentId,
     setSelectedModel,
     setSelectedProvider,
@@ -54,15 +58,61 @@ const AIAgentSandboxPage: React.FC = () => {
     formatCost,
     formatTokens,
     clearError,
+    clearActivityLog,
   } = useAgentSandbox();
+
+  // Agent profile files (SOUL.md, AGENTS.md) for InspectorPanel System tab
+  const [agentSystemPrompt, setAgentSystemPrompt] = useState<string>("");
+  const [agentInstructions, setAgentInstructions] = useState<string>("");
+
+  React.useEffect(() => {
+    if (!selectedAgent?.id) return;
+    setAgentSystemPrompt("");
+    setAgentInstructions("");
+    sandboxApi.getAgentProfile(selectedAgent.id).then((res) => {
+      if (res.success && res.files) {
+        setAgentSystemPrompt(res.files["SOUL.md"] || "");
+        setAgentInstructions(res.files["AGENTS.md"] || "");
+      }
+    }).catch(() => {});
+  }, [selectedAgent?.id]);
 
   // Media query states implemented directly via window check / resize listener or basic defaults
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
-  const [inspectorOpen, setInspectorOpen] = useState<boolean>(true);
+  const [inspectorOpen, setInspectorOpen] = useState<boolean>(() => window.innerWidth >= 1440);
   const [activeMobilePanel, setActiveMobilePanel] = useState<'sessions' | 'chat' | 'inspector'>('chat');
+  const [inspectorWidth, setInspectorWidth] = useState(288);
+  const [inspectorResizing, setInspectorResizing] = useState(false);
+
+  const handleInspectorResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setInspectorResizing(true);
+    const startX = e.clientX;
+    const startWidth = inspectorWidth;
+
+    const handleMouseMove = (ev: MouseEvent) => {
+      const delta = ev.clientX - startX;
+      const newWidth = Math.min(Math.max(startWidth + delta, 180), 600);
+      setInspectorWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setInspectorResizing(false);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    document.body.style.cursor = "ew-resize";
+    document.body.style.userSelect = "none";
+  }, [inspectorWidth]);
 
 
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [agentProfileDialogOpen, setAgentProfileDialogOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -133,7 +183,7 @@ const AIAgentSandboxPage: React.FC = () => {
   };
 
   return (
-    <div className="h-[calc(100dvh-116px)] md:h-[calc(100vh-100px)] flex flex-col bg-slate-50/20 dark:bg-slate-950 overflow-hidden relative md:p-1 bg-background border-y md:border rounded-none md:rounded-xl shadow-sm">
+    <div className="h-full flex flex-col bg-slate-50/20 dark:bg-slate-950 overflow-hidden relative md:p-1 bg-background border-y md:border rounded-none md:rounded-xl shadow-sm">
       {/* Top Header Controls */}
       <HeaderBar
         agent={selectedAgent}
@@ -148,8 +198,10 @@ const AIAgentSandboxPage: React.FC = () => {
           setSelectedProvider(provider);
           setSelectedKeyId(keyId || null);
         }}
+        onSessions={() => setSidebarOpen((p) => !p)}
         onEvaluate={handleEvaluate}
         onExport={() => setExportDialogOpen(true)}
+        onAgentProfile={() => setAgentProfileDialogOpen(true)}
         isStreaming={isStreaming}
       />
 
@@ -200,20 +252,47 @@ const AIAgentSandboxPage: React.FC = () => {
            />
          </div>
  
-          {/* Inspector/Skills Panel Toggle Tab */}
-          <div className="hidden md:flex w-7 min-w-[28px] border-l border-r border-slate-200 dark:border-slate-800 flex-col justify-center items-center bg-white dark:bg-slate-900 select-none">
-            <button
-              onClick={() => setInspectorOpen((p) => !p)}
-              className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-650"
-              title={inspectorOpen ? "Hide skills panel" : "Show skills panel"}
-            >
-              {inspectorOpen ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
-            </button>
+           {/* Right Toggle Column: Drag handle + collapse toggle */}
+          <div className="hidden md:flex w-8 min-w-[32px] border-l border-r border-slate-200 dark:border-slate-800 flex-col bg-white dark:bg-slate-900 select-none relative">
+            {/* Resize drag handle */}
+            <div
+              onMouseDown={handleInspectorResizeStart}
+              className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-indigo-400/30 active:bg-indigo-400/50 transition-colors z-10"
+              title="Drag to resize"
+            />
+            <div className="flex-1 flex flex-col justify-center items-center gap-1">
+              <button
+                onClick={() => setInspectorOpen((p) => !p)}
+                className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-650"
+                title={inspectorOpen ? "Hide activity log" : "Show activity log"}
+              >
+                {inspectorOpen ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
+              </button>
+              {inspectorOpen && (
+                <GripVertical className="size-3 text-slate-300 dark:text-slate-700" />
+              )}
+            </div>
           </div>
   
-          {/* Right Agent Profile Pane */}
-          <div className={`transition-all duration-300 ${activeMobilePanel === 'inspector' ? 'flex' : 'hidden'} md:flex`}>
-            <AgentProfilePanel selectedAgent={selectedAgent} />
+          {/* Right Activity Log / Inspector Pane */}
+          <div className={`${inspectorResizing ? "" : "transition-all duration-300"} ${activeMobilePanel === 'inspector' ? 'flex' : 'hidden'} md:flex`}>
+            <InspectorPanel
+              tools={toolsMetadata.map((t) => ({ name: t.name, description: t.description, sideEffect: t.sideEffects || "read", enabled: true, inputSchema: undefined }))}
+              activityLog={activityLog}
+              traceSummary={latestTraceSummary}
+              onClearLog={clearActivityLog}
+              systemPrompt={agentSystemPrompt}
+              agentInstructions={agentInstructions}
+              agentName={selectedAgent?.name || ""}
+              agentRole={selectedAgent?.role || ""}
+              agentDescription={selectedAgent?.description || ""}
+              modelName={selectedModel}
+              providerName={selectedProvider}
+              conversationMessages={activeSession?.messages || []}
+              agentSkills={skills}
+              collapsed={!inspectorOpen}
+              width={inspectorWidth}
+            />
           </div>
        </div>
 
@@ -281,6 +360,28 @@ const AIAgentSandboxPage: React.FC = () => {
               >
                 Markdown
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Agent Profile Modal */}
+      {agentProfileDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm select-none">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full p-5 shadow-xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Agent Profile</h4>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setAgentProfileDialogOpen(false)}
+                className="size-7 text-slate-400 hover:text-slate-700"
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <AgentProfilePanel selectedAgent={selectedAgent} />
             </div>
           </div>
         </div>

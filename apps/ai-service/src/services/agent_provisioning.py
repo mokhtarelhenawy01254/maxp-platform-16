@@ -17,6 +17,7 @@ GLOBAL_TEMPLATE_SLUGS: list[str] = [
     "marketing-agent",
     "facebook-sales-support-agent",
     "sas-sales-agent",
+    "smart-seller-agent",
 ]
 
 

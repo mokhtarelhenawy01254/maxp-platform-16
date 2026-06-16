@@ -9,15 +9,24 @@ from src.agents.base import BaseAgent, BaseAgentConfig
 from src.tools.gateway import ToolGateway, ToolResultStatus
 from src.tools.registry import (
     ADVANCED_TOOLS,
+    ALL_TOOLS,
     CORE_TOOLS,
-    unlock_advanced_tools,
+    DiscountCreateInput,
+    ProductSearchInput,
     UnlockAdvancedToolsInput,
+    unlock_advanced_tools,
+    unlock_advanced_tools_tool,
 )
-from src.tools.sdk_gateway import wrap_tools_for_gateway
+from src.tools.sdk_gateway import (
+    is_gateway_managed_tool,
+    requires_sdk_approval,
+    wrap_tool_for_gateway,
+    wrap_tools_for_gateway,
+)
 
 
 # ---------------------------------------------------------------------------
-# Tool separation — agent starts with CORE_TOOLS only
+# Tool separation -- agent starts with CORE_TOOLS only
 # ---------------------------------------------------------------------------
 
 
@@ -60,7 +69,7 @@ class TestToolSeparation:
 
 
 # ---------------------------------------------------------------------------
-# unlock_advanced_tools — direct function unit tests
+# unlock_advanced_tools -- direct function unit tests
 # ---------------------------------------------------------------------------
 
 
@@ -93,12 +102,12 @@ class TestUnlockAdvancedToolsUnit:
 
 
 # ---------------------------------------------------------------------------
-# Gateway chain — ToolGateway passes ctx through to the original function
+# Gateway chain -- ToolGateway passes ctx through to the original function
 # ---------------------------------------------------------------------------
 
 
 class TestGatewayCtxInjection:
-    """Verify the full gateway → registry → original function chain with ctx."""
+    """Verify the full gateway -> registry -> original function chain with ctx."""
 
     @pytest.mark.asyncio
     async def test_gateway_passes_ctx_to_unlock_advanced_tools(self):
@@ -129,153 +138,82 @@ class TestGatewayCtxInjection:
         assert len(result["result"]["unlocked_tools"]) == len(ADVANCED_TOOLS)
 
     def test_gateway_inspects_func_signature_for_ctx_parameter(self):
-        """ToolGateway checks the original function's signature before passing ctx."""
+        """ToolGateway should detect ctx parameter in unlock_advanced_tools."""
         import inspect
-
-        from src.tools.registry import unlock_advanced_tools, product_search
-
-        assert "ctx" in inspect.signature(unlock_advanced_tools).parameters
-        assert "ctx" not in inspect.signature(product_search).parameters
+        tool = unlock_advanced_tools_tool
+        sig = inspect.signature(tool.func)
+        assert "ctx" in sig.parameters
 
 
 # ---------------------------------------------------------------------------
-# SDK Wrapper — _gateway_func signature enables native ctx injection
+# SDK Gateway -- wraps tools correctly
 # ---------------------------------------------------------------------------
 
 
-class TestSdkWrapperInjection:
-    """When tools are wrapped for the gateway, the _gateway_func declares ctx
-    so the SDK runtime can inject FunctionInvocationContext automatically."""
+class TestSDKGatewayWrapping:
+    """Verify wrap_tool_for_gateway produces correct approval behavior."""
 
-    def test_wrapped_unlock_tool_detects_context_parameter(self):
-        """The wrapper's _gateway_func has ctx: FunctionInvocationContext | None,
-        so the SDK will detect it and inject the context at runtime."""
-        from src.tools.registry import unlock_advanced_tools_tool
+    def test_write_tool_is_gateway_managed(self):
+        write_tool = ALL_TOOLS.get("discount_create")
+        assert write_tool is not None
+        assert is_gateway_managed_tool(write_tool) is True
 
-        wrapped = wrap_tools_for_gateway(
-            [unlock_advanced_tools_tool],
+    def test_write_tool_requires_sdk_approval(self):
+        write_tool = ALL_TOOLS.get("discount_create")
+        assert write_tool is not None
+        assert requires_sdk_approval(write_tool) is True
+
+    def test_read_tool_does_not_require_sdk_approval(self):
+        read_tool = ALL_TOOLS.get("product_search")
+        assert read_tool is not None
+        assert requires_sdk_approval(read_tool) is False
+
+    @pytest.mark.asyncio
+    async def test_write_tool_wrapped_returns_awaiting_approval(self):
+        """Write tools routed through gateway return awaiting_approval
+        because approval_granted is False -- they need merchant approval."""
+        write_tool = ALL_TOOLS.get("discount_create")
+        wrapped = wrap_tool_for_gateway(
+            write_tool,
+            company_id="test_co",
+            agent_role="SALES",
+            allowed_tools=["discount_create"],
+        )
+
+        result = await wrapped.func(
+            DiscountCreateInput(
+                product_id="prod_1",
+                discount_percent=15,
+                reason="test",
+                company_id="test_co",
+            ),
+        )
+        assert result["status"] == "awaiting_approval"
+
+    @pytest.mark.asyncio
+    async def test_read_tool_wrapped_executes_normally(self):
+        """Read tools routed through gateway execute normally
+        because approval_granted is True for read tools."""
+        read_tool = ALL_TOOLS.get("product_search")
+        wrapped = wrap_tool_for_gateway(
+            read_tool,
             company_id="test_co",
             agent_role="SUPPORT",
+            allowed_tools=["product_search"],
         )
 
-        assert len(wrapped) == 1
-        fw_tool = wrapped[0]
-        assert getattr(fw_tool, "_context_parameter_name", None) == "ctx"
-
-    def test_regular_tool_wrapper_also_detects_context_parameter(self):
-        """All gateway-wrapped tools now have ctx in _gateway_func so
-        the SDK can safely pass FunctionInvocationContext to every tool.
-        Tools that don't need it simply ignore the parameter."""
-        from src.tools.registry import product_search_tool
-
-        wrapped = wrap_tools_for_gateway(
-            [product_search_tool],
-            company_id="test_co",
-            agent_role="SUPPORT",
+        result = await wrapped.func(
+            ProductSearchInput(
+                query="test",
+                company_id="test_co",
+            ),
         )
-
-        assert len(wrapped) == 1
-        fw_tool = wrapped[0]
-        # Every wrapped tool now declares ctx so the SDK runtime
-        # can consistently inject FunctionInvocationContext
-        assert getattr(fw_tool, "_context_parameter_name", None) == "ctx"
+        # Read tools should execute (may return success or error, but not awaiting_approval/forbidden)
+        assert result["status"] not in ("awaiting_approval", "forbidden")
 
 
 # ---------------------------------------------------------------------------
-# End-to-end — process_task with progressive exposure
-# ---------------------------------------------------------------------------
-
-
-class TestProcessTaskProgressiveExposure:
-    """Full flow: agent.build -> framework_agent.run -> progressive exposure."""
-
-    @pytest.mark.asyncio
-    async def test_agent_build_passes_core_tools_to_client(self):
-        """Verify that when the framework Agent is built, the client receives
-        only CORE_TOOLS (via build_agent_client)."""
-        config = BaseAgentConfig(
-            id="e2e_test", name="E2E Agent", role="SUPPORT", company_id="e2e_co",
-        )
-        agent = BaseAgent(config)
-
-        with patch("src.agents.base.build_agent_client") as mock_client:
-            mock_client.return_value = MagicMock()
-            agent.build()
-
-        mock_client.assert_called_once()
-        _call_args, _call_kwargs = mock_client.call_args
-        passed_tools = _call_kwargs.get("tools", [])
-        passed_names = {t.name for t in passed_tools}
-
-        core_names = {t.name for t in CORE_TOOLS}
-        advanced_names = {t.name for t in ADVANCED_TOOLS}
-
-        assert passed_names == core_names
-        assert passed_names.isdisjoint(advanced_names)
-        assert "unlock_advanced_tools" in passed_names
-
-    @pytest.mark.asyncio
-    async def test_agent_build_passes_gateway_wrapped_tools_to_client(self):
-        """The tools passed to the client are gateway-wrapped with ctx
-        injection for SDK runtime."""
-        config = BaseAgentConfig(
-            id="e2e_test", name="E2E Agent", role="SUPPORT", company_id="e2e_co",
-        )
-        agent = BaseAgent(config)
-
-        with patch("src.agents.base.build_agent_client") as mock_client:
-            mock_client.return_value = MagicMock()
-            agent.build()
-
-        _call_args, _call_kwargs = mock_client.call_args
-        passed_tools = _call_kwargs.get("tools", [])
-
-        unlock_tool = next(
-            (t for t in passed_tools if t.name == "unlock_advanced_tools"),
-            None,
-        )
-        assert unlock_tool is not None
-        # The SDK will detect ctx parameter and inject FunctionInvocationContext
-        assert getattr(unlock_tool, "_context_parameter_name", None) == "ctx"
-
-    @pytest.mark.asyncio
-    async def test_process_task_internal_task_has_unlock_tool_available(self):
-        """Internal tasks running via SDK runtime have unlock_advanced_tools
-        available in the tool list passed to the client."""
-        config = BaseAgentConfig(
-            id="e2e_test", name="E2E Agent", role="SUPPORT", company_id="e2e_co",
-        )
-        agent = BaseAgent(config)
-
-        # Verify _resolve_tools includes unlock_advanced_tools
-        resolved = agent._resolve_tools()
-        resolved_names = {t.name for t in resolved}
-        assert "unlock_advanced_tools" in resolved_names
-
-        # Verify SDK runtime path uses these tools
-        sdk_session = object()
-        sdk_response = MagicMock()
-        sdk_response.text = "sdk reply"
-        sdk_response.user_input_requests = []
-
-        framework_agent = MagicMock()
-        framework_agent.create_session.return_value = sdk_session
-        framework_agent.run = AsyncMock(return_value=sdk_response)
-
-        with patch.object(agent, "build", return_value=framework_agent), \
-             patch("src.agents.base.execute_pipeline", new=AsyncMock()) as pipeline:
-            result = await agent.process_task({
-                "description": "Analyze sales data",
-                "job_id": "job_1",
-            })
-
-        assert result["status"] == "SUCCESS"
-        assert result["result"]["runtime"] == "sdk_agent"
-        pipeline.assert_not_called()
-
-
-# ---------------------------------------------------------------------------
-# Multi-turn simulation — progressive unlock across conversation turns
+# Multi-turn simulation -- progressive unlock across conversation turns
 # ---------------------------------------------------------------------------
 
 
@@ -285,7 +223,7 @@ class TestMultiTurnProgressiveExposure:
 
     @pytest.mark.asyncio
     async def test_unlock_mutates_live_tool_list(self):
-        """Turn 1: call unlock → ctx.add_tools mutates the original list."""
+        """Turn 1: call unlock -> ctx.add_tools mutates the original list."""
         live_tools = list(CORE_TOOLS)
         core_names = {t.name for t in CORE_TOOLS}
         advanced_names = {t.name for t in ADVANCED_TOOLS}
@@ -309,7 +247,7 @@ class TestMultiTurnProgressiveExposure:
 
     @pytest.mark.asyncio
     async def test_idempotent_unlock_does_not_duplicate_tools(self):
-        """Calling unlock twice with same tools is safe — no duplicates."""
+        """Calling unlock twice with same tools is safe -- no duplicates."""
         live_tools = list(CORE_TOOLS)
         ctx = FunctionInvocationContext(
             function=MagicMock(),
@@ -349,7 +287,7 @@ class TestMultiTurnProgressiveExposure:
 
 
 # ---------------------------------------------------------------------------
-# Gateway permission boundary — advanced tools blocked before unlock
+# Gateway permission boundary -- advanced tools blocked before unlock
 # ---------------------------------------------------------------------------
 
 

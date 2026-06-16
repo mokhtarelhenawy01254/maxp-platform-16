@@ -85,7 +85,8 @@ export const SidebarSettingsProvider: React.FC<{ children: React.ReactNode }> = 
         typeof (err as { response?: { status?: number } }).response === "object"
           ? (err as { response?: { status?: number } }).response?.status
           : undefined;
-      if (status !== 403) {
+      // 401 is expected during initial load before token is set (apiClient retries automatically)
+      if (status !== 403 && status !== 401) {
         const msg = err instanceof Error ? err.message : "فشل تحميل إعدادات القائمة الجانبية"; // no-arabic-check
         setError(msg);
       }

@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "description": "تحويل محادثات فيسبوك إلى مسودات طلبات مؤكدة بخطوات بيع آمنة ومؤرشفة.",
   "allowedTools": [
-    "product.search",
-    "customer.info",
-    "order.create_confirmed"
+    "product_search",
+    "customer_info",
+    "order_create_confirmed"
   ],
   "requiresHumanApproval": false,
   "maxToolCount": 3,

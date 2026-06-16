@@ -83,4 +83,32 @@ roles:
     - inventory_check
     - audit_read
 
+  SMART_SELLER:
+    - product_search
+    - product_top_selling
+    - product_performance
+    - category_list
+    - customer_info
+    - customer_top_buyers
+    - order_lookup
+    - order_create_draft
+    - order_create_confirmed
+    - order_cancel
+    - order_refund
+    - order_summary
+    - inventory_check
+    - discount_create_draft
+    - sales_revenue
+    - company_snapshot
+    - shipping_rates
+    - whatsapp_send
+    - knowledge_search
+    - agent_handoff_to
+    - lead_score
+    - abandoned_carts
+    - pipeline_overview
+    - followup_suggestions
+    - deal_params
+    - purchase_prediction
+
   CEO: []

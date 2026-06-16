@@ -166,7 +166,7 @@ function buildAiServiceAgentConfig(agent) {
     id: agent.id,
     name: agent.name,
     role: agent.role,
-    templateSlug: agent.templateSlug,
+    templateSlug: agentData.templateSlug || agentData.template_slug,
     version: agent.version,
     model: agent.model,
     status: agent.status,
@@ -555,22 +555,9 @@ function hydrateSandboxWorkingMemory(companyId, conversationId, sessionMessages 
 async function createSandboxRuntimeAgent(companyId, agentId, modelSelection) {
   const agentConfig = await getAgentConfig(companyId, agentId);
   let runtimeAgent = agentConfig;
+  // 2026: ai-service API (AgentRead) is the single source of truth; no more Prisma fallback
   if (!runtimeAgent) {
-    const prisma = getSharedPrismaClient();
-    const row = await prisma.companyAgent.findUnique({ where: { id: agentId } });
-    if (!row || row.companyId !== companyId) return null;
-    runtimeAgent = {
-      id: row.id,
-      name: row.name,
-      role: row.role,
-      model: row.model,
-      templateSlug: row.templateSlug,
-      parentId: row.parentId,
-      allowedTools: normalizeStringList(row.allowedTools),
-      allowedSkills: (function() { try { return JSON.parse(row.skills || '[]'); } catch(e) { return []; } })(),
-      persona: { soulInstructions: row.soul || '' },
-      status: row.status,
-    };
+    return null;
   }
 
   const modelPolicy = {
@@ -745,6 +732,7 @@ async function runSandboxChatTurn({
     usedFallbackKey: modelSelection.usedFallbackKey ?? false,
     runtime,
     pipelineTrace,
+    compiledSystemPrompt,
   };
 }
 
@@ -795,7 +783,7 @@ function sanitizeAgentForSandbox(agent, orgMetaById) {
     model: agent.model || null,
     status: agent.status || 'ACTIVE',
     parentId: agent.parentId || null,
-    templateSlug: agent.templateSlug || null,
+    templateSlug: agent.templateSlug || agent.template_slug || null,
     departmentId: agent.departmentId || orgMeta.departmentId || null,
     departmentKey: agent.departmentKey || orgMeta.departmentKey || null,
     departmentName: agent.departmentName || orgMeta.departmentName || null,
@@ -807,19 +795,16 @@ function sanitizeAgentForSandbox(agent, orgMetaById) {
 async function loadAgentOrgMetadata(companyId) {
   try {
     const prisma = getSharedPrismaClient();
-    const rows = await prisma.$queryRawUnsafe(`
-      SELECT
-        ca."id",
-        ca."departmentId",
-        ca."managerType",
-        ad."key" AS "departmentKey",
-        ad."name" AS "departmentName",
-        ad."icon" AS "departmentIcon"
-      FROM "company_agents" ca
-      LEFT JOIN "agent_departments" ad ON ad."id" = ca."departmentId"
-      WHERE ca."companyId" = $1
-    `, companyId);
-    return new Map(rows.map(row => [row.id, row]));
+    // 2026: Department/org metadata from ai-service AgentRead (no more company_agents reads)
+    const agents = await aiServiceAdminClient.listAgents(companyId);
+    return new Map((agents || []).map(a => [a.id, {
+      id: a.id,
+      departmentId: a.departmentId || a.department_id || null,
+      departmentKey: a.departmentKey || a.department_key || null,
+      departmentName: a.departmentName || a.department_name || null,
+      departmentIcon: a.departmentIcon || a.department_icon || null,
+      managerType: a.managerType || a.manager_type || null,
+    }]));
   } catch (_) {
     return new Map();
   }
@@ -919,42 +904,31 @@ async function listAgents(req, res) {
     const companyId = req.user?.companyId || req.companyId;
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
 
-    const orgMetaById = await loadAgentOrgMetadata(companyId);
+    // 2026: All agent data from ai-service API — no more Prisma companyAgent reads
+    const apiAgents = await aiServiceAdminClient.listAgents(companyId);
+    const activeAgents = (apiAgents || []).filter(a => a.status !== 'ARCHIVED');
 
-    const prisma = getSharedPrismaClient();
-    const rows = await prisma.companyAgent.findMany({
-      where: { companyId, status: { not: 'ARCHIVED' } },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    const byId = new Map();
-    for (const a of rows) {
-      byId.set(a.id, {
-        id: a.id,
-        name: a.name,
-        role: a.role,
-        icon: a.icon || '🤖',
-        description: a.description || '',
-        soul: a.soul || '',
-        rules: (function() { try { return JSON.parse(a.rules || '[]'); } catch(e) { return []; } })(),
-        skills: (function() { try { return JSON.parse(a.skills || '[]'); } catch(e) { return []; } })(),
-        allowedTools: (function() { const v = a.allowedTools; if (Array.isArray(v)) return v; try { return JSON.parse(v || '[]'); } catch(e) { return []; } })(),
-        model: a.model || null,
-        status: a.status,
-        parentId: a.parentId || null,
-        templateSlug: a.templateSlug || null,
-        createdBy: a.createdBy || null,
-        createdAt: a.createdAt,
-        departmentId: orgMetaById.get(a.id)?.departmentId || null,
-        departmentKey: orgMetaById.get(a.id)?.departmentKey || null,
-        departmentName: orgMetaById.get(a.id)?.departmentName || null,
-        departmentIcon: orgMetaById.get(a.id)?.departmentIcon || null,
-        managerType: orgMetaById.get(a.id)?.managerType || null,
-      });
-    }
-
-    const agents = [...byId.values()].map(agent => ({
-      ...sanitizeAgentForSandbox(agent, orgMetaById),
+    const agents = activeAgents.map(a => ({
+      id: a.id,
+      name: a.name,
+      role: a.role,
+      icon: a.icon || '🤖',
+      description: a.description || '',
+      soul: a.soul || a.persona?.soulInstructions || '',
+      rules: (() => { try { return typeof a.rules === 'string' ? JSON.parse(a.rules || '[]') : (a.rules || []); } catch { return []; } })(),
+      skills: (() => { try { return typeof a.skillsRaw === 'string' ? JSON.parse(a.skillsRaw || '[]') : (a.allowedSkills || []); } catch { return []; } })(),
+      allowedTools: a.allowedTools || a.allowed_tools || [],
+      model: a.model || null,
+      status: a.status,
+      parentId: a.parentId || a.parent_id || null,
+      templateSlug: a.templateSlug || a.template_slug || null,
+      createdBy: a.createdBy || a.created_by || null,
+      createdAt: a.created_at || a.createdAt,
+      departmentId: a.departmentId || a.department_id || null,
+      departmentKey: a.departmentKey || a.department_key || null,
+      departmentName: a.departmentName || a.department_name || null,
+      departmentIcon: a.departmentIcon || a.department_icon || null,
+      managerType: a.managerType || a.manager_type || (a.role === 'CEO' ? 'AGENT' : 'DEPARTMENT_MANAGER'),
     }));
 
     return res.json({ success: true, agents, count: agents.length });
@@ -971,13 +945,13 @@ async function getAgentProfile(req, res) {
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId required' });
     if (!agentId) return res.status(400).json({ success: false, error: 'agentId required' });
 
-    const prisma = getSharedPrismaClient();
-    const agent = await prisma.companyAgent.findFirst({ where: { id: agentId, companyId } });
-    if (!agent) return res.status(404).json({ success: false, error: 'AGENT_NOT_FOUND' });
+    // 2026: Agent data from ai-service API — no more Prisma companyAgent reads
+    const agentData = await aiServiceAdminClient.getAgent(companyId, agentId);
+    if (!agentData) return res.status(404).json({ success: false, error: 'AGENT_NOT_FOUND' });
 
     let templateFiles = {};
     let agentJson = {};
-    const slug = agent.templateSlug;
+    const slug = agentData.templateSlug || agentData.template_slug;
     if (slug) {
       const templateDir = path.join(__dirname, '..', 'agents', slug);
       if (fs.existsSync(templateDir)) {
@@ -995,7 +969,7 @@ async function getAgentProfile(req, res) {
     }
 
     let skillIds = [];
-    try { skillIds = JSON.parse(agent.skills || '[]'); } catch {}
+    try { skillIds = JSON.parse(agentData.skillsRaw || agentData.skills || '[]'); } catch {}
     if (!skillIds.length && Array.isArray(agentJson.allowedSkills)) skillIds = agentJson.allowedSkills;
 
     const allowedTools = Array.isArray(agentJson.allowedTools) ? agentJson.allowedTools : [];
@@ -1059,10 +1033,10 @@ async function getAgentProfile(req, res) {
         description: agent.description || '',
         model: agent.model || agentJson.modelPolicy?.default || null,
         status: agent.status,
-        templateSlug: agent.templateSlug || null,
+        templateSlug: agent.templateSlug || agent.template_slug || null,
       },
       files: {
-        'SOUL.md': resolveFile('SOUL.md') || agent.soul || '',
+        'SOUL.md': resolveFile('SOUL.md') || agentData.soul || agentData.persona?.soulInstructions || '',
         'AGENTS.md': resolveFile('AGENTS.md'),
         'TOOLS.md': resolveFile('TOOLS.md'),
         'PERSONA.md': resolveFile('PERSONA.md'),
@@ -1394,6 +1368,7 @@ async function sendChatMessage(req, res) {
       pipelineTrace: turnResult.pipelineTrace || null,
       usedFallbackKey: turnResult.usedFallbackKey ?? false,
       runtime: turnResult.runtime || 'unknown',
+      compiledSystemPrompt: turnResult.compiledSystemPrompt || null,
     });
   } catch (error) {
     return sendCodeError(res, error.statusCode || 500, error.code || 'AI_SANDBOX_CHAT_FAILED');
@@ -1462,7 +1437,8 @@ async function streamChatMessage(req, res) {
     const finalReply = extractSandboxReply(taskResult);
     const toolCalls = mapSandboxToolsToToolCalls(taskResult?.result?.tools || []);
     const responseAttachments = extractResponseAttachments(taskResult);
-    const pipelineTrace = taskResult?.result?.pipelineTrace || null;
+  const pipelineTrace = taskResult?.result?.pipelineTrace || null;
+  const compiledSystemPrompt = taskResult?.result?.compiledSystemPrompt || null;
 
     const latencyMs = Date.now() - turnStartTime;
 
@@ -1557,6 +1533,7 @@ async function streamChatMessage(req, res) {
       runtime: streamRuntime,
       responseAttachments,
       pipelineTrace,
+      compiledSystemPrompt,
     })}\n\n`);
 
     res.end();

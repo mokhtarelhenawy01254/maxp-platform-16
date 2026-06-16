@@ -26,26 +26,12 @@ const agentManagerService = {
       let skills = [];
       let manager = null;
       try {
-        const db = prisma();
-        const dbProfiles = await db.agentDefinition.findMany({ where: { isBuiltIn: true } });
-        profiles = dbProfiles.map(p => {
-          const settings = (() => { try { return JSON.parse(p.settings || '{}'); } catch { return {}; } })();
-          return {
-            slug: p.type,
-            name: p.name,
-            role: settings.role || '',
-            allowedTools: settings.allowedTools || [],
-            allowedSkills: settings.allowedSkills || [],
-          };
-        });
+        // 2026: profiles come from ai-service API, not from agent_definitions table
+        if (Array.isArray(context?.profiles)) {
+          profiles = context.profiles;
+        }
         const ceo = agents.find(a => a.role === 'CEO' || a.managerType === 'CEO');
         if (ceo) manager = { id: ceo.id, name: ceo.name, status: ceo.status || 'ACTIVE', templateSlug: ceo.templateSlug || null };
-        if (!manager) {
-          try {
-            const dbCeo = await db.companyAgent.findFirst({ where: { companyId, role: 'CEO', status: { not: 'ARCHIVED' } } });
-            if (dbCeo) manager = { id: dbCeo.id, name: dbCeo.name, status: dbCeo.status, templateSlug: dbCeo.templateSlug || null };
-          } catch (_) {}
-        }
         skills = profiles.length > 0 ? profiles.flatMap(p => p.allowedSkills).filter(Boolean) : [];
         const uniqueSkills = [...new Set(skills)];
         skills = uniqueSkills.map(s => ({ id: s, displayName: s }));
@@ -69,17 +55,9 @@ const agentManagerService = {
   },
   hireAgent: async (companyId, body) => {
     const result = await aiServiceAdminClient.spawnAgent({ companyId, ...body });
+    // 2026: ai-service manages ai.agents table; no dual-write to public.company_agents
     if (result && result.id) {
-      try {
-        const db = prisma();
-        await db.companyAgent.upsert({
-          where: { id: result.id },
-          update: { name: result.name, role: result.role, model: result.model || null, templateSlug: result.template_slug || result.templateSlug || null, status: result.status || 'ACTIVE' },
-          create: { id: result.id, companyId, name: result.name, role: result.role, model: result.model || null, templateSlug: result.template_slug || result.templateSlug || null, status: result.status || 'ACTIVE', icon: body.icon || '🤖', description: body.description || '' },
-        });
-      } catch (dbErr) {
-        console.error('[MANAGER] Failed to sync hired agent to company_agents:', dbErr.message);
-      }
+      console.log('[MANAGER] Agent spawned via ai-service:', result.id, result.name);
     }
     return result || { success: false, error: 'فشل تعيين الوكيل' };
   },
@@ -104,13 +82,10 @@ const agentManagerService = {
     }
   },
   archiveAgent: async (companyId, agentId) => {
+    // 2026: delegate to ai-service API (single source of truth)
     try {
-      const db = prisma();
-      await db.companyAgent.updateMany({
-        where: { id: agentId, companyId, status: { not: 'ARCHIVED' } },
-        data: { status: 'ARCHIVED' },
-      });
-      return { success: true };
+      const result = await aiServiceAdminClient.archiveAgent(agentId, companyId);
+      return result || { success: true };
     } catch (err) {
       return { success: false, error: err.message };
     }
@@ -139,10 +114,14 @@ async function countAgentTasks(companyId) {
 }
 
 async function resolveCeoAgentId(companyId) {
+  // 2026: use ai-service API instead of direct Prisma read
   try {
-    const db = prisma();
-    const ceo = await db.companyAgent.findFirst({ where: { companyId, role: 'CEO', status: { not: 'ARCHIVED' } } });
-    return ceo?.id || '';
+    const agents = await aiServiceAdminClient.listAgents(companyId);
+    if (Array.isArray(agents)) {
+      const ceo = agents.find(a => a.role === 'CEO' && a.status !== 'ARCHIVED');
+      return ceo?.id || '';
+    }
+    return '';
   } catch (_) {
     return '';
   }
@@ -228,22 +207,19 @@ router.use(verifyToken.authenticateToken);
 const getCompanyId = (req) => req.user?.companyId || req.companyId;
 const sqlQuote = (value = '') => String(value).replace(/'/g, "''");
 
+// 2026: Department/org metadata now comes from ai-service AgentRead (departmentId, departmentKey, etc.)
+// This function is kept as a thin wrapper for backward compatibility.
 async function loadAgentOrgMetadata(companyId) {
   try {
-    const prisma = getSharedPrismaClient();
-    const rows = await prisma.$queryRawUnsafe(`
-      SELECT
-        ca."id",
-        ca."departmentId",
-        ca."managerType",
-        ad."key" AS "departmentKey",
-        ad."name" AS "departmentName",
-        ad."icon" AS "departmentIcon"
-      FROM "company_agents" ca
-      LEFT JOIN "agent_departments" ad ON ad."id" = ca."departmentId"
-      WHERE ca."companyId" = '${sqlQuote(companyId)}'
-    `);
-    return new Map(rows.map(row => [row.id, row]));
+    const agents = await aiServiceAdminClient.listAgents(companyId);
+    return new Map((agents || []).map(a => [a.id, {
+      id: a.id,
+      departmentId: a.departmentId || a.department_id || null,
+      departmentKey: a.departmentKey || a.department_key || null,
+      departmentName: a.departmentName || a.department_name || null,
+      departmentIcon: a.departmentIcon || a.department_icon || null,
+      managerType: a.managerType || a.manager_type || null,
+    }]));
   } catch (_) {
     return new Map();
   }
@@ -402,11 +378,8 @@ router.get('/agents', async (req, res) => {
     const orgMetaById = await loadAgentOrgMetadata(companyId);
 
     try {
-      const prisma = getSharedPrismaClient();
-      const rows = await prisma.companyAgent.findMany({
-        where: { companyId, status: { not: 'ARCHIVED' } },
-        orderBy: { createdAt: 'asc' },
-      });
+      // 2026: skip direct Prisma company_agents read; ai-service API already provides agent data
+      const rows = [];
       for (const a of rows) {
         byId.set(a.id, {
           ...(byId.get(a.id) || {}),
@@ -458,13 +431,10 @@ router.put('/agents/:id', async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
-    const prisma = getSharedPrismaClient();
+    // 2026: delegate to ai-service API for agent updates
     const allowedChannels = req.body?.allowedChannels;
     if (allowedChannels !== undefined) {
-      await prisma.companyAgent.updateMany({
-        where: { id: req.params.id, companyId },
-        data: { channels: JSON.stringify(allowedChannels) },
-      });
+      await aiServiceAdminClient.updateAgent(req.params.id, companyId, { allowedChannels });
     }
     return res.json({ success: true });
   } catch (error) {

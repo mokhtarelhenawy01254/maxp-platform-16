@@ -35,5 +35,17 @@
   "sources": {
     "mcp": "MCP",
     "python": "Python"
-  }
+  },
+  "tool_lead_score": "Lead Score",
+  "tool_lead_score_desc": "Score and rank customer leads by purchase probability based on recency, frequency, and monetary value",
+  "tool_abandoned_carts": "Abandoned Carts",
+  "tool_abandoned_carts_desc": "Find customers who left their cart and suggest recovery actions",
+  "tool_pipeline_overview": "Pipeline Overview",
+  "tool_pipeline_overview_desc": "Sales pipeline breakdown by order status with revenue trends",
+  "tool_followup_suggestions": "Follow-up Suggestions",
+  "tool_followup_suggestions_desc": "Suggest follow-up actions for customers who need re-engagement",
+  "tool_deal_params": "Deal Parameters",
+  "tool_deal_params_desc": "Average discount, suggested max discount, and price range for negotiation",
+  "tool_purchase_prediction": "Purchase Prediction",
+  "tool_purchase_prediction_desc": "Predict purchase probability and lead score for a specific customer"
 }

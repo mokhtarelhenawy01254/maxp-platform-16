@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import Any
 
 import structlog
-from sqlalchemy import text
 
 import src.db.session as _db_mod
 from src.tools.facebook_client import FacebookGraphClient
+from src.tools.repositories.facebook_page_repository import FacebookPageRepository
 
 logger = structlog.get_logger(__name__)
 
@@ -15,6 +15,7 @@ async def send_whatsapp(
     company_id: str, phone: str, message: str
 ) -> dict[str, Any]:
     """Send a WhatsApp message to a customer."""
+    from src.tools.backend_client import get_backend_client
     client = get_backend_client()
     return await client.send_whatsapp_message(company_id, phone, message)
 
@@ -33,17 +34,12 @@ async def send_facebook_reply(
 
     sf = _db_mod.async_session
     async with sf() as sess:
-        row = await sess.execute(text("""
-            SELECT page_access_token FROM facebook_pages
-            WHERE page_id = :pid AND company_id = :cid
-            LIMIT 1
-        """), {"pid": page_id, "cid": company_id})
-        token_row = row.first()
+        repo = FacebookPageRepository(sess)
+        token = await repo.get_page_token(company_id, page_id)
 
-    if not token_row:
+    if not token:
         return {"success": False, "error": "Facebook page not configured or token not found"}
 
-    token = token_row[0]
     client = FacebookGraphClient(token)
 
     try:

@@ -14,7 +14,7 @@ from src.db.models.thread import Thread
 from src.db.session import get_session
 from src.deps import get_company_id, get_customer_id
 from src.i18n import t
-from src.workflows.approval import create_approval_draft
+from src.services.approval_service import ApprovalService
 from src.workflows.orchestration_flow import run_orchestration
 
 logger = structlog.get_logger(__name__)
@@ -55,6 +55,38 @@ def sanitize_model_reply(reply: Any) -> str:
         text = THOUGHT_TAG_RE.split(text, maxsplit=1)[0].strip()
 
     return text
+
+
+async def _handle_approval(
+    tool_result: dict[str, Any],
+    company_id: str,
+    customer_id: str,
+    thread_id: str,
+    session: AsyncSession,
+    channel: str = "chat",
+) -> ChatResponse | None:
+    """Process an awaiting_approval tool result through the ApprovalService.
+
+    Returns a ChatResponse if an approval was created, None otherwise.
+    """
+    if not isinstance(tool_result, dict) or tool_result.get("status") != "awaiting_approval":
+        return None
+
+    svc = ApprovalService(session)
+    approval_info = await svc.request_approval(
+        action_type=tool_result["action_type"],
+        action_args=tool_result["action_args"],
+        company_id=tool_result.get("company_id", company_id),
+        customer_id=customer_id,
+        thread_id=thread_id,
+        channel=channel,
+        sdk_approval_id=tool_result.get("sdk_approval_id"),
+    )
+    return ChatResponse(
+        status="awaiting_approval",
+        thread_id=thread_id,
+        draft_id=approval_info["draft_id"],
+    )
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -127,22 +159,12 @@ async def chat(
         tool_results = outcome.get("tool_results", [])
 
         for tr in tool_results:
-            if isinstance(tr, dict) and tr.get("status") == "awaiting_approval":
-                draft_info = await create_approval_draft(
-                    action_type=tr["action_type"],
-                    action_args=tr["action_args"],
-                    company_id=tr.get("company_id", company_id),
-                    customer_id=customer_id,
-                    thread_id=thread_id,
-                    session=session,
-                    sdk_approval_id=tr.get("sdk_approval_id"),
-                )
-                return ChatResponse(
-                    status="awaiting_approval",
-                    thread_id=thread_id,
-                    draft_id=draft_info["draft_id"],
-                    reply=reply,
-                )
+            approval_response = await _handle_approval(
+                tr, company_id, customer_id, thread_id, session, channel
+            )
+            if approval_response:
+                approval_response.reply = reply
+                return approval_response
 
         return ChatResponse(
             status="ok",
@@ -226,22 +248,12 @@ async def chat_merchant(
         tool_results = outcome.get("tool_results", [])
 
         for tr in tool_results:
-            if isinstance(tr, dict) and tr.get("status") == "awaiting_approval":
-                draft_info = await create_approval_draft(
-                    action_type=tr["action_type"],
-                    action_args=tr["action_args"],
-                    company_id=tr.get("company_id", company_id),
-                    customer_id=customer_id,
-                    thread_id=thread_id,
-                    session=session,
-                    sdk_approval_id=tr.get("sdk_approval_id"),
-                )
-                return ChatResponse(
-                    status="awaiting_approval",
-                    thread_id=thread_id,
-                    draft_id=draft_info["draft_id"],
-                    reply=reply,
-                )
+            approval_response = await _handle_approval(
+                tr, company_id, customer_id, thread_id, session, "merchant"
+            )
+            if approval_response:
+                approval_response.reply = reply
+                return approval_response
 
         return ChatResponse(
             status="ok",

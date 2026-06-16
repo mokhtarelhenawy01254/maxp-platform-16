@@ -305,7 +305,7 @@ export function useAgentSandbox() {
   const [agents, setAgents] = useState<AgentConfig[]>([]);
   const [models, setModels] = useState<ModelConfig[]>([]);
   const [centralKeys, setCentralKeys] = useState<CentralKeyConfig[]>([]);
-  const [toolsMetadata, setToolsMetadata] = useState<Array<{ name: string; description: string; sideEffect: "read" | "write" }>>([]);
+  const [toolsMetadata, setToolsMetadata] = useState<Array<{ name: string; description: string; sideEffects: "read" | "write" }>>([]);
   const [skills, setSkills] = useState<SkillDefinition[]>([]);
   const [typingStage, setTypingStage] = useState<string | null>(null);
   const [activeToolCalls, setActiveToolCalls] = useState<ToolCall[]>([]);
@@ -826,7 +826,12 @@ export function useAgentSandbox() {
               if (event.responseAttachments) {
                 streamingResponseAttachments = normalizeResponseAttachments(event.responseAttachments);
               }
-              if (event.pipelineTrace) pipelineTrace = event.pipelineTrace;
+              if (event.pipelineTrace) {
+                if (event.compiledSystemPrompt) {
+                  event.pipelineTrace._compiledSystemPrompt = event.compiledSystemPrompt;
+                }
+                pipelineTrace = event.pipelineTrace;
+              }
             }
           }
         );

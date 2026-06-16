@@ -24,6 +24,11 @@ def is_gateway_managed_tool(tool: FunctionTool) -> bool:
 
 
 def requires_sdk_approval(tool: FunctionTool) -> bool:
+    """Return True if the tool requires human approval before execution.
+
+    Write tools (approval_mode='always_require') need approval.
+    Read tools (approval_mode='never_require') do not.
+    """
     if canonical_tool_name(tool.name).startswith("mcp_"):
         return False
     registry_tool = get_tool(tool.name)
@@ -38,23 +43,29 @@ def wrap_tool_for_gateway(
     agent_role: str | None,
     allowed_tools: Iterable[str] | None = None,
 ) -> FunctionTool:
-    """Return an SDK FunctionTool whose execution goes through ToolGateway."""
+    """Return an SDK FunctionTool whose execution goes through ToolGateway.
+
+    Tools that require approval will be routed to the approval flow
+    (approval_granted=False) instead of being auto-approved.
+    """
     if not isinstance(tool, FunctionTool):
         return tool
     if not is_gateway_managed_tool(tool):
         return tool
 
-    allowed = list(allowed_tools or [])
+    needs_approval = requires_sdk_approval(tool)
 
     async def _gateway_func(input_data: Any, ctx: FunctionInvocationContext | None = None) -> dict[str, Any]:
         payload = _dump_input(input_data)
         tenant_id = str(payload.get("company_id") or company_id or "")
-        approval_granted = requires_sdk_approval(tool)
+        # Tools that need approval have NOT been approved yet in the SDK flow.
+        # The approval happens via the /resume endpoint, not through this wrapper.
+        approval_granted = not needs_approval
         return await ToolGateway().execute(
             tool_name=tool.name,
             company_id=tenant_id,
             agent_role=agent_role,
-            allowed_tools=allowed,
+            allowed_tools=allowed_tools,
             input_data=payload,
             approval_granted=approval_granted,
             ctx=ctx,
@@ -65,7 +76,7 @@ def wrap_tool_for_gateway(
         description=tool.description,
         func=_gateway_func,
         input_model=tool.input_model,
-        approval_mode="always_require" if requires_sdk_approval(tool) else "never_require",
+        approval_mode="always_require" if needs_approval else "never_require",
     )
 
 

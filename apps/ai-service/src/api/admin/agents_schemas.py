@@ -78,12 +78,17 @@ class AgentStatusUpdate(BaseModel):
 
 
 class AgentRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     id: str
     company_id: str
     name: str
     role: str
+    description: str | None = None
+    icon: str | None = None
+    soul: str | None = None
+    rules: str | None = None
+    skills_raw: str | None = Field(default=None, alias="skillsRaw")
     template_slug: str | None = None
     status: Literal["ACTIVE", "INACTIVE", "ARCHIVED"]
     model: str | None = None
@@ -94,6 +99,12 @@ class AgentRead(BaseModel):
     guardrails: dict[str, Any]
     budget: dict[str, Any]
     parent_id: str | None = None
+    department_id: str | None = Field(default=None, alias="departmentId")
+    department_key: str | None = Field(default=None, alias="departmentKey")
+    department_name: str | None = Field(default=None, alias="departmentName")
+    department_icon: str | None = Field(default=None, alias="departmentIcon")
+    manager_type: str | None = Field(default=None, alias="managerType")
+    created_by: str | None = Field(default=None, alias="createdBy")
     version: str
     config: dict[str, Any]
     created_at: datetime
@@ -138,6 +149,7 @@ class AgentChatResponse(BaseModel):
     runtime: str = "agent"
     tool_calls: list[dict[str, Any]] = Field(default_factory=list)
     pipeline_trace: dict[str, Any] | None = None
+    compiled_system_prompt: str | None = None
 
 
 class SandboxEvaluateRequest(BaseModel):
@@ -251,7 +263,7 @@ class ManagerContextResponse(BaseModel):
     agents: list[AgentSummary] = []
     profiles: list[ProfileSummary] = []
     tools: list[ToolSummary] = []
-    skills: list[dict[str, str]] = []
+    skills: list[dict[str, Any]] = []
     inbox: InboxSummary = Field(default_factory=InboxSummary)
 
 

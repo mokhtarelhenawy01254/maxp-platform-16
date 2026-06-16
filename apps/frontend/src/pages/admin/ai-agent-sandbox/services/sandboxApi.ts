@@ -348,7 +348,7 @@ export const sandboxApi = {
     return data.content;
   },
 
-  async getTools(): Promise<{ success: boolean; tools: Array<{ name: string; description: string; sideEffect: "read" | "write" }> }> {
+  async getTools(): Promise<{ success: boolean; tools: Array<{ name: string; description: string; sideEffects: "read" | "write" }> }> {
     const response = await fetch(buildApiUrl("ai-sandbox/tools"), {
       headers: getAuthHeaders(),
     });

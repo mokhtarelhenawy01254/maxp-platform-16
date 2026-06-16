@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from src.db.base import Base
-from src.db.models.agent import Agent, AgentDepartment, AgentTemplate, CompanyAgent
+from src.db.models.agent import Agent, AgentDepartment, AgentTemplate
 from src.db.models.ai_setting import AiSetting
 from src.db.models.approval import Approval
 from src.db.models.checkpoint import Checkpoint
@@ -26,8 +26,6 @@ __all__ = [
     "AiSetting",
     "Approval",
     "Base",
-    "Checkpoint",
-    "CompanyAgent",
     "GlobalAiConfig",
     "Policy",
     "Product",

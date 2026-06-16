@@ -3,7 +3,10 @@
   "displayName": "Read Company State",
   "version": "1.0.0",
   "description": "Summarize operational state for the manager agent.",
-  "allowedTools": ["agent.read_state", "audit.read", "agent.list_agents"],
+  "allowedTools": [
+    "company_snapshot",
+    "audit_read"
+  ],
   "requiresHumanApproval": false,
   "maxToolCount": 3
 }

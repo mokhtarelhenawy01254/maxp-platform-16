@@ -12,7 +12,7 @@ import httpx
 from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 from src.tools import product_tools
-from src.tools.definitions._helpers import _write_result
+from src.tools.definitions._helpers import _write_result, period_start_date as _period_start_date
 from src.tools.vector_product_search import vector_product_search
 
 
@@ -35,22 +35,6 @@ def _is_public_image_url(url: str) -> bool:
         or ip.is_reserved
         or ip.is_unspecified
     )
-
-
-def _period_start_date(period: str) -> datetime:
-    now = datetime.utcnow()
-    period = period.lower()
-    if period == "today":
-        return now.replace(hour=0, minute=0, second=0, microsecond=0)
-    elif period == "yesterday":
-        return (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-    elif period == "week":
-        return now - timedelta(days=7)
-    elif period == "month":
-        return now - timedelta(days=30)
-    elif period == "all":
-        return datetime(2000, 1, 1)
-    return now - timedelta(days=30)
 
 
 async def _host_resolves_to_public_ips(hostname: str) -> bool:
@@ -210,6 +194,7 @@ async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
     )
     products = result.get("products", [])
 
+    # Vector fallback: if text search returned no results and we have a query, use semantic search
     if not products and query and not input_data.list_all and input_data.use_vector:
         vec_results = await vector_product_search(
             company_id=input_data.company_id or "",

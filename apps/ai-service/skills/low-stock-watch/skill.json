@@ -3,7 +3,10 @@
   "displayName": "Low Stock Watch",
   "version": "1.0.0",
   "description": "Find low-stock products and recommend action.",
-  "allowedTools": ["inventory.check", "product.search"],
+  "allowedTools": [
+    "inventory_check",
+    "product_search"
+  ],
   "requiresHumanApproval": false,
   "maxToolCount": 2
 }

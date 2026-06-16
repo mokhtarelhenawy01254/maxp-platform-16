@@ -54,7 +54,7 @@ model Company {
   aiSetting                       AiSetting?
   aiTraces                        AiTrace[]
   agentDepartments                AgentDepartment[]
-  companyAgents                   CompanyAgent[]
+  // companyAgents removed — 2026 refactor
   socialProfiles                  CompanySocialProfile[]
    aiAgentTasks                    AiAgentTask[]
    aiSandboxSessions               AiSandboxSession[]

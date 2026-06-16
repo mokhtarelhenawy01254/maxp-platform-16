@@ -38,7 +38,8 @@ async def test_spawn_wraps_tools_with_gateway(monkeypatch):
 
     assert agent_id.startswith("agent_")
     assert any(isinstance(item, MaxPFunctionAuditMiddleware) for item in middleware)
-    assert result["status"] == "success"
-    assert result["result"]["status"] == "awaiting_approval"
-    assert result["result"]["action_type"] == "product.create"
-    assert result["result"]["company_id"] == "comp1"
+    # Write tools now return awaiting_approval directly (not wrapped in success)
+    # because the gateway correctly routes them to the approval flow
+    assert result["status"] == "awaiting_approval"
+    assert result["action_type"] == "product_create"
+    assert result["company_id"] == "comp1"

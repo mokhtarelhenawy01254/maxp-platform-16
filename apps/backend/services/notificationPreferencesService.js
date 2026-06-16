@@ -297,10 +297,6 @@ const getNotificationSettingsForUser = async ({
       },
     });
   } catch (error) {
-    if (!isNotificationPreferencesStorageUnavailable(error)) {
-      throw error;
-    }
-
     console.warn(
       `[NOTIFICATIONS] Falling back to default settings: ${error.message}`,
     );

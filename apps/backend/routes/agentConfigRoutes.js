@@ -42,36 +42,37 @@ router.get('/', async (req, res) => {
     const prisma = getSharedPrismaClient();
     const setting = await prisma.aiSetting.findUnique({ where: { companyId } });
 
-    // ── Soul ─────────────────────────────────────────────────────────────────
-    const soul = setting?.promptTemplate || '';
-
-    // ── Rules ────────────────────────────────────────────────────────────────
+    // ── Soul / Rules / Skills — now from ai-service (AgentTemplate)
+    // Legacy: fall back to AiSetting if ai-service is unreachable
+    let soul = '';
     let rules = [];
-    const rawRules = setting?.responseRules;
-    if (rawRules) {
-      const parsed = parseJson(rawRules, null);
-      if (Array.isArray(parsed)) rules = parsed;
-      else if (typeof rawRules === 'string') rules = rawRules.split('\n').filter(Boolean);
+    let skills = [];
+    try {
+      const templates = await aiServiceAdminClient.listAgentTemplates();
+      if (Array.isArray(templates) && templates.length > 0) {
+        const ceoTemplate = templates.find(t => t.role === 'CEO') || templates[0];
+        soul = ceoTemplate.instructions_soul || ceoTemplate.instructionsSoul || '';
+        const allTools = await aiServiceAdminClient.listTools();
+        skills = Array.isArray(allTools) ? allTools.map(t => ({
+          name: t.name, description: t.description || '',
+          params: t.params || {}, readOnly: t.readOnly !== false, enabled: true,
+        })) : [];
+      }
+    } catch (_) {
+      // Fallback to legacy AiSetting fields
+      soul = setting?.promptTemplate || '';
+      const rawRules = setting?.responseRules;
+      if (rawRules) {
+        const parsed = parseJson(rawRules, null);
+        if (Array.isArray(parsed)) rules = parsed;
+        else if (typeof rawRules === 'string') rules = rawRules.split('\n').filter(Boolean);
+      }
+      const allToolNames = getAllToolNames();
+      const modelSettings = parseJson(setting?.modelSettings, {});
+      const storedSkills = modelSettings.agentSkills;
+      const enabledSet = new Set(Array.isArray(storedSkills) && storedSkills.length > 0 ? storedSkills : allToolNames);
+      skills = allToolNames.map(name => ({ name, description: TOOLS[name]?.description || '', params: TOOLS[name]?.params || {}, readOnly: TOOLS[name]?.readOnly !== false, enabled: enabledSet.has(name) }));
     }
-
-    // ── Skills ───────────────────────────────────────────────────────────────
-    const tools = TOOLS;
-    const allToolNames = getAllToolNames();
-    const modelSettings = parseJson(setting?.modelSettings, {});
-    const storedSkills = modelSettings.agentSkills;
-    const enabledSet = new Set(
-      Array.isArray(storedSkills) && storedSkills.length > 0
-        ? storedSkills
-        : allToolNames
-    );
-
-    const skills = allToolNames.map(name => ({
-      name,
-      description: tools[name]?.description || '',
-      params: tools[name]?.params || {},
-      readOnly: tools[name]?.readOnly !== false,
-      enabled: enabledSet.has(name),
-    }));
 
     return res.json({ success: true, soul, rules, skills });
   } catch (error) {
@@ -90,42 +91,35 @@ router.put('/', async (req, res) => {
     const { soul, rules, enabledSkills } = req.body || {};
     const prisma = getSharedPrismaClient();
 
-    // Preserve existing modelSettings, only update agentSkills
+    // 2026: Delegate soul/rules/skills to ai-service AgentTemplate
+    try {
+      const templates = await aiServiceAdminClient.listAgentTemplates();
+      const ceoSlug = Array.isArray(templates) && templates.find(t => t.role === 'CEO')?.slug || 'manager-ceo';
+      await aiServiceAdminClient.updateAgentTemplate(ceoSlug, {
+        soulInstructions: soul?.trim() || '',
+        rules: Array.isArray(rules) ? rules.map(r => String(r).trim()).filter(Boolean) : [],
+        allowedSkills: Array.isArray(enabledSkills) ? enabledSkills : [],
+      });
+    } catch (apiErr) {
+      console.error('[AGENT-CONFIG] Failed to sync to ai-service:', apiErr.message);
+    }
+
+    // Keep AiSetting for backward-compatible company settings
     const existing = await prisma.aiSetting.findUnique({ where: { companyId } });
     const currentModelSettings = parseJson(existing?.modelSettings, {});
     const allToolNames = getAllToolNames();
-
     const skillsToSave = Array.isArray(enabledSkills)
       ? enabledSkills.filter(s => allToolNames.includes(s))
       : allToolNames;
-
-    const updatedModelSettings = {
-      ...currentModelSettings,
-      agentSkills: skillsToSave,
-    };
-
-    const cleanRules = Array.isArray(rules)
-      ? rules.map(r => String(r).trim()).filter(Boolean)
-      : [];
+    const updatedModelSettings = { ...currentModelSettings, agentSkills: skillsToSave };
 
     await prisma.aiSetting.upsert({
       where: { companyId },
-      update: {
-        promptTemplate: soul?.trim() || null,
-        responseRules: cleanRules.length ? JSON.stringify(cleanRules) : null,
-        modelSettings: JSON.stringify(updatedModelSettings),
-      },
-      create: {
-        companyId,
-        promptTemplate: soul?.trim() || null,
-        responseRules: cleanRules.length ? JSON.stringify(cleanRules) : null,
-        modelSettings: JSON.stringify(updatedModelSettings),
-      },
+      update: { modelSettings: JSON.stringify(updatedModelSettings) },
+      create: { companyId, modelSettings: JSON.stringify(updatedModelSettings) },
     });
 
-    // Invalidate 5-min soul cache so the agent picks up changes immediately
     clearCache(companyId);
-
     return res.json({ success: true, message: t('agentConfig.saved') });
   } catch (error) {
     console.error('[AGENT-CONFIG] PUT error:', error.message);

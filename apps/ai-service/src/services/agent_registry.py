@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.agents.base import BaseAgent, BaseAgentConfig
 from src.config import get_settings
-from src.db.models.agent import CompanyAgent
+from src.db.models.agent import Agent
 from src.db.repo.agent_repo import AgentRepository
 from src.prompts.template_registry import get_prompt_registry
 from src.tools.registry import (
@@ -191,7 +191,7 @@ async def init_registry_from_db(session_factory) -> None:
 
     async with session_factory() as session:
         repo = AgentRepository(session)
-        stmt = select(CompanyAgent.company_id).distinct()
+        stmt = select(Agent.company_id).distinct()
         result = await session.execute(stmt)
         companies = [row[0] for row in result]
 

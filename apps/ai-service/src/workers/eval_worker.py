@@ -21,7 +21,7 @@ async def run_eval() -> str:
     agents = []
     async with engine.connect() as conn:
         result = await conn.execute(
-            text("SELECT name, role, model FROM ai.company_agents WHERE status = 'ACTIVE'")
+            text("SELECT name, role, model FROM ai.agents WHERE status = 'ACTIVE'")
         )
         for row in result:
             agents.append(f"  {row.role:20s} {row.name:30s} {row.model or 'N/A':20s}")
