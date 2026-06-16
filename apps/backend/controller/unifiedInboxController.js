@@ -82,7 +82,8 @@ const getUnifiedConversations = async (req, res) => {
 
         const prisma = getSharedPrismaClient();
 
-        // When merging with WhatsApp, fetch extra for better sort accuracy
+        // When merging sources, fetch enough from each for a representative sort
+        const mergeTakeMultiplier = 2;
         const fbTake = hasAll ? take * mergeTakeMultiplier : take;
 
         // Run conversations query and count in parallel
@@ -139,8 +140,6 @@ const getUnifiedConversations = async (req, res) => {
         const shouldFetchWhatsApp = hasAll || selectedPlatforms.includes('WHATSAPP');
         const isWhatsAppOnly = !hasAll && selectedPlatforms.includes('WHATSAPP') && selectedPlatforms.length === 1;
 
-        // When merging sources, fetch enough from each for a representative sort
-        const mergeTakeMultiplier = 2;
         const waTake = isWhatsAppOnly ? take : (hasAll ? take * mergeTakeMultiplier : take);
 
         if (shouldFetchWhatsApp) {
