@@ -388,7 +388,43 @@ class BaseAgent:
                 if st not in base_set:
                     base_set.append(st)
 
+        from src.tools.registry import get_all_tools, unlock_advanced_tools_tool
+
         if not self.allowed_tools:
+            # When skills are configured without explicit tools, derive tools from skill manifests.
+            # This enables the "skills-first" pattern: the agent discovers tools via load_skill()
+            # while the gateway still authorizes only what the skills declare.
+            if self.allowed_skills:
+                import json as _json
+                from src.skills.integration import get_skill_tool_names
+                allowed: set[str] = set()
+                for _skill_id in self.allowed_skills:
+                    _skill_json = _SKILLS_ROOT / _skill_id / "skill.json"
+                    if _skill_json.exists():
+                        try:
+                            _skill_data = _json.loads(_skill_json.read_text(encoding="utf-8"))
+                            for _t in _skill_data.get("allowedTools", _skill_data.get("tools", [])):
+                                allowed.add(str(_t).lower().replace(".", "_"))
+                                allowed.add(str(_t).lower())
+                        except Exception:
+                            pass
+                for _st in get_skill_tool_names():
+                    allowed.add(_st.lower())
+                for _bt in base_set:
+                    allowed.add(_tool_name(_bt).lower())
+                scoped = [
+                    t for t in get_all_tools()
+                    if _tool_name(t).lower() in allowed
+                    or _tool_name(t).replace("_", ".").lower() in allowed
+                ]
+                if unlock_advanced_tools_tool not in scoped:
+                    scoped.append(unlock_advanced_tools_tool)
+                return wrap_tools_for_gateway(
+                    scoped,
+                    company_id=self.company_id,
+                    agent_role=self.role,
+                    allowed_tools=[_tool_name(t) for t in scoped],
+                )
             return wrap_tools_for_gateway(
                 base_set,
                 company_id=self.company_id,
@@ -396,7 +432,6 @@ class BaseAgent:
                 allowed_tools=[_tool_name(tool) for tool in base_set],
             )
 
-        from src.tools.registry import get_all_tools, unlock_advanced_tools_tool
         allowed = {name.lower() for name in self.allowed_tools}
 
         # Derive tools from skill.json allowedTools for each allowed skill
