@@ -1488,7 +1488,7 @@ const UnifiedInbox: React.FC = () => {
                     {t("unifiedInbox.customer.contactInfo")}
                   </h4>
                   <div className="space-y-2.5">
-                    {customerProfile.email && (
+                    {customerProfile.email && !customerProfile.email.endsWith("@example.com") && (
                       <div className="flex items-center gap-2.5 text-sm">
                         <EnvelopeIcon
                           className="w-4 h-4"
