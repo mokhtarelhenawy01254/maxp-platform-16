@@ -55,7 +55,7 @@ async def shipping_update(input_data: ShippingUpdateInput) -> dict[str, Any]:
 
 shipping_rates_tool = FunctionTool(
     name="shipping_rates",
-    description="Get shipping rates and delivery info for a governorate.",
+    description="Get shipping rates and delivery info for a governorate. Only needs the governorate name to calculate — do not ask for full address, city, or street. Use this immediately when customer asks about delivery cost, shipping fees, or how much delivery costs.",
     func=shipping_rates,
     input_model=ShippingRatesInput,
 )

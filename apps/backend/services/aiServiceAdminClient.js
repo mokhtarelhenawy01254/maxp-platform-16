@@ -60,6 +60,10 @@ async function listTools() {
   return request('GET', '/admin/tools') || [];
 }
 
+async function updateToolMeta(toolName, data) {
+  return request('PUT', `/admin/tools/${encodeURIComponent(toolName)}`, data);
+}
+
 async function listAgents(companyId) {
   const qs = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
   return request('GET', `/admin/agents${qs}`) || [];
@@ -237,6 +241,7 @@ async function listDepartments(companyId) {
 
 module.exports = {
   listTools,
+  updateToolMeta,
   listAgentTemplates,
   getAgentTemplate,
   createAgentTemplate,

@@ -868,7 +868,26 @@ async def list_tools() -> list[dict[str, Any]]:
             "description": t.description,
             "input_schema": schema,
         })
-    return result
+    from src.tools.overrides import merge_descriptions
+    return merge_descriptions(result)
+
+
+@router.put("/tools/{name}")
+async def update_tool_description(name: str, body: dict[str, Any]) -> dict[str, bool]:
+    """Update a tool's description via local overrides file."""
+    from src.tools.overrides import set_override
+
+    description = (body or {}).get("description", "").strip()
+    if not description:
+        raise HTTPException(status_code=422, detail="description is required")
+
+    all_tools = get_all_tools()
+    tool_names = {t.name for t in all_tools}
+    if name not in tool_names:
+        raise HTTPException(status_code=404, detail=f"Tool '{name}' not found")
+
+    set_override(name, description)
+    return {"success": True}
 
 
 @router.get("/agents/{agent_id}", response_model=AgentRead)

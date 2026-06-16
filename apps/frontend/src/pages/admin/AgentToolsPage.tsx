@@ -14,6 +14,9 @@ import {
   Check,
   AlertCircle,
   Wrench,
+  Pencil,
+  Save,
+  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -107,9 +110,33 @@ export default function AgentToolsPage() {
 
   function ToolCard({ tool }: { tool: ToolDefinition }) {
     const isExpanded = expandedTool === tool.name;
+    const [editing, setEditing] = useState(false);
+    const [editDesc, setEditDesc] = useState(tool.description || "");
+    const [saving, setSaving] = useState(false);
     const agentList = toolToAgents.get(tool.name) || [];
     const isWrite = tool.sideEffects === "write";
     const sourceLabel = tool.source === "mcp" ? i18n.t("agentTools.sources.mcp") : i18n.t("agentTools.sources.python");
+
+    const handleSaveDesc = async () => {
+      setSaving(true);
+      try {
+        const res = await fetch(buildApiUrl(`agent/tools/${encodeURIComponent(tool.name)}`), {
+          method: "PUT",
+          headers: { ...tokenManager.createAuthHeaders(), "Content-Type": "application/json" },
+          body: JSON.stringify({ description: editDesc.trim() }),
+        });
+        const data = await res.json();
+        if (!res.ok || data.success === false) throw new Error(data.error || "Save failed");
+        setEditing(false);
+        toast.success(i18n.t("common.saved") || "Saved");
+        loadAll();
+      } catch (err: any) {
+        toast.error(err.message || i18n.t("common.saveError"));
+      } finally {
+        setSaving(false);
+      }
+    };
+
     return (
       <div className={cn("rounded-xl border p-4 transition-all hover:border-primary", isWrite ? "border-amber-600/50 bg-amber-500/[0.03]" : "border-border")}>
         <div className="flex gap-3">
@@ -122,7 +149,32 @@ export default function AgentToolsPage() {
               <Badge variant="outline" className="h-5 text-[0.65rem]">{sourceLabel}</Badge>
               {agentList.length > 0 && <Badge variant="outline" className="h-5 text-[0.65rem] text-green-600">{agentList.length} {i18n.t("agentTools.agents")}</Badge>}
             </div>
-            <p className="mb-2 text-sm text-muted-foreground">{tool.description || i18n.t("agentTools.noDescription")}</p>
+            {editing ? (
+              <div className="mb-2 space-y-2">
+                <textarea
+                  className="w-full rounded-lg border bg-background p-2 text-sm"
+                  rows={3}
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  dir="auto"
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" variant="default" onClick={handleSaveDesc} disabled={saving}>
+                    {saving ? <LoadingSpinner size="sm" /> : <Save className="size-3" />}{saving ? i18n.t("common.saving") : i18n.t("common.save")}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setEditDesc(tool.description || ""); }}>
+                    <X className="size-3" />{i18n.t("common.cancel")}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <p className="mb-2 text-sm text-muted-foreground">
+                {tool.description || i18n.t("agentTools.noDescription")}
+                <Button size="sm" variant="ghost" onClick={() => { setEditing(true); setEditDesc(tool.description || ""); }} className="mr-1 h-5 px-1 text-muted-foreground hover:text-foreground">
+                  <Pencil className="size-3" />
+                </Button>
+              </p>
+            )}
             <div className="mb-2"><Button size="sm" variant="outline" onClick={() => setAssignTool(tool.name)} className="h-7 text-[0.72rem]"><UserPlus className="size-3" />{i18n.t("agentTools.assignToAgent")}</Button></div>
             {agentList.length > 0 ? (<><Button variant="link" size="sm" onClick={() => setExpandedTool(isExpanded ? null : tool.name)} className="h-6 text-xs text-muted-foreground">{isExpanded ? <ChevronDown className="size-3" /> : <ChevronLeft className="size-3" />}{i18n.t("agentTools.agentsUsing", { count: agentList.length })}</Button>{isExpanded && <div className="mt-2 space-y-1">{agentList.map((agent) => (<div key={agent.id} className="flex cursor-pointer items-center justify-between rounded-xl border p-2 transition-colors hover:bg-muted" onClick={() => navigate(`/admin/ai-agents?agent=${agent.id}`)}><div className="flex items-center gap-2"><span className="text-base">{agent.icon || "🤖"}</span><div><p className="text-sm font-bold">{agent.name}</p><span className="text-xs text-muted-foreground">{agent.role}</span></div></div><Badge variant="outline" className={cn("h-4 text-[0.6rem]", agent.autonomy === "blocked" ? "border-destructive text-destructive" : agent.autonomy === "approval" ? "border-amber-600 text-amber-600" : "border-green-600 text-green-600")}>{agent.autonomy === "blocked" ? i18n.t("agentTools.autonomy.blocked") : agent.autonomy === "approval" ? i18n.t("agentTools.autonomy.approval") : i18n.t("agentTools.autonomy.auto")}</Badge></div>))}</div>}</>) : <p className="text-xs italic text-muted-foreground">{i18n.t("agentTools.noAgents")}</p>}
           </div>

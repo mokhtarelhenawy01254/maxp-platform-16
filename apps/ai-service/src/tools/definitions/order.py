@@ -145,14 +145,14 @@ async def order_refund(input_data: OrderRefundInput) -> dict[str, Any]:
 
 order_lookup_tool = FunctionTool(
     name="order_lookup",
-    description="Look up an order by its order number. Returns order status, items, and delivery info.",
+    description="Look up an order by its order number. Use when customer asks about order status, delivery status, or wants to check their existing order. Returns order status, items, and delivery info.",
     func=order_lookup,
     input_model=OrderLookupInput,
 )
 
 order_create_draft_tool = FunctionTool(
     name="order_create_draft",
-    description="Create a draft order for merchant review. REQUIRES MERCHANT APPROVAL.",
+    description="Create a draft order for merchant review. Use when customer confirms they want to buy and provides: product name, quantity, size/color, customer name, phone, and delivery governorate. REQUIRES MERCHANT APPROVAL.",
     func=order_create_draft,
     input_model=OrderCreateDraftInput,
 )

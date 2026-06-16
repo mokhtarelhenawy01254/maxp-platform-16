@@ -79,6 +79,20 @@ router.get('/tools', async (req, res) => {
   }
 });
 
+router.put('/tools/:name', async (req, res) => {
+  try {
+    const { name } = req.params;
+    const { description } = req.body;
+    if (!description || !description.trim()) {
+      return res.status(422).json({ success: false, error: 'description is required' });
+    }
+    const result = await aiServiceAdminClient.updateToolMeta(name, { description: description.trim() });
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.get('/skills', async (req, res) => {
   try {
     const companyId = getCompanyId(req);

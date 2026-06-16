@@ -300,7 +300,7 @@ async def category_list(input_data: CategoryListInput) -> dict[str, Any]:
 
 product_search_tool = FunctionTool(
     name="product_search",
-    description="Search for products by name, SKU, or keyword. Set list_all=true to browse the full catalog. Returns products with prices, stock, variants, available sizes, available colors, and category info. Use inventory.check for detailed per-variant availability.",
+    description="Search for products by name, SKU, or keyword. Use this FIRST when customer asks about products, wants to see what's available, or asks for recommendations — never guess or invent products from memory. Set list_all=true to browse the full catalog. Returns products with prices, stock, variants, available sizes, available colors, and category info. Use inventory.check for detailed per-variant availability.",
     func=product_search,
     input_model=ProductSearchInput,
 )
