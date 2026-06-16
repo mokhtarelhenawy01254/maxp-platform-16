@@ -160,23 +160,7 @@ model AiSetting {
 
 // CompanyAgent model removed — 2026 refactor
 
-model AgentDepartment {
-  id          String   @id
-  companyId   String
-  key         String
-  name        String
-  description String?
-  icon        String?  @default("🤖")
-  sortOrder   Int      @default(100)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@unique([companyId, key])
-  @@index([companyId])
-  @@map("agent_departments")
-}
+// AgentDepartment model removed — 2026 refactor
 
 model LearningData {
   id             String   @id @default(cuid())

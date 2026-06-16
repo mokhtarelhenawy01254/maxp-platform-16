@@ -92,8 +92,16 @@ const agentManagerService = {
   },
   listAgentDepartments: async (companyId) => {
     try {
-      const db = prisma();
-      return await db.agentDepartment.findMany({ where: { companyId }, orderBy: { sortOrder: 'asc' } });
+      const departments = await aiServiceAdminClient.listDepartments(companyId);
+      return (departments || []).map(d => ({
+        id: d.id,
+        companyId: d.company_id,
+        key: d.key,
+        name: d.name,
+        description: d.description || null,
+        icon: d.icon || '🤖',
+        sortOrder: d.sort_order || 100,
+      }));
     } catch (_) {
       return [];
     }

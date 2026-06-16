@@ -226,6 +226,11 @@ async function deleteAgentTemplate(slug) {
   return request('DELETE', `/admin/agent-templates/${encodeURIComponent(slug)}`);
 }
 
+async function listDepartments(companyId) {
+  const qs = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
+  return request('GET', `/admin/departments${qs}`) || [];
+}
+
 module.exports = {
   listTools,
   listAgentTemplates,
@@ -233,6 +238,7 @@ module.exports = {
   createAgentTemplate,
   updateAgentTemplate,
   deleteAgentTemplate,
+  listDepartments,
   listAgents,
   chatWithAgent,
   evaluateSandboxResponse,
