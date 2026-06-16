@@ -983,6 +983,7 @@ export const getSidebarConfig = (
                 { to: '/super-admin/queue-monitor', icon: QueueListIcon, label: t('sidebar.systemMonitoring') }, // BullMQ Monitor
                 { to: '/super-admin/db-migration', icon: WrenchScrewdriverIcon, label: t('sidebar.dbMigration') },
                 { to: '/super-admin/billing-overview', icon: BanknotesIcon, label: t('sidebar.billingOverview') },
+                { to: '/super-admin/app-pricing', icon: ClipboardDocumentListIcon, label: t('sidebar.appPricingSheet') },
                 { to: '/super-admin/marketplace-management', icon: CubeIcon, label: t('sidebar.marketplaceManagement') },
                 { to: '/super-admin/storefront-themes', icon: SwatchIcon, label: 'تسعير قوالب المتجر' },
                 { to: '/super-admin/marketing-links', icon: MegaphoneIcon, label: t('sidebar.marketingLinks') },

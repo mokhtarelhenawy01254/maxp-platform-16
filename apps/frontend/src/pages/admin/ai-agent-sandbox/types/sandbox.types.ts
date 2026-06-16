@@ -203,6 +203,7 @@ export interface StreamEvent {
   toolCalls?: ToolCall[];
   runtime?: string;
   pipelineTrace?: PipelineTrace;
+  compiledSystemPrompt?: string | null;
 }
 
 export interface EvalScore {

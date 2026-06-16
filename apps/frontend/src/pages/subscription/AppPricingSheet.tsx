@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
+import { useAuth } from "../../hooks/useAuthSimple";
 import {
   Search,
   FileSpreadsheet,
@@ -46,6 +47,7 @@ type SortOrder = "asc" | "desc" | null;
 export default function AppPricingSheet() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // State
   const [apps, setApps] = useState<MarketplaceApp[]>([]);
@@ -65,7 +67,7 @@ export default function AppPricingSheet() {
         // Request limit 100 to fetch all apps
         const response = await apiClient.get<{ success: boolean; data: MarketplaceApp[] }>(
           "/marketplace/apps",
-          { params: { limit: 100 } }
+          { params: { limit: 500 } }
         );
         if (response.data?.success) {
           setApps(response.data.data);
@@ -78,7 +80,7 @@ export default function AppPricingSheet() {
       }
     };
     fetchApps();
-  }, [i18n.language]);
+  }, [i18n.language, t]);
 
   // Extract all unique categories
   const categories = useMemo(() => {
@@ -173,8 +175,8 @@ export default function AppPricingSheet() {
     // Sorting
     if (sortOrder && sortField) {
       result.sort((a, b) => {
-        let valA: any = "";
-        let valB: any = "";
+        let valA: string | number = "";
+        let valB: string | number = "";
 
         if (sortField === "name") {
           valA = i18n.language === "ar" ? a.name : a.nameEn || a.name;
@@ -209,6 +211,7 @@ export default function AppPricingSheet() {
         t("subscription.csvCategory"),
         t("subscription.csvPricingModel"),
         t("subscription.csvMonthlySubPrice"),
+        t("subscription.csvYearlySubPrice"),
         t("subscription.csvUsageUnitPrice"),
         t("subscription.csvFreeTrialDays"),
         t("subscription.csvInstallationStatus"),
@@ -222,8 +225,9 @@ export default function AppPricingSheet() {
           : app.pricingModel === "PAY_PER_USE"
             ? t("subscription.payAsYouGo")
             : t("subscription.subscription"),
-        app.pricingModel === "SUBSCRIPTION" ? `${app.monthlyPrice} ${t("subscription.egp")}` : "0",
-        app.unitPrice ? `${app.unitPrice} ${t("subscription.egp")} / ${app.unitName || ""}` : "-",
+        app.pricingModel === "SUBSCRIPTION" ? `${app.monthlyPrice || 0} ${t("subscription.egp")}` : "0",
+        app.pricingModel === "SUBSCRIPTION" && app.yearlyPrice ? `${app.yearlyPrice} ${t("subscription.egp")}` : "0",
+        app.unitPrice ? `${app.unitPrice} ${t("subscription.egp")} / ${app.unitName ? t(`subscription.units.${app.unitName}`, app.unitName) : ""}` : "-",
         app.trialDays > 0 ? `${app.trialDays}` : "0",
         app.isInstalled ? t("subscription.installed") : t("subscription.notInstalled"),
       ]);
@@ -446,10 +450,10 @@ export default function AppPricingSheet() {
         ) : viewMode === "sheet" ? (
           /* Excel-like Table View */
           <div className="bg-white dark:bg-slate-900 rounded-xl shadow-md border border-slate-200/60 dark:border-slate-800 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-right border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+            <div className="overflow-x-auto max-h-[70vh]">
+              <table className="w-full text-right border-collapse relative">
+                <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 shadow-sm border-b border-slate-200 dark:border-slate-800">
+                  <tr>
                     <th
                       className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300 font-cairo cursor-pointer hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors"
                       onClick={() => handleSort("name")}
@@ -473,6 +477,9 @@ export default function AppPricingSheet() {
                         {t("subscription.subscriptionPrice")}
                         {renderSortIcon("monthlyPrice")}
                       </div>
+                    </th>
+                    <th className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300 font-cairo">
+                      {t("subscription.yearlyPrice")}
                     </th>
                     <th
                       className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300 font-cairo cursor-pointer hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors"
@@ -530,10 +537,19 @@ export default function AppPricingSheet() {
                       <td className="px-6 py-4 text-sm font-bold text-slate-800 dark:text-slate-200 font-cairo">
                         {app.pricingModel === "SUBSCRIPTION" ? (
                           <span>
-                            {app.monthlyPrice} <span className="text-xs font-normal text-slate-400">{t("subscription.egpPerMonth")}</span>
+                            {app.monthlyPrice || 0} <span className="text-xs font-normal text-slate-400">{t("subscription.egpPerMonth")}</span>
                           </span>
                         ) : app.pricingModel === "FREE" ? (
                           <span className="text-emerald-600 dark:text-emerald-400">{t("subscription.free")}</span>
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-bold text-slate-800 dark:text-slate-200 font-cairo">
+                        {app.pricingModel === "SUBSCRIPTION" && app.yearlyPrice ? (
+                          <span>
+                            {app.yearlyPrice} <span className="text-xs font-normal text-slate-400">{t("subscription.egpPerYear")}</span>
+                          </span>
                         ) : (
                           <span className="text-slate-400">-</span>
                         )}
@@ -544,7 +560,7 @@ export default function AppPricingSheet() {
                             <span>
                               {app.unitPrice} <span className="text-xs font-normal text-slate-400">{t("subscription.egp")}</span>
                             </span>
-                            <span className="text-xs font-normal text-slate-400">/ {app.unitName || t("subscription.unit")}</span>
+                            <span className="text-xs font-normal text-slate-400">/ {app.unitName ? t(`subscription.units.${app.unitName}`, app.unitName) : t("subscription.unit")}</span>
                           </div>
                         ) : (
                           <span className="text-slate-400">-</span>
@@ -637,9 +653,16 @@ export default function AppPricingSheet() {
                         </div>
                         <div className="text-sm font-bold font-cairo text-slate-800 dark:text-slate-200">
                           {app.pricingModel === "SUBSCRIPTION" ? (
-                            <span>
-                            {app.monthlyPrice} <span className="text-xs font-normal text-slate-400">{t("subscription.egpPerMonth")}</span>
-                            </span>
+                            <div className="flex flex-col">
+                              <span>
+                                {app.monthlyPrice || 0} <span className="text-xs font-normal text-slate-400">{t("subscription.egpPerMonth")}</span>
+                              </span>
+                              {app.yearlyPrice && (
+                                <span>
+                                  {app.yearlyPrice} <span className="text-xs font-normal text-slate-400">{t("subscription.egpPerYear")}</span>
+                                </span>
+                              )}
+                            </div>
                           ) : app.pricingModel === "FREE" ? (
                           <span className="text-emerald-600 dark:text-emerald-400">{t("subscription.free")}</span>
                           ) : (
@@ -654,10 +677,12 @@ export default function AppPricingSheet() {
                         </div>
                         <div className="text-sm font-bold font-cairo text-slate-800 dark:text-slate-200">
                           {app.unitPrice ? (
-                            <span>
-                              {app.unitPrice} <span className="text-xs font-normal text-slate-400">{t("subscription.egp")}</span>
-                              <span className="text-xs font-normal text-slate-400">/{app.unitName || t("subscription.unit")}</span>
-                            </span>
+                            <div className="flex flex-col">
+                              <span>
+                                {app.unitPrice} <span className="text-xs font-normal text-slate-400">{t("subscription.egp")}</span>
+                              </span>
+                              <span className="text-xs font-normal text-slate-400">/ {app.unitName ? t(`subscription.units.${app.unitName}`, app.unitName) : t("subscription.unit")}</span>
+                            </div>
                           ) : (
                             <span className="text-slate-400">-</span>
                           )}
@@ -698,6 +723,16 @@ export default function AppPricingSheet() {
                     >
                       {t("subscription.manageApp")}
                     </Button>
+                    {user?.role === "SUPER_ADMIN" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="font-cairo text-xs h-8 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 hover:bg-amber-50/50 dark:hover:bg-amber-950/20"
+                        onClick={() => navigate(`/super-admin/marketplace-management?tab=apps`)}
+                      >
+                        {t("subscription.editPricing")}
+                      </Button>
+                    )}
                   </div>
                 </div>
               </Card>
