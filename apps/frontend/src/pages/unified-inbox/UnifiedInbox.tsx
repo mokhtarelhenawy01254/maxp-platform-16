@@ -641,10 +641,14 @@ const UnifiedInbox: React.FC = () => {
               />
               <input
                 type="text"
+                id="inbox-search"
+                name="inbox-search"
                 placeholder={t("unifiedInbox.searchPlaceholder")}
+                aria-label={t("unifiedInbox.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className={`business-inbox-search ${isRtl ? "pr-9 pl-4" : "pl-9 pr-4 text-left"}`}
+                autoComplete="off"
               />
             </div>
 
@@ -890,6 +894,8 @@ const UnifiedInbox: React.FC = () => {
                           src={selectedConversation.contactAvatar}
                           alt=""
                           className="business-conversation-avatar !w-10 !h-10"
+                          width={40}
+                          height={40}
                         />
                       ) : (
                         <div className="business-conversation-fallback !w-10 !h-10">
@@ -1429,6 +1435,8 @@ const UnifiedInbox: React.FC = () => {
                         "color-mix(in srgb, white 76%, var(--color-background) 24%)",
                     }}
                     alt=""
+                    width={80}
+                    height={80}
                   />
                 ) : (
                   <div

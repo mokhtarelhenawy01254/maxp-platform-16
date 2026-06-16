@@ -82,6 +82,8 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
             alt={conversation.customerName}
             className="mx-auto mb-3 h-20 w-20 rounded-full object-cover"
             style={{ border: "2px solid var(--business-card-border)" }}
+            width={80}
+            height={80}
           />
         ) : (
           <div
