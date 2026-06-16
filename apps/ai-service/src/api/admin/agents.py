@@ -782,18 +782,15 @@ async def get_manager_context(
         allowed_skills=list(t.allowed_skills or []),
     ) for t in templates]
 
-    # Build full skill metadata from skill.json + SKILL.md files
-    from src.skills.integration import _skill_metadata_from_dir, _SKILLS_ROOT
+    # Build full skill metadata — DB-first (ai.skills table), file fallback
+    from src.skills.integration import _get_skill_meta
+    from src.db.models.skill import Skill as SkillModel
 
-    seen: set[str] = set()
     skills = []
-    for t in templates:
-        for s in (t.allowed_skills or []):
-            if s in seen:
-                continue
-            seen.add(s)
-            skill_dir = _SKILLS_ROOT / s
-            meta = _skill_metadata_from_dir(skill_dir)
+    try:
+        skill_rows = (await session.execute(select(SkillModel).where(SkillModel.enabled == True).order_by(SkillModel.name))).scalars().all()
+        for row in skill_rows:
+            meta = _get_skill_meta(row.id)
             if meta:
                 skills.append({
                     "id": meta["id"],
@@ -803,10 +800,21 @@ async def get_manager_context(
                     "requiresHumanApproval": meta.get("requires_human_approval", False),
                     "maxToolCount": meta.get("max_tool_count", 0),
                     "skillMd": meta.get("instructions", ""),
-                    "version": "1.0.0",
+                    "version": row.version or "1.0.0",
                 })
             else:
-                skills.append({"id": s, "displayName": s})
+                skills.append({
+                    "id": row.id,
+                    "displayName": row.name,
+                    "description": row.description or "",
+                    "allowedTools": row.allowed_tools or [],
+                    "requiresHumanApproval": row.requires_human_approval,
+                    "maxToolCount": row.max_tool_count or 0,
+                    "skillMd": row.content or row.instructions or "",
+                    "version": row.version or "1.0.0",
+                })
+    except Exception:
+        logger.warning("skills_db_query_failed", company_id=company_id)
 
 
     inbox = InboxSummary()

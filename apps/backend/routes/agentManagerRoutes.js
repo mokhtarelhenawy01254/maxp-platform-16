@@ -386,8 +386,9 @@ router.get('/agents', async (req, res) => {
     const agents = [...byId.values()].map(agent => ({
       ...agent,
       rules: agent.rules || [],
-      skills: agent.skills || agent.allowedSkills || [],
-      allowedTools: agent.allowedTools || agent.allowed_tools || [],
+      skills: agent.allowed_skills || agent.skills || agent.allowedSkills || [],
+      allowedSkills: agent.allowed_skills || agent.skills || agent.allowedSkills || [],
+      allowedTools: agent.allowed_tools || agent.allowedTools || [],
       departmentId: agent.departmentId || agent.department_id || null,
       departmentKey: agent.departmentKey || agent.department_key || null,
       departmentName: agent.departmentName || agent.department_name || null,

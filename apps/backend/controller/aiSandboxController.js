@@ -969,8 +969,12 @@ async function getAgentProfile(req, res) {
     }
 
     let skillIds = [];
-    try { skillIds = JSON.parse(agentData.skillsRaw || agentData.skills || '[]'); } catch {}
-    if (!skillIds.length && Array.isArray(agentJson.allowedSkills)) skillIds = agentJson.allowedSkills;
+    if (Array.isArray(agentData.allowed_skills) && agentData.allowed_skills.length) {
+      skillIds = agentData.allowed_skills;
+    } else {
+      try { skillIds = JSON.parse(agentData.skillsRaw || agentData.skills || '[]'); } catch {}
+      if (!skillIds.length && Array.isArray(agentJson.allowedSkills)) skillIds = agentJson.allowedSkills;
+    }
 
     const allowedTools = Array.isArray(agentJson.allowedTools) ? agentJson.allowedTools : [];
 
