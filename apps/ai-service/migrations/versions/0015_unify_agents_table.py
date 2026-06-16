@@ -47,6 +47,16 @@ def upgrade() -> None:
     # Step 4: Migrate data from ai.company_agents to ai.agents
     # Use DISTINCT ON to deduplicate (company_id, name) pairs in the source
     op.execute("""
+        CREATE OR REPLACE FUNCTION _tmp_safe_jsonb_cast(channels text)
+        RETURNS jsonb LANGUAGE plpgsql AS $$
+        BEGIN
+            RETURN channels::jsonb;
+        EXCEPTION WHEN OTHERS THEN
+            RETURN '[]'::jsonb;
+        END;
+        $$;
+    """)
+    op.execute("""
         INSERT INTO ai.agents (id, company_id, name, role, description, icon, soul, rules,
                                skills, status, model, persona, allowed_tools, allowed_skills,
                                channels, guardrails, budget, parent_id, department_id,
@@ -67,9 +77,9 @@ def upgrade() -> None:
             '{}'::jsonb,
             '[]'::jsonb,
             '[]'::jsonb,
-            CASE 
+            CASE
                 WHEN ca.channels IS NULL OR ca.channels = '' THEN '[]'::jsonb
-                WHEN left(ca.channels, 1) = '[' THEN ca.channels::jsonb
+                WHEN left(ca.channels, 1) = '[' THEN _tmp_safe_jsonb_cast(ca.channels)
                 ELSE '[]'::jsonb
             END,
             '{}'::jsonb,
@@ -116,6 +126,9 @@ def upgrade() -> None:
     op.drop_index("ix_company_agents_company_id", table_name="company_agents", schema="ai", if_exists=True)
     op.drop_index("ix_company_agents_department_id", table_name="company_agents", schema="ai", if_exists=True)
     op.drop_table("company_agents", schema="ai")
+
+    # Step 7: Clean up temporary helper function
+    op.execute("DROP FUNCTION IF EXISTS _tmp_safe_jsonb_cast;")
 
 
 def downgrade() -> None:
