@@ -21,3 +21,5 @@ This document outlines the enhancements made to the App Pricing Sheet (`AppPrici
 - Confirmed Super Admin conditional logic using `useAuth`.
 - Verified Arabic and English unit translations.
 - Passed `tsc` and `eslint` checks.
+
+- \pps/frontend/src/App.tsx\`n6. **Super Admin Routing**: Added the App Pricing Sheet to the Super Admin layout under /super-admin/app-pricing to prevent Super Admins from being redirected to the customer platform view.

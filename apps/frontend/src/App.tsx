@@ -1217,7 +1217,7 @@ const LoadingFallback = () => <PageSkeleton />;
 
 // Route prefetch registry — triggers dynamic imports on hover for instant navigation
 if (typeof window !== "undefined") {
-  const p = (window as any).__MAXP_ROUTE_PREFETCH__ = {};
+  const p = (window as unknown as Record<string, Record<string, () => Promise<unknown>>>).__MAXP_ROUTE_PREFETCH__ = {};
 
   p["/customers"] = () => import("./pages/customers/CustomerList");
   p["/orders"] = () => import("./pages/orders/Orders");
@@ -1730,6 +1730,14 @@ const AppContent = () => {
               element={
                 <Layout>
                   <SuperAdminSystemManagement />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/app-pricing"
+              element={
+                <Layout>
+                  <AppPricingSheet />
                 </Layout>
               }
             />
