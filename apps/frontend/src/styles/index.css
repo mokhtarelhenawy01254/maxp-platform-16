@@ -4240,6 +4240,11 @@ select {
   background: transparent;
 }
 
+.business-inbox-shell {
+  flex: 1;
+  min-height: 0;
+}
+
 [data-theme="business-os-enterprise"] .business-inbox-stage {
   display: flex;
   flex: 1;
@@ -5127,8 +5132,10 @@ select {
   [data-theme="business-os-enterprise"]
     .business-inbox-shell--conversation-active
     .business-inbox-stage {
-    padding-top: 0;
-  }
+      grid-template-columns: var(--inbox-conversation-active-col);
+    }
+
+
 
   [data-theme="business-os-enterprise"] .business-inbox-stage {
     gap: 0;
