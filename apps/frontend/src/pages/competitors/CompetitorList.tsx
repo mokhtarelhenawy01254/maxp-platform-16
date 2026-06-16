@@ -69,6 +69,8 @@ const CompetitorList: React.FC = () => {
   const [devTasks, setDevTasks] = useState<DevTask[]>([]);
   const [newTaskText, setNewTaskText] = useState('');
   const [pendingTasks, setPendingTasks] = useState<{ title: string; completed: boolean }[]>([]);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTaskText, setEditingTaskText] = useState('');
 
   const fetchCompetitors = useCallback(async () => {
     setIsLoading(true);
@@ -95,6 +97,8 @@ const CompetitorList: React.FC = () => {
     setDevTasks([]);
     setPendingTasks([]);
     setNewTaskText('');
+    setEditingTaskId(null);
+    setEditingTaskText('');
     setShowModal(true);
   };
 
@@ -108,6 +112,8 @@ const CompetitorList: React.FC = () => {
     });
     setPendingTasks([]);
     setNewTaskText('');
+    setEditingTaskId(null);
+    setEditingTaskText('');
     setDevTasks([]);
     apiClient.get(`/competitors/${c.id}/dev-recommendations`).then(res => {
       if (res.data.success && res.data.data?.tasks) {
@@ -154,6 +160,51 @@ const CompetitorList: React.FC = () => {
     setPendingTasks(prev => prev.map((t, i) => i === idx ? { ...t, completed: !t.completed } : t));
   };
 
+  const handleStartEdit = (task: DevTask) => {
+    setEditingTaskId(task.id);
+    setEditingTaskText(task.title);
+  };
+
+  const handleStartEditPending = (idx: number, title: string) => {
+    setEditingTaskId(`pending-${idx}`);
+    setEditingTaskText(title);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingTaskId || !editingTaskText.trim()) return;
+    if (editingTaskId.startsWith('pending-')) {
+      const idx = parseInt(editingTaskId.replace('pending-', ''), 10);
+      setPendingTasks(prev => prev.map((t, i) => i === idx ? { ...t, title: editingTaskText.trim() } : t));
+    } else {
+      if (!editingId) return;
+      apiClient.put(`/competitors/${editingId}/dev-tasks/${editingTaskId}`, { title: editingTaskText.trim() }).then(res => {
+        if (res.data.success) {
+          setDevTasks(prev => prev.map(t => t.id === editingTaskId ? { ...t, title: editingTaskText.trim() } : t));
+        }
+      }).catch(() => {});
+    }
+    setEditingTaskId(null);
+    setEditingTaskText('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTaskId(null);
+    setEditingTaskText('');
+  };
+
+  const handleDeleteSavedTask = (taskId: string) => {
+    if (!editingId) return;
+    apiClient.delete(`/competitors/${editingId}/dev-tasks/${taskId}`).then(res => {
+      if (res.data.success) {
+        setDevTasks(prev => prev.filter(t => t.id !== taskId));
+      }
+    }).catch(() => {});
+  };
+
+  const handleDeletePendingTask = (idx: number) => {
+    setPendingTasks(prev => prev.filter((_, i) => i !== idx));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) {
@@ -172,8 +223,8 @@ const CompetitorList: React.FC = () => {
         if (res.data?.data?.id) competitorId = res.data.data.id;
       }
       if (competitorId && pendingTasks.length > 0) {
-        for (const { title, completed } of pendingTasks) {
-          await apiClient.post(`/competitors/${competitorId}/dev-tasks`, { title, status: completed ? 'completed' : 'not_started' });
+        for (const { title } of pendingTasks) {
+          await apiClient.post(`/competitors/${competitorId}/dev-tasks`, { title, status: 'not_started' });
         }
       }
       setShowModal(false);
@@ -497,62 +548,97 @@ const CompetitorList: React.FC = () => {
                     </button>
                   </div>
                   <div className="max-h-48 overflow-y-auto space-y-1">
-                    {pendingTasks.map(({ title, completed }, idx) => (
+                    {pendingTasks.map(({ title }, idx) => (
                       <div
                         key={`pending-${idx}`}
-                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-all duration-300 ease-in-out ${
-                          completed
-                            ? 'bg-green-50 dark:bg-green-900/20'
-                            : 'bg-blue-50 dark:bg-blue-900/20'
-                        }`}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm bg-blue-50 dark:bg-blue-900/20"
                       >
-                        <span
-                          onClick={() => handleTogglePendingTask(idx)}
-                          className="shrink-0 cursor-pointer focus:outline-none"
-                        >
-                          {completed ? (
-                            <CheckCircle2 size={14} className="text-green-500 transition-all duration-300" />
-                          ) : (
-                            <Circle size={14} className="text-gray-300 dark:text-gray-600 transition-all duration-300 hover:text-blue-400" />
-                          )}
-                        </span>
-                        <span className={`flex-1 transition-all duration-300 ease-in-out ${
-                          completed
-                            ? 'line-through text-gray-400 dark:text-gray-500'
-                            : 'text-gray-800 dark:text-gray-200'
-                        }`}>
-                          {title}
-                        </span>
+                        {editingTaskId === `pending-${idx}` ? (
+                          <>
+                            <input
+                              type="text"
+                              value={editingTaskText}
+                              onChange={e => setEditingTaskText(e.target.value)}
+                              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSaveEdit(); } }}
+                              className="flex-1 px-2 py-1 border rounded text-sm dark:bg-gray-800 dark:border-gray-700"
+                              autoFocus
+                            />
+                            <button type="button" onClick={handleSaveEdit} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+                              <CheckCircle2 size={14} className="text-green-500" />
+                            </button>
+                            <button type="button" onClick={handleCancelEdit} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+                              <X size={14} className="text-gray-400" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="flex-1 text-gray-800 dark:text-gray-200">{title}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleStartEditPending(idx, title)}
+                              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                              title={t('competitors.devRecommendations.editTask')}
+                            >
+                              <Pencil size={14} className="text-gray-400" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePendingTask(idx)}
+                              className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900"
+                              title={t('common.delete')}
+                            >
+                              <Trash2 size={14} className="text-red-400" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     ))}
                     {(editingId ? devTasks : []).map(task => (
                       <div
                         key={task.id}
-                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-all duration-300 ease-in-out ${
-                          task.status === 'completed'
-                            ? 'bg-green-50 dark:bg-green-900/20'
-                            : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
                       >
-                        <button type="button" onClick={() => handleToggleTask(task)} className="shrink-0 focus:outline-none">
-                          {task.status === 'completed' ? (
-                            <CheckCircle2 size={16} className="text-green-500 transition-all duration-300 hover:text-green-600" />
-                          ) : (
-                            <Circle size={16} className="text-gray-300 dark:text-gray-600 transition-all duration-300 hover:text-blue-400" />
-                          )}
-                        </button>
-                        <span
-                          className={`flex-1 transition-all duration-300 ease-in-out ${
-                            task.status === 'completed'
-                              ? 'line-through text-gray-400 dark:text-gray-500'
-                              : 'text-gray-800 dark:text-gray-200'
-                          }`}
-                        >
-                          {task.title}
-                        </span>
-                        <span className="text-[10px] text-gray-400 hidden sm:inline">
-                          {new Date(task.createdAt).toLocaleDateString()}
-                        </span>
+                        {editingTaskId === task.id ? (
+                          <>
+                            <input
+                              type="text"
+                              value={editingTaskText}
+                              onChange={e => setEditingTaskText(e.target.value)}
+                              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSaveEdit(); } }}
+                              className="flex-1 px-2 py-1 border rounded text-sm dark:bg-gray-800 dark:border-gray-700"
+                              autoFocus
+                            />
+                            <button type="button" onClick={handleSaveEdit} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+                              <CheckCircle2 size={14} className="text-green-500" />
+                            </button>
+                            <button type="button" onClick={handleCancelEdit} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+                              <X size={14} className="text-gray-400" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="flex-1 text-gray-800 dark:text-gray-200">{task.title}</span>
+                            <span className="text-[10px] text-gray-400 hidden sm:inline">
+                              {new Date(task.createdAt).toLocaleDateString()}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleStartEdit(task)}
+                              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                              title={t('competitors.devRecommendations.editTask')}
+                            >
+                              <Pencil size={14} className="text-gray-400" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSavedTask(task.id)}
+                              className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900"
+                              title={t('common.delete')}
+                            >
+                              <Trash2 size={14} className="text-red-400" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     ))}
                     {((editingId ? devTasks : []).length === 0 && pendingTasks.length === 0) && (
