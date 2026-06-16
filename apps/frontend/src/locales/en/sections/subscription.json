@@ -49,6 +49,19 @@
   "csvUsageUnitPrice": "Usage Unit Price",
   "csvFreeTrialDays": "Free Trial (Days)",
   "csvInstallationStatus": "Installation Status",
+  "csvYearlySubPrice": "Yearly Sub Price",
+  "yearlyPrice": "Yearly Price",
+  "egpPerYear": "EGP/yr",
+  "editPricing": "Edit Pricing",
+  "units": {
+    "message": "Message",
+    "request": "Request",
+    "order": "Order",
+    "user": "User",
+    "session": "Session",
+    "GB": "GB",
+    "month": "Month"
+  },
   "categories": {
     "MESSAGING": "Messaging & Chat",
     "ECOMMERCE": "E-Commerce",
