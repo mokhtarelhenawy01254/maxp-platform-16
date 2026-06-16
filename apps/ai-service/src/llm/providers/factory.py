@@ -50,7 +50,7 @@ PROVIDER_DEFS: dict[str, dict[str, Any]] = {
         "class": "OpenAICompatProvider",
         "env_key": "NVIDIA_API_KEY",
         "base_url": "https://integrate.api.nvidia.com/v1",
-        "default_model": "openai/gpt-oss-120b",
+        "default_model": "meta/llama-3.1-70b-instruct",
         "provider_name": "NVIDIA",
         "priority": 4,
     },
