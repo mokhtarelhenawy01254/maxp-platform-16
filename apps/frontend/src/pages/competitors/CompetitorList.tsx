@@ -68,7 +68,7 @@ const CompetitorList: React.FC = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [devTasks, setDevTasks] = useState<DevTask[]>([]);
   const [newTaskText, setNewTaskText] = useState('');
-  const [pendingTasks, setPendingTasks] = useState<string[]>([]);
+  const [pendingTasks, setPendingTasks] = useState<{ title: string; completed: boolean }[]>([]);
 
   const fetchCompetitors = useCallback(async () => {
     setIsLoading(true);
@@ -135,7 +135,7 @@ const CompetitorList: React.FC = () => {
         }
       }).catch(() => {});
     } else {
-      setPendingTasks(prev => [text, ...prev]);
+      setPendingTasks(prev => [{ title: text, completed: false }, ...prev]);
       setNewTaskText('');
     }
   };
@@ -148,6 +148,10 @@ const CompetitorList: React.FC = () => {
         }
       }).catch(() => {});
     }
+  };
+
+  const handleTogglePendingTask = (idx: number) => {
+    setPendingTasks(prev => prev.map((t, i) => i === idx ? { ...t, completed: !t.completed } : t));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -168,8 +172,8 @@ const CompetitorList: React.FC = () => {
         if (res.data?.data?.id) competitorId = res.data.data.id;
       }
       if (competitorId && pendingTasks.length > 0) {
-        for (const title of pendingTasks) {
-          await apiClient.post(`/competitors/${competitorId}/dev-tasks`, { title, status: 'not_started' });
+        for (const { title, completed } of pendingTasks) {
+          await apiClient.post(`/competitors/${competitorId}/dev-tasks`, { title, status: completed ? 'completed' : 'not_started' });
         }
       }
       setShowModal(false);
@@ -493,10 +497,32 @@ const CompetitorList: React.FC = () => {
                     </button>
                   </div>
                   <div className="max-h-48 overflow-y-auto space-y-1">
-                    {pendingTasks.map((title, idx) => (
-                      <div key={`pending-${idx}`} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-sm transition-all duration-300">
-                        <Circle size={14} className="text-gray-300 shrink-0" />
-                        <span className="flex-1">{title}</span>
+                    {pendingTasks.map(({ title, completed }, idx) => (
+                      <div
+                        key={`pending-${idx}`}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-all duration-300 ease-in-out ${
+                          completed
+                            ? 'bg-green-50 dark:bg-green-900/20'
+                            : 'bg-blue-50 dark:bg-blue-900/20'
+                        }`}
+                      >
+                        <span
+                          onClick={() => handleTogglePendingTask(idx)}
+                          className="shrink-0 cursor-pointer focus:outline-none"
+                        >
+                          {completed ? (
+                            <CheckCircle2 size={14} className="text-green-500 transition-all duration-300" />
+                          ) : (
+                            <Circle size={14} className="text-gray-300 dark:text-gray-600 transition-all duration-300 hover:text-blue-400" />
+                          )}
+                        </span>
+                        <span className={`flex-1 transition-all duration-300 ease-in-out ${
+                          completed
+                            ? 'line-through text-gray-400 dark:text-gray-500'
+                            : 'text-gray-800 dark:text-gray-200'
+                        }`}>
+                          {title}
+                        </span>
                       </div>
                     ))}
                     {(editingId ? devTasks : []).map(task => (
