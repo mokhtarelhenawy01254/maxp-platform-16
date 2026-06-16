@@ -118,7 +118,6 @@ def _generate_agent_id() -> str:
     return f"agent_{secrets.token_urlsafe(16)}"
 
 
-<<<<<<< HEAD
 def _parse_skills_field(skills_val: object) -> list[str]:
     """Parse the legacy `skills` column (JSON string or list) into a list of tool names."""
     if not skills_val:
@@ -126,12 +125,12 @@ def _parse_skills_field(skills_val: object) -> list[str]:
     if isinstance(skills_val, list):
         return [str(s) for s in skills_val if s]
     try:
-        import json as _json
-        parsed = _json.loads(skills_val)
+        parsed = json.loads(skills_val)
         return [str(s) for s in parsed if s] if isinstance(parsed, list) else []
     except Exception:
         return []
-=======
+
+
 def _safe_list(value: object) -> list:
     if isinstance(value, list):
         return value
@@ -142,7 +141,6 @@ def _safe_list(value: object) -> list:
         except (json.JSONDecodeError, TypeError):
             return []
     return []
->>>>>>> cd2014e (fix: safe list parsing for channels in agent endpoints [no-doc])
 
 
 def _agent_to_read(agent: AgentModel) -> AgentRead:
