@@ -21,7 +21,6 @@
   },
   "guardrails": {
     "requireDraftOrders": false,
-    "confirmBeforePrice": true,
     "singleQuestionPerTurn": false
   },
   "allowedTools": [

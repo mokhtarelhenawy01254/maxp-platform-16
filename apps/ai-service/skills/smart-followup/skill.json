@@ -1,0 +1,9 @@
+{
+  "id": "smart-followup",
+  "displayName": "Smart Follow-up",
+  "version": "1.0.0",
+  "description": "Identify customers who need follow-up and suggest the best re-engagement action.",
+  "allowedTools": ["followup_suggestions", "lead_score", "customer_info", "whatsapp_send", "order_lookup"],
+  "requiresHumanApproval": true,
+  "maxToolCount": 3
+}

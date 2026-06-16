@@ -1,0 +1,81 @@
+{
+  "slug": "smart-seller-agent",
+  "name": "Smart Seller Agent",
+  "role": "SMART_SELLER",
+  "version": "1.0.0",
+  "modelPolicy": {
+    "default": "claude-sonnet-4-6",
+    "fallback": "gemini-2.5-flash"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "standard",
+    "tone": "persuasive",
+    "formality": "semi-formal"
+  },
+  "guardrails": {
+    "requireDraftOrders": true,
+    "singleQuestionPerTurn": false
+  },
+  "allowedTools": [
+    "product_search",
+    "product_top_selling",
+    "product_performance",
+    "category_list",
+    "customer_info",
+    "customer_top_buyers",
+    "order_lookup",
+    "order_create_draft",
+    "order_create_confirmed",
+    "order_cancel",
+    "order_refund",
+    "order_summary",
+    "inventory_check",
+    "discount_create_draft",
+    "sales_revenue",
+    "company_snapshot",
+    "shipping_rates",
+    "whatsapp_send",
+    "knowledge_search",
+    "agent_handoff_to",
+    "lead_score",
+    "abandoned_carts",
+    "pipeline_overview",
+    "followup_suggestions",
+    "deal_params",
+    "purchase_prediction"
+  ],
+  "allowedSkills": [
+    "smart-followup",
+    "upsell-engine",
+    "cart-recovery",
+    "smart-negotiation",
+    "deal-closing",
+    "sales-co-pilot",
+    "post-sale-retention"
+  ],
+  "channels": ["dashboard", "whatsapp"],
+  "budget": {
+    "dailyUsd": 3,
+    "maxToolCallsPerRun": 8
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "recommendation": { "type": "string" },
+      "customerImpact": { "type": "string" },
+      "actionItems": {
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "requiresApproval": { "type": "boolean" }
+    },
+    "required": ["recommendation", "requiresApproval"]
+  }
+}

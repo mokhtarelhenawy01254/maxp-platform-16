@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
 from typing import Any
 
 import structlog
 from sqlalchemy import text
 
 import src.db.session as _db_mod
+from src.tools.definitions._helpers import period_start_date
+from src.tools.repositories.customer_repository import CustomerRepository
 
 logger = structlog.get_logger(__name__)
 
@@ -17,38 +18,14 @@ async def customer_info(
     if not company_id or not query:
         return {"found": False, "code": "MISSING_PARAMS", "query": query}
 
-    clean_query = query.strip()
-    pattern = f"%{clean_query}%"
-
-    sql = text("""
-        SELECT id, "firstName", "lastName", phone, email, status,
-               "totalOrdersCount" AS "totalOrders", "customerRating", "createdAt" AS "joinDate",
-               "successScore", "deliveryRate", "totalDelivered"
-        FROM customers
-        WHERE "companyId" = :cid
-          AND (phone ILIKE :pattern OR email ILIKE :pattern
-               OR "firstName" ILIKE :pattern OR "lastName" ILIKE :pattern
-               OR "firstName" || ' ' || "lastName" ILIKE :pattern)
-        ORDER BY
-          CASE
-            WHEN phone = :exact THEN 0
-            WHEN email = :exact THEN 1
-            WHEN "firstName" || ' ' || "lastName" = :exact THEN 2
-            ELSE 3
-          END,
-          "updatedAt" DESC
-        LIMIT 1
-    """)
-
     sf = _db_mod.async_session
     async with sf() as sess:
-        rows = await sess.execute(sql, {"cid": company_id, "pattern": pattern, "exact": clean_query})
-        row = rows.first()
+        repo = CustomerRepository(sess)
+        c = await repo.find_customer(company_id, query)
 
-    if not row:
+    if not c:
         return {"found": False, "code": "CUSTOMER_NOT_FOUND", "query": query}
 
-    c = dict(row._mapping)
     first = c.get("firstName") or ""
     last = c.get("lastName") or ""
 
@@ -71,40 +48,7 @@ async def top_buyers(
     if not company_id:
         return []
 
-    now = datetime.utcnow()
-    if period == "week":
-        start = now - timedelta(days=7)
-    elif period == "month":
-        start = now - timedelta(days=30)
-    elif period == "all":
-        start = datetime(2000, 1, 1)
-    else:
-        start = now - timedelta(days=30)
-
-    sql = text("""
-        SELECT
-          c.id, c."firstName", c."lastName", c.phone,
-          COUNT(DISTINCT o.id)::int AS orders_count,
-          COALESCE(SUM(o.total), 0) AS total_spent
-        FROM customers c
-        JOIN orders o ON o."customerId" = c.id
-        WHERE c."companyId" = :cid
-          AND o."createdAt" >= :start
-          AND o.status != 'CANCELLED'
-        GROUP BY c.id, c."firstName", c."lastName", c.phone
-        ORDER BY total_spent DESC
-        LIMIT :lim
-    """)
-
     sf = _db_mod.async_session
     async with sf() as sess:
-        rows = await sess.execute(sql, {"cid": company_id, "start": start, "lim": limit})
-        return [
-            {
-                "rank": i + 1,
-                "customerName": f"{(r.firstName or '')} {(r.lastName or '')}".strip(),
-                "ordersCount": r.orders_count,
-                "totalSpent": str(r.total_spent),
-            }
-            for i, r in enumerate(rows)
-        ]
+        repo = CustomerRepository(sess)
+        return await repo.get_top_buyers(company_id, limit, period)

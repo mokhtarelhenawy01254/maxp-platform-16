@@ -3,7 +3,9 @@
   "displayName": "Review Agent Performance",
   "version": "1.0.0",
   "description": "Review agent audit logs and telemetry for performance issues.",
-  "allowedTools": ["audit.read", "agent.list_agents"],
+  "allowedTools": [
+    "audit_read"
+  ],
   "requiresHumanApproval": false,
   "maxToolCount": 2
 }

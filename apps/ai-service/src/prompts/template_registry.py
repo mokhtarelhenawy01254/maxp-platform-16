@@ -144,8 +144,11 @@ class _StringLoader(BaseLoader):
 
 class PromptTemplateRegistry:
     """
-    Loads agent templates from backend/agents/ directory,
-    caches them in memory, and provides hydrated prompts on demand.
+    Loads agent templates - DB first, file fallback.
+
+    2026 architecture: DB (ai.agent_templates) is source of truth.
+    File-based templates in backend/agents/ are used only as fallback
+    when DB is empty (dev/seed time).
     """
 
     def __init__(self, agents_root: Path | None = None) -> None:
@@ -175,47 +178,107 @@ class PromptTemplateRegistry:
         return candidates[0]  # default even if missing
 
     def load_templates(self) -> None:
-        """Discover and load all agent templates from the agents directory."""
+        """Load templates - DB first, file fallback."""
+        # Try DB first
+        db_loaded = self._load_from_db()
+        if db_loaded:
+            self._loaded = True
+            return
+        # Fallback: load from files
+        self._load_from_files()
+        self._loaded = True
+
+    def _load_from_db(self) -> bool:
+        """Try to load templates from ai.agent_templates table."""
+        try:
+            import asyncio
+            from src.db.models.agent import AgentTemplate
+            from src.db.session import async_session_factory
+            from sqlalchemy import select
+
+            async def _fetch():
+                async with async_session_factory() as session:
+                    result = await session.execute(
+                        select(AgentTemplate).order_by(AgentTemplate.role, AgentTemplate.slug)
+                    )
+                    return list(result.scalars().all())
+
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+
+            if loop and loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as pool:
+                    db_templates = pool.submit(asyncio.run, _fetch()).result()
+            else:
+                db_templates = asyncio.run(_fetch())
+
+            if not db_templates:
+                return False
+
+            for t in db_templates:
+                template = PromptTemplate(
+                    slug=t.slug,
+                    role=t.role.upper(),
+                    name=t.name,
+                    version=t.version,
+                    soul=t.instructions_soul or "",
+                    persona=t.instructions_persona or "",
+                    tools=t.instructions_tools or "",
+                    agents=t.instructions_agents or "",
+                    persona_meta=t.persona_meta or {},
+                    guardrails=t.guardrails or {},
+                    allowed_tools=t.allowed_tools or [],
+                    channels=t.channels or [],
+                    handoffs=t.handoffs or [],
+                )
+                self._templates[template.slug] = template
+                role_key = template.role.upper()
+                if role_key not in self._role_index:
+                    self._role_index[role_key] = template.slug
+
+            logger.info(
+                "prompt templates loaded from DB",
+                count=len(db_templates),
+                slugs=list(self._templates.keys()),
+            )
+            return True
+        except Exception as exc:
+            logger.debug("DB template load failed, falling back to files", error=str(exc))
+            return False
+
+    def _load_from_files(self) -> None:
+        """Load templates from backend/agents/ directory (fallback)."""
         if not self._agents_root.exists():
             logger.warning(
                 "agents templates directory not found",
                 path=str(self._agents_root),
             )
-            self._loaded = True
             return
 
         loaded_count = 0
         for entry in sorted(self._agents_root.iterdir()):
             if entry.name.startswith("_") or not entry.is_dir():
                 continue
-
             manifest_path = entry / "agent.json"
             if not manifest_path.exists():
                 continue
-
             try:
                 template = self._load_single_template(entry, manifest_path)
                 self._templates[template.slug] = template
-
-                # Index by role (first template wins for each role)
                 role_key = template.role.upper()
                 if role_key not in self._role_index:
                     self._role_index[role_key] = template.slug
-
                 loaded_count += 1
             except Exception as exc:
-                logger.warning(
-                    "failed to load agent template",
-                    slug=entry.name,
-                    error=str(exc),
-                )
+                logger.warning("failed to load agent template", slug=entry.name, error=str(exc))
 
-        self._loaded = True
         logger.info(
-            "prompt templates loaded",
+            "prompt templates loaded from files",
             count=loaded_count,
             slugs=list(self._templates.keys()),
-            roles=dict(self._role_index),
         )
 
     def _load_single_template(

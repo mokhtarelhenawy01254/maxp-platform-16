@@ -35,16 +35,9 @@ router.delete('/agents/:id', async (req, res) => {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ error: 'companyId is required' });
     const result = await aiServiceAdminClient.archiveAgent(req.params.id, companyId);
+    // 2026: ai-service manages agents; no dual-write to public.company_agents
     if (result && result.id) {
-      try {
-        const prisma = getSharedPrismaClient();
-        await prisma.companyAgent.updateMany({
-          where: { id: result.id, companyId },
-          data: { status: 'ARCHIVED' },
-        });
-      } catch (dbErr) {
-        console.error('[AGENT] Failed to sync archive to company_agents:', dbErr.message);
-      }
+      console.log('[AGENT] Agent archived via ai-service:', result.id);
     }
     return res.json(result);
   } catch (error) {
@@ -188,17 +181,9 @@ router.post('/agents', async (req, res) => {
       parentId: req.body?.parentId, allowedTools: req.body?.allowedTools,
       allowedSkills: req.body?.allowedSkills, allowedChannels: req.body?.allowedChannels,
     });
+    // 2026: ai-service manages agents; no dual-write to public.company_agents
     if (result && result.id) {
-      try {
-        const prisma = getSharedPrismaClient();
-        await prisma.companyAgent.upsert({
-          where: { id: result.id },
-          update: { name: result.name, role: result.role, model: result.model || null, templateSlug: result.template_slug || result.templateSlug || null, status: result.status || 'ACTIVE' },
-          create: { id: result.id, companyId, name: result.name, role: result.role, model: result.model || null, templateSlug: result.template_slug || result.templateSlug || null, status: result.status || 'ACTIVE', icon: req.body?.icon || '🤖', description: req.body?.description || '' },
-        });
-      } catch (dbErr) {
-        console.error('[AGENT] Failed to sync to company_agents:', dbErr.message);
-      }
+      console.log('[AGENT] Agent spawned via ai-service:', result.id);
     }
     return res.status(201).json(result);
   } catch (error) {
@@ -292,20 +277,9 @@ router.put('/agents/:id/files', async (req, res) => {
       style: req.body?.style, policies: req.body?.policies,
     };
     const result = await aiServiceAdminClient.updateAgent(req.params.id, companyId, payload);
+    // 2026: ai-service manages agents; no dual-write to public.company_agents
     if (result && result.id) {
-      try {
-        const prisma = getSharedPrismaClient();
-        await prisma.companyAgent.updateMany({
-          where: { id: result.id, companyId },
-          data: {
-            ...(req.body?.name ? { name: req.body.name } : {}),
-            ...(req.body?.icon ? { icon: req.body.icon } : {}),
-            ...(req.body?.model ? { model: req.body.model } : {}),
-          },
-        });
-      } catch (dbErr) {
-        console.error('[AGENT] Failed to sync profile update to company_agents:', dbErr.message);
-      }
+      console.log('[AGENT] Agent updated via ai-service:', result.id);
     }
     return res.json(result || { success: true, agent: {}, files: {}, tools: [], skills: [] });
   } catch (error) {

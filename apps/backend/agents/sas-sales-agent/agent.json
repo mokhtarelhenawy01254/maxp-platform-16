@@ -22,7 +22,6 @@
   },
   "guardrails": {
     "requireDraftOrders": true,
-    "confirmBeforePrice": true,
     "singleQuestionPerTurn": true,
     "input": ["sensitive_data", "prompt_injection"],
     "output": ["tool_name_exposure", "arabic_language"]

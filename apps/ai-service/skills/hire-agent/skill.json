@@ -3,7 +3,10 @@
   "displayName": "Hire Agent",
   "version": "1.0.0",
   "description": "Create a least-privileged specialist agent from an approved template.",
-  "allowedTools": ["agent.spawn", "agent.list_agents"],
+  "allowedTools": [
+    "agent_spawn",
+    "audit_read"
+  ],
   "requiresHumanApproval": true,
   "maxToolCount": 2
 }

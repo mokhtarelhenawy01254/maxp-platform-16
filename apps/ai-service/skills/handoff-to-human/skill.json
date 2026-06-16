@@ -3,7 +3,9 @@
   "displayName": "Handoff To Human",
   "version": "1.0.0",
   "description": "Escalate sensitive or emotionally heated work to a human operator.",
-  "allowedTools": ["agent.handoff"],
+  "allowedTools": [
+    "agent_handoff_to"
+  ],
   "requiresHumanApproval": false,
   "maxToolCount": 1
 }

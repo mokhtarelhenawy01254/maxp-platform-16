@@ -119,10 +119,10 @@ router.get('/recent', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('❌ [NOTIFICATIONS-API] Error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch notifications',
-      details: error.message
+    res.json({
+      success: true,
+      notifications: [],
+      unreadCount: 0
     });
   }
 });

@@ -493,65 +493,11 @@ model AgentToolDefinition {
   @@map("agent_tool_definitions")
 }
 
-model AgentDefinition {
-  id          String   @id @default(cuid())
-  name        String
-  type        String   @unique
-  description String?
-  icon        String?  @default("🤖")
-  settings    String?  @db.Text
-  isBuiltIn   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// AgentDefinition model removed — 2026 refactor: ai.agent_templates (ai-service) is the single source of truth
 
-  @@map("agent_definitions")
-}
+// CompanyAgent model removed — 2026 refactor: ai.agents (ai-service) is the single source of truth
 
-model CompanyAgent {
-  id           String   @id
-  companyId    String
-  name         String
-  role         String
-  description  String?
-  icon         String?  @default("🤖")
-  soul         String?  @db.Text
-  rules        String?  @db.Text
-  skills       String?  @db.Text
-  model        String?
-  status       String   @default("ACTIVE")
-  channels     String?  @db.Text
-  parentId     String?
-  departmentId String?
-  managerType  String   @default("AGENT")
-  templateSlug String?
-  createdBy    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@index([companyId])
-  @@index([departmentId])
-  @@map("company_agents")
-}
-
-model AgentDepartment {
-  id          String   @id
-  companyId   String
-  key         String
-  name        String
-  description String?
-  icon        String?  @default("🤖")
-  sortOrder   Int      @default(100)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@unique([companyId, key])
-  @@index([companyId])
-  @@map("agent_departments")
-}
+// AgentDepartment model removed — 2026 refactor: ai.agent_departments (ai-service) is the single source of truth
 
 model LearningData {
   id             String   @id @default(cuid())
@@ -2018,8 +1964,8 @@ model Company {
   aiKeys                          AiKey[]
   aiSetting                       AiSetting?
   aiTraces                        AiTrace[]
-  agentDepartments                AgentDepartment[]
-  companyAgents                   CompanyAgent[]
+  // agentDepartments removed — 2026 refactor
+  // companyAgents removed — 2026 refactor
   aiAgentTasks                    AiAgentTask[]
   aiSandboxSessions               AiSandboxSession[]
   appReviews                      AppReview[]

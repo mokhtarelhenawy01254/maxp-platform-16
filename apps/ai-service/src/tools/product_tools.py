@@ -5,14 +5,16 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import structlog
-from sqlalchemy import text
 
 import src.db.session as _db_mod
+from src.tools.definitions._helpers import _write_result, period_start_date
+from src.tools.repositories.product_search_repository import ProductSearchRepository
 
 logger = structlog.get_logger(__name__)
 
-_VARIANT_SIZE_ALIASES = {"size", "Size", "مقاس", "المقاس"}
-_VARIANT_COLOR_ALIASES = {"color", "Color", "لون", "اللون"}
+
+_VARIANT_SIZE_ALIASES = {"size", "Size", "\u0645\u0642\u0627\u0633", "\u0627\u0644\u0645\u0642\u0627\u0633"}
+_VARIANT_COLOR_ALIASES = {"color", "Color", "\u0644\u0648\u0646", "\u0627\u0644\u0644\u0648\u0646"}
 
 
 def _aggregate_variants(
@@ -41,7 +43,7 @@ def _aggregate_variants(
 
 
 def _map_product(p: dict[str, Any]) -> dict[str, Any]:
-    variants = p.get("productVariants") or []
+    variants = p.get("productVariants") or p.get("_variants") or []
     size_variants = _aggregate_variants(variants, _VARIANT_SIZE_ALIASES)
     color_variants = _aggregate_variants(variants, _VARIANT_COLOR_ALIASES)
     return {
@@ -95,38 +97,6 @@ def _parse_images(product: dict[str, Any]) -> list[str]:
     return images[:8]
 
 
-def _nested(obj: Any, *keys: str) -> Any:
-    for k in keys:
-        if isinstance(obj, dict):
-            obj = obj.get(k)
-        else:
-            return None
-    return obj
-
-
-async def _fetch_variants(product_ids: list[str]) -> dict[str, list[dict[str, Any]]]:
-    if not product_ids:
-        return {}
-    sql = text("""
-        SELECT "productId", name, type, sku, stock, "trackInventory"
-        FROM product_variants
-        WHERE "productId" = ANY(:pids)
-          AND "isActive" = TRUE
-        ORDER BY "sortOrder" ASC
-    """)
-    sf = _db_mod.async_session
-    async with sf() as sess:
-        rows = await sess.execute(sql, {"pids": product_ids})
-        raw = [dict(r._mapping) for r in rows]
-    result: dict[str, list[dict[str, Any]]] = {}
-    for r in raw:
-        pid = r["productId"]
-        if pid not in result:
-            result[pid] = []
-        result[pid].append(r)
-    return result
-
-
 async def search_products(
     company_id: str,
     query: str,
@@ -141,71 +111,20 @@ async def search_products(
     if not company_id:
         return {"found": False, "code": "MISSING_COMPANY", "query": query, "products": []}
 
-    where_clauses = [
-        'p."companyId" = :company_id',
-        'p."deletedAt" IS NULL',
-        'p."isActive" = TRUE',
-    ]
-    params: dict[str, Any] = {"company_id": company_id, "limit": min(limit, 50)}
-
-    clean_query = (query or "").strip()
-    if clean_query:
-        pattern = f"%{clean_query}%"
-        where_clauses.append(
-            '(p.name ILIKE :pattern OR p.sku ILIKE :pattern OR COALESCE(p.tags, \'\') ILIKE :pattern)'
-        )
-        params["pattern"] = pattern
-
-    if product_size:
-        size_pattern = f"%{product_size}%"
-        where_clauses.append(
-            'AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv."productId" = p.id '
-            'AND pv."isActive" = TRUE AND pv.type = ANY(:size_types) AND pv.name ILIKE :size_pattern)'
-        )
-        params["size_types"] = list(_VARIANT_SIZE_ALIASES)
-        params["size_pattern"] = size_pattern
-
-    if product_color:
-        color_pattern = f"%{product_color}%"
-        where_clauses.append(
-            'AND EXISTS (SELECT 1 FROM product_variants pv WHERE pv."productId" = p.id '
-            'AND pv."isActive" = TRUE AND pv.type = ANY(:color_types) AND pv.name ILIKE :color_pattern)'
-        )
-        params["color_types"] = list(_VARIANT_COLOR_ALIASES)
-        params["color_pattern"] = color_pattern
-
-    where_sql = " AND ".join(where_clauses)
-
-    sql = text(f"""
-        SELECT p.id, p.name, p.sku, p.price, p."comparePrice", p.stock,
-               p."trackInventory", p."mainImage", p.images, p."isFeatured",
-               p.tags, p."categoryId", c.name AS category_name
-        FROM products p
-        LEFT JOIN categories c ON c.id = p."categoryId"
-        WHERE {where_sql}
-        ORDER BY p."updatedAt" DESC
-        LIMIT :limit
-    """)
-
     sf = _db_mod.async_session
     async with sf() as sess:
-        rows = await sess.execute(sql, params)
-        products_raw = [dict(r._mapping) for r in rows]
+        repo = ProductSearchRepository(sess)
+        products_raw, variants_map = await repo.search_products_with_categories(
+            company_id, query or "", limit
+        )
 
-    if not products_raw:
-        return {"found": False, "code": "PRODUCT_NOT_FOUND", "query": query, "products": []}
-
-    pids = [p["id"] for p in products_raw]
-    variants_map = await _fetch_variants(pids)
-
+    # Attach variants to products
     for p in products_raw:
-        p["productVariants"] = variants_map.get(p["id"], [])
-        cat_name = p.pop("category_name", None)
-        if cat_name:
-            p["category"] = {"name": cat_name}
+        pid = p.get("id")
+        if pid and pid in variants_map:
+            p["productVariants"] = variants_map[pid]
 
     mapped = [_map_product(p) for p in products_raw]
-
     return {"found": True, "count": len(mapped), "query": query, "products": mapped}
 
 
@@ -216,26 +135,10 @@ async def low_stock_products(
     if not company_id:
         return {"count": 0, "products": [], "code": "MISSING_COMPANY"}
 
-    sql = text("""
-        SELECT id, name, sku, stock, price
-        FROM products
-        WHERE "companyId" = :company_id
-          AND "deletedAt" IS NULL
-          AND "isActive" = TRUE
-          AND "trackInventory" = TRUE
-          AND stock <= :threshold
-        ORDER BY stock ASC
-        LIMIT :limit
-    """)
-
     sf = _db_mod.async_session
     async with sf() as sess:
-        rows = await sess.execute(sql, {
-            "company_id": company_id,
-            "threshold": threshold,
-            "limit": limit,
-        })
-        data = [dict(r._mapping) for r in rows]
+        repo = ProductSearchRepository(sess)
+        data = await repo.get_low_stock_products(company_id, threshold, limit)
 
     if not data:
         return {"count": 0, "products": [], "code": "NO_LOW_STOCK_PRODUCTS"}
@@ -261,32 +164,12 @@ async def top_selling_products(
     if not company_id:
         return {"count": 0, "products": [], "code": "MISSING_COMPANY", "period": period}
 
-    start_date = _period_start_date(period)
-
-    sql = text("""
-        SELECT p.id, p.name AS "productName", p.sku,
-               COALESCE(SUM(oi.quantity), 0)::int AS "quantitySold",
-               COALESCE(SUM(oi.total), 0) AS revenue
-        FROM products p
-        JOIN order_items oi ON oi."productId" = p.id
-        JOIN orders o ON o.id = oi."orderId"
-        WHERE p."companyId" = :company_id
-          AND p."deletedAt" IS NULL
-          AND o."createdAt" >= :start_date
-          AND o.status != 'CANCELLED'
-        GROUP BY p.id, p.name, p.sku
-        ORDER BY "quantitySold" DESC
-        LIMIT :limit
-    """)
+    start_date = period_start_date(period)
 
     sf = _db_mod.async_session
     async with sf() as sess:
-        rows = await sess.execute(sql, {
-            "company_id": company_id,
-            "start_date": start_date,
-            "limit": limit,
-        })
-        data = [dict(r._mapping) for r in rows]
+        repo = ProductSearchRepository(sess)
+        data = await repo.get_top_selling_products(company_id, start_date, limit)
 
     if not data:
         return {"count": 0, "products": [], "code": "NO_SALES_DATA", "period": period}
@@ -300,7 +183,7 @@ async def top_selling_products(
             "revenue": str(p.get("revenue", 0)),
         })
 
-    return {"count": len(result), "products": result}
+    return {"count": len(result), "products": result, "period": period}
 
 
 async def list_categories(
@@ -308,34 +191,16 @@ async def list_categories(
     limit: int = 50,
 ) -> dict[str, Any]:
     """List all available product categories by scanning the catalog."""
-    mapped = await search_products(
-        company_id=company_id,
-        query="",
-        limit=limit,
-        use_vector=False,
-    )
-
-    categories: dict[str, list[dict[str, Any]]] = {}
-    products = mapped.get("products", [])
-    for p in products:
-        cat_name = p.get("categoryName")
-        if cat_name:
-            if cat_name not in categories:
-                categories[cat_name] = []
-            categories[cat_name].append({
-                "name": p.get("name"),
-                "sku": p.get("sku"),
-                "price": p.get("price"),
-                "stock": p.get("stock"),
-                "status": p.get("status"),
-            })
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = ProductSearchRepository(sess)
+        categories_raw = await repo.get_categories(company_id, limit)
 
     result = []
-    for cat_name, cat_products in sorted(categories.items()):
+    for cat in categories_raw:
         result.append({
-            "category": cat_name,
-            "productCount": len(cat_products),
-            "products": cat_products,
+            "category": cat.get("name", ""),
+            "productCount": cat.get("product_count", 0),
         })
 
     return {
@@ -343,19 +208,3 @@ async def list_categories(
         "count": len(result),
         "categories": result,
     }
-
-
-def _period_start_date(period: str) -> datetime:
-    now = datetime.utcnow()
-    period = period.lower()
-    if period == "today":
-        return now.replace(hour=0, minute=0, second=0, microsecond=0)
-    elif period == "yesterday":
-        return (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-    elif period == "week":
-        return now - timedelta(days=7)
-    elif period == "month":
-        return now - timedelta(days=30)
-    elif period == "all":
-        return datetime(2000, 1, 1)
-    return now - timedelta(days=30)

@@ -3,7 +3,11 @@
   "displayName": "Order Support",
   "version": "1.0.0",
   "description": "Resolve order and shipping support questions safely.",
-  "allowedTools": ["order.lookup", "shipping.rates", "agent.handoff"],
+  "allowedTools": [
+    "order_lookup",
+    "shipping_rates",
+    "agent_handoff_to"
+  ],
   "requiresHumanApproval": false,
   "maxToolCount": 3
 }

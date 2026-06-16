@@ -9,48 +9,55 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.config import get_settings
 from src.db.models.agent import AgentTemplate
 
 logger = structlog.get_logger(__name__)
 
 
 def _get_agents_root() -> Path:
-    settings = get_settings()
-    if settings.agents_templates_root:
+    settings = None
+    try:
+        from src.config import get_settings
+        settings = get_settings()
+    except Exception:
+        pass
+    if settings and settings.agents_templates_root:
         root = Path(settings.agents_templates_root)
         if root.exists():
             return root
-    # Fallback: relative to project root
-    candidates = []
-    env_root = os.environ.get("BACKEND_AGENTS_ROOT")
+    env_root = os.environ.get("BACKEND_AGENTS_ROOT", "")
     if env_root:
-        candidates.append(Path(env_root))
-    candidates.extend([
-        Path(__file__).resolve().parent.parent.parent.parent.parent / "apps" / "backend" / "agents",
+        p = Path(env_root)
+        if p.exists():
+            return p
+    candidates = [
+        Path(__file__).resolve().parent.parent.parent.parent / "backend" / "agents",
         Path(__file__).resolve().parent.parent.parent / "agents",
-    ])
+    ]
     for c in candidates:
         if c.exists():
             return c
-    return Path(__file__).resolve().parent.parent.parent.parent.parent / "apps" / "backend" / "agents"
+    return candidates[0]
 
-TEMPLATE_DESCRIPTIONS: list[dict[str, Any]] = []
+
+def _read_md(entry_path: Path, ref: str | None) -> str | None:
+    if not ref:
+        return None
+    md_path = entry_path / ref
+    if md_path.exists():
+        return md_path.read_text(encoding="utf-8")
+    return None
 
 
 def _discover_templates(agents_root: Path | None = None) -> list[dict[str, Any]]:
-    """Discover agent.json files in the agents directory."""
+    """Discover agent.json files in the agents directory.
+    
+    Used by the seed script. At runtime, prefer DB-backed templates.
+    """
     root = agents_root or _get_agents_root()
     if not root.exists():
         logger.warning("Agent templates directory not found", path=str(root))
         return []
-    def _read_md(entry_path: Path, ref: str | None) -> str | None:
-        if not ref:
-            return None
-        md_path = entry_path / ref
-        if md_path.exists():
-            return md_path.read_text(encoding="utf-8")
-        return None
 
     templates = []
     for entry in sorted(root.iterdir()):
@@ -67,7 +74,6 @@ def _discover_templates(agents_root: Path | None = None) -> list[dict[str, Any]]
             continue
 
         instructions = manifest.get("instructions", {})
-
         templates.append({
             "slug": manifest.get("slug", entry.name),
             "role": manifest.get("role", "").upper(),
@@ -94,7 +100,10 @@ def _discover_templates(agents_root: Path | None = None) -> list[dict[str, Any]]
 
 
 async def seed_templates(session: AsyncSession) -> list[AgentTemplate]:
-    """Load and seed agent templates into the database."""
+    """Upsert agent templates from files into the database.
+    
+    This is the 2026 approach: files are dev-time only, DB is source of truth.
+    """
     templates = _discover_templates()
     if not templates:
         logger.warning("No agent templates found to seed")
@@ -105,19 +114,24 @@ async def seed_templates(session: AsyncSession) -> list[AgentTemplate]:
         existing = await session.execute(
             select(AgentTemplate).where(AgentTemplate.slug == data["slug"])
         )
-        if existing.scalar_one_or_none():
-            logger.debug("Template already exists, skipping", slug=data["slug"])
-            continue
+        template = existing.scalar_one_or_none()
 
-        template = AgentTemplate(**data)
-        session.add(template)
-        seeded.append(template)
+        if template:
+            for key, value in data.items():
+                setattr(template, key, value)
+            logger.debug("Template updated", slug=data["slug"])
+        else:
+            template = AgentTemplate(**data)
+            session.add(template)
+            seeded.append(template)
+            logger.debug("Template created", slug=data["slug"])
 
     if seeded:
         await session.commit()
         logger.info("Seeded agent templates", count=len(seeded), slugs=[t.slug for t in seeded])
     else:
-        logger.info("No new agent templates to seed")
+        await session.commit()
+        logger.info("Templates up-to-date, no new templates seeded")
 
     return seeded
 

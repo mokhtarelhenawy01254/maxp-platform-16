@@ -1,6 +1,7 @@
 __all__ = [
     "AgentManagerService",
     "AgentRegistry",
+    "ApprovalService",
     "PromptCacheService",
     "QueuePriority",
     "QueueService",
@@ -18,6 +19,7 @@ _EXPORT_MODULES = {
     "get_agent_manager_service": "src.services.agent_manager_service",
     "AgentRegistry": "src.services.agent_registry",
     "get_agent_registry": "src.services.agent_registry",
+    "ApprovalService": "src.services.approval_service",
     "PromptCacheService": "src.services.prompt_cache_service",
     "prompt_cache_service": "src.services.prompt_cache_service",
     "QueuePriority": "src.services.queue_service",

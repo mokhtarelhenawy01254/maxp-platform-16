@@ -39,9 +39,7 @@ from src.api.admin.agents_schemas import (
     TeamMapResponse,
     ToolSummary,
 )
-from src.db.models.agent import Agent as AgentModel
-from src.db.models.agent import AgentTemplate, CompanyAgent as CompanyAgentModel
-from src.db.models.skill import Skill as SkillModel
+from src.db.models.agent import Agent as AgentModel, AgentTemplate, AgentDepartment
 from src.db.models.thread import Thread
 from src.db.session import get_session
 from src.llm.agent_client_factory import build_provider_client_async
@@ -121,11 +119,17 @@ def _generate_agent_id() -> str:
 
 
 def _agent_to_read(agent: AgentModel) -> AgentRead:
+    dept = getattr(agent, 'department', None)
     return AgentRead(
         id=agent.id,
         company_id=agent.company_id,
         name=agent.name,
         role=agent.role,
+        description=getattr(agent, 'description', None),
+        icon=getattr(agent, 'icon', None),
+        soul=getattr(agent, 'soul', None),
+        rules=getattr(agent, 'rules', None),
+        skills_raw=getattr(agent, 'skills', None),
         template_slug=agent.template_slug,
         status=agent.status,
         model=agent.model,
@@ -136,6 +140,12 @@ def _agent_to_read(agent: AgentModel) -> AgentRead:
         guardrails=getattr(agent, 'guardrails', None) or {},
         budget=getattr(agent, 'budget', None) or {},
         parent_id=agent.parent_id,
+        department_id=getattr(agent, 'department_id', None),
+        department_key=dept.key if dept else None,
+        department_name=dept.name if dept else None,
+        department_icon=dept.icon if dept else None,
+        manager_type=getattr(agent, 'manager_type', None),
+        created_by=getattr(agent, 'created_by', None),
         version=getattr(agent, 'version', None) or '1.0.0',
         config=getattr(agent, 'config', None) or {},
         created_at=agent.created_at or datetime.now(UTC),
@@ -236,15 +246,15 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
     request_config = dict(body.agent_config or {})
     raw_config = _agent_config_from_record(db_agent) if db_agent else {}
 
-    # Fallback: read from public.company_agents table (Node-managed agents, camelCase columns)
+    # Fallback: read from ai.agents with new fields (previously from public.company_agents)
     if not db_agent:
         import json as _json
         ca_row = await session.execute(
             text("""
-                SELECT id, name, role, "templateSlug" AS template_slug, model,
-                       soul, skills, status, "parentId" AS parent_id
-                FROM public.company_agents
-                WHERE id = :agent_id AND "companyId" = :company_id AND status != 'ARCHIVED'
+                SELECT a.id, a.name, a.role, a.template_slug, a.model,
+                       a.soul, a.skills, a.status, a.parent_id, a.company_id
+                FROM ai.agents a
+                WHERE a.id = :agent_id AND a.company_id = :company_id AND a.status != 'ARCHIVED'
             """),
             {"agent_id": body.agent_id, "company_id": body.company_id},
         )
@@ -451,7 +461,7 @@ async def list_agents(
     limit: int = Query(default=100, ge=1, le=500),
 ) -> list[AgentRead]:
     """List agents from Agent table."""
-    stmt = select(AgentModel).order_by(AgentModel.created_at.desc())
+    stmt = select(AgentModel).options(selectinload(AgentModel.department)).order_by(AgentModel.created_at.desc())
     if company_id:
         stmt = stmt.where(AgentModel.company_id == company_id)
     if status:
@@ -561,6 +571,7 @@ async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentC
         runtime=str(payload.get("runtime") or "agent"),
         tool_calls=list(tools) if isinstance(tools, list) else [],
         pipeline_trace=payload.get("pipeline_trace") if isinstance(payload.get("pipeline_trace"), dict) else None,
+        compiled_system_prompt=payload.get("compiled_system_prompt") or None,
     )
 
 
@@ -647,91 +658,17 @@ async def evaluate_sandbox_response(body: SandboxEvaluateRequest) -> SandboxEval
 
 
 async def _ensure_agent_in_db(agent_id: str, session: AsyncSession) -> AgentModel | None:
-    """Ensure that the agent is initialized in the ai.agents table, migrating it from public.company_agents if needed."""
-    # 1. Retrieve the agent from ai.agents table
-    result = await session.execute(select(AgentModel).where(AgentModel.id == agent_id))
-    agent = result.scalar_one_or_none()
-    if agent:
-        return agent
+    """Retrieve agent from ai.agents table.
 
-    # 2. Run a raw SQL SELECT on public.company_agents
-    import json as _json
-    from unittest.mock import MagicMock, AsyncMock
-
-    ca_row = await session.execute(
-        text("""
-            SELECT id, name, role, "templateSlug" AS template_slug, model,
-                   soul, skills, channels, status, "parentId" AS parent_id, "companyId" AS company_id
-            FROM public.company_agents
-            WHERE id = :agent_id
-        """),
-        {"agent_id": agent_id},
+    2026: The migration bridge from public.company_agents has been removed.
+    All agents should exist in ai.agent_templates or ai.agents.
+    """
+    result = await session.execute(
+        select(AgentModel)
+        .options(selectinload(AgentModel.department))
+        .where(AgentModel.id == agent_id)
     )
-
-    if isinstance(ca_row, (MagicMock, AsyncMock)) or type(ca_row).__name__ in ('MagicMock', 'AsyncMock'):
-        return None
-
-    ca = ca_row.mappings().one_or_none()
-    if not ca or isinstance(ca, (MagicMock, AsyncMock)) or type(ca).__name__ in ('MagicMock', 'AsyncMock'):
-        return None
-
-    # 3. If found, initialize and insert the agent record into ai.agents
-    template_slug = ca["template_slug"]
-    template = None
-    if template_slug:
-        template = await get_template(template_slug, session)
-        if not template:
-            # Fallback to None if the template does not exist in DB to prevent foreign key violation
-            template_slug = None
-
-    persona = {}
-    if ca["soul"]:
-        persona["soulInstructions"] = ca["soul"]
-
-    allowed_skills = []
-    if ca["skills"]:
-        try:
-            allowed_skills = _json.loads(ca["skills"])
-        except Exception:
-            pass
-
-    channels: list[str] = []
-    if ca.get("channels"):
-        try:
-            channels = _json.loads(ca["channels"])
-        except Exception:
-            channels = [ca["channels"]] if isinstance(ca["channels"], str) and ca["channels"].strip() else []
-
-    # Fallback default tools and skills from template if available
-    allowed_tools = template.allowed_tools if template else []
-    if template and not allowed_skills:
-        allowed_skills = template.allowed_skills
-
-    model = ca["model"] or (template.model_policy.get("default") if template else None)
-
-    agent = AgentModel(
-        id=ca["id"],
-        company_id=ca["company_id"],
-        name=ca["name"],
-        role=ca["role"] or (template.role if template else "CUSTOM"),
-        template_slug=template_slug,
-        status=ca["status"] or "ACTIVE",
-        model=model,
-        persona=persona,
-        allowed_tools=allowed_tools,
-        allowed_skills=allowed_skills,
-        channels=channels,
-        guardrails=template.guardrails if template else {},
-        budget=template.budget if template else {},
-        parent_id=ca["parent_id"],
-        version=template.version if template else "1.0.0",
-        config={},
-    )
-    session.add(agent)
-    await session.commit()
-    await session.refresh(agent)
-    logger.info("Migrated agent from public to ai schema", agent_id=agent_id, company_id=ca["company_id"])
-    return agent
+    return result.scalar_one_or_none()
 
 
 @router.get("/manager/context", response_model=ManagerContextResponse)
@@ -755,21 +692,21 @@ async def get_manager_context(
             allowed_skills=list(a.allowed_skills or []),
             allowed_channels=list(a.channels or []) if a.channels else [],
         )
-
     ca_stmt = (
-        select(CompanyAgentModel)
-        .where(CompanyAgentModel.company_id == company_id, CompanyAgentModel.status != "ARCHIVED")
-        .order_by(CompanyAgentModel.created_at)
+        select(AgentModel)
+        .options(selectinload(AgentModel.department))
+        .where(AgentModel.company_id == company_id, AgentModel.status != 'ARCHIVED')
+        .order_by(AgentModel.created_at)
     )
     for ca in (await session.execute(ca_stmt)).scalars().all():
         if ca.id not in agents_map:
             agents_map[ca.id] = AgentSummary(
                 id=ca.id, name=ca.name, role=ca.role, status=ca.status,
                 model=ca.model, template_slug=ca.template_slug,
-                allowed_tools=[], allowed_skills=[],
-                allowed_channels=list(ca.channels or []),
+                allowed_tools=list(ca.allowed_tools or []),
+                allowed_skills=list(ca.allowed_skills or []),
+                allowed_channels=list(ca.channels or []) if ca.channels else [],
             )
-
     agents = list(agents_map.values())
     manager = next((a for a in agents if a.role == "CEO"), agents[0] if agents else None)
 
@@ -791,13 +728,32 @@ async def get_manager_context(
         allowed_skills=list(t.allowed_skills or []),
     ) for t in templates]
 
+    # Build full skill metadata from skill.json + SKILL.md files
+    from src.skills.integration import _skill_metadata_from_dir, _SKILLS_ROOT
+
     seen: set[str] = set()
     skills = []
     for t in templates:
         for s in (t.allowed_skills or []):
-            if s not in seen:
-                seen.add(s)
+            if s in seen:
+                continue
+            seen.add(s)
+            skill_dir = _SKILLS_ROOT / s
+            meta = _skill_metadata_from_dir(skill_dir)
+            if meta:
+                skills.append({
+                    "id": meta["id"],
+                    "displayName": meta["name"],
+                    "description": meta.get("description", ""),
+                    "allowedTools": meta.get("allowed_tools", []),
+                    "requiresHumanApproval": meta.get("requires_human_approval", False),
+                    "maxToolCount": meta.get("max_tool_count", 0),
+                    "skillMd": meta.get("instructions", ""),
+                    "version": "1.0.0",
+                })
+            else:
                 skills.append({"id": s, "displayName": s})
+
 
     inbox = InboxSummary()
     try:
@@ -970,15 +926,14 @@ async def get_team_map(
             "template_slug": a.template_slug, "parent_id": a.parent_id,
             "department_name": None, "department_icon": None, "manager_type": None,
         }
-
     ca_stmt = (
-        select(CompanyAgentModel)
-        .options(selectinload(CompanyAgentModel.department))
+        select(AgentModel)
+        .options(selectinload(AgentModel.department))
         .where(
-            CompanyAgentModel.company_id == company_id,
-            CompanyAgentModel.status != "ARCHIVED",
+            AgentModel.company_id == company_id,
+            AgentModel.status != 'ARCHIVED',
         )
-        .order_by(CompanyAgentModel.created_at)
+        .order_by(AgentModel.created_at)
     )
     for ca in (await session.execute(ca_stmt)).scalars().all():
         dept_name = ca.department.name if ca.department else None
@@ -1050,17 +1005,16 @@ async def _load_agent_for_files(
     import json as _json
     ca_row = await session.execute(
         text("""
-            SELECT ca.id, ca.name, ca.role, ca.icon, ca.description, ca.soul,
-                   ca.rules, ca.skills, ca.channels, ca.model, ca.status, ca."parentId" AS parent_id,
-                   ca."templateSlug" AS template_slug, ca."createdBy" AS created_by,
-                   ca."createdAt" AS created_at, ca."departmentId" AS department_id,
-                   ca."managerType" AS manager_type,
-                   ad."key" AS department_key, ad."name" AS department_name,
-                   ad."icon" AS department_icon
-            FROM public.company_agents ca
-            LEFT JOIN ai.agent_departments ad ON ad.id = ca."departmentId"
-            WHERE ca.id = :agent_id
-              AND (ca."companyId" = :company_id OR :company_id IS NULL)
+            SELECT a.id, a.name, a.role, a.icon, a.description, a.soul,
+                   a.rules, a.skills, a.channels, a.model, a.status, a.parent_id,
+                   a.template_slug, a.created_by,
+                   a.created_at, a.department_id, a.manager_type,
+                   ad.key AS department_key, ad.name AS department_name,
+                   ad.icon AS department_icon
+            FROM ai.agents a
+            LEFT JOIN ai.agent_departments ad ON ad.id = a.department_id
+            WHERE a.id = :agent_id
+              AND (a.company_id = :company_id OR :company_id IS NULL)
         """),
         {"agent_id": agent_id, "company_id": company_id or ""},
     )
@@ -1263,9 +1217,183 @@ async def save_agent_files(
             if body.model is not None:
                 params["model"] = body.model
             await session.execute(
-                text(f'UPDATE public.company_agents SET {set_clause} WHERE id = :agent_id'),
+                text(f'UPDATE ai.agents SET {set_clause} WHERE id = :agent_id'),
                 params,
             )
             await session.commit()
 
     return await _build_agent_files_response(agent_id, company_id, session)
+
+
+
+# ── Agent Template Management (2026 unified approach) ────────────────────
+
+
+@router.get("/agent-templates")
+async def list_agent_templates(
+    session: SessionDep,
+) -> list[dict[str, Any]]:
+    """List all agent templates (source of truth for agent definitions)."""
+    from src.agents.loader import list_templates
+    templates = await list_templates(session)
+    return [
+        {
+            "slug": t.slug,
+            "name": t.name,
+            "role": t.role,
+            "version": t.version,
+            "channels": t.channels,
+            "allowedTools": t.allowed_tools,
+            "allowedSkills": t.allowed_skills,
+            "instructionsSoul": t.instructions_soul or "",
+            "instructionsPersona": t.instructions_persona or "",
+            "instructionsTools": t.instructions_tools or "",
+            "instructionsAgents": t.instructions_agents or "",
+            "guardrails": t.guardrails,
+            "budget": t.budget,
+            "personaMeta": t.persona_meta,
+            "humanApproval": t.human_approval,
+            "handoffs": t.handoffs,
+            "mcpServers": t.mcp_servers,
+        }
+        for t in templates
+    ]
+
+
+@router.get("/agent-templates/{slug}")
+async def get_agent_template(
+    slug: str,
+    session: SessionDep,
+) -> dict[str, Any]:
+    """Get a single agent template by slug."""
+    from src.agents.loader import get_template
+    template = await get_template(slug, session)
+    if not template:
+        raise HTTPException(status_code=404, detail=f"Template not found: {slug}")
+    return {
+        "slug": template.slug,
+        "name": template.name,
+        "role": template.role,
+        "version": template.version,
+        "channels": template.channels,
+        "allowedTools": template.allowed_tools,
+        "allowedSkills": template.allowed_skills,
+        "instructionsSoul": template.instructions_soul or "",
+        "instructionsPersona": template.instructions_persona or "",
+        "instructionsTools": template.instructions_tools or "",
+        "instructionsAgents": template.instructions_agents or "",
+        "guardrails": template.guardrails,
+        "budget": template.budget,
+        "personaMeta": template.persona_meta,
+        "humanApproval": template.human_approval,
+        "handoffs": template.handoffs,
+        "mcpServers": template.mcp_servers,
+    }
+
+
+@router.post("/agent-templates")
+async def create_agent_template(
+    body: dict[str, Any],
+    session: SessionDep,
+) -> dict[str, Any]:
+    """Create a new agent template."""
+    from src.db.models.agent import AgentTemplate
+    slug = body.get("slug", "")
+    if not slug:
+        raise HTTPException(status_code=400, detail="slug is required")
+    existing = await session.execute(
+        select(AgentTemplate).where(AgentTemplate.slug == slug)
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail=f"Template already exists: {slug}")
+    template = AgentTemplate(
+        slug=slug,
+        role=body.get("role", slug.upper()),
+        name=body.get("name", slug),
+        version=body.get("version", "1.0.0"),
+        model_policy=body.get("modelPolicy", {}),
+        allowed_tools=body.get("allowedTools", []),
+        allowed_skills=body.get("allowedSkills", []),
+        channels=body.get("channels", []),
+        guardrails=body.get("guardrails", {}),
+        persona_meta=body.get("personaMeta", {}),
+        instructions_soul=body.get("soulInstructions") or body.get("instructionsSoul"),
+        instructions_persona=body.get("personaInstructions") or body.get("instructionsPersona"),
+        instructions_tools=body.get("toolsInstructions") or body.get("instructionsTools"),
+        instructions_agents=body.get("agentInstructions") or body.get("instructionsAgents"),
+        human_approval=body.get("humanApproval", {}),
+        handoffs=body.get("handoffs", []),
+        mcp_servers=body.get("mcpServers", []),
+        budget=body.get("budget", {}),
+        config=body.get("config", {}),
+    )
+    session.add(template)
+    await session.commit()
+    await session.refresh(template)
+    return {"slug": template.slug, "name": template.name, "role": template.role}
+
+
+@router.put("/agent-templates/{slug}")
+async def update_agent_template(
+    slug: str,
+    body: dict[str, Any],
+    session: SessionDep,
+) -> dict[str, Any]:
+    """Update an agent template."""
+    from src.agents.loader import get_template
+    template = await get_template(slug, session)
+    if not template:
+        raise HTTPException(status_code=404, detail=f"Template not found: {slug}")
+    updatable = [
+        "name", "role", "version", "model_policy", "allowed_tools", "allowed_skills",
+        "channels", "guardrails", "persona_meta", "human_approval", "handoffs",
+        "mcp_servers", "budget", "config",
+    ]
+    for field in updatable:
+        if field in body:
+            setattr(template, field, body[field])
+    # Handle instruction fields (camelCase API → snake_case model)
+    instruction_map = {
+        "soulInstructions": "instructions_soul",
+        "instructionsSoul": "instructions_soul",
+        "personaInstructions": "instructions_persona",
+        "instructionsPersona": "instructions_persona",
+        "toolsInstructions": "instructions_tools",
+        "instructionsTools": "instructions_tools",
+        "agentInstructions": "instructions_agents",
+        "instructionsAgents": "instructions_agents",
+    }
+    for api_key, model_key in instruction_map.items():
+        if api_key in body:
+            setattr(template, model_key, body[api_key])
+    # Handle allowedSkills list
+    if "allowedSkills" in body or "rules" in body:
+        if "allowedSkills" in body:
+            template.allowed_skills = body["allowedSkills"]
+    await session.commit()
+    await session.refresh(template)
+    return {"slug": template.slug, "name": template.name, "role": template.role}
+
+
+@router.delete("/agent-templates/{slug}")
+async def delete_agent_template(
+    slug: str,
+    session: SessionDep,
+) -> dict[str, Any]:
+    """Delete an agent template."""
+    from src.agents.loader import get_template
+    template = await get_template(slug, session)
+    if not template:
+        raise HTTPException(status_code=404, detail=f"Template not found: {slug}")
+    # Check if any agents reference this template
+    agents_using = await session.execute(
+        select(AgentModel).where(AgentModel.template_slug == slug)
+    )
+    if agents_using.scalars().first():
+        raise HTTPException(
+            status_code=409,
+            detail=f"Cannot delete template: agents are using it",
+        )
+    await session.delete(template)
+    await session.commit()
+    return {"success": True, "deleted": slug}

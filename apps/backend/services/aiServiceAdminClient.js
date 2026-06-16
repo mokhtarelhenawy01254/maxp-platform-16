@@ -204,8 +204,41 @@ async function deleteKnowledgeEmbeddingItem(sourceId, sourceType) {
   });
 }
 
+// ── Agent Template Management (2026 unified approach) ──────────────
+
+async function listAgentTemplates() {
+  return request('GET', '/admin/agent-templates');
+}
+
+async function getAgentTemplate(slug) {
+  return request('GET', `/admin/agent-templates/${encodeURIComponent(slug)}`);
+}
+
+async function createAgentTemplate(data) {
+  return request('POST', '/admin/agent-templates', data);
+}
+
+async function updateAgentTemplate(slug, data) {
+  return request('PUT', `/admin/agent-templates/${encodeURIComponent(slug)}`, data);
+}
+
+async function deleteAgentTemplate(slug) {
+  return request('DELETE', `/admin/agent-templates/${encodeURIComponent(slug)}`);
+}
+
+async function listDepartments(companyId) {
+  const qs = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
+  return request('GET', `/admin/departments${qs}`) || [];
+}
+
 module.exports = {
   listTools,
+  listAgentTemplates,
+  getAgentTemplate,
+  createAgentTemplate,
+  updateAgentTemplate,
+  deleteAgentTemplate,
+  listDepartments,
   listAgents,
   chatWithAgent,
   evaluateSandboxResponse,

@@ -6,7 +6,8 @@ import {
   FlaskConical,
   ClipboardCheck,
   ArrowLeftRight,
-  LayoutList
+  LayoutList,
+  Sparkles
 } from "lucide-react";
 import type { AgentConfig, ModelConfig } from "../types/sandbox.types";
 import type { CentralKeyConfig } from "../types/sandbox.types";
@@ -24,6 +25,7 @@ interface HeaderBarProps {
   onEvaluate: () => void;
   onCompare?: () => void;
   onExport?: () => void;
+  onAgentProfile?: () => void;
   isStreaming: boolean;
 }
 
@@ -40,6 +42,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   onEvaluate,
   onCompare,
   onExport,
+  onAgentProfile,
   isStreaming,
 }) => {
   const optionValue = (m: ModelConfig) => `${m.provider}::${m.model}::${m.keyId || ""}`;
@@ -178,6 +181,18 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
             title="Toggle sessions sidebar"
           >
             <LayoutList className="size-4 text-slate-650" />
+          </Button>
+        )}
+
+        {onAgentProfile && (
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onAgentProfile}
+            className="size-8 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+            title="Open agent profile"
+          >
+            <Sparkles className="size-4 text-indigo-500" />
           </Button>
         )}
 

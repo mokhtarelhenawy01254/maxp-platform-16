@@ -3,7 +3,9 @@
   "displayName": "Campaign Report",
   "version": "1.0.0",
   "description": "Summarize campaign and agent activity for marketing decisions.",
-  "allowedTools": ["audit.read"],
+  "allowedTools": [
+    "audit_read"
+  ],
   "requiresHumanApproval": false,
   "maxToolCount": 1
 }

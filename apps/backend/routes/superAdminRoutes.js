@@ -534,68 +534,21 @@ router.get(
   storePagesController.getAllPagesSuperAdmin,
 );
 
-// 🤖 Dynamic AI Agents Configuration
-// Each AgentDefinition stores its own soul/rules/skills.
-// All companies without custom config inherit from the matching AgentDefinition.
+// 🤖 AI Agent Templates — now managed by ai-service (AgentTemplate table)
+// 2026 refactor: agent_definitions table is deprecated; templates live in ai.agent_templates
+// These routes proxy to the ai-service admin API.
 
-function getAllToolNames() {
-  return Object.keys(TOOLS);
-}
-
-function buildSkillsList(enabledSkillNames) {
-  const tools = TOOLS;
-  return getAllToolNames().map(name => ({
-    name,
-    description: tools[name]?.description || '',
-    params: tools[name]?.params || {},
-    readOnly: tools[name]?.readOnly !== false,
-    enabled: enabledSkillNames.includes(name),
-  }));
-}
-
-// Seed CEO agent from legacy GlobalAiConfig if no agents exist yet
-async function seedCeoAgentIfEmpty(prisma) {
-  const count = await prisma.agentDefinition.count();
-  if (count > 0) return;
-
-  let legacyConfig = {};
-  try {
-    const row = await prisma.globalAiConfig.findFirst({ orderBy: { createdAt: 'asc' } });
-    if (row?.settings) {
-      const gs = parseJson(row.settings, {});
-      legacyConfig = gs.agentConfig || {};
-    }
-  } catch { /* ignore */ }
-
-  await prisma.agentDefinition.create({
-    data: {
-      name: 'CEO Agent',
-      type: 'ceo',
-      description: 'المساعد الذكي الرئيسي لإدارة الأعمال التجارية',
-      icon: '🧠',
-      isBuiltIn: true,
-      settings: JSON.stringify({
-        soul: legacyConfig.soul || '',
-        rules: legacyConfig.rules || [],
-        skills: legacyConfig.skills || ALL_TOOL_NAMES,
-      }),
-    },
-  });
-}
-
-// GET /agents — list all agent definitions
+// GET /agents — list all agent templates
 router.get("/agents", async (req, res) => {
   try {
-    const prisma = getSharedPrismaClient();
-    await seedCeoAgentIfEmpty(prisma);
-    const agents = await prisma.agentDefinition.findMany({ orderBy: { createdAt: 'asc' } });
+    const result = await aiServiceAdminClient.listAgentTemplates();
     return res.json({
       success: true,
-      agents: agents.map(a => ({
-        id: a.id, name: a.name, type: a.type,
-        description: a.description || '', icon: a.icon || '🤖',
-        isBuiltIn: a.isBuiltIn,
-      })),
+      agents: Array.isArray(result) ? result.map(a => ({
+        id: a.slug, name: a.name, type: a.slug,
+        description: a.role || '', icon: '🤖',
+        isBuiltIn: true,
+      })) : [],
     });
   } catch (error) {
     console.error('[SA-AGENTS] GET list error:', error.message);
@@ -603,113 +556,47 @@ router.get("/agents", async (req, res) => {
   }
 });
 
-// GET /agents/:id — get agent with expanded skills
+// GET /agents/:id — get agent template with expanded details
 router.get("/agents/:id", async (req, res) => {
   try {
-    const prisma = getSharedPrismaClient();
-    const agent = await prisma.agentDefinition.findUnique({ where: { id: req.params.id } });
-    if (!agent) return res.status(404).json({ success: false, error: 'الوكيل غير موجود' });
-
-    const settings = parseJson(agent.settings, {});
-    const enabledNames = Array.isArray(settings.skills) && settings.skills.length > 0
-      ? settings.skills : ALL_TOOL_NAMES;
-
-    return res.json({
-      success: true,
-      agent: {
-        id: agent.id, name: agent.name, type: agent.type,
-        description: agent.description || '', icon: agent.icon || '🤖',
-        isBuiltIn: agent.isBuiltIn,
-        soul: settings.soul || '',
-        rules: Array.isArray(settings.rules) ? settings.rules : [],
-        skills: buildSkillsList(enabledNames),
-      },
-    });
+    const result = await aiServiceAdminClient.getAgentTemplate(req.params.id);
+    if (!result) return res.status(404).json({ success: false, error: 'الوكيل غير موجود' });
+    return res.json({ success: true, agent: result });
   } catch (error) {
     console.error('[SA-AGENTS] GET one error:', error.message);
     return res.status(500).json({ success: false, error: 'فشل تحميل إعدادات الوكيل' });
   }
 });
 
-// POST /agents — create new agent
+// POST /agents — create new agent template (via ai-service)
 router.post("/agents", async (req, res) => {
   try {
-    const prisma = getSharedPrismaClient();
-    const { name, type, description, icon } = req.body || {};
+    const { name, type, description } = req.body || {};
     if (!name?.trim() || !type?.trim())
       return res.status(400).json({ success: false, error: 'الاسم والمعرف مطلوبان' });
-
-    const existing = await prisma.agentDefinition.findUnique({ where: { type: type.trim() } });
-    if (existing)
-      return res.status(400).json({ success: false, error: 'هذا المعرف مستخدم بالفعل' });
-
-    const agent = await prisma.agentDefinition.create({
-      data: {
-        name: name.trim(), type: type.trim(),
-        description: description?.trim() || '',
-        icon: icon?.trim() || '🤖',
-        isBuiltIn: false,
-        settings: JSON.stringify({ soul: '', rules: [], skills: ALL_TOOL_NAMES }),
-      },
-    });
-
-    return res.status(201).json({
-      success: true,
-      agent: {
-        id: agent.id, name: agent.name, type: agent.type,
-        description: agent.description || '', icon: agent.icon || '🤖',
-        isBuiltIn: agent.isBuiltIn,
-      },
-    });
+    const result = await aiServiceAdminClient.createAgentTemplate({ slug: type.trim(), name: name.trim(), role: type.trim().toUpperCase(), description: description?.trim() || '' });
+    return res.status(201).json({ success: true, agent: result });
   } catch (error) {
     console.error('[SA-AGENTS] POST error:', error.message);
     return res.status(500).json({ success: false, error: 'فشل إنشاء الوكيل' });
   }
 });
 
-// PUT /agents/:id — update soul/rules/skills
+// PUT /agents/:id — update agent template
 router.put("/agents/:id", async (req, res) => {
   try {
-    const prisma = getSharedPrismaClient();
-    const agent = await prisma.agentDefinition.findUnique({ where: { id: req.params.id } });
-    if (!agent) return res.status(404).json({ success: false, error: 'الوكيل غير موجود' });
-
-    const { soul, rules, enabledSkills } = req.body || {};
-    const current = parseJson(agent.settings, {});
-    const updated = {
-      ...current,
-      soul: soul?.trim() ?? current.soul ?? '',
-      rules: Array.isArray(rules) ? rules.map(r => String(r).trim()).filter(Boolean) : (current.rules || []),
-      skills: Array.isArray(enabledSkills)
-        ? enabledSkills.filter(s => ALL_TOOL_NAMES.includes(s))
-        : ALL_TOOL_NAMES,
-    };
-
-    await prisma.agentDefinition.update({
-      where: { id: req.params.id },
-      data: { settings: JSON.stringify(updated) },
-    });
-
-    clearAgentCache(agent.type);
-
-    return res.json({ success: true, message: `تم حفظ إعدادات ${agent.name} ✅` });
+    const result = await aiServiceAdminClient.updateAgentTemplate(req.params.id, req.body || {});
+    return res.json({ success: true, message: 'تم حفظ الإعدادات ✅' });
   } catch (error) {
     console.error('[SA-AGENTS] PUT error:', error.message);
     return res.status(500).json({ success: false, error: 'فشل حفظ الإعدادات' });
   }
 });
 
-// DELETE /agents/:id — delete non-built-in agent
+// DELETE /agents/:id — delete agent template
 router.delete("/agents/:id", async (req, res) => {
   try {
-    const prisma = getSharedPrismaClient();
-    const agent = await prisma.agentDefinition.findUnique({ where: { id: req.params.id } });
-    if (!agent) return res.status(404).json({ success: false, error: 'الوكيل غير موجود' });
-    if (agent.isBuiltIn) return res.status(400).json({ success: false, error: 'لا يمكن حذف الوكلاء المدمجين' });
-
-    await prisma.agentDefinition.delete({ where: { id: req.params.id } });
-    clearAgentCache(agent.type);
-
+    await aiServiceAdminClient.deleteAgentTemplate(req.params.id);
     return res.json({ success: true, message: 'تم حذف الوكيل' });
   } catch (error) {
     console.error('[SA-AGENTS] DELETE error:', error.message);

@@ -1132,6 +1132,7 @@ class BaseAgent:
                 "tool_rounds": ctx.rounds,
                 "tools": executed,
                 "pipeline_trace": pipeline_trace,
+                "compiled_system_prompt": ctx.system_prompt or "",
                 "repaired": ctx.repaired,
                 "status": (ctx.early_return or {}).get("status", "ok"),
                 "thread_id": ctx.thread_id,

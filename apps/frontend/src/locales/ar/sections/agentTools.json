@@ -35,5 +35,17 @@
   "sources": {
     "mcp": "MCP",
     "python": "Python"
-  }
+  },
+  "tool_lead_score": "تقييم العملاء المحتملين",
+  "tool_lead_score_desc": "ترتيب العملاء حسب احتمالية الشراء بناءً على الحداثة والتكرار والقيمة",
+  "tool_abandoned_carts": "السلات المتروكة",
+  "tool_abandoned_carts_desc": "إيجاد العملاء الذين تركوا سلتهم وإقتراح إجراءات استرداد",
+  "tool_pipeline_overview": "نظرة عامة على خط المبيعات",
+  "tool_pipeline_overview_desc": "توزيع الأوامر حسب الحالة مع اتجاهات الإيرادات",
+  "tool_followup_suggestions": "اقتراحات المتابعة",
+  "tool_followup_suggestions_desc": "اقتراح إجراءات متابعة للعملاء غير النشطين",
+  "tool_deal_params": "معلمات التفاوض",
+  "tool_deal_params_desc": "متوسط الخصم والحد الأقصى المقترح ونطاق الأسعار",
+  "tool_purchase_prediction": "توقع الشراء",
+  "tool_purchase_prediction_desc": "توقع احتمالية الشراء لعميل محدد"
 }

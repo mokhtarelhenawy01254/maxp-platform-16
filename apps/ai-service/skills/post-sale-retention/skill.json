@@ -1,0 +1,21 @@
+{
+  "id": "post-sale-retention",
+  "displayName": "Post-Sale Retention",
+  "version": "1.0.0",
+  "description": "Retain customers after the sale: follow up, request reviews, suggest repurchases, and run referral programs.",
+  "allowedTools": [
+    "customer_info",
+    "order_lookup",
+    "order_summary",
+    "product_search",
+    "product_top_selling",
+    "lead_score",
+    "purchase_prediction",
+    "followup_suggestions",
+    "discount_create_draft",
+    "whatsapp_send",
+    "shipping_rates"
+  ],
+  "requiresHumanApproval": true,
+  "maxToolCount": 5
+}

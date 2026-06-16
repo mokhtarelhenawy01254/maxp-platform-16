@@ -3,7 +3,10 @@
   "displayName": "Discount Proposal",
   "version": "1.0.0",
   "description": "Prepare a discount proposal that requires human approval.",
-  "allowedTools": ["product.search", "discount.create_draft"],
+  "allowedTools": [
+    "product_search",
+    "discount_create_draft"
+  ],
   "requiresHumanApproval": true,
   "maxToolCount": 2
 }
