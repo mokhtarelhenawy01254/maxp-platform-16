@@ -30,6 +30,18 @@ router.post('/conversations/:id/messages',
     unifiedInboxController.sendUnifiedMessage
 );
 
+// Update conversation (status, assignment, etc.)
+router.put('/conversations/:id',
+    verifyToken.authenticateToken,
+    unifiedInboxController.updateUnifiedConversation
+);
+
+// Delete conversation
+router.delete('/conversations/:id',
+    verifyToken.authenticateToken,
+    unifiedInboxController.deleteUnifiedConversation
+);
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📊 إحصائيات
 // ═══════════════════════════════════════════════════════════════════════════════

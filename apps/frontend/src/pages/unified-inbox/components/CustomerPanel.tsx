@@ -9,7 +9,8 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { format } from "date-fns";
-import { arSA } from "date-fns/locale";
+import { arSA, enUS } from "date-fns/locale";
+import { useTranslation } from "react-i18next";
 import { useCustomerProfile } from "../../../hooks/inbox/useCustomerProfile";
 import { InboxConversation } from "../../../types/inbox.types";
 import TagInput from "../../../components/facebook-inbox/TagInput/TagInput";
@@ -53,6 +54,7 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
   disabled = false,
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>("timeline");
+  const { t, i18n } = useTranslation();
 
   const {
     customer,
@@ -91,7 +93,7 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
                 "color-mix(in srgb, var(--color-background) 94%, transparent)",
             }}
           >
-            {conversation.customerName.charAt(0)}
+            {(conversation.customerName || "?").charAt(0)}
           </div>
         )}
         <h3 className="text-lg font-bold" style={headingStyle}>
@@ -110,7 +112,7 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
         <div className="mt-4 flex justify-center gap-4 text-sm">
           <div className="text-center">
             <p className="text-xs" style={mutedStyle}>
-              الطلبات
+              {t("unifiedInbox.orders")}
             </p>
             <p className="font-semibold" style={headingStyle}>
               {orders.length}
@@ -118,10 +120,10 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
           </div>
           <div className="text-center">
             <p className="text-xs" style={mutedStyle}>
-              القيمة
+              {t("unifiedInbox.orderValue")}
             </p>
             <p className="font-semibold" style={successStyle}>
-              {ltv.toLocaleString()} ج.م
+              {ltv.toLocaleString()} {t("unifiedInbox.egp")}
             </p>
           </div>
         </div>
@@ -155,7 +157,7 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
           data-active={activeTab === "timeline"}
         >
           <span className="flex items-center justify-center gap-1">
-            <Activity size={16} /> نشاط
+            <Activity size={16} /> {t("unifiedInbox.activity")}
           </span>
         </button>
         <button
@@ -164,7 +166,7 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
           data-active={activeTab === "orders"}
         >
           <span className="flex items-center justify-center gap-1">
-            <ShoppingBag size={16} /> طلبات
+            <ShoppingBag size={16} /> {t("unifiedInbox.orders")}
             {orders.length > 0 && (
               <span className="business-inbox-tab-count">{orders.length}</span>
             )}
@@ -176,7 +178,7 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
           data-active={activeTab === "info"}
         >
           <span className="flex items-center justify-center gap-1">
-            <User size={16} /> معلومات
+            <User size={16} /> {t("unifiedInbox.info")}
           </span>
         </button>
       </div>
@@ -198,7 +200,7 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
                     className="mb-3 text-xs font-semibold uppercase"
                     style={mutedStyle}
                   >
-                    التواصل
+                    {t("unifiedInbox.contact")}
                   </h4>
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 text-sm">
@@ -208,7 +210,7 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
                         style={headingStyle}
                         dir="ltr"
                       >
-                        {customer?.phone || "غير متوفر"}
+                        {customer?.phone || t("unifiedInbox.notAvailable")}
                       </span>
                     </div>
                     {customer?.email &&
@@ -228,7 +230,7 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
                     className="mb-3 text-xs font-semibold uppercase"
                     style={mutedStyle}
                   >
-                    التصنيفات
+                    {t("unifiedInbox.categories")}
                   </h4>
                   <TagInput
                     conversationId={conversation.id}
@@ -249,7 +251,7 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
                       className="mx-auto mb-2 opacity-20"
                       style={mutedStyle}
                     />
-                    <p>لا توجد طلبات سابقة</p>
+                    <p>{t("unifiedInbox.noOrders")}</p>
                   </div>
                 ) : (
                   orders.map((order) => (
@@ -261,7 +263,7 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
                           </p>
                           <p className="text-xs" style={mutedStyle}>
                             {format(new Date(order.createdAt), "dd MMM yyyy", {
-                              locale: arSA,
+                              locale: i18n.language === "ar" ? arSA : enUS,
                             })}
                           </p>
                         </div>
@@ -276,10 +278,10 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
                         }}
                       >
                         <span className="text-xs" style={mutedStyle}>
-                          {order.items?.length || 0} منتجات
+                          {order.items?.length || 0} {t("unifiedInbox.products")}
                         </span>
                         <span className="font-bold" style={primaryStyle}>
-                          {order.total?.toLocaleString() || 0} ج.م
+                          {order.total?.toLocaleString() || 0} {t("unifiedInbox.egp")}
                         </span>
                       </div>
                       <button
@@ -293,7 +295,7 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
                         data-active="true"
                       >
                         <ExternalLink size={14} />
-                        عرض الطلب
+                        {t("unifiedInbox.viewOrder")}
                       </button>
                     </div>
                   ))
@@ -313,7 +315,7 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
                       className="mx-auto mb-2 opacity-20"
                       style={mutedStyle}
                     />
-                    <p>لا يوجد نشاط مسجل</p>
+                    <p>{t("unifiedInbox.noActivity")}</p>
                   </div>
                 ) : (
                   activities.map((activity) => (
@@ -336,7 +338,7 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
                             new Date(activity.createdAt),
                             "dd MMM, HH:mm",
                             {
-                              locale: arSA,
+                              locale: i18n.language === "ar" ? arSA : enUS,
                             },
                           )}
                         </p>

@@ -178,6 +178,9 @@ const UnifiedInbox: React.FC = () => {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [sending, setSending] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const pageRef = useRef(1);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
@@ -200,6 +203,7 @@ const UnifiedInbox: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const actionsMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const socketHandlerRef = useRef<((message: any) => void) | null>(null);
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -232,28 +236,50 @@ const UnifiedInbox: React.FC = () => {
   // 📡 Data Fetching
   // ──────────────────────────────────────────────────────────
 
-  const loadConversations = useCallback(async () => {
+  const loadConversations = useCallback(async (pageNum?: number, append?: boolean) => {
+    const targetPage = pageNum ?? 1;
+    const isAppend = append ?? false;
+
     try {
-      setLoading(true);
+      if (!isAppend) setLoading(true);
+      else setLoadingMore(true);
+
       const params = new URLSearchParams();
-      
+
       if (selectedPlatforms.length > 0) {
         params.set("platform", selectedPlatforms.join(","));
       } else {
         params.set("platform", "all");
       }
-      
+
       if (searchQuery) params.set("search", searchQuery);
       if (followUpFilter) params.set("status", "pending");
       if (unreadFilter) params.set("unreadOnly", "true");
       params.set("limit", "50");
+      params.set("page", String(targetPage));
 
       const response = await apiClient.get(
         `/api/v1/unified-inbox/conversations?${params.toString()}`,
       );
 
       if (response.data?.success) {
-        setConversations(response.data.data || []);
+        const newData = response.data.data || [];
+        const pagination = response.data.pagination || {};
+        const hasNext = pagination.totalPages > targetPage;
+
+        setHasMore(hasNext);
+        pageRef.current = targetPage;
+
+        if (isAppend) {
+          setConversations(prev => {
+            const existingIds = new Set(prev.map(c => c.id));
+            const fresh = newData.filter(c => !existingIds.has(c.id));
+            return [...prev, ...fresh];
+          });
+        } else {
+          setConversations(newData);
+        }
+
         if (response.data.counts) {
           setCounts(response.data.counts);
         }
@@ -262,8 +288,21 @@ const UnifiedInbox: React.FC = () => {
       console.error("❌ Error loading conversations:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, [selectedPlatforms, searchQuery, followUpFilter, unreadFilter]);
+
+  const loadMoreConversations = useCallback(() => {
+    if (!hasMore || loadingMore) return;
+    loadConversations(pageRef.current + 1, true);
+  }, [hasMore, loadingMore, loadConversations]);
+
+  const handleConversationListScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 150) {
+      loadMoreConversations();
+    }
+  }, [loadMoreConversations]);
 
   const loadMessages = useCallback(async (conv: UnifiedConversation) => {
     try {
@@ -428,7 +467,7 @@ const UnifiedInbox: React.FC = () => {
               ? {
                   ...c,
                   lastMessage: attachedFile
-                    ? (attachedFile.type === "image" ? "📷 صورة" : `📎 ${attachedFile.name}`)
+                    ? (attachedFile.type === "image" ? `📷 ${t("unifiedInbox.image")}` : `📎 ${attachedFile.name}`)
                     : newMessage.trim(),
                   lastMessageTime: new Date().toISOString(),
                   lastMessageIsFromCustomer: false,
@@ -439,7 +478,7 @@ const UnifiedInbox: React.FC = () => {
       }
     } catch (error: any) {
       console.error("❌ Error sending message:", error);
-      const msg = error?.response?.data?.message || error?.message || (i18n.language === "ar" ? "فشل إرسال الرسالة، حاول مرة أخرى" : "Failed to send message, please try again");
+      const msg = error?.response?.data?.message || error?.message || t("unifiedInbox.sendFailed");
       setSendError(msg);
       // Auto-clear error after 5 seconds
       setTimeout(() => setSendError(null), 5000);
@@ -453,7 +492,7 @@ const UnifiedInbox: React.FC = () => {
     if (!selectedConversation) return;
     setShowActionsMenu(false);
     try {
-      await apiClient.put(`/api/v1/conversations/${selectedConversation.id}`, { status: "resolved" });
+      await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}`, { status: "resolved" });
       setConversations(prev => prev.filter(c => c.id !== selectedConversation.id));
       setSelectedConversation(null);
     } catch (err) {
@@ -463,27 +502,25 @@ const UnifiedInbox: React.FC = () => {
 
   const handleDeleteConversation = useCallback(async () => {
     if (!selectedConversation) return;
-    const confirmMsg = i18n.language === "ar" ? "هل أنت متأكد من حذف هذه المحادثة؟" : "Are you sure you want to delete this conversation?";
-    if (!window.confirm(confirmMsg)) return;
+    if (!window.confirm(t("unifiedInbox.deleteConfirm"))) return;
     setShowActionsMenu(false);
     try {
-      await apiClient.delete(`/api/v1/conversations/${selectedConversation.id}`);
+      await apiClient.delete(`/api/v1/unified-inbox/conversations/${selectedConversation.id}`);
       setConversations(prev => prev.filter(c => c.id !== selectedConversation.id));
       setSelectedConversation(null);
     } catch (err) {
       console.error("Error deleting conversation:", err);
     }
-  }, [selectedConversation, i18n.language]);
+  }, [selectedConversation]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     searchTimeoutRef.current = setTimeout(() => {
-      loadConversations();
+      setSearchQuery(value);
     }, 400);
   };
 
@@ -501,11 +538,21 @@ const UnifiedInbox: React.FC = () => {
     loadQuickReplies();
   }, [loadConversations, loadQuickReplies]);
 
+  // Warn before closing if there's unsent message
   useEffect(() => {
-    // Real-time updates
+    if (!newMessage.trim()) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [newMessage]);
+
+  useEffect(() => {
     socketService.connect();
 
-    socketService.onMessage?.((message: any) => {
+    const handler = (message: any) => {
       if (
         selectedConversation &&
         message.conversationId === selectedConversation.id
@@ -513,7 +560,6 @@ const UnifiedInbox: React.FC = () => {
         setMessages((prev) => [...prev, message]);
         scrollToBottom();
       }
-      // Update conversation list
       setConversations((prev) =>
         prev.map((c) =>
           c.id === message.conversationId
@@ -526,10 +572,16 @@ const UnifiedInbox: React.FC = () => {
             : c,
         ),
       );
-    });
+    };
+
+    socketHandlerRef.current = handler;
+    socketService.onMessage(handler);
 
     return () => {
-      // Cleanup if needed
+      if (socketHandlerRef.current) {
+        socketService.off("message:new", socketHandlerRef.current);
+        socketHandlerRef.current = null;
+      }
     };
   }, [selectedConversation]);
 
@@ -540,6 +592,7 @@ const UnifiedInbox: React.FC = () => {
   const formatTime = (dateStr: string) => {
     if (!dateStr) return "";
     const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return "";
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -689,7 +742,10 @@ const UnifiedInbox: React.FC = () => {
           </div>
 
           {/* Conversation List */}
-          <div className="flex-1 overflow-y-auto">
+          <div
+            className="flex-1 overflow-y-auto"
+            onScroll={handleConversationListScroll}
+          >
             {loading ? (
               <div className="business-inbox-empty h-40">
                 <div className="flex flex-col items-center gap-3">
@@ -716,91 +772,104 @@ const UnifiedInbox: React.FC = () => {
                 <p className="text-sm">{t("unifiedInbox.noConversations")}</p>
               </div>
             ) : (
-              conversations.map((conv) => (
-                <div
-                  key={conv.id}
-                  onClick={() => selectConversation(conv)}
-                  className="business-conversation-card"
-                  data-state={
-                    selectedConversation?.id === conv.id
-                      ? "selected"
-                      : conv.unreadCount > 0
-                        ? "attention"
-                        : "idle"
-                  }
-                >
-                  <div className="flex items-start gap-3">
-                    {/* Avatar */}
-                    <div className="relative flex-shrink-0">
-                      {conv.contactAvatar ? (
-                        <img
-                          src={conv.contactAvatar}
-                          alt={conv.contactName}
-                          className="business-conversation-avatar"
-                        />
-                      ) : (
-                        <div className="business-conversation-fallback">
-                          {conv.contactName?.charAt(0) || "?"}
-                        </div>
-                      )}
-                      {/* Platform indicator */}
-                      <span
-                        className={`absolute -bottom-0.5 text-xs ${isRtl ? "-left-0.5" : "-right-0.5"}`}
-                      >
-                        {platformStyles[conv.platform]?.icon || "💬"}
-                      </span>
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <h3
-                          className={`font-semibold text-sm truncate ${isRtl ? "text-right" : "text-left"}`}
-                          style={{ color: "var(--color-foreground)" }}
-                        >
-                          {conv.contactName || t("unifiedInbox.unknown")}
-                        </h3>
+              <>
+                {conversations.map((conv) => (
+                  <button
+                    key={conv.id}
+                    onClick={() => selectConversation(conv)}
+                    className="business-conversation-card w-full text-left"
+                    data-state={
+                      selectedConversation?.id === conv.id
+                        ? "selected"
+                        : conv.unreadCount > 0
+                          ? "attention"
+                          : "idle"
+                    }
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="relative flex-shrink-0">
+                        {conv.contactAvatar ? (
+                          <img
+                            src={conv.contactAvatar}
+                            alt={conv.contactName}
+                            className="business-conversation-avatar"
+                            width={40}
+                            height={40}
+                          />
+                        ) : (
+                          <div className="business-conversation-fallback">
+                            {conv.contactName?.charAt(0) || "?"}
+                          </div>
+                        )}
                         <span
-                          className={`text-[11px] flex-shrink-0 ${isRtl ? "mr-2" : "ml-2"}`}
-                          style={{ color: "var(--color-muted-foreground)" }}
+                          className={`absolute -bottom-0.5 text-xs ${isRtl ? "-left-0.5" : "-right-0.5"}`}
                         >
-                          {formatTime(conv.lastMessageTime)}
+                          {platformStyles[conv.platform]?.icon || "💬"}
                         </span>
                       </div>
 
-                      <p
-                        className={`text-xs truncate leading-5 ${isRtl ? "text-right" : "text-left"}`}
-                        style={{ color: "var(--color-muted-foreground)" }}
-                      >
-                        {conv.lastMessageIsFromCustomer
-                          ? ""
-                          : t("unifiedInbox.you")}
-                        {conv.lastMessage || t("unifiedInbox.noMessages")}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <h3
+                            className={`font-semibold text-sm truncate ${isRtl ? "text-right" : "text-left"}`}
+                            style={{ color: "var(--color-foreground)" }}
+                            translate="no"
+                          >
+                            {conv.contactName || t("unifiedInbox.unknown")}
+                          </h3>
+                          <span
+                            className={`text-[11px] flex-shrink-0 ${isRtl ? "mr-2" : "ml-2"}`}
+                            style={{ color: "var(--color-muted-foreground)" }}
+                          >
+                            {formatTime(conv.lastMessageTime)}
+                          </span>
+                        </div>
 
-                      <div className="flex items-center justify-between mt-1">
-                        {getPlatformBadge(conv.platform)}
-                        <div className="flex items-center gap-1.5">
-                          {conv.isPinned && (
-                            <StarSolidIcon
-                              className="w-3.5 h-3.5"
-                              style={{ color: "var(--business-warning)" }}
-                            />
-                          )}
-                          {conv.unreadCount > 0 && (
-                            <span
-                              className="text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 text-white"
-                              style={{ background: "var(--business-danger)" }}
-                            >
-                              {conv.unreadCount > 99 ? "99+" : conv.unreadCount}
-                            </span>
-                          )}
+                        <p
+                          className={`text-xs truncate leading-5 ${isRtl ? "text-right" : "text-left"}`}
+                          style={{ color: "var(--color-muted-foreground)" }}
+                          translate="no"
+                        >
+                          {conv.lastMessageIsFromCustomer
+                            ? ""
+                            : t("unifiedInbox.you")}
+                          {conv.lastMessage || t("unifiedInbox.noMessages")}
+                        </p>
+
+                        <div className="flex items-center justify-between mt-1">
+                          {getPlatformBadge(conv.platform)}
+                          <div className="flex items-center gap-1.5">
+                            {conv.isPinned && (
+                              <StarSolidIcon
+                                className="w-3.5 h-3.5"
+                                style={{ color: "var(--business-warning)" }}
+                              />
+                            )}
+                            {conv.unreadCount > 0 && (
+                              <span
+                                className="text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 text-white"
+                                style={{ background: "var(--business-danger)" }}
+                              >
+                                {conv.unreadCount > 99 ? "99+" : conv.unreadCount}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
+                  </button>
+                ))}
+                {loadingMore && (
+                  <div className="flex justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-t-transparent"
+                      style={{
+                        borderColor: "color-mix(in srgb, var(--color-primary) 24%, transparent)",
+                        borderTopColor: "transparent",
+                      }}
+                    />
                   </div>
-                </div>
-              ))
+                )}
+              </>
             )}
           </div>
         </div>
@@ -832,6 +901,7 @@ const UnifiedInbox: React.FC = () => {
                       <h3
                         className="font-semibold text-sm"
                         style={{ color: "var(--color-foreground)" }}
+                        translate="no"
                       >
                         {selectedConversation.contactName}
                       </h3>
@@ -854,17 +924,17 @@ const UnifiedInbox: React.FC = () => {
                       onClick={() => setShowProfilePanel(!showProfilePanel)}
                       className="business-chip-button"
                       data-active={showProfilePanel ? "true" : "false"}
-                      title={t("unifiedInbox.profile")}
+                      aria-label={t("unifiedInbox.profile")}
                     >
-                      <UserCircleIcon className="w-5 h-5" />
+                      <UserCircleIcon className="w-5 h-5" aria-hidden="true" />
                     </button>
                     <div className="relative" ref={actionsMenuRef}>
                       <button
                         className="business-chip-button"
                         onClick={() => setShowActionsMenu(prev => !prev)}
-                        title={i18n.language === "ar" ? "خيارات" : "Options"}
+                        aria-label={t("unifiedInbox.options")}
                       >
-                        <EllipsisVerticalIcon className="w-5 h-5" />
+                        <EllipsisVerticalIcon className="w-5 h-5" aria-hidden="true" />
                       </button>
                       {showActionsMenu && (
                         <div
@@ -884,7 +954,7 @@ const UnifiedInbox: React.FC = () => {
                           >
                             <span style={{ color: "var(--business-success)" }}>✓</span>
                             <span className="inbox-platform-text">
-                              {i18n.language === "ar" ? "تحديد كمحلول" : "Mark as Resolved"}
+                              {t("unifiedInbox.markAsResolved")}
                             </span>
                           </button>
                           <button
@@ -893,7 +963,7 @@ const UnifiedInbox: React.FC = () => {
                           >
                             <span>👤</span>
                             <span className="inbox-platform-text">
-                              {i18n.language === "ar" ? (showProfilePanel ? "إخفاء البروفايل" : "عرض البروفايل") : (showProfilePanel ? "Hide Profile" : "Show Profile")}
+                              {showProfilePanel ? t("unifiedInbox.hideProfile") : t("unifiedInbox.showProfile")}
                             </span>
                           </button>
                           <div style={{ height: 1, background: "var(--business-card-border)", margin: "4px 8px" }} />
@@ -904,7 +974,7 @@ const UnifiedInbox: React.FC = () => {
                           >
                             <span>🗑️</span>
                             <span className="inbox-platform-text">
-                              {i18n.language === "ar" ? "حذف المحادثة" : "Delete Conversation"}
+                              {t("unifiedInbox.deleteConversation")}
                             </span>
                           </button>
                         </div>
@@ -1041,6 +1111,7 @@ const UnifiedInbox: React.FC = () => {
                                       ? "var(--color-foreground)"
                                       : "white",
                                   }}
+                                  translate="no"
                                 >
                                   {msg.content}
                                 </p>
@@ -1067,10 +1138,12 @@ const UnifiedInbox: React.FC = () => {
                                 {!msg.isFromCustomer && (
                                   <span className="text-[10px]">
                                     {msg.status === "read"
-                                      ? "✓✓"
+                                      ? <span style={{ color: "#53bdeb" }}>✓✓</span>
                                       : msg.status === "delivered"
                                         ? "✓✓"
-                                        : "✓"}
+                                        : msg.status === "sending"
+                                          ? <ClockIcon className="w-3 h-3 inline" />
+                                          : "✓"}
                                   </span>
                                 )}
                               </div>
@@ -1100,8 +1173,9 @@ const UnifiedInbox: React.FC = () => {
                     onClick={() => setSendError(null)}
                     className="ml-auto"
                     style={{ color: "inherit", opacity: 0.7 }}
+                    aria-label={t("unifiedInbox.dismiss")}
                   >
-                    <XMarkIcon className="w-4 h-4" />
+                    <XMarkIcon className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
               )}
@@ -1122,12 +1196,13 @@ const UnifiedInbox: React.FC = () => {
                       >
                         {t("unifiedInbox.quickReplies")}
                       </span>
-                      <button
-                        onClick={() => setShowQuickReplies(false)}
-                        className="business-chip-button"
-                      >
-                        <XMarkIcon className="w-4 h-4" />
-                      </button>
+                  <button
+                    onClick={() => setShowQuickReplies(false)}
+                    className="business-chip-button"
+                    aria-label={t("unifiedInbox.close")}
+                  >
+                    <XMarkIcon className="w-4 h-4" aria-hidden="true" />
+                  </button>
                     </div>
                     {quickReplies.map((reply) => (
                       <button
@@ -1174,8 +1249,8 @@ const UnifiedInbox: React.FC = () => {
                       <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>{attachedFile.type}</p>
                     </div>
                   </div>
-                  <button onClick={() => setAttachedFile(null)} className="business-chip-button shrink-0">
-                    <XMarkIcon className="w-4 h-4" />
+                  <button onClick={() => setAttachedFile(null)} className="business-chip-button shrink-0" aria-label={t("unifiedInbox.removeFile")}>
+                    <XMarkIcon className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
               )}
@@ -1210,24 +1285,24 @@ const UnifiedInbox: React.FC = () => {
                     <button
                       onClick={() => setShowQuickReplies(!showQuickReplies)}
                       className="business-chip-button"
-                      title={t("unifiedInbox.quickReplies")}
+                      aria-label={t("unifiedInbox.quickReplies")}
                     >
-                      <BoltIcon className="w-5 h-5" />
+                      <BoltIcon className="w-5 h-5" aria-hidden="true" />
                     </button>
                     <button
                       onClick={() => fileInputRef.current?.click()}
                       className={`business-chip-button ${uploadingFile ? 'animate-pulse' : ''}`}
-                      title={t("unifiedInbox.attachFile")}
+                      aria-label={t("unifiedInbox.attachFile")}
                       disabled={uploadingFile}
                     >
-                      <PaperClipIcon className="w-5 h-5" />
+                      <PaperClipIcon className="w-5 h-5" aria-hidden="true" />
                     </button>
                     <button
                       onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                       className={`business-chip-button ${showEmojiPicker ? 'text-primary' : ''}`}
-                      title={t("unifiedInbox.emoji")}
+                      aria-label={t("unifiedInbox.emoji")}
                     >
-                      <FaceSmileIcon className="w-5 h-5" />
+                      <FaceSmileIcon className="w-5 h-5" aria-hidden="true" />
                     </button>
                   </div>
 
@@ -1243,7 +1318,7 @@ const UnifiedInbox: React.FC = () => {
                           handleSendMessage();
                         }
                       }}
-                      placeholder={uploadingFile ? "جاري رفع الملف..." : t("unifiedInbox.inputPlaceholder", {
+                      placeholder={uploadingFile ? t("unifiedInbox.uploading") : t("unifiedInbox.inputPlaceholder", {
                         platform: t(`unifiedInbox.platforms.${selectedConversation.platform}`, {
                           defaultValue: platformStyles[selectedConversation.platform]?.label || t("common.platform")
                         }),
@@ -1262,11 +1337,12 @@ const UnifiedInbox: React.FC = () => {
                       background:
                         "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
                     }}
+                    aria-label={t("unifiedInbox.send")}
                   >
                     {sending ? (
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true"></div>
                     ) : (
-                      <PaperAirplaneIcon className={`w-5 h-5 ${isRtl ? "rotate-180" : ""}`} />
+                      <PaperAirplaneIcon className={`w-5 h-5 ${isRtl ? "rotate-180" : ""}`} aria-hidden="true" />
                     )}
                   </button>
                 </div>
@@ -1338,8 +1414,9 @@ const UnifiedInbox: React.FC = () => {
               <button
                 onClick={() => setShowProfilePanel(false)}
                 className={`absolute top-3 p-1 rounded business-chip-button ${isRtl ? "left-3" : "right-3"}`}
+                aria-label={t("unifiedInbox.close")}
               >
-                <XMarkIcon className="w-4 h-4" />
+                <XMarkIcon className="w-4 h-4" aria-hidden="true" />
               </button>
 
               <div className="relative inline-block mb-3">
@@ -1371,6 +1448,7 @@ const UnifiedInbox: React.FC = () => {
               <h3
                 className="font-bold text-lg"
                 style={{ color: "var(--color-foreground)" }}
+                translate="no"
               >
                 {customerProfile?.name || selectedConversation.contactName}
               </h3>

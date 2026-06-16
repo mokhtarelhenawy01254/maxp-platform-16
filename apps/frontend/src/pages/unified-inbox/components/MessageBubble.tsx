@@ -1,5 +1,6 @@
 import React, { useState, memo } from "react";
 import { Trash2, Reply, Forward, Star, Smile } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import ReactionSelector from "../../../../components/facebook-inbox/Generic/ReactionSelector";
 import LinkifiedText from "../../../components/common/LinkifiedText";
 import { InboxMessage } from "../../../types/inbox.types";
@@ -51,6 +52,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
     const isCustomer = !!message.isFromCustomer;
     const [showActions, setShowActions] = useState(false);
     const [showReactionSelector, setShowReactionSelector] = useState(false);
+    const { t, i18n } = useTranslation();
 
     // Parse metadata safely
     let metadata: any = {};
@@ -87,34 +89,34 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
         messageDate.getDate(),
       );
 
+      if (isNaN(messageDate.getTime())) return "";
+
       const diffDays = Math.floor(
         (today.getTime() - msgDay.getTime()) / (1000 * 60 * 60 * 24),
       );
 
-      const timeStr = messageDate.toLocaleTimeString("ar-EG", {
+      const locale = i18n.language === "ar" ? "ar-EG" : "en-US";
+      const timeStr = messageDate.toLocaleTimeString(locale, {
         hour: "2-digit",
         minute: "2-digit",
-        calendar: "gregory",
       });
 
       if (diffDays === 0) {
         return timeStr;
       } else if (diffDays === 1) {
-        return `أمس ${timeStr}`;
+        return `${t("unifiedInbox.yesterday")} ${timeStr}`;
       } else if (diffDays < 7) {
-        return messageDate.toLocaleDateString("ar-EG", {
+        return messageDate.toLocaleDateString(locale, {
           weekday: "short",
           hour: "2-digit",
           minute: "2-digit",
-          calendar: "gregory",
         });
       } else {
-        return messageDate.toLocaleDateString("ar-EG", {
+        return messageDate.toLocaleDateString(locale, {
           day: "numeric",
           month: "short",
           hour: "2-digit",
           minute: "2-digit",
-          calendar: "gregory",
         });
       }
     };
@@ -195,14 +197,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
           >
             {onReaction && (
               <div className="relative">
-                <button
-                  onClick={() => setShowReactionSelector(!showReactionSelector)}
-                  className="business-icon-button business-icon-button--sm"
-                  style={myReaction ? warningActionStyle : neutralActionStyle}
-                  title="إضافة تفاعل"
-                >
-                  <Smile size={14} />
-                </button>
+                  <button
+                    onClick={() => setShowReactionSelector(!showReactionSelector)}
+                    className="business-icon-button business-icon-button--sm"
+                    style={myReaction ? warningActionStyle : neutralActionStyle}
+                    title={t("unifiedInbox.addReaction")}
+                  >
+                    <Smile size={14} />
+                  </button>
                 {showReactionSelector && (
                   <ReactionSelector
                     onSelect={(r) => {
@@ -219,7 +221,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                 onClick={() => onReply(message)}
                 className="business-icon-button business-icon-button--sm"
                 style={neutralActionStyle}
-                title="رد"
+                title={t("unifiedInbox.reply")}
               >
                 <Reply size={14} />
               </button>
@@ -229,7 +231,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                 onClick={() => onStar(message.id, !!isStarred)}
                 className="business-icon-button business-icon-button--sm"
                 style={isStarred ? warningActionStyle : neutralActionStyle}
-                title={isStarred ? "إلغاء التمييز" : "تمييز الرسالة"}
+                title={isStarred ? t("unifiedInbox.unstarMessage") : t("unifiedInbox.starMessage")}
               >
                 <Star size={14} fill={isStarred ? "currentColor" : "none"} />
               </button>
@@ -239,7 +241,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                 onClick={() => onForward(message)}
                 className="business-icon-button business-icon-button--sm"
                 style={neutralActionStyle}
-                title="إعادة توجيه"
+                title={t("unifiedInbox.forward")}
               >
                 <Forward size={14} />
               </button>
@@ -249,7 +251,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                 onClick={() => onDelete(message.id)}
                 className="business-icon-button business-icon-button--sm"
                 style={dangerActionStyle}
-                title="حذف الرسالة"
+                title={t("unifiedInbox.deleteMessage")}
               >
                 <Trash2 size={14} />
               </button>
@@ -278,7 +280,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                 className="h-2 w-2 animate-pulse rounded-full"
                 style={{ background: "var(--business-danger)" }}
               />
-              <span>غير مردود عليها</span>
+              <span>{t("unifiedInbox.unreplied")}</span>
             </div>
           )}
 
@@ -297,7 +299,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
               >
                 <div className="font-semibold">{replyTo.senderName}</div>
                 <div className="truncate opacity-80">
-                  {replyTo.type === "text" ? replyTo.content : "مرفق/صورة"}
+                  {replyTo.type === "text" ? replyTo.content : replyTo.content || t("unifiedInbox.mediaAttachment")}
                 </div>
               </div>
             )}
@@ -310,7 +312,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                 <div className="mb-2">
                   <img
                     src={message.fileUrl || message.content}
-                    alt="صورة"
+                    alt={t("unifiedInbox.mediaAttachment")}
                     loading="lazy"
                     className="rounded-lg max-w-full h-auto"
                     style={{ maxHeight: "300px" }}

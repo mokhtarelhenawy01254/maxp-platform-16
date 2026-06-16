@@ -82,6 +82,9 @@ const getUnifiedConversations = async (req, res) => {
 
         const prisma = getSharedPrismaClient();
 
+        // When merging with WhatsApp, fetch extra for better sort accuracy
+        const fbTake = hasAll ? take * mergeTakeMultiplier : take;
+
         // Run conversations query and count in parallel
         const [conversations, totalCount] = await Promise.all([
             executeWithRetry(async () => {
@@ -121,7 +124,7 @@ const getUnifiedConversations = async (req, res) => {
                     },
                     orderBy: { [sortBy]: sortOrder },
                     skip,
-                    take
+                    take: fbTake
                 });
             }, 3),
             executeWithRetry(async () => {
@@ -135,6 +138,10 @@ const getUnifiedConversations = async (req, res) => {
         let whatsappContacts = [];
         const shouldFetchWhatsApp = hasAll || selectedPlatforms.includes('WHATSAPP');
         const isWhatsAppOnly = !hasAll && selectedPlatforms.includes('WHATSAPP') && selectedPlatforms.length === 1;
+
+        // When merging sources, fetch enough from each for a representative sort
+        const mergeTakeMultiplier = 2;
+        const waTake = isWhatsAppOnly ? take : (hasAll ? take * mergeTakeMultiplier : take);
 
         if (shouldFetchWhatsApp) {
             try {
@@ -164,7 +171,7 @@ const getUnifiedConversations = async (req, res) => {
                             { lastMessageAt: 'desc' }
                         ],
                         skip: isWhatsAppOnly ? skip : 0,
-                        take: isWhatsAppOnly ? take : 20,
+                        take: waTake,
                         select: {
                             id: true,
                             sessionId: true,
@@ -763,21 +770,24 @@ const getUnifiedStats = async (req, res) => {
 
         const prisma = getSharedPrismaClient();
 
+        // Get WhatsApp session IDs for contact queries
+        const waSessions = await prisma.whatsAppSession.findMany({
+            where: { companyId },
+            select: { id: true }
+        });
+        const waSessionIds = waSessions.map(s => s.id);
+
         const [
-            totalActive,
-            totalUnreplied,
             fbActive,
             igActive,
-            waActive,
             tgActive,
-            totalResolved
+            fbUnreplied,
+            igUnreplied,
+            tgUnreplied,
+            fbResolved,
+            igResolved,
+            tgResolved
         ] = await Promise.all([
-            prisma.conversation.count({
-                where: { companyId, channel: { in: ['FACEBOOK', 'INSTAGRAM', 'WHATSAPP', 'TELEGRAM'] }, status: { in: ['ACTIVE', 'PENDING'] } }
-            }),
-            prisma.conversation.count({
-                where: { companyId, channel: { in: ['FACEBOOK', 'INSTAGRAM', 'WHATSAPP', 'TELEGRAM'] }, status: { in: ['ACTIVE', 'PENDING'] }, lastMessageIsFromCustomer: true }
-            }),
             prisma.conversation.count({
                 where: { companyId, channel: 'FACEBOOK', status: { in: ['ACTIVE', 'PENDING'] } }
             }),
@@ -785,34 +795,55 @@ const getUnifiedStats = async (req, res) => {
                 where: { companyId, channel: 'INSTAGRAM', status: { in: ['ACTIVE', 'PENDING'] } }
             }),
             prisma.conversation.count({
-                where: { companyId, channel: 'WHATSAPP', status: { in: ['ACTIVE', 'PENDING'] } }
-            }),
-            prisma.conversation.count({
                 where: { companyId, channel: 'TELEGRAM', status: { in: ['ACTIVE', 'PENDING'] } }
             }),
             prisma.conversation.count({
-                where: { companyId, channel: { in: ['FACEBOOK', 'INSTAGRAM', 'WHATSAPP', 'TELEGRAM'] }, status: { in: ['RESOLVED', 'CLOSED'] } }
+                where: { companyId, channel: 'FACEBOOK', status: { in: ['ACTIVE', 'PENDING'] }, lastMessageIsFromCustomer: true }
+            }),
+            prisma.conversation.count({
+                where: { companyId, channel: 'INSTAGRAM', status: { in: ['ACTIVE', 'PENDING'] }, lastMessageIsFromCustomer: true }
+            }),
+            prisma.conversation.count({
+                where: { companyId, channel: 'TELEGRAM', status: { in: ['ACTIVE', 'PENDING'] }, lastMessageIsFromCustomer: true }
+            }),
+            prisma.conversation.count({
+                where: { companyId, channel: 'FACEBOOK', status: { in: ['RESOLVED', 'CLOSED'] } }
+            }),
+            prisma.conversation.count({
+                where: { companyId, channel: 'INSTAGRAM', status: { in: ['RESOLVED', 'CLOSED'] } }
+            }),
+            prisma.conversation.count({
+                where: { companyId, channel: 'TELEGRAM', status: { in: ['RESOLVED', 'CLOSED'] } }
             })
         ]);
 
-        // Get WhatsApp total unread from contacts
+        // Get WhatsApp stats from WhatsAppContact model (the actual data source)
+        let waActive = 0;
+        let waUnreplied = 0;
         let waUnread = 0;
-        try {
-            const sessions = await prisma.whatsAppSession.findMany({
-                where: { companyId },
-                select: { id: true }
-            });
-            if (sessions.length > 0) {
-                const result = await prisma.whatsAppContact.aggregate({
-                    where: {
-                        sessionId: { in: sessions.map(s => s.id) },
-                        unreadCount: { gt: 0 }
-                    },
-                    _sum: { unreadCount: true }
+        if (waSessionIds.length > 0) {
+            try {
+                [waActive, waUnread] = await Promise.all([
+                    prisma.whatsAppContact.count({
+                        where: { sessionId: { in: waSessionIds }, isArchived: false }
+                    }),
+                    prisma.whatsAppContact.aggregate({
+                        where: { sessionId: { in: waSessionIds }, isArchived: false, unreadCount: { gt: 0 } },
+                        _sum: { unreadCount: true }
+                    }).then(r => r._sum.unreadCount || 0)
+                ]);
+                // WA "unreplied" = last message is from customer (not from me)
+                waUnreplied = await prisma.whatsAppContact.count({
+                    where: { sessionId: { in: waSessionIds }, isArchived: false, lastMessageIsFromMe: false }
                 });
-                waUnread = result._sum.unreadCount || 0;
+            } catch (e) {
+                console.error('⚠️ [UNIFIED] Error fetching WhatsApp stats:', e.message);
             }
-        } catch (e) { }
+        }
+
+        const totalActive = fbActive + igActive + tgActive + waActive;
+        const totalUnreplied = fbUnreplied + igUnreplied + tgUnreplied + waUnreplied;
+        const totalResolved = fbResolved + igResolved + tgResolved;
 
         res.json({
             success: true,
@@ -1052,6 +1083,140 @@ const getSettings = async (req, res) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// ✏️ تحديث محادثة موحدة
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Update a unified conversation (status, assignment, etc.)
+ * PUT /api/v1/unified-inbox/conversations/:id
+ */
+const updateUnifiedConversation = async (req, res) => {
+    try {
+        const companyId = req.user?.companyId;
+        if (!companyId) {
+            return res.status(403).json({ success: false, message: 'Company ID is required' });
+        }
+
+        const { id } = req.params;
+        const { status, assignedTo } = req.body;
+        const prisma = getSharedPrismaClient();
+
+        // Handle WhatsApp conversations
+        if (id.startsWith('wa_')) {
+            const contactId = id.replace('wa_', '');
+            const contact = await prisma.whatsAppContact.findFirst({
+                where: { id: contactId, isArchived: false }
+            });
+            if (!contact) {
+                return res.status(404).json({ success: false, message: 'Conversation not found' });
+            }
+
+            if (status === 'resolved' || status === 'closed') {
+                await prisma.whatsAppContact.update({
+                    where: { id: contactId },
+                    data: {
+                        isArchived: true,
+                        lastMessageAt: new Date()
+                    }
+                });
+            }
+
+            return res.json({ success: true, data: { id, status: status || 'active' } });
+        }
+
+        // Handle Conversation model (Facebook/Instagram/Telegram)
+        const conversation = await prisma.conversation.findFirst({
+            where: { id, companyId }
+        });
+
+        if (!conversation) {
+            return res.status(404).json({ success: false, message: 'Conversation not found' });
+        }
+
+        const updateData = {};
+        if (status) updateData.status = status.toUpperCase();
+        if (assignedTo) updateData.assignedTo = assignedTo;
+        updateData.updatedAt = new Date();
+
+        const updated = await prisma.conversation.update({
+            where: { id },
+            data: updateData
+        });
+
+        res.json({
+            success: true,
+            data: {
+                id: updated.id,
+                status: updated.status?.toLowerCase(),
+                assignedTo: updated.assignedTo
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ [UNIFIED] Error updating conversation:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🗑️ حذف محادثة موحدة
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Delete a unified conversation
+ * DELETE /api/v1/unified-inbox/conversations/:id
+ */
+const deleteUnifiedConversation = async (req, res) => {
+    try {
+        const companyId = req.user?.companyId;
+        if (!companyId) {
+            return res.status(403).json({ success: false, message: 'Company ID is required' });
+        }
+
+        const { id } = req.params;
+        const prisma = getSharedPrismaClient();
+
+        // Handle WhatsApp conversations
+        if (id.startsWith('wa_')) {
+            const contactId = id.replace('wa_', '');
+            const contact = await prisma.whatsAppContact.findFirst({
+                where: { id: contactId, isArchived: false }
+            });
+            if (!contact) {
+                return res.status(404).json({ success: false, message: 'Conversation not found' });
+            }
+
+            // Delete all messages for this contact, then the contact
+            await prisma.whatsAppMessage.deleteMany({
+                where: { sessionId: contact.sessionId, remoteJid: contact.jid }
+            });
+            await prisma.whatsAppContact.delete({
+                where: { id: contactId }
+            });
+
+            return res.json({ success: true, message: 'Conversation deleted' });
+        }
+
+        // Handle Conversation model (Facebook/Instagram/Telegram)
+        const conversation = await prisma.conversation.findFirst({
+            where: { id, companyId }
+        });
+        if (!conversation) {
+            return res.status(404).json({ success: false, message: 'Conversation not found' });
+        }
+
+        await prisma.message.deleteMany({ where: { conversationId: id } });
+        await prisma.conversation.delete({ where: { id } });
+
+        res.json({ success: true, message: 'Conversation deleted' });
+
+    } catch (error) {
+        console.error('❌ [UNIFIED] Error deleting conversation:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // 🔧 Helper functions
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1073,6 +1238,8 @@ module.exports = {
     getUnifiedConversations,
     getConversationMessages,
     sendUnifiedMessage,
+    updateUnifiedConversation,
+    deleteUnifiedConversation,
     getUnifiedStats,
     getCustomerProfile,
     getQuickReplies,

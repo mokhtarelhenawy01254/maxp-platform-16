@@ -1773,8 +1773,7 @@ select {
   font-family: var(--theme-font-heading);
 }
 
-[data-theme="business-os-enterprise"] .business-auth-shell,
-[data-theme="business-os-enterprise"] .business-shell-root {
+[data-theme="business-os-enterprise"] .business-auth-shell {
   position: relative;
   min-height: 100vh;
   background-image: var(--app-bg-glow), var(--app-bg-gradient);
@@ -6432,4 +6431,33 @@ select {
   background: rgba(59, 130, 246, 0.2) !important;
   border-color: #3B82F6 !important;
   color: #60A5FA !important;
+}
+
+/* ════════════════════════════════════════════════
+   Accessibility: Focus-visible rings
+   ════════════════════════════════════════════════ */
+
+.business-conversation-card:focus-visible,
+.business-chip-button:focus-visible,
+.business-icon-button:focus-visible,
+.inbox-filter-chip:focus-visible,
+.inbox-dropdown-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-primary);
+  border-radius: 8px;
+}
+
+/* ════════════════════════════════════════════════
+   Accessibility: Respect reduced motion
+   ════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

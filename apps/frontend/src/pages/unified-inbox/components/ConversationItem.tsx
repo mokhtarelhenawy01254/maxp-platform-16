@@ -1,6 +1,7 @@
 import React, { memo } from "react";
 import { InboxConversation } from "../../../types/inbox.types";
-import { Facebook, MessageCircle, Send } from "lucide-react";
+import { Facebook, MessageCircle, Send, Globe } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const headingStyle: React.CSSProperties = {
   color: "var(--color-foreground)",
@@ -31,22 +32,24 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
     onToggleSelection,
     onClick,
   }) => {
+    const { t, i18n } = useTranslation();
+
     const formatTime = (date: Date) => {
       const now = new Date();
       const diff = now.getTime() - new Date(date).getTime();
       const minutes = Math.floor(diff / 60000);
       const hours = Math.floor(diff / 3600000);
       const days = Math.floor(diff / 86400000);
+      const locale = i18n.language === "ar" ? "ar-EG" : "en-US";
 
-      if (minutes < 1) return "الآن";
-      if (minutes < 60) return `${minutes} د`;
-      if (hours < 24) return `${hours} س`;
-      if (days < 7) return `${days} يوم`;
+      if (minutes < 1) return t("unifiedInbox.time.now");
+      if (minutes < 60) return `${minutes} ${t("unifiedInbox.time.minutes")}`;
+      if (hours < 24) return `${hours} ${t("unifiedInbox.time.hours")}`;
+      if (days < 7) return `${days} ${t("unifiedInbox.time.days")}`;
 
-      return new Date(date).toLocaleDateString("ar-EG", {
+      return new Date(date).toLocaleDateString(locale, {
         day: "numeric",
         month: "short",
-        calendar: "gregory",
       });
     };
 
@@ -58,15 +61,19 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
           return <MessageCircle size={12} className="fill-current" />;
         case "telegram":
           return <Send size={12} className="fill-current" />;
+        case "instagram":
+        case "website":
+        case "test":
+          return <Globe size={12} />;
         default:
-          return null;
+          return <Globe size={12} />;
       }
     };
 
     return (
-      <div
+      <button
         onClick={onClick}
-        className="business-conversation-card group"
+        className="business-conversation-card group w-full text-left"
         data-state={
           isSelected || isMultiSelected
             ? "selected"
@@ -109,6 +116,8 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
                 alt={conversation.customerName}
                 loading="lazy"
                 className="business-conversation-avatar"
+                width={40}
+                height={40}
               />
             ) : (
               <div className="business-conversation-fallback">
@@ -133,7 +142,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
                   style={{ background: "var(--business-danger)" }}
                 />
                 <span className="text-xs font-medium" style={dangerStyle}>
-                  رسائل جديدة
+                  {t("unifiedInbox.unreadBadge")}
                 </span>
               </div>
             )}
@@ -158,7 +167,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
               }`}
               style={mutedStyle}
             >
-              {conversation.lastMessageIsFromCustomer ? "" : "أنت: "}
+              {conversation.lastMessageIsFromCustomer ? "" : t("unifiedInbox.youPrefix")}
               {conversation.lastMessage}
             </p>
 
@@ -182,7 +191,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
                     color: "var(--color-secondary)",
                   }}
                 >
-                  👤 معين
+                  👤 {t("unifiedInbox.assignedBadge")}
                 </span>
               )}
 
@@ -194,7 +203,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
             </div>
           </div>
         </div>
-      </div>
+      </button>
     );
   },
   (prevProps, nextProps) => {
