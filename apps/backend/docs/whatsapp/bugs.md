@@ -2,6 +2,19 @@
 
 > Domain-specific bug tracker for WhatsApp sessions, notifications, Telegram, and campaigns.
 
+### [FIX] ReferenceError: whatsappContacts is not defined in Unified Inbox
+- **Date**: 2026-06-16
+- **Description**: Accessing the Unified Inbox with platform filter excluding WhatsApp (e.g. `platform=instagram,facebook`) caused a 500 server error.
+- **Root Cause**:
+    1. In `apps/backend/controller/unifiedInboxController.js`, `whatsappContacts` was assigned within `if (shouldFetchWhatsApp)` without a prior `let` or `const` declaration.
+    2. Since the variable was mapped and referenced outside the `if` block, when `shouldFetchWhatsApp` was false, referencing `whatsappContacts` resulted in a `ReferenceError`.
+- **Resolution**:
+    1. Added `let whatsappContacts = [];` before the conditional block.
+- **Verification**:
+    - Run syntax check and verified that tests pass.
+- **Files Modified**:
+    - `apps/backend/controller/unifiedInboxController.js`
+
 ### [FIX] WhatsApp Session Retention Preference And Same-Session Reconnect Tests
 - **Date**: 2026-05-19
 - **Description**: Operators needed proof that deleting a linked WhatsApp number can either retain or remove MaxP chat history based on the saved choice, and that reconnect does not require deleting/recreating the MaxP session when QR or pairing-code relink is needed.
