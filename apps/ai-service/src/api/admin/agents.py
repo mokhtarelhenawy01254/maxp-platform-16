@@ -119,7 +119,6 @@ def _generate_agent_id() -> str:
 
 
 def _parse_skills_field(skills_val: object) -> list[str]:
-    """Parse the legacy `skills` column (JSON string or list) into a list of tool names."""
     if not skills_val:
         return []
     if isinstance(skills_val, list):
@@ -129,7 +128,6 @@ def _parse_skills_field(skills_val: object) -> list[str]:
         return [str(s) for s in parsed if s] if isinstance(parsed, list) else []
     except Exception:
         return []
-
 
 def _safe_list(value: object) -> list:
     if isinstance(value, list):

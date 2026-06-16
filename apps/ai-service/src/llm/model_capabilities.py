@@ -20,7 +20,7 @@ DEFAULT_PROVIDER_MODELS = {
     "GROQ": "llama-3.3-70b-versatile",
     "OPENROUTER": "openrouter/auto",
     "DEEPSEEK": "deepseek-chat",
-    "NVIDIA": "openai/gpt-oss-120b",
+    "NVIDIA": "meta/llama-3.1-70b-instruct",
     "OLLAMA": "llama3",
 }
 

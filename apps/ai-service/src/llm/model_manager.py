@@ -335,7 +335,10 @@ class ModelManager:
                 )
 
             response = await asyncio.wait_for(
-                client.chat([{"role": "user", "content": "Reply with exactly: KEY_OK"}]),
+                client.generate_response(
+                    [{"role": "user", "content": "Reply with exactly: KEY_OK"}],
+                    max_tokens=50,
+                ),
                 timeout=timeout_ms / 1000,
             )
             content = self._extract_provider_text(response)
@@ -396,8 +399,11 @@ class ModelManager:
         }
 
     def _extract_provider_text(self, result: Any) -> str:
-        if hasattr(result, "text") and callable(result.text):
-            return result.text()
+        if hasattr(result, "text"):
+            if callable(result.text):
+                return result.text()
+            if isinstance(result.text, str):
+                return result.text
         if isinstance(result, str):
             return result
         if isinstance(result, dict):
@@ -423,7 +429,7 @@ class ModelManager:
             "OLLAMA": "llama3.2",
             "GROQ": "llama-3.3-70b-versatile",
             "OPENROUTER": "openrouter/auto",
-            "NVIDIA": "openai/gpt-oss-120b",
+            "NVIDIA": "meta/llama-3.1-70b-instruct",
         }
         return defaults.get(provider, "gemini-2.5-flash")
 
