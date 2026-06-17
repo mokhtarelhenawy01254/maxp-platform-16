@@ -4463,14 +4463,18 @@ select {
 [data-theme="business-os-enterprise"]
   .business-conversation-card[data-state="selected"] {
   background: var(--business-surface-selected);
-  box-shadow: inset 2px 0 0 0 var(--color-primary);
+  border-inline-start: 3px solid var(--color-primary);
+  margin-inline-start: -1px;
+  padding-inline-start: calc(0.82rem - 2px);
 }
 
 [data-theme="business-os-enterprise"]
   .business-conversation-card[data-state="attention"] {
   background: var(--business-surface-attention);
-  box-shadow: inset 2px 0 0 0
+  border-inline-start: 3px solid
     color-mix(in srgb, var(--business-danger) 60%, transparent);
+  margin-inline-start: -1px;
+  padding-inline-start: calc(0.82rem - 2px);
 }
 
 [data-theme="business-os-enterprise"] .business-conversation-avatar {
@@ -4487,11 +4491,7 @@ select {
   width: 2.65rem;
   height: 2.65rem;
   border-radius: 999px;
-  background: linear-gradient(
-    135deg,
-    var(--color-primary) 0%,
-    var(--color-secondary) 100%
-  );
+  background: var(--color-primary);
   color: white;
   font-size: 0.92rem;
   font-weight: 800;
@@ -6422,32 +6422,32 @@ select {
 
 /* Dark mode compatibility fixes */
 .dark .inbox-platform-dropdown {
-  background: #1F2937 !important;
-  border-color: #374151 !important;
+  background: var(--business-surface-panel, var(--shell-overlay-bg, #1F2937));
+  border-color: var(--business-card-border, var(--shell-control-border, #374151));
 }
 
 .dark .inbox-dropdown-item:hover {
-  background: #374151 !important;
+  background: var(--business-surface-hover, var(--shell-control-hover, #374151));
 }
 
 .dark .inbox-platform-text {
-  color: #F9FAFB !important;
+  color: var(--color-foreground, #F9FAFB);
 }
 
 .dark .inbox-filter-chip {
-  background: #1F2937 !important;
-  border-color: #374151 !important;
-  color: #D1D5DB !important;
+  background: var(--shell-control-bg, #1F2937);
+  border-color: var(--business-card-border, var(--shell-control-border, #374151));
+  color: var(--color-muted-foreground, #D1D5DB);
 }
 
 .dark .inbox-filter-chip:hover {
-  background: #374151 !important;
+  background: var(--business-surface-hover, var(--shell-control-hover, #374151));
 }
 
 .dark .inbox-filter-chip[data-active="true"] {
-  background: rgba(59, 130, 246, 0.2) !important;
-  border-color: #3B82F6 !important;
-  color: #60A5FA !important;
+  background: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  border-color: var(--color-primary, #3B82F6);
+  color: var(--color-primary, #60A5FA);
 }
 
 /* ════════════════════════════════════════════════

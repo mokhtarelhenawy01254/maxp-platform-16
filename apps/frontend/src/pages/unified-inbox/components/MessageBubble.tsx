@@ -148,8 +148,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
             border: "1px solid var(--business-card-border)",
           }
       : {
-          background:
-            "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
+          background: "var(--color-primary)",
           color:
             "color-mix(in srgb, var(--color-background) 96%, transparent)",
           borderRadius: "1rem",

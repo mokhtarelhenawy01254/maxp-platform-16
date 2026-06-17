@@ -43,6 +43,7 @@
   "profile": "Customer Profile",
   "noMessagesYet": "No messages yet",
   "quickReplies": "Quick Replies",
+  "noQuickReplies": "No quick replies defined yet",
   "attachFile": "Attach File",
   "emoji": "Emoji",
   "inputPlaceholder": "Type a message via {{platform}}...",

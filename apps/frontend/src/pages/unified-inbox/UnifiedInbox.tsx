@@ -23,6 +23,11 @@ import {
   ChartBarSquareIcon,
   PhotoIcon,
   DocumentTextIcon,
+  ArrowUturnLeftIcon,
+  HeartIcon,
+  ArrowTopRightOnSquareIcon,
+  TrashIcon,
+  StarIcon as StarOutlineIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import { apiClient } from "../../services/apiClient";
@@ -1276,7 +1281,7 @@ const UnifiedInbox: React.FC = () => {
                             className="inbox-dropdown-item w-full"
                             onClick={handleMarkResolved}
                           >
-                            <span style={{ color: "var(--business-success)" }}>✓</span>
+                            <CheckIcon className="w-4 h-4" style={{ color: "var(--business-success)" }} aria-hidden="true" />
                             <span className="inbox-platform-text">
                               {t("unifiedInbox.markAsResolved")}
                             </span>
@@ -1312,7 +1317,7 @@ const UnifiedInbox: React.FC = () => {
                             className="inbox-dropdown-item w-full"
                             onClick={() => { setShowActionsMenu(false); setShowProfilePanel(p => !p); }}
                           >
-                            <span>👤</span>
+                            <UserCircleIcon className="w-4 h-4" style={{ color: "var(--color-muted-foreground)" }} aria-hidden="true" />
                             <span className="inbox-platform-text">
                               {showProfilePanel ? t("unifiedInbox.hideProfile") : t("unifiedInbox.showProfile")}
                             </span>
@@ -1323,7 +1328,7 @@ const UnifiedInbox: React.FC = () => {
                             onClick={handleDeleteConversation}
                             style={{ color: "var(--business-danger, #ef4444)" }}
                           >
-                            <span>🗑️</span>
+                            <TrashIcon className="w-4 h-4" aria-hidden="true" />
                             <span className="inbox-platform-text">
                               {t("unifiedInbox.deleteConversation")}
                             </span>
@@ -1464,43 +1469,39 @@ const UnifiedInbox: React.FC = () => {
                                     onClick={() => handleMsgReply(msg)}
                                     className="business-icon-button business-icon-button--sm"
                                     aria-label={t("unifiedInbox.reply")}
-                                    style={{ fontSize: 14 }}
                                   >
-                                    ↩
+                                    <ArrowUturnLeftIcon className="w-4 h-4" aria-hidden="true" />
                                   </button>
                                 )}
                                 <button
                                   onClick={() => handleMsgReact(msg.id, "👍")}
                                   className="business-icon-button business-icon-button--sm"
                                   aria-label={t("unifiedInbox.addReaction")}
-                                  style={{ fontSize: 14 }}
                                 >
-                                  😊
+                                  <HeartIcon className="w-4 h-4" aria-hidden="true" />
                                 </button>
                                 <button
                                   onClick={() => handleMsgStar(msg.id)}
                                   className="business-icon-button business-icon-button--sm"
                                   aria-label={t("unifiedInbox.starMessage")}
-                                  style={{ fontSize: 14 }}
                                 >
-                                  ⭐
+                                  <StarOutlineIcon className="w-4 h-4" aria-hidden="true" />
                                 </button>
                                 <button
                                   onClick={() => { setForwardMessage(msg); setShowForwardModal(true); }}
                                   className="business-icon-button business-icon-button--sm"
                                   aria-label={t("unifiedInbox.forward")}
-                                  style={{ fontSize: 14 }}
                                 >
-                                  ↗
+                                  <ArrowTopRightOnSquareIcon className="w-4 h-4" aria-hidden="true" />
                                 </button>
                                 {!msg.isFromCustomer && (
                                   <button
                                     onClick={() => handleMsgDelete(msg.id)}
                                     className="business-icon-button business-icon-button--sm"
                                     aria-label={t("unifiedInbox.deleteMessage")}
-                                    style={{ fontSize: 14, color: "var(--business-danger)" }}
+                                    style={{ color: "var(--business-danger)" }}
                                   >
-                                    🗑
+                                    <TrashIcon className="w-4 h-4" aria-hidden="true" />
                                   </button>
                                 )}
                               </div>
@@ -1518,8 +1519,7 @@ const UnifiedInbox: React.FC = () => {
                                       borderTopRightRadius: "0.5rem",
                                     }
                                   : {
-                                      background:
-                                        "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
+                                      background: "var(--color-primary)",
                                       color: "white",
                                       borderTopLeftRadius: "0.5rem",
                                     }
@@ -1649,7 +1649,7 @@ const UnifiedInbox: React.FC = () => {
               {/* Quick Replies Panel */}
               {showQuickReplies && quickReplies.length === 0 && (
                 <div className="business-chat-composer px-5 py-3 text-sm" style={{ color: "var(--color-muted-foreground)" }}>
-                  {i18n.language === "ar" ? "لا توجد قوالب ردود سريعة بعد" : "No quick replies defined yet"}
+                  {t("unifiedInbox.noQuickReplies")}
                 </div>
               )}
               {showQuickReplies && quickReplies.length > 0 && (
@@ -1831,8 +1831,7 @@ const UnifiedInbox: React.FC = () => {
                     disabled={(!newMessage.trim() && !attachedFile) || sending || uploadingFile}
                     className="business-icon-button text-white p-2.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
                     style={{
-                      background:
-                        "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
+                      background: "var(--color-primary)",
                     }}
                     aria-label={t("unifiedInbox.send")}
                   >
@@ -1853,7 +1852,7 @@ const UnifiedInbox: React.FC = () => {
                   className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-3xl"
                   style={{
                     background:
-                      "linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 10%, white) 0%, color-mix(in srgb, var(--color-secondary) 12%, white) 100%)",
+                      "color-mix(in srgb, var(--color-primary) 10%, white)",
                   }}
                 >
                   <ChatBubbleLeftRightIcon
@@ -1935,8 +1934,7 @@ const UnifiedInbox: React.FC = () => {
                     style={{
                       borderColor:
                         "color-mix(in srgb, white 76%, var(--color-background) 24%)",
-                      background:
-                        "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
+                      background: "var(--color-primary)",
                     }}
                   >
                     {selectedConversation.contactName?.charAt(0) || "?"}

@@ -89,8 +89,7 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
           <div
             className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold"
             style={{
-              background:
-                "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
+              background: "var(--color-primary)",
               color:
                 "color-mix(in srgb, var(--color-background) 94%, transparent)",
             }}

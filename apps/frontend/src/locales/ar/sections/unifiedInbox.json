@@ -43,6 +43,7 @@
   "profile": "بيانات العميل",
   "noMessagesYet": "لا توجد رسائل بعد",
   "quickReplies": "ردود سريعة",
+  "noQuickReplies": "لا توجد قوالب ردود سريعة بعد",
   "attachFile": "إرفاق ملف",
   "emoji": "إيموجي",
   "inputPlaceholder": "اكتب رسالة عبر {{platform}}...",
