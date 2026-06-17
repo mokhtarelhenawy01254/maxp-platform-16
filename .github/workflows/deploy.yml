@@ -199,26 +199,23 @@ jobs:
           printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/maxp_deploy_key"
           chmod 600 "$HOME/.ssh/maxp_deploy_key"
 
-          # Fast pre-flight: confirm TCP port is reachable before spending time on SSH handshake
+          # Pre-flight TCP check (informational only — not a hard failure).
+          # The actual SSH command below is the authoritative connectivity test.
           echo "🔌 Checking TCP reachability of $SERVER_HOST:$SERVER_SSH_PORT ..."
-          if command -v nc &>/dev/null; then
-            NC_OK=true
-          else
-            NC_OK=false
-          fi
           TCP_REACHABLE=false
-          if [ "$NC_OK" = true ] && nc -z -w 10 "$SERVER_HOST" "$SERVER_SSH_PORT" 2>/dev/null; then
+          if command -v nc &>/dev/null && nc -z -w 10 "$SERVER_HOST" "$SERVER_SSH_PORT" 2>/dev/null; then
             TCP_REACHABLE=true
           elif timeout 10 bash -c "echo >/dev/tcp/$SERVER_HOST/$SERVER_SSH_PORT" 2>/dev/null; then
             TCP_REACHABLE=true
           fi
           if [ "$TCP_REACHABLE" = false ]; then
-            echo "❌ Cannot reach $SERVER_HOST port $SERVER_SSH_PORT (firewall is blocking the connection)."
-            echo "   If you know the server is reachable, add the runner's IP to the firewall."
-            echo "   Or SSH into the server and run: sudo ufw allow $SERVER_SSH_PORT/tcp && sudo ufw reload"
-            exit 1
+            echo "⚠️  TCP pre-flight could not reach $SERVER_HOST:$SERVER_SSH_PORT."
+            echo "   This may be a transient check failure; proceeding to SSH connection."
+            echo "   If SSH also fails, ensure port $SERVER_SSH_PORT is open to GitHub Actions IPs"
+            echo "   in your VPS provider's cloud firewall (not just ufw)."
+          else
+            echo "✅ TCP port $SERVER_SSH_PORT is reachable."
           fi
-          echo "✅ TCP port $SERVER_SSH_PORT is reachable."
 
           ssh-keyscan -p "$SERVER_SSH_PORT" -H "$SERVER_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
           SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
