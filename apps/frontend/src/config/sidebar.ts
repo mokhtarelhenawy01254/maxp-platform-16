@@ -60,6 +60,8 @@ import {
     ArrowsRightLeftIcon,
     AcademicCapIcon,
     LightBulbIcon,
+    LinkIcon,
+    NoSymbolIcon,
 } from '@heroicons/react/24/outline';
 
 import i18n from '../i18n';
@@ -418,6 +420,7 @@ export const getSidebarConfig = (
             icon: ChatBubbleLeftRightIcon,
             items: [
                 { to: '/unified-inbox', icon: ChatBubbleLeftRightIcon, label: t('sidebar.unifiedInbox') },
+                { to: '/unified-inbox/connections', icon: LinkIcon, label: t('sidebar.platformConnections') },
             ],
             hidden: user?.role === 'AFFILIATE' || !isAppActive('crm-basic')
         },
@@ -433,8 +436,8 @@ export const getSidebarConfig = (
                 { to: '/employee-stats', icon: ChartBarIcon, label: t('sidebar.employeeStats') },
                 { to: '/sent-messages-stats', icon: ChartBarIcon, label: t('sidebar.sentMessagesStats') },
                 { to: '/campaign-calculator', icon: CalculatorIcon, label: t('sidebar.campaignCalculator') },
-                { to: '/settings/facebook', icon: CogIcon, label: t('sidebar.facebookSettings') },
-                { to: '/settings/facebook-oauth', icon: ShieldCheckIcon, label: t('sidebar.facebookOAuth') },
+                { to: '/settings/facebook-oauth', icon: ChatBubbleLeftRightIcon, label: t('sidebar.facebookConnect') },
+                { to: '/settings/facebook-blocked', icon: NoSymbolIcon, label: t('sidebar.facebookBlocked') },
                 { to: '/settings/agent-inbox', icon: KeyIcon, label: 'Agent Inbox API' },
                 { to: '/settings/smart-replies', icon: ChatBubbleLeftRightIcon, label: t('sidebar.smartReplies') },
             ],

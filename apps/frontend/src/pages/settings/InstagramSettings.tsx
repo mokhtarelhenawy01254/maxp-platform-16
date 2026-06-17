@@ -124,7 +124,7 @@ const InstagramSettings: React.FC = () => {
           <p style={{ margin: "4px 0 0", fontSize: 13, color: "#be185d" }}>
             {t("instagramSettings.connectInfo")}
             {" "}
-            <a href="/settings/facebook" style={{ color: "#db2777", fontWeight: 600 }}>
+            <a href="/settings/facebook-oauth" style={{ color: "#db2777", fontWeight: 600 }}>
               {t("instagramSettings.facebookSettings")}
             </a>{" "}
             {t("instagramSettings.reauthInfo")}

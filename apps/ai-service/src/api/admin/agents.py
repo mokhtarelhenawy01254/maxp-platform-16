@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.agents.base import BaseAgent, BaseAgentConfig
+from src.api.chat import sanitize_model_reply
 from src.agents.loader import get_template, list_templates, seed_templates
 from src.tools.registry import get_all_tools
 from src.api.admin.agents_schemas import (
@@ -624,10 +625,11 @@ async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentC
     error_message = payload.get("error") or result_data.get("error")
     response_attachments = payload.get("response_attachments")
 
+    reply_text = sanitize_model_reply(payload.get("reply") or payload.get("summary") or "")
     return AgentChatResponse(
         status=status,
         thread_id=thread_id,
-        reply=payload.get("reply") or payload.get("summary") or "",
+        reply=reply_text,
         response_attachments=response_attachments if isinstance(response_attachments, list) else [],
         error=error_message if status == "error" else None,
         error_code=error_code if status == "error" else None,

@@ -95,6 +95,15 @@ class PlanLimitsService {
         storage: 5120, // MB
         features: ['priority_support', 'advanced_analytics', 'custom_branding']
       },
+      MESSAGING: {
+        users: 50,
+        customers: 50000,
+        products: -1, // unlimited
+        orders: -1, // unlimited
+        conversations: -1, // unlimited
+        storage: 10240, // 10 GB
+        features: ['ai_agent', 'unified_inbox', 'priority_support', 'advanced_analytics', 'multi_platform']
+      },
       ENTERPRISE: {
         users: -1, // unlimited
         customers: -1, // unlimited

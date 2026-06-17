@@ -1861,7 +1861,7 @@ const UnifiedInbox: React.FC = () => {
                   {/* Send */}
                   <button
                     onClick={handleSendMessage}
-                    disabled={(!newMessage.trim() && !attachedFile) || sending || uploadingFile}
+                    disabled={(!newMessage.trim() && attachments.length === 0) || sending || uploadingFile}
                     className="business-icon-button text-white p-2.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
                     style={{
                       background: "var(--color-primary)",
@@ -2349,9 +2349,7 @@ const UnifiedInbox: React.FC = () => {
       onClose={() => setShowImageGallery(false)}
       onSelectImage={handleImageGallerySelect}
       onSelectMultipleImages={(images) => {
-        if (images.length > 0) {
-          setAttachedFile({ url: images[0].url, name: images[0].filename, type: "image" });
-        }
+        setAttachments(prev => [...prev, ...images.map(img => ({ url: img.url, name: img.filename, type: "image" }))]);
         setShowImageGallery(false);
       }}
     />

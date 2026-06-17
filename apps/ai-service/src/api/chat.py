@@ -23,6 +23,8 @@ router = APIRouter()
 SAFE_FALLBACK_REPLY = ""
 THOUGHT_BLOCK_RE = re.compile(r"<thought\b[^>]*>.*?</thought>\s*", re.IGNORECASE | re.DOTALL)
 THOUGHT_TAG_RE = re.compile(r"</?thought\b[^>]*>", re.IGNORECASE)
+THINK_BLOCK_RE = re.compile(r"<think\b[^>]*>.*?</think>\s*", re.IGNORECASE | re.DOTALL)
+THINK_TAG_RE = re.compile(r"</?think\b[^>]*>", re.IGNORECASE)
 
 
 class ChatRequest(BaseModel):
@@ -53,6 +55,10 @@ def sanitize_model_reply(reply: Any) -> str:
     text = THOUGHT_BLOCK_RE.sub("", text).strip()
     if THOUGHT_TAG_RE.search(text):
         text = THOUGHT_TAG_RE.split(text, maxsplit=1)[0].strip()
+
+    text = THINK_BLOCK_RE.sub("", text).strip()
+    if THINK_TAG_RE.search(text):
+        text = THINK_TAG_RE.split(text, maxsplit=1)[0].strip()
 
     return text
 
@@ -86,6 +92,11 @@ async def _handle_approval(
         status="awaiting_approval",
         thread_id=thread_id,
         draft_id=approval_info["draft_id"],
+        tool_calls=[{
+            "tool": tool_result.get("tool", ""),
+            "status": "awaiting_approval",
+            "action_type": tool_result.get("action_type", ""),
+        }],
     )
 
 
@@ -158,6 +169,27 @@ async def chat(
         reply = sanitize_model_reply(outcome.get("reply", ""))
         tool_results = outcome.get("tool_results", [])
 
+        # Build tool_calls summary for the response
+        tool_calls = []
+        for tr in tool_results:
+            if isinstance(tr, dict):
+                info = {
+                    "tool": tr.get("tool", ""),
+                    "status": tr.get("status", ""),
+                    "success": tr.get("success", False),
+                }
+                params = tr.get("params", {})
+                if params:
+                    # Include params for visibility but redact large values
+                    safe_params = {}
+                    for k, v in params.items():
+                        if isinstance(v, str) and len(v) > 200:
+                            safe_params[k] = v[:200] + "..."
+                        else:
+                            safe_params[k] = v
+                    info["params"] = safe_params
+                tool_calls.append(info)
+
         for tr in tool_results:
             approval_response = await _handle_approval(
                 tr, company_id, customer_id, thread_id, session, channel
@@ -170,6 +202,7 @@ async def chat(
             status="ok",
             thread_id=thread_id,
             reply=reply,
+            tool_calls=tool_calls,
         )
     except Exception as e:
         logger.error("chat failed", error=str(e), thread_id=thread_id)

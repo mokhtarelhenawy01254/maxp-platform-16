@@ -1060,23 +1060,27 @@ const getSettings = async (req, res) => {
         const prisma = getSharedPrismaClient();
 
         // Check connected platforms
-        const [fbPages, waSessions, tgConfigs, igPages] = await Promise.all([
-            prisma.conversation.groupBy({
-                by: ['channel'],
-                where: { companyId, channel: 'FACEBOOK' },
-                _count: { id: true }
-            }),
+        const [
+            waSessions,
+            tgConfigs,
+            fbAllPages,
+            igPages
+        ] = await Promise.all([
             prisma.whatsAppSession.findMany({
                 where: { companyId },
-                select: { id: true, name: true, phoneNumber: true, status: true }
+                select: { id: true, name: true, phoneNumber: true, status: true, createdAt: true, provider: true }
             }),
             prisma.telegramConfig.findMany({
                 where: { companyId },
-                select: { id: true, botName: true, botUsername: true, isActive: true, type: true }
+                select: { id: true, botName: true, botUsername: true, isActive: true, type: true, label: true, createdAt: true }
+            }),
+            prisma.facebookPage.findMany({
+                where: { companyId },
+                select: { id: true, pageId: true, pageName: true, status: true, connectedAt: true }
             }),
             prisma.facebookPage.findMany({
                 where: { companyId, instagramAccountId: { not: null } },
-                select: { id: true, name: true, instagramAccountId: true, instagramAccountName: true }
+                select: { id: true, pageName: true, instagramAccountId: true, instagramAccountName: true, status: true }
             })
         ]);
 
@@ -1085,19 +1089,23 @@ const getSettings = async (req, res) => {
             data: {
                 platforms: {
                     facebook: {
-                        connected: fbPages.length > 0,
-                        count: fbPages[0]?._count?.id || 0
+                        connected: fbAllPages.length > 0,
+                        count: fbAllPages.length,
+                        pages: fbAllPages
                     },
                     instagram: {
                         connected: igPages.length > 0,
+                        count: igPages.length,
                         pages: igPages
                     },
                     whatsapp: {
                         connected: waSessions.length > 0,
+                        count: waSessions.length,
                         sessions: waSessions
                     },
                     telegram: {
                         connected: tgConfigs.some(c => c.isActive),
+                        count: tgConfigs.length,
                         configs: tgConfigs
                     }
                 }

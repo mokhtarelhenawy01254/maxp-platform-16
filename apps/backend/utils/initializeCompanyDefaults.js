@@ -136,7 +136,6 @@ async function initializeDefaultApps(companyId, options = {}) {
   try {
     console.log(`🚀 [INIT] Initializing default apps for company: ${companyId}`);
     const prisma = getSharedPrismaClient();
-    const requiredDefaultAppSlugs = ['ecommerce-basic'];
     const specialtyAppSlugs = Array.isArray(options.specialtyAppSlugs)
       ? options.specialtyAppSlugs.map((slug) => String(slug || '').trim()).filter(Boolean)
       : [];
@@ -190,56 +189,7 @@ async function initializeDefaultApps(companyId, options = {}) {
       return { success: true, installedCount: specialtyApps.length };
     }
 
-    if (options.specialtySlug) {
-      return { success: true, installedCount: 0 };
-    }
-
-    const [featuredApps, requiredApps] = await Promise.all([
-      prisma.marketplaceApp.findMany({
-        where: {
-          isFeatured: true,
-          isActive: true,
-          category: {
-            notIn: ['THEME', 'TEMPLATE'],
-          },
-        }
-      }),
-      prisma.marketplaceApp.findMany({
-        where: {
-          slug: {
-            in: requiredDefaultAppSlugs,
-          },
-          isActive: true,
-          category: {
-            notIn: ['THEME', 'TEMPLATE'],
-          },
-        }
-      })
-    ]);
-
-    const autoInstallApps = Array.from(
-      new Map(
-        [...featuredApps, ...requiredApps].map((app) => [app.id, app])
-      ).values()
-    );
-
-    for (const app of autoInstallApps) {
-      await prisma.companyApp.upsert({
-        where: { companyId_appId: { companyId, appId: app.id } },
-        update: {
-          status: 'ACTIVE',
-          activePricingModel: app.pricingModel || 'SUBSCRIPTION',
-        },
-        create: {
-          companyId,
-          appId: app.id,
-          status: 'ACTIVE',
-          activePricingModel: app.pricingModel || 'SUBSCRIPTION'
-        }
-      });
-    }
-
-    return { success: true };
+    return { success: true, installedCount: 0 };
   } catch (error) {
     console.error(`❌ [INIT] Error auto-installing apps:`, error);
     return { success: false };

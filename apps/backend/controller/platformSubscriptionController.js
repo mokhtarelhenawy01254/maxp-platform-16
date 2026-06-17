@@ -705,14 +705,13 @@ exports.createCheckoutSession = async (req, res) => {
 
 /**
  * @route POST /api/v1/platform-subscription/messaging-checkout
- * @desc Create Kashier checkout session for the Messaging Package (100 EGP - test)
+ * @desc Activate AI + Inbox Bundle (MESSAGING plan, 999 EGP/month)
  * @access Protected
  */
 exports.messagingCheckout = async (req, res) => {
   try {
     const { companyId } = req.user;
     const amount = 999;
-    const planName = "PRO";
     const prisma = getSharedPrismaClient();
 
     const nextBillingDate = new Date();
@@ -723,13 +722,14 @@ exports.messagingCheckout = async (req, res) => {
         update: { plan: "PRO", status: "ACTIVE", monthlyFee: amount, nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
         create: { companyId, plan: "PRO", status: "ACTIVE", monthlyFee: amount, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date() }
       });
-      await tx.company.update({ where: { id: companyId }, data: { plan: "PRO" } });
-      const apps = await tx.marketplaceApp.findMany({ where: { slug: { in: ["crm-basic", "whatsapp-business", "telegram-business"] } } });
-      for (const app of apps) {
+      await tx.company.update({ where: { id: companyId }, data: { plan: "MESSAGING" } });
+      // Activate AI Chat for the company
+      const aiApp = await tx.marketplaceApp.findUnique({ where: { slug: "ai-chat-basic" } });
+      if (aiApp) {
         await tx.companyApp.upsert({
-          where: { companyId_appId: { companyId, appId: app.id } },
+          where: { companyId_appId: { companyId, appId: aiApp.id } },
           update: { status: "ACTIVE" },
-          create: { companyId, appId: app.id, status: "ACTIVE" }
+          create: { companyId, appId: aiApp.id, status: "ACTIVE" }
         });
       }
     });

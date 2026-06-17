@@ -95,6 +95,9 @@ const FacebookPostCreator = React.lazy(
 const UnifiedInbox = React.lazy(
   () => import("./pages/unified-inbox/UnifiedInbox"),
 );
+const PlatformConnections = React.lazy(
+  () => import("./pages/unified-inbox/connections/PlatformConnections"),
+);
 const InboxPage = React.lazy(
   () => import("./pages/whatsapp-inbox/WhatsAppInboxHome"),
 );
@@ -232,8 +235,8 @@ const OrderSettings = React.lazy(
 const CustomerBlockSettings = React.lazy(
   () => import("./pages/settings/CustomerBlockSettings"),
 );
-const FacebookSettings = React.lazy(
-  () => import("./pages/settings/FacebookSettings"),
+const FacebookBlockedCustomers = React.lazy(
+  () => import("./pages/settings/FacebookBlockedCustomers"),
 );
 
 const InstagramSettings = React.lazy(
@@ -626,6 +629,9 @@ const MgAgencyLeadLanding = React.lazy(
 
 const MessagingLanding = React.lazy(
   () => import("./pages/landing/MessagingLanding"),
+);
+const AiInboxLanding = React.lazy(
+  () => import("./pages/landing/AiInboxLanding"),
 );
 const PlatformLandingPreviewPage = React.lazy(
   () => import("./pages/landing/PlatformLandingPreviewPage"),
@@ -1232,6 +1238,7 @@ if (typeof window !== "undefined") {
   p["/facebook-inbox"] = () => import("./pages/facebook-inbox/FacebookInbox");
   p["/instagram-inbox"] = () => import("./pages/instagram-inbox/InstagramInbox");
   p["/unified-inbox"] = () => import("./pages/unified-inbox/UnifiedInbox");
+  p["/unified-inbox/connections"] = () => import("./pages/unified-inbox/connections/PlatformConnections");
   p["/tasks"] = () => import("./pages/tasks/Dashboard");
   p["/inventory"] = () => import("./pages/inventory/Inventory");
   p["/reports"] = () => import("./pages/reports/Reports");
@@ -1542,6 +1549,7 @@ const AppContent = () => {
             <Route path="/lp/mg" element={<MgAgencyLeadLanding />} />
             <Route path="/lp/mg-agency" element={<MgAgencyLeadLanding />} />
             <Route path="/lp/messaging" element={<MessagingLanding />} />
+            <Route path="/lp/ai-inbox" element={<AiInboxLanding />} />
             <Route
               path="/preview/platform-home/:variantId"
               element={<PlatformLandingPreviewPage />}
@@ -2472,6 +2480,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <UnifiedInbox />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/unified-inbox/connections"
+                  element={
+                    <Layout fullWidth>
+                      <PlatformConnections />
                     </Layout>
                   }
                 />
@@ -5083,14 +5099,6 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/settings/facebook"
-                  element={
-                    <Layout>
-                      <FacebookSettings />
-                    </Layout>
-                  }
-                />
-                <Route
                   path="/settings/instagram"
                   element={
                     <Layout>
@@ -5103,6 +5111,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <FacebookOAuth />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/facebook-blocked"
+                  element={
+                    <Layout>
+                      <FacebookBlockedCustomers />
                     </Layout>
                   }
                 />
