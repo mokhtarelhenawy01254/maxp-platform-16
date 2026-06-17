@@ -63,12 +63,19 @@
     "month": "Month"
   },
   "categories": {
+    "AI": "AI & Automation",
     "MESSAGING": "Messaging & Chat",
     "ECOMMERCE": "E-Commerce",
-    "ANALYTICS": "Analytics",
-    "CRM": "CRM",
+    "ANALYTICS": "Analytics & Reports",
+    "CRM": "CRM & Customers",
     "MARKETING": "Digital Marketing",
-    "STOREFRONT": "Storefront",
+    "COMMUNICATION": "Communication",
+    "FINANCE": "Finance & Accounting",
+    "GAMIFICATION": "Gamification & Loyalty",
+    "HR": "HR & Employees",
+    "INTEGRATION": "Integrations & APIs",
+    "PRODUCTIVITY": "Productivity & Tools",
+    "STOREFRONT": "Storefront & Themes",
     "THEME": "Themes & Templates"
   }
 }

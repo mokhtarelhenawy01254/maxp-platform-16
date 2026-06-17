@@ -27,7 +27,8 @@ import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Switch } from "../../components/ui/switch";
-import { Plus, Pencil, Trash2, Copy } from "lucide-react";
+import { Plus, Pencil, Trash2, Copy, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
+import { Checkbox } from "../../components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../components/ui/tooltip";
 
@@ -38,6 +39,7 @@ interface MarketplaceApp {
   nameEn?: string;
   category: string;
   description: string;
+  imageUrl?: string;
   pricingModel: string; // FREE, PAY_PER_USE, SUBSCRIPTION
   unitPrice?: number;
   unitName?: string;
@@ -68,13 +70,24 @@ export default function AppPricingSheet() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingApp, setEditingApp] = useState<Partial<MarketplaceApp> | null>(null);
 
+  // Delete confirmation dialog
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
   const handleOpenDialog = (app?: MarketplaceApp) => {
     if (app) {
       setEditingApp(app);
     } else {
       setEditingApp({
-        name: "", slug: "", category: "ECOMMERCE", description: "", pricingModel: "SUBSCRIPTION",
-        monthlyPrice: 0, yearlyPrice: 0, unitPrice: 0, trialDays: 14, isActive: true
+        name: "", nameEn: "", slug: "", category: "ECOMMERCE", description: "", imageUrl: "",
+        pricingModel: "SUBSCRIPTION",
+        monthlyPrice: 0, yearlyPrice: 0, unitPrice: 0, unitName: "", trialDays: 14, isActive: true
       });
     }
     setIsDialogOpen(true);
@@ -87,15 +100,23 @@ export default function AppPricingSheet() {
         return;
       }
       
+      const newSlug = editingApp.slug || editingApp.name.toLowerCase().replace(/\s+/g, '-');
+      if (slugExists(newSlug, editingApp.id)) {
+        toast.error(t("subscription.slugExists", "الـ Slug موجود مسبقاً، الرجاء اختيار Slug آخر"));
+        return;
+      }
       const payload = {
         name: editingApp.name,
-        slug: editingApp.slug || editingApp.name.toLowerCase().replace(/\s+/g, '-'),
+        slug: newSlug,
         category: editingApp.category,
         description: editingApp.description || "",
+        nameEn: editingApp.nameEn || "",
+        imageUrl: editingApp.imageUrl || "",
         pricingModel: editingApp.pricingModel,
         monthlyPrice: Number(editingApp.monthlyPrice) || 0,
         yearlyPrice: Number(editingApp.yearlyPrice) || 0,
         unitPrice: Number(editingApp.unitPrice) || 0,
+        unitName: editingApp.unitName || "",
         trialDays: Number(editingApp.trialDays) || 0,
         isActive: editingApp.isActive ?? true,
       };
@@ -120,11 +141,16 @@ export default function AppPricingSheet() {
   };
 
   const handleDeleteApp = async (id: string) => {
-    if (!window.confirm(t("subscription.confirmDeleteApp", "هل أنت متأكد من حذف هذا التطبيق؟") as string)) return;
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDeleteApp = async () => {
+    if (!deleteConfirmId) return;
     try {
-      await apiClient.delete(`/super-admin/marketplace-management/apps/${id}`);
+      await apiClient.delete(`/super-admin/marketplace-management/apps/${deleteConfirmId}`);
       toast.success(t("subscription.appDeleted", "تم حذف التطبيق بنجاح"));
-      setApps(prev => prev.filter(a => a.id !== id));
+      setApps(prev => prev.filter(a => a.id !== deleteConfirmId));
+      setDeleteConfirmId(null);
     } catch (err: any) {
       toast.error(err.response?.data?.message || t("subscription.appDeleteError", "حدث خطأ أثناء الحذف"));
     }
@@ -296,6 +322,78 @@ export default function AppPricingSheet() {
     return result;
   }, [apps, searchQuery, selectedCategory, selectedPricingModel, sortField, sortOrder, i18n.language]);
 
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(processedApps.length / pageSize));
+  const paginatedApps = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return processedApps.slice(start, start + pageSize);
+  }, [processedApps, page, pageSize]);
+
+  // Reset page when filters change
+  useEffect(() => { setPage(1); }, [searchQuery, selectedCategory, selectedPricingModel]);
+
+  const isFilterActive = searchQuery.trim() !== "" || selectedCategory !== "ALL" || selectedPricingModel !== "ALL";
+
+  const slugExists = (slug: string, excludeId?: string) =>
+    apps.some((a) => a.slug === slug && a.id !== excludeId);
+
+  // Bulk selection
+  const toggleSelectApp = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === paginatedApps.length && selectedIds.size > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(paginatedApps.map((a) => a.id)));
+    }
+  };
+
+  const handleBulkToggleActive = async (activate: boolean) => {
+    try {
+      const promises = Array.from(selectedIds).map((id) =>
+        apiClient.put(`/super-admin/marketplace-management/apps/${id}`, { isActive: activate })
+      );
+      await Promise.all(promises);
+      setApps((prev) =>
+        prev.map((a) => (selectedIds.has(a.id) ? { ...a, isActive: activate } : a))
+      );
+      setSelectedIds(new Set());
+      toast.success(
+        activate
+          ? t("subscription.bulkActivated", "تم تفعيل التطبيقات المحددة بنجاح")
+          : t("subscription.bulkDeactivated", "تم إيقاف التطبيقات المحددة بنجاح")
+      );
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || t("common.error", "حدث خطأ"));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    setDeleteConfirmId("__bulk__");
+  };
+
+  const confirmBulkDelete = async () => {
+    try {
+      const promises = Array.from(selectedIds).map((id) =>
+        apiClient.delete(`/super-admin/marketplace-management/apps/${id}`)
+      );
+      await Promise.all(promises);
+      setApps((prev) => prev.filter((a) => !selectedIds.has(a.id)));
+      setSelectedIds(new Set());
+      toast.success(t("subscription.bulkDeleted", "تم حذف التطبيقات المحددة بنجاح"));
+      setDeleteConfirmId(null);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || t("common.error", "حدث خطأ"));
+    }
+  };
+
   // Export to CSV Functionality
   const exportToCSV = () => {
     try {
@@ -308,6 +406,8 @@ export default function AppPricingSheet() {
         t("subscription.csvUsageUnitPrice"),
         t("subscription.csvFreeTrialDays"),
         t("subscription.csvInstallationStatus"),
+        "Slug",
+        "ID",
       ];
 
       const rows = processedApps.map((app) => [
@@ -323,6 +423,8 @@ export default function AppPricingSheet() {
         app.unitPrice ? `${app.unitPrice} ${t("subscription.egp")} / ${app.unitName ? t(`subscription.units.${app.unitName}`, app.unitName) : ""}` : "-",
         app.trialDays > 0 ? `${app.trialDays}` : "0",
         app.isInstalled ? t("subscription.installed") : t("subscription.notInstalled"),
+        app.slug,
+        app.id,
       ]);
 
       const csvContent =
@@ -546,6 +648,41 @@ export default function AppPricingSheet() {
           </CardContent>
         </Card>
 
+        {/* Active Filters Bar + Bulk Actions */}
+        {!loading && isFilterActive && processedApps.length > 0 && (
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-500 dark:text-slate-400 font-cairo">
+                {t("subscription.filteredResults", "نتائج مُصفّاة: {{count}}", { count: processedApps.length })}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-indigo-600 dark:text-indigo-400 font-cairo text-xs h-7"
+                onClick={() => { setSearchQuery(""); setSelectedCategory("ALL"); setSelectedPricingModel("ALL"); }}
+              >
+                {t("common.clearFilters", "مسح الفلاتر")}
+              </Button>
+            </div>
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-500 dark:text-slate-400 font-cairo">
+                  {t("subscription.selectedCount", "{{count}} مختار", { count: selectedIds.size })}
+                </span>
+                <Button variant="outline" size="sm" className="h-8 text-xs font-cairo text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={() => handleBulkToggleActive(true)}>
+                  {t("subscription.bulkActivate", "تفعيل الكل")}
+                </Button>
+                <Button variant="outline" size="sm" className="h-8 text-xs font-cairo text-amber-600 border-amber-200 hover:bg-amber-50" onClick={() => handleBulkToggleActive(false)}>
+                  {t("subscription.bulkDeactivate", "إيقاف الكل")}
+                </Button>
+                <Button variant="outline" size="sm" className="h-8 text-xs font-cairo text-red-600 border-red-200 hover:bg-red-50" onClick={handleBulkDelete}>
+                  {t("subscription.bulkDelete", "حذف المحدد")}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Pricing Sheet Component */}
         {loading ? (
           <Card className="border-none shadow-md bg-white dark:bg-slate-900 p-6">
@@ -583,6 +720,16 @@ export default function AppPricingSheet() {
               <table className="w-full text-right border-collapse relative">
                 <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 shadow-sm border-b border-slate-200 dark:border-slate-800">
                   <tr>
+                    {/* Bulk Select All */}
+                    <th className="px-4 py-4 w-10">
+                      {user?.role === "SUPER_ADMIN" && (
+                        <Checkbox
+                          checked={selectedIds.size > 0 && selectedIds.size === paginatedApps.length}
+                          onCheckedChange={toggleSelectAll}
+                          aria-label="Select all"
+                        />
+                      )}
+                    </th>
                     <th
                       className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300 font-cairo cursor-pointer hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors"
                       onClick={() => handleSort("name")}
@@ -640,13 +787,23 @@ export default function AppPricingSheet() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                  {processedApps.map((app, idx) => (
+                  {paginatedApps.map((app, idx) => (
                     <tr
                       key={app.id}
                       className={`group hover:bg-indigo-50/20 dark:hover:bg-indigo-950/10 transition-colors ${
                         idx % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-slate-50/30 dark:bg-slate-900/40"
                       }`}
                     >
+                      {/* Bulk Select */}
+                      <td className="px-4 py-4">
+                        {user?.role === "SUPER_ADMIN" && (
+                          <Checkbox
+                            checked={selectedIds.has(app.id)}
+                            onCheckedChange={() => toggleSelectApp(app.id)}
+                            aria-label={`Select ${app.name}`}
+                          />
+                        )}
+                      </td>
                       <td className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 font-cairo">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-indigo-100/30 flex-shrink-0">
@@ -824,7 +981,7 @@ export default function AppPricingSheet() {
         ) : (
           /* Grid Card View */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {processedApps.map((app) => (
+            {paginatedApps.map((app) => (
               <Card
                 key={app.id}
                 className="border-none shadow-md bg-white dark:bg-slate-900 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden"
@@ -1008,6 +1165,66 @@ export default function AppPricingSheet() {
             ))}
           </div>
         )}
+
+        {/* Pagination */}
+        {!loading && processedApps.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200/60 dark:border-slate-800 px-6 py-3">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-slate-500 dark:text-slate-400 font-cairo">
+                {t("subscription.showingResults", "عرض {{start}}-{{end}} من {{total}}", {
+                  start: (page - 1) * pageSize + 1,
+                  end: Math.min(page * pageSize, processedApps.length),
+                  total: processedApps.length,
+                })}
+              </span>
+              <select
+                className="text-sm border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 bg-white dark:bg-slate-950 font-cairo"
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+              >
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                <ChevronLeft size={16} />
+              </Button>
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                const startPage = Math.max(1, Math.min(page - 2, totalPages - 4));
+                const p = startPage + i;
+                if (p > totalPages) return null;
+                return (
+                  <Button
+                    key={p}
+                    variant={p === page ? "default" : "outline"}
+                    size="sm"
+                    className={`h-8 min-w-[2rem] font-cairo text-xs ${p === page ? "bg-indigo-600" : ""}`}
+                    onClick={() => setPage(p)}
+                  >
+                    {p}
+                  </Button>
+                );
+              })}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                <ChevronRight size={16} />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
       {/* Add/Edit App Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -1022,6 +1239,15 @@ export default function AppPricingSheet() {
                 value={editingApp?.name || ""}
                 onChange={(e) => setEditingApp({ ...editingApp, name: e.target.value })}
                 placeholder="اسم التطبيق"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("subscription.appNameEn", "اسم التطبيق (English)")}</Label>
+              <Input
+                value={editingApp?.nameEn || ""}
+                onChange={(e) => setEditingApp({ ...editingApp, nameEn: e.target.value })}
+                placeholder="App name (English)"
+                dir="ltr"
               />
             </div>
             <div className="space-y-2">
@@ -1040,6 +1266,15 @@ export default function AppPricingSheet() {
                 rows={3}
               />
             </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>{t("subscription.imageUrl", "رابط الصورة")}</Label>
+              <Input
+                value={editingApp?.imageUrl || ""}
+                onChange={(e) => setEditingApp({ ...editingApp, imageUrl: e.target.value })}
+                placeholder="https://example.com/app-icon.png"
+                dir="ltr"
+              />
+            </div>
             <div className="space-y-2">
               <Label>{t("subscription.categoryLabel", "الفئة")}</Label>
               <Select
@@ -1048,15 +1283,15 @@ export default function AppPricingSheet() {
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ECOMMERCE">التجارة الإلكترونية</SelectItem>
-                  <SelectItem value="MARKETING">التسويق</SelectItem>
-                  <SelectItem value="MANAGEMENT">الإدارة</SelectItem>
-                  <SelectItem value="SHIPPING">الشحن</SelectItem>
-                  <SelectItem value="PAYMENT">الدفع</SelectItem>
-                  <SelectItem value="CUSTOMER_SERVICE">خدمة العملاء</SelectItem>
-                  <SelectItem value="SOCIAL_MEDIA">التواصل الاجتماعي</SelectItem>
-                  <SelectItem value="ANALYSIS">التحليلات</SelectItem>
-                  <SelectItem value="OTHER">أخرى</SelectItem>
+                  {[
+                    "ECOMMERCE", "MARKETING", "ANALYTICS", "CRM", "AI",
+                    "COMMUNICATION", "FINANCE", "GAMIFICATION", "HR",
+                    "INTEGRATION", "PRODUCTIVITY", "THEME", "OTHER",
+                  ].map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {getCategoryLabel(cat)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -1106,6 +1341,24 @@ export default function AppPricingSheet() {
                 />
               </div>
             )}
+            {editingApp?.pricingModel === "PAY_PER_USE" && (
+              <div className="space-y-2">
+                <Label>{t("subscription.unitName", "اسم الوحدة")}</Label>
+                <Select
+                  value={editingApp?.unitName || ""}
+                  onValueChange={(val) => setEditingApp({ ...(editingApp ?? {}), unitName: val })}
+                >
+                  <SelectTrigger><SelectValue placeholder={t("subscription.selectUnit", "اختر الوحدة")} /></SelectTrigger>
+                  <SelectContent>
+                    {["message", "request", "order", "user", "session", "GB", "month"].map((u) => (
+                      <SelectItem key={u} value={u}>
+                        {t(`subscription.units.${u}`, u)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>{t("subscription.freeTrial", "أيام التجربة المجانية")}</Label>
@@ -1128,6 +1381,37 @@ export default function AppPricingSheet() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>{t("common.cancel", "إلغاء")}</Button>
             <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleSaveApp}>{t("common.save", "حفظ")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
+        <DialogContent className="max-w-md font-cairo">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle size={20} />
+              {t("subscription.confirmDeleteTitle", "تأكيد الحذف")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-slate-600 dark:text-slate-400">
+              {deleteConfirmId === "__bulk__"
+                ? t("subscription.confirmBulkDelete", "هل أنت متأكد من حذف التطبيقات المحددة؟")
+                : t("subscription.confirmDeleteApp", "هل أنت متأكد من حذف هذا التطبيق؟")}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
+              {t("common.cancel", "إلغاء")}
+            </Button>
+            <Button
+              variant="destructive"
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={deleteConfirmId === "__bulk__" ? confirmBulkDelete : confirmDeleteApp}
+            >
+              {t("common.delete", "حذف")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
