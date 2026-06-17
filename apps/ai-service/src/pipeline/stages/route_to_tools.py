@@ -87,17 +87,29 @@ def _native_tool_available(ctx: PipelineContext, tool_name: str) -> bool:
 
 
 def _prefer_product_search_for_image_query(ctx: PipelineContext, read_exec: dict | None) -> dict | None:
-    if not read_exec:
-        return read_exec
-    if canonical_tool_name(read_exec.get("nativeName") or read_exec.get("tool") or "") != "inventory_check":
-        return read_exec
+    # No image — nothing to change
     if not _first_image_attachment_payload(ctx):
         return read_exec
 
+    if not _native_tool_available(ctx, "product_search"):
+        return read_exec
+
+    # No read_exec yet (intent was general.chat or unclassified) → force product_search
+    # so the agent can identify the product from the image via embedding search.
+    if not read_exec:
+        return {
+            "tool": "product.search",
+            "nativeName": "product.search",
+            "params": {"query": ctx.message},
+        }
+
+    # Existing read_exec is not inventory_check → leave it as-is
+    if canonical_tool_name(read_exec.get("nativeName") or read_exec.get("tool") or "") != "inventory_check":
+        return read_exec
+
+    # Prefer product_search over inventory_check for image queries
     allowed = canonical_tool_set(getattr(ctx.relevance_plan, "allowedTools", []) or [])
     if allowed and "product_search" not in allowed:
-        return read_exec
-    if not _native_tool_available(ctx, "product_search"):
         return read_exec
 
     return {

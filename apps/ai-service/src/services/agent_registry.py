@@ -240,8 +240,11 @@ async def init_registry_from_db(session_factory) -> None:
                             allowed_tools=tool_names,
                             allowed_channels=channels,
                             model=db_agent.model or settings.default_model,
+                            allowed_skills=list(db_agent.allowed_skills or []),
+                            persona=db_agent.persona or {},
                         )
                         agent = BaseAgent(config)
+                        agent._db_rules = db_agent.rules or ""
 
                     registry.register(company_id, db_agent.id, agent, tool_names=tool_names)
                 except Exception as exc:

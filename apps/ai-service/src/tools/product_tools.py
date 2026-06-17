@@ -72,26 +72,38 @@ def _availability_status(product: dict[str, Any]) -> str:
 
 
 def _is_valid_image_url(url: str) -> bool:
-    return bool(url and (url.startswith("http://") or url.startswith("https://")))
+    return bool(url and (
+        url.startswith("http://")
+        or url.startswith("https://")
+        or url.startswith("/")  # relative server path — will be made absolute
+    ))
+
+
+def _make_absolute_url(url: str) -> str:
+    if url.startswith("/"):
+        from src.config import get_settings
+        base = (get_settings().maxp_api_url or "").rstrip("/")
+        return f"{base}{url}"
+    return url
 
 
 def _parse_images(product: dict[str, Any]) -> list[str]:
     images: list[str] = []
     main = product.get("mainImage")
     if main and _is_valid_image_url(str(main)):
-        images.append(str(main))
+        images.append(_make_absolute_url(str(main)))
     extra = product.get("images")
     if isinstance(extra, list):
         for img in extra:
             if img and _is_valid_image_url(str(img)):
-                images.append(str(img))
+                images.append(_make_absolute_url(str(img)))
     elif isinstance(extra, str):
         try:
             parsed = json.loads(extra)
             if isinstance(parsed, list):
                 for img in parsed:
                     if img and _is_valid_image_url(str(img)):
-                        images.append(str(img))
+                        images.append(_make_absolute_url(str(img)))
         except json.JSONDecodeError:
             pass
     return images[:8]

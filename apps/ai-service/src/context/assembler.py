@@ -167,6 +167,21 @@ class ContextAssembler:
         from src.pipeline.stages.resolve_intent import get_agent_instructions
         base_prompt = ctx.system_prompt or (get_agent_instructions(ctx.agent) if ctx.agent else "") or ""
 
+        # Inject persona.agentInstructions, persona.toolsInstructions, and rules
+        # These are stored in the DB but were previously excluded from the system prompt.
+        _agent = ctx.agent
+        if _agent:
+            _persona = getattr(_agent, "persona", {}) or {}
+            _agent_instr = (_persona.get("agentInstructions") or "").strip()
+            _tools_instr = (_persona.get("toolsInstructions") or "").strip()
+            _db_rules = (getattr(_agent, "_db_rules", "") or "").strip()
+            if _agent_instr:
+                base_prompt += f"\n\n{_agent_instr}"
+            if _tools_instr:
+                base_prompt += f"\n\n{_tools_instr}"
+            if _db_rules:
+                base_prompt += f"\n\n<rules>\n{_db_rules}\n</rules>"
+
         sections: list[tuple[str, str]] = []  # (section_name, xml_content)
 
         # 1. Customer profile
