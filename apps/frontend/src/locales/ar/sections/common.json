@@ -46,6 +46,9 @@
   "create": "إنشاء",
   "notFound": "غير موجود",
   "refresh": "تحديث",
+  "searching": "جاري البحث...",
+  "noResults": "لا توجد نتائج",
+  "tryAdjustingSearch": "حاول بتغيير كلمة البحث",
   "upgrade_now": "ترقية الآن",
   "severity": {
     "low": "منخفض",
