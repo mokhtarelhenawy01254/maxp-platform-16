@@ -20,7 +20,6 @@ import {
 import { useAuth } from "../../hooks/useAuthSimple";
 import ThemeToggle from "../ui/theme-toggle";
 import GlobalTimer from "../common/GlobalTimer";
-import GlobalSearch from "./GlobalSearch";
 import { cn } from "@/lib/utils";
 
 type SuperAdminHeaderUser = { firstName?: string | null } | null;
@@ -132,7 +131,6 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
             </div>
           )}
         </div>
-        <GlobalSearch />
         <div className="flex items-center gap-1 flex-shrink-0">
           <TooltipProvider>
             <Tooltip>
