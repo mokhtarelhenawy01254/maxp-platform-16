@@ -870,7 +870,107 @@ const UnifiedInbox: React.FC = () => {
   // ═══════════════════════════════════════════════════════════════════════════
 
   return (
-    <><div className="business-inbox-shell" dir={isRtl ? "rtl" : "ltr"}>
+    <>
+      {/* ═══════════════════════════════════════════════════════════════════════ */}
+      {/* PAGE HEADER — Tabs + Filters (Full Width) */}
+      {/* ═══════════════════════════════════════════════════════════════════════ */}
+      <div className="unified-inbox-page-header" dir={isRtl ? "rtl" : "ltr"}>
+        {/* Title + Platform Dropdown */}
+        <div className="flex items-center gap-3">
+          <h2 className="text-sm font-bold whitespace-nowrap" style={{ color: "var(--color-foreground)" }}>
+            {t("unifiedInbox.title", "الرسائل")}
+          </h2>
+          <div className="relative">
+            <select
+              value={selectedPlatforms.length === 0 ? "all" : selectedPlatforms[0]}
+              onChange={(e) => {
+                if (e.target.value === "all") {
+                  setSelectedPlatforms([]);
+                } else {
+                  setSelectedPlatforms([e.target.value]);
+                }
+                setActiveTab("all");
+              }}
+              className="inbox-filter-chip text-sm appearance-none cursor-pointer pr-6 pl-3"
+              style={{ borderRadius: "6px" }}
+            >
+              <option value="all">{t("unifiedInbox.filters.allPlatforms", "كل المنصات")}</option>
+              <option value="facebook">Messenger</option>
+              <option value="instagram">Instagram</option>
+              <option value="whatsapp">{t("unifiedInbox.tabs.whatsapp", "واتساب")}</option>
+            </select>
+            <ChevronDownIcon className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-muted-foreground)" }} />
+          </div>
+          {/* Comments links */}
+          <div className="flex gap-1">
+            <button
+              onClick={() => navigate("/unified-comments?platform=facebook")}
+              className="inbox-filter-chip text-xs whitespace-nowrap"
+              style={{ padding: "0.3rem 0.6rem" }}
+            >
+              {t("unifiedInbox.tabs.fbComments", "تعليقات فيسبوك")}
+            </button>
+            <button
+              onClick={() => navigate("/unified-comments?platform=instagram")}
+              className="inbox-filter-chip text-xs whitespace-nowrap"
+              style={{ padding: "0.3rem 0.6rem" }}
+            >
+              {t("unifiedInbox.tabs.igComments", "تعليقات Instagram")}
+            </button>
+          </div>
+        </div>
+
+        {/* Filter Chips */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setFollowUpFilter(prev => !prev)}
+            className="inbox-filter-chip"
+            data-active={followUpFilter ? "true" : "false"}
+          >
+            {t("unifiedInbox.filters.followUp")}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setUnreadFilter(prev => !prev)}
+            className="inbox-filter-chip"
+            data-active={unreadFilter ? "true" : "false"}
+          >
+            {t("unifiedInbox.filters.unread")}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleRefresh}
+            className="inbox-filter-chip"
+            aria-label={t("unifiedInbox.refresh")}
+          >
+            <ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectMode(prev => !prev)}
+            className="inbox-filter-chip"
+            data-active={selectMode ? "true" : "false"}
+            aria-label={t("unifiedInbox.select")}
+          >
+            <CheckIcon className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowStats(true)}
+            className="inbox-filter-chip"
+            aria-label={t("unifiedInbox.stats")}
+          >
+            {t("unifiedInbox.stats")}
+          </button>
+        </div>
+      </div>
+
+      <div className="business-inbox-shell" dir={isRtl ? "rtl" : "ltr"}>
       <div className="business-inbox-stage">
         {/* ═══════════════════════════════════════════════════════════════════ */}
         {/* COLUMN 1 — Conversation List */}
@@ -894,107 +994,6 @@ const UnifiedInbox: React.FC = () => {
                 className={`business-inbox-search ${isRtl ? "pr-9 pl-4" : "pl-9 pr-4 text-left"}`}
                 autoComplete="off"
               />
-            </div>
-
-            {/* App Strip */}
-            <div
-              className="flex mb-3 gap-2 overflow-x-auto pb-1"
-              style={{ flexDirection: isRtl ? "row-reverse" : "row" }}
-            >
-              {[
-                { id: "all", label: t("unifiedInbox.tabs.all", "كل الرسائل"), count: counts.all, type: 'inbox', platforms: [] },
-                { id: "messenger", label: "Messenger", count: counts.facebook, type: 'inbox', platforms: ["facebook"] },
-                { id: "instagram", label: "Instagram", count: counts.instagram, type: 'inbox', platforms: ["instagram"] },
-                { id: "whatsapp", label: t("unifiedInbox.tabs.whatsapp", "واتساب"), count: counts.whatsapp > 0 ? t("unifiedInbox.new", "جديد") : 0, type: 'inbox', platforms: ["whatsapp"] },
-                { id: "fb-comments", label: t("unifiedInbox.tabs.fbComments", "تعليقات فيسبوك"), type: 'comments', platform: "facebook" },
-                { id: "ig-comments", label: t("unifiedInbox.tabs.igComments", "تعليقات Instagram"), type: 'comments', platform: "instagram" },
-              ].map((tab) => {
-                const isActive = tab.type === 'inbox' 
-                  && ((tab.platforms.length === 0 && selectedPlatforms.length === 0) 
-                      || (tab.platforms.length > 0 && selectedPlatforms.length === 1 && selectedPlatforms[0] === tab.platforms[0]));
-                
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      if (tab.type === 'comments') {
-                        navigate(`/unified-comments?platform=${tab.platform}`);
-                      } else {
-                        setSelectedPlatforms(tab.platforms);
-                        setActiveTab("all");
-                      }
-                    }}
-                    className="inbox-filter-chip text-sm whitespace-nowrap font-semibold flex items-center"
-                    data-active={isActive ? "true" : "false"}
-                    style={{ padding: "0.4rem 0.8rem", borderRadius: "6px" }}
-                  >
-                    {tab.label}
-                    {tab.count !== undefined && tab.count !== 0 && (
-                      <span 
-                        className={`font-bold mr-2 px-1.5 py-0.5 rounded-full text-[10px] ${
-                          tab.count === t("unifiedInbox.new", "جديد") ? 'bg-green-100 text-green-700' : 'bg-red-600 text-white'
-                        }`}
-                      >
-                        {typeof tab.count === 'number' && tab.count > 9 ? '+9' : tab.count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Filter Chips Row */}
-            <div
-              className="inbox-filter-bar relative flex items-center gap-2 mb-2"
-              style={{ flexDirection: isRtl ? "row-reverse" : "row", justifyContent: isRtl ? "flex-end" : "flex-start" }}
-            >
-
-              <button
-                type="button"
-                onClick={() => setFollowUpFilter(prev => !prev)}
-                className="inbox-filter-chip"
-                data-active={followUpFilter ? "true" : "false"}
-              >
-                {t("unifiedInbox.filters.followUp")}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setUnreadFilter(prev => !prev)}
-                className="inbox-filter-chip"
-                data-active={unreadFilter ? "true" : "false"}
-              >
-                {t("unifiedInbox.filters.unread")}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleRefresh}
-                className="inbox-filter-chip"
-                aria-label={t("unifiedInbox.refresh")}
-                style={{ marginInlineStart: "auto" }}
-              >
-                <ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectMode(prev => !prev)}
-                className="inbox-filter-chip"
-                data-active={selectMode ? "true" : "false"}
-                aria-label={t("unifiedInbox.select")}
-              >
-                <CheckIcon className="w-3.5 h-3.5" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowStats(true)}
-                className="inbox-filter-chip"
-                aria-label={t("unifiedInbox.stats")}
-              >
-                {t("unifiedInbox.stats")}
-              </button>
             </div>
           </div>
 
