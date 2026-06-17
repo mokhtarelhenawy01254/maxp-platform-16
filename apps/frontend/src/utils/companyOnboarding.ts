@@ -75,7 +75,6 @@ export const getPostAuthDestination = (user?: UserLike | null): string => {
     return "/super-admin/dev-dashboard";
   }
 
-  // Bypass onboarding and old dashboard/marketplace entirely
-  // Direct all company users to the Apps page
-  return "/apps";
+  // Direct all company users to the main dashboard
+  return "/company-dashboard";
 };
