@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const faqController = require('../controller/faqController');
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 
 // Public routes
 router.get('/', faqController.getFAQs);
@@ -9,9 +9,9 @@ router.get('/categories', faqController.getFAQCategories);
 router.post('/:faqId/rate', faqController.rateFAQ);
 
 // Admin routes (require authentication)
-router.post('/', requireAuth, faqController.createFAQ);
-router.put('/:faqId', requireAuth, faqController.updateFAQ);
-router.delete('/:faqId', requireAuth, faqController.deleteFAQ);
-router.get('/admin/all', requireAuth, faqController.getAllFAQsForAdmin);
+router.post('/', verifyToken.authenticateToken, faqController.createFAQ);
+router.put('/:faqId', verifyToken.authenticateToken, faqController.updateFAQ);
+router.delete('/:faqId', verifyToken.authenticateToken, faqController.deleteFAQ);
+router.get('/admin/all', verifyToken.authenticateToken, faqController.getAllFAQsForAdmin);
 
 module.exports = router;

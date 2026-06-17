@@ -7,6 +7,39 @@ const {
 const tenantContext = require('../services/tenantContext');
 const { getJwtSecret, isMissingAuthSecretError } = require('./jwtSecret');
 
+/**
+ * Load user permissions from the new Role-based permission system
+ * Falls back gracefully if the Permission table doesn't exist yet
+ */
+const loadUserPermissions = async (userId, companyId) => {
+  if (!userId || !companyId) return [];
+  try {
+    const prisma = await getSharedPrismaClientAsync();
+    const userCompany = await prisma.userCompany.findUnique({
+      where: { userId_companyId: { userId, companyId } },
+      select: {
+        roleId: true,
+        roleRef: {
+          include: {
+            permissions: {
+              include: { permission: true },
+            },
+          },
+        },
+      },
+    });
+    if (userCompany?.roleRef?.permissions) {
+      return userCompany.roleRef.permissions.map(rp => rp.permission.key);
+    }
+  } catch (e) {
+    // Table might not exist yet (pre-migration)
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('[PERMISSIONS] Permission table not available, skipping:', e.message?.substring(0, 100));
+    }
+  }
+  return [];
+};
+
 const isDatabaseAvailabilityError = (error) => {
   const message = String(error?.message || '');
   return (
@@ -189,7 +222,8 @@ const authenticateToken = async (req, res, next) => {
           },
           select: {
             role: true,
-            isActive: true
+            isActive: true,
+            roleId: true
           }
         })
       );
@@ -216,6 +250,12 @@ const authenticateToken = async (req, res, next) => {
       }
     }
 
+    // Load DB-based permissions
+    let userPermissions = [];
+    if (effectiveCompanyId && user.role !== 'SUPER_ADMIN') {
+      userPermissions = await loadUserPermissions(user.id, effectiveCompanyId);
+    }
+
     req.user = {
       ...decoded,
       id: user.id,
@@ -223,7 +263,8 @@ const authenticateToken = async (req, res, next) => {
       lastName: user.lastName,
       email: user.email,
       role: effectiveRole,
-      companyId: effectiveCompanyId
+      companyId: effectiveCompanyId,
+      userPermissions
     };
 
     // 🛡️ [SAAS] propagate companyId to tenantContext for RLS
@@ -308,7 +349,8 @@ const requireCompanyAccess = async (req, res, next) => {
           },
           select: {
             role: true,
-            isActive: true
+            isActive: true,
+            roleId: true
           }
         })
       )
@@ -334,6 +376,11 @@ const requireCompanyAccess = async (req, res, next) => {
       }
     } else if (membership.role) {
       req.user.role = membership.role;
+    }
+
+    // Load DB-based permissions for this company context
+    if (targetCompanyId && user.role !== 'SUPER_ADMIN') {
+      req.user.userPermissions = await loadUserPermissions(user.id, targetCompanyId);
     }
 
     // Success: Set effective IDs for controllers
@@ -408,4 +455,18 @@ const requireSuperAdmin = (req, res, next) => {
 };
 
 
-module.exports = { requireSuperAdmin, requireRole, requireCompanyAccess, authenticateToken }
+// Optional authentication - doesn't throw if no token, just continues
+const optionalAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token) {
+      return authenticateToken(req, res, next);
+    }
+    next();
+  } catch {
+    next();
+  }
+};
+
+module.exports = { requireSuperAdmin, requireRole, requireCompanyAccess, authenticateToken, optionalAuth }

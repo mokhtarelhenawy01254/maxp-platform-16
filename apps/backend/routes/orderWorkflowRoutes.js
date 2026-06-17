@@ -8,10 +8,10 @@ const router = express.Router();
 const orderWorkflowService = require('../services/orderWorkflowService');
 const orderService = require('../services/orderService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 
 // Apply authentication to all routes
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 // Helper to get companyId safely
 const getCompanyId = (req) => {

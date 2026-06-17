@@ -3,7 +3,7 @@
 ## General
 - **Project**: maxp-platform
 - **Type**: Full-stack web application with AI agent capabilities
-- **Repo**: https://github.com/elhenawym124-ops/maxp-platform
+- **Repo**: https://github.com/mokhtar1983/maxp-platform-1 (نُقل من elhenawym124-ops/maxp-platform)
 
 ## Tech Stack
 - Backend: Node.js/Express, Prisma ORM, PostgreSQL

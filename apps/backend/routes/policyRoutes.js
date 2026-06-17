@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const HtmlPolicyService = require('../services/htmlPolicyService');
 
@@ -233,7 +233,7 @@ async function findOrderDocumentData(prisma, companyId, orderNumber) {
   return null;
 }
 
-router.get('/generate/:orderNumber', requireAuth, async (req, res) => {
+router.get('/generate/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const companyId = req.user?.effectiveCompanyId || req.user?.companyId;

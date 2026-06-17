@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const platformSubscriptionController = require('../controller/platformSubscriptionController');
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const { checkSubscription } = require('../middleware/checkSubscription');
 
 // جميع الـ routes محمية بـ authentication
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 // Messaging package checkout — before subscription check so new users can pay
 router.post('/messaging-checkout', platformSubscriptionController.messagingCheckout);

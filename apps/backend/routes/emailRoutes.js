@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const EmailService = require('../services/email/EmailService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 // Send order confirmation via email
-router.post('/send-order-confirmation', requireAuth, async (req, res) => {
+router.post('/send-order-confirmation', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderId, email } = req.body;
     

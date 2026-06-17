@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const orderConfirmationService = require('../services/orderConfirmationService');
-const { requireAuth, requireRole } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 const SETTINGS_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER'];
 const QUEUE_ROLES = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER', 'AGENT'];
@@ -114,7 +114,7 @@ const assignOrderInternal = async ({ companyId, orderId, userId, assignedBy, not
   return { orderType: 'guest', guestOrder, assignment };
 };
 
-router.get('/settings', requireRole(QUEUE_ROLES), async (req, res) => {
+router.get('/settings', verifyToken.requireRole(QUEUE_ROLES), async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
@@ -126,7 +126,7 @@ router.get('/settings', requireRole(QUEUE_ROLES), async (req, res) => {
   }
 });
 
-router.get('/eligible-users', requireRole(QUEUE_ROLES), async (req, res) => {
+router.get('/eligible-users', verifyToken.requireRole(QUEUE_ROLES), async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
@@ -157,7 +157,7 @@ router.get('/eligible-users', requireRole(QUEUE_ROLES), async (req, res) => {
   }
 });
 
-router.put('/settings', requireRole(SETTINGS_ROLES), async (req, res) => {
+router.put('/settings', verifyToken.requireRole(SETTINGS_ROLES), async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
@@ -169,7 +169,7 @@ router.put('/settings', requireRole(SETTINGS_ROLES), async (req, res) => {
   }
 });
 
-router.get('/queue', requireRole(QUEUE_ROLES), async (req, res) => {
+router.get('/queue', verifyToken.requireRole(QUEUE_ROLES), async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
@@ -181,7 +181,7 @@ router.get('/queue', requireRole(QUEUE_ROLES), async (req, res) => {
   }
 });
 
-router.get('/stats', requireRole(QUEUE_ROLES), async (req, res) => {
+router.get('/stats', verifyToken.requireRole(QUEUE_ROLES), async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
@@ -193,7 +193,7 @@ router.get('/stats', requireRole(QUEUE_ROLES), async (req, res) => {
   }
 });
 
-router.post('/confirm', requireRole(QUEUE_ROLES), async (req, res) => {
+router.post('/confirm', verifyToken.requireRole(QUEUE_ROLES), async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
@@ -232,7 +232,7 @@ router.post('/confirm', requireRole(QUEUE_ROLES), async (req, res) => {
   }
 });
 
-router.post('/confirm/bulk', requireRole(QUEUE_ROLES), async (req, res) => {
+router.post('/confirm/bulk', verifyToken.requireRole(QUEUE_ROLES), async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
@@ -293,7 +293,7 @@ router.post('/confirm/bulk', requireRole(QUEUE_ROLES), async (req, res) => {
   }
 });
 
-router.post('/assign', requireRole(QUEUE_ROLES), async (req, res) => {
+router.post('/assign', verifyToken.requireRole(QUEUE_ROLES), async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });
@@ -352,7 +352,7 @@ router.post('/assign', requireRole(QUEUE_ROLES), async (req, res) => {
   }
 });
 
-router.post('/assign/bulk', requireRole(QUEUE_ROLES), async (req, res) => {
+router.post('/assign/bulk', verifyToken.requireRole(QUEUE_ROLES), async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, message: 'معرف الشركة مفقود' });

@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 
 // Middleware to ensure user is agent/admin
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 const canManageAffiliateSettings = (userRole) =>
     ['OWNER', 'COMPANY_ADMIN', 'SUPER_ADMIN'].includes(userRole);

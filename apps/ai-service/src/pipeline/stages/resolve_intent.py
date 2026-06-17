@@ -42,6 +42,7 @@ def _available_tools(ctx: PipelineContext) -> list[str]:
                 tools.append({"name": st_name})
 
     ctx.native_tools = tools
+    logger.info('available_tools_debug', agent_type=type(agent).__name__ if agent else None, native_tools_count=len(ctx.native_tools), tools_sample=[_tool_name(t) for t in ctx.native_tools[:10]])
     return [name for tool in tools if (name := _tool_name(tool))]
 
 

@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const walletController = require('../controller/walletController');
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const { checkSubscription } = require('../middleware/checkSubscription');
 
 // Middleware for all routes
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 router.use(checkSubscription);
 
 // --- Company Wallet & Billing Routes ---

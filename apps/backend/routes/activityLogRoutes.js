@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const activityLogController = require('../controller/activityLogController');
-const { requireAuth: protect } = require('../middleware/auth');
+const verifyToken = require('../utils/verifyToken');
+const protect = verifyToken.authenticateToken;
 
 /**
  * Routes للنشاطات الشخصية (للمستخدم)

@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const competitorPlatformService = require('../services/competitorPlatformService');
 
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 router.get('/amazon/:competitorId', async (req, res) => {
   try {

@@ -1,58 +1,58 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth, requireRole } = require('../middleware/auth');
-const { requirePermission } = require('../middleware/rbacMiddleware');
+const verifyToken = require('../utils/verifyToken');
+const { requireDbPermission } = require('../middleware/rbacMiddleware');
 const assignmentController = require('../controller/numberAssignmentController');
 
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 // ─── Admin Routes ─────────────────────────────────────────────────
 
 router.get(
   '/',
-  requirePermission('numbers.view'),
+  requireDbPermission('numbers.view'),
   assignmentController.getAllAssignments
 );
 
 router.get(
   '/workspace',
-  requirePermission('numbers.view'),
+  requireDbPermission('numbers.view'),
   assignmentController.getRoutingWorkspace
 );
 
 router.get(
   '/available',
-  requirePermission('numbers.manage'),
+  requireDbPermission('numbers.manage'),
   assignmentController.getAvailableNumbers
 );
 
 router.get(
   '/moderators',
-  requirePermission('numbers.manage'),
+  requireDbPermission('numbers.manage'),
   assignmentController.getAvailableModerators
 );
 
 router.post(
   '/assign',
-  requirePermission('numbers.assign'),
+  requireDbPermission('numbers.assign'),
   assignmentController.assignNumber
 );
 
 router.put(
   '/:sessionId/routing',
-  requirePermission('numbers.assign'),
+  requireDbPermission('numbers.assign'),
   assignmentController.saveRoutingRule
 );
 
 router.post(
   '/unassign',
-  requirePermission('numbers.assign'),
+  requireDbPermission('numbers.assign'),
   assignmentController.unassignNumber
 );
 
 router.get(
   '/:sessionId',
-  requirePermission('numbers.view'),
+  requireDbPermission('numbers.view'),
   assignmentController.getSessionAssignment
 );
 

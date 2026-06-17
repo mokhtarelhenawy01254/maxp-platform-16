@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const verifyToken = require('../utils/verifyToken');
 const router = express.Router();
 const { checkAppAccess } = require('../middleware/checkAppAccess');
-const requireAuth = verifyToken.authenticateToken;
+
 const simpleOrderService = require('../services/simpleOrderService');
 const orderService = require('../services/orderService');
 const orderDetailsUpdateService = require('../services/orderDetailsUpdateService');
@@ -910,7 +910,7 @@ const permanentlyDeleteAnyOrder = async ({ orderIdentifier, companyId }) => {
 };
 
 // الحصول على الطلبات غير المكتملة (مسودات الشيك آوت)
-router.get('/incomplete', requireAuth, async (req, res) => {
+router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -1061,7 +1061,7 @@ router.get('/incomplete', requireAuth, async (req, res) => {
 });
 
 // تفاصيل طلب غير مكتمل واحد
-router.get('/incomplete/:cartId', requireAuth, async (req, res) => {
+router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -1169,10 +1169,10 @@ router.get('/incomplete/:cartId', requireAuth, async (req, res) => {
 
 // الحصول على الطلبات البسيطة
 // الحصول على الطلبات البسيطة (مع Pagination & Filtering)
-router.get('/simple', requireAuth, async (req, res) => {
+router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
   try {
     // الحصول على companyId من المستخدم المصادق عليه
-    // التأكد من وجود req.user و companyId (requireAuth يجب أن يضمن ذلك)
+    // التأكد من وجود req.user و companyId (verifyToken.authenticateToken يجب أن يضمن ذلك)
     if (!req.user) {
       console.error(`[ORDERS] /simple - req.user is null/undefined`);
       return res.status(401).json({
@@ -2017,7 +2017,7 @@ router.get('/simple', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/preparation/queue', requireAuth, async (req, res) => {
+router.get('/preparation/queue', verifyToken.authenticateToken, async (req, res) => {
   try {
     const payload = await preparationQueueService.getPreparationQueue({
       user: req.user,
@@ -2036,7 +2036,7 @@ router.get('/preparation/queue', requireAuth, async (req, res) => {
 });
 
 // إحصائيات الطلبات البسيطة
-router.get('/simple/stats', requireAuth, async (req, res) => {
+router.get('/simple/stats', verifyToken.authenticateToken, async (req, res) => {
   try {
     // ✅ الحصول على companyId من المستخدم المصادق عليه
     const companyId = req.user?.companyId || null;
@@ -2085,7 +2085,7 @@ router.get('/simple/stats', requireAuth, async (req, res) => {
 });
 
 // تحديث حالة الطلب البسيط
-router.post('/simple/:orderNumber/status', requireAuth, async (req, res) => {
+router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { status, notes } = req.body;
@@ -2375,7 +2375,7 @@ router.post('/simple/:orderNumber/status', requireAuth, async (req, res) => {
 });
 
 // تسجيل محاولة اتصال
-router.post('/simple/:orderNumber/call-attempt', requireAuth, async (req, res) => {
+router.post('/simple/:orderNumber/call-attempt', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { notes, result } = req.body;
@@ -2439,7 +2439,7 @@ router.post('/simple/:orderNumber/call-attempt', requireAuth, async (req, res) =
 });
 
 // تعليم الطلب كمقروء
-router.post('/simple/:orderNumber/viewed', requireAuth, async (req, res) => {
+router.post('/simple/:orderNumber/viewed', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const merchant = isMerchantUser(req.user)
@@ -2512,7 +2512,7 @@ router.post('/simple/:orderNumber/viewed', requireAuth, async (req, res) => {
 });
 
 // جلب عدد الطلبات الجديدة غير المقروءة
-router.get('/simple/new-count', requireAuth, async (req, res) => {
+router.get('/simple/new-count', verifyToken.authenticateToken, async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -2554,7 +2554,7 @@ router.get('/simple/new-count', requireAuth, async (req, res) => {
 });
 
 // جلب قائمة الطلبات الجديدة غير المقروءة
-router.get('/simple/new-list', requireAuth, async (req, res) => {
+router.get('/simple/new-list', verifyToken.authenticateToken, async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -2636,7 +2636,7 @@ router.get('/simple/new-list', requireAuth, async (req, res) => {
 });
 
 // تعليم كل الطلبات كمقروءة
-router.post('/simple/mark-all-viewed', requireAuth, async (req, res) => {
+router.post('/simple/mark-all-viewed', verifyToken.authenticateToken, async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) {
@@ -2677,7 +2677,7 @@ router.post('/simple/mark-all-viewed', requireAuth, async (req, res) => {
 });
 
 // تحديث حالة الدفع للطلب البسيط
-router.post('/simple/:orderNumber/payment-status', requireAuth, async (req, res) => {
+router.post('/simple/:orderNumber/payment-status', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { paymentStatus, notes } = req.body;
@@ -2829,7 +2829,7 @@ router.post('/simple/:orderNumber/payment-status', requireAuth, async (req, res)
 });
 
 // الحصول على جميع الطلبات
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { page = 1, limit = 20, status, customerId } = req.query;
     const skip = (page - 1) * limit;
@@ -2920,7 +2920,7 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 // إضافة ملاحظة للطلب
-router.post('/simple/:orderNumber/notes', requireAuth, async (req, res) => {
+router.post('/simple/:orderNumber/notes', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { content } = req.body;
@@ -3006,7 +3006,7 @@ router.post('/simple/:orderNumber/notes', requireAuth, async (req, res) => {
 });
 
 // تعديل ملاحظة طلب
-router.patch('/simple/notes/:noteId', requireAuth, async (req, res) => {
+router.patch('/simple/notes/:noteId', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { noteId } = req.params;
     const { content } = req.body;
@@ -3066,7 +3066,7 @@ router.patch('/simple/notes/:noteId', requireAuth, async (req, res) => {
 });
 
 // حذف ملاحظة طلب
-router.delete('/simple/notes/:noteId', requireAuth, async (req, res) => {
+router.delete('/simple/notes/:noteId', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { noteId } = req.params;
     const companyId = req.user?.companyId;
@@ -3113,11 +3113,11 @@ router.delete('/simple/notes/:noteId', requireAuth, async (req, res) => {
 });
 
 // الحصول على طلب بسيط محدد بالرقم
-router.get('/simple/:orderNumber', requireAuth, async (req, res) => {
+router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
 
-    // التأكد من وجود req.user (requireAuth يجب أن يضمن ذلك)
+    // التأكد من وجود req.user (verifyToken.authenticateToken يجب أن يضمن ذلك)
     if (!req.user) {
       console.error('❌ [ORDER-DETAIL] req.user is null/undefined');
       return res.status(401).json({
@@ -3800,7 +3800,7 @@ router.get('/simple/:orderNumber', requireAuth, async (req, res) => {
 });
 
 // الحصول على طلب محدد
-router.get('/:orderNumber', requireAuth, async (req, res) => {
+router.get('/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
 
@@ -3829,7 +3829,7 @@ router.get('/:orderNumber', requireAuth, async (req, res) => {
 });
 
 // تحديث حالة الطلب
-router.patch('/:orderNumber/status', requireAuth, async (req, res) => {
+router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, res) => {
   console.log(`🔍 [ORDERS-ROUTE-DEBUG] PATCH /:orderNumber/status called:`);
   console.log(`   - Order Number: ${req.params.orderNumber}`);
   console.log(`   - New Status: ${req.body.status}`);
@@ -3913,7 +3913,7 @@ router.patch('/:orderNumber/status', requireAuth, async (req, res) => {
 });
 
 // تأكيد الطلب
-router.post('/:orderNumber/confirm', requireAuth, async (req, res) => {
+router.post('/:orderNumber/confirm', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { shippingAddress } = req.body;
@@ -3949,7 +3949,7 @@ router.post('/:orderNumber/confirm', requireAuth, async (req, res) => {
 });
 
 // إلغاء الطلب
-router.post('/:orderNumber/cancel', requireAuth, async (req, res) => {
+router.post('/:orderNumber/cancel', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { reason } = req.body;
@@ -3985,7 +3985,7 @@ router.post('/:orderNumber/cancel', requireAuth, async (req, res) => {
 });
 
 // إحصائيات الطلبات
-router.get('/stats/summary', requireAuth, async (req, res) => {
+router.get('/stats/summary', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { days = 30, companyId } = req.query;
 
@@ -4014,7 +4014,7 @@ router.get('/stats/summary', requireAuth, async (req, res) => {
 });
 
 // طلبات العميل
-router.get('/customer/:customerId', requireAuth, async (req, res) => {
+router.get('/customer/:customerId', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { customerId } = req.params;
     const { limit = 10 } = req.query;
@@ -4039,7 +4039,7 @@ router.get('/customer/:customerId', requireAuth, async (req, res) => {
 });
 
 // إنشاء طلب بسيط من المحادثة (باستخدام EnhancedOrderService)
-router.post('/simple', requireAuth, async (req, res) => {
+router.post('/simple', verifyToken.authenticateToken, async (req, res) => {
   try {
     const EnhancedOrderService = require('../services/enhancedOrderService');
     const enhancedOrderService = new EnhancedOrderService();
@@ -4216,7 +4216,7 @@ router.post('/simple', requireAuth, async (req, res) => {
 });
 
 // إنشاء طلب بسيط (للاختبار)
-router.post('/create-simple', requireAuth, async (req, res) => {
+router.post('/create-simple', verifyToken.authenticateToken, async (req, res) => {
   try {
     const orderData = req.body;
 
@@ -4278,7 +4278,7 @@ router.post('/create-simple', requireAuth, async (req, res) => {
 });
 
 // إنشاء طلب يدوي (للاختبار)
-router.post('/create', requireAuth, async (req, res) => {
+router.post('/create', verifyToken.authenticateToken, async (req, res) => {
   try {
     const orderData = req.body;
 
@@ -4341,7 +4341,7 @@ router.post('/create', requireAuth, async (req, res) => {
 });
 
 // Bulk Status Update
-router.post('/bulk/status', requireAuth, async (req, res) => {
+router.post('/bulk/status', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderIds, status, notes } = req.body;
     const companyId = req.user?.effectiveCompanyId || req.user?.companyId;
@@ -4409,7 +4409,7 @@ router.post('/bulk/status', requireAuth, async (req, res) => {
 });
 
 // Bulk Delete
-router.post('/bulk/delete', requireAuth, async (req, res) => {
+router.post('/bulk/delete', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderIds, permanent = false } = req.body;
     const shouldPermanentlyDelete = permanent === true || permanent === 'true';
@@ -4479,7 +4479,7 @@ router.post('/bulk/delete', requireAuth, async (req, res) => {
 });
 
 // Export Orders
-router.get('/export', requireAuth, async (req, res) => {
+router.get('/export', verifyToken.authenticateToken, async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, message: 'Unauthorized' });
@@ -4619,7 +4619,7 @@ router.get('/export', requireAuth, async (req, res) => {
   }
 });
 
-router.put('/simple/:orderNumber', requireAuth, async (req, res) => {
+router.put('/simple/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { shippingAddress, notes, customerName, customerPhone, alternativePhone, city, governorate, metadataPatch } = req.body;
@@ -4677,7 +4677,7 @@ router.put('/simple/:orderNumber', requireAuth, async (req, res) => {
 });
 
 // Update Order Items
-router.put('/simple/:orderNumber/items', requireAuth, async (req, res) => {
+router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const { items, total, subtotal, tax, shipping } = req.body;

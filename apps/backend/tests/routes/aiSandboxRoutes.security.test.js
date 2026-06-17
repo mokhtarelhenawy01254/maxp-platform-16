@@ -41,8 +41,8 @@ const mockPrisma = {
   $queryRawUnsafe: jest.fn(),
 };
 
-jest.mock('../../middleware/auth', () => ({
-  requireAuth: (req, res, next) => {
+jest.mock('../../utils/verifyToken', () => ({
+  authenticateToken: (req, res, next) => {
     if (!mockCurrentUser) {
       return res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' });
     }
@@ -58,6 +58,14 @@ jest.mock('../../middleware/auth', () => ({
     }
     return next();
   },
+  requireSuperAdmin: (req, res, next) => {
+    if (!req.user || req.user.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+    return next();
+  },
+  requireCompanyAccess: (req, res, next) => next(),
+  optionalAuth: (req, res, next) => next(),
 }));
 
 jest.mock('../../services/sharedDatabase', () => ({

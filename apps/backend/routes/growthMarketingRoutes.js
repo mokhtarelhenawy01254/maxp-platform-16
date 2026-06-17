@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const ctrl = require('../controller/growthMarketingController');
 
 // All routes require authentication
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 // GET /api/v1/growth-marketing/dashboard
 router.get('/dashboard', ctrl.getDashboard);

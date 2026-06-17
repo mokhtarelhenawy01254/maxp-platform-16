@@ -219,13 +219,6 @@ enum DevProjectStatus {
   CANCELLED
 }
 
-enum UsercompanyRole {
-  SUPER_ADMIN
-  COMPANY_ADMIN
-  MANAGER
-  AGENT
-}
-
 enum DevTaskStatus {
   BACKLOG
   TODO

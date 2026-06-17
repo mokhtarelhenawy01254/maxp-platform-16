@@ -1147,6 +1147,7 @@ async def _build_agent_files_response(
     session: AsyncSession,
 ) -> AgentFilesResponse:
     agent_model, agent_raw = await _load_agent_for_files(agent_id, company_id, session)
+    from src.db.models.skill import Skill as SkillModel
     if not agent_raw:
         raise HTTPException(status_code=404, detail=f"Agent not found: {agent_id}")
 

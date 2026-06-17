@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const verifyToken = require('../utils/verifyToken');
-const { requirePermission } = require('../middleware/rbacMiddleware');
+const { requireDbPermission } = require('../middleware/rbacMiddleware');
 const { bulkOrderService, BULK_ORDER_PERMISSIONS } = require('../services/bulkOrderService');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -10,7 +10,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 router.use(verifyToken.authenticateToken);
 router.use(verifyToken.requireCompanyAccess);
 
-router.get('/', requirePermission(BULK_ORDER_PERMISSIONS.VIEW), async (req, res) => {
+router.get('/', requireDbPermission(BULK_ORDER_PERMISSIONS.VIEW), async (req, res) => {
   try {
     const { page, limit, status, search, sortBy, sortOrder, userId, dateFrom, dateTo } = req.query;
     const result = await bulkOrderService.list({
@@ -31,7 +31,7 @@ router.get('/', requirePermission(BULK_ORDER_PERMISSIONS.VIEW), async (req, res)
   }
 });
 
-router.get('/:id', requirePermission(BULK_ORDER_PERMISSIONS.VIEW), async (req, res) => {
+router.get('/:id', requireDbPermission(BULK_ORDER_PERMISSIONS.VIEW), async (req, res) => {
   try {
     const record = await bulkOrderService.getById(req.params.id, req.user.companyId);
     if (!record) return res.status(404).json({ success: false, error: 'Bulk order not found' });
@@ -41,7 +41,7 @@ router.get('/:id', requirePermission(BULK_ORDER_PERMISSIONS.VIEW), async (req, r
   }
 });
 
-router.post('/', requirePermission(BULK_ORDER_PERMISSIONS.CREATE), async (req, res) => {
+router.post('/', requireDbPermission(BULK_ORDER_PERMISSIONS.CREATE), async (req, res) => {
   try {
     const record = await bulkOrderService.create(req.body, req.user);
     res.status(201).json({ success: true, data: record });
@@ -50,7 +50,7 @@ router.post('/', requirePermission(BULK_ORDER_PERMISSIONS.CREATE), async (req, r
   }
 });
 
-router.put('/:id', requirePermission(BULK_ORDER_PERMISSIONS.EDIT), async (req, res) => {
+router.put('/:id', requireDbPermission(BULK_ORDER_PERMISSIONS.EDIT), async (req, res) => {
   try {
     const record = await bulkOrderService.update(req.params.id, req.body, req.user);
     res.json({ success: true, data: record });
@@ -59,7 +59,7 @@ router.put('/:id', requirePermission(BULK_ORDER_PERMISSIONS.EDIT), async (req, r
   }
 });
 
-router.delete('/:id', requirePermission(BULK_ORDER_PERMISSIONS.DELETE), async (req, res) => {
+router.delete('/:id', requireDbPermission(BULK_ORDER_PERMISSIONS.DELETE), async (req, res) => {
   try {
     await bulkOrderService.delete(req.params.id, req.user.companyId, req.user);
     res.json({ success: true });
@@ -68,7 +68,7 @@ router.delete('/:id', requirePermission(BULK_ORDER_PERMISSIONS.DELETE), async (r
   }
 });
 
-router.post('/:id/duplicate', requirePermission(BULK_ORDER_PERMISSIONS.CREATE), async (req, res) => {
+router.post('/:id/duplicate', requireDbPermission(BULK_ORDER_PERMISSIONS.CREATE), async (req, res) => {
   try {
     const record = await bulkOrderService.duplicate(req.params.id, req.user);
     res.status(201).json({ success: true, data: record });
@@ -77,7 +77,7 @@ router.post('/:id/duplicate', requirePermission(BULK_ORDER_PERMISSIONS.CREATE), 
   }
 });
 
-router.get('/:id/export', requirePermission(BULK_ORDER_PERMISSIONS.EXPORT), async (req, res) => {
+router.get('/:id/export', requireDbPermission(BULK_ORDER_PERMISSIONS.EXPORT), async (req, res) => {
   try {
     const format = req.query.format || 'json';
     const result = await bulkOrderService.export(req.params.id, req.user.companyId, format, req.user);
@@ -93,7 +93,7 @@ router.get('/:id/export', requirePermission(BULK_ORDER_PERMISSIONS.EXPORT), asyn
   }
 });
 
-router.post('/:id/import', requirePermission(BULK_ORDER_PERMISSIONS.EDIT), upload.single('file'), async (req, res) => {
+router.post('/:id/import', requireDbPermission(BULK_ORDER_PERMISSIONS.EDIT), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, error: 'File is required' });
     const items = await bulkOrderService.parseUpload(req.file.buffer, req.file.mimetype);
@@ -104,7 +104,7 @@ router.post('/:id/import', requirePermission(BULK_ORDER_PERMISSIONS.EDIT), uploa
   }
 });
 
-router.post('/:id/execute', requirePermission(BULK_ORDER_PERMISSIONS.EDIT), async (req, res) => {
+router.post('/:id/execute', requireDbPermission(BULK_ORDER_PERMISSIONS.EDIT), async (req, res) => {
   try {
     const result = await bulkOrderService.execute(req.params.id, req.user);
     res.json({ success: true, ...result });
@@ -113,7 +113,7 @@ router.post('/:id/execute', requirePermission(BULK_ORDER_PERMISSIONS.EDIT), asyn
   }
 });
 
-router.delete('/', requirePermission(BULK_ORDER_PERMISSIONS.DELETE), async (req, res) => {
+router.delete('/', requireDbPermission(BULK_ORDER_PERMISSIONS.DELETE), async (req, res) => {
   try {
     const { ids } = req.body;
     if (!Array.isArray(ids) || ids.length === 0) {

@@ -1,7 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-// const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
+const verifyToken = require("../utils/verifyToken");
+
+// All Facebook status routes require super admin access
+router.use(verifyToken.authenticateToken);
+router.use(verifyToken.requireSuperAdmin);
 
 // فحص حالة صفحات Facebook
 router.get('/facebook-status', async (req, res) => {

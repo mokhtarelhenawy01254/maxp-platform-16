@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const posController = require('../controller/posController');
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 
 // Protect all POS routes
-if (typeof requireAuth !== 'function') {
-  throw new Error('requireAuth middleware is not a function. Check middleware/auth.js');
+if (typeof verifyToken.authenticateToken !== 'function') {
+  throw new Error('verifyToken.authenticateToken is not a function');
 }
 
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 // POST /api/pos/orders - Create new POS order
 router.post('/orders', posController.createPOSOrder);

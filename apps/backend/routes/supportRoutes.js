@@ -24,21 +24,21 @@ const {
   getAllFAQsForAdmin
 } = require('../controller/faqController');
 
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 
 // Support Ticket Routes
-router.post('/tickets', requireAuth, upload.array('attachments', 5), createTicket);
-router.get('/tickets', requireAuth, getUserTickets);
-router.get('/tickets/:ticketId', requireAuth, getTicketDetails);
-router.post('/tickets/:ticketId/messages', requireAuth, upload.array('attachments', 5), addMessage);
-router.patch('/tickets/:ticketId', requireAuth, updateTicket);
-router.patch('/tickets/:ticketId/status', requireAuth, updateTicketStatus);
-router.post('/tickets/:ticketId/rate', requireAuth, rateTicket);
+router.post('/tickets', verifyToken.authenticateToken, upload.array('attachments', 5), createTicket);
+router.get('/tickets', verifyToken.authenticateToken, getUserTickets);
+router.get('/tickets/:ticketId', verifyToken.authenticateToken, getTicketDetails);
+router.post('/tickets/:ticketId/messages', verifyToken.authenticateToken, upload.array('attachments', 5), addMessage);
+router.patch('/tickets/:ticketId', verifyToken.authenticateToken, updateTicket);
+router.patch('/tickets/:ticketId/status', verifyToken.authenticateToken, updateTicketStatus);
+router.post('/tickets/:ticketId/rate', verifyToken.authenticateToken, rateTicket);
 
 // Admin Routes for Tickets
-router.get('/admin/tickets', requireAuth, getAllTickets);
-router.get('/admin/users/:userId/tickets', requireAuth, getUserTicketHistory);
-router.get('/admin/staff', requireAuth, getSupportStaff);
+router.get('/admin/tickets', verifyToken.authenticateToken, getAllTickets);
+router.get('/admin/users/:userId/tickets', verifyToken.authenticateToken, getUserTicketHistory);
+router.get('/admin/staff', verifyToken.authenticateToken, getSupportStaff);
 
 // FAQ Routes (Public)
 router.get('/faq', getFAQs);
@@ -46,9 +46,9 @@ router.get('/faq/categories', getFAQCategories);
 router.post('/faq/:faqId/rate', rateFAQ);
 
 // Admin Routes for FAQ
-router.post('/admin/faq', requireAuth, createFAQ);
-router.put('/admin/faq/:faqId', requireAuth, updateFAQ);
-router.delete('/admin/faq/:faqId', requireAuth, deleteFAQ);
-router.get('/admin/faq', requireAuth, getAllFAQsForAdmin);
+router.post('/admin/faq', verifyToken.authenticateToken, createFAQ);
+router.put('/admin/faq/:faqId', verifyToken.authenticateToken, updateFAQ);
+router.delete('/admin/faq/:faqId', verifyToken.authenticateToken, deleteFAQ);
+router.get('/admin/faq', verifyToken.authenticateToken, getAllFAQsForAdmin);
 
 module.exports = router;

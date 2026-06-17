@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const autoDeductionController = require('../../controller/hr/autoDeductionController');
-const { authenticate } = require('../../middleware/auth');
+const verifyToken = require('../../utils/verifyToken');
+const authenticate = verifyToken.authenticateToken;
 const { checkPermission } = require('../../middleware/permissions');
 
 /**

@@ -28,15 +28,15 @@ router.get('/1/usage-mock', companiesController.mockEndpoint);
 router.get('/usage-safe', cacheMiddleware(60000), companiesController.safeUsageEndpoint); // 1 minute cache
 router.get('/plans', cacheMiddleware(300000), companiesController.companyPlansEndpoint); // 5 minutes cache
 router.get('/:id/info', validateCompanyId, verifyToken.authenticateToken, cacheMiddleware(120000), companiesController.getCompanyInfoEndpoint); // 2 minutes cache
-router.put('/:companyId/currency', validateCompanyId, companiesController.updateCompanyCurrency);
+router.put('/:companyId/currency', validateCompanyId, verifyToken.authenticateToken, verifyToken.requireCompanyAccess, verifyToken.requireRole(['COMPANY_ADMIN', 'OWNER']), companiesController.updateCompanyCurrency);
 ////////////////////////////////////////////////////////////
-router.get('/', companiesController.getAllCompanies);
+router.get('/', verifyToken.authenticateToken, verifyToken.requireSuperAdmin, companiesController.getAllCompanies);
 router.get('/:id', validateCompanyId, verifyToken.authenticateToken, companiesController.getCompanyDetails);
 // ✅ RESTRICTED: Only SUPER_ADMIN can create companies directly
 // Regular users get one company created during registration
 router.post('/', verifyToken.authenticateToken, verifyToken.requireSuperAdmin, companiesController.createNewCompany);
-router.put('/:id', validateCompanyId, companiesController.updateCompany);
-router.delete('/:id', validateCompanyId, companiesController.deleteCompany);
+router.put('/:id', validateCompanyId, verifyToken.authenticateToken, verifyToken.requireSuperAdmin, companiesController.updateCompany);
+router.delete('/:id', validateCompanyId, verifyToken.authenticateToken, verifyToken.requireSuperAdmin, companiesController.deleteCompany);
 // ==================== COMPANY USERS MANAGEMENT ====================
 router.get('/:companyId/users', validateCompanyId, verifyToken.authenticateToken, verifyToken.requireCompanyAccess, companiesController.getCompanyUsers);
 router.get('/:companyId/users/statistics', validateCompanyId, verifyToken.authenticateToken, verifyToken.requireCompanyAccess, companiesController.getUsersStatistics);
@@ -48,11 +48,10 @@ router.delete('/:companyId/users/:userId', validateCompanyId, verifyToken.authen
 // ==================== USER PROFILE ====================
 router.put('/profile/me', verifyToken.authenticateToken, companiesController.updateMyProfile);
 
-// ==================== ROLES & PERMISSIONS MANAGEMENT ====================
-router.post('/:companyId/roles', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, verifyToken.requireRole(['COMPANY_ADMIN', 'OWNER']), companiesController.createCustomRole);
+// ==================== ROLES & PERMISSIONS MANAGEMENT (Legacy) ====================
+// Deprecated: Use /api/v1/permissions/companies/:companyId/roles instead
+// GET kept for backward compatibility (reads from new DB + fallback to old JSON)
 router.get('/:companyId/roles', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, companiesController.getCompanyRoles);
-router.put('/:companyId/roles/:roleKey', companiesController.updateCustomRole);
-router.delete('/:companyId/roles/:roleKey', companiesController.deleteCustomRole);
 
 // ==================== OWNERSHIP MANAGEMENT ====================
 router.post('/:companyId/transfer-ownership', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, verifyToken.requireRole(['OWNER']), companiesController.transferOwnership);

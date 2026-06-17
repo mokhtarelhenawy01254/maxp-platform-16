@@ -2583,7 +2583,53 @@ const getCompanyRoles = async (req, res) => {
   try {
     const { companyId } = req.params;
 
-    // Get company
+    // Try to read from new Role table first
+    try {
+      const dbRoles = await getSharedPrismaClient().role.findMany({
+        where: {
+          OR: [
+            { companyId: null, isBuiltIn: true },
+            { companyId },
+          ],
+          isActive: true,
+        },
+        include: {
+          permissions: {
+            include: { permission: true },
+          },
+        },
+        orderBy: { priority: 'desc' },
+      });
+
+      if (dbRoles && dbRoles.length > 0) {
+        const allRoles = {};
+        for (const role of dbRoles) {
+          allRoles[role.key] = {
+            id: role.id,
+            name: role.name,
+            description: role.description,
+            permissions: role.permissions.map(rp => ({
+              key: rp.permission.key,
+              name: rp.permission.name,
+              domain: rp.permission.domain,
+            })),
+            isBuiltIn: role.isBuiltIn,
+            isSystem: role.isSystem,
+            isActive: role.isActive,
+            priority: role.priority,
+            companyId: role.companyId,
+          };
+        }
+        return res.json({ success: true, data: allRoles });
+      }
+    } catch (dbError) {
+      // Role table might not exist yet (pre-migration)
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[ROLES] Role table not available, using fallback:', dbError.message?.substring(0, 100));
+      }
+    }
+
+    // Fallback: read from Company.settings JSON (legacy)
     const company = await getSharedPrismaClient().company.findUnique({
       where: { id: companyId },
     });
@@ -2595,56 +2641,25 @@ const getCompanyRoles = async (req, res) => {
       });
     }
 
-    // Built-in roles
     const builtInRoles = {
       OWNER: {
         name: "مالك الشركة",
         description: "صلاحيات كاملة وغير محدودة",
-        permissions: [
-          "إدارة المستخدمين",
-          "إدارة الأدوار",
-          "إدارة المنتجات",
-          "مشاهدة المنتجات",
-          "إدارة العملاء",
-          "مشاهدة العملاء",
-          "إدارة الطلبات",
-          "مشاهدة الطلبات",
-          "مشاهدة التقارير",
-          "إدارة التقارير",
-          "إدارة الإعدادات",
-          "إدارة التكاملات",
-          "إدارة المحادثات",
-          "مشاهدة المحادثات",
-          "إدارة الخطة والاشتراك",
-        ],
+        permissions: ["إدارة المستخدمين", "إدارة الأدوار", "إدارة المنتجات", "مشاهدة المنتجات", "إدارة العملاء", "مشاهدة العملاء", "إدارة الطلبات", "مشاهدة الطلبات", "مشاهدة التقارير", "إدارة التقارير", "إدارة الإعدادات", "إدارة التكاملات", "إدارة المحادثات", "مشاهدة المحادثات", "إدارة الخطة والاشتراك"],
         isBuiltIn: true,
         isActive: true,
       },
       COMPANY_ADMIN: {
         name: "مدير الشركة",
         description: "صلاحيات كاملة لإدارة الشركة والمستخدمين",
-        permissions: [
-          "إدارة المستخدمين",
-          "إدارة الأدوار",
-          "إدارة المنتجات",
-          "إدارة العملاء",
-          "إدارة الطلبات",
-          "مشاهدة التقارير",
-          "إدارة الإعدادات",
-          "إدارة التكاملات",
-        ],
+        permissions: ["إدارة المستخدمين", "إدارة الأدوار", "إدارة المنتجات", "إدارة العملاء", "إدارة الطلبات", "مشاهدة التقارير", "إدارة الإعدادات", "إدارة التكاملات"],
         isBuiltIn: true,
         isActive: true,
       },
       MANAGER: {
         name: "مدير",
         description: "صلاحيات إدارية محدودة",
-        permissions: [
-          "إدارة المنتجات",
-          "إدارة العملاء",
-          "إدارة الطلبات",
-          "مشاهدة التقارير",
-        ],
+        permissions: ["إدارة المنتجات", "إدارة العملاء", "إدارة الطلبات", "مشاهدة التقارير"],
         isBuiltIn: true,
         isActive: true,
       },
@@ -2657,17 +2672,13 @@ const getCompanyRoles = async (req, res) => {
       },
     };
 
-    // Get custom roles
     const settings = company.settings ? JSON.parse(company.settings) : {};
     const customRoles = settings.customRoles || {};
-
-    // Combine roles
-    const allRoles = { ...builtInRoles, ...customRoles };
 
     res.json({
       success: true,
       message: "تم جلب الأدوار بنجاح",
-      data: allRoles,
+      data: { ...builtInRoles, ...customRoles },
     });
   } catch (error) {
     console.error("❌ Error fetching roles:", error);
@@ -2756,13 +2767,12 @@ const updateCustomRole = async (req, res) => {
 const deleteCustomRole = async (req, res) => {
   try {
     const { companyId, roleKey } = req.params;
-    const { name, description, permissions, isActive } = req.body;
 
     // Check if it's a built-in role
     if (["COMPANY_ADMIN", "MANAGER", "AGENT"].includes(roleKey)) {
       return res.status(400).json({
         success: false,
-        message: "لا يمكن تعديل الأدوار الأساسية",
+        message: "لا يمكن حذف الأدوار الأساسية",
       });
     }
 
@@ -2788,15 +2798,8 @@ const deleteCustomRole = async (req, res) => {
       });
     }
 
-    // Update role
-    customRoles[roleKey] = {
-      ...customRoles[roleKey],
-      ...(name && { name }),
-      ...(description && { description }),
-      ...(permissions && { permissions }),
-      ...(isActive !== undefined && { isActive }),
-      updatedAt: new Date().toISOString(),
-    };
+    // Delete role
+    delete customRoles[roleKey];
 
     // Update company settings
     await getSharedPrismaClient().company.update({
@@ -2811,17 +2814,13 @@ const deleteCustomRole = async (req, res) => {
 
     res.json({
       success: true,
-      message: "تم تحديث الدور بنجاح",
-      data: {
-        key: roleKey,
-        ...customRoles[roleKey],
-      },
+      message: "تم حذف الدور بنجاح",
     });
   } catch (error) {
-    console.error("❌ Error updating role:", error);
+    console.error("❌ Error deleting role:", error);
     res.status(500).json({
       success: false,
-      message: "فشل في تحديث الدور",
+      message: "فشل في حذف الدور",
       error: error.message,
     });
   }

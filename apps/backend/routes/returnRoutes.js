@@ -1,33 +1,33 @@
 const express = require('express');
 const router = express.Router();
 const returnController = require('../controller/returnController');
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const { checkAppAccess } = require('../middleware/checkAppAccess');
 
 // Return Reason Categories
-router.get('/categories', requireAuth, checkAppAccess('order-core'), returnController.getCategories);
-router.post('/categories', requireAuth, checkAppAccess('order-core'), returnController.createCategory);
-router.put('/categories/:id', requireAuth, checkAppAccess('order-core'), returnController.updateCategory);
+router.get('/categories', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getCategories);
+router.post('/categories', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.createCategory);
+router.put('/categories/:id', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.updateCategory);
 
 // Return Reasons
-router.get('/reasons', requireAuth, checkAppAccess('order-core'), returnController.getReturnReasons);
-router.post('/reasons', requireAuth, checkAppAccess('order-core'), returnController.createReturnReason);
-router.put('/reasons/:id', requireAuth, checkAppAccess('order-core'), returnController.updateReturnReason);
-router.delete('/reasons/:id', requireAuth, checkAppAccess('order-core'), returnController.deleteReturnReason);
+router.get('/reasons', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getReturnReasons);
+router.post('/reasons', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.createReturnReason);
+router.put('/reasons/:id', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.updateReturnReason);
+router.delete('/reasons/:id', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.deleteReturnReason);
 
 // Return Requests
-router.get('/requests', requireAuth, checkAppAccess('order-core'), returnController.getReturnRequests);
-router.post('/requests', requireAuth, checkAppAccess('order-core'), returnController.createReturnRequest);
-router.put('/requests/:id', requireAuth, checkAppAccess('order-core'), returnController.updateReturnRequest);
+router.get('/requests', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getReturnRequests);
+router.post('/requests', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.createReturnRequest);
+router.put('/requests/:id', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.updateReturnRequest);
 
 // Return Settings
-router.get('/settings', requireAuth, checkAppAccess('order-core'), returnController.getReturnSettings);
-router.put('/settings', requireAuth, checkAppAccess('order-core'), returnController.updateReturnSettings);
+router.get('/settings', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getReturnSettings);
+router.put('/settings', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.updateReturnSettings);
 
 // Return Operations (Contact & History)
-router.post('/requests/:id/contact', requireAuth, checkAppAccess('order-core'), returnController.addContactAttempt);
-router.get('/requests/:id/contacts', requireAuth, checkAppAccess('order-core'), returnController.getContactHistory);
-router.get('/requests/:id/activity', requireAuth, checkAppAccess('order-core'), returnController.getActivityLog);
+router.post('/requests/:id/contact', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.addContactAttempt);
+router.get('/requests/:id/contacts', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getContactHistory);
+router.get('/requests/:id/activity', verifyToken.authenticateToken, checkAppAccess('order-core'), returnController.getActivityLog);
 
 
 // Public Routes (Self-Service)

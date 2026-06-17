@@ -3,8 +3,12 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const verifyToken = require("../utils/verifyToken");
 
 const router = express.Router();
+
+// All upload routes require authentication
+router.use(verifyToken.authenticateToken);
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, '../uploads');

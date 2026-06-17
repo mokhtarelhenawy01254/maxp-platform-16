@@ -1,37 +1,37 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
-const { requirePermission } = require('../middleware/rbacMiddleware');
+const verifyToken = require('../utils/verifyToken');
+const { requireDbPermission } = require('../middleware/rbacMiddleware');
 const { conversationAccessGuard } = require('../middleware/numberAccessGuard');
 const notesController = require('../controller/internalNotesController');
 
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 // ─── Notes ────────────────────────────────────────────────────────
 
 router.get(
   '/:conversationId',
   conversationAccessGuard,
-  requirePermission('notes.view'),
+  requireDbPermission('notes.view'),
   notesController.getConversationNotes
 );
 
 router.post(
   '/',
   conversationAccessGuard,
-  requirePermission('notes.create'),
+  requireDbPermission('notes.create'),
   notesController.createNote
 );
 
 router.patch(
   '/:noteId',
-  requirePermission('notes.create'),
+  requireDbPermission('notes.create'),
   notesController.updateNote
 );
 
 router.delete(
   '/:noteId',
-  requirePermission('notes.create'),
+  requireDbPermission('notes.create'),
   notesController.deleteNote
 );
 
@@ -40,20 +40,20 @@ router.delete(
 router.get(
   '/tags/:conversationId',
   conversationAccessGuard,
-  requirePermission('tags.manage'),
+  requireDbPermission('tags.manage'),
   notesController.getConversationTags
 );
 
 router.post(
   '/tags',
   conversationAccessGuard,
-  requirePermission('tags.manage'),
+  requireDbPermission('tags.manage'),
   notesController.addTag
 );
 
 router.delete(
   '/tags/:tagId',
-  requirePermission('tags.manage'),
+  requireDbPermission('tags.manage'),
   notesController.removeTag
 );
 

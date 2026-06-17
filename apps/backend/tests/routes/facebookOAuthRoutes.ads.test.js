@@ -30,18 +30,31 @@ jest.mock("../../services/sharedDatabase", () => ({
   getSharedPrismaClient: jest.fn(() => mockPrisma),
 }));
 
-jest.mock("../../middleware/auth", () => ({
-  requireAuth: (req, _res, next) => {
-    req.user = mockAuthUser;
-    next();
+jest.mock("../../utils/verifyToken", () => ({
+  authenticateToken: (req, res, next) => {
+    if (!mockCurrentUser) {
+      return res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' });
+    }
+    req.user = mockCurrentUser;
+    return next();
   },
-  requireRole: (allowedRoles) => (req, res, next) => {
-    if (allowedRoles.includes(req.user?.role)) return next();
-    return res.status(403).json({
-      error: "Insufficient permissions",
-      code: "INSUFFICIENT_PERMISSIONS",
-    });
+  requireRole: (roles) => (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' });
+    }
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions', code: 'INSUFFICIENT_PERMISSIONS' });
+    }
+    return next();
   },
+  requireSuperAdmin: (req, res, next) => {
+    if (!req.user || req.user.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+    return next();
+  },
+  requireCompanyAccess: (req, res, next) => next(),
+  optionalAuth: (req, res, next) => next(),
 }));
 
 jest.mock("../../middleware/superAdminMiddleware", () => ({

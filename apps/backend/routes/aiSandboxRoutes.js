@@ -1,7 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const router = express.Router();
-const { requireAuth, requireRole } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const {
   listAgents,
   getAgentProfile,
@@ -34,8 +34,8 @@ const aiSandboxLimiter = rateLimit({
   },
 });
 
-router.use(requireAuth);
-router.use(requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']));
+router.use(verifyToken.authenticateToken);
+router.use(verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER']));
 router.use(aiSandboxLimiter);
 
 router.get('/agents', listAgents);

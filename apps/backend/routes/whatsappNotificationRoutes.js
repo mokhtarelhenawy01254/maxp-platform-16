@@ -6,66 +6,66 @@
 const express = require('express');
 const router = express.Router();
 const whatsappNotificationController = require('../controller/whatsappNotificationController');
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ⚙️ إعدادات الإشعارات
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // جلب إعدادات الإشعارات
-router.get('/settings', requireAuth, whatsappNotificationController.getNotificationSettings);
+router.get('/settings', verifyToken.authenticateToken, whatsappNotificationController.getNotificationSettings);
 
 // تحديث إعدادات الإشعارات
-router.put('/settings', requireAuth, whatsappNotificationController.updateNotificationSettings);
+router.put('/settings', verifyToken.authenticateToken, whatsappNotificationController.updateNotificationSettings);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📝 القوالب
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // جلب جميع القوالب
-router.get('/templates', requireAuth, whatsappNotificationController.getTemplates);
+router.get('/templates', verifyToken.authenticateToken, whatsappNotificationController.getTemplates);
 
 // جلب قالب واحد
-router.get('/templates/:id', requireAuth, whatsappNotificationController.getTemplate);
+router.get('/templates/:id', verifyToken.authenticateToken, whatsappNotificationController.getTemplate);
 
 // إنشاء قالب جديد
-router.post('/templates', requireAuth, whatsappNotificationController.createTemplate);
+router.post('/templates', verifyToken.authenticateToken, whatsappNotificationController.createTemplate);
 
 // تحديث قالب
-router.put('/templates/:id', requireAuth, whatsappNotificationController.updateTemplate);
+router.put('/templates/:id', verifyToken.authenticateToken, whatsappNotificationController.updateTemplate);
 
 // حذف قالب
-router.delete('/templates/:id', requireAuth, whatsappNotificationController.deleteTemplate);
+router.delete('/templates/:id', verifyToken.authenticateToken, whatsappNotificationController.deleteTemplate);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📊 السجلات والإحصائيات
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // جلب سجل الإشعارات
-router.get('/logs', requireAuth, whatsappNotificationController.getNotificationLogs);
+router.get('/logs', verifyToken.authenticateToken, whatsappNotificationController.getNotificationLogs);
 
 // جلب إحصائيات الإشعارات
-router.get('/stats', requireAuth, whatsappNotificationController.getNotificationStats);
+router.get('/stats', verifyToken.authenticateToken, whatsappNotificationController.getNotificationStats);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📤 الإرسال
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // إرسال إشعار يدوي
-router.post('/send', requireAuth, whatsappNotificationController.sendManualNotification);
+router.post('/send', verifyToken.authenticateToken, whatsappNotificationController.sendManualNotification);
 
 // إرسال إشعار اختباري
 // إرسال إشعار اختباري
-router.post('/test', requireAuth, whatsappNotificationController.sendTestNotification);
+router.post('/test', verifyToken.authenticateToken, whatsappNotificationController.sendTestNotification);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 👤 تفضيلات العملاء
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // جلب تفضيلات العميل
-router.get('/preferences/customer/:customerId', requireAuth, whatsappNotificationController.getCustomerPreferences);
+router.get('/preferences/customer/:customerId', verifyToken.authenticateToken, whatsappNotificationController.getCustomerPreferences);
 
 // تحديث تفضيلات العميل
-router.put('/preferences/customer/:customerId', requireAuth, whatsappNotificationController.updateCustomerPreferences);
+router.put('/preferences/customer/:customerId', verifyToken.authenticateToken, whatsappNotificationController.updateCustomerPreferences);
 
 module.exports = router;
