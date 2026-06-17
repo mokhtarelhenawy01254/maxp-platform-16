@@ -15,6 +15,10 @@ import {
   BoltIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  CheckIcon,
+  LinkIcon,
+  BellSnoozeIcon,
+  PencilSquareIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import { apiClient } from "../../services/apiClient";
@@ -196,6 +200,11 @@ const UnifiedInbox: React.FC = () => {
   const [attachedFile, setAttachedFile] = useState<{ url: string; name: string; type: string } | null>(null);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [selectedConvIds, setSelectedConvIds] = useState<Set<string>>(new Set());
+  const [selectMode, setSelectMode] = useState(false);
+  const [showSnoozePicker, setShowSnoozePicker] = useState(false);
+  const [editNote, setEditNote] = useState(false);
+  const [noteText, setNoteText] = useState("");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -303,6 +312,92 @@ const UnifiedInbox: React.FC = () => {
       loadMoreConversations();
     }
   }, [loadMoreConversations]);
+
+  const toggleSelectConv = useCallback((id: string) => {
+    setSelectedConvIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedConvIds(new Set());
+    setSelectMode(false);
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  const handleTogglePriority = useCallback(async () => {
+    if (!selectedConversation) return;
+    setShowActionsMenu(false);
+    const newPinned = !selectedConversation.isPinned;
+    try {
+      await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}`, {
+        isPinned: newPinned
+      });
+      setConversations(prev => prev.map(c =>
+        c.id === selectedConversation.id ? { ...c, isPinned: newPinned } : c
+      ));
+      setSelectedConversation(prev => prev ? { ...prev, isPinned: newPinned } : null);
+    } catch (err) {
+      console.error("Error toggling priority:", err);
+    }
+  }, [selectedConversation]);
+
+  const handleCopyConversationLink = useCallback(() => {
+    if (!selectedConversation) return;
+    const link = `${window.location.origin}/unified-inbox?conv=${selectedConversation.id}`;
+    navigator.clipboard.writeText(link).catch(() => {});
+    setShowActionsMenu(false);
+  }, [selectedConversation]);
+
+  const handleSnooze = useCallback(async (until: Date) => {
+    if (!selectedConversation) return;
+    setShowSnoozePicker(false);
+    setShowActionsMenu(false);
+    try {
+      await apiClient.post(`/api/v1/unified-inbox/conversations/${selectedConversation.id}/snooze`, {
+        snoozeUntil: until.toISOString()
+      });
+      setConversations(prev => prev.filter(c => c.id !== selectedConversation.id));
+      setSelectedConversation(null);
+    } catch (err) {
+      console.error("Error snoozing:", err);
+    }
+  }, [selectedConversation]);
+
+  const handleSaveNote = useCallback(async () => {
+    if (!selectedConversation || !customerProfile) return;
+    try {
+      await apiClient.put(`/api/v1/unified-inbox/customer/${customerProfile.id}`, {
+        notes: noteText
+      });
+      setCustomerProfile(prev => prev ? { ...prev, notes: noteText } : null);
+      setEditNote(false);
+    } catch (err) {
+      console.error("Error saving note:", err);
+    }
+  }, [selectedConversation, customerProfile, noteText]);
+
+  const handleBulkUpdate = useCallback(async (status: string) => {
+    if (selectedConvIds.size === 0) return;
+    try {
+      await Promise.all(Array.from(selectedConvIds).map(id =>
+        apiClient.put(`/api/v1/unified-inbox/conversations/${id}`, { status })
+      ));
+      setConversations(prev => prev.filter(c => !selectedConvIds.has(c.id)));
+      if (selectedConversation && selectedConvIds.has(selectedConversation.id)) {
+        setSelectedConversation(null);
+      }
+      clearSelection();
+    } catch (err) {
+      console.error("Error bulk update:", err);
+    }
+  }, [selectedConvIds, selectedConversation, clearSelection]);
 
   const loadMessages = useCallback(async (conv: UnifiedConversation) => {
     try {
@@ -742,12 +837,63 @@ const UnifiedInbox: React.FC = () => {
               >
                 {t("unifiedInbox.filters.unread")}
               </button>
+
+              <button
+                type="button"
+                onClick={handleRefresh}
+                className="inbox-filter-chip"
+                aria-label={t("unifiedInbox.refresh")}
+                style={{ marginInlineStart: "auto" }}
+              >
+                <ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectMode(prev => !prev)}
+                className="inbox-filter-chip"
+                data-active={selectMode ? "true" : "false"}
+                aria-label={t("unifiedInbox.select")}
+              >
+                <CheckIcon className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
 
+          {/* Bulk Action Bar */}
+          {selectedConvIds.size > 0 && (
+            <div
+              className="flex items-center gap-2 px-3 py-2"
+              style={{
+                background: "color-mix(in srgb, var(--color-primary) 8%, var(--color-background))",
+                borderBottom: "1px solid var(--business-card-border)",
+              }}
+            >
+              <span className="text-xs font-medium" style={{ color: "var(--color-foreground)" }}>
+                {selectedConvIds.size} {t("unifiedInbox.selected")}
+              </span>
+              <button
+                type="button"
+                onClick={() => handleBulkUpdate("resolved")}
+                className="inbox-filter-chip text-xs"
+                style={{ padding: "0.25rem 0.6rem" }}
+              >
+                {t("unifiedInbox.markAsResolved")}
+              </button>
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="inbox-filter-chip text-xs"
+                style={{ padding: "0.25rem 0.6rem" }}
+              >
+                <XMarkIcon className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
           {/* Conversation List */}
           <div
-            className="flex-1 overflow-y-auto"
+            className={`flex-1 overflow-y-auto ${selectedConvIds.size > 0 ? "" : ""}`}
             onScroll={handleConversationListScroll}
           >
             {loading ? (
@@ -777,92 +923,128 @@ const UnifiedInbox: React.FC = () => {
               </div>
             ) : (
               <>
-                {conversations.map((conv) => (
-                  <button
-                    key={conv.id}
-                    onClick={() => selectConversation(conv)}
-                    className="business-conversation-card w-full text-left"
-                    data-state={
-                      selectedConversation?.id === conv.id
-                        ? "selected"
-                        : conv.unreadCount > 0
-                          ? "attention"
-                          : "idle"
-                    }
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="relative flex-shrink-0">
-                        {conv.contactAvatar ? (
-                          <img
-                            src={conv.contactAvatar}
-                            alt={conv.contactName}
-                            className="business-conversation-avatar"
-                            width={40}
-                            height={40}
-                          />
-                        ) : (
-                          <div className="business-conversation-fallback">
-                            {conv.contactName?.charAt(0) || "?"}
-                          </div>
-                        )}
-                        <span
-                          className={`absolute -bottom-0.5 text-xs ${isRtl ? "-left-0.5" : "-right-0.5"}`}
-                        >
-                          {platformStyles[conv.platform]?.icon || "💬"}
-                        </span>
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-0.5">
-                          <h3
-                            className={`font-semibold text-sm truncate ${isRtl ? "text-right" : "text-left"}`}
-                            style={{ color: "var(--color-foreground)" }}
-                            translate="no"
-                          >
-                            {conv.contactName || t("unifiedInbox.unknown")}
-                          </h3>
+                {conversations.map((conv) => {
+                  const isSelected = selectedConvIds.has(conv.id);
+                  return (
+                    <button
+                      key={conv.id}
+                      onClick={(e) => {
+                        if (selectMode) {
+                          e.preventDefault();
+                          toggleSelectConv(conv.id);
+                          return;
+                        }
+                        selectConversation(conv);
+                      }}
+                      className="business-conversation-card w-full text-left"
+                      data-state={
+                        isSelected
+                          ? "selected"
+                          : selectedConversation?.id === conv.id
+                            ? "selected"
+                            : conv.unreadCount > 0
+                              ? "attention"
+                              : "idle"
+                      }
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="relative flex-shrink-0">
+                          {selectMode && (
+                            <div
+                              className="absolute inset-0 z-10 flex items-center justify-center"
+                              style={{
+                                background: isSelected
+                                  ? "color-mix(in srgb, var(--color-primary) 20%, transparent)"
+                                  : "color-mix(in srgb, var(--color-background) 70%, transparent)",
+                                borderRadius: "999px",
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleSelectConv(conv.id);
+                              }}
+                            >
+                              <div
+                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                  isSelected ? "border-[var(--color-primary)] bg-[var(--color-primary)]" : "border-gray-400"
+                                }`}
+                              >
+                                {isSelected && <CheckIcon className="w-3 h-3 text-white" />}
+                              </div>
+                            </div>
+                          )}
+                          {conv.contactAvatar ? (
+                            <img
+                              src={conv.contactAvatar}
+                              alt={conv.contactName}
+                              className="business-conversation-avatar"
+                              width={40}
+                              height={40}
+                              style={{ opacity: selectMode && isSelected ? 0.7 : 1 }}
+                            />
+                          ) : (
+                            <div className="business-conversation-fallback" style={{ opacity: selectMode && isSelected ? 0.7 : 1 }}>
+                              {conv.contactName?.charAt(0) || "?"}
+                            </div>
+                          )}
                           <span
-                            className={`text-[11px] flex-shrink-0 ${isRtl ? "mr-2" : "ml-2"}`}
-                            style={{ color: "var(--color-muted-foreground)" }}
+                            className={`absolute -bottom-0.5 text-xs ${isRtl ? "-left-0.5" : "-right-0.5"}`}
                           >
-                            {formatTime(conv.lastMessageTime)}
+                            {platformStyles[conv.platform]?.icon || "💬"}
                           </span>
                         </div>
 
-                        <p
-                          className={`text-xs truncate leading-5 ${isRtl ? "text-right" : "text-left"}`}
-                          style={{ color: "var(--color-muted-foreground)" }}
-                          translate="no"
-                        >
-                          {conv.lastMessageIsFromCustomer
-                            ? ""
-                            : t("unifiedInbox.you")}
-                          {conv.lastMessage || t("unifiedInbox.noMessages")}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <h3
+                              className={`font-semibold text-sm truncate ${isRtl ? "text-right" : "text-left"}`}
+                              style={{ color: "var(--color-foreground)" }}
+                              translate="no"
+                            >
+                              {conv.contactName || t("unifiedInbox.unknown")}
+                            </h3>
+                            <span
+                              className={`text-[11px] flex-shrink-0 ${isRtl ? "mr-2" : "ml-2"}`}
+                              style={{ color: "var(--color-muted-foreground)" }}
+                            >
+                              {formatTime(conv.lastMessageTime)}
+                            </span>
+                          </div>
 
-                        <div className="flex items-center justify-between mt-1">
-                          {getPlatformBadge(conv.platform)}
-                          <div className="flex items-center gap-1.5">
-                            {conv.isPinned && (
-                              <StarSolidIcon
-                                className="w-3.5 h-3.5"
-                                style={{ color: "var(--business-warning)" }}
-                              />
-                            )}
-                            {conv.unreadCount > 0 && (
-                              <span
-                                className="text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 text-white"
-                                style={{ background: "var(--business-danger)" }}
-                              >
-                                {conv.unreadCount > 99 ? "99+" : conv.unreadCount}
-                              </span>
-                            )}
+                          <p
+                            className={`text-xs truncate leading-5 ${isRtl ? "text-right" : "text-left"}`}
+                            style={{ color: "var(--color-muted-foreground)" }}
+                            translate="no"
+                          >
+                            {conv.lastMessageIsFromCustomer
+                              ? ""
+                              : t("unifiedInbox.you")}
+                            {conv.lastMessage || t("unifiedInbox.noMessages")}
+                          </p>
+
+                          <div className="flex items-center justify-between mt-1">
+                            {getPlatformBadge(conv.platform)}
+                            <div className="flex items-center gap-1.5">
+                              {conv.isPinned && (
+                                <StarSolidIcon
+                                  className="w-3.5 h-3.5"
+                                  style={{ color: "var(--business-warning)" }}
+                                />
+                              )}
+                              {conv.unreadCount > 0 && (
+                                <span
+                                  className="text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 text-white"
+                                  style={{ background: "var(--business-danger)" }}
+                                >
+                                  {conv.unreadCount > 99 ? "99+" : conv.unreadCount}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
                 {loadingMore && (
                   <div className="flex justify-center py-4">
                     <div className="animate-spin rounded-full h-6 w-6 border-2 border-t-transparent"
@@ -965,6 +1147,33 @@ const UnifiedInbox: React.FC = () => {
                           </button>
                           <button
                             className="inbox-dropdown-item w-full"
+                            onClick={handleTogglePriority}
+                          >
+                            <StarSolidIcon className="w-4 h-4" style={{ color: selectedConversation?.isPinned ? "var(--business-warning)" : "var(--color-muted-foreground)" }} />
+                            <span className="inbox-platform-text">
+                              {selectedConversation?.isPinned ? t("unifiedInbox.unstar") : t("unifiedInbox.star")}
+                            </span>
+                          </button>
+                          <button
+                            className="inbox-dropdown-item w-full"
+                            onClick={handleCopyConversationLink}
+                          >
+                            <LinkIcon className="w-4 h-4" style={{ color: "var(--color-muted-foreground)" }} />
+                            <span className="inbox-platform-text">
+                              {t("unifiedInbox.copyLink")}
+                            </span>
+                          </button>
+                          <button
+                            className="inbox-dropdown-item w-full"
+                            onClick={() => setShowSnoozePicker(true)}
+                          >
+                            <BellSnoozeIcon className="w-4 h-4" style={{ color: "var(--color-muted-foreground)" }} />
+                            <span className="inbox-platform-text">
+                              {t("unifiedInbox.snooze")}
+                            </span>
+                          </button>
+                          <button
+                            className="inbox-dropdown-item w-full"
                             onClick={() => { setShowActionsMenu(false); setShowProfilePanel(p => !p); }}
                           >
                             <span>👤</span>
@@ -989,6 +1198,44 @@ const UnifiedInbox: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Snooze Picker */}
+              {showSnoozePicker && (
+                <div
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-2xl shadow-xl p-4"
+                  style={{
+                    background: "var(--business-surface-panel)",
+                    border: "1px solid var(--business-card-border)",
+                    minWidth: 200,
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-semibold" style={{ color: "var(--color-foreground)" }}>
+                      {t("unifiedInbox.snooze")}
+                    </span>
+                    <button onClick={() => setShowSnoozePicker(false)} className="business-chip-button" aria-label={t("unifiedInbox.close")}>
+                      <XMarkIcon className="w-4 h-4" aria-hidden="true" />
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {[
+                      { label: t("unifiedInbox.snooze1h"), ms: 60 * 60 * 1000 },
+                      { label: t("unifiedInbox.snooze3h"), ms: 3 * 60 * 60 * 1000 },
+                      { label: t("unifiedInbox.snoozeTomorrow"), ms: 24 * 60 * 60 * 1000 },
+                      { label: t("unifiedInbox.snoozeWeek"), ms: 7 * 24 * 60 * 60 * 1000 },
+                    ].map(opt => (
+                      <button
+                        key={opt.label}
+                        className="inbox-dropdown-item"
+                        onClick={() => handleSnooze(new Date(Date.now() + opt.ms))}
+                      >
+                        <BellSnoozeIcon className="w-4 h-4" style={{ color: "var(--color-muted-foreground)" }} />
+                        <span className="inbox-platform-text">{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Messages Area */}
               <div
@@ -1711,22 +1958,52 @@ const UnifiedInbox: React.FC = () => {
                 )}
 
                 {/* Notes */}
-                {customerProfile.notes && (
-                  <div className="p-4">
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
                     <h4
-                      className={`text-xs font-semibold uppercase tracking-wider mb-3 ${isRtl ? "text-right" : "text-left"}`}
+                      className={`text-xs font-semibold uppercase tracking-wider ${isRtl ? "text-right" : "text-left"}`}
                       style={{ color: "var(--color-muted-foreground)" }}
                     >
-                      {t("unifiedInbox.customer.notes")}
+                      {t("unifiedInbox.notes")}
                     </h4>
+                    <button
+                      onClick={() => {
+                        setNoteText(customerProfile?.notes || "");
+                        setEditNote(!editNote);
+                      }}
+                      className="business-chip-button"
+                      aria-label={t("unifiedInbox.customer.notes")}
+                    >
+                      <PencilSquareIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                    </button>
+                  </div>
+                  {editNote ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={noteText}
+                        onChange={(e) => setNoteText(e.target.value)}
+                        placeholder={t("unifiedInbox.notePlaceholder")}
+                        className="business-chat-input w-full p-2 text-xs min-h-[80px] resize-none"
+                        style={{ color: "var(--color-foreground)" }}
+                      />
+                      <div className="flex gap-2">
+                        <button onClick={handleSaveNote} className="inbox-filter-chip text-xs" data-active="true">
+                          {t("unifiedInbox.save")}
+                        </button>
+                        <button onClick={() => setEditNote(false)} className="inbox-filter-chip text-xs">
+                          {t("unifiedInbox.cancel")}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
                     <p
                       className="text-xs leading-relaxed whitespace-pre-wrap"
-                      style={{ color: "var(--color-foreground)" }}
+                      style={{ color: customerProfile?.notes ? "var(--color-foreground)" : "var(--color-muted-foreground)" }}
                     >
-                      {customerProfile.notes}
+                      {customerProfile?.notes || t("unifiedInbox.noNotes")}
                     </p>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 {/* Conversation History */}
                 {customerProfile.recentConversations?.length > 0 && (
