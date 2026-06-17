@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+
 import { Search, Loader2, Building2, Users, Code2, BarChart3, DollarSign, Key, Ticket, X, Package, ShoppingCart, UserRound, MessageSquare, Facebook, Briefcase, TrendingUp, Tag, FolderTree, Store, Megaphone, UserCheck, FileText } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { apiClient } from "../../services/apiClient";
@@ -46,29 +46,32 @@ const iconMap: Record<string, React.ReactNode> = {
   FileText: <FileText className="size-4" />,
 };
 
-const typeLabelKeyMap: Record<string, string> = {
-  companies: "superAdmin.globalSearch.categories.companies",
-  users: "superAdmin.globalSearch.categories.users",
-  projects: "superAdmin.globalSearch.categories.projects",
-  tasks: "superAdmin.globalSearch.categories.tasks",
-  subscriptions: "superAdmin.globalSearch.categories.subscriptions",
-  aiKeys: "superAdmin.globalSearch.categories.aiKeys",
-  tickets: "superAdmin.globalSearch.categories.tickets",
-  products: "superAdmin.globalSearch.categories.products",
-  orders: "superAdmin.globalSearch.categories.orders",
-  customers: "superAdmin.globalSearch.categories.customers",
-  conversations: "superAdmin.globalSearch.categories.conversations",
-  facebookPages: "superAdmin.globalSearch.categories.facebookPages",
-  whatsappSessions: "superAdmin.globalSearch.categories.whatsappSessions",
-  employees: "superAdmin.globalSearch.categories.employees",
-  competitors: "superAdmin.globalSearch.categories.competitors",
-  coupons: "superAdmin.globalSearch.categories.coupons",
-  categories: "superAdmin.globalSearch.categories.categories",
-  merchants: "superAdmin.globalSearch.categories.merchants",
-  broadcastCampaigns: "superAdmin.globalSearch.categories.broadcastCampaigns",
-  departments: "superAdmin.globalSearch.categories.departments",
-  positions: "superAdmin.globalSearch.categories.positions",
-  invoices: "superAdmin.globalSearch.categories.invoices",
+const AR = {
+  placeholder: "ابحث في النظام بالكامل...",
+  searching: "جاري البحث...",
+  noResults: "لا توجد نتائج",
+  tryAdjusting: "حاول بتغيير كلمة البحث",
+  hint: "اكتب أي كلمة أو حرف للبحث في جميع أقسام النظام",
+  categories: {
+    companies: "الشركات", users: "المستخدمين", projects: "مشاريع التطوير",
+    tasks: "مهام التطوير", subscriptions: "الاشتراكات", aiKeys: "مفاتيح الذكاء الاصطناعي",
+    tickets: "تذاكر الدعم", products: "المنتجات", orders: "الطلبات",
+    customers: "العملاء", conversations: "المحادثات", facebookPages: "صفحات فيسبوك",
+    whatsappSessions: "جلسات واتساب", employees: "الموظفين", competitors: "المنافسون",
+    coupons: "الكوبونات", categories: "التصنيفات", merchants: "التجار",
+    broadcastCampaigns: "الحملات الإعلانية", departments: "الأقسام", positions: "المناصب",
+    invoices: "الفواتير",
+  },
+};
+const typeLabelMap: Record<string, string> = {
+  companies: AR.categories.companies, users: AR.categories.users, projects: AR.categories.projects,
+  tasks: AR.categories.tasks, subscriptions: AR.categories.subscriptions, aiKeys: AR.categories.aiKeys,
+  tickets: AR.categories.tickets, products: AR.categories.products, orders: AR.categories.orders,
+  customers: AR.categories.customers, conversations: AR.categories.conversations, facebookPages: AR.categories.facebookPages,
+  whatsappSessions: AR.categories.whatsappSessions, employees: AR.categories.employees, competitors: AR.categories.competitors,
+  coupons: AR.categories.coupons, categories: AR.categories.categories, merchants: AR.categories.merchants,
+  broadcastCampaigns: AR.categories.broadcastCampaigns, departments: AR.categories.departments, positions: AR.categories.positions,
+  invoices: AR.categories.invoices,
 };
 
 const statusColorMap: Record<string, string> = {
@@ -101,7 +104,6 @@ const getStatusDot = (status?: string) => {
 };
 
 const GlobalSearch: React.FC = () => {
-  const { t } = useTranslation();
   const { actualTheme } = useTheme();
   const navigate = useNavigate();
   const isDark = actualTheme === "dark";
@@ -184,7 +186,7 @@ const GlobalSearch: React.FC = () => {
   const hasResults = results.length > 0;
 
   return (
-    <div ref={containerRef} className="relative flex-1 max-w-md mx-2 sm:mx-4">
+    <div ref={containerRef} className="relative flex-1 max-w-md mx-2 sm:mx-4" dir="rtl">
       <div className={cn(
         "relative flex items-center rounded-xl border transition-all duration-200",
         isDark
@@ -205,7 +207,7 @@ const GlobalSearch: React.FC = () => {
           value={query}
           onChange={handleChange}
           onFocus={() => { if (results.length > 0) setIsOpen(true); }}
-          placeholder={t("superAdmin.globalSearchPlaceholder")}
+          placeholder={AR.placeholder}
           className={cn(
             "h-9 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground",
             "pr-2 pl-2",
@@ -232,15 +234,15 @@ const GlobalSearch: React.FC = () => {
             {isLoading && (
               <div className="flex items-center gap-3 px-4 py-6">
                 <Loader2 className="size-5 animate-spin text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">{t("common.searching")}</span>
+                <span className="text-sm text-muted-foreground">{AR.searching}</span>
               </div>
             )}
 
             {!isLoading && !hasResults && hasSearched && (
               <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
                 <Search className="size-8 text-muted-foreground/40" />
-                <p className="text-sm font-medium text-muted-foreground">{t("common.noResults")}</p>
-                <p className="text-xs text-muted-foreground/60">{t("common.tryAdjustingSearch")}</p>
+                <p className="text-sm font-medium text-muted-foreground">{AR.noResults}</p>
+                <p className="text-xs text-muted-foreground/60">{AR.tryAdjusting}</p>
               </div>
             )}
 
@@ -253,7 +255,7 @@ const GlobalSearch: React.FC = () => {
                       isDark ? "text-gray-400 bg-[#0f172a]/50" : "text-gray-500 bg-gray-50"
                     )}>
                       {iconMap[group.icon] || <Search className="size-3.5" />}
-                      <span>{typeLabelKeyMap[group.type] ? t(typeLabelKeyMap[group.type]) : group.type}</span>
+                      <span>{typeLabelMap[group.type] || group.type}</span>
                       <span className={cn(
                         "mr-auto text-[10px] px-1.5 py-0.5 rounded-full",
                         isDark ? "bg-white/5 text-gray-400" : "bg-gray-200 text-gray-500"
@@ -307,7 +309,7 @@ const GlobalSearch: React.FC = () => {
               <div className="px-4 py-6 text-center">
                 <Search className="mx-auto size-6 text-muted-foreground/30 mb-2" />
                 <p className="text-xs text-muted-foreground/50">
-                  {t("superAdmin.globalSearch.hint")}
+                  {AR.hint}
                 </p>
               </div>
             )}
