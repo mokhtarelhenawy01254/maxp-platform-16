@@ -4285,6 +4285,101 @@ select {
   flex: 1;
 }
 
+/* ─────────────────────────────────────────────────────────────
+   📜 Custom slim scrollbars — inbox conversation list, chat log,
+   profile panel. Thin, rounded, blends with light & dark mode.
+   ───────────────────────────────────────────────────────────── */
+.business-inbox-column--list,
+.business-inbox-messages,
+.business-inbox-profile,
+.business-chat-body {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-muted-foreground, #94a3b8) 35%, transparent) transparent;
+}
+
+.business-inbox-column--list::-webkit-scrollbar,
+.business-inbox-messages::-webkit-scrollbar,
+.business-inbox-profile::-webkit-scrollbar,
+.business-chat-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.business-inbox-column--list::-webkit-scrollbar-track,
+.business-inbox-messages::-webkit-scrollbar-track,
+.business-inbox-profile::-webkit-scrollbar-track,
+.business-chat-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.business-inbox-column--list::-webkit-scrollbar-thumb,
+.business-inbox-messages::-webkit-scrollbar-thumb,
+.business-inbox-profile::-webkit-scrollbar-thumb,
+.business-chat-body::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-muted-foreground, #94a3b8) 40%, transparent);
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+
+.business-inbox-column--list::-webkit-scrollbar-thumb:hover,
+.business-inbox-messages::-webkit-scrollbar-thumb:hover,
+.business-inbox-profile::-webkit-scrollbar-thumb:hover,
+.business-chat-body::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-muted-foreground, #94a3b8) 70%, transparent);
+}
+
+/* Dark mode scrollbar override */
+.dark .business-inbox-column--list::-webkit-scrollbar-thumb,
+.dark .business-inbox-messages::-webkit-scrollbar-thumb,
+.dark .business-inbox-profile::-webkit-scrollbar-thumb,
+.dark .business-chat-body::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, #fff 18%, transparent);
+}
+
+.dark .business-inbox-column--list::-webkit-scrollbar-thumb:hover,
+.dark .business-inbox-messages::-webkit-scrollbar-thumb:hover,
+.dark .business-inbox-profile::-webkit-scrollbar-thumb:hover,
+.dark .business-chat-body::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, #fff 34%, transparent);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ✨ Micro-animations — message hover action bar
+   Fades in smoothly, respects prefers-reduced-motion.
+   ───────────────────────────────────────────────────────────── */
+@keyframes inbox-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.business-msg-actions {
+  animation: inbox-fade-in-up 0.18s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .business-msg-actions {
+    animation: none;
+  }
+}
+
+/* Hover action icon buttons — subtle lift on hover */
+.business-msg-action-btn {
+  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.business-msg-action-btn:hover {
+  transform: scale(1.12);
+}
+
+.business-msg-action-btn:active {
+  transform: scale(0.96);
+}
+
 [data-theme="business-os-enterprise"] .business-inbox-stage {
   display: flex;
   flex: 1;
