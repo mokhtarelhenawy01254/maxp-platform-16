@@ -22,7 +22,7 @@ import {
   ShoppingCartIcon,
   ChartBarSquareIcon,
   PhotoIcon,
-  DocumentTextIcon,
+  BookOpenIcon,
   ArrowUturnLeftIcon,
   HeartIcon,
   ArrowTopRightOnSquareIcon,
@@ -1777,7 +1777,7 @@ const UnifiedInbox: React.FC = () => {
                       className="business-chip-button"
                       aria-label={t("unifiedInbox.savedTexts")}
                     >
-                      <DocumentTextIcon className="w-5 h-5" aria-hidden="true" />
+                      <BookOpenIcon className="w-5 h-5" aria-hidden="true" />
                     </button>
                     <button
                       onClick={() => setShowImageGallery(true)}

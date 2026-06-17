@@ -102,6 +102,8 @@
   "replyingTo": "رد على",
   "mediaAttachment": "مرفق/صورة",
   "image": "صورة",
+  "file": "ملف",
+  "files": "ملفات",
   "time": {
     "now": "الآن",
     "minutes": "د",
