@@ -48,7 +48,7 @@ const ROLE_COLORS = {
 };
 const defaultColor = { border: "border-gray-300 dark:border-gray-600", bg: "bg-white dark:bg-gray-950/10", badge: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300", icon: "text-gray-500", label: "bg-gray-500" };
 
-const SUCCESS = "success" as const;
+const SUCCESS = "success";
 
 const RolesManagement = () => {
   const { user } = useAuth();
@@ -72,8 +72,8 @@ const RolesManagement = () => {
 
   const getRoleColor = (roleKey) => ROLE_COLORS[roleKey] || defaultColor;
 
-  const showToast = (message, type = SUCCESS) => {
-    setToast({ message, type });
+  const showToast = (message) => {
+    setToast({ message });
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -174,7 +174,7 @@ const RolesManagement = () => {
       const roleId = deleteTarget.id;
       const r = await fetch(buildApiUrl(`permissions/companies/${user.companyId}/roles/${roleId}`), { method: "DELETE", headers: getAuthHeaders() });
       const d = await r.json();
-      if (d.success) { await fetchRoles(); setError(null); showToast("تم حذف الدور بنجاح", "success"); }
+      if (d.success) { await fetchRoles(); setError(null); showToast("تم حذف الدور بنجاح"); }
       else setError(d.message || "فشل في حذف الدور");
     } catch (err) { setError("فشل في حذف الدور: " + err.message); }
     finally { setDeleteTarget(null); }
