@@ -8,7 +8,7 @@
  * Run: npm run seed:link-roles
  */
 
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('../generated/postgresql_v2');
 const prisma = new PrismaClient();
 
 async function linkRoles() {
@@ -16,7 +16,7 @@ async function linkRoles() {
 
   // Get all built-in roles from the new Role table
   const builtInRoles = await prisma.role.findMany({
-    where: { companyId: null, isBuiltIn: true },
+    where: { companyId: '__system__', isBuiltIn: true },
   });
   const roleMap = {};
   for (const r of builtInRoles) {

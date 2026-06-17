@@ -26,16 +26,16 @@ const agentManagerService = {
       let skills = [];
       let manager = null;
       try {
-        // 2026: profiles come from ai-service API, not from agent_definitions table
-        if (Array.isArray(context?.profiles)) {
-          profiles = context.profiles;
+        const templates = await aiServiceAdminClient.listAgentTemplates();
+        if (Array.isArray(templates)) {
+          profiles = templates.map(t => ({ slug: t.slug, name: t.name, role: t.role, allowedSkills: t.allowed_skills || t.allowedSkills || [] }));
+          const allSkills = profiles.flatMap(p => p.allowedSkills);
+          const uniqueSkills = [...new Set(allSkills.filter(Boolean))];
+          skills = uniqueSkills.map(s => ({ id: s, displayName: s }));
         }
-        const ceo = agents.find(a => a.role === 'CEO' || a.managerType === 'CEO');
-        if (ceo) manager = { id: ceo.id, name: ceo.name, status: ceo.status || 'ACTIVE', templateSlug: ceo.templateSlug || null };
-        skills = profiles.length > 0 ? profiles.flatMap(p => p.allowedSkills).filter(Boolean) : [];
-        const uniqueSkills = [...new Set(skills)];
-        skills = uniqueSkills.map(s => ({ id: s, displayName: s }));
       } catch (_) {}
+      const ceo = agents.find(a => a.role === 'CEO' || a.managerType === 'CEO');
+      if (ceo) manager = { id: ceo.id, name: ceo.name, status: ceo.status || 'ACTIVE', templateSlug: ceo.templateSlug || null };
 
       const taskCounts = await countAgentTasks(companyId);
       return { manager, agents, profiles, tools, skills, inbox: taskCounts };
@@ -387,6 +387,7 @@ router.get('/agents', async (req, res) => {
       ...agent,
       rules: agent.rules || [],
       skills: agent.allowed_skills || agent.skills || agent.allowedSkills || [],
+      allowedChannels: agent.allowed_channels || agent.allowedChannels || [],
       allowedSkills: agent.allowed_skills || agent.skills || agent.allowedSkills || [],
       allowedTools: agent.allowed_tools || agent.allowedTools || [],
       departmentId: agent.departmentId || agent.department_id || null,

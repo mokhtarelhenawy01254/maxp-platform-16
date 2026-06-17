@@ -1546,16 +1546,18 @@ const AppContent = () => {
             {/* New Storefront Theme Engine - Fully Isolated */}
             <Route path="/store/*" element={<StorefrontShell />} />
             <Route
-              path="/super-admin"
-              element={<Navigate to="/super-admin/dev-dashboard" replace />}
-            />
-            <Route
               path="/super-admin/login"
               element={
                 <AuthLayout>
                   <ModernLogin />
                 </AuthLayout>
               }
+            />
+            {isAuthenticated && (
+              <>
+            <Route
+              path="/super-admin"
+              element={<Navigate to="/super-admin/dev-dashboard" replace />}
             />
             <Route
               path="/super-admin/dashboard"
@@ -2159,6 +2161,8 @@ const AppContent = () => {
               path="/super-admin/storefront/structure-manager"
               element={<Navigate to="/super-admin/dashboard" replace />}
             />
+              </>
+            )}
             {/* Public Payment Routes */}
             <Route path="/payment/:invoiceId" element={<PaymentPage />} />
             <Route
@@ -6376,16 +6380,7 @@ const AppContent = () => {
                   path="/super-admin/dev-reports"
                   element={<Navigate to="/auth/login" replace />}
                 />
-                <Route
-                  path="/super-admin/db-migration"
-                  element={
-                    <Layout>
-                      <DatabaseMigration />
-                    </Layout>
-                  }
-                />
-
-                <Route path="*" element={<RedirectToApps />} />
+                <Route path="*" element={<Navigate to="/auth/login" replace />} />
               </>
             )}
           </Routes>

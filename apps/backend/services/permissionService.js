@@ -34,7 +34,7 @@ const getCompanyRoles = async (companyId) => {
   return getSharedPrismaClient().role.findMany({
     where: {
       OR: [
-        { companyId: null, isBuiltIn: true },
+        { companyId: '__system__', isBuiltIn: true },
         { companyId },
       ],
       isActive: true,
@@ -53,7 +53,7 @@ const getCompanyRoleByKey = async (companyId, key) => {
     where: {
       key,
       OR: [
-        { companyId: null, isBuiltIn: true },
+        { companyId: '__system__', isBuiltIn: true },
         { companyId },
       ],
     },

@@ -224,8 +224,8 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isMobile, isMobileMenuOpen]);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/auth/login");
   };
 
