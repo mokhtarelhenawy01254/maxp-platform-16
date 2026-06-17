@@ -40,7 +40,7 @@ async def knowledge_ask_merchant(input_data: KnowledgeAskMerchantInput) -> dict[
             INSERT INTO ai.knowledge_questions
                 (id, company_id, conversation_id, channel, customer_question, context, status, created_at, updated_at)
             VALUES
-                (:id, :company_id, :conversation_id, :channel, :customer_question, :context::jsonb, 'pending', now(), now())
+                (:id, :company_id, :conversation_id, :channel, :customer_question, CAST(:context AS jsonb), 'pending', now(), now())
         """)
         async with _db_mod.async_session() as sess:
             await sess.execute(sql, {

@@ -93,11 +93,15 @@ async def create_knowledge_question(
     company_id = get_company_id(request)
     qid = str(uuid.uuid4())
 
+    import json as _json
+
+    ctx_json = _json.dumps(body.context) if body.context else "{}"
+
     sql = text("""
         INSERT INTO ai.knowledge_questions
             (id, company_id, conversation_id, channel, customer_question, context, status, created_at, updated_at)
         VALUES
-            (:id, :company_id, :conversation_id, :channel, :customer_question, :context::jsonb, 'pending', now(), now())
+            (:id, :company_id, :conversation_id, :channel, :customer_question, CAST(:context AS jsonb), 'pending', now(), now())
     """)
     await session.execute(sql, {
         "id": qid,
@@ -105,7 +109,7 @@ async def create_knowledge_question(
         "conversation_id": body.conversation_id,
         "channel": body.channel,
         "customer_question": body.customer_question,
-        "context": "{}" if not body.context else body.context,
+        "context": ctx_json,
     })
     await session.commit()
 
@@ -137,8 +141,9 @@ async def answer_knowledge_question(
 
     answered_by = getattr(request.state, "user_id", None) or getattr(request.state, "username", None) or "merchant"
 
-    # Try to create a knowledge embedding so the RAG pipeline can find this answer
     embedding_id = None
+    await session.commit()
+
     try:
         from src.memory.episodic_memory import EpisodicMemoryService
 
@@ -172,9 +177,11 @@ async def answer_knowledge_question(
                 "embed_text": embed_text,
                 "q_vec": q_vec_str,
             })
+            await session.commit()
             logger.info("knowledge_embedding_created", id=embedding_id, source_id=source_id)
     except Exception as exc:
         logger.warning("knowledge_embedding_creation_failed", error=str(exc))
+        await session.rollback()
 
     update = text("""
         UPDATE ai.knowledge_questions

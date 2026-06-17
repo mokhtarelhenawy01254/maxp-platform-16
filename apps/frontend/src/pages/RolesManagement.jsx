@@ -344,19 +344,19 @@ const RolesManagement = () => {
       <Dialog open={modalOpen || editModalOpen} onOpenChange={o => {
         if (!o) { setModalOpen(false); setEditModalOpen(false); setFormData({ name: "", description: "", permissions: [], isActive: true }); setSelectedRole(null); setSearchQuery(""); }
       }}>
-        <DialogContent className="max-w-xl max-h-[85vh] overflow-hidden flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-xl max-h-full sm:max-h-[85vh] h-dvh sm:h-auto flex flex-col sm:rounded-2xl rounded-none p-0">
+          <DialogHeader className="px-4 pt-4 pb-0 shrink-0">
             <DialogTitle>{editModalOpen ? "تعديل الدور" : "إضافة دور جديد"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 overflow-y-auto px-1 flex-1">
-            <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-3 overflow-y-auto px-4 flex-1 pb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <Label>اسم الدور *</Label>
                 <Input value={formData.name} onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
                   disabled={submitting} className={formErrors.name ? "border-destructive" : ""} />
                 {formErrors.name && <p className="text-xs text-destructive mt-1">{formErrors.name}</p>}
               </div>
-              <div className="flex items-end gap-2 pb-1">
+              <div className="flex items-center gap-2 sm:pb-1 sm:items-end">
                 <Switch checked={formData.isActive} onCheckedChange={v => setFormData(p => ({ ...p, isActive: v }))} disabled={submitting} />
                 <Label>نشط</Label>
               </div>
@@ -388,28 +388,28 @@ const RolesManagement = () => {
               Object.entries(filteredGroupedPermissions).map(([domain, domainPermissions]) => (
                 <div key={domain} className="rounded-lg border overflow-hidden">
                   <button onClick={() => setExpandedDomain(expandedDomain === domain ? null : domain)}
-                    className="flex items-center justify-between w-full p-2.5 text-sm font-bold hover:bg-muted/50 transition-colors">
+                    className="flex items-center justify-between w-full p-3 sm:p-2.5 text-sm font-bold hover:bg-muted/50 transition-colors min-h-12 sm:min-h-0">
                     <span>{DOMAIN_LABELS[domain] || domain}
                       <span className="text-xs font-normal text-muted-foreground mr-1">
                         ({domainPermissions.filter(p => formData.permissions.includes(p.key)).length}/{domainPermissions.length})
                       </span>
                     </span>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       <span onClick={e => { e.stopPropagation(); handleSelectAll(domainPermissions); }}
-                        className="text-xs font-normal text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 transition-colors">
+                        className="text-xs font-normal text-muted-foreground hover:text-foreground px-2 py-1 rounded bg-muted hover:bg-muted/80 transition-colors">
                         {domainPermissions.every(p => formData.permissions.includes(p.key)) ? "إلغاء الكل" : "تحديد الكل"}
                       </span>
                       <ChevronDown className={`size-4 transition-transform ${expandedDomain === domain ? "rotate-180" : ""}`} />
                     </div>
                   </button>
                   {expandedDomain === domain && (
-                    <div className="p-2 grid grid-cols-1 sm:grid-cols-2 gap-0.5 border-t">
+                    <div className="p-2 grid grid-cols-1 gap-0.5 border-t">
                       {domainPermissions.map(permission => (
-                        <label key={permission.key} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 cursor-pointer transition-colors">
+                        <label key={permission.key} className="flex items-center gap-3 p-2.5 rounded hover:bg-muted/50 cursor-pointer transition-colors min-h-12">
                           <input type="checkbox" checked={formData.permissions.includes(permission.key)}
-                            onChange={() => handlePermissionToggle(permission.key)} disabled={submitting} className="size-4 shrink-0" />
+                            onChange={() => handlePermissionToggle(permission.key)} disabled={submitting} className="size-5 shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">{permission.name}</p>
+                            <p className="text-sm font-medium">{permission.name}</p>
                             <p className="text-xs text-muted-foreground truncate">{permission.description || permission.key}</p>
                           </div>
                         </label>
@@ -420,9 +420,9 @@ const RolesManagement = () => {
               ))
             )}
           </div>
-          <DialogFooter className="pt-3 border-t mt-3">
-            <Button variant="outline" onClick={() => { setModalOpen(false); setEditModalOpen(false); setFormData({ name: "", description: "", permissions: [], isActive: true }); setSelectedRole(null); setSearchQuery(""); }} disabled={submitting}>إلغاء</Button>
-            <Button onClick={handleSubmit} disabled={submitting || permissionsLoading}>
+          <DialogFooter className="pt-3 border-t mt-0 px-4 py-3 shrink-0">
+            <Button variant="outline" onClick={() => { setModalOpen(false); setEditModalOpen(false); setFormData({ name: "", description: "", permissions: [], isActive: true }); setSelectedRole(null); setSearchQuery(""); }} disabled={submitting} className="flex-1 sm:flex-none">إلغاء</Button>
+            <Button onClick={handleSubmit} disabled={submitting || permissionsLoading} className="flex-1 sm:flex-none">
               {submitting ? <LoadingSpinner size="sm" /> : editModalOpen ? "تحديث" : "إنشاء"}
             </Button>
           </DialogFooter>
