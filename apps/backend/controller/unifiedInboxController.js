@@ -28,6 +28,7 @@ const getUnifiedConversations = async (req, res) => {
             search,
             status,        // 'active' | 'pending' | 'resolved' | 'closed'
             unreadOnly,
+            tab,           // 'all' | 'unreplied' | 'done' | 'main' | 'general' | 'requests' | 'spam'
             sortBy = 'lastMessageAt',
             sortOrder = 'desc'
         } = req.query;
@@ -63,6 +64,34 @@ const getUnifiedConversations = async (req, res) => {
             fbWhere.status = statusMap[status.toLowerCase()] || status.toUpperCase();
         } else {
             fbWhere.status = { in: ['ACTIVE', 'PENDING'] };
+        }
+
+        // Handle tab-based filtering (mirrors what useInboxConversations does)
+        if (tab && tab !== 'all') {
+            const tabMap = {
+                'done': { status: { in: ['RESOLVED', 'CLOSED'] } },
+                'unreplied': { lastMessageIsFromCustomer: true },
+                'main': {
+                    status: { in: ['ACTIVE', 'OPEN', 'PENDING'] },
+                    metadata: { contains: '"tab":"main"' }
+                },
+                'general': {
+                    status: { in: ['ACTIVE', 'OPEN', 'PENDING'] },
+                    metadata: { contains: '"tab":"general"' }
+                },
+                'requests': {
+                    status: { in: ['ACTIVE', 'OPEN', 'PENDING'] },
+                    metadata: { contains: '"tab":"requests"' }
+                },
+                'spam': {
+                    status: { in: ['ACTIVE', 'OPEN', 'PENDING'] },
+                    metadata: { contains: '"tab":"spam"' }
+                }
+            };
+            const tabFilter = tabMap[tab];
+            if (tabFilter) {
+                Object.assign(fbWhere, tabFilter);
+            }
         }
 
         if (unreadOnly === 'true') {

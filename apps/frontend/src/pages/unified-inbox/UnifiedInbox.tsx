@@ -190,6 +190,7 @@ const UnifiedInbox: React.FC = () => {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [unreadFilter, setUnreadFilter] = useState(false);
   const [followUpFilter, setFollowUpFilter] = useState(false);
+  const [activeTab, setActiveTab] = useState("all");
   const [showPlatformDropdown, setShowPlatformDropdown] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [showProfilePanel, setShowProfilePanel] = useState(true);
@@ -262,6 +263,7 @@ const UnifiedInbox: React.FC = () => {
       }
 
       if (searchQuery) params.set("search", searchQuery);
+      if (activeTab !== "all") params.set("tab", activeTab);
       if (followUpFilter) params.set("status", "pending");
       if (unreadFilter) params.set("unreadOnly", "true");
       params.set("limit", "50");
@@ -299,7 +301,7 @@ const UnifiedInbox: React.FC = () => {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [selectedPlatforms, searchQuery, followUpFilter, unreadFilter]);
+  }, [selectedPlatforms, searchQuery, followUpFilter, unreadFilter, activeTab]);
 
   const loadMoreConversations = useCallback(() => {
     if (!hasMore || loadingMore) return;
@@ -745,6 +747,37 @@ const UnifiedInbox: React.FC = () => {
                 className={`business-inbox-search ${isRtl ? "pr-9 pl-4" : "pl-9 pr-4 text-left"}`}
                 autoComplete="off"
               />
+            </div>
+
+            {/* Tabs Row */}
+            <div
+              className="flex mb-2 gap-1 overflow-x-auto"
+              style={{ flexDirection: isRtl ? "row-reverse" : "row" }}
+            >
+              {[
+                { id: "all", label: t("unifiedInbox.tabs.all"), count: counts.all },
+                { id: "unreplied", label: t("unifiedInbox.tabs.unreplied"), count: counts.unreplied },
+                { id: "done", label: t("unifiedInbox.tabs.done") },
+                { id: "main", label: t("unifiedInbox.tabs.main") },
+                { id: "general", label: t("unifiedInbox.tabs.general") },
+                { id: "requests", label: t("unifiedInbox.tabs.requests") },
+                { id: "spam", label: t("unifiedInbox.tabs.spam") },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className="inbox-filter-chip text-xs whitespace-nowrap"
+                  data-active={activeTab === tab.id ? "true" : "false"}
+                  style={{ padding: "0.25rem 0.6rem" }}
+                >
+                  {tab.label}
+                  {tab.count !== undefined && (
+                    <span className={`mr-1 text-[10px] ${activeTab === tab.id ? "opacity-90" : "opacity-60"}`}>
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
 
             {/* Filter Chips Row */}

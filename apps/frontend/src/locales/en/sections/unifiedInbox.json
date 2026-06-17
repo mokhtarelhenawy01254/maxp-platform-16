@@ -20,7 +20,12 @@
     "messenger": "Messenger",
     "whatsapp": "WhatsApp",
     "telegram": "Telegram",
-    "unreplied": "Unreplied"
+    "unreplied": "Unreplied",
+    "done": "Done",
+    "main": "Main",
+    "general": "General",
+    "requests": "Requests",
+    "spam": "Spam"
   },
   "loading": "Loading…",
   "noConversations": "No conversations",

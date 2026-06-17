@@ -20,7 +20,12 @@
     "messenger": "Messenger",
     "whatsapp": "WhatsApp",
     "telegram": "Telegram",
-    "unreplied": "لم يتم الرد"
+    "unreplied": "غير مردود عليها",
+    "done": "منتهي",
+    "main": "رئيسي",
+    "general": "عام",
+    "requests": "طلبات",
+    "spam": "سبام"
   },
   "loading": "جاري التحميل…",
   "noConversations": "لا توجد محادثات",
