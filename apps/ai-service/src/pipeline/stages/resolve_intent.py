@@ -23,7 +23,15 @@ def _available_tools(ctx: PipelineContext) -> list[str]:
         return [name for tool in ctx.native_tools if (name := _tool_name(tool))]
 
     agent = ctx.agent
-    tools = list(getattr(agent, "tools", []) or [])
+    # agent_framework.Agent stores tools in default_options['tools'], not as .tools attribute.
+    # Try default_options first (for agent_framework.Agent), then fall back to .tools.
+    tools: list[Any] = []
+    if agent and hasattr(agent, 'default_options') and isinstance(getattr(agent, 'default_options', None), dict):
+        opts_tools = agent.default_options.get('tools') or []
+        if opts_tools:
+            tools = list(opts_tools)
+    if not tools:
+        tools = list(getattr(agent, "tools", []) or [])
     if not tools and hasattr(agent, "get_tools"):
         tools = [{"name": name} for name in (agent.get_tools() or [])]
     elif not tools and hasattr(agent, "_resolve_tools"):
@@ -44,7 +52,6 @@ def _available_tools(ctx: PipelineContext) -> list[str]:
     ctx.native_tools = tools
     logger.info('available_tools_debug', agent_type=type(agent).__name__ if agent else None, native_tools_count=len(ctx.native_tools), tools_sample=[_tool_name(t) for t in ctx.native_tools[:10]])
     return [name for tool in tools if (name := _tool_name(tool))]
-
 
 def get_agent_instructions(agent: Any) -> str:
     if not agent:

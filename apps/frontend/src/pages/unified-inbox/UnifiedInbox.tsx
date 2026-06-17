@@ -112,6 +112,12 @@ interface PlatformCounts {
   unreplied: number;
 }
 
+interface Attachment {
+  url: string;
+  name: string;
+  type: string;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 🎨 Platform styling
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -214,7 +220,7 @@ const UnifiedInbox: React.FC = () => {
   const [quickReplies, setQuickReplies] = useState<any[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
-  const [attachedFile, setAttachedFile] = useState<{ url: string; name: string; type: string } | null>(null);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [selectedConvIds, setSelectedConvIds] = useState<Set<string>>(new Set());
