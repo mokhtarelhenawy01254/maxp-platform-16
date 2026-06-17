@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const {
   sendMessage,
   previewRag,
@@ -25,7 +25,7 @@ const {
   getStatus,
 } = require('../controller/aiAgentChatController');
 
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 router.post('/message', sendMessage);
 router.post('/rag-preview', previewRag);

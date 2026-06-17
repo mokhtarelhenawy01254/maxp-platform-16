@@ -3,7 +3,7 @@ const router = express.Router();
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const episodicMemoryService = { generateEmbeddingAsync: async () => null };
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 
 const getPrisma = () => getSharedPrismaClient();
 
@@ -81,7 +81,7 @@ router.get('/', async (req, res) => {
 });
 
 // Create policy
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { title, content, category, tags, isActive, effectiveAt, expiresAt } = req.body;
     const companyId = req.user.companyId;
@@ -114,7 +114,7 @@ router.post('/', requireAuth, async (req, res) => {
 });
 
 // Update policy
-router.put('/:id', requireAuth, async (req, res) => {
+router.put('/:id', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, content, category, tags, isActive, effectiveAt, expiresAt } = req.body;
@@ -150,7 +150,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 });
 
 // Delete policy
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 

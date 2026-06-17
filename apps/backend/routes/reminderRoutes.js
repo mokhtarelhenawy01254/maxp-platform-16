@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 
 // Placeholder controller functions - will be implemented
 const reminderController = {
@@ -123,10 +123,10 @@ const reminderController = {
 };
 
 // Routes
-router.get('/', requireAuth, reminderController.getReminders);
-router.get('/stats', requireAuth, reminderController.getStats);
-router.post('/', requireAuth, reminderController.createReminder);
-router.put('/:id/status', requireAuth, reminderController.updateStatus);
-router.post('/:id/snooze', requireAuth, reminderController.snoozeReminder);
+router.get('/', verifyToken.authenticateToken, reminderController.getReminders);
+router.get('/stats', verifyToken.authenticateToken, reminderController.getStats);
+router.post('/', verifyToken.authenticateToken, reminderController.createReminder);
+router.put('/:id/status', verifyToken.authenticateToken, reminderController.updateStatus);
+router.post('/:id/snooze', verifyToken.authenticateToken, reminderController.snoozeReminder);
 
 module.exports = router;

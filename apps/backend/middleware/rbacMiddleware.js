@@ -6,6 +6,8 @@
  *   router.post('/users', requirePermission('users.manage'), handler)
  */
 
+const permissionService = require('../services/permissionService');
+
 const PERMISSIONS = {
   // Dashboard & Analytics
   'dashboard.view': ['SUPER_ADMIN', 'COMPANY_ADMIN', 'TEAM_LEADER', 'MODERATOR'],
@@ -120,6 +122,7 @@ const hasPermission = (role, permission) => {
 
 /**
  * Middleware factory — requires a specific permission
+ * Checks DB-based permissions first, falls back to hardcoded PERMISSIONS
  */
 const requirePermission = (permission) => {
   return (req, res, next) => {
@@ -129,6 +132,23 @@ const requirePermission = (permission) => {
 
     const userRole = req.user.role;
 
+    // SUPER_ADMIN always passes
+    if (userRole === 'SUPER_ADMIN') return next();
+
+    // Check if user has DB-based permissions attached (from auth middleware)
+    if (req.user.userPermissions && Array.isArray(req.user.userPermissions)) {
+      if (req.user.userPermissions.includes(permission)) {
+        return next();
+      }
+      return res.status(403).json({
+        error: 'Insufficient permissions',
+        code: 'INSUFFICIENT_PERMISSIONS',
+        requiredPermission: permission,
+        currentRole: userRole
+      });
+    }
+
+    // Fallback to hardcoded PERMISSIONS
     if (!hasPermission(userRole, permission)) {
       return res.status(403).json({
         error: 'Insufficient permissions',
@@ -139,6 +159,40 @@ const requirePermission = (permission) => {
     }
 
     next();
+  };
+};
+
+/**
+ * Middleware — requires a permission using DB-based roles
+ * Loads user permissions from DB on each request (no cache)
+ */
+const requireDbPermission = (permissionKey) => {
+  return async (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (req.user.role === 'SUPER_ADMIN') return next();
+
+    const companyId = req.user.effectiveCompanyId || req.user.companyId;
+    if (!companyId) {
+      return res.status(403).json({ error: 'No company context' });
+    }
+
+    try {
+      const permissions = await permissionService.getUserPermissions(req.user.id, companyId);
+      if (!permissions.includes(permissionKey)) {
+        return res.status(403).json({
+          error: 'Insufficient permissions',
+          code: 'INSUFFICIENT_PERMISSIONS',
+          requiredPermission: permissionKey,
+        });
+      }
+      next();
+    } catch (error) {
+      console.error('[RBAC] requireDbPermission error:', error.message);
+      return res.status(500).json({ error: 'Permission check failed' });
+    }
   };
 };
 
@@ -242,6 +296,7 @@ const canViewConversation = async (prisma, userId, companyId, conversationId) =>
 
 module.exports = {
   requirePermission,
+  requireDbPermission,
   requireMinRole,
   hasPermission,
   canViewConversation,

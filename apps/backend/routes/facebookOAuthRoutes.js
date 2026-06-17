@@ -20,7 +20,7 @@ const {
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 
 // Import authentication middleware
-const { requireAuth } = require("../middleware/auth");
+const verifyToken = require("../utils/verifyToken");
 const {
   authenticateToken,
   requireSuperAdmin,
@@ -692,7 +692,7 @@ const reconnectCompanyFacebookPages = async ({ companyId, pageIds }) => {
  * GET /api/v1/facebook-oauth/authorize
  * ✅ REQUIRES AUTHENTICATION
  */
-router.get("/authorize", requireAuth, async (req, res) => {
+router.get("/authorize", verifyToken.authenticateToken, async (req, res) => {
   try {
     const { appId } = getFacebookOAuthConfig();
     const { companyId } = req.query;
@@ -1241,7 +1241,7 @@ router.get("/callback", async (req, res) => {
  * POST /api/v1/facebook-oauth/test-subscription
  * ✅ REQUIRES AUTHENTICATION
  */
-router.post("/test-subscription", requireAuth, async (req, res) => {
+router.post("/test-subscription", verifyToken.authenticateToken, async (req, res) => {
   try {
     const { pageId } = req.body;
     const { companyId } = req.query;
@@ -1320,7 +1320,7 @@ router.post("/test-subscription", requireAuth, async (req, res) => {
  * GET /api/v1/facebook-oauth/status
  * ✅ REQUIRES AUTHENTICATION
  */
-router.get("/status", requireAuth, async (req, res) => {
+router.get("/status", verifyToken.authenticateToken, async (req, res) => {
   try {
     const { companyId, validateTokens } = req.query;
 
@@ -1381,7 +1381,7 @@ router.get("/status", requireAuth, async (req, res) => {
  * DELETE /api/v1/facebook-oauth/disconnect
  * ✅ REQUIRES AUTHENTICATION
  */
-router.delete("/disconnect", requireAuth, async (req, res) => {
+router.delete("/disconnect", verifyToken.authenticateToken, async (req, res) => {
   try {
     const { pageIds } = req.body;
     const { companyId } = req.query;
@@ -1436,7 +1436,7 @@ router.delete("/disconnect", requireAuth, async (req, res) => {
  * POST /api/v1/facebook-oauth/reconnect
  * ✅ REQUIRES AUTHENTICATION
  */
-router.post("/reconnect", requireAuth, async (req, res) => {
+router.post("/reconnect", verifyToken.authenticateToken, async (req, res) => {
   try {
     const { pageIds } = req.body;
     const { companyId } = req.query;
@@ -1497,7 +1497,7 @@ router.post("/reconnect", requireAuth, async (req, res) => {
  * GET /api/v1/facebook-oauth/skipped-pages
  * ✅ REQUIRES AUTHENTICATION
  */
-router.get("/skipped-pages", requireAuth, async (req, res) => {
+router.get("/skipped-pages", verifyToken.authenticateToken, async (req, res) => {
   try {
     const { companyId } = req.query;
 
@@ -1602,7 +1602,7 @@ router.get("/skipped-pages", requireAuth, async (req, res) => {
  * POST /api/v1/facebook-oauth/resolve-skipped
  * ✅ REQUIRES AUTHENTICATION
  */
-router.post("/resolve-skipped", requireAuth, async (req, res) => {
+router.post("/resolve-skipped", verifyToken.authenticateToken, async (req, res) => {
   try {
     const { companyId } = req.query;
     const { pageIds } = req.body; // Array of skipped page IDs to resolve
@@ -1672,7 +1672,7 @@ router.post("/resolve-skipped", requireAuth, async (req, res) => {
  * Step 7: Debug - check pages for a company
  * GET /api/v1/facebook-oauth/debug
  */
-router.get("/debug", requireAuth, async (req, res) => {
+router.get("/debug", verifyToken.authenticateToken, async (req, res) => {
   try {
     const { companyId } = req.query;
 
@@ -1745,7 +1745,7 @@ router.get("/debug", requireAuth, async (req, res) => {
  * GET /api/v1/facebook-oauth/pixel-authorize
  * ✅ REQUIRES AUTHENTICATION
  */
-router.get("/pixel-authorize", requireAuth, async (req, res) => {
+router.get("/pixel-authorize", verifyToken.authenticateToken, async (req, res) => {
   try {
     const { appId } = getFacebookOAuthConfig();
     const { companyId } = req.query;
@@ -2012,7 +2012,7 @@ const handlePixelTokenError = async (error, companyId) => {
  * GET /api/v1/facebook-oauth/pixels
  * ✅ REQUIRES AUTHENTICATION
  */
-router.get("/pixels", requireAuth, async (req, res) => {
+router.get("/pixels", verifyToken.authenticateToken, async (req, res) => {
   try {
     const { companyId } = req.query;
 
@@ -2427,7 +2427,7 @@ router.get("/pixels", requireAuth, async (req, res) => {
  * POST /api/v1/facebook-oauth/generate-pixel-token
  * ✅ REQUIRES AUTHENTICATION
  */
-router.post("/generate-pixel-token", requireAuth, async (req, res) => {
+router.post("/generate-pixel-token", verifyToken.authenticateToken, async (req, res) => {
   try {
     const { companyId } = req.query;
     const { pixelId, businessId } = req.body;

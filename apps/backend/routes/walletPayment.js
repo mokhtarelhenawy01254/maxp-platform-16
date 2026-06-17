@@ -1,4 +1,4 @@
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const express = require('express');
 const router = express.Router();
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
@@ -39,7 +39,7 @@ const upload = multer({
 });
 
 // جلب أرقام المحافظ النشطة
-router.get('/wallet-numbers', requireAuth, async (req, res) => {
+router.get('/wallet-numbers', verifyToken.authenticateToken, async (req, res) => {
   try {
     const walletNumbers = await executeWithRetry(async () => {
       return await getSharedPrismaClient().walletNumber.findMany({
@@ -70,7 +70,7 @@ router.get('/wallet-numbers', requireAuth, async (req, res) => {
 });
 
 // جلب تفاصيل فاتورة للدفع
-router.get('/invoice/:invoiceId', requireAuth, async (req, res) => {
+router.get('/invoice/:invoiceId', verifyToken.authenticateToken, async (req, res) => {
   try {
     const { invoiceId } = req.params;
 
@@ -122,7 +122,7 @@ router.get('/invoice/:invoiceId', requireAuth, async (req, res) => {
 });
 
 // رفع إيصال الدفع
-router.post('/submit-receipt', requireAuth, upload.single('receipt'), async (req, res) => {
+router.post('/submit-receipt', verifyToken.authenticateToken, upload.single('receipt'), async (req, res) => {
   try {
     const { invoiceId, walletNumberId, subscriptionId, amount, purpose } = req.body;
 

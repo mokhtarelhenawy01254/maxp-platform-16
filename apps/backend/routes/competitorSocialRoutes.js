@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const competitorSocialService = require('../services/competitorSocialService');
 
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 router.get('/profile/:competitorId/:platform', async (req, res) => {
   try {

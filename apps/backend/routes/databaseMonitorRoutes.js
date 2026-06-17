@@ -8,6 +8,11 @@ const express = require('express');
 const router = express.Router();
 const { healthCheck, getConnectionStats } = require('../services/sharedDatabase');
 const { safeDb } = require('../utils/safeDatabase');
+const verifyToken = require("../utils/verifyToken");
+
+// All database monitor routes require super admin access
+router.use(verifyToken.authenticateToken);
+router.use(verifyToken.requireSuperAdmin);
 
 /**
  * Get comprehensive database status

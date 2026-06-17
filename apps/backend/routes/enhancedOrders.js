@@ -9,12 +9,12 @@ const customerBlocklistService = require('../services/customerBlocklistService')
 
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 
 const DEFAULT_MIGRATION_COMPANY_ID = 'cmdt8nrjq003vufuss47dqc45';
 
 // Apply authentication to all routes
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 router.use((req, res, next) => {
   if (isMerchantUser(req.user)) {
     return res.status(403).json({

@@ -1,22 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
-const { requirePermission } = require('../middleware/rbacMiddleware');
+const verifyToken = require('../utils/verifyToken');
+const { requireDbPermission } = require('../middleware/rbacMiddleware');
 const settingsController = require('../controller/inboxSettingsController');
 
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 // ─── General Inbox Settings ───────────────────────────────────────
 
 router.get(
   '/',
-  requirePermission('settings.read'),
+  requireDbPermission('settings.read'),
   settingsController.getSettings
 );
 
 router.put(
   '/',
-  requirePermission('settings.manage'),
+  requireDbPermission('settings.manage'),
   settingsController.updateSettings
 );
 
@@ -24,13 +24,13 @@ router.put(
 
 router.get(
   '/notification-preferences',
-  requirePermission('settings.notifications.manage'),
+  requireDbPermission('settings.notifications.manage'),
   settingsController.getNotificationPreferences
 );
 
 router.put(
   '/notification-preferences',
-  requirePermission('settings.notifications.manage'),
+  requireDbPermission('settings.notifications.manage'),
   settingsController.updateNotificationPreferences
 );
 
@@ -38,7 +38,7 @@ router.put(
 
 router.post(
   '/browser-push',
-  requirePermission('settings.notifications.manage'),
+  requireDbPermission('settings.notifications.manage'),
   settingsController.saveBrowserPushSubscription
 );
 

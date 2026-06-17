@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { requireAuth } = require("../middleware/auth");
+const verifyToken = require("../utils/verifyToken");
 const {
   DEFAULT_NOTIFICATION_TYPES,
   getNotificationSettingsForUser,
@@ -245,13 +245,13 @@ const notificationController = {
   },
 };
 
-router.get("/types", requireAuth, notificationController.getTypes);
-router.get("/push/public-key", requireAuth, notificationController.getBrowserPushPublicKey);
-router.post("/push/subscriptions", requireAuth, notificationController.subscribeBrowserPush);
-router.delete("/push/subscriptions", requireAuth, notificationController.unsubscribeBrowserPush);
-router.get("/settings/:userId", requireAuth, notificationController.getSettings);
-router.put("/settings/:userId", requireAuth, notificationController.updateSettings);
-router.get("/stats/:userId", requireAuth, notificationController.getStats);
-router.post("/test", requireAuth, notificationController.testNotification);
+router.get("/types", verifyToken.authenticateToken, notificationController.getTypes);
+router.get("/push/public-key", verifyToken.authenticateToken, notificationController.getBrowserPushPublicKey);
+router.post("/push/subscriptions", verifyToken.authenticateToken, notificationController.subscribeBrowserPush);
+router.delete("/push/subscriptions", verifyToken.authenticateToken, notificationController.unsubscribeBrowserPush);
+router.get("/settings/:userId", verifyToken.authenticateToken, notificationController.getSettings);
+router.put("/settings/:userId", verifyToken.authenticateToken, notificationController.updateSettings);
+router.get("/stats/:userId", verifyToken.authenticateToken, notificationController.getStats);
+router.post("/test", verifyToken.authenticateToken, notificationController.testNotification);
 
 module.exports = router;

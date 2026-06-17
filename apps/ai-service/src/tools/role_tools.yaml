@@ -14,6 +14,9 @@ roles:
     - agent_handoff_to
 
   ORDER:
+    - product_search
+    - category_list
+    - customer_info
     - order_lookup
     - order_summary
     - order_recent_list
@@ -22,6 +25,8 @@ roles:
     - order_cancel
     - order_refund
     - shipping_rates
+    - facebook_reply
+    - agent_handoff_to
 
   SALES:
     - product_search

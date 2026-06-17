@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const ownerController = require('../controller/ownerController');
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const verifyToken = require('../utils/verifyToken');
 const { cacheMiddleware } = require('../middleware/performanceOptimization');
 
@@ -47,7 +47,7 @@ const requireOwnerRole = async (req, res, next) => {
 };
 
 // Apply authentication to all routes
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 // Dashboard & Companies - Require OWNER role
 router.get('/companies', requireOwnerRole, ownerController.getOwnerCompanies);

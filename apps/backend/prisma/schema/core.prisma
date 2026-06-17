@@ -393,6 +393,7 @@ model UserCompany {
   userId    String
   companyId String
   role      UserCompaniesRole @default(AGENT)
+  roleId    String?
   isActive  Boolean           @default(true)
   isDefault Boolean           @default(false)
   joinedAt  DateTime          @default(now())
@@ -400,6 +401,7 @@ model UserCompany {
   updatedAt DateTime          @updatedAt
   company   Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleRef   Role?             @relation(fields: [roleId], references: [id])
 
   @@unique([userId, companyId])
   @@index([companyId])

@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const agentWorkspaceController = require('../controller/agentWorkspaceController');
 
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 /**
  * @route GET /api/v1/agent-workspace/my-orders

@@ -1,46 +1,46 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth, requireRole } = require('../middleware/auth');
-const { requirePermission } = require('../middleware/rbacMiddleware');
+const verifyToken = require('../utils/verifyToken');
+const { requireDbPermission } = require('../middleware/rbacMiddleware');
 const rbacController = require('../controller/rbacAdminController');
 
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 // ─── Teams Management ─────────────────────────────────────────────
 
 router.get(
   '/teams',
-  requirePermission('teams.view'),
+  requireDbPermission('teams.view'),
   rbacController.getTeams
 );
 
 router.post(
   '/teams',
-  requirePermission('teams.manage'),
+  requireDbPermission('teams.manage'),
   rbacController.createTeam
 );
 
 router.put(
   '/teams/:teamId',
-  requirePermission('teams.manage'),
+  requireDbPermission('teams.manage'),
   rbacController.updateTeam
 );
 
 router.delete(
   '/teams/:teamId',
-  requirePermission('teams.manage'),
+  requireDbPermission('teams.manage'),
   rbacController.deleteTeam
 );
 
 router.post(
   '/teams/:teamId/members',
-  requirePermission('teams.manage'),
+  requireDbPermission('teams.manage'),
   rbacController.addTeamMember
 );
 
 router.delete(
   '/teams/:teamId/members/:memberId',
-  requirePermission('teams.manage'),
+  requireDbPermission('teams.manage'),
   rbacController.removeTeamMember
 );
 
@@ -48,19 +48,19 @@ router.delete(
 
 router.get(
   '/users',
-  requirePermission('users.view'),
+  requireDbPermission('users.view'),
   rbacController.getUsers
 );
 
 router.patch(
   '/users/:userId/role',
-  requirePermission('users.manage'),
+  requireDbPermission('users.manage'),
   rbacController.updateUserRole
 );
 
 router.patch(
   '/users/:userId/status',
-  requirePermission('users.manage'),
+  requireDbPermission('users.manage'),
   rbacController.toggleUserStatus
 );
 
@@ -68,7 +68,7 @@ router.patch(
 
 router.get(
   '/activity-log',
-  requirePermission('reports.view'),
+  requireDbPermission('reports.view'),
   rbacController.getActivityLog
 );
 
@@ -76,7 +76,7 @@ router.get(
 
 router.get(
   '/permissions',
-  requirePermission('settings.read'),
+  requireDbPermission('settings.read'),
   rbacController.getPermissionsMatrix
 );
 

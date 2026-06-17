@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const promotionSettingsController = require('../controller/promotionSettingsController');
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 
 /**
  * 🎯 Routes لإدارة إعدادات الترويج (الشحن المجاني)
@@ -11,9 +11,9 @@ const { requireAuth } = require('../middleware/auth');
 router.get('/:companyId', promotionSettingsController.getPublicPromotionSettings);
 
 // Protected routes (تحتاج مصادقة)
-router.get('/', requireAuth, promotionSettingsController.getPromotionSettings);
-router.post('/', requireAuth, promotionSettingsController.updatePromotionSettings);
-router.put('/', requireAuth, promotionSettingsController.updatePromotionSettings);
-router.post('/reset', requireAuth, promotionSettingsController.resetPromotionSettings);
+router.get('/', verifyToken.authenticateToken, promotionSettingsController.getPromotionSettings);
+router.post('/', verifyToken.authenticateToken, promotionSettingsController.updatePromotionSettings);
+router.put('/', verifyToken.authenticateToken, promotionSettingsController.updatePromotionSettings);
+router.post('/reset', verifyToken.authenticateToken, promotionSettingsController.resetPromotionSettings);
 
 module.exports = router;

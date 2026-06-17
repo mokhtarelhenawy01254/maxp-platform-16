@@ -1,16 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth, requireRole } = require('../middleware/auth');
-const { requirePermission } = require('../middleware/rbacMiddleware');
+const verifyToken = require('../utils/verifyToken');
+const { requireDbPermission } = require('../middleware/rbacMiddleware');
 const dashboardController = require('../controller/moderatorDashboardController');
 
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 // ─── My Dashboard ─────────────────────────────────────────────────
 
 router.get(
   '/',
-  requirePermission('dashboard.view'),
+  requireDbPermission('dashboard.view'),
   dashboardController.getMyDashboard
 );
 
@@ -18,7 +18,7 @@ router.get(
 
 router.get(
   '/team/:teamId',
-  requirePermission('dashboard.view.team'),
+  requireDbPermission('dashboard.view.team'),
   dashboardController.getTeamDashboard
 );
 
@@ -26,7 +26,7 @@ router.get(
 
 router.get(
   '/admin',
-  requirePermission('dashboard.view.all'),
+  requireDbPermission('dashboard.view.all'),
   dashboardController.getAdminDashboard
 );
 

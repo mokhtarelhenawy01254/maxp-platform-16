@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const shippingProviderService = require('../services/shippingProviderService');
 
 const buildSlug = (value) =>
@@ -39,7 +39,7 @@ const buildProviderFields = (body, carrier = {}) => {
 };
 
 // Get all shipping companies for the current company
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', verifyToken.authenticateToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const { companyId } = req.user;
@@ -57,7 +57,7 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 // Add temporary demo providers for UAT/sandbox flows.
-router.post('/demo-carriers', requireAuth, async (req, res) => {
+router.post('/demo-carriers', verifyToken.authenticateToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const { companyId } = req.user;
@@ -76,7 +76,7 @@ router.post('/demo-carriers', requireAuth, async (req, res) => {
 });
 
 // Get single shipping company by ID or slug
-router.get('/:idOrSlug', requireAuth, async (req, res) => {
+router.get('/:idOrSlug', verifyToken.authenticateToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const { idOrSlug } = req.params;
@@ -116,7 +116,7 @@ router.get('/:idOrSlug', requireAuth, async (req, res) => {
 });
 
 // Create a new shipping company
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', verifyToken.authenticateToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const { companyId } = req.user;
@@ -153,7 +153,7 @@ router.post('/', requireAuth, async (req, res) => {
 });
 
 // Update a shipping company
-router.put('/:id', requireAuth, async (req, res) => {
+router.put('/:id', verifyToken.authenticateToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const { id } = req.params;
@@ -202,7 +202,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 });
 
 // Delete a shipping company
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', verifyToken.authenticateToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const { id } = req.params;

@@ -24,11 +24,31 @@ jest.mock("../../services/sharedDatabase", () => ({
   getSharedPrismaClient: jest.fn(() => mockPrisma),
 }));
 
-jest.mock("../../middleware/auth", () => ({
-  requireAuth: (req, res, next) => {
+jest.mock("../../utils/verifyToken", () => ({
+  authenticateToken: (req, res, next) => {
+    if (!mockCurrentUser) {
+      return res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' });
+    }
     req.user = mockCurrentUser;
-    next();
+    return next();
   },
+  requireRole: (roles) => (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required', code: 'AUTH_REQUIRED' });
+    }
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions', code: 'INSUFFICIENT_PERMISSIONS' });
+    }
+    return next();
+  },
+  requireSuperAdmin: (req, res, next) => {
+    if (!req.user || req.user.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+    return next();
+  },
+  requireCompanyAccess: (req, res, next) => next(),
+  optionalAuth: (req, res, next) => next(),
 }));
 
 const affiliateSettingsRoutes = require("../../routes/affiliateSettingsRoutes");

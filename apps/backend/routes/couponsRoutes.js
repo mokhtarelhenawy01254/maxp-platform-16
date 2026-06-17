@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const couponsController = require('../controller/couponsController');
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 
 /**
  * 🎟️ Coupons Routes
@@ -9,7 +9,7 @@ const { requireAuth } = require('../middleware/auth');
  */
 
 // جميع المسارات تتطلب مصادقة
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 // ✅ الحصول على جميع الكوبونات
 router.get('/', couponsController.getCoupons);

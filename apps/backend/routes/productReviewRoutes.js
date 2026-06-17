@@ -9,7 +9,7 @@ const productReviewController = require('../controller/productReviewController')
  */
 
 // Get all reviews (Admin)
-// Note: globalSecurity middleware handles authentication, no need for requireAuth here
+// Note: globalSecurity middleware handles authentication, no need for verifyToken.authenticateToken here
 router.get('/', productReviewController.getAllReviews);
 
 // Bulk Action (Admin) - Must be before dynamic routes

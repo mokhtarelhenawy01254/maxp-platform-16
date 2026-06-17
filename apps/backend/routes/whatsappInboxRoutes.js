@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth, requireRole } = require('../middleware/auth');
+const verifyToken = require('../utils/verifyToken');
 const { numberAccessGuard, conversationAccessGuard } = require('../middleware/numberAccessGuard');
-const { requirePermission } = require('../middleware/rbacMiddleware');
+const { requireDbPermission } = require('../middleware/rbacMiddleware');
 const inboxController = require('../controller/whatsappInboxController');
 
 // All routes require authentication
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 // ─── Sessions ─────────────────────────────────────────────────────
 
@@ -21,7 +21,7 @@ router.get(
 router.get(
   '/sessions/:sessionId/conversations',
   numberAccessGuard('sessionId'),
-  requirePermission('inbox.view'),
+  requireDbPermission('inbox.view'),
   inboxController.getSessionConversations
 );
 
@@ -29,7 +29,7 @@ router.get(
 
 router.get(
   '/unread-counts',
-  requirePermission('inbox.view'),
+  requireDbPermission('inbox.view'),
   inboxController.getUnreadCounts
 );
 
@@ -38,35 +38,35 @@ router.get(
 router.get(
   '/conversations/:conversationId',
   conversationAccessGuard,
-  requirePermission('inbox.view'),
+  requireDbPermission('inbox.view'),
   inboxController.getConversationDetail
 );
 
 router.post(
   '/conversations/:conversationId/messages',
   conversationAccessGuard,
-  requirePermission('inbox.send'),
+  requireDbPermission('inbox.send'),
   inboxController.sendMessage
 );
 
 router.patch(
   '/conversations/:conversationId/status',
   conversationAccessGuard,
-  requirePermission('inbox.close'),
+  requireDbPermission('inbox.close'),
   inboxController.updateStatus
 );
 
 router.post(
   '/conversations/:conversationId/assign',
   conversationAccessGuard,
-  requirePermission('inbox.transfer'),
+  requireDbPermission('inbox.transfer'),
   inboxController.assignConversation
 );
 
 router.post(
   '/conversations/:conversationId/transfer',
   conversationAccessGuard,
-  requirePermission('inbox.transfer'),
+  requireDbPermission('inbox.transfer'),
   inboxController.transferConversation
 );
 

@@ -8,14 +8,14 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const facebookAdsController = require('../controller/facebookAdsController');
 const facebookAdsBudgetAlertController = require('../controller/facebookAdsBudgetAlertController');
 const facebookAudiencesController = require('../controller/facebookAudiencesController');
 const facebookCatalogController = require('../controller/facebookCatalogController');
 
 // Apply authentication middleware to all routes
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 // Multer configuration for file uploads
 const storage = multer.memoryStorage();

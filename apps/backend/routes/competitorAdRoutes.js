@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const competitorAdService = require('../services/competitorAdService');
 
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 router.get('/campaigns/:competitorId', async (req, res) => {
   try {

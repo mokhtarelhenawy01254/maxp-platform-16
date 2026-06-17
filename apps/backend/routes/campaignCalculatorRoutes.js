@@ -5,11 +5,11 @@ console.log('✅ [DEBUG] campaignCalculatorRoutes: Importing auth middleware...'
 
 // Deferred auth middleware to avoid undefined callback on boot
 const deferredRequireAuth = (req, res, next) => {
-  const auth = require('../middleware/auth');
-  if (auth && typeof auth.requireAuth === 'function') {
-    return auth.requireAuth(req, res, next);
+  const verifyToken = require("../utils/verifyToken");
+  if (auth && typeof verifyToken.requireAuth === 'function') {
+    return verifyToken.requireAuth(req, res, next);
   }
-  next(new Error('requireAuth middleware is undefined at runtime'));
+  next(new Error('verifyToken.authenticateToken middleware is undefined at runtime'));
 };
 
 // Helper to handle potential circular dependency undefined exports

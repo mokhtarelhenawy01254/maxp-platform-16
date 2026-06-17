@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const orderInvoiceSettingsController = require('../controller/orderInvoiceSettingsController');
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const { checkAppAccess } = require('../middleware/checkAppAccess');
 
-router.get('/', requireAuth, checkAppAccess('order-invoicing'), orderInvoiceSettingsController.getSettings);
+router.get('/', verifyToken.authenticateToken, checkAppAccess('order-invoicing'), orderInvoiceSettingsController.getSettings);
 
-router.put('/', requireAuth, checkAppAccess('order-invoicing'), orderInvoiceSettingsController.updateSettings);
+router.put('/', verifyToken.authenticateToken, checkAppAccess('order-invoicing'), orderInvoiceSettingsController.updateSettings);
 
-router.post('/reset', requireAuth, checkAppAccess('order-invoicing'), orderInvoiceSettingsController.resetSettings);
+router.post('/reset', verifyToken.authenticateToken, checkAppAccess('order-invoicing'), orderInvoiceSettingsController.resetSettings);
 
 module.exports = router;
 

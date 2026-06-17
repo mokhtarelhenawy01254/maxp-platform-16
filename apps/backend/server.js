@@ -748,6 +748,7 @@ app.use("/api/v1/hr/lateness", require("./routes/latenessRoutes"));
 app.use("/api/v1/settings", settingsRoutes);
 app.use("/api/v1/smart-replies", smartRepliesRoutes);
 app.use("/api/v1/companies", companyRoutes);
+app.use("/api/v1/permissions", require("./routes/permissionRoutes"));
 app.use("/api/v1/company-connections", companyConnectionRoutes);
 const competitorRoutes = require("./routes/competitorRoutes");
 app.use("/api/v1/competitors", competitorRoutes);

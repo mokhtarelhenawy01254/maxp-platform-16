@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const controller = require('../controller/competitorController');
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 router.get('/', controller.list);
 router.post('/', controller.create);

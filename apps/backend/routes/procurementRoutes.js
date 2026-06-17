@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const supplierController = require('../controller/supplierController');
 const purchaseOrderController = require('../controller/purchaseOrderController');
 const purchaseInvoiceController = require('../controller/purchaseInvoiceController');
 const supplierPaymentController = require('../controller/supplierPaymentController');
 const procurementReportsController = require('../controller/procurementReportsController');
 
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 
 router.post('/suppliers', supplierController.createSupplier);
 router.get('/suppliers', supplierController.getAllSuppliers);

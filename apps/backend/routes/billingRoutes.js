@@ -6,11 +6,11 @@
 const express = require('express');
 const router = express.Router();
 const billingService = require('../services/billingService');
-const { requireAuth } = require('../middleware/auth');
+const verifyToken = require("../utils/verifyToken");
 const { checkSubscription } = require('../middleware/checkSubscription');
 
 // All billing routes require authentication + subscription check
-router.use(requireAuth);
+router.use(verifyToken.authenticateToken);
 router.use(checkSubscription);
 
 /**

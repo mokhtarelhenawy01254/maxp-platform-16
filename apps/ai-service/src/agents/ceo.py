@@ -9,6 +9,7 @@ from src.agents.middleware import build_maxp_function_middleware
 from src.config import get_settings
 from src.prompts.template_registry import get_prompt_registry
 from src.tools.manager_tools import get_manager_tools
+from src.tools.registry import get_read_tools, get_write_tools
 
 
 def create_ceo_agent(
@@ -31,7 +32,10 @@ def create_ceo_agent(
     )
     instructions = hydrated.text
 
-    all_tools = list(get_manager_tools())
+    # CEO agent needs all functional tools so the pipeline's intent classifier
+    # can route to product_search, order_lookup, etc. directly, instead of only
+    # having delegation tools that the classifier doesn't know how to route to.
+    all_tools = list(get_manager_tools()) + get_read_tools() + get_write_tools()
     if specialized_agents_tools:
         all_tools.extend(specialized_agents_tools)
 
