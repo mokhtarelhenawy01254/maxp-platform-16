@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -23,6 +22,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../..
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { Skeleton } from "../../components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../components/ui/dialog";
+import { Label } from "../../components/ui/label";
+import { Textarea } from "../../components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { Switch } from "../../components/ui/switch";
+import { Plus, Pencil, Trash2, Copy } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../components/ui/tooltip";
 
 interface MarketplaceApp {
   id: string;
@@ -46,7 +53,6 @@ type SortOrder = "asc" | "desc" | null;
 
 export default function AppPricingSheet() {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
   const { user } = useAuth();
 
   // State
@@ -58,6 +64,93 @@ export default function AppPricingSheet() {
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [viewMode, setViewMode] = useState<"sheet" | "grid">("sheet");
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingApp, setEditingApp] = useState<Partial<MarketplaceApp> | null>(null);
+
+  const handleOpenDialog = (app?: MarketplaceApp) => {
+    if (app) {
+      setEditingApp(app);
+    } else {
+      setEditingApp({
+        name: "", slug: "", category: "ECOMMERCE", description: "", pricingModel: "SUBSCRIPTION",
+        monthlyPrice: 0, yearlyPrice: 0, unitPrice: 0, trialDays: 14, isActive: true
+      });
+    }
+    setIsDialogOpen(true);
+  };
+
+  const handleSaveApp = async () => {
+    try {
+      if (!editingApp?.name || !editingApp?.category || !editingApp?.pricingModel) {
+        toast.error(t("subscription.fillRequiredFields", "الرجاء تعبئة الحقول المطلوبة"));
+        return;
+      }
+      
+      const payload = {
+        name: editingApp.name,
+        slug: editingApp.slug || editingApp.name.toLowerCase().replace(/\s+/g, '-'),
+        category: editingApp.category,
+        description: editingApp.description || "",
+        pricingModel: editingApp.pricingModel,
+        monthlyPrice: Number(editingApp.monthlyPrice) || 0,
+        yearlyPrice: Number(editingApp.yearlyPrice) || 0,
+        unitPrice: Number(editingApp.unitPrice) || 0,
+        trialDays: Number(editingApp.trialDays) || 0,
+        isActive: editingApp.isActive ?? true,
+      };
+
+      if (editingApp.id) {
+        await apiClient.put(`/super-admin/marketplace-management/apps/${editingApp.id}`, payload);
+        toast.success(t("subscription.appUpdated", "تم تحديث التطبيق بنجاح"));
+      } else {
+        await apiClient.post(`/super-admin/marketplace-management/apps`, payload);
+        toast.success(t("subscription.appAdded", "تمت إضافة التطبيق بنجاح"));
+      }
+      setIsDialogOpen(false);
+      
+      // reload the data
+      setLoading(true);
+      const response = await apiClient.get<{ success: boolean; data: MarketplaceApp[] }>("/marketplace/apps", { params: { limit: 500 } });
+      if (response.data?.success) setApps(response.data.data);
+      setLoading(false);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || t("subscription.appSaveError", "حدث خطأ أثناء الحفظ"));
+    }
+  };
+
+  const handleDeleteApp = async (id: string) => {
+    if (!window.confirm(t("subscription.confirmDeleteApp", "هل أنت متأكد من حذف هذا التطبيق؟") as string)) return;
+    try {
+      await apiClient.delete(`/super-admin/marketplace-management/apps/${id}`);
+      toast.success(t("subscription.appDeleted", "تم حذف التطبيق بنجاح"));
+      setApps(prev => prev.filter(a => a.id !== id));
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || t("subscription.appDeleteError", "حدث خطأ أثناء الحذف"));
+    }
+  };
+
+  const handleToggleActive = async (app: MarketplaceApp) => {
+    try {
+      const newStatus = !app.isActive;
+      // Optimistic update
+      setApps(prev => prev.map(a => a.id === app.id ? { ...a, isActive: newStatus } : a));
+      const payload = { isActive: newStatus };
+      await apiClient.put(`/super-admin/marketplace-management/apps/${app.id}`, payload);
+      toast.success(t("subscription.appUpdated", "تم تحديث التطبيق بنجاح"));
+    } catch (err: any) {
+      // Revert on error
+      setApps(prev => prev.map(a => a.id === app.id ? { ...a, isActive: app.isActive } : a));
+      toast.error(err.response?.data?.message || t("subscription.appSaveError", "حدث خطأ أثناء الحفظ"));
+    }
+  };
+
+  const copyToClipboard = (text: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    navigator.clipboard.writeText(text);
+    toast.success(t("common.copied", "تم النسخ بنجاح"));
+  };
+
 
   // Fetch all apps
   useEffect(() => {
@@ -196,7 +289,7 @@ export default function AppPricingSheet() {
           return sortOrder === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
         }
 
-        return sortOrder === "asc" ? valA - valB : valB - valA;
+        return sortOrder === "asc" ? (valA as number) - (valB as number) : (valB as number) - (valA as number);
       });
     }
 
@@ -281,68 +374,85 @@ export default function AppPricingSheet() {
                 <FileSpreadsheet size={18} />
                 {t("subscription.exportToExcel")}
               </Button>
+              {user?.role === "SUPER_ADMIN" && (
+                <Button
+                  className="flex items-center gap-2 font-semibold font-cairo bg-indigo-600 hover:bg-indigo-700 text-white"
+                  onClick={() => handleOpenDialog()}
+                >
+                  <Plus size={18} />
+                  {t("subscription.addApp", "إضافة تطبيق")}
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        {/* KPI Cards */}
+        {/* KPI Cards (Modernized with Glassmorphism & Gradients) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="border-none shadow-md bg-white dark:bg-slate-900 overflow-hidden relative">
-            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
-            <CardHeader className="pb-2">
-              <CardDescription className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase">
+          <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(255,255,255,0.01)] bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl overflow-hidden relative group transition-all duration-300 hover:-translate-y-1">
+            <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <CardHeader className="pb-2 pt-6">
+              <CardDescription className="text-slate-500 dark:text-slate-400 text-xs font-bold tracking-wider uppercase font-cairo">
                 {t("subscription.totalApps")}
               </CardDescription>
-              <CardTitle className="text-3xl font-bold font-cairo text-slate-800 dark:text-slate-100 flex items-center justify-between">
-                {loading ? <Skeleton className="h-9 w-16" /> : stats.total}
-                <Package className="text-blue-500/80" size={24} />
+              <CardTitle className="text-4xl font-black font-cairo text-slate-800 dark:text-slate-100 flex items-center justify-between mt-2">
+                {loading ? <Skeleton className="h-10 w-20" /> : stats.total}
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                  <Package className="text-blue-600 dark:text-blue-400" size={24} strokeWidth={2.5} />
+                </div>
               </CardTitle>
             </CardHeader>
           </Card>
 
-          <Card className="border-none shadow-md bg-white dark:bg-slate-900 overflow-hidden relative">
-            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
-            <CardHeader className="pb-2">
-              <CardDescription className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase">
+          <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(255,255,255,0.01)] bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl overflow-hidden relative group transition-all duration-300 hover:-translate-y-1">
+            <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-emerald-400 to-teal-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <CardHeader className="pb-2 pt-6">
+              <CardDescription className="text-slate-500 dark:text-slate-400 text-xs font-bold tracking-wider uppercase font-cairo">
                 {t("subscription.activatedApps")}
               </CardDescription>
-              <CardTitle className="text-3xl font-bold font-cairo text-slate-800 dark:text-slate-100 flex items-center justify-between">
-                {loading ? <Skeleton className="h-9 w-16" /> : stats.installed}
-                <CheckCircle className="text-emerald-500/80" size={24} />
+              <CardTitle className="text-4xl font-black font-cairo text-slate-800 dark:text-slate-100 flex items-center justify-between mt-2">
+                {loading ? <Skeleton className="h-10 w-20" /> : stats.installed}
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
+                  <CheckCircle className="text-emerald-600 dark:text-emerald-400" size={24} strokeWidth={2.5} />
+                </div>
               </CardTitle>
             </CardHeader>
           </Card>
 
-          <Card className="border-none shadow-md bg-white dark:bg-slate-900 overflow-hidden relative">
-            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-indigo-500 to-violet-500" />
-            <CardHeader className="pb-2">
-              <CardDescription className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase">
+          <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(255,255,255,0.01)] bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl overflow-hidden relative group transition-all duration-300 hover:-translate-y-1">
+            <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-indigo-500 to-violet-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <CardHeader className="pb-2 pt-6">
+              <CardDescription className="text-slate-500 dark:text-slate-400 text-xs font-bold tracking-wider uppercase font-cairo">
                 {t("subscription.avgSubFee")}
               </CardDescription>
-              <CardTitle className="text-3xl font-bold font-cairo text-slate-800 dark:text-slate-100 flex items-center justify-between">
+              <CardTitle className="text-4xl font-black font-cairo text-slate-800 dark:text-slate-100 flex items-center justify-between mt-2">
                 {loading ? (
-                  <Skeleton className="h-9 w-24" />
+                  <Skeleton className="h-10 w-28" />
                 ) : (
-                  <span>
-                    {stats.avgSubPrice} <span className="text-sm font-medium">{t("subscription.egpPerMonth")}</span>
+                  <span className="flex items-baseline gap-1">
+                    {stats.avgSubPrice} <span className="text-sm font-bold text-slate-400">{t("subscription.egpPerMonth")}</span>
                   </span>
                 )}
-                <DollarSign className="text-indigo-500/80" size={24} />
+                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl">
+                  <DollarSign className="text-indigo-600 dark:text-indigo-400" size={24} strokeWidth={2.5} />
+                </div>
               </CardTitle>
             </CardHeader>
           </Card>
 
-          <Card className="border-none shadow-md bg-white dark:bg-slate-900 overflow-hidden relative">
-            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-amber-500 to-orange-500" />
-            <CardHeader className="pb-2">
-              <CardDescription className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase">
+          <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(255,255,255,0.01)] bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl overflow-hidden relative group transition-all duration-300 hover:-translate-y-1">
+            <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-amber-400 to-orange-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <CardHeader className="pb-2 pt-6">
+              <CardDescription className="text-slate-500 dark:text-slate-400 text-xs font-bold tracking-wider uppercase font-cairo">
                 {t("subscription.freeTrialSupport")}
               </CardDescription>
-              <CardTitle className="text-3xl font-bold font-cairo text-slate-800 dark:text-slate-100 flex items-center justify-between">
-                {loading ? <Skeleton className="h-9 w-16" /> : stats.withTrial}
-                <Clock className="text-amber-500/80" size={24} />
+              <CardTitle className="text-4xl font-black font-cairo text-slate-800 dark:text-slate-100 flex items-center justify-between mt-2">
+                {loading ? <Skeleton className="h-10 w-20" /> : stats.withTrial}
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
+                  <Clock className="text-amber-600 dark:text-amber-400" size={24} strokeWidth={2.5} />
+                </div>
               </CardTitle>
             </CardHeader>
           </Card>
@@ -357,7 +467,7 @@ export default function AppPricingSheet() {
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
                 <Input
                   type="text"
-                  placeholder={t("subscription.searchPlaceholder")}
+                  placeholder={t("subscription.searchPlaceholder") as string}
                   className="pr-10 pl-4 border-slate-200 dark:border-slate-800 dark:bg-slate-950 font-cairo"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -366,8 +476,18 @@ export default function AppPricingSheet() {
 
               {/* Filters dropdown & view selector */}
               <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                {/* Pricing Model Filter */}
-                <div className="flex items-center gap-2">
+                {/* Pricing Model Filter (Modern Tabs) */}
+                <Tabs value={selectedPricingModel} onValueChange={setSelectedPricingModel} className="hidden lg:block">
+                  <TabsList className="h-9">
+                    <TabsTrigger value="ALL" className="font-cairo text-xs px-3">{t("subscription.all", "الكل")}</TabsTrigger>
+                    <TabsTrigger value="FREE" className="font-cairo text-xs px-3">{t("subscription.free", "مجاني")}</TabsTrigger>
+                    <TabsTrigger value="SUBSCRIPTION" className="font-cairo text-xs px-3">{t("subscription.subscription", "اشتراك")}</TabsTrigger>
+                    <TabsTrigger value="PAY_PER_USE" className="font-cairo text-xs px-3">{t("subscription.payAsYouGo", "حسب الاستخدام")}</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                
+                {/* Mobile Fallback for Pricing Model */}
+                <div className="lg:hidden flex items-center gap-2">
                   <span className="text-sm font-medium text-slate-600 dark:text-slate-400 font-cairo">
                     {t("subscription.pricingLabel")}
                   </span>
@@ -438,14 +558,23 @@ export default function AppPricingSheet() {
             </div>
           </Card>
         ) : processedApps.length === 0 ? (
-          <Card className="border-none shadow-md bg-white dark:bg-slate-900 py-16 text-center">
-            <Package className="mx-auto text-slate-300 dark:text-slate-700 mb-4" size={64} />
-            <CardTitle className="text-xl font-bold font-cairo mb-2 text-slate-800 dark:text-slate-200">
-              {t("subscription.noResultsFound")}
+          <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm py-20 text-center border border-slate-200 dark:border-slate-800 border-dashed">
+            <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+              <Search className="text-slate-400 dark:text-slate-500" size={32} />
+            </div>
+            <CardTitle className="text-2xl font-bold font-cairo mb-3 text-slate-800 dark:text-slate-200">
+              {t("subscription.noResultsFound", "لا توجد نتائج")}
             </CardTitle>
-            <CardDescription className="font-cairo">
-              {t("subscription.noResultsHint")}
+            <CardDescription className="font-cairo text-base max-w-md mx-auto text-slate-500">
+              {t("subscription.noResultsHint", "جرب تغيير كلمات البحث أو تعديل الفلاتر للوصول إلى التطبيق المطلوب.")}
             </CardDescription>
+            <Button 
+              variant="outline" 
+              className="mt-6 font-cairo text-indigo-600 border-indigo-200 hover:bg-indigo-50 dark:text-indigo-400 dark:border-indigo-800 dark:hover:bg-indigo-900/30" 
+              onClick={() => { setSearchQuery(""); setSelectedCategory("ALL"); setSelectedPricingModel("ALL"); }}
+            >
+              {t("common.clearFilters", "مسح الفلاتر")}
+            </Button>
           </Card>
         ) : viewMode === "sheet" ? (
           /* Excel-like Table View */
@@ -503,6 +632,9 @@ export default function AppPricingSheet() {
                       {t("subscription.status")}
                     </th>
                     <th className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300 font-cairo text-center">
+                      {t("subscription.active", "مفعّل")}
+                    </th>
+                    <th className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300 font-cairo text-center">
                       {t("subscription.action")}
                     </th>
                   </tr>
@@ -511,19 +643,34 @@ export default function AppPricingSheet() {
                   {processedApps.map((app, idx) => (
                     <tr
                       key={app.id}
-                      className={`hover:bg-indigo-50/20 dark:hover:bg-indigo-950/10 transition-colors ${
+                      className={`group hover:bg-indigo-50/20 dark:hover:bg-indigo-950/10 transition-colors ${
                         idx % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-slate-50/30 dark:bg-slate-900/40"
                       }`}
                     >
                       <td className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 font-cairo">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-indigo-100/30">
+                          <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-indigo-100/30 flex-shrink-0">
                             <Layers size={18} />
                           </div>
                           <div>
                             <div className="text-sm font-bold">{i18n.language === "ar" ? app.name : app.nameEn || app.name}</div>
-                            <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                            <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-1.5">
                               {getCategoryLabel(app.category)}
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400"
+                                      onClick={(e) => copyToClipboard(app.slug, e)}
+                                    >
+                                      <Copy size={11} />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs">
+                                    {t("common.copySlug", "نسخ الـ Slug")}: {app.slug}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </div>
                           </div>
                         </div>
@@ -593,18 +740,80 @@ export default function AppPricingSheet() {
                           </Badge>
                         )}
                       </td>
+                      {/* Quick Active Toggle Column */}
                       <td className="px-6 py-4 text-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-bold font-cairo hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20"
-                          onClick={() => window.open(`/marketplace?app=${app.slug}`, '_blank')}
-                        >
-                          <span className="flex items-center gap-1.5">
-                            {t("subscription.details")}
-                            <ExternalLink size={12} />
+                        <div className="flex flex-col items-center gap-1.5">
+                          {/* Glowing Status Badge */}
+                          <span className={`inline-flex items-center gap-1.5 text-xs font-semibold font-cairo px-2 py-0.5 rounded-full ${
+                            app.isActive
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+                              : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500"
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              app.isActive
+                                ? "bg-emerald-500 shadow-[0_0_6px_1px_rgba(16,185,129,0.7)] animate-pulse"
+                                : "bg-slate-400"
+                            }`} />
+                            {app.isActive ? t("subscription.active", "مفعّل") : t("subscription.disabled", "موقوف")}
                           </span>
-                        </Button>
+                          {/* Quick Toggle Switch */}
+                          {user?.role === "SUPER_ADMIN" && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Switch
+                                    checked={app.isActive}
+                                    onCheckedChange={() => handleToggleActive(app)}
+                                    className="data-[state=checked]:bg-emerald-500"
+                                  />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs">
+                                  {app.isActive ? t("subscription.deactivate", "إيقاف التفعيل") : t("subscription.activate", "تفعيل")}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20"
+                                  onClick={(e) => copyToClipboard(app.slug, e)}
+                                >
+                                  <Copy size={14} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs">{t("common.copySlug", "نسخ الـ Slug")}</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-bold font-cairo hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20"
+                            onClick={() => window.open(`/marketplace?app=${app.slug}`, '_blank')}
+                          >
+                            <span className="flex items-center gap-1.5">
+                              {t("subscription.details")}
+                              <ExternalLink size={12} />
+                            </span>
+                          </Button>
+                          {user?.role === "SUPER_ADMIN" && (
+                            <div className="flex items-center gap-1 border-r border-slate-200 dark:border-slate-700 pl-2 ml-2">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50" onClick={(e) => { e.stopPropagation(); handleOpenDialog(app); }}>
+                                <Pencil size={14} />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); handleDeleteApp(app.id); }}>
+                                <Trash2 size={14} />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -692,47 +901,107 @@ export default function AppPricingSheet() {
                   </CardContent>
                 </div>
 
-                <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between mt-auto">
-                  {/* Free Trial Indicators */}
-                  <div className="text-xs font-semibold font-cairo flex items-center gap-1.5">
-                    {app.trialDays > 0 ? (
-                      <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                        <Clock size={12} />
-                        {app.trialDays} {t("subscription.daysTrial")}
+                <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 mt-auto">
+                  {/* Top row: trial + active status + toggle */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-xs font-semibold font-cairo flex items-center gap-1.5">
+                      {app.trialDays > 0 ? (
+                        <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                          <Clock size={12} />
+                          {app.trialDays} {t("subscription.daysTrial")}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 dark:text-slate-500">
+                          {t("subscription.noTrialPeriod")}
+                        </span>
+                      )}
+                    </div>
+                    {/* Glowing Active Badge + Quick Toggle */}
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center gap-1.5 text-xs font-semibold font-cairo px-2 py-0.5 rounded-full ${
+                        app.isActive
+                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+                          : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500"
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                          app.isActive
+                            ? "bg-emerald-500 shadow-[0_0_6px_1px_rgba(16,185,129,0.7)] animate-pulse"
+                            : "bg-slate-400"
+                        }`} />
+                        {app.isActive ? t("subscription.active", "مفعّل") : t("subscription.disabled", "موقوف")}
                       </span>
-                    ) : (
-                      <span className="text-slate-400 dark:text-slate-500">
-                        {t("subscription.noTrialPeriod")}
-                      </span>
-                    )}
+                      {user?.role === "SUPER_ADMIN" && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Switch
+                                checked={app.isActive}
+                                onCheckedChange={() => handleToggleActive(app)}
+                                className="data-[state=checked]:bg-emerald-500 h-5 w-9"
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs font-cairo">
+                              {app.isActive ? t("subscription.deactivate", "إيقاف التفعيل") : t("subscription.activate", "تفعيل")}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Actions & Status */}
-                  <div className="flex items-center gap-3">
+                  {/* Bottom row: Actions */}
+                  <div className="flex items-center gap-2 flex-wrap">
                     {app.isInstalled && (
                       <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
                         <CheckCircle size={14} />
                         {t("subscription.installed")}
                       </span>
                     )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="font-cairo text-xs h-8 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-950/20"
-                      onClick={() => window.open(`/marketplace?app=${app.slug}`, '_blank')}
-                    >
-                      {t("subscription.manageApp")}
-                    </Button>
-                    {user?.role === "SUPER_ADMIN" && (
+                    <div className="flex items-center gap-1 ml-auto">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50/50"
+                              onClick={(e) => copyToClipboard(app.slug, e)}
+                            >
+                              <Copy size={13} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-xs">{app.slug}</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        className="font-cairo text-xs h-8 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 hover:bg-amber-50/50 dark:hover:bg-amber-950/20"
-                        onClick={() => window.open(`/super-admin/marketplace-management?tab=apps`, '_blank')}
+                        className="font-cairo text-xs h-8 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-950/20"
+                        onClick={() => window.open(`/marketplace?app=${app.slug}`, '_blank')}
                       >
-                        {t("subscription.editPricing")}
+                        {t("subscription.manageApp")}
                       </Button>
-                    )}
+                      {user?.role === "SUPER_ADMIN" && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-amber-600 dark:text-amber-400 hover:text-amber-800 hover:bg-amber-50/50"
+                            onClick={() => handleOpenDialog(app)}
+                          >
+                            <Pencil size={14} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-600 dark:text-red-400 hover:text-red-800 hover:bg-red-50/50"
+                            onClick={() => handleDeleteApp(app.id)}
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -740,6 +1009,128 @@ export default function AppPricingSheet() {
           </div>
         )}
       </div>
+      {/* Add/Edit App Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl font-cairo">
+          <DialogHeader>
+            <DialogTitle>{editingApp?.id ? t("subscription.editApp", "تعديل التطبيق") : t("subscription.addApp", "إضافة تطبيق")}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label>{t("subscription.appName", "اسم التطبيق")}</Label>
+              <Input
+                value={editingApp?.name || ""}
+                onChange={(e) => setEditingApp({ ...editingApp, name: e.target.value })}
+                placeholder="اسم التطبيق"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Slug</Label>
+              <Input
+                value={editingApp?.slug || ""}
+                onChange={(e) => setEditingApp({ ...editingApp, slug: e.target.value })}
+                placeholder="app-slug"
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>{t("subscription.description", "الوصف")}</Label>
+              <Textarea
+                value={editingApp?.description || ""}
+                onChange={(e) => setEditingApp({ ...editingApp, description: e.target.value })}
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("subscription.categoryLabel", "الفئة")}</Label>
+              <Select
+                value={editingApp?.category || "ECOMMERCE"}
+                onValueChange={(val) => setEditingApp({ ...(editingApp ?? {}), category: val })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ECOMMERCE">التجارة الإلكترونية</SelectItem>
+                  <SelectItem value="MARKETING">التسويق</SelectItem>
+                  <SelectItem value="MANAGEMENT">الإدارة</SelectItem>
+                  <SelectItem value="SHIPPING">الشحن</SelectItem>
+                  <SelectItem value="PAYMENT">الدفع</SelectItem>
+                  <SelectItem value="CUSTOMER_SERVICE">خدمة العملاء</SelectItem>
+                  <SelectItem value="SOCIAL_MEDIA">التواصل الاجتماعي</SelectItem>
+                  <SelectItem value="ANALYSIS">التحليلات</SelectItem>
+                  <SelectItem value="OTHER">أخرى</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("subscription.pricingModel", "نظام التسعير")}</Label>
+              <Select
+                value={editingApp?.pricingModel || "SUBSCRIPTION"}
+                onValueChange={(val) => setEditingApp({ ...(editingApp ?? {}), pricingModel: val })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="FREE">مجاني (Free)</SelectItem>
+                  <SelectItem value="SUBSCRIPTION">اشتراك (Subscription)</SelectItem>
+                  <SelectItem value="PAY_PER_USE">حسب الاستخدام (Pay Per Use)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {editingApp?.pricingModel === "SUBSCRIPTION" && (
+              <>
+                <div className="space-y-2">
+                  <Label>{t("subscription.monthlyPrice", "السعر الشهري")}</Label>
+                  <Input
+                    type="number"
+                    value={editingApp?.monthlyPrice || 0}
+                    onChange={(e) => setEditingApp({ ...editingApp, monthlyPrice: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("subscription.yearlyPrice", "السعر السنوي")}</Label>
+                  <Input
+                    type="number"
+                    value={editingApp?.yearlyPrice || 0}
+                    onChange={(e) => setEditingApp({ ...editingApp, yearlyPrice: Number(e.target.value) })}
+                  />
+                </div>
+              </>
+            )}
+
+            {editingApp?.pricingModel === "PAY_PER_USE" && (
+              <div className="space-y-2">
+                <Label>{t("subscription.unitPrice", "سعر الوحدة")}</Label>
+                <Input
+                  type="number"
+                  value={editingApp?.unitPrice || 0}
+                  onChange={(e) => setEditingApp({ ...editingApp, unitPrice: Number(e.target.value) })}
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>{t("subscription.freeTrial", "أيام التجربة المجانية")}</Label>
+              <Input
+                type="number"
+                value={editingApp?.trialDays || 0}
+                onChange={(e) => setEditingApp({ ...editingApp, trialDays: Number(e.target.value) })}
+              />
+            </div>
+            
+            <div className="space-y-2 md:col-span-2 flex items-center gap-2 pt-4">
+              <Switch
+                checked={editingApp?.isActive ?? true}
+                onCheckedChange={(val) => setEditingApp({ ...editingApp, isActive: val })}
+              />
+              <Label>{t("subscription.activeStatus", "حالة التفعيل")}</Label>
+            </div>
+
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>{t("common.cancel", "إلغاء")}</Button>
+            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleSaveApp}>{t("common.save", "حفظ")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
