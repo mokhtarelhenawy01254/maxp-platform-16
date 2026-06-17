@@ -2588,7 +2588,7 @@ const getCompanyRoles = async (req, res) => {
       const dbRoles = await getSharedPrismaClient().role.findMany({
         where: {
           OR: [
-            { companyId: null, isBuiltIn: true },
+            { companyId: '__system__', isBuiltIn: true },
             { companyId },
           ],
           isActive: true,

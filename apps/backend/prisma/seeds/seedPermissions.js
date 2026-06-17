@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('../generated/postgresql_v2');
 const prisma = new PrismaClient();
 
 const PERMISSIONS = [
@@ -239,23 +239,32 @@ async function seed() {
 
   // Upsert built-in roles (no companyId = global)
   for (const [key, role] of Object.entries(BUILT_IN_ROLES)) {
-    const dbRole = await prisma.role.upsert({
-      where: { key_companyId: { key, companyId: null } },
-      create: {
-        key,
-        name: role.name,
-        description: role.description,
-        priority: role.priority,
-        isBuiltIn: true,
-        isSystem: role.isSystem,
-        companyId: null,
-      },
-      update: {
-        name: role.name,
-        description: role.description,
-        priority: role.priority,
-      },
+    let dbRole = await prisma.role.findFirst({
+      where: { key, companyId: null },
     });
+
+    if (dbRole) {
+      dbRole = await prisma.role.update({
+        where: { id: dbRole.id },
+        data: {
+          name: role.name,
+          description: role.description,
+          priority: role.priority,
+        },
+      });
+    } else {
+      dbRole = await prisma.role.create({
+        data: {
+          key,
+          name: role.name,
+          description: role.description,
+          priority: role.priority,
+          isBuiltIn: true,
+          isSystem: role.isSystem,
+          companyId: '__system__',
+        },
+      });
+    }
 
     // Set permissions for this role
     const permIds = role.permissions.map(pk => permissionMap[pk]).filter(Boolean);

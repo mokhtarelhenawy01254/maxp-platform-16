@@ -88,7 +88,7 @@ describe('permissionService', () => {
       expect(mockPrisma.role.findMany).toHaveBeenCalledWith({
         where: {
           OR: [
-            { companyId: null, isBuiltIn: true },
+            { companyId: '__system__', isBuiltIn: true },
             { companyId: 'company-1' },
           ],
           isActive: true,

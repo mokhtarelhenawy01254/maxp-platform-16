@@ -111,9 +111,9 @@ export default function ChannelRoutingPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const activeAgents = agents.filter((a) => a.status === "ACTIVE");
+      const agentMap = new Map(agents.filter((a) => a.status === "ACTIVE").map((a) => [a.id, { ...a }]));
       for (const config of channelConfigs) {
-        const prevAgent = activeAgents.find((a) =>
+        const prevAgent = [...agentMap.values()].find((a) =>
           (a.allowedChannels || []).map((c) => c.toUpperCase()).includes(config.channel)
         );
         if (prevAgent && prevAgent.id !== config.agentId) {
@@ -124,16 +124,19 @@ export default function ChannelRoutingPage() {
             method: "PUT",
             body: JSON.stringify({ allowedChannels: updated }),
           });
+          agentMap.set(prevAgent.id, { ...prevAgent, allowedChannels: updated });
         }
         if (config.agentId) {
-          const target = activeAgents.find((a) => a.id === config.agentId);
+          const target = agentMap.get(config.agentId);
           if (target) {
             const current = (target.allowedChannels || []).map((c) => c.toUpperCase());
             if (!current.includes(config.channel)) {
+              const updated = [...(target.allowedChannels || []), config.channel];
               await apiFetch(`/agent-manager/agents/${config.agentId}`, {
                 method: "PUT",
-                body: JSON.stringify({ allowedChannels: [...(target.allowedChannels || []), config.channel] }),
+                body: JSON.stringify({ allowedChannels: updated }),
               });
+              agentMap.set(config.agentId, { ...target, allowedChannels: updated });
             }
           }
         }

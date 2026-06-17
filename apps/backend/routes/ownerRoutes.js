@@ -7,7 +7,6 @@ const express = require('express');
 const router = express.Router();
 const ownerController = require('../controller/ownerController');
 const verifyToken = require("../utils/verifyToken");
-const verifyToken = require('../utils/verifyToken');
 const { cacheMiddleware } = require('../middleware/performanceOptimization');
 
 // Middleware to ensure user is OWNER of at least one company

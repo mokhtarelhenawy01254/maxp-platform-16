@@ -385,7 +385,6 @@ async def build_intent_contract_async(
         policy_plan.intent = classifier_result.intent
         source = "llm-classifier"
         config = INTENT_CONFIGURED_TOOLS.get(classifier_result.intent)
-        logger.info("intent_classification_debug", intent=classifier_result.intent, available_tools_count=len(available_tools), available_tools_sample=available_tools[:20] if available_tools else [], config_exists=bool(INTENT_CONFIGURED_TOOLS.get(classifier_result.intent)))
 
         if config:
             filtered_allowed = _filter_available(config["allowedTools"], available_tools)
