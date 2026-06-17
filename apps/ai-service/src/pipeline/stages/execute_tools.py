@@ -496,12 +496,13 @@ async def execute_tools(ctx: PipelineContext) -> PipelineContext:
                     "[Tool Results]\n"
                     f"{ctx.tool_context}"
                     "[/Tool Results]\n\n"
-                    "Generate the customer-facing reply from these structured results. "
-                    "Do not invent data that is not present. "
-                    "If the customer asked for a product photo and the tool results include image URL fields such as images or mainImage, "
-                    "include the best image URL in the reply, preferably as a Markdown image like ![product image](url) when the channel can render it; "
-                    "do not say images cannot be sent when an image URL is present. "
-                    "If the latest customer message did not ask for a product photo, do not include image URLs or Markdown images even if tool results contain image fields. "
+"Generate the customer-facing reply from these structured results. "
+"Do not invent data that is not present. "
+"If the tool results include product image URL fields such as images or mainImage, "
+"include the best image URL in the reply when the customer is asking about or interested in a specific product — "
+"preferably as a Markdown image like ![product image](url) when the channel can render it; "
+"do not say images cannot be sent when an image URL is present. "
+"Avoid including image URLs only when the request is purely about price, stock count, size, or availability without any visual interest."
                     "If any tool result status is awaiting_approval, explain naturally that the requested action is pending review or approval, "
                     "summarize only the structured action arguments, and do not ask for extra optional details unless the result explicitly contains missingFields or NEEDS_MORE_INFO. "
                     "Never expose raw JSON, tool names, internal status codes, or field keys to the customer."
@@ -523,7 +524,7 @@ async def execute_tools(ctx: PipelineContext) -> PipelineContext:
                             "You write final customer-facing chat replies. Return plain text only. "
                             "No JSON, no tool calls, no function calls, no internal reasoning. "
                             "Use the customer's language and summarize only the provided tool results. "
-                            "If product image URL fields are present and the customer asked for a photo, include the image URL or a Markdown image."
+                            "If product image URL fields are present, include the image URL or a Markdown image when relevant to the customer's request."
                         ],
                     ),
                     Message(role="user", contents=[ctx.message]),
