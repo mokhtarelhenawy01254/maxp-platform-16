@@ -7,7 +7,7 @@ on:
   workflow_dispatch: # للسماح بالتشغيل اليدوي
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
   SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
 
 concurrency:
