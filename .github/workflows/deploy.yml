@@ -201,11 +201,21 @@ jobs:
 
           # Fast pre-flight: confirm TCP port is reachable before spending time on SSH handshake
           echo "🔌 Checking TCP reachability of $SERVER_HOST:$SERVER_SSH_PORT ..."
-          if ! nc -z -w 10 "$SERVER_HOST" "$SERVER_SSH_PORT" 2>/dev/null; then
+          if command -v nc &>/dev/null; then
+            NC_OK=true
+          else
+            NC_OK=false
+          fi
+          TCP_REACHABLE=false
+          if [ "$NC_OK" = true ] && nc -z -w 10 "$SERVER_HOST" "$SERVER_SSH_PORT" 2>/dev/null; then
+            TCP_REACHABLE=true
+          elif timeout 10 bash -c "echo >/dev/tcp/$SERVER_HOST/$SERVER_SSH_PORT" 2>/dev/null; then
+            TCP_REACHABLE=true
+          fi
+          if [ "$TCP_REACHABLE" = false ]; then
             echo "❌ Cannot reach $SERVER_HOST port $SERVER_SSH_PORT (firewall is blocking the connection)."
-            echo "   Fix: SSH into the server manually and run:"
-            echo "     sudo ufw allow $SERVER_SSH_PORT/tcp && sudo ufw reload"
-            echo "   Then re-run this workflow."
+            echo "   If you know the server is reachable, add the runner's IP to the firewall."
+            echo "   Or SSH into the server and run: sudo ufw allow $SERVER_SSH_PORT/tcp && sudo ufw reload"
             exit 1
           fi
           echo "✅ TCP port $SERVER_SSH_PORT is reachable."
