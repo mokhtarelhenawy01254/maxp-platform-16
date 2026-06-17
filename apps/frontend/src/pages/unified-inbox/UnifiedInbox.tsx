@@ -221,6 +221,8 @@ const UnifiedInbox: React.FC = () => {
   const [showImageGallery, setShowImageGallery] = useState(false);
   const [showForwardModal, setShowForwardModal] = useState(false);
   const [forwardMessage, setForwardMessage] = useState<any>(null);
+  const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
+  const [replyToMsg, setReplyToMsg] = useState<UnifiedMessage | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -422,6 +424,43 @@ const UnifiedInbox: React.FC = () => {
     setShowTextGallery(false);
   }, []);
 
+  const handleMsgStar = useCallback(async (msgId: string) => {
+    if (!selectedConversation) return;
+    try {
+      await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}/messages/${msgId}/star`);
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, status: m.status } : m));
+    } catch (err) {
+      console.error("Error starring message:", err);
+    }
+  }, [selectedConversation]);
+
+  const handleMsgReact = useCallback(async (msgId: string, reaction: string) => {
+    if (!selectedConversation) return;
+    try {
+      await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}/messages/${msgId}/reaction`, { reaction });
+    } catch (err) {
+      console.error("Error reacting to message:", err);
+    }
+  }, [selectedConversation]);
+
+  const handleMsgDelete = useCallback(async (msgId: string) => {
+    if (!selectedConversation) return;
+    try {
+      await apiClient.delete(`/api/v1/unified-inbox/conversations/${selectedConversation.id}/messages/${msgId}`);
+      setMessages(prev => prev.filter(m => m.id !== msgId));
+    } catch (err) {
+      console.error("Error deleting message:", err);
+    }
+  }, [selectedConversation]);
+
+  const handleMsgReply = useCallback((msg: UnifiedMessage) => {
+    setReplyToMsg(msg);
+  }, []);
+
+  const handleCancelReply = useCallback(() => {
+    setReplyToMsg(null);
+  }, []);
+
   const handleImageGallerySelect = useCallback((imageUrl: string, filename: string) => {
     setAttachedFile({ url: imageUrl, name: filename, type: "image" });
     setShowImageGallery(false);
@@ -574,6 +613,11 @@ const UnifiedInbox: React.FC = () => {
         platform: selectedConversation.platform,
       };
 
+      if (replyToMsg) {
+        body.quotedMessageId = replyToMsg.id;
+        body.quotedContent = replyToMsg.content;
+      }
+
       if (attachedFile) {
         body.type = attachedFile.type;
         body.mediaUrl = attachedFile.url;
@@ -597,6 +641,7 @@ const UnifiedInbox: React.FC = () => {
         setMessages((prev) => [...prev, response.data.data]);
         setNewMessage("");
         setAttachedFile(null);
+        setReplyToMsg(null);
         setTimeout(() => scrollToBottom(), 100);
 
         // Update conversation preview
@@ -1400,8 +1445,67 @@ const UnifiedInbox: React.FC = () => {
                           )}
 
                           <div
-                            className={`flex ${msg.isFromCustomer ? "justify-start" : "justify-end"}`}
+                            className={`flex items-start gap-1 group ${msg.isFromCustomer ? "justify-start" : "justify-end flex-row-reverse"}`}
+                            onMouseEnter={() => setHoveredMsgId(msg.id)}
+                            onMouseLeave={() => setHoveredMsgId(null)}
                           >
+                            {/* Action buttons on hover */}
+                            {hoveredMsgId === msg.id && (
+                              <div
+                                className={`flex items-center gap-0.5 py-1 px-1.5 rounded-full shadow-sm backdrop-blur-sm ${isRtl ? "order-first" : ""}`}
+                                style={{
+                                  background:
+                                    "color-mix(in srgb, var(--color-background) 92%, var(--shell-control-bg) 8%)",
+                                  border: "1px solid var(--business-card-border)",
+                                }}
+                              >
+                                {msg.isFromCustomer && (
+                                  <button
+                                    onClick={() => handleMsgReply(msg)}
+                                    className="business-icon-button business-icon-button--sm"
+                                    aria-label={t("unifiedInbox.reply")}
+                                    style={{ fontSize: 14 }}
+                                  >
+                                    ↩
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleMsgReact(msg.id, "👍")}
+                                  className="business-icon-button business-icon-button--sm"
+                                  aria-label={t("unifiedInbox.addReaction")}
+                                  style={{ fontSize: 14 }}
+                                >
+                                  😊
+                                </button>
+                                <button
+                                  onClick={() => handleMsgStar(msg.id)}
+                                  className="business-icon-button business-icon-button--sm"
+                                  aria-label={t("unifiedInbox.starMessage")}
+                                  style={{ fontSize: 14 }}
+                                >
+                                  ⭐
+                                </button>
+                                <button
+                                  onClick={() => { setForwardMessage(msg); setShowForwardModal(true); }}
+                                  className="business-icon-button business-icon-button--sm"
+                                  aria-label={t("unifiedInbox.forward")}
+                                  style={{ fontSize: 14 }}
+                                >
+                                  ↗
+                                </button>
+                                {!msg.isFromCustomer && (
+                                  <button
+                                    onClick={() => handleMsgDelete(msg.id)}
+                                    className="business-icon-button business-icon-button--sm"
+                                    aria-label={t("unifiedInbox.deleteMessage")}
+                                    style={{ fontSize: 14, color: "var(--business-danger)" }}
+                                  >
+                                    🗑
+                                  </button>
+                                )}
+                              </div>
+                            )}
+
                             <div
                               className="max-w-[75%] rounded-2xl px-4 py-2.5 shadow-sm"
                               style={
@@ -1628,6 +1732,23 @@ const UnifiedInbox: React.FC = () => {
                     width="100%"
                     height={350}
                   />
+                </div>
+              )}
+
+              {/* Reply Preview */}
+              {replyToMsg && (
+                <div className="px-5 py-2 flex items-center gap-2" style={{ borderTop: '1px solid var(--business-card-border)', background: 'color-mix(in srgb, var(--color-primary) 5%, var(--color-background))' }}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium" style={{ color: 'var(--color-primary)' }}>
+                      {t("unifiedInbox.replyingTo")}
+                    </p>
+                    <p className="text-xs truncate" style={{ color: 'var(--color-muted-foreground)' }}>
+                      {replyToMsg.content?.substring(0, 80) || t("unifiedInbox.mediaAttachment")}
+                    </p>
+                  </div>
+                  <button onClick={handleCancelReply} className="business-chip-button shrink-0" aria-label={t("unifiedInbox.cancel")}>
+                    <XMarkIcon className="w-4 h-4" aria-hidden="true" />
+                  </button>
                 </div>
               )}
 
