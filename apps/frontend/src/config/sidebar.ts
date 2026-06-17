@@ -59,6 +59,7 @@ import {
     TrophyIcon,
     ArrowsRightLeftIcon,
     AcademicCapIcon,
+    LightBulbIcon,
 } from '@heroicons/react/24/outline';
 
 import i18n from '../i18n';
@@ -974,6 +975,7 @@ export const getSidebarConfig = (
                 { to: '/admin/ai-hub?tab=tools', icon: WrenchScrewdriverIcon, label: t('sidebar.aiAgentTools') },
                 { to: '/admin/agent-manager', icon: SparklesIcon, label: t('sidebar.agentManager') },
                 { to: '/admin/ai-chat', icon: ChatBubbleLeftRightIcon, label: t('sidebar.ceoAgentChat') },
+                { to: '/admin/ai-knowledge-questions', icon: LightBulbIcon, label: t('sidebar.aiKnowledgeQuestions') },
                 { to: '/admin/ai-hub?tab=rag', icon: BeakerIcon, label: t('sidebar.aiRagLab') },
                 { to: '/admin/ai-hub?tab=sandbox', icon: BeakerIcon, label: t('sidebar.aiAgentSandbox') },
                 { to: '/admin/faqs', icon: QuestionMarkCircleIcon, label: t('sidebar.faqs') },

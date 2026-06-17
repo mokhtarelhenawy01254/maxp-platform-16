@@ -63,6 +63,7 @@ CORE_TOOL_NAMES: set[str] = {
     "knowledge_search",
     "agent_handoff_to",
     "unlock_advanced_tools",
+    "knowledge_ask_merchant",
 }
 
 ADVANCED_TOOL_NAMES: set[str] = {

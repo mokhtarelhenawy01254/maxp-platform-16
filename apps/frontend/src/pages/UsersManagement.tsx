@@ -83,15 +83,16 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { TooltipProvider } from "../components/ui/tooltip";
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import {
   BusinessFilterSheet,
   BusinessMobileSearchPanel,
 } from "../components/business/BusinessFilters";
-import { BusinessMetricsStrip } from "../components/business/BusinessMetrics";
-import {
-  BusinessPageHero,
-  BusinessPageShell,
-  BusinessSectionPanel,
-} from "../components/business/BusinessSurface";
 import { useAuth } from "../hooks/useAuthSimple";
 import { cn } from "../lib/utils";
 import { getProtectedUserActionMessage } from "../utils/usersManagementGuards";
@@ -1260,8 +1261,8 @@ const UsersManagement: React.FC = () => {
 
   if (!user?.companyId) {
     return (
-      <BusinessPageShell>
-        <Alert variant="destructive" className="border-0">
+      <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto">
+        <Alert variant="destructive">
           <AlertTriangle />
           <AlertTitle>هذه الصفحة غير متاحة</AlertTitle>
           <AlertDescription>
@@ -1269,37 +1270,36 @@ const UsersManagement: React.FC = () => {
             المستخدمين.
           </AlertDescription>
         </Alert>
-      </BusinessPageShell>
+      </div>
     );
   }
 
   return (
     <TooltipProvider>
-      <BusinessPageShell className="space-y-6">
-        <BusinessPageHero
-          eyebrow="TEAM · ACCESS"
-          title={t("users.title")}
-          description="لوحة موحدة لإضافة المستخدمين، متابعة الدعوات، والتحكم في صلاحيات الفريق من نفس المكان."
-          actions={
-            <div className="flex w-full flex-wrap justify-end gap-2">
-              <Button type="button" className="h-11 rounded-2xl" onClick={openAddUser} disabled={!canAddUser}>
-                <Plus className="size-4" />
-                {t("users.addNewUser")}
-              </Button>
-              <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={openInviteDialog} disabled={!canAddUser}>
-                <UserPlus className="size-4" />
-                {t("users.inviteUser")}
-              </Button>
-              <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={exportCurrentUsers} disabled={users.length === 0}>
-                <ArrowDownToLine className="size-4" />
-                تصدير CSV
-              </Button>
-            </div>
-          }
-        />
+      <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("users.title")}</h1>
+            <p className="text-sm text-muted-foreground">لوحة موحدة لإضافة المستخدمين، متابعة الدعوات، والتحكم في صلاحيات الفريق من نفس المكان.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" className="h-11 rounded-2xl" onClick={openAddUser} disabled={!canAddUser}>
+              <Plus className="size-4" />
+              {t("users.addNewUser")}
+            </Button>
+            <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={openInviteDialog} disabled={!canAddUser}>
+              <UserPlus className="size-4" />
+              {t("users.inviteUser")}
+            </Button>
+            <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={exportCurrentUsers} disabled={users.length === 0}>
+              <ArrowDownToLine className="size-4" />
+              تصدير CSV
+            </Button>
+          </div>
+        </div>
 
         {planUsage && planUsage.limit !== -1 && usagePercentage >= 80 ? (
-          <Alert variant={usagePercentage >= 95 ? "destructive" : "default"} className="business-page-panel border-0 shadow-none">
+          <Alert variant={usagePercentage >= 95 ? "destructive" : "default"}>
             <AlertTriangle />
             <AlertTitle>
               {usagePercentage >= 95
@@ -1329,7 +1329,7 @@ const UsersManagement: React.FC = () => {
         ) : null}
 
         {error ? (
-          <Alert variant="destructive" className="business-page-panel border-0 shadow-none">
+          <Alert variant="destructive">
             <AlertTriangle />
             <AlertTitle>فيه مشكلة محتاجة مراجعة</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
@@ -1341,7 +1341,25 @@ const UsersManagement: React.FC = () => {
           </Alert>
         ) : null}
 
-        <BusinessMetricsStrip items={metrics} />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {metrics.map((m) => {
+            const Icon = m.icon;
+            return (
+              <div key={m.title} className="rounded-2xl border border-border/50 bg-card p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm text-muted-foreground">{m.title}</p>
+                    <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{m.value}</p>
+                  </div>
+                  <div className="rounded-xl bg-muted/50 p-2.5">
+                    <Icon className="size-5" />
+                  </div>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{m.subtitle}</p>
+              </div>
+            );
+          })}
+        </div>
 
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value === "invitations" ? "invitations" : "users")} className="gap-4">
           <TabsList className="w-full justify-start overflow-x-auto rounded-2xl bg-muted/60 p-1">
@@ -1362,28 +1380,29 @@ const UsersManagement: React.FC = () => {
 
           <TabsContent value="users" className="space-y-4">
             {selectedUsers.length > 0 ? (
-              <BusinessSectionPanel
-                title={`تم تحديد ${selectedUsers.length} مستخدم`}
-                description="الإجراءات التالية ستُطبق على العناصر المحددة في الصفحة الحالية."
-                className="border-0 shadow-none"
-                contentClassName="space-y-4 p-4"
-              >
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="outline" onClick={() => void handleBulkToggle(true)}>
-                    تفعيل
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => void handleBulkToggle(false)}>
-                    تعطيل
-                  </Button>
-                  <Button type="button" variant="destructive" onClick={() => setPendingAction({ kind: "bulk-delete", count: selectedUsers.length })}>
-                    <Trash2 className="size-4" />
-                    حذف المحدد
-                  </Button>
-                  <Button type="button" variant="ghost" onClick={() => setSelectedUsers([])}>
-                    إلغاء التحديد
-                  </Button>
-                </div>
-              </BusinessSectionPanel>
+              <Card>
+                <CardHeader>
+                  <CardTitle>{`تم تحديد ${selectedUsers.length} مستخدم`}</CardTitle>
+                  <CardDescription>الإجراءات التالية ستُطبق على العناصر المحددة في الصفحة الحالية.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="outline" onClick={() => void handleBulkToggle(true)}>
+                      تفعيل
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => void handleBulkToggle(false)}>
+                      تعطيل
+                    </Button>
+                    <Button type="button" variant="destructive" onClick={() => setPendingAction({ kind: "bulk-delete", count: selectedUsers.length })}>
+                      <Trash2 className="size-4" />
+                      حذف المحدد
+                    </Button>
+                    <Button type="button" variant="ghost" onClick={() => setSelectedUsers([])}>
+                      إلغاء التحديد
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             ) : null}
 
             <BusinessMobileSearchPanel
@@ -1474,18 +1493,18 @@ const UsersManagement: React.FC = () => {
               </FormField>
             </BusinessFilterSheet>
 
-            <BusinessSectionPanel
-              title={`قائمة المستخدمين (${totalCount})`}
-              description="واجهة مركزة لإدارة الحسابات بدون ازدحام، مع نسخة موبايل أقرب لتجربة التطبيقات."
-              className="border-0 shadow-none"
-              headerAside={
+            <Card>
+              <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <CardTitle>{`قائمة المستخدمين (${totalCount})`}</CardTitle>
+                  <CardDescription>واجهة مركزة لإدارة الحسابات بدون ازدحام، مع نسخة موبايل أقرب لتجربة التطبيقات.</CardDescription>
+                </div>
                 <Button type="button" variant="outline" className="h-10 rounded-2xl" onClick={() => void fetchUsers()}>
                   <RefreshCw className={cn("size-4", loading ? "animate-spin" : undefined)} />
                   تحديث
                 </Button>
-              }
-              contentClassName="space-y-4 p-4 md:p-5"
-            >
+              </CardHeader>
+              <CardContent className="space-y-4">
               {isInitialLoading ? (
                 <div className="flex min-h-[18rem] items-center justify-center">
                   <Loader2 className="size-6 animate-spin text-muted-foreground" />
@@ -1707,22 +1726,23 @@ const UsersManagement: React.FC = () => {
                   </div>
                 </>
               )}
-            </BusinessSectionPanel>
+            </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="invitations" className="space-y-4">
-            <BusinessSectionPanel
-              title={`الدعوات المعلقة (${invitations.length})`}
-              description="متابعة الدعوات المرسلة، نسخ الرابط، أو إعادة الإرسال والإلغاء من شاشة واحدة."
-              className="border-0 shadow-none"
-              headerAside={
+            <Card>
+              <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <CardTitle>{`الدعوات المعلقة (${invitations.length})`}</CardTitle>
+                  <CardDescription>متابعة الدعوات المرسلة، نسخ الرابط، أو إعادة الإرسال والإلغاء من شاشة واحدة.</CardDescription>
+                </div>
                 <Button type="button" variant="outline" className="h-10 rounded-2xl" onClick={() => void fetchInvitations()}>
                   <RefreshCw className={cn("size-4", invitationsLoading ? "animate-spin" : undefined)} />
                   تحديث
                 </Button>
-              }
-              contentClassName="space-y-4 p-4 md:p-5"
-            >
+              </CardHeader>
+              <CardContent className="space-y-4">
               {invitationsLoading ? (
                 <div className="flex min-h-[14rem] items-center justify-center">
                   <Loader2 className="size-6 animate-spin text-muted-foreground" />
@@ -1792,7 +1812,8 @@ const UsersManagement: React.FC = () => {
                   })}
                 </div>
               )}
-            </BusinessSectionPanel>
+            </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 
@@ -2077,7 +2098,7 @@ const UsersManagement: React.FC = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </BusinessPageShell>
+      </div>
     </TooltipProvider>
   );
 };

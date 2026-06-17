@@ -167,11 +167,92 @@ async function consolidateDreamer({ companyId, conversations, consolidationType 
   return await response.json();
 }
 
+/**
+ * List knowledge questions from Python AI service.
+ * @param {Object} params
+ * @param {string} params.companyId
+ * @param {string} [params.status="pending"]
+ * @returns {Promise<{questions: Array, count: number}>}
+ */
+async function listKnowledgeQuestions({ companyId, status = "pending" }) {
+  const url = new URL(`/knowledge-questions?status=${encodeURIComponent(status)}`, getAiServiceUrl());
+  const token = getAiServiceToken();
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Company-Id': companyId,
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`AI service knowledge-questions error ${response.status}: ${text}`);
+  }
+  const data = await response.json();
+  return { questions: data.questions || [], count: data.count || 0 };
+}
+
+/**
+ * Count pending knowledge questions.
+ * @param {Object} params
+ * @param {string} params.companyId
+ * @returns {Promise<{count: number}>}
+ */
+async function countPendingKnowledgeQuestions({ companyId }) {
+  const url = new URL('/knowledge-questions/count', getAiServiceUrl());
+  const token = getAiServiceToken();
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Company-Id': companyId,
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`AI service knowledge-questions count error ${response.status}: ${text}`);
+  }
+  const data = await response.json();
+  return { count: data.count || 0 };
+}
+
+/**
+ * Answer a knowledge question.
+ * @param {Object} params
+ * @param {string} params.companyId
+ * @param {string} params.questionId
+ * @param {string} params.answer
+ * @returns {Promise<Object>}
+ */
+async function answerKnowledgeQuestion({ companyId, questionId, answer }) {
+  const url = new URL(`/knowledge-questions/${encodeURIComponent(questionId)}/answer`, getAiServiceUrl());
+  const token = getAiServiceToken();
+  const response = await fetch(url.toString(), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Company-Id': companyId,
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ answer }),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`AI service answer knowledge-question error ${response.status}: ${text}`);
+  }
+  return await response.json();
+}
+
 module.exports = {
   sendChatMessage,
   resumeWorkflow,
   healthCheck,
   listApprovals,
+  listKnowledgeQuestions,
+  countPendingKnowledgeQuestions,
+  answerKnowledgeQuestion,
   consolidateDreamer,
   normalizeAiServiceResponse,
 };

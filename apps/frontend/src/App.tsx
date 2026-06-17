@@ -792,6 +792,9 @@ const SubAgentsPage = React.lazy(
 const AIAgentSandboxPage = React.lazy(
   () => import("./pages/admin/ai-agent-sandbox/AIAgentSandboxPage"),
 );
+const AIKnowledgeQuestionsPage = React.lazy(
+  () => import("./pages/admin/AIKnowledgeQuestionsPage"),
+);
 const AgentProfilesPage = React.lazy(
   () => import("./pages/admin/agent-profiles/AgentProfilesPage"),
 );
@@ -6205,6 +6208,14 @@ const AppContent = () => {
                 <Route
                   path="/admin/ai-scheduler"
                   element={<Navigate to="/admin/ai-hub?tab=scheduler" replace />}
+                />
+                <Route
+                  path="/admin/ai-knowledge-questions"
+                  element={
+                    <Layout fullWidth>
+                      <AIKnowledgeQuestionsPage />
+                    </Layout>
+                  }
                 />
                 {/* Catch-all for authenticated users */}
                 <Route path="*" element={<Navigate to="/apps" replace />} />
