@@ -810,7 +810,7 @@ const UnifiedInbox: React.FC = () => {
   // ═══════════════════════════════════════════════════════════════════════════
 
   return (
-    <div className="business-inbox-shell" dir={isRtl ? "rtl" : "ltr"}>
+    <><div className="business-inbox-shell" dir={isRtl ? "rtl" : "ltr"}>
       <div className="business-inbox-stage">
         {/* ═══════════════════════════════════════════════════════════════════ */}
         {/* COLUMN 1 — Conversation List */}
@@ -2327,7 +2327,7 @@ const UnifiedInbox: React.FC = () => {
       onForward={handleForwardMessage}
       conversations={[]}
     />
-  );
+  </>);
 };
 
 export default UnifiedInbox;
