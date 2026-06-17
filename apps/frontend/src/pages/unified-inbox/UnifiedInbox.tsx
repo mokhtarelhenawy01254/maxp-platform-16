@@ -33,6 +33,7 @@ import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import { apiClient } from "../../services/apiClient";
 import { socketService } from "../../services/socketService";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import EmojiPicker from "emoji-picker-react";
 import StatsDashboard from "../../components/facebook-inbox/StatsDashboard/StatsDashboard";
 import QuickOrderModal from "../../components/facebook-inbox/Modals/QuickOrderModal";
@@ -175,6 +176,7 @@ const FlaskIcon = ({ className, style }: { className?: string; style?: React.CSS
 const UnifiedInbox: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === "rtl";
+  const navigate = useNavigate();
 
   // State
   const [conversations, setConversations] = useState<UnifiedConversation[]>([]);
@@ -841,35 +843,51 @@ const UnifiedInbox: React.FC = () => {
               />
             </div>
 
-            {/* Tabs Row */}
+            {/* App Strip */}
             <div
-              className="flex mb-2 gap-1 overflow-x-auto"
+              className="flex mb-3 gap-2 overflow-x-auto pb-1"
               style={{ flexDirection: isRtl ? "row-reverse" : "row" }}
             >
               {[
-                { id: "all", label: t("unifiedInbox.tabs.all"), count: counts.all },
-                { id: "unreplied", label: t("unifiedInbox.tabs.unreplied"), count: counts.unreplied },
-                { id: "done", label: t("unifiedInbox.tabs.done") },
-                { id: "main", label: t("unifiedInbox.tabs.main") },
-                { id: "general", label: t("unifiedInbox.tabs.general") },
-                { id: "requests", label: t("unifiedInbox.tabs.requests") },
-                { id: "spam", label: t("unifiedInbox.tabs.spam") },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className="inbox-filter-chip text-xs whitespace-nowrap"
-                  data-active={activeTab === tab.id ? "true" : "false"}
-                  style={{ padding: "0.25rem 0.6rem" }}
-                >
-                  {tab.label}
-                  {tab.count !== undefined && (
-                    <span className={`mr-1 text-[10px] ${activeTab === tab.id ? "opacity-90" : "opacity-60"}`}>
-                      {tab.count}
-                    </span>
-                  )}
-                </button>
-              ))}
+                { id: "all", label: "كل الرسائل", count: counts.all, type: 'inbox', platforms: [] },
+                { id: "messenger", label: "Messenger", count: counts.facebook, type: 'inbox', platforms: ["facebook"] },
+                { id: "instagram", label: "Instagram", count: counts.instagram, type: 'inbox', platforms: ["instagram"] },
+                { id: "whatsapp", label: "واتساب", count: counts.whatsapp > 0 ? "جديد" : 0, type: 'inbox', platforms: ["whatsapp"] },
+                { id: "fb-comments", label: "تعليقات فيسبوك", type: 'comments', platform: "facebook" },
+                { id: "ig-comments", label: "تعليقات Instagram", type: 'comments', platform: "instagram" },
+              ].map((tab) => {
+                const isActive = tab.type === 'inbox' 
+                  && ((tab.platforms.length === 0 && selectedPlatforms.length === 0) 
+                      || (tab.platforms.length > 0 && selectedPlatforms.length === 1 && selectedPlatforms[0] === tab.platforms[0]));
+                
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      if (tab.type === 'comments') {
+                        navigate(`/unified-comments?platform=${tab.platform}`);
+                      } else {
+                        setSelectedPlatforms(tab.platforms);
+                        setActiveTab("all");
+                      }
+                    }}
+                    className="inbox-filter-chip text-sm whitespace-nowrap font-semibold flex items-center"
+                    data-active={isActive ? "true" : "false"}
+                    style={{ padding: "0.4rem 0.8rem", borderRadius: "6px" }}
+                  >
+                    {tab.label}
+                    {tab.count !== undefined && tab.count !== 0 && (
+                      <span 
+                        className={`font-bold mr-2 px-1.5 py-0.5 rounded-full text-[10px] ${
+                          tab.count === 'جديد' ? 'bg-green-100 text-green-700' : 'bg-red-600 text-white'
+                        }`}
+                      >
+                        {typeof tab.count === 'number' && tab.count > 9 ? '+9' : tab.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Filter Chips Row */}
@@ -877,73 +895,6 @@ const UnifiedInbox: React.FC = () => {
               className="inbox-filter-bar relative flex items-center gap-2 mb-2"
               style={{ flexDirection: isRtl ? "row-reverse" : "row", justifyContent: isRtl ? "flex-end" : "flex-start" }}
             >
-              {/* Platform Selector Dropdown — shown first in RTL (rightmost) */}
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => setShowPlatformDropdown(prev => !prev)}
-                  className="inbox-filter-chip flex items-center gap-1.5"
-                  data-active={selectedPlatforms.length > 0 ? "true" : "false"}
-                >
-                  {isRtl ? (
-                    <>
-                      <ChevronDownIcon className={`w-3.5 h-3.5 transition-transform ${showPlatformDropdown ? "rotate-180" : ""}`} />
-                      <span>{getPlatformFilterLabel()}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>{getPlatformFilterLabel()}</span>
-                      <ChevronDownIcon className={`w-3.5 h-3.5 transition-transform ${showPlatformDropdown ? "rotate-180" : ""}`} />
-                    </>
-                  )}
-                </button>
-
-                {showPlatformDropdown && (
-                  <div
-                    className="inbox-platform-dropdown"
-                    dir={isRtl ? "rtl" : "ltr"}
-                    style={{ zIndex: 100 }}
-                  >
-                    {[
-                      { id: "facebook", label: t("unifiedInbox.platforms.facebook"), icon: FacebookIcon, color: "#1877F2" },
-                      { id: "instagram", label: t("unifiedInbox.platforms.instagram"), icon: InstagramIcon, color: "#E1306C" },
-                      { id: "whatsapp", label: t("unifiedInbox.platforms.whatsapp"), icon: WhatsAppIcon, color: "#25D366" },
-                      { id: "telegram", label: t("unifiedInbox.platforms.telegram"), icon: TelegramIcon, color: "#0088cc" },
-                      { id: "website", label: t("unifiedInbox.platforms.website"), icon: GlobeIcon, color: "#3B82F6" },
-                      { id: "test", label: t("unifiedInbox.platforms.test"), icon: FlaskIcon, color: "#F97316" }
-                    ].map((plat) => {
-                      const isChecked = selectedPlatforms.includes(plat.id);
-                      return (
-                        <div
-                          key={plat.id}
-                          className="inbox-dropdown-item"
-                          onClick={() => {
-                            setSelectedPlatforms(prev =>
-                              prev.includes(plat.id)
-                                ? prev.filter(x => x !== plat.id)
-                                : [...prev, plat.id]
-                            );
-                          }}
-                        >
-                          {isRtl ? (
-                            <>
-                              <span className="inbox-platform-text">{plat.label}</span>
-                              <plat.icon className="inbox-platform-icon" style={{ color: plat.color }} />
-                              <div className={`inbox-checkbox-circle ${isChecked ? "checked" : ""}`} />
-                            </>
-                          ) : (
-                            <>
-                              <div className={`inbox-checkbox-circle ${isChecked ? "checked" : ""}`} />
-                              <plat.icon className="inbox-platform-icon" style={{ color: plat.color }} />
-                              <span className="inbox-platform-text">{plat.label}</span>
-                            </>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
 
               <button
                 type="button"
