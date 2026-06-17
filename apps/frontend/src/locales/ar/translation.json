@@ -5563,7 +5563,7 @@
     "limitNearWarning": "تحذير: اقتراب من الحد الأقصى",
     "addNewUser": "إضافة مستخدم جديد",
     "inviteUser": "دعوة مستخدم",
-    "userList": "قائمة المستخدمين",
+    "userList": "قائمة المستخدمين ({{count}})",
     "statsReports": "تقارير الإحصائيات",
     "fromDate": "من تاريخ",
     "toDate": "إلى تاريخ",
@@ -5642,7 +5642,18 @@
     "noUsers": "لا يوجد مستخدمين",
     "unlimited": "غير محدود",
     "editUser": "تعديل المستخدم",
-    "inviteNewUser": "دعوة مستخدم جديد"
+    "inviteNewUser": "دعوة مستخدم جديد",
+    "pageDescription": "لوحة موحدة لإضافة المستخدمين، متابعة الدعوات، والتحكم في صلاحيات الفريق من نفس المكان.",
+    "exportCsv": "تصدير CSV",
+    "selectedUsers": "تم تحديد {{count}} مستخدم",
+    "bulkActionsDescription": "الإجراءات التالية ستُطبق على العناصر المحددة في الصفحة الحالية.",
+    "activate": "تفعيل",
+    "deactivate": "تعطيل",
+    "deleteSelected": "حذف المحدد",
+    "clearSelection": "إلغاء التحديد",
+    "userListDescription": "واجهة مركزة لإدارة الحسابات بدون ازدحام، مع نسخة موبايل أقرب لتجربة التطبيقات.",
+    "pendingInvitations": "الدعوات المعلقة ({{count}})",
+    "invitationsDescription": "متابعة الدعوات المرسلة، نسخ الرابط، أو إعادة الإرسال والإلغاء من شاشة واحدة."
   },
   "variationsAnalytics": {
     "title": "تحليلات المتغيرات",

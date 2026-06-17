@@ -5507,7 +5507,7 @@
     "limitNearWarning": "Warning: Approaching Limit",
     "addNewUser": "Add New User",
     "inviteUser": "Invite User",
-    "userList": "User List",
+    "userList": "User List ({{count}})",
     "statsReports": "Statistics Reports",
     "fromDate": "From Date",
     "toDate": "To Date",
@@ -5586,7 +5586,18 @@
     "noUsers": "No users found",
     "unlimited": "Unlimited",
     "editUser": "Edit User",
-    "inviteNewUser": "Invite New User"
+    "inviteNewUser": "Invite New User",
+    "pageDescription": "A unified dashboard for adding users, tracking invitations, and managing team permissions from one place.",
+    "exportCsv": "Export CSV",
+    "selectedUsers": "{{count}} users selected",
+    "bulkActionsDescription": "The following actions will apply to selected items on the current page.",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "deleteSelected": "Delete selected",
+    "clearSelection": "Clear selection",
+    "userListDescription": "A focused account management interface without clutter, with a mobile version closer to an app experience.",
+    "pendingInvitations": "Pending Invitations ({{count}})",
+    "invitationsDescription": "Track sent invitations, copy the link, or resend and cancel from one screen."
   },
   "variationsAnalytics": {
     "title": "Variations Analytics",
