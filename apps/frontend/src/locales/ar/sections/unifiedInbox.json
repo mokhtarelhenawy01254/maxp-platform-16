@@ -94,6 +94,10 @@
   "save": "حفظ",
   "cancel": "إلغاء",
   "noNotes": "لا توجد ملاحظات بعد",
+  "stats": "الإحصائيات",
+  "quickOrder": "إنشاء طلب",
+  "savedTexts": "النصوص المحفوظة",
+  "savedImages": "الصور المحفوظة",
   "mediaAttachment": "مرفق/صورة",
   "image": "صورة",
   "time": {

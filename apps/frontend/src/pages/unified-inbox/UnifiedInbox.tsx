@@ -19,12 +19,21 @@ import {
   LinkIcon,
   BellSnoozeIcon,
   PencilSquareIcon,
+  ShoppingCartIcon,
+  ChartBarSquareIcon,
+  PhotoIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import { apiClient } from "../../services/apiClient";
 import { socketService } from "../../services/socketService";
 import { useTranslation } from "react-i18next";
 import EmojiPicker from "emoji-picker-react";
+import StatsDashboard from "../../components/facebook-inbox/StatsDashboard/StatsDashboard";
+import QuickOrderModal from "../../components/facebook-inbox/Modals/QuickOrderModal";
+import TextGalleryModal from "../../components/facebook-inbox/TextGallery/TextGalleryModal";
+import ImageGalleryModal from "../../components/facebook-inbox/ImageGallery/ImageGalleryModal";
+import ForwardModal from "../../components/facebook-inbox/Modals/ForwardModal";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📋 Types
@@ -206,6 +215,12 @@ const UnifiedInbox: React.FC = () => {
   const [showSnoozePicker, setShowSnoozePicker] = useState(false);
   const [editNote, setEditNote] = useState(false);
   const [noteText, setNoteText] = useState("");
+  const [showStats, setShowStats] = useState(false);
+  const [showQuickOrder, setShowQuickOrder] = useState(false);
+  const [showTextGallery, setShowTextGallery] = useState(false);
+  const [showImageGallery, setShowImageGallery] = useState(false);
+  const [showForwardModal, setShowForwardModal] = useState(false);
+  const [forwardMessage, setForwardMessage] = useState<any>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -384,6 +399,33 @@ const UnifiedInbox: React.FC = () => {
       console.error("Error saving note:", err);
     }
   }, [selectedConversation, customerProfile, noteText]);
+
+  const handleForwardMessage = useCallback(async (targetConversationId: string) => {
+    if (!forwardMessage) return;
+    try {
+      await apiClient.post(`/api/v1/unified-inbox/conversations/${targetConversationId}/messages`, {
+        content: forwardMessage.content,
+        type: forwardMessage.type || 'text',
+        platform: forwardMessage.platform,
+        mediaUrl: forwardMessage.mediaUrl,
+        mediaFileName: forwardMessage.mediaFileName
+      });
+      setShowForwardModal(false);
+      setForwardMessage(null);
+    } catch (err) {
+      console.error("Error forwarding message:", err);
+    }
+  }, [forwardMessage]);
+
+  const handleTextGallerySelect = useCallback((text: { content: string; imageUrls?: string[] }) => {
+    setNewMessage(prev => prev + text.content);
+    setShowTextGallery(false);
+  }, []);
+
+  const handleImageGallerySelect = useCallback((imageUrl: string, filename: string) => {
+    setAttachedFile({ url: imageUrl, name: filename, type: "image" });
+    setShowImageGallery(false);
+  }, []);
 
   const handleBulkUpdate = useCallback(async (status: string) => {
     if (selectedConvIds.size === 0) return;
@@ -890,6 +932,15 @@ const UnifiedInbox: React.FC = () => {
               >
                 <CheckIcon className="w-3.5 h-3.5" />
               </button>
+
+              <button
+                type="button"
+                onClick={() => setShowStats(true)}
+                className="inbox-filter-chip"
+                aria-label={t("unifiedInbox.stats")}
+              >
+                {t("unifiedInbox.stats")}
+              </button>
             </div>
           </div>
 
@@ -1141,6 +1192,13 @@ const UnifiedInbox: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setShowQuickOrder(true)}
+                      className="business-chip-button"
+                      aria-label={t("unifiedInbox.quickOrder")}
+                    >
+                      <ShoppingCartIcon className="w-5 h-5" aria-hidden="true" />
+                    </button>
                     <button
                       onClick={() => setShowProfilePanel(!showProfilePanel)}
                       className="business-chip-button"
@@ -1592,6 +1650,20 @@ const UnifiedInbox: React.FC = () => {
                       aria-label={t("unifiedInbox.quickReplies")}
                     >
                       <BoltIcon className="w-5 h-5" aria-hidden="true" />
+                    </button>
+                    <button
+                      onClick={() => setShowTextGallery(true)}
+                      className="business-chip-button"
+                      aria-label={t("unifiedInbox.savedTexts")}
+                    >
+                      <DocumentTextIcon className="w-5 h-5" aria-hidden="true" />
+                    </button>
+                    <button
+                      onClick={() => setShowImageGallery(true)}
+                      className="business-chip-button"
+                      aria-label={t("unifiedInbox.savedImages")}
+                    >
+                      <PhotoIcon className="w-5 h-5" aria-hidden="true" />
                     </button>
                     <button
                       onClick={() => fileInputRef.current?.click()}
@@ -2094,6 +2166,46 @@ const UnifiedInbox: React.FC = () => {
         )}
       </div>
     </div>
+
+    {/* Modals */}
+    <StatsDashboard
+      isOpen={showStats}
+      onClose={() => setShowStats(false)}
+      conversations={[]}
+    />
+    {showQuickOrder && selectedConversation && (
+      <QuickOrderModal
+        isOpen={showQuickOrder}
+        onClose={() => setShowQuickOrder(false)}
+        conversationId={selectedConversation.id}
+        customerId={selectedConversation.contactId}
+        customerName={selectedConversation.contactName}
+        customerPhone={selectedConversation.contactPhone || undefined}
+        platform={selectedConversation.platform === "whatsapp" ? "whatsapp" : "facebook"}
+      />
+    )}
+    <TextGalleryModal
+      isOpen={showTextGallery}
+      onClose={() => setShowTextGallery(false)}
+      onSelectText={handleTextGallerySelect}
+    />
+    <ImageGalleryModal
+      isOpen={showImageGallery}
+      onClose={() => setShowImageGallery(false)}
+      onSelectImage={handleImageGallerySelect}
+      onSelectMultipleImages={(images) => {
+        if (images.length > 0) {
+          setAttachedFile({ url: images[0].url, name: images[0].filename, type: "image" });
+        }
+        setShowImageGallery(false);
+      }}
+    />
+    <ForwardModal
+      isOpen={showForwardModal}
+      onClose={() => { setShowForwardModal(false); setForwardMessage(null); }}
+      onForward={handleForwardMessage}
+      conversations={[]}
+    />
   );
 };
 

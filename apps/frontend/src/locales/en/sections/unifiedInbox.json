@@ -94,6 +94,10 @@
   "save": "Save",
   "cancel": "Cancel",
   "noNotes": "No notes yet",
+  "stats": "Stats",
+  "quickOrder": "Create Order",
+  "savedTexts": "Saved Texts",
+  "savedImages": "Saved Images",
   "mediaAttachment": "Media/Attachment",
   "image": "Image",
   "time": {
