@@ -4250,6 +4250,11 @@ select {
   overflow: hidden;
 }
 
+.app-shell-content:has(.business-inbox-shell) > * {
+  height: 100%;
+  min-height: 0;
+}
+
 [data-theme="business-os-enterprise"] .business-inbox-stage {
   display: flex;
   flex: 1;
