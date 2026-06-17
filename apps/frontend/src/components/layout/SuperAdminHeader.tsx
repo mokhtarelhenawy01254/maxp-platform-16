@@ -20,7 +20,6 @@ import {
 import { useAuth } from "../../hooks/useAuthSimple";
 import ThemeToggle from "../ui/theme-toggle";
 import GlobalTimer from "../common/GlobalTimer";
-import GlobalSearch from "./GlobalSearch";
 import { cn } from "@/lib/utils";
 
 type SuperAdminHeaderUser = { firstName?: string | null } | null;
