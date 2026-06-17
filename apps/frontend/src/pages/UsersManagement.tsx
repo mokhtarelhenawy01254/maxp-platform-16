@@ -1280,7 +1280,7 @@ const UsersManagement: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("users.title")}</h1>
-            <p className="text-sm text-muted-foreground">لوحة موحدة لإضافة المستخدمين، متابعة الدعوات، والتحكم في صلاحيات الفريق من نفس المكان.</p>
+            <p className="text-sm text-muted-foreground">{t("users.pageDescription")}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="button" className="h-11 rounded-2xl" onClick={openAddUser} disabled={!canAddUser}>
@@ -1293,7 +1293,7 @@ const UsersManagement: React.FC = () => {
             </Button>
             <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={exportCurrentUsers} disabled={users.length === 0}>
               <ArrowDownToLine className="size-4" />
-              تصدير CSV
+              {t("users.exportCsv")}
             </Button>
           </div>
         </div>
@@ -1382,23 +1382,23 @@ const UsersManagement: React.FC = () => {
             {selectedUsers.length > 0 ? (
               <Card>
                 <CardHeader>
-                  <CardTitle>{`تم تحديد ${selectedUsers.length} مستخدم`}</CardTitle>
-                  <CardDescription>الإجراءات التالية ستُطبق على العناصر المحددة في الصفحة الحالية.</CardDescription>
+                  <CardTitle>{t("users.selectedUsers", { count: selectedUsers.length })}</CardTitle>
+                  <CardDescription>{t("users.bulkActionsDescription")}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
                     <Button type="button" variant="outline" onClick={() => void handleBulkToggle(true)}>
-                      تفعيل
+                      {t("users.activate")}
                     </Button>
                     <Button type="button" variant="outline" onClick={() => void handleBulkToggle(false)}>
-                      تعطيل
+                      {t("users.deactivate")}
                     </Button>
                     <Button type="button" variant="destructive" onClick={() => setPendingAction({ kind: "bulk-delete", count: selectedUsers.length })}>
                       <Trash2 className="size-4" />
-                      حذف المحدد
+                      {t("users.deleteSelected")}
                     </Button>
                     <Button type="button" variant="ghost" onClick={() => setSelectedUsers([])}>
-                      إلغاء التحديد
+                      {t("users.clearSelection")}
                     </Button>
                   </div>
                 </CardContent>
@@ -1496,8 +1496,8 @@ const UsersManagement: React.FC = () => {
             <Card>
               <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
-                  <CardTitle>{`قائمة المستخدمين (${totalCount})`}</CardTitle>
-                  <CardDescription>واجهة مركزة لإدارة الحسابات بدون ازدحام، مع نسخة موبايل أقرب لتجربة التطبيقات.</CardDescription>
+                  <CardTitle>{t("users.userList", { count: totalCount })}</CardTitle>
+                  <CardDescription>{t("users.userListDescription")}</CardDescription>
                 </div>
                 <Button type="button" variant="outline" className="h-10 rounded-2xl" onClick={() => void fetchUsers()}>
                   <RefreshCw className={cn("size-4", loading ? "animate-spin" : undefined)} />
@@ -1734,8 +1734,8 @@ const UsersManagement: React.FC = () => {
             <Card>
               <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
-                  <CardTitle>{`الدعوات المعلقة (${invitations.length})`}</CardTitle>
-                  <CardDescription>متابعة الدعوات المرسلة، نسخ الرابط، أو إعادة الإرسال والإلغاء من شاشة واحدة.</CardDescription>
+                  <CardTitle>{t("users.pendingInvitations", { count: invitations.length })}</CardTitle>
+                  <CardDescription>{t("users.invitationsDescription")}</CardDescription>
                 </div>
                 <Button type="button" variant="outline" className="h-10 rounded-2xl" onClick={() => void fetchInvitations()}>
                   <RefreshCw className={cn("size-4", invitationsLoading ? "animate-spin" : undefined)} />
