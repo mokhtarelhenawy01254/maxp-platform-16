@@ -6726,6 +6726,106 @@ const globalSearch = async (req, res) => {
         select: { id: true, userMessage: true, conversationId: true, companyId: true, conversation: { select: { subject: true, company: { select: { name: true } } } } },
         take: 5, orderBy: { createdAt: "desc" },
       }),
+      prisma.task.findMany({
+        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }] },
+        select: { id: true, title: true, status: true, priority: true, dueDate: true, companyId: true, company: { select: { name: true } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.message.findMany({
+        where: { content: { contains: query, mode: "insensitive" } },
+        select: { id: true, content: true, conversationId: true, role: true, createdAt: true, conversation: { select: { subject: true, companyId: true, company: { select: { name: true } } } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.faq.findMany({
+        where: { OR: [{ question: { contains: query, mode: "insensitive" } }, { answer: { contains: query, mode: "insensitive" } }] },
+        select: { id: true, question: true, category: true, tags: true, companyId: true },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.knowledgeBase.findMany({
+        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { content: { contains: query, mode: "insensitive" } }] },
+        select: { id: true, title: true, category: true, tags: true, companyId: true, company: { select: { name: true } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.storePage.findMany({
+        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { slug: { contains: query, mode: "insensitive" } }] },
+        select: { id: true, title: true, slug: true, isPublished: true, companyId: true, company: { select: { name: true } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.productReview.findMany({
+        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { comment: { contains: query, mode: "insensitive" } }] },
+        select: { id: true, title: true, comment: true, rating: true, customerName: true, productId: true, companyId: true, product: { select: { name: true } }, company: { select: { name: true } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.jobPosting.findMany({
+        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }, { department: { contains: query, mode: "insensitive" } }] },
+        select: { id: true, title: true, department: true, location: true, status: true, companyId: true, company: { select: { name: true } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.applicant.findMany({
+        where: { OR: [{ name: { contains: query, mode: "insensitive" } }, { email: { contains: query, mode: "insensitive" } }, { phone: { contains: query, mode: "insensitive" } }, { skills: { contains: query, mode: "insensitive" } }] },
+        select: { id: true, name: true, email: true, phone: true, status: true, jobPostingId: true, companyId: true, company: { select: { name: true } }, jobPosting: { select: { title: true } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.recruitmentForm.findMany({
+        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }] },
+        select: { id: true, title: true, slug: true, isActive: true, companyId: true, company: { select: { name: true } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.goal.findMany({
+        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }] },
+        select: { id: true, title: true, status: true, companyId: true, company: { select: { name: true } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.feedback.findMany({
+        where: { OR: [{ content: { contains: query, mode: "insensitive" } }, { adminReply: { contains: query, mode: "insensitive" } }] },
+        select: { id: true, content: true, type: true, companyId: true, company: { select: { name: true } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.supportMessage.findMany({
+        where: { content: { contains: query, mode: "insensitive" } },
+        select: { id: true, content: true, ticketId: true, senderRole: true, createdAt: true, ticket: { select: { subject: true, companyId: true, company: { select: { name: true } } } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.whatsAppQuickReply.findMany({
+        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { shortcut: { contains: query, mode: "insensitive" } }, { content: { contains: query, mode: "insensitive" } }] },
+        select: { id: true, title: true, shortcut: true, content: true, companyId: true, company: { select: { name: true } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.workReportForm.findMany({
+        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }] },
+        select: { id: true, title: true, description: true, isActive: true, companyId: true, company: { select: { name: true } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.promotion.findMany({
+        where: { OR: [{ name: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }] },
+        select: { id: true, name: true, description: true, type: true, isActive: true, companyId: true, company: { select: { name: true } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.facebookComment.findMany({
+        where: { message: { contains: query, mode: "insensitive" } },
+        select: { id: true, message: true, senderName: true, postId: true, companyId: true, company: { select: { name: true } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.customerNote.findMany({
+        where: { content: { contains: query, mode: "insensitive" } },
+        select: { id: true, content: true, customerId: true, companyId: true, customer: { select: { firstName: true, lastName: true, phone: true } }, company: { select: { name: true } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.competitorReport.findMany({
+        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { summary: { contains: query, mode: "insensitive" } }] },
+        select: { id: true, title: true, summary: true, competitorId: true, companyId: true, company: { select: { name: true } }, competitor: { select: { name: true } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.appExplanation.findMany({
+        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { content: { contains: query, mode: "insensitive" } }] },
+        select: { id: true, title: true, slug: true, companyId: true },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
+      prisma.conversationMemory.findMany({
+        where: { OR: [{ userMessage: { contains: query, mode: "insensitive" } }, { aiResponse: { contains: query, mode: "insensitive" } }] },
+        select: { id: true, userMessage: true, conversationId: true, companyId: true, conversation: { select: { subject: true, company: { select: { name: true } } } } },
+        take: 5, orderBy: { createdAt: "desc" },
+      }),
     ]);
 
     const searchTime = Date.now() - searchStart;
@@ -6901,6 +7001,66 @@ const globalSearch = async (req, res) => {
     if (conversationMemories.length) {
       const items = conversationMemories.map((m) => ({ id: m.id, title: m.userMessage?.substring(0, 80), subtitle: m.conversation?.subject || "", link: "/super-admin/companies-v2" }));
       results.push({ type: "conversationMemories", icon: "Brain", items }); totalCount += items.length;
+    }
+    if (tasks.length) {
+      results.push({ type: "generalTasks", icon: "BarChart3", items: tasks.map((t) => ({ id: t.id, title: t.title, subtitle: `${t.status || ""} ${t.company?.name ? `- ${t.company.name}` : ""}`, status: t.status, link: "/super-admin/companies-v2" })) });
+    }
+    if (messages.length) {
+      results.push({ type: "messages", icon: "MessageSquare", items: messages.map((m) => ({ id: m.id, title: m.content?.substring(0, 80), subtitle: `${m.conversation?.subject || ""} ${m.conversation?.company?.name ? `- ${m.conversation.company.name}` : ""}`, status: m.role, link: "/super-admin/companies-v2" })) });
+    }
+    if (faqs.length) {
+      results.push({ type: "faqs", icon: "HelpCircle", items: faqs.map((f) => ({ id: f.id, title: f.question?.substring(0, 80), subtitle: `${f.category || ""} ${f.tags ? `#${f.tags}` : ""}`, link: "/super-admin/companies-v2" })) });
+    }
+    if (knowledgeBases.length) {
+      results.push({ type: "knowledgeBases", icon: "BookOpen", items: knowledgeBases.map((k) => ({ id: k.id, title: k.title, subtitle: `${k.category || ""} ${k.company?.name ? `- ${k.company.name}` : ""}`, link: "/super-admin/companies-v2" })) });
+    }
+    if (storePages.length) {
+      results.push({ type: "storePages", icon: "Layout", items: storePages.map((s) => ({ id: s.id, title: s.title, subtitle: `/${s.slug || ""} ${s.company?.name ? `- ${s.company.name}` : ""}`, status: s.isPublished ? "active" : "inactive", link: "/super-admin/companies-v2" })) });
+    }
+    if (productReviews.length) {
+      results.push({ type: "productReviews", icon: "Star", items: productReviews.map((r) => ({ id: r.id, title: r.title || r.comment?.substring(0, 60), subtitle: `${r.customerName || ""} ${r.product?.name ? `- ${r.product.name}` : ""}`, link: "/super-admin/companies-v2" })) });
+    }
+    if (jobPostings.length) {
+      results.push({ type: "jobPostings", icon: "Briefcase", items: jobPostings.map((j) => ({ id: j.id, title: j.title, subtitle: `${j.department || ""} ${j.location ? `(${j.location})` : ""}`, status: j.status, link: "/super-admin/companies-v2" })) });
+    }
+    if (applicants.length) {
+      results.push({ type: "applicants", icon: "UserRound", items: applicants.map((a) => ({ id: a.id, title: a.name, subtitle: `${a.email || a.phone || ""} ${a.jobPosting?.title ? `- ${a.jobPosting.title}` : ""}`, status: a.status, link: "/super-admin/companies-v2" })) });
+    }
+    if (recruitmentForms.length) {
+      results.push({ type: "recruitmentForms", icon: "FileText", items: recruitmentForms.map((f) => ({ id: f.id, title: f.title, subtitle: `${f.slug || ""} ${f.company?.name ? `- ${f.company.name}` : ""}`, status: f.isActive ? "active" : "inactive", link: "/super-admin/companies-v2" })) });
+    }
+    if (goals.length) {
+      results.push({ type: "goals", icon: "Target", items: goals.map((g) => ({ id: g.id, title: g.title, subtitle: g.company?.name || "", status: g.status, link: "/super-admin/companies-v2" })) });
+    }
+    if (feedbacks.length) {
+      results.push({ type: "feedbacks", icon: "MessageSquare", items: feedbacks.map((f) => ({ id: f.id, title: f.content?.substring(0, 80), subtitle: `${f.type || ""} ${f.company?.name ? `- ${f.company.name}` : ""}`, link: "/super-admin/companies-v2" })) });
+    }
+    if (supportMessages.length) {
+      results.push({ type: "supportMessages", icon: "Ticket", items: supportMessages.map((m) => ({ id: m.id, title: m.content?.substring(0, 80), subtitle: `${m.ticket?.subject || ""} ${m.ticket?.company?.name ? `- ${m.ticket.company.name}` : ""}`, link: "/admin/support" })) });
+    }
+    if (whatsAppQuickReplies.length) {
+      results.push({ type: "whatsAppQuickReplies", icon: "Zap", items: whatsAppQuickReplies.map((q) => ({ id: q.id, title: q.title, subtitle: `/${q.shortcut || ""} ${q.company?.name ? `- ${q.company.name}` : ""}`, link: "/super-admin/whatsapp" })) });
+    }
+    if (workReportForms.length) {
+      results.push({ type: "workReportForms", icon: "ClipboardList", items: workReportForms.map((f) => ({ id: f.id, title: f.title, subtitle: f.description?.substring(0, 60) || "", status: f.isActive ? "active" : "inactive", link: "/super-admin/companies-v2" })) });
+    }
+    if (promotions.length) {
+      results.push({ type: "promotions", icon: "Megaphone", items: promotions.map((p) => ({ id: p.id, title: p.name, subtitle: `${p.type || ""} ${p.company?.name ? `- ${p.company.name}` : ""}`, status: p.isActive ? "active" : "inactive", link: "/super-admin/companies-v2" })) });
+    }
+    if (facebookComments.length) {
+      results.push({ type: "facebookComments", icon: "Facebook", items: facebookComments.map((c) => ({ id: c.id, title: c.message?.substring(0, 80), subtitle: `${c.senderName || ""} ${c.company?.name ? `- ${c.company.name}` : ""}`, link: "/super-admin/companies-v2" })) });
+    }
+    if (customerNotes.length) {
+      results.push({ type: "customerNotes", icon: "FileText", items: customerNotes.map((n) => ({ id: n.id, title: n.content?.substring(0, 80), subtitle: `${n.customer?.firstName || ""} ${n.customer?.lastName || ""} ${n.customer?.phone || ""}`, link: "/super-admin/companies-v2" })) });
+    }
+    if (competitorReports.length) {
+      results.push({ type: "competitorReports", icon: "TrendingUp", items: competitorReports.map((r) => ({ id: r.id, title: r.title, subtitle: `${r.competitor?.name || ""} ${r.company?.name ? `- ${r.company.name}` : ""}`, link: "/super-admin/companies-v2" })) });
+    }
+    if (appExplanations.length) {
+      results.push({ type: "appExplanations", icon: "BookOpen", items: appExplanations.map((a) => ({ id: a.id, title: a.title, subtitle: a.slug || "", link: "/super-admin/app-explanations" })) });
+    }
+    if (conversationMemories.length) {
+      results.push({ type: "conversationMemories", icon: "Brain", items: conversationMemories.map((m) => ({ id: m.id, title: m.userMessage?.substring(0, 80), subtitle: m.conversation?.subject || "", link: "/super-admin/companies-v2" })) });
     }
 
     return res.json({
