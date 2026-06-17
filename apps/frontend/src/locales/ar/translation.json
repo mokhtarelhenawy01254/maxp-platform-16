@@ -973,6 +973,9 @@
     "create": "إنشاء",
     "notFound": "غير موجود",
     "refresh": "تحديث",
+    "searching": "جاري البحث...",
+    "noResults": "لا توجد نتائج",
+    "tryAdjustingSearch": "حاول بتغيير كلمة البحث",
     "upgrade_now": "ترقية الآن",
     "severity": {
       "low": "منخفض",
@@ -4992,9 +4995,39 @@
       "ceoAgentSettings": "إعدادات CEO Agent",
       "providerLogs": "لوج المزودين"
     },
-    "globalSearchPlaceholder": "ابحث في كل شيء...",
-    "globalSearchHint": "اكتب على الأقل حرفين للبحث في جميع الوحدات",
-    "searchResults": "نتائج البحث"
+    "globalSearchPlaceholder": "ابحث في النظام بالكامل...",
+    "globalSearchHint": "اكتب أي كلمة أو حرف للبحث في جميع أقسام النظام",
+    "searchResults": "نتائج البحث",
+    "globalSearch": {
+      "searching": "جاري البحث...",
+      "noResults": "لا توجد نتائج",
+      "tryAdjusting": "حاول بتغيير كلمة البحث",
+      "hint": "اكتب أي كلمة أو حرف للبحث في جميع أقسام النظام",
+      "categories": {
+        "companies": "الشركات",
+        "users": "المستخدمين",
+        "projects": "مشاريع التطوير",
+        "tasks": "مهام التطوير",
+        "subscriptions": "الاشتراكات",
+        "aiKeys": "مفاتيح الذكاء الاصطناعي",
+        "tickets": "تذاكر الدعم",
+        "products": "المنتجات",
+        "orders": "الطلبات",
+        "customers": "العملاء",
+        "conversations": "المحادثات",
+        "facebookPages": "صفحات فيسبوك",
+        "whatsappSessions": "جلسات واتساب",
+        "employees": "الموظفين",
+        "competitors": "المنافسون",
+        "coupons": "الكوبونات",
+        "categories": "التصنيفات",
+        "merchants": "التجار",
+        "broadcastCampaigns": "الحملات الإعلانية",
+        "departments": "الأقسام",
+        "positions": "المناصب",
+        "invoices": "الفواتير"
+      }
+    }
   },
   "tasks": {
     "title": "المهام",

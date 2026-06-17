@@ -44,6 +44,9 @@
   "create": "Create",
   "notFound": "Not found",
   "refresh": "Refresh",
+  "searching": "Searching...",
+  "noResults": "No results found",
+  "tryAdjustingSearch": "Try adjusting your search term",
   "upgrade_now": "Upgrade now",
   "severity": {
     "low": "Low",

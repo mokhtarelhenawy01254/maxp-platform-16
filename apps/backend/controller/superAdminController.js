@@ -6716,7 +6716,7 @@ const globalSearch = async (req, res) => {
       results.push({ type: "customers", icon: "UserRound", items: customers.map((c) => ({ id: c.id, title: `${c.firstName} ${c.lastName}`, subtitle: `${c.phone || ""} ${c.email ? `(${c.email})` : ""}`, status: c.status, link: `/super-admin/companies-v2` })) });
     }
     if (conversations.length) {
-      results.push({ type: "conversations", icon: "MessageSquare", items: conversations.map((c) => ({ id: c.id, title: c.subject || "بدون موضوع", subtitle: `${c.channel} - ${c.company?.name || ""}`, status: c.status, link: `/super-admin/companies-v2` })) });
+      results.push({ type: "conversations", icon: "MessageSquare", items: conversations.map((c) => ({ id: c.id, title: c.subject || "No Subject", subtitle: `${c.channel} - ${c.company?.name || ""}`, status: c.status, link: `/super-admin/companies-v2` })) });
     }
     if (facebookPages.length) {
       results.push({ type: "facebookPages", icon: "Facebook", items: facebookPages.map((p) => ({ id: p.id, title: p.pageName, subtitle: `${p.company?.name || ""}`, status: p.status, link: `/super-admin/companies-v2` })) });

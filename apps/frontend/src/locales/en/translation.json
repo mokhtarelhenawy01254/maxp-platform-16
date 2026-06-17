@@ -971,6 +971,9 @@
     "create": "Create",
     "notFound": "Not found",
     "refresh": "Refresh",
+    "searching": "Searching...",
+    "noResults": "No results found",
+    "tryAdjustingSearch": "Try adjusting your search term",
     "upgrade_now": "Upgrade now",
     "severity": {
       "low": "Low",
@@ -4936,9 +4939,39 @@
       "ceoAgentSettings": "CEO Agent Settings",
       "providerLogs": "Provider Logs"
     },
-    "globalSearchPlaceholder": "Search everything...",
-    "globalSearchHint": "Type at least 2 characters to search across all modules",
-    "searchResults": "Search Results"
+    "globalSearchPlaceholder": "Search the entire system...",
+    "globalSearchHint": "Type any word or letter to search across all system sections",
+    "searchResults": "Search Results",
+    "globalSearch": {
+      "searching": "Searching...",
+      "noResults": "No results found",
+      "tryAdjusting": "Try adjusting your search term",
+      "hint": "Type any word or letter to search across all system sections",
+      "categories": {
+        "companies": "Companies",
+        "users": "Users",
+        "projects": "Dev Projects",
+        "tasks": "Dev Tasks",
+        "subscriptions": "Subscriptions",
+        "aiKeys": "AI Keys",
+        "tickets": "Support Tickets",
+        "products": "Products",
+        "orders": "Orders",
+        "customers": "Customers",
+        "conversations": "Conversations",
+        "facebookPages": "Facebook Pages",
+        "whatsappSessions": "WhatsApp Sessions",
+        "employees": "Employees",
+        "competitors": "Competitors",
+        "coupons": "Coupons",
+        "categories": "Categories",
+        "merchants": "Merchants",
+        "broadcastCampaigns": "Broadcast Campaigns",
+        "departments": "Departments",
+        "positions": "Positions",
+        "invoices": "Invoices"
+      }
+    }
   },
   "tasks": {
     "title": "Tasks",
