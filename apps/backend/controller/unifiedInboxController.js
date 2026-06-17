@@ -1097,7 +1097,7 @@ const updateUnifiedConversation = async (req, res) => {
         }
 
         const { id } = req.params;
-        const { status, assignedTo } = req.body;
+        const { status, assignedTo, isPinned } = req.body;
         const prisma = getSharedPrismaClient();
 
         // Handle WhatsApp conversations
@@ -1134,7 +1134,8 @@ const updateUnifiedConversation = async (req, res) => {
 
         const updateData = {};
         if (status) updateData.status = status.toUpperCase();
-        if (assignedTo) updateData.assignedTo = assignedTo;
+        if (assignedTo !== undefined) updateData.assignedTo = assignedTo;
+        if (isPinned !== undefined) updateData.isPinned = isPinned;
         updateData.updatedAt = new Date();
 
         const updated = await prisma.conversation.update({
@@ -1216,6 +1217,107 @@ const deleteUnifiedConversation = async (req, res) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// 👤 تحديث بيانات العميل (ملاحظات)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Update customer (notes, etc.)
+ * PUT /api/v1/unified-inbox/customer/:customerId
+ */
+const updateCustomer = async (req, res) => {
+    try {
+        const companyId = req.user?.companyId;
+        if (!companyId) {
+            return res.status(403).json({ success: false, message: 'Company ID is required' });
+        }
+
+        const { customerId } = req.params;
+        const { notes } = req.body;
+        const prisma = getSharedPrismaClient();
+
+        const customer = await prisma.customer.findFirst({
+            where: { id: customerId, companyId }
+        });
+        if (!customer) {
+            return res.status(404).json({ success: false, message: 'Customer not found' });
+        }
+
+        await prisma.customer.update({
+            where: { id: customerId },
+            data: { notes }
+        });
+
+        res.json({ success: true, message: 'Customer updated' });
+
+    } catch (error) {
+        console.error('❌ [UNIFIED] Error updating customer:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 😴 غفوة محادثة
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Snooze a conversation
+ * POST /api/v1/unified-inbox/conversations/:id/snooze
+ */
+const snoozeConversation = async (req, res) => {
+    try {
+        const companyId = req.user?.companyId;
+        if (!companyId) {
+            return res.status(403).json({ success: false, message: 'Company ID is required' });
+        }
+
+        const { id } = req.params;
+        const { snoozeUntil } = req.body;
+        const prisma = getSharedPrismaClient();
+
+        if (!snoozeUntil) {
+            return res.status(400).json({ success: false, message: 'snoozeUntil is required' });
+        }
+
+        // WhatsApp conversations
+        if (id.startsWith('wa_')) {
+            const contactId = id.replace('wa_', '');
+            await prisma.whatsAppContact.update({
+                where: { id: contactId },
+                data: { isArchived: true, lastMessageAt: new Date() }
+            });
+            return res.json({ success: true, message: 'WhatsApp conversation snoozed' });
+        }
+
+        // FB/IG/TG conversations
+        const conversation = await prisma.conversation.findFirst({
+            where: { id, companyId }
+        });
+        if (!conversation) {
+            return res.status(404).json({ success: false, message: 'Conversation not found' });
+        }
+
+        // Store snooze in metadata
+        const metadata = conversation.metadata ? JSON.parse(conversation.metadata) : {};
+        metadata.snoozedUntil = snoozeUntil;
+
+        await prisma.conversation.update({
+            where: { id },
+            data: {
+                status: 'PENDING',
+                metadata: JSON.stringify(metadata),
+                updatedAt: new Date()
+            }
+        });
+
+        res.json({ success: true, message: 'Conversation snoozed' });
+
+    } catch (error) {
+        console.error('❌ [UNIFIED] Error snoozing conversation:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // 🔧 Helper functions
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1241,6 +1343,8 @@ module.exports = {
     deleteUnifiedConversation,
     getUnifiedStats,
     getCustomerProfile,
+    updateCustomer,
+    snoozeConversation,
     getQuickReplies,
     getSettings
 };

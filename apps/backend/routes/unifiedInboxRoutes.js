@@ -62,6 +62,18 @@ router.get('/customer/:customerId',
     unifiedInboxController.getCustomerProfile
 );
 
+// Update customer (notes, etc.)
+router.put('/customer/:customerId',
+    verifyToken.authenticateToken,
+    unifiedInboxController.updateCustomer
+);
+
+// Snooze conversation
+router.post('/conversations/:id/snooze',
+    verifyToken.authenticateToken,
+    unifiedInboxController.snoozeConversation
+);
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // ⚡ الردود السريعة
 // ═══════════════════════════════════════════════════════════════════════════════
