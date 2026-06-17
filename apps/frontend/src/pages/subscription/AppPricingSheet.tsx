@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate, useLocation } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
 import {
@@ -14,7 +15,7 @@ import {
   Package,
   Layers,
   DollarSign,
-  ExternalLink,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
@@ -56,6 +57,8 @@ type SortOrder = "asc" | "desc" | null;
 export default function AppPricingSheet() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // State
   const [apps, setApps] = useState<MarketplaceApp[]>([]);
@@ -66,6 +69,7 @@ export default function AppPricingSheet() {
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [viewMode, setViewMode] = useState<"sheet" | "grid">("sheet");
+  const [detailApp, setDetailApp] = useState<MarketplaceApp | null>(null);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingApp, setEditingApp] = useState<Partial<MarketplaceApp> | null>(null);
@@ -167,6 +171,20 @@ export default function AppPricingSheet() {
     } catch (err: any) {
       // Revert on error
       setApps(prev => prev.map(a => a.id === app.id ? { ...a, isActive: app.isActive } : a));
+      toast.error(err.response?.data?.message || t("subscription.appSaveError", "حدث خطأ أثناء الحفظ"));
+    }
+  };
+
+  const handleToggleInstalled = async (app: MarketplaceApp) => {
+    try {
+      const newInstalled = !app.isInstalled;
+      // Optimistic update
+      setApps(prev => prev.map(a => a.id === app.id ? { ...a, isInstalled: newInstalled } : a));
+      await apiClient.put(`/super-admin/marketplace-management/apps/${app.id}`, { isInstalled: newInstalled });
+      toast.success(t("subscription.appUpdated", "تم تحديث التطبيق بنجاح"));
+    } catch (err: any) {
+      // Revert on error
+      setApps(prev => prev.map(a => a.id === app.id ? { ...a, isInstalled: app.isInstalled } : a));
       toast.error(err.response?.data?.message || t("subscription.appSaveError", "حدث خطأ أثناء الحفظ"));
     }
   };
@@ -452,12 +470,19 @@ export default function AppPricingSheet() {
     return <ArrowUpDown size={14} className="text-gray-400 dark:text-gray-500" />;
   };
 
+  // Subscription nav tabs config
+  const subscriptionTabs = [
+    { label: t("subscription.tabAppPricing", "أسعار التطبيقات"), path: "/super-admin/app-pricing" },
+    { label: t("subscription.tabSubscriptions", "الاشتراكات"), path: "/super-admin/subscriptions" },
+    { label: t("subscription.tabPlatformSubscriptions", "اشتراكات المنصة"), path: "/super-admin/platform-subscriptions" },
+  ];
+
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50 pb-12">
       {/* Page Header */}
       <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-0">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div>
               <h1 className="text-3xl font-extrabold text-slate-900 dark:text-slate-50 tracking-tight font-cairo">
                 {t("subscription.pageTitle")}
@@ -486,6 +511,25 @@ export default function AppPricingSheet() {
                 </Button>
               )}
             </div>
+          </div>
+          {/* Subscription Navigation Tabs */}
+          <div className="flex gap-1 border-b-0">
+            {subscriptionTabs.map((tab) => {
+              const isActive = location.pathname === tab.path;
+              return (
+                <button
+                  key={tab.path}
+                  onClick={() => navigate(tab.path)}
+                  className={`px-5 py-3 text-sm font-semibold font-cairo transition-all duration-200 border-b-2 whitespace-nowrap ${
+                    isActive
+                      ? "border-indigo-600 text-indigo-700 dark:text-indigo-400 dark:border-indigo-500"
+                      : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:border-slate-300"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -839,15 +883,26 @@ export default function AppPricingSheet() {
                         {getPricingModelBadge(app.pricingModel)}
                       </td>
                       <td className="px-6 py-4 text-sm font-bold text-slate-800 dark:text-slate-200 font-cairo">
-                        {app.pricingModel === "SUBSCRIPTION" ? (
-                          <span>
-                            {app.monthlyPrice || 0} <span className="text-xs font-normal text-slate-400">{t("subscription.egpPerMonth")}</span>
-                          </span>
-                        ) : app.pricingModel === "FREE" ? (
-                          <span className="text-emerald-600 dark:text-emerald-400">{t("subscription.free")}</span>
-                        ) : (
-                          <span className="text-slate-400">-</span>
-                        )}
+                        <div className="flex items-center gap-1.5 group/price">
+                          {app.pricingModel === "SUBSCRIPTION" ? (
+                            <span>
+                              {app.monthlyPrice || 0} <span className="text-xs font-normal text-slate-400">{t("subscription.egpPerMonth")}</span>
+                            </span>
+                          ) : app.pricingModel === "FREE" ? (
+                            <span className="text-emerald-600 dark:text-emerald-400">{t("subscription.free")}</span>
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
+                          {user?.role === "SUPER_ADMIN" && (
+                            <button
+                              className="opacity-0 group-hover/price:opacity-100 transition-opacity p-0.5 rounded hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-indigo-500 hover:text-indigo-700"
+                              onClick={(e) => { e.stopPropagation(); handleOpenDialog(app); }}
+                              title={t("subscription.editApp", "تعديل")}
+                            >
+                              <Pencil size={12} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-sm font-bold text-slate-800 dark:text-slate-200 font-cairo">
                         {app.pricingModel === "SUBSCRIPTION" && app.yearlyPrice ? (
@@ -885,17 +940,32 @@ export default function AppPricingSheet() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm font-cairo">
-                        {app.isInstalled ? (
-                          <Badge className="bg-emerald-100 text-emerald-800 border-none dark:bg-emerald-900/30 dark:text-emerald-400 flex items-center gap-1 w-fit">
-                            <CheckCircle size={12} />
-                            {t("subscription.installed")}
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-slate-400 dark:bg-slate-800 dark:text-slate-500 flex items-center gap-1 w-fit">
-                            <XCircle size={12} />
-                            {t("subscription.inactive")}
-                          </Badge>
-                        )}
+                        <div className="flex flex-col items-start gap-1">
+                          <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${
+                            app.isInstalled
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+                              : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500"
+                          }`}>
+                            {app.isInstalled ? <CheckCircle size={11} /> : <XCircle size={11} />}
+                            {app.isInstalled ? t("subscription.installed") : t("subscription.notInstalled")}
+                          </span>
+                          {user?.role === "SUPER_ADMIN" && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Switch
+                                    checked={!!app.isInstalled}
+                                    onCheckedChange={() => handleToggleInstalled(app)}
+                                    className="data-[state=checked]:bg-emerald-500 scale-90"
+                                  />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs">
+                                  {app.isInstalled ? t("subscription.uninstall", "إلغاء التثبيت") : t("subscription.install", "تثبيت")}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
                       </td>
                       {/* Quick Active Toggle Column */}
                       <td className="px-6 py-4 text-center">
@@ -953,11 +1023,11 @@ export default function AppPricingSheet() {
                             variant="ghost"
                             size="sm"
                             className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-bold font-cairo hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20"
-                            onClick={() => window.open(`/marketplace?app=${app.slug}`, '_blank')}
+                            onClick={() => setDetailApp(app)}
                           >
                             <span className="flex items-center gap-1.5">
+                              <Eye size={14} />
                               {t("subscription.details")}
-                              <ExternalLink size={12} />
                             </span>
                           </Button>
                           {user?.role === "SUPER_ADMIN" && (
@@ -1134,9 +1204,10 @@ export default function AppPricingSheet() {
                         variant="outline"
                         size="sm"
                         className="font-cairo text-xs h-8 hover:bg-indigo-50 hover:text-indigo-700 dark:hover:bg-indigo-950/20"
-                        onClick={() => window.open(`/marketplace?app=${app.slug}`, '_blank')}
+                        onClick={() => setDetailApp(app)}
                       >
-                        {t("subscription.manageApp")}
+                        <Eye size={13} className="ml-1" />
+                        {t("subscription.details")}
                       </Button>
                       {user?.role === "SUPER_ADMIN" && (
                         <>
@@ -1381,6 +1452,82 @@ export default function AppPricingSheet() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>{t("common.cancel", "Cancel")}</Button>
             <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleSaveApp}>{t("common.save", "Save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* App Detail Dialog */}
+      <Dialog open={detailApp !== null} onOpenChange={(open) => { if (!open) setDetailApp(null); }}>
+        <DialogContent className="max-w-2xl font-cairo">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600">
+                <Layers size={16} />
+              </div>
+              {detailApp && (i18n.language === "ar" ? detailApp.name : detailApp.nameEn || detailApp.name)}
+            </DialogTitle>
+          </DialogHeader>
+          {detailApp && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
+              <div className="space-y-1">
+                <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">{t("subscription.pricingModel", "نظام التسعير")}</p>
+                <div>{getPricingModelBadge(detailApp.pricingModel)}</div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">{t("subscription.categoryLabel", "الفئة")}</p>
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{getCategoryLabel(detailApp.category)}</p>
+              </div>
+              {detailApp.pricingModel === "SUBSCRIPTION" && (
+                <>
+                  <div className="space-y-1">
+                    <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">{t("subscription.monthlyPrice", "السعر الشهري")}</p>
+                    <p className="text-lg font-black text-slate-800 dark:text-slate-100">{detailApp.monthlyPrice || 0} <span className="text-xs font-normal text-slate-400">{t("subscription.egpPerMonth")}</span></p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">{t("subscription.yearlyPrice", "السعر السنوي")}</p>
+                    <p className="text-lg font-black text-slate-800 dark:text-slate-100">{detailApp.yearlyPrice || 0} <span className="text-xs font-normal text-slate-400">{t("subscription.egpPerYear")}</span></p>
+                  </div>
+                </>
+              )}
+              {detailApp.pricingModel === "PAY_PER_USE" && (
+                <div className="space-y-1 md:col-span-2">
+                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">{t("subscription.usagePricing", "سعر الاستخدام")}</p>
+                  <p className="text-lg font-black text-slate-800 dark:text-slate-100">{detailApp.unitPrice || 0} <span className="text-xs font-normal text-slate-400">{t("subscription.egp")} / {detailApp.unitName}</span></p>
+                </div>
+              )}
+              <div className="space-y-1">
+                <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">{t("subscription.freeTrial", "أيام التجربة")}</p>
+                <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{detailApp.trialDays > 0 ? `${detailApp.trialDays} ${t("subscription.days")}` : t("subscription.none")}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">{t("subscription.status", "الحالة")}</p>
+                <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  detailApp.isActive
+                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+                    : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${detailApp.isActive ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
+                  {detailApp.isActive ? t("subscription.active", "مفعّل") : t("subscription.disabled", "موقوف")}
+                </span>
+              </div>
+              <div className="md:col-span-2 space-y-1">
+                <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">{t("subscription.description", "الوصف")}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{detailApp.description || "-"}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Slug</p>
+                <code className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1 rounded">{detailApp.slug}</code>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailApp(null)}>{t("common.cancel", "إغلاق")}</Button>
+            {user?.role === "SUPER_ADMIN" && detailApp && (
+              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => { setDetailApp(null); handleOpenDialog(detailApp); }}>
+                <Pencil size={14} className="ml-1" />
+                {t("subscription.editApp", "تعديل")}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
