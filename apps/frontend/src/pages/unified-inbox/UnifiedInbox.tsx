@@ -849,12 +849,12 @@ const UnifiedInbox: React.FC = () => {
               style={{ flexDirection: isRtl ? "row-reverse" : "row" }}
             >
               {[
-                { id: "all", label: "كل الرسائل", count: counts.all, type: 'inbox', platforms: [] },
+                { id: "all", label: t("unifiedInbox.tabs.all", "كل الرسائل"), count: counts.all, type: 'inbox', platforms: [] },
                 { id: "messenger", label: "Messenger", count: counts.facebook, type: 'inbox', platforms: ["facebook"] },
                 { id: "instagram", label: "Instagram", count: counts.instagram, type: 'inbox', platforms: ["instagram"] },
-                { id: "whatsapp", label: "واتساب", count: counts.whatsapp > 0 ? "جديد" : 0, type: 'inbox', platforms: ["whatsapp"] },
-                { id: "fb-comments", label: "تعليقات فيسبوك", type: 'comments', platform: "facebook" },
-                { id: "ig-comments", label: "تعليقات Instagram", type: 'comments', platform: "instagram" },
+                { id: "whatsapp", label: t("unifiedInbox.tabs.whatsapp", "واتساب"), count: counts.whatsapp > 0 ? t("unifiedInbox.new", "جديد") : 0, type: 'inbox', platforms: ["whatsapp"] },
+                { id: "fb-comments", label: t("unifiedInbox.tabs.fbComments", "تعليقات فيسبوك"), type: 'comments', platform: "facebook" },
+                { id: "ig-comments", label: t("unifiedInbox.tabs.igComments", "تعليقات Instagram"), type: 'comments', platform: "instagram" },
               ].map((tab) => {
                 const isActive = tab.type === 'inbox' 
                   && ((tab.platforms.length === 0 && selectedPlatforms.length === 0) 
@@ -879,7 +879,7 @@ const UnifiedInbox: React.FC = () => {
                     {tab.count !== undefined && tab.count !== 0 && (
                       <span 
                         className={`font-bold mr-2 px-1.5 py-0.5 rounded-full text-[10px] ${
-                          tab.count === 'جديد' ? 'bg-green-100 text-green-700' : 'bg-red-600 text-white'
+                          tab.count === t("unifiedInbox.new", "جديد") ? 'bg-green-100 text-green-700' : 'bg-red-600 text-white'
                         }`}
                       >
                         {typeof tab.count === 'number' && tab.count > 9 ? '+9' : tab.count}
