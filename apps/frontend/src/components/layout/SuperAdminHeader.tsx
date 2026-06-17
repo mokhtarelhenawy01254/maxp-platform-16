@@ -1,7 +1,7 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Menu, Lightbulb, LogOut } from "lucide-react";
+import { Menu, Lightbulb, LogOut, Search, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -51,6 +51,45 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
   const { t } = useTranslation();
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [headerSearch, setHeaderSearch] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const isDevTasksPage = location.pathname === "/super-admin/dev-tasks";
+
+  useEffect(() => {
+    if (!isDevTasksPage) {
+      setHeaderSearch("");
+    }
+  }, [isDevTasksPage]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  const handleHeaderSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setHeaderSearch(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      if (value) params.set("search", value);
+      else params.delete("search");
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      navigate(newUrl, { replace: true });
+    }, 300);
+  }, [navigate]);
+
+  const handleHeaderSearchClear = useCallback(() => {
+    setHeaderSearch("");
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const params = new URLSearchParams(window.location.search);
+    params.delete("search");
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    navigate(newUrl, { replace: true });
+  }, [navigate]);
 
   return (
     <header
@@ -66,6 +105,32 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
           <Button variant="ghost" size="icon" onClick={onCollapseToggle} className="hidden sm:flex"><Menu className="size-5 text-muted-foreground" /></Button>
           <h1 className="text-base font-bold tracking-tight truncate max-w-[120px] lg:max-w-[200px]">{title}</h1>
           <div className="hidden md:block"><GlobalTimer /></div>
+          {isDevTasksPage && (
+            <div className="relative hidden md:block mr-3">
+              <Search className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                value={headerSearch}
+                onChange={handleHeaderSearchChange}
+                placeholder={t("tasks.searchPlaceholder") || "بحث في المهام..."}
+                className={cn(
+                  "h-9 w-64 rounded-xl border bg-gray-100 dark:bg-[#1e293b] border-transparent",
+                  "focus:border-blue-400 focus:bg-white dark:focus:border-blue-500/50 dark:focus:bg-[#1e293b]",
+                  "pl-4 pr-9 text-sm outline-none placeholder:text-muted-foreground",
+                  "transition-all duration-200",
+                  isDark ? "text-white" : "text-gray-900"
+                )}
+              />
+              {headerSearch && (
+                <button
+                  onClick={handleHeaderSearchClear}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
         <GlobalSearch />
         <div className="flex items-center gap-1 flex-shrink-0">

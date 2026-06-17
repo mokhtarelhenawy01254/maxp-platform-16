@@ -821,7 +821,31 @@ const getAllTasks = async (req, res) => {
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
+        { description: { contains: search, mode: 'insensitive' } },
+        { component: { contains: search, mode: 'insensitive' } },
+        { tags: { contains: search, mode: 'insensitive' } },
+        { status: { contains: search, mode: 'insensitive' } },
+        { priority: { contains: search, mode: 'insensitive' } },
+        {
+          assignee: {
+            user: {
+              OR: [
+                { firstName: { contains: search, mode: 'insensitive' } },
+                { lastName: { contains: search, mode: 'insensitive' } },
+              ]
+            }
+          }
+        },
+        {
+          project: {
+            name: { contains: search, mode: 'insensitive' }
+          }
+        },
+        {
+          release: {
+            version: { contains: search, mode: 'insensitive' }
+          }
+        },
       ];
     }
 

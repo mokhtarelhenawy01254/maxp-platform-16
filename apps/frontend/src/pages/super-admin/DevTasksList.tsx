@@ -147,6 +147,18 @@ const DevTasksList: React.FC = () => {
     fetchStats();
   }, []);
 
+  // Sync URL search param to filters (for header search bar)
+  const urlSearch = searchParams.get("search") || "";
+  useEffect(() => {
+    setFilters((prev) => {
+      if (prev.search !== urlSearch) {
+        return { ...prev, search: urlSearch };
+      }
+      return prev;
+    });
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  }, [urlSearch]);
+
   useEffect(() => {
     fetchTasks();
   }, [
