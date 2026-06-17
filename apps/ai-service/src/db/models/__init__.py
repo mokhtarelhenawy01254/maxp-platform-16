@@ -26,6 +26,7 @@ __all__ = [
     "AiSetting",
     "Approval",
     "Base",
+    "Checkpoint",
     "GlobalAiConfig",
     "Policy",
     "Product",

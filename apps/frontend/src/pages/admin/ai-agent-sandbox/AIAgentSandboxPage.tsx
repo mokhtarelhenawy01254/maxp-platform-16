@@ -2,10 +2,7 @@ import React, { useMemo, useState } from "react";
 import {
   X,
   AlertTriangle,
-  CheckCircle2,
-  MessageSquare,
-  LayoutList,
-  Sparkles
+  CheckCircle2
 } from "lucide-react";
 import { useAgentSandbox } from "./hooks/useAgentSandbox";
 import { sandboxApi } from "./services/sandboxApi";
@@ -72,21 +69,6 @@ const AIAgentSandboxPage: React.FC = () => {
       }
     }).catch(() => {});
   }, [selectedAgent?.id]);
-
-  // Mobile-style overlay toggles
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [inspectorOpen, setInspectorOpen] = useState(false);
-
-  React.useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setSidebarOpen(false);
-        setInspectorOpen(false);
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, []);
 
 
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -162,11 +144,6 @@ const AIAgentSandboxPage: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-background overflow-hidden relative">
-      <style>{`
-        @keyframes slide-from-left { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-        @keyframes slide-from-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        @keyframes overlay-fade-in { from { opacity: 0; } to { opacity: 1; } }
-      `}</style>
 
       {/* Top Header Controls */}
       <HeaderBar
@@ -182,15 +159,26 @@ const AIAgentSandboxPage: React.FC = () => {
           setSelectedProvider(provider);
           setSelectedKeyId(keyId || null);
         }}
-        onSessions={() => setSidebarOpen(true)}
         onEvaluate={handleEvaluate}
         onExport={() => setExportDialogOpen(true)}
         onAgentProfile={() => setAgentProfileDialogOpen(true)}
         isStreaming={isStreaming}
       />
 
-      {/* Main workspace - single column chat */}
+      {/* Main workspace - three columns */}
       <div className="flex-1 flex overflow-hidden relative">
+        <SessionList
+          sessions={sessions}
+          activeSessionId={activeSessionId}
+          onSelectSession={setActiveSessionId}
+          onCreateSession={createSession}
+          onDeleteSession={deleteSession}
+          onUpdateTitle={updateSessionTitle}
+          formatCost={formatCost}
+          collapsed={false}
+          isSessionsLoading={isSessionsLoading}
+          width={300}
+        />
         <ChatArea
           messages={activeSession?.messages || []}
           agent={selectedAgent}
@@ -203,121 +191,24 @@ const AIAgentSandboxPage: React.FC = () => {
           activeToolCalls={activeToolCalls}
           onSendMessage={sendMessage}
         />
+        <InspectorPanel
+          tools={toolsMetadata.map((t) => ({ name: t.name, description: t.description, sideEffect: t.sideEffects || "read", enabled: true, inputSchema: undefined }))}
+          activityLog={activityLog}
+          traceSummary={latestTraceSummary}
+          onClearLog={clearActivityLog}
+          systemPrompt={agentSystemPrompt}
+          agentInstructions={agentInstructions}
+          agentName={selectedAgent?.name || ""}
+          agentRole={selectedAgent?.role || ""}
+          agentDescription={selectedAgent?.description || ""}
+          modelName={selectedModel}
+          providerName={selectedProvider}
+          conversationMessages={activeSession?.messages || []}
+          agentSkills={skills}
+          collapsed={false}
+          width={320}
+        />
       </div>
-
-      {/* Bottom Navigation - persistent mobile-style tab bar */}
-      <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-shrink-0 select-none">
-        <div className="flex justify-around items-center py-1.5 px-2">
-          <button
-            onClick={() => { setSidebarOpen(true); setInspectorOpen(false); }}
-            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-0 flex-1 max-w-24 ${
-              sidebarOpen
-                ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/20"
-                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-            }`}
-          >
-            <LayoutList className="size-5" />
-            <span className="text-[10px] font-medium">Sessions</span>
-          </button>
-          <button
-            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-0 flex-1 max-w-24 ${
-              !sidebarOpen && !inspectorOpen
-                ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/20"
-                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-            }`}
-          >
-            <MessageSquare className="size-5" />
-            <span className="text-[10px] font-medium">Chat</span>
-          </button>
-          <button
-            onClick={() => { setInspectorOpen(true); setSidebarOpen(false); }}
-            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-0 flex-1 max-w-24 ${
-              inspectorOpen
-                ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/20"
-                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-            }`}
-          >
-            <Sparkles className="size-5" />
-            <span className="text-[10px] font-medium">Inspector</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Sessions Overlay Drawer */}
-      {sidebarOpen && (
-        <div className="absolute inset-0 z-40 flex" style={{ animation: 'overlay-fade-in 200ms ease-out' }}>
-          <div
-            className="bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col relative"
-            style={{ animation: 'slide-from-left 250ms ease-out', width: 300, minWidth: 300 }}
-          >
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="absolute top-3 right-3 z-10 size-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <X className="size-4" />
-            </button>
-            <SessionList
-              sessions={sessions}
-              activeSessionId={activeSessionId}
-              onSelectSession={(id) => {
-                setActiveSessionId(id);
-                setSidebarOpen(false);
-              }}
-              onCreateSession={createSession}
-              onDeleteSession={deleteSession}
-              onUpdateTitle={updateSessionTitle}
-              formatCost={formatCost}
-              collapsed={false}
-              isSessionsLoading={isSessionsLoading}
-              width={300}
-            />
-          </div>
-          <div
-            className="flex-1 bg-slate-900/30 dark:bg-slate-950/50 backdrop-blur-sm"
-            onClick={() => setSidebarOpen(false)}
-            style={{ animation: 'overlay-fade-in 200ms ease-out' }}
-          />
-        </div>
-      )}
-
-      {/* Inspector Overlay Drawer */}
-      {inspectorOpen && (
-        <div className="absolute inset-0 z-40 flex flex-row-reverse" style={{ animation: 'overlay-fade-in 200ms ease-out' }}>
-          <div
-            className="bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col"
-            style={{ animation: 'slide-from-right 250ms ease-out' }}
-          >
-            <button
-              onClick={() => setInspectorOpen(false)}
-              className="absolute top-1 right-1 z-10 size-7 flex items-center justify-center rounded-lg bg-white/90 dark:bg-slate-900/90 shadow-sm border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <X className="size-4" />
-            </button>
-            <InspectorPanel
-              tools={toolsMetadata.map((t) => ({ name: t.name, description: t.description, sideEffect: t.sideEffects || "read", enabled: true, inputSchema: undefined }))}
-              activityLog={activityLog}
-              traceSummary={latestTraceSummary}
-              onClearLog={clearActivityLog}
-              systemPrompt={agentSystemPrompt}
-              agentInstructions={agentInstructions}
-              agentName={selectedAgent?.name || ""}
-              agentRole={selectedAgent?.role || ""}
-              agentDescription={selectedAgent?.description || ""}
-              modelName={selectedModel}
-              providerName={selectedProvider}
-              conversationMessages={activeSession?.messages || []}
-              agentSkills={skills}
-              collapsed={false}
-              width={320}
-            />
-          </div>
-          <div
-            className="flex-1 bg-slate-900/30 dark:bg-slate-950/50 backdrop-blur-sm"
-            onClick={() => setInspectorOpen(false)}
-            style={{ animation: 'overlay-fade-in 200ms ease-out' }}
-          />
-        </div>
-      )}
 
       {/* Export Session Modal overlay */}
       {exportDialogOpen && (
