@@ -102,6 +102,8 @@ const SAFE_LINE_PATTERNS = [
   /systemPrompt/,        // system prompt variable
   /\.content\s*=\s*`.*`/,
   /\/\/\s*no-arabic-check/, // inline bypass comment
+  /\bt\(['"]/,           // i18next t() translation fallback
+  /i18n\.t\(['"]/,       // i18next i18n.t() translation fallback
 ];
 
 function shouldSkip(filePath) {
