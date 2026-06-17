@@ -19,25 +19,12 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import tokenManager from "../../../utils/tokenManager";
 import { buildApiUrl } from "../../../utils/urlHelper";
 
 type Tab = "soul" | "agents" | "tools-md" | "tools" | "skills-json";
-
-const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
-  { key: "soul",   label: "SOUL.md",   icon: <BookOpen className="size-4" /> },
-  { key: "agents", label: "AGENTS.md", icon: <Users className="size-4" /> },
-  { key: "tools-md",  label: "TOOLS.md",  icon: <Wrench className="size-4" /> },
-  { key: "tools", label: "الأدوات والمهارات", icon: <Shield className="size-4" /> },
-  { key: "skills-json", label: "SKILLS.json", icon: <FileCode className="size-4" /> },
-];
-
-const CHANNEL_META: Record<string, string> = {
-  facebook: "فيسبوك",
-  whatsapp: "واتساب",
-  dashboard: "داشبورد",
-};
 
 const FILE_KEYS: Record<string, string> = {
   soul: "SOUL.md",
@@ -46,25 +33,19 @@ const FILE_KEYS: Record<string, string> = {
   "skills-json": "SKILLS.json",
 };
 
-const AUTONOMY_OPTIONS = [
-  { value: "auto", label: "تلقائي", color: "text-emerald-600" },
-  { value: "approval", label: "تأكيد", color: "text-amber-600" },
-  { value: "blocked", label: "محظور", color: "text-destructive" },
-] as const;
-
 const isActive = (s?: string | null) => String(s || "").toUpperCase() === "ACTIVE";
 
-const relativeTime = (dateStr?: string | null) => {
+const relativeTime = (dateStr: string | null | undefined, t: (key: string, opts?: Record<string, unknown>) => string, locale?: string) => {
   if (!dateStr) return null;
   const diff = Date.now() - new Date(dateStr).getTime();
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "الآن";
-  if (minutes < 60) return `منذ ${minutes} دقيقة`;
+  if (minutes < 1) return t("agentProfiles.time.now");
+  if (minutes < 60) return t("agentProfiles.time.minutesAgo", { minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `منذ ${hours} ساعة`;
+  if (hours < 24) return t("agentProfiles.time.hoursAgo", { hours });
   const days = Math.floor(hours / 24);
-  if (days < 30) return `منذ ${days} يوم`;
-  return new Date(dateStr).toLocaleDateString("ar-EG");
+  if (days < 30) return t("agentProfiles.time.daysAgo", { days });
+  return new Date(dateStr).toLocaleDateString(locale || "ar-EG");
 };
 
 const getAgentChannels = (profile?: AgentProfileResponse | null): string[] => {
@@ -88,8 +69,8 @@ const collectAgentText = (agent?: { name?: string; role?: string; templateSlug?:
   agent?.role, agent?.templateSlug, agent?.description, agent?.createdBy,
 ].filter(Boolean).join(" ").toLowerCase();
 
-const renderMarkdownPreview = (md: string): string => {
-  if (!md) return '<p style="color: var(--color-muted-foreground)">لا يوجد محتوى</p>';
+const renderMarkdownPreview = (md: string, t: (key: string) => string): string => {
+  if (!md) return `<p style="color: var(--color-muted-foreground)">${t("agentProfiles.editor.emptyContent")}</p>`;
   return md
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/^### (.+)$/gm, "<h3>$1</h3>").replace(/^## (.+)$/gm, "<h2>$1</h2>").replace(/^# (.+)$/gm, "<h1>$1</h1>")
@@ -127,6 +108,7 @@ function ToolBadge({ name }: { name: string }) {
 }
 
 function SkillCard({ skill }: { skill: AgentSkillDetail }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   return (
     <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
@@ -148,10 +130,10 @@ function SkillCard({ skill }: { skill: AgentSkillDetail }) {
           )}
           {skill.allowedTools.length > 0 ? (
             <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Tools ({skill.allowedTools.length})</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t("agentProfiles.skillCard.tools", { count: skill.allowedTools.length })}</p>
               <div className="flex flex-wrap gap-1.5">{skill.allowedTools.map((t) => <ToolBadge key={t} name={t} />)}</div>
             </div>
-          ) : <p className="text-xs text-slate-400 italic">No tools configured</p>}
+          ) : <p className="text-xs text-slate-400 italic">{t("agentProfiles.skillCard.noTools")}</p>}
         </div>
       )}
     </div>
@@ -161,6 +143,7 @@ function SkillCard({ skill }: { skill: AgentSkillDetail }) {
 function FieldEditor({ label, value, onChange, minRows = 8, disablePreview = false }: {
   label: string; value: string; onChange: (v: string) => void; minRows?: number; disablePreview?: boolean;
 }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const lineCount = value.split("\n").length;
@@ -176,13 +159,13 @@ function FieldEditor({ label, value, onChange, minRows = 8, disablePreview = fal
           <span className="text-sm font-bold text-slate-700 dark:text-slate-300 font-mono tracking-wide">{label}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[0.65rem] text-slate-400">{lineCount} سطر · {wordCount} كلمة</span>
+          <span className="text-[0.65rem] text-slate-400">{t("agentProfiles.editor.linesWords", { lineCount, wordCount })}</span>
           {isMarkdown && !disablePreview && (
             <button type="button" onClick={() => setShowPreview(!showPreview)}
               className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 transition-colors px-2 py-1 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
             >
               {showPreview ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-              {showPreview ? "تحرير" : "معاينة"}
+              {showPreview ? t("agentProfiles.editor.edit") : t("agentProfiles.editor.preview")}
             </button>
           )}
           {lineCount > 6 && (
@@ -190,19 +173,19 @@ function FieldEditor({ label, value, onChange, minRows = 8, disablePreview = fal
               className="flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 transition-colors px-2 py-1 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
             >
               {expanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
-              {expanded ? "طي" : "توسيع"}
+              {expanded ? t("agentProfiles.editor.collapse") : t("agentProfiles.editor.expand")}
             </button>
           )}
         </div>
       </div>
       {showPreview && isMarkdown && !disablePreview ? (
-        <div className="p-5" dangerouslySetInnerHTML={{ __html: renderMarkdownPreview(value) }} />
+        <div className="p-5" dangerouslySetInnerHTML={{ __html: renderMarkdownPreview(value, t) }} />
       ) : (
         <Textarea value={value} onChange={(e) => onChange(e.target.value)}
           rows={shouldCollapse ? 10 : minRows}
           className="resize-y border-0 rounded-none bg-transparent font-mono text-sm leading-[1.8] text-slate-800 dark:text-slate-200 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-slate-400/40 px-5 py-4 min-h-[200px]"
           dir="ltr" spellCheck={false}
-          placeholder={`اكتب محتوى ${label} هنا...`}
+          placeholder={t("agentProfiles.editor.placeholder", { label })}
         />
       )}
     </div>
@@ -210,6 +193,7 @@ function FieldEditor({ label, value, onChange, minRows = 8, disablePreview = fal
 }
 
 function MetadataGrid({ agent, resolvedParentName }: { agent: { departmentIcon?: string | null; departmentName?: string | null; managerType?: string | null; createdBy?: string | null; parentId?: string | null }; resolvedParentName: string | null }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   return (
     <div className="px-6 pt-3">
@@ -217,30 +201,30 @@ function MetadataGrid({ agent, resolvedParentName }: { agent: { departmentIcon?:
         className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors w-full"
       >
         {expanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
-        <span className="font-medium">تفاصيل الوكيل</span>
+        <span className="font-medium">{t("agentProfiles.metadata.title")}</span>
         {!expanded && (
           <span className="mr-2 text-slate-400/60 truncate">
-            {agent.departmentName || "بدون قسم"} · {agent.managerType || "AGENT"}
+            {agent.departmentName || t("agentProfiles.metadata.noDepartment")} · {agent.managerType || "AGENT"}
           </span>
         )}
       </button>
       {expanded && (
         <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-slate-400">القسم:</span>
-            <span className="text-slate-700 dark:text-slate-300">{agent.departmentIcon} {agent.departmentName || "غير محدد"}</span>
+            <span className="font-medium text-slate-400">{t("agentProfiles.metadata.department")}</span>
+            <span className="text-slate-700 dark:text-slate-300">{agent.departmentIcon} {agent.departmentName || t("agentProfiles.metadata.unspecified")}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-medium text-slate-400">المستوى:</span>
+            <span className="font-medium text-slate-400">{t("agentProfiles.metadata.level")}</span>
             <span className="text-slate-700 dark:text-slate-300">{agent.managerType || "AGENT"}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-medium text-slate-400">المدير:</span>
-            <span className="text-slate-700 dark:text-slate-300">{resolvedParentName || "لا يوجد"}</span>
+            <span className="font-medium text-slate-400">{t("agentProfiles.metadata.manager")}</span>
+            <span className="text-slate-700 dark:text-slate-300">{resolvedParentName || t("agentProfiles.metadata.none")}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-medium text-slate-400">أنشأه:</span>
-            <span className="text-slate-700 dark:text-slate-300">{agent.createdBy || "النظام"}</span>
+            <span className="font-medium text-slate-400">{t("agentProfiles.metadata.createdBy")}</span>
+            <span className="text-slate-700 dark:text-slate-300">{agent.createdBy || t("agentProfiles.metadata.system")}</span>
           </div>
         </div>
       )}
@@ -283,6 +267,7 @@ const templateIcon = (slug: string) => {
 };
 
 export default function AgentProfilesPage() {
+  const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const agentIdFromUrl = searchParams.get("agent");
 
@@ -343,6 +328,14 @@ export default function AgentProfilesPage() {
       || !FILES_EQUAL(draftFiles, profile.files)
     );
   }, [profile, draftModel, draftName, draftIcon, draftAllowedTools, draftAllowedSkills, draftToolAutonomy, draftConfig, draftFiles]);
+
+  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
+    { key: "soul",   label: t("agentProfiles.tabs.soul"),   icon: <BookOpen className="size-4" /> },
+    { key: "agents", label: t("agentProfiles.tabs.agents"),  icon: <Users className="size-4" /> },
+    { key: "tools-md",  label: t("agentProfiles.tabs.toolsMd"),  icon: <Wrench className="size-4" /> },
+    { key: "tools", label: t("agentProfiles.tabs.tools"),   icon: <Shield className="size-4" /> },
+    { key: "skills-json", label: t("agentProfiles.tabs.skillsJson"), icon: <FileCode className="size-4" /> },
+  ];
 
   /* ── Load agents ── */
   useEffect(() => {
@@ -459,7 +452,7 @@ export default function AgentProfilesPage() {
     const skillsJson = draftFiles["SKILLS.json"];
     if (skillsJson?.trim()) {
       try { JSON.parse(skillsJson); }
-      catch { setTab("skills-json"); setProfileError("ملف SKILLS.json يحتوي على JSON غير صالح. صححه قبل الحفظ."); return; }
+      catch { setTab("skills-json"); setProfileError(t("agentProfiles.toast.invalidSkillsJson")); return; }
     }
     setProfileSaving(true);
     setProfileError(null);
@@ -488,9 +481,9 @@ export default function AgentProfilesPage() {
       } : prev);
       setAgents((prev) => prev.map((a) => a.id === selectedId ? { ...a, name: draftName || a.name, icon: draftIcon } : a));
       setEditing(false);
-      toast.success("تم حفظ التعديلات بنجاح");
+      toast.success(t("agentProfiles.toast.saveSuccess"));
     } else {
-      setProfileError("فشل حفظ التعديلات");
+      setProfileError(t("agentProfiles.toast.saveFailed"));
     }
     setProfileSaving(false);
   };
@@ -522,7 +515,7 @@ export default function AgentProfilesPage() {
       setNewAgentIcon("🤖");
       setNewAgentDesc("");
       setNewAgentTemplate(null);
-      toast.success(`تم إنشاء الوكيل ${data.agent.name} بنجاح`);
+      toast.success(t("agentProfiles.toast.createSuccess", { name: data.agent.name }));
       sandboxApi.getAgents().then((res) => {
         setAgents(res.agents as AgentItem[]);
         setSelectedId(data.agent.id);
@@ -531,7 +524,7 @@ export default function AgentProfilesPage() {
         setSearchParams(params, { replace: true });
       }).catch(() => {});
     } else {
-      setCreateError("فشل إنشاء الوكيل. قد يكون الاسم مستخدماً بالفعل.");
+      setCreateError(t("agentProfiles.toast.createFailed"));
     }
     setCreating(false);
   };
@@ -548,9 +541,9 @@ export default function AgentProfilesPage() {
       setAgents(remaining);
       if (remaining.length > 0) setSelectedId(remaining[0].id);
       else setSelectedId(null);
-      toast.success("تم حذف الوكيل بنجاح");
+      toast.success(t("agentProfiles.toast.deleteSuccess"));
     } else {
-      setCreateError("فشل حذف الوكيل");
+      setCreateError(t("agentProfiles.toast.deleteFailed"));
     }
     setDeleting(false);
   };
@@ -558,7 +551,7 @@ export default function AgentProfilesPage() {
   const selectedAgent = agents.find((a) => a.id === selectedId);
   const channels = useMemo(() => getAgentChannels(profile), [profile]);
   const active = isActive(profile?.agent?.status);
-  const createdStr = relativeTime((profile?.agent as { createdAt?: string })?.createdAt);
+  const createdStr = relativeTime((profile?.agent as { createdAt?: string })?.createdAt, t, i18n.language);
 
   const agentNameMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -606,11 +599,11 @@ export default function AgentProfilesPage() {
       <aside className="w-64 flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
           <Bot className="size-4 text-indigo-600" />
-          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200">الوكلاء</h2>
+          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200">{t("agentProfiles.sidebar.title")}</h2>
           {!agentsLoading && <Badge variant="secondary" className="text-xs mr-auto">{agents.length}</Badge>}
           <button onClick={() => setCreateOpen(true)}
             className="flex items-center justify-center size-6 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-400 hover:text-indigo-600"
-            title="إضافة وكيل جديد"
+            title={t("agentProfiles.sidebar.addTitle")}
           >
             <Plus className="size-4" />
           </button>
@@ -618,7 +611,7 @@ export default function AgentProfilesPage() {
         <div className="px-3 py-2">
           <div className="relative">
             <Search className="absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            <Input placeholder="بحث في الوكلاء..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-8 pr-8 text-xs" />
+            <Input placeholder={t("agentProfiles.sidebar.search")} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-8 pr-8 text-xs" />
           </div>
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
@@ -627,12 +620,12 @@ export default function AgentProfilesPage() {
           ) : filteredAgents.length === 0 && searchQuery ? (
             <div className="flex flex-col items-center gap-2 px-4 py-10 text-center text-xs text-slate-400">
               <Search className="size-6 text-slate-300" />
-              <span>لا توجد نتائج لـ &quot;{searchQuery}&quot;</span>
+              <span>{t("agentProfiles.sidebar.noResults", { query: searchQuery })}</span>
             </div>
           ) : (
             filteredAgents.map((agent) => (
               <button key={agent.id} onClick={() => {
-                if (hasUnsavedChanges && selectedId !== agent.id && !window.confirm("لديك تعديلات غير محفوظة. هل تريد تجاهلها وفتح وكيل آخر؟")) return;
+                if (hasUnsavedChanges && selectedId !== agent.id && !window.confirm(t("agentProfiles.sidebar.unsavedConfirm"))) return;
                 setSelectedId(agent.id);
                 setTab("soul");
               }}
@@ -682,7 +675,7 @@ export default function AgentProfilesPage() {
                       >{icon}</button>
                     ))}
                   </div>
-                  <span className="text-[8px] text-slate-400">الأيقونة</span>
+                  <span className="text-[8px] text-slate-400">{t("agentProfiles.icon.label")}</span>
                 </div>
               ) : (
                 <span className="text-2xl flex-shrink-0">{selectedAgent.icon || "🤖"}</span>
@@ -697,9 +690,9 @@ export default function AgentProfilesPage() {
                   {profile && (
                     <>
                       <span className={`inline-block size-2 rounded-full ${active ? "bg-emerald-500" : "bg-slate-300"}`} />
-                      <span className="text-xs text-slate-500">{active ? "نشط" : "متوقف"}</span>
+                      <span className="text-xs text-slate-500">{active ? t("agentProfiles.header.status.active") : t("agentProfiles.header.status.paused")}</span>
                       {channels.map((ch) => (
-                        <span key={ch} className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded font-medium">{CHANNEL_META[ch] || ch}</span>
+                        <span key={ch} className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded font-medium">{t(`agentProfiles.channel.${ch}`)}</span>
                       ))}
                       {createdStr && <span className="text-xs text-slate-400"><Clock className="inline-block size-3 ml-1" />{createdStr}</span>}
                     </>
@@ -711,7 +704,7 @@ export default function AgentProfilesPage() {
                 {profile && (
                   <div className="flex items-center gap-1.5 rounded-lg border bg-slate-50 dark:bg-slate-800 px-3 py-1.5">
                     <Switch checked={active} onCheckedChange={toggleStatus} disabled={statusSaving} />
-                    <span className="text-xs font-medium text-slate-500">{statusSaving ? "..." : active ? "مفعل" : "متوقف"}</span>
+                    <span className="text-xs font-medium text-slate-500">{statusSaving ? "..." : active ? t("agentProfiles.header.status.active_toggle") : t("agentProfiles.header.status.paused_toggle")}</span>
                   </div>
                 )}
                 {profile?.agent.templateSlug && (
@@ -720,7 +713,7 @@ export default function AgentProfilesPage() {
                 {profile && selectedAgent?.role !== "CEO" && (
                   <button onClick={() => setDeleteConfirm(selectedId)}
                     className="flex items-center justify-center size-8 rounded-lg border border-transparent hover:border-red-200 dark:hover:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-400 hover:text-red-600 transition-all"
-                    title="حذف الوكيل"
+                    title={t("agentProfiles.header.deleteTitle")}
                   >
                     <Trash2 className="size-3.5" />
                   </button>
@@ -728,23 +721,23 @@ export default function AgentProfilesPage() {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-slate-400">اختر وكيلاً من القائمة</p>
+            <p className="text-sm text-slate-400">{t("agentProfiles.header.noSelection")}</p>
           )}
 
           {/* Model + Save */}
           {profile && (
             <div className="mt-4 flex items-center gap-3">
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                <span className="text-xs font-medium text-slate-500 whitespace-nowrap">الموديل:</span>
+                <span className="text-xs font-medium text-slate-500 whitespace-nowrap">{t("agentProfiles.header.model")}</span>
                 <Select value={draftModel} onValueChange={(v) => { setDraftModel(v ?? ""); if (!editing) setEditing(true); }}>
                   <SelectTrigger className="h-9 text-sm border-slate-200 dark:border-slate-700 rounded-lg flex-1 min-w-0">
-                    <SelectValue placeholder={models.length > 0 ? "اختر موديل..." : "لا توجد موديلات متاحة"} />
+                    <SelectValue placeholder={models.length > 0 ? t("agentProfiles.header.modelPlaceholder") : t("agentProfiles.header.noModels")} />
                   </SelectTrigger>
                   <SelectContent>
                     {draftModel && !models.some((m) => m.modelName === draftModel) && (
                       <SelectItem value={draftModel} className="text-sm">
                         <span className="font-medium">{draftModel}</span>
-                        <span className="text-xs text-slate-400 mr-2">· الحالي</span>
+                        <span className="text-xs text-slate-400 mr-2">{t("agentProfiles.header.current")}</span>
                       </SelectItem>
                     )}
                     {models.map((m) => (
@@ -761,11 +754,11 @@ export default function AgentProfilesPage() {
               {hasUnsavedChanges && (
                 <div className="flex gap-2 shrink-0">
                   <Button size="sm" variant="outline" className="h-9 text-xs px-3" onClick={discardChanges}>
-                    <X className="size-3.5 ml-1.5" />تراجع
+                    <X className="size-3.5 ml-1.5" />{t("agentProfiles.header.discard")}
                   </Button>
                   <Button size="sm" className="h-9 text-xs px-4" onClick={saveProfile} disabled={profileSaving}>
                     {profileSaving ? <Loader2 className="size-3.5 animate-spin ml-1.5" /> : <Save className="size-3.5 ml-1.5" />}
-                    {profileSaving ? "حفظ..." : "حفظ"}
+                    {profileSaving ? t("agentProfiles.header.saving") : t("agentProfiles.header.save")}
                   </Button>
                 </div>
               )}
@@ -778,7 +771,7 @@ export default function AgentProfilesPage() {
 
         {/* Tabs */}
         <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 flex gap-1 overflow-x-auto">
-          {TABS.map(({ key, label, icon }) => (
+          {tabs.map(({ key, label, icon }) => (
             <button key={key} onClick={() => setTab(key)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 tab === key ? "border-indigo-600 text-indigo-600 dark:text-indigo-400" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -832,7 +825,7 @@ export default function AgentProfilesPage() {
           {!selectedId && (
             <div className="flex flex-col items-center justify-center py-24 text-center">
               <Bot className="size-10 text-slate-300 dark:text-slate-700 mb-3" />
-              <p className="text-sm text-slate-400">اختر وكيلاً من القائمة</p>
+              <p className="text-sm text-slate-400">{t("agentProfiles.header.noSelection")}</p>
             </div>
           )}
         </div>
@@ -846,7 +839,7 @@ export default function AgentProfilesPage() {
               <DialogHeader className="mb-4">
                 <DialogTitle className="text-base flex items-center gap-2">
                   <span className="size-6 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-sm">✨</span>
-                  إضافة وكيل جديد
+                  {t("agentProfiles.create.title")}
                 </DialogTitle>
               </DialogHeader>
             </div>
@@ -854,12 +847,12 @@ export default function AgentProfilesPage() {
               <section className="mb-4">
                 <div className="flex items-center gap-1.5 mb-2">
                   <span className="size-1.5 rounded-full bg-indigo-500" />
-                  <h4 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">القالب</h4>
+                  <h4 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("agentProfiles.create.template")}</h4>
                 </div>
                 {templatesLoading ? (
                   <div className="flex items-center gap-2 py-2.5 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
                     <Loader2 className="size-3.5 animate-spin text-indigo-500" />
-                    <span className="text-xs text-slate-400">جارٍ تحميل القوالب...</span>
+                    <span className="text-xs text-slate-400">{t("agentProfiles.create.loadingTemplates")}</span>
                   </div>
                 ) : (
                   <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
@@ -871,7 +864,7 @@ export default function AgentProfilesPage() {
                       }`}
                     >
                       <span className={`size-8 flex items-center justify-center rounded-lg text-lg transition-all ${!newAgentTemplate ? "bg-indigo-100 dark:bg-indigo-900/40" : "bg-slate-100 dark:bg-slate-800"}`}>⚙️</span>
-                      <p className={`text-[10px] font-semibold ${!newAgentTemplate ? "text-indigo-700 dark:text-indigo-400" : "text-slate-600 dark:text-slate-400"}`}>مخصص</p>
+                      <p className={`text-[10px] font-semibold ${!newAgentTemplate ? "text-indigo-700 dark:text-indigo-400" : "text-slate-600 dark:text-slate-400"}`}>{t("agentProfiles.create.custom")}</p>
                       {!newAgentTemplate && <span className="size-1 rounded-full bg-indigo-500" />}
                     </button>
                     {templates.map((tpl) => (
@@ -886,7 +879,7 @@ export default function AgentProfilesPage() {
                           {templateIcon(tpl.slug)}
                         </span>
                         <p className={`text-[10px] font-semibold leading-tight ${newAgentTemplate === tpl.slug ? "text-indigo-700 dark:text-indigo-400" : "text-slate-600 dark:text-slate-400"}`}>{tpl.name}</p>
-                        <span className="text-[8px] text-slate-400">{tpl.allowedTools.length} أدوات · {tpl.allowedSkills.length} مهارات</span>
+                        <span className="text-[8px] text-slate-400">{t("agentProfiles.create.toolsCount", { n: tpl.allowedTools.length, m: tpl.allowedSkills.length })}</span>
                         {newAgentTemplate === tpl.slug && <span className="size-1 rounded-full bg-indigo-500" />}
                       </button>
                     ))}
@@ -897,11 +890,11 @@ export default function AgentProfilesPage() {
               <section className="mb-4">
                 <div className="flex items-center gap-1.5 mb-2">
                   <span className="size-1.5 rounded-full bg-indigo-500" />
-                  <h4 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الهوية</h4>
+                  <h4 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("agentProfiles.create.identity")}</h4>
                 </div>
                 <div className="flex gap-2.5">
                   <div className="flex-shrink-0">
-                    <label className="text-[9px] font-medium text-slate-400 block mb-1 text-center">الأيقونة</label>
+                    <label className="text-[9px] font-medium text-slate-400 block mb-1 text-center">{t("agentProfiles.icon.label")}</label>
                     <div className="grid grid-cols-4 gap-0.5">
                       {AGENT_ICONS.map((icon) => (
                         <button key={icon} type="button" onClick={() => setNewAgentIcon(icon)} title={icon}
@@ -916,12 +909,12 @@ export default function AgentProfilesPage() {
                   </div>
                   <div className="flex-1 space-y-2">
                     <div>
-                      <label className="text-[9px] font-medium text-slate-400 block mb-0.5">اسم الوكيل *</label>
-                      <Input placeholder="مثال: وكيل مبيعات متجر" value={newAgentName} onChange={(e) => setNewAgentName(e.target.value)} disabled={creating} className="h-8 text-sm" />
+                      <label className="text-[9px] font-medium text-slate-400 block mb-0.5">{t("agentProfiles.create.name")}</label>
+                      <Input placeholder={t("agentProfiles.create.namePlaceholder")} value={newAgentName} onChange={(e) => setNewAgentName(e.target.value)} disabled={creating} className="h-8 text-sm" />
                     </div>
                     <div>
-                      <label className="text-[9px] font-medium text-slate-400 block mb-0.5">الوصف (اختياري)</label>
-                      <Input placeholder="وصف مختصر لمهام الوكيل..." value={newAgentDesc} onChange={(e) => setNewAgentDesc(e.target.value)} disabled={creating} className="h-8 text-sm" />
+                      <label className="text-[9px] font-medium text-slate-400 block mb-0.5">{t("agentProfiles.create.description")}</label>
+                      <Input placeholder={t("agentProfiles.create.descPlaceholder")} value={newAgentDesc} onChange={(e) => setNewAgentDesc(e.target.value)} disabled={creating} className="h-8 text-sm" />
                     </div>
                   </div>
                 </div>
@@ -930,14 +923,14 @@ export default function AgentProfilesPage() {
               <section className="mb-4">
                 <div className="flex items-center gap-1.5 mb-2">
                   <span className="size-1.5 rounded-full bg-indigo-500" />
-                  <h4 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">الموديل</h4>
+                  <h4 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("agentProfiles.create.model")}</h4>
                 </div>
                 <Select value={newAgentModel} onValueChange={setNewAgentModel} disabled={creating}>
                   <SelectTrigger className="w-full h-8 text-sm">
-                    <SelectValue placeholder="اختر موديل التشغيل..." />
+                    <SelectValue placeholder={t("agentProfiles.create.modelPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">بدون موديل</SelectItem>
+                    <SelectItem value="none">{t("agentProfiles.create.noModel")}</SelectItem>
                     {models.map((m) => (
                       <SelectItem key={m.id} value={m.modelName}>
                         <div className="flex items-center gap-2">
@@ -956,11 +949,11 @@ export default function AgentProfilesPage() {
                 <span className="text-xl flex-shrink-0">{newAgentIcon}</span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{newAgentName || "اسم الوكيل"}</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{newAgentName || t("agentProfiles.create.namePreview")}</p>
                     <span className={`size-1.5 rounded-full flex-shrink-0 ${newAgentName ? "bg-emerald-500" : "bg-slate-300"}`} />
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                    <span className="text-[10px] text-slate-500">{newAgentDesc || (selectedTemplate ? selectedTemplate.name : "وكيل مخصص")}</span>
+                    <span className="text-[10px] text-slate-500">{newAgentDesc || (selectedTemplate ? selectedTemplate.name : t("agentProfiles.create.descPreview"))}</span>
                     {selectedTemplate ? (
                       <span className="text-[9px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-medium">{selectedTemplate.role || selectedTemplate.slug}</span>
                     ) : (
@@ -981,10 +974,10 @@ export default function AgentProfilesPage() {
               )}
 
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating} className="h-8 text-xs px-3">إلغاء</Button>
+                <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating} className="h-8 text-xs px-3">{t("agentProfiles.create.cancel")}</Button>
                 <Button onClick={handleCreateAgent} disabled={creating || !newAgentName.trim()} className="h-8 text-xs px-4">
                   {creating ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : <Plus className="ml-1.5 size-3.5" />}
-                  {creating ? "جارٍ الإنشاء..." : "إنشاء الوكيل"}
+                  {creating ? t("agentProfiles.create.creating") : t("agentProfiles.create.submit")}
                 </Button>
               </div>
             </div>
@@ -998,20 +991,20 @@ export default function AgentProfilesPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
               <Trash2 className="size-4" />
-              حذف الوكيل
+              {t("agentProfiles.delete.title")}
             </DialogTitle>
           </DialogHeader>
           <div className="py-3">
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              هل أنت متأكد من حذف الوكيل <strong className="text-slate-800 dark:text-slate-200">{selectedAgent?.name}</strong>؟
+              <span dangerouslySetInnerHTML={{ __html: t("agentProfiles.delete.confirm", { name: selectedAgent?.name }) }} />
             </p>
-            <p className="text-xs text-slate-400 mt-2">لا يمكن التراجع عن هذا الإجراء.</p>
+            <p className="text-xs text-slate-400 mt-2">{t("agentProfiles.delete.irreversible")}</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)} disabled={deleting}>إلغاء</Button>
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)} disabled={deleting}>{t("agentProfiles.delete.cancel")}</Button>
             <Button variant="destructive" onClick={handleDeleteAgent} disabled={deleting}>
               {deleting ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : null}
-              {deleting ? "جارٍ الحذف..." : "تأكيد الحذف"}
+              {deleting ? t("agentProfiles.delete.deleting") : t("agentProfiles.delete.confirmButton")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1038,6 +1031,7 @@ function ToolsAndSkillsTab({
   onToolAutonomyChange: (autonomy: Record<string, string>) => void;
   onConfigChange: (config: Record<string, string>) => void;
 }) {
+  const { t } = useTranslation();
   const [toolsSearch, setToolsSearch] = useState("");
   const [skillsSearch, setSkillsSearch] = useState("");
   const [addToolOpen, setAddToolOpen] = useState(false);
@@ -1099,6 +1093,12 @@ function ToolsAndSkillsTab({
   const enabledToolsCount = draftAllowedTools.length;
   const enabledSkillsCount = draftAllowedSkills.length;
 
+  const autonomyOptions = [
+    { value: "auto", label: t("agentProfiles.autonomy.auto"), color: "text-emerald-600" },
+    { value: "approval", label: t("agentProfiles.autonomy.approval"), color: "text-amber-600" },
+    { value: "blocked", label: t("agentProfiles.autonomy.blocked"), color: "text-destructive" },
+  ] as const;
+
   const AutonomySelect = ({ toolName }: { toolName: string }) => {
     const current = draftToolAutonomy[toolName] || "auto";
     return (
@@ -1111,7 +1111,7 @@ function ToolsAndSkillsTab({
           current === "blocked" && "border-destructive/50 text-destructive",
         )}
       >
-        {AUTONOMY_OPTIONS.map((opt) => (
+        {autonomyOptions.map((opt) => (
           <option key={opt.value} value={opt.value}>{opt.label}</option>
         ))}
       </select>
@@ -1124,29 +1124,29 @@ function ToolsAndSkillsTab({
       <div>
         <div className="flex items-center gap-2 mb-3">
           <Wrench className="size-4 text-slate-500" />
-          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">الأدوات</p>
+          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{t("agentProfiles.tools.title")}</p>
           <Badge variant="secondary" className="text-xs">{enabledToolsCount} / {allTools.length}</Badge>
           <div className="mr-auto flex gap-1">
-            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => setAddToolOpen(true)}>+ إضافة أداة</Button>
-            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={enableAllTools}>تفعيل الكل</Button>
-            <Button variant="ghost" size="sm" className="h-7 text-xs px-2 text-destructive hover:text-destructive" onClick={disableAllTools}>تعطيل الكل</Button>
+            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => setAddToolOpen(true)}>{t("agentProfiles.tools.add")}</Button>
+            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={enableAllTools}>{t("agentProfiles.tools.enableAll")}</Button>
+            <Button variant="ghost" size="sm" className="h-7 text-xs px-2 text-destructive hover:text-destructive" onClick={disableAllTools}>{t("agentProfiles.tools.disableAll")}</Button>
           </div>
         </div>
         <div className="relative mb-3">
           <Search className="absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          <Input placeholder="بحث في الأدوات..." value={toolsSearch} onChange={(e) => setToolsSearch(e.target.value)} className="h-8 pr-8 text-xs" />
+          <Input placeholder={t("agentProfiles.tools.search")} value={toolsSearch} onChange={(e) => setToolsSearch(e.target.value)} className="h-8 pr-8 text-xs" />
         </div>
 
         {allTools.length === 0 ? (
           <div className="w-full rounded-lg border border-dashed px-4 py-6 text-center text-xs text-slate-400">
             <Wrench className="mx-auto mb-2 size-6 text-slate-300/30" />
-            لا توجد أدوات متاحة
+            {t("agentProfiles.tools.empty")}
           </div>
         ) : (
           <div className="space-y-3">
             {readTools.length > 0 && (
               <div>
-                <p className="text-xs text-slate-500 mb-1.5 font-medium">قراءة (آمنة)</p>
+                <p className="text-xs text-slate-500 mb-1.5 font-medium">{t("agentProfiles.tools.readOnly")}</p>
                 <div className="grid grid-cols-1 gap-1.5">
                   {readTools.map((tool) => {
                     const enabled = draftAllowedTools.includes(tool.name);
@@ -1172,7 +1172,7 @@ function ToolsAndSkillsTab({
             )}
             {writeTools.length > 0 && (
               <div>
-                <p className="text-xs text-slate-500 mb-1.5 font-medium">كتابة (تحتاج موافقة)</p>
+                <p className="text-xs text-slate-500 mb-1.5 font-medium">{t("agentProfiles.tools.write")}</p>
                 <div className="grid grid-cols-1 gap-1.5">
                   {writeTools.map((tool) => {
                     const enabled = draftAllowedTools.includes(tool.name);
@@ -1207,19 +1207,19 @@ function ToolsAndSkillsTab({
           <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 p-4 space-y-4">
             <div className="flex items-center gap-2">
               <Wrench className="size-4 text-emerald-600" />
-              <p className="text-sm font-bold text-emerald-800 dark:text-emerald-200">إعدادات الربط بـ Google Sheets</p>
+              <p className="text-sm font-bold text-emerald-800 dark:text-emerald-200">{t("agentProfiles.googleSheets.title")}</p>
             </div>
-            <p className="text-xs text-emerald-700 dark:text-emerald-400">أدخل الرابط ليستخدمه الوكيل تلقائياً عند تفعيل أدوات الشيت.</p>
+            <p className="text-xs text-emerald-700 dark:text-emerald-400">{t("agentProfiles.googleSheets.desc")}</p>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-emerald-800 dark:text-emerald-200 mb-1">رابط شيت المنتجات</label>
+                <label className="block text-xs font-medium text-emerald-800 dark:text-emerald-200 mb-1">{t("agentProfiles.googleSheets.productsLabel")}</label>
                 <Input value={draftConfig.productsSheetUrl || ""} onChange={(e) => onConfigChange({ ...draftConfig, productsSheetUrl: e.target.value })}
                   placeholder="https://docs.google.com/spreadsheets/d/..." dir="ltr" className="h-9 text-xs bg-white dark:bg-gray-900"
                 />
               </div>
               <div>
                 <label className="block text-xs font-medium text-emerald-800 dark:text-emerald-200 mb-1">
-                  رابط Google Apps Script (للأوردرات)
+                  {t("agentProfiles.googleSheets.ordersLabel")}
                   <button type="button" onClick={() => setHelpDialogOpen(true)}
                     className="inline-flex items-center justify-center mr-1.5 align-middle size-4 rounded-full text-emerald-600 hover:text-emerald-800 hover:bg-emerald-200/50 dark:hover:bg-emerald-800/50 transition-colors"
                   >
@@ -1237,14 +1237,14 @@ function ToolsAndSkillsTab({
 
       <Dialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen}>
         <DialogContent className="sm:max-w-xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="text-base">كيفية الحصول على رابط Google Apps Script</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-base">{t("agentProfiles.googleSheets.helpTitle")}</DialogTitle></DialogHeader>
           <div className="space-y-3 text-sm leading-relaxed">
-            <p className="font-medium text-emerald-700 dark:text-emerald-400">اتبع الخطوات لإنشاء Web App للأوردرات:</p>
+            <p className="font-medium text-emerald-700 dark:text-emerald-400">{t("agentProfiles.googleSheets.helpTitle")}</p>
             <ol className="list-decimal pr-5 space-y-2 text-slate-600 dark:text-slate-400">
-              <li>افتح <strong>Google Sheets</strong></li>
-              <li>من القائمة: <strong>Extensions → Apps Script</strong></li>
-              <li>أنشئ Web App جديد وانسخ الرابط</li>
-              <li>ضع الرابط في حقل "رابط Google Apps Script"</li>
+              <li dangerouslySetInnerHTML={{ __html: t("agentProfiles.googleSheets.helpStep1") }} />
+              <li dangerouslySetInnerHTML={{ __html: t("agentProfiles.googleSheets.helpStep2") }} />
+              <li>{t("agentProfiles.googleSheets.helpStep3")}</li>
+              <li>{t("agentProfiles.googleSheets.helpStep4")}</li>
             </ol>
           </div>
         </DialogContent>
@@ -1254,23 +1254,23 @@ function ToolsAndSkillsTab({
       <div>
         <div className="flex items-center gap-2 mb-3">
           <Shield className="size-4 text-slate-500" />
-          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">المهارات</p>
+          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{t("agentProfiles.skills.title")}</p>
           <Badge variant="secondary" className="text-xs">{enabledSkillsCount} / {allSkills.length}</Badge>
           <div className="mr-auto flex gap-1">
-            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => setAddSkillOpen(true)}>+ إضافة مهارة</Button>
-            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={enableAllSkills}>تفعيل الكل</Button>
-            <Button variant="ghost" size="sm" className="h-7 text-xs px-2 text-destructive hover:text-destructive" onClick={disableAllSkills}>تعطيل الكل</Button>
+            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => setAddSkillOpen(true)}>{t("agentProfiles.skills.add")}</Button>
+            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={enableAllSkills}>{t("agentProfiles.skills.enableAll")}</Button>
+            <Button variant="ghost" size="sm" className="h-7 text-xs px-2 text-destructive hover:text-destructive" onClick={disableAllSkills}>{t("agentProfiles.skills.disableAll")}</Button>
           </div>
         </div>
         <div className="relative mb-3">
           <Search className="absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          <Input placeholder="بحث في المهارات..." value={skillsSearch} onChange={(e) => setSkillsSearch(e.target.value)} className="h-8 pr-8 text-xs" />
+          <Input placeholder={t("agentProfiles.skills.search")} value={skillsSearch} onChange={(e) => setSkillsSearch(e.target.value)} className="h-8 pr-8 text-xs" />
         </div>
 
         {allSkills.length === 0 ? (
           <div className="w-full rounded-lg border border-dashed px-4 py-6 text-center text-xs text-slate-400">
             <Shield className="mx-auto mb-2 size-6 text-slate-300/30" />
-            لا توجد مهارات متاحة
+            {t("agentProfiles.skills.empty")}
           </div>
         ) : (
           <div className="space-y-1.5">
@@ -1308,10 +1308,10 @@ function ToolsAndSkillsTab({
       {/* Add Tool Dialog */}
       <Dialog open={addToolOpen} onOpenChange={setAddToolOpen}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>إضافة أداة للوكيل</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("agentProfiles.tools.addDialogTitle")}</DialogTitle></DialogHeader>
           <div className="relative mb-3">
             <Search className="absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            <Input placeholder="ابحث عن أداة..." value={addToolSearch} onChange={(e) => setAddToolSearch(e.target.value)} className="h-9 pr-8 text-sm" autoFocus />
+            <Input placeholder={t("agentProfiles.tools.addSearch")} value={addToolSearch} onChange={(e) => setAddToolSearch(e.target.value)} className="h-9 pr-8 text-sm" autoFocus />
           </div>
           <div className="max-h-[300px] overflow-y-auto space-y-1">
             {allTools.filter((t) => {
@@ -1337,7 +1337,7 @@ function ToolsAndSkillsTab({
                       onClick={(e) => e.stopPropagation()}
                       className="h-6 rounded border bg-background px-1 text-[0.6rem]"
                     >
-                      {AUTONOMY_OPTIONS.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
+                      {autonomyOptions.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
                     </select>
                   )}
                 </div>
@@ -1350,10 +1350,10 @@ function ToolsAndSkillsTab({
       {/* Add Skill Dialog */}
       <Dialog open={addSkillOpen} onOpenChange={setAddSkillOpen}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>إضافة مهارة للوكيل</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("agentProfiles.skills.addDialogTitle")}</DialogTitle></DialogHeader>
           <div className="relative mb-3">
             <Search className="absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            <Input placeholder="ابحث عن مهارة..." value={addSkillSearch} onChange={(e) => setAddSkillSearch(e.target.value)} className="h-9 pr-8 text-sm" autoFocus />
+            <Input placeholder={t("agentProfiles.skills.addSearch")} value={addSkillSearch} onChange={(e) => setAddSkillSearch(e.target.value)} className="h-9 pr-8 text-sm" autoFocus />
           </div>
           <div className="max-h-[300px] overflow-y-auto space-y-1">
             {allSkills.filter((s) => {

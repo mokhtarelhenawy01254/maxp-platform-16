@@ -4229,7 +4229,153 @@
     "agentWorkspace": "مركز التأكيد والمتابعة",
     "aiAgentMap": "خريطة الوكلاء",
     "aiAgentsTeam": "فريق الوكلاء",
-    "agentProfiles": "ملفات الوكلاء",
+    "agentProfiles": {
+      "sidebarTitle": "ملفات الوكلاء",
+      "tabs": {
+        "soul": "SOUL.md",
+        "agents": "AGENTS.md",
+        "toolsMd": "TOOLS.md",
+        "tools": "الأدوات والمهارات",
+        "skillsJson": "SKILLS.json"
+      },
+      "channel": {
+        "facebook": "فيسبوك",
+        "whatsapp": "واتساب",
+        "dashboard": "داشبورد"
+      },
+      "autonomy": {
+        "auto": "تلقائي",
+        "approval": "تأكيد",
+        "blocked": "محظور"
+      },
+      "time": {
+        "now": "الآن",
+        "minutesAgo": "منذ {minutes} دقيقة",
+        "hoursAgo": "منذ {hours} ساعة",
+        "daysAgo": "منذ {days} يوم"
+      },
+      "sidebar": {
+        "title": "الوكلاء",
+        "search": "بحث في الوكلاء...",
+        "addTitle": "إضافة وكيل جديد",
+        "noResults": "لا توجد نتائج لـ \"{query}\"",
+        "unsavedConfirm": "لديك تعديلات غير محفوظة. هل تريد تجاهلها وفتح وكيل آخر؟"
+      },
+      "header": {
+        "noSelection": "اختر وكيلاً من القائمة",
+        "status": {
+          "active": "نشط",
+          "paused": "متوقف",
+          "active_toggle": "مفعل",
+          "paused_toggle": "متوقف"
+        },
+        "model": "الموديل:",
+        "modelPlaceholder": "اختر موديل...",
+        "noModels": "لا توجد موديلات متاحة",
+        "current": "· الحالي",
+        "discard": "تراجع",
+        "save": "حفظ",
+        "saving": "حفظ...",
+        "deleteTitle": "حذف الوكيل"
+      },
+      "metadata": {
+        "title": "تفاصيل الوكيل",
+        "department": "القسم:",
+        "unspecified": "غير محدد",
+        "level": "المستوى:",
+        "manager": "المدير:",
+        "none": "لا يوجد",
+        "createdBy": "أنشأه:",
+        "system": "النظام",
+        "noDepartment": "بدون قسم"
+      },
+      "toast": {
+        "saveSuccess": "تم حفظ التعديلات بنجاح",
+        "saveFailed": "فشل حفظ التعديلات",
+        "createSuccess": "تم إنشاء الوكيل {name} بنجاح",
+        "createFailed": "فشل إنشاء الوكيل. قد يكون الاسم مستخدماً بالفعل.",
+        "deleteSuccess": "تم حذف الوكيل بنجاح",
+        "deleteFailed": "فشل حذف الوكيل",
+        "invalidSkillsJson": "ملف SKILLS.json يحتوي على JSON غير صالح. صححه قبل الحفظ."
+      },
+      "editor": {
+        "linesWords": "{lineCount} سطر · {wordCount} كلمة",
+        "edit": "تحرير",
+        "preview": "معاينة",
+        "collapse": "طي",
+        "expand": "توسيع",
+        "placeholder": "اكتب محتوى {label} هنا...",
+        "emptyContent": "لا يوجد محتوى"
+      },
+      "icon": {
+        "label": "الأيقونة"
+      },
+      "create": {
+        "title": "إضافة وكيل جديد",
+        "template": "القالب",
+        "loadingTemplates": "جارٍ تحميل القوالب...",
+        "custom": "مخصص",
+        "toolsCount": "{n} أدوات · {m} مهارات",
+        "identity": "الهوية",
+        "name": "اسم الوكيل *",
+        "namePlaceholder": "مثال: وكيل مبيعات متجر",
+        "namePreview": "اسم الوكيل",
+        "description": "الوصف (اختياري)",
+        "descPlaceholder": "وصف مختصر لمهام الوكيل...",
+        "descPreview": "وكيل مخصص",
+        "model": "الموديل",
+        "modelPlaceholder": "اختر موديل التشغيل...",
+        "noModel": "بدون موديل",
+        "cancel": "إلغاء",
+        "submit": "إنشاء الوكيل",
+        "creating": "جارٍ الإنشاء..."
+      },
+      "delete": {
+        "title": "حذف الوكيل",
+        "confirm": "هل أنت متأكد من حذف الوكيل <strong>{name}</strong>؟",
+        "irreversible": "لا يمكن التراجع عن هذا الإجراء.",
+        "cancel": "إلغاء",
+        "confirmButton": "تأكيد الحذف",
+        "deleting": "جارٍ الحذف..."
+      },
+      "tools": {
+        "title": "الأدوات",
+        "add": "+ إضافة أداة",
+        "enableAll": "تفعيل الكل",
+        "disableAll": "تعطيل الكل",
+        "search": "بحث في الأدوات...",
+        "empty": "لا توجد أدوات متاحة",
+        "readOnly": "قراءة (آمنة)",
+        "write": "كتابة (تحتاج موافقة)",
+        "addDialogTitle": "إضافة أداة للوكيل",
+        "addSearch": "ابحث عن أداة..."
+      },
+      "skills": {
+        "title": "المهارات",
+        "add": "+ إضافة مهارة",
+        "enableAll": "تفعيل الكل",
+        "disableAll": "تعطيل الكل",
+        "search": "بحث في المهارات...",
+        "empty": "لا توجد مهارات متاحة",
+        "addDialogTitle": "إضافة مهارة للوكيل",
+        "addSearch": "ابحث عن مهارة..."
+      },
+      "googleSheets": {
+        "title": "إعدادات الربط بـ Google Sheets",
+        "desc": "أدخل الرابط ليستخدمه الوكيل تلقائياً عند تفعيل أدوات الشيت.",
+        "productsLabel": "رابط شيت المنتجات",
+        "ordersLabel": "رابط Google Apps Script (للأوردرات)",
+        "helpTitle": "كيفية الحصول على رابط Google Apps Script",
+        "helpStep1": "افتح <strong>Google Sheets</strong>",
+        "helpStep2": "من القائمة: <strong>Extensions → Apps Script</strong>",
+        "helpStep3": "أنشئ Web App جديد وانسخ الرابط",
+        "helpStep4": "ضع الرابط في حقل \"رابط Google Apps Script\""
+      },
+      "skillCard": {
+        "tools": "الأدوات ({count})",
+        "noTools": "لا توجد أدوات"
+      }
+    },
     "aiCatalog": "كتالوج المنتجات (البوت)",
     "aiAgentSkills": "مهارات الوكلاء",
     "aiAgentTools": "أدوات الوكلاء",

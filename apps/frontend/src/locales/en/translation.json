@@ -4175,7 +4175,153 @@
     "agentWorkspace": "Confirmation Center",
     "aiAgentMap": "Agent Map",
     "aiAgentsTeam": "Agent Team",
-    "agentProfiles": "Agent Profiles",
+    "agentProfiles": {
+      "sidebarTitle": "Agent Profiles",
+      "tabs": {
+        "soul": "SOUL.md",
+        "agents": "AGENTS.md",
+        "toolsMd": "TOOLS.md",
+        "tools": "Tools & Skills",
+        "skillsJson": "SKILLS.json"
+      },
+      "channel": {
+        "facebook": "Facebook",
+        "whatsapp": "WhatsApp",
+        "dashboard": "Dashboard"
+      },
+      "autonomy": {
+        "auto": "Auto",
+        "approval": "Approval",
+        "blocked": "Blocked"
+      },
+      "time": {
+        "now": "Now",
+        "minutesAgo": "{minutes} min ago",
+        "hoursAgo": "{hours} hr ago",
+        "daysAgo": "{days} day ago"
+      },
+      "sidebar": {
+        "title": "Agents",
+        "search": "Search agents...",
+        "addTitle": "Add new agent",
+        "noResults": "No results for \"{query}\"",
+        "unsavedConfirm": "You have unsaved changes. Discard and open another agent?"
+      },
+      "header": {
+        "noSelection": "Select an agent from the list",
+        "status": {
+          "active": "Active",
+          "paused": "Paused",
+          "active_toggle": "Active",
+          "paused_toggle": "Paused"
+        },
+        "model": "Model:",
+        "modelPlaceholder": "Select model...",
+        "noModels": "No models available",
+        "current": "· Current",
+        "discard": "Discard",
+        "save": "Save",
+        "saving": "Saving...",
+        "deleteTitle": "Delete agent"
+      },
+      "metadata": {
+        "title": "Agent Details",
+        "department": "Department:",
+        "unspecified": "Unspecified",
+        "level": "Level:",
+        "manager": "Manager:",
+        "none": "None",
+        "createdBy": "Created by:",
+        "system": "System",
+        "noDepartment": "No department"
+      },
+      "toast": {
+        "saveSuccess": "Changes saved successfully",
+        "saveFailed": "Failed to save changes",
+        "createSuccess": "Agent {name} created successfully",
+        "createFailed": "Failed to create agent. Name may already be in use.",
+        "deleteSuccess": "Agent deleted successfully",
+        "deleteFailed": "Failed to delete agent",
+        "invalidSkillsJson": "SKILLS.json contains invalid JSON. Fix it before saving."
+      },
+      "editor": {
+        "linesWords": "{lineCount} lines · {wordCount} words",
+        "edit": "Edit",
+        "preview": "Preview",
+        "collapse": "Collapse",
+        "expand": "Expand",
+        "placeholder": "Write {label} content here...",
+        "emptyContent": "No content"
+      },
+      "icon": {
+        "label": "Icon"
+      },
+      "create": {
+        "title": "Add New Agent",
+        "template": "Template",
+        "loadingTemplates": "Loading templates...",
+        "custom": "Custom",
+        "toolsCount": "{n} tools · {m} skills",
+        "identity": "Identity",
+        "name": "Agent Name *",
+        "namePlaceholder": "e.g. Store Sales Agent",
+        "namePreview": "Agent Name",
+        "description": "Description (optional)",
+        "descPlaceholder": "Brief description of agent tasks...",
+        "descPreview": "Custom Agent",
+        "model": "Model",
+        "modelPlaceholder": "Select runtime model...",
+        "noModel": "No model",
+        "cancel": "Cancel",
+        "submit": "Create Agent",
+        "creating": "Creating..."
+      },
+      "delete": {
+        "title": "Delete Agent",
+        "confirm": "Are you sure you want to delete <strong>{name}</strong>?",
+        "irreversible": "This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirmButton": "Confirm Delete",
+        "deleting": "Deleting..."
+      },
+      "tools": {
+        "title": "Tools",
+        "add": "+ Add Tool",
+        "enableAll": "Enable All",
+        "disableAll": "Disable All",
+        "search": "Search tools...",
+        "empty": "No tools available",
+        "readOnly": "Read (Safe)",
+        "write": "Write (Needs Approval)",
+        "addDialogTitle": "Add Tool to Agent",
+        "addSearch": "Search for a tool..."
+      },
+      "skills": {
+        "title": "Skills",
+        "add": "+ Add Skill",
+        "enableAll": "Enable All",
+        "disableAll": "Disable All",
+        "search": "Search skills...",
+        "empty": "No skills available",
+        "addDialogTitle": "Add Skill to Agent",
+        "addSearch": "Search for a skill..."
+      },
+      "googleSheets": {
+        "title": "Google Sheets Integration Settings",
+        "desc": "Enter the URL for the agent to use automatically when sheet tools are enabled.",
+        "productsLabel": "Products Sheet URL",
+        "ordersLabel": "Google Apps Script URL (for orders)",
+        "helpTitle": "How to get Google Apps Script URL",
+        "helpStep1": "Open <strong>Google Sheets</strong>",
+        "helpStep2": "From menu: <strong>Extensions → Apps Script</strong>",
+        "helpStep3": "Create a new Web App and copy the URL",
+        "helpStep4": "Paste the URL in the \"Google Apps Script URL\" field"
+      },
+      "skillCard": {
+        "tools": "Tools ({count})",
+        "noTools": "No tools configured"
+      }
+    },
     "aiCatalog": "AI Product Catalog",
     "aiAgentSkills": "Agent Skills",
     "aiAgentTools": "Agent Tools",
