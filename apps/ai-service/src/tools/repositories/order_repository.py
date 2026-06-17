@@ -117,8 +117,9 @@ class OrderRepository(BaseRepository):
         import uuid
         order_id = str(uuid.uuid4())
 
+        # Use regex filter to skip non-integer orderNumbers like "ORD-000862-984"
         num_row = await self._session.execute(text("""
-            SELECT COALESCE(MAX(CAST("orderNumber" AS integer)), 0) + 1 AS next_num
+            SELECT COALESCE(MAX(CASE WHEN "orderNumber" ~ '^[0-9]+$' THEN CAST("orderNumber" AS integer) ELSE 0 END), 0) + 1 AS next_num
             FROM orders WHERE "companyId" = :cid
         """), {"cid": company_id})
         _first = num_row.first()
@@ -127,18 +128,48 @@ class OrderRepository(BaseRepository):
         total = order_data.get("total") or 0
         product_name = order_data.get("productName") or ""
         qty = order_data.get("quantity", 1)
+        customer_phone = order_data.get("customerPhone") or ""
+        customer_name = order_data.get("customerName") or ""
+
+        # Find or create customer so we can satisfy the NOT NULL customerId FK
+        customer_id = None
+        if customer_phone:
+            cust_row = await self._session.execute(text("""
+                SELECT id FROM customers
+                WHERE "companyId" = :cid AND phone = :phone
+                LIMIT 1
+            """), {"cid": company_id, "phone": customer_phone})
+            cust = cust_row.first()
+            if cust:
+                customer_id = cust.id
+            else:
+                customer_id = str(uuid.uuid4())
+                name_parts = customer_name.split(" ", 1)
+                first_name = name_parts[0]
+                last_name = name_parts[1] if len(name_parts) > 1 else ""
+                await self._session.execute(text("""
+                    INSERT INTO customers (id, "firstName", "lastName", phone, status, "companyId", "createdAt", "updatedAt")
+                    VALUES (:id, :fname, :lname, :phone, 'ACTIVE', :cid, NOW(), NOW())
+                """), {
+                    "id": customer_id,
+                    "fname": first_name,
+                    "lname": last_name,
+                    "phone": customer_phone,
+                    "cid": company_id,
+                })
 
         await self._session.execute(text("""
-            INSERT INTO orders (id, "orderNumber", "customerName", "customerPhone",
+            INSERT INTO orders (id, "orderNumber", "customerId", "customerName", "customerPhone",
                                total, subtotal, status, "paymentStatus",
                                notes, "companyId", "createdAt", "updatedAt")
-            VALUES (:id, :onum, :cname, :cphone, :total, :subtotal, 'PENDING', 'PENDING',
+            VALUES (:id, :onum, :cust_id, :cname, :cphone, :total, :subtotal, 'PENDING', 'PENDING',
                     :notes, :cid, NOW(), NOW())
         """), {
             "id": order_id,
             "onum": str(next_num),
-            "cname": order_data.get("customerName") or "",
-            "cphone": order_data.get("customerPhone") or "",
+            "cust_id": customer_id,
+            "cname": customer_name,
+            "cphone": customer_phone,
             "total": total,
             "subtotal": total,
             "notes": order_data.get("notes") or "",
