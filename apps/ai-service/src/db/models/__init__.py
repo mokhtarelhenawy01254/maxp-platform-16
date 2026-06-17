@@ -6,6 +6,7 @@ from src.db.models.ai_setting import AiSetting
 from src.db.models.approval import Approval
 from src.db.models.checkpoint import Checkpoint
 from src.db.models.faq import FAQ
+from src.db.models.knowledge_question import KnowledgeQuestion
 from src.db.models.policy import Policy
 from src.db.models.product import Product
 from src.db.models.provider import AiKey, AiModelConfig, GlobalAiConfig, Provider, ProviderLog
@@ -16,6 +17,7 @@ from src.db.models.tool_call import ToolCall
 
 __all__ = [
     "FAQ",
+    "KnowledgeQuestion",
     "Agent",
     "AgentDepartment",
     "AgentTemplate",

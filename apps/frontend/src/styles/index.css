@@ -4231,6 +4231,28 @@ select {
   text-decoration: none;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/* Unified Inbox — Page Header (Tabs above shell) */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="business-os-enterprise"] .unified-inbox-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  background: var(--business-surface-panel);
+  border: 1px solid var(--business-card-border);
+  border-radius: 24px 24px 0 0;
+  border-bottom: none;
+  box-shadow: 0 24px 72px -56px rgba(7, 17, 32, 0.36);
+  flex-wrap: wrap;
+}
+
+.unified-inbox-page-header {
+  flex-shrink: 0;
+}
+
 [data-theme="business-os-enterprise"] .business-inbox-shell {
   display: flex;
   flex-direction: column;
@@ -4248,11 +4270,19 @@ select {
 
 .app-shell-content:has(.business-inbox-shell) {
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.app-shell-content:has(.business-inbox-shell) > * {
+.app-shell-content:has(.business-inbox-shell) > .unified-inbox-page-header {
+  height: auto;
+  flex-shrink: 0;
+}
+
+.app-shell-content:has(.business-inbox-shell) > .business-inbox-shell {
   height: 100%;
   min-height: 0;
+  flex: 1;
 }
 
 [data-theme="business-os-enterprise"] .business-inbox-stage {
@@ -4262,6 +4292,7 @@ select {
   position: relative;
   gap: 0.6rem;
   padding: 0.6rem;
+  border-radius: 0 0 24px 24px;
 }
 
 [data-theme="business-os-enterprise"] .business-inbox-column {
@@ -4269,7 +4300,7 @@ select {
   flex-direction: column;
   min-height: 0;
   min-width: 0;
-  border-radius: 24px;
+  border-radius: 0 0 24px 24px;
   border: 1px solid var(--business-card-border);
   background: var(--business-surface-panel);
   box-shadow: 0 24px 72px -56px rgba(7, 17, 32, 0.36);

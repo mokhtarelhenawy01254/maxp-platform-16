@@ -564,7 +564,11 @@ class PromptTemplateRegistry:
             "If you cannot fulfill the request:\n"
             "1. Clearly inform the user why.\n"
             "2. Suggest an alternative if available.\n"
-            "3. Escalate to human support when needed."
+            "3. Escalate to human support when needed.\n\n"
+            "If you don't know the answer to a customer's question and cannot find it "
+            "through your available tools or knowledge base, use the knowledge_ask_merchant "
+            "tool to request the information from the merchant. Then tell the customer "
+            "you will check and get back to them."
         )
 
         if template.handoffs:
