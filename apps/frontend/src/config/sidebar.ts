@@ -418,7 +418,6 @@ export const getSidebarConfig = (
             icon: ChatBubbleLeftRightIcon,
             items: [
                 { to: '/unified-inbox', icon: ChatBubbleLeftRightIcon, label: t('sidebar.unifiedInbox') },
-                { to: '/unified-comments', icon: ChatBubbleLeftRightIcon, label: t('sidebar.unifiedComments') },
             ],
             hidden: user?.role === 'AFFILIATE' || !isAppActive('crm-basic')
         },
@@ -430,6 +429,7 @@ export const getSidebarConfig = (
             icon: ChatBubbleLeftRightIcon,
             items: [
                 { to: '/facebook-inbox', icon: ChatBubbleLeftRightIcon, label: t('sidebar.facebookInbox') },
+                { to: '/unified-comments', icon: ChatBubbleLeftRightIcon, label: t('sidebar.unifiedComments') },
                 { to: '/employee-stats', icon: ChartBarIcon, label: t('sidebar.employeeStats') },
                 { to: '/sent-messages-stats', icon: ChartBarIcon, label: t('sidebar.sentMessagesStats') },
                 { to: '/campaign-calculator', icon: CalculatorIcon, label: t('sidebar.campaignCalculator') },
