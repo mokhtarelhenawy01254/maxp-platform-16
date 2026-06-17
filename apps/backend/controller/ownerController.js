@@ -115,7 +115,7 @@ const getOwnerDashboard = async (req, res) => {
             // Count users in company (safe query)
             let totalUsers = 0;
             try {
-                totalUsers = await prisma.user.count({
+                totalUsers = await prisma.userCompany.count({
                     where: { companyId, isActive: true }
                 });
             } catch (e) {

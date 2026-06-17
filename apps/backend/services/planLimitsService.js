@@ -169,7 +169,8 @@ class PlanLimitsService {
 
       const [users, customers, products, orders, conversations] =
         await Promise.all([
-          prisma.user.count({ where: { companyId } }),
+          // Count via UserCompany junction table (multi-company support)
+          prisma.userCompany.count({ where: { companyId } }),
           prisma.customer.count({ where: { companyId } }),
           prisma.product.count({ where: { companyId } }),
           prisma.order.count({
