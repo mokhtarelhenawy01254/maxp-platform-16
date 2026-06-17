@@ -204,6 +204,7 @@ const UnifiedInbox: React.FC = () => {
   const pageRef = useRef(1);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [localSearchQuery, setLocalSearchQuery] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [unreadFilter, setUnreadFilter] = useState(false);
   const [followUpFilter, setFollowUpFilter] = useState(false);
@@ -569,6 +570,14 @@ const UnifiedInbox: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file size (max 20 MB)
+    if (file.size > 20 * 1024 * 1024) {
+      setSendError(t("unifiedInbox.fileTooLarge"));
+      setTimeout(() => setSendError(null), 5000);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
     setUploadingFile(true);
     const formData = new FormData();
     formData.append("file", file);
@@ -598,9 +607,14 @@ const UnifiedInbox: React.FC = () => {
           name: file.name,
           type: type,
         });
+      } else {
+        setSendError(t("unifiedInbox.uploadFailed"));
+        setTimeout(() => setSendError(null), 5000);
       }
     } catch (error) {
       console.error("Error uploading file:", error);
+      setSendError(t("unifiedInbox.uploadFailed"));
+      setTimeout(() => setSendError(null), 5000);
     } finally {
       setUploadingFile(false);
       if (fileInputRef.current) {
@@ -710,6 +724,7 @@ const UnifiedInbox: React.FC = () => {
   };
 
   const handleSearchChange = (value: string) => {
+    setLocalSearchQuery(value);
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     searchTimeoutRef.current = setTimeout(() => {
       setSearchQuery(value);
@@ -750,7 +765,7 @@ const UnifiedInbox: React.FC = () => {
         message.conversationId === selectedConversation.id
       ) {
         setMessages((prev) => [...prev, message]);
-        scrollToBottom();
+        setTimeout(() => scrollToBottom(), 50);
       }
       setConversations((prev) =>
         prev.map((c) =>
@@ -901,7 +916,7 @@ const UnifiedInbox: React.FC = () => {
                 name="inbox-search"
                 placeholder={t("unifiedInbox.searchPlaceholder")}
                 aria-label={t("unifiedInbox.searchPlaceholder")}
-                value={searchQuery}
+                value={localSearchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className={`business-inbox-search ${isRtl ? "pr-9 pl-4" : "pl-9 pr-4 text-left"}`}
                 autoComplete="off"
@@ -1425,7 +1440,7 @@ const UnifiedInbox: React.FC = () => {
                             {/* Action buttons on hover */}
                             {hoveredMsgId === msg.id && (
                               <div
-                                className={`flex items-center gap-0.5 py-1 px-1.5 rounded-full shadow-sm backdrop-blur-sm ${isRtl ? "order-first" : ""}`}
+                                className={`business-msg-actions flex items-center gap-0.5 py-1 px-1.5 rounded-full shadow-sm backdrop-blur-sm ${isRtl ? "order-first" : ""}`}
                                 style={{
                                   background:
                                     "color-mix(in srgb, var(--color-background) 92%, var(--shell-control-bg) 8%)",
@@ -1435,7 +1450,7 @@ const UnifiedInbox: React.FC = () => {
                                 {msg.isFromCustomer && (
                                   <button
                                     onClick={() => handleMsgReply(msg)}
-                                    className="business-icon-button business-icon-button--sm"
+                                    className="business-icon-button business-icon-button--sm business-msg-action-btn"
                                     aria-label={t("unifiedInbox.reply")}
                                   >
                                     <ArrowUturnLeftIcon className="w-4 h-4" aria-hidden="true" />
@@ -1443,21 +1458,21 @@ const UnifiedInbox: React.FC = () => {
                                 )}
                                 <button
                                   onClick={() => handleMsgReact(msg.id, "👍")}
-                                  className="business-icon-button business-icon-button--sm"
+                                  className="business-icon-button business-icon-button--sm business-msg-action-btn"
                                   aria-label={t("unifiedInbox.addReaction")}
                                 >
                                   <HeartIcon className="w-4 h-4" aria-hidden="true" />
                                 </button>
                                 <button
                                   onClick={() => handleMsgStar(msg.id)}
-                                  className="business-icon-button business-icon-button--sm"
+                                  className="business-icon-button business-icon-button--sm business-msg-action-btn"
                                   aria-label={t("unifiedInbox.starMessage")}
                                 >
                                   <StarOutlineIcon className="w-4 h-4" aria-hidden="true" />
                                 </button>
                                 <button
                                   onClick={() => { setForwardMessage(msg); setShowForwardModal(true); }}
-                                  className="business-icon-button business-icon-button--sm"
+                                  className="business-icon-button business-icon-button--sm business-msg-action-btn"
                                   aria-label={t("unifiedInbox.forward")}
                                 >
                                   <ArrowTopRightOnSquareIcon className="w-4 h-4" aria-hidden="true" />
@@ -1465,7 +1480,7 @@ const UnifiedInbox: React.FC = () => {
                                 {!msg.isFromCustomer && (
                                   <button
                                     onClick={() => handleMsgDelete(msg.id)}
-                                    className="business-icon-button business-icon-button--sm"
+                                    className="business-icon-button business-icon-button--sm business-msg-action-btn"
                                     aria-label={t("unifiedInbox.deleteMessage")}
                                     style={{ color: "var(--business-danger)" }}
                                   >
@@ -1689,19 +1704,7 @@ const UnifiedInbox: React.FC = () => {
                 </div>
               )}
 
-              {/* Emoji Picker */}
-              {showEmojiPicker && (
-                <div className="px-5 py-2" style={{ borderTop: '1px solid var(--business-card-border)' }}>
-                  <EmojiPicker
-                    onEmojiClick={(emojiData: any) => {
-                      setNewMessage((prev: string) => prev + emojiData.emoji);
-                      setShowEmojiPicker(false);
-                    }}
-                    width="100%"
-                    height={350}
-                  />
-                </div>
-              )}
+
 
               {/* Reply Preview */}
               {replyToMsg && (
@@ -1721,7 +1724,32 @@ const UnifiedInbox: React.FC = () => {
               )}
 
               {/* Message Input */}
-              <div className="business-chat-composer px-5 py-3">
+              <div className="business-chat-composer px-5 py-3" style={{ position: 'relative' }}>
+                {/* Emoji Picker — floats above composer, no layout shift */}
+                {showEmojiPicker && (
+                  <div
+                    className="emoji-picker-popover"
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      insetInlineStart: 0,
+                      zIndex: 200,
+                      marginBottom: '4px',
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <EmojiPicker
+                      onEmojiClick={(emojiData: any) => {
+                        setNewMessage((prev: string) => prev + emojiData.emoji);
+                        setShowEmojiPicker(false);
+                      }}
+                      width={320}
+                      height={380}
+                    />
+                  </div>
+                )}
                 {/* Hidden file input */}
                 <input
                   type="file"
