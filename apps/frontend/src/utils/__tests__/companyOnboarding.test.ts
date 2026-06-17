@@ -10,7 +10,7 @@ describe("companyOnboarding routing", () => {
     NonNullable<Parameters<typeof getPostAuthDestination>[0]>["company"]
   >["onboarding"];
 
-  test("sends owner accounts with no login history to the marketplace", () => {
+  test("sends owner accounts with no login history to the main dashboard", () => {
     const user = {
       role: "OWNER",
       lastLoginAt: null,
@@ -20,7 +20,7 @@ describe("companyOnboarding routing", () => {
     };
 
     expect(isFirstLoginCompanyOwner(user)).toBe(true);
-    expect(getPostAuthDestination(user)).toBe("/apps");
+    expect(getPostAuthDestination(user)).toBe("/company-dashboard");
   });
 
   test("keeps returning owner accounts on the normal post-auth destination", () => {
@@ -33,7 +33,7 @@ describe("companyOnboarding routing", () => {
     };
 
     expect(isFirstLoginCompanyOwner(user)).toBe(false);
-    expect(getPostAuthDestination(user)).toBe("/apps");
+    expect(getPostAuthDestination(user)).toBe("/company-dashboard");
   });
 
   test("does not override role-specific destinations", () => {
@@ -58,7 +58,7 @@ describe("companyOnboarding routing", () => {
     ).toBe("/merchant-portal");
   });
 
-  test("sends app-dashboard company users to the apps landing page", () => {
+  test("sends all company users to the main dashboard", () => {
     expect(
       getPostAuthDestination({
         role: "OWNER",
@@ -68,6 +68,6 @@ describe("companyOnboarding routing", () => {
           onboarding: onboardingReady,
         },
       }),
-    ).toBe("/apps");
+    ).toBe("/company-dashboard");
   });
 });
