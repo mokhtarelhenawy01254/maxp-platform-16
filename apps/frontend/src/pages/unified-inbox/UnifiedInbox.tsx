@@ -475,7 +475,7 @@ const UnifiedInbox: React.FC = () => {
   }, []);
 
   const handleImageGallerySelect = useCallback((imageUrl: string, filename: string) => {
-    setAttachedFile({ url: imageUrl, name: filename, type: "image" });
+    setAttachments(prev => [...prev, { url: imageUrl, name: filename, type: "image" }]);
     setShowImageGallery(false);
   }, []);
 
@@ -571,38 +571,45 @@ const UnifiedInbox: React.FC = () => {
   );
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setUploadingFile(true);
-    const formData = new FormData();
-    formData.append("file", file);
+    const newAttachments: Attachment[] = [];
 
     try {
-      const response = await apiClient.post("/api/v1/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      for (let i = 0; i < files.length; i++) {
+        const file = files.item(i);
+        if (!file) continue;
 
-      if (response.data?.success || response.data?.filePath) {
-        const filePath = response.data.filePath;
-        const fullUrl = response.data.fullUrl || `${window.location.origin}${filePath}`;
-        
-        let type = "document";
-        if (file.type.startsWith("image/")) {
-          type = "image";
-        } else if (file.type.startsWith("video/")) {
-          type = "video";
-        } else if (file.type.startsWith("audio/")) {
-          type = "audio";
-        }
+        const formData = new FormData();
+        formData.append("file", file);
 
-        setAttachedFile({
-          url: fullUrl,
-          name: file.name,
-          type: type,
+        const response = await apiClient.post("/api/v1/upload", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         });
+
+        if (response.data?.success || response.data?.filePath) {
+          const filePath = response.data.filePath;
+          const fullUrl = response.data.fullUrl || `${window.location.origin}${filePath}`;
+
+          let type = "document";
+          if (file.type.startsWith("image/")) {
+            type = "image";
+          } else if (file.type.startsWith("video/")) {
+            type = "video";
+          } else if (file.type.startsWith("audio/")) {
+            type = "audio";
+          }
+
+          newAttachments.push({ url: fullUrl, name: file.name, type });
+        }
+      }
+
+      if (newAttachments.length > 0) {
+        setAttachments(prev => [...prev, ...newAttachments]);
       }
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -616,56 +623,97 @@ const UnifiedInbox: React.FC = () => {
 
   const handleSendMessage = async () => {
     if (!selectedConversation) return;
-    if (!newMessage.trim() && !attachedFile) return;
+    if (!newMessage.trim() && attachments.length === 0) return;
 
     setSending(true);
     setSendError(null);
     try {
-      const body: any = {
-        content: newMessage.trim(),
-        platform: selectedConversation.platform,
-      };
+      const sentMessages: any[] = [];
+      const hasText = newMessage.trim().length > 0;
 
-      if (replyToMsg) {
-        body.quotedMessageId = replyToMsg.id;
-        body.quotedContent = replyToMsg.content;
+      // Build the list of payloads to send
+      const payloads: any[] = [];
+
+      if (hasText) {
+        const firstPayload: any = {
+          content: newMessage.trim(),
+          platform: selectedConversation.platform,
+        };
+        if (attachments.length > 0) {
+          firstPayload.type = attachments[0].type;
+          firstPayload.mediaUrl = attachments[0].url;
+          firstPayload.mediaFileName = attachments[0].name;
+        }
+        payloads.push(firstPayload);
+
+        for (let i = 1; i < attachments.length; i++) {
+          payloads.push({
+            content: "",
+            platform: selectedConversation.platform,
+            type: attachments[i].type,
+            mediaUrl: attachments[i].url,
+            mediaFileName: attachments[i].name,
+          });
+        }
+      } else {
+        for (const att of attachments) {
+          payloads.push({
+            content: "",
+            platform: selectedConversation.platform,
+            type: att.type,
+            mediaUrl: att.url,
+            mediaFileName: att.name,
+          });
+        }
       }
 
-      if (attachedFile) {
-        body.type = attachedFile.type;
-        body.mediaUrl = attachedFile.url;
-        body.mediaFileName = attachedFile.name;
+      // Send each payload sequentially
+      for (let i = 0; i < payloads.length; i++) {
+        const body = payloads[i];
+
+        if (i === 0 && replyToMsg) {
+          body.quotedMessageId = replyToMsg.id;
+          body.quotedContent = replyToMsg.content;
+        }
+
+        if (selectedConversation.metadata?.["sessionId"]) {
+          body.sessionId = selectedConversation.metadata["sessionId"];
+        }
+        if (selectedConversation.metadata?.["jid"]) {
+          body.jid = selectedConversation.metadata["jid"];
+        }
+
+        const realId = selectedConversation.id;
+        const response = await apiClient.post(
+          `/api/v1/unified-inbox/conversations/${realId}/messages`,
+          body,
+        );
+
+        if (response.data?.success) {
+          sentMessages.push(response.data.data);
+        }
       }
 
-      if (selectedConversation.metadata?.["sessionId"]) {
-        body.sessionId = selectedConversation.metadata["sessionId"];
-      }
-      if (selectedConversation.metadata?.["jid"]) {
-        body.jid = selectedConversation.metadata["jid"];
-      }
-
-      const realId = selectedConversation.id;
-      const response = await apiClient.post(
-        `/api/v1/unified-inbox/conversations/${realId}/messages`,
-        body,
-      );
-
-      if (response.data?.success) {
-        setMessages((prev) => [...prev, response.data.data]);
+      if (sentMessages.length > 0) {
+        setMessages((prev) => [...prev, ...sentMessages]);
         setNewMessage("");
-        setAttachedFile(null);
+        setAttachments([]);
         setReplyToMsg(null);
         setTimeout(() => scrollToBottom(), 100);
 
         // Update conversation preview
+        const previewText = attachments.length > 0
+          ? (attachments.every(a => a.type === "image")
+              ? `📷 ${attachments.length}`
+              : `📎 ${attachments.length}`)
+          : newMessage.trim();
+
         setConversations((prev) =>
           prev.map((c) =>
             c.id === selectedConversation.id
               ? {
                   ...c,
-                  lastMessage: attachedFile
-                    ? (attachedFile.type === "image" ? `📷 ${t("unifiedInbox.image")}` : `📎 ${attachedFile.name}`)
-                    : newMessage.trim(),
+                  lastMessage: previewText,
                   lastMessageTime: new Date().toISOString(),
                   lastMessageIsFromCustomer: false,
                 }
@@ -677,7 +725,6 @@ const UnifiedInbox: React.FC = () => {
       console.error("❌ Error sending message:", error);
       const msg = error?.response?.data?.message || error?.message || t("unifiedInbox.sendFailed");
       setSendError(msg);
-      // Auto-clear error after 5 seconds
       setTimeout(() => setSendError(null), 5000);
     } finally {
       setSending(false);
@@ -1656,25 +1703,36 @@ const UnifiedInbox: React.FC = () => {
                 </div>
               )}
 
-              {/* Attachment Preview */}
-              {attachedFile && (
-                <div className="px-5 py-2 flex items-center gap-2" style={{ borderTop: '1px solid var(--business-card-border)', background: 'color-mix(in srgb, var(--color-primary) 5%, var(--color-background))' }}>
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    {attachedFile.type === 'image' ? (
-                      <img src={attachedFile.url} alt={attachedFile.name} className="w-10 h-10 rounded-lg object-cover" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'color-mix(in srgb, var(--color-primary) 15%, white)' }}>
-                        <PaperClipIcon className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+              {/* Attachments Preview Strip */}
+              {attachments.length > 0 && (
+                <div className="px-5 py-2" style={{ borderTop: '1px solid var(--business-card-border)', background: 'color-mix(in srgb, var(--color-primary) 5%, var(--color-background))' }}>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {attachments.map((att, index) => (
+                      <div key={index} className="relative flex-shrink-0 group">
+                        {att.type === 'image' ? (
+                          <img src={att.url} alt={att.name} className="w-16 h-16 rounded-lg object-cover border" style={{ borderColor: 'var(--business-card-border)' }} />
+                        ) : (
+                          <div className="w-16 h-16 rounded-lg flex items-center justify-center border" style={{ borderColor: 'var(--business-card-border)', background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)' }}>
+                            <PaperClipIcon className="w-6 h-6" style={{ color: 'var(--color-primary)' }} />
+                          </div>
+                        )}
+                        <button
+                          onClick={() => setAttachments(prev => prev.filter((_, i) => i !== index))}
+                          className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full opacity-0 transition-opacity group-hover:opacity-100"
+                          style={{ background: 'var(--business-danger)', color: 'white' }}
+                          aria-label={t("unifiedInbox.removeFile")}
+                        >
+                          <XMarkIcon className="w-3 h-3" aria-hidden="true" />
+                        </button>
+                        <p className="mt-0.5 w-16 truncate text-[10px] text-center" style={{ color: 'var(--color-muted-foreground)' }}>
+                          {att.name.length > 10 ? att.name.substring(0, 10) + '...' : att.name}
+                        </p>
                       </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: 'var(--color-foreground)' }}>{attachedFile.name}</p>
-                      <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>{attachedFile.type}</p>
-                    </div>
+                    ))}
                   </div>
-                  <button onClick={() => setAttachedFile(null)} className="business-chip-button shrink-0" aria-label={t("unifiedInbox.removeFile")}>
-                    <XMarkIcon className="w-4 h-4" aria-hidden="true" />
-                  </button>
+                  <p className="text-[10px] mt-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                    {attachments.length} {attachments.length > 1 ? t("unifiedInbox.files") : t("unifiedInbox.file")}
+                  </p>
                 </div>
               )}
 
@@ -1718,6 +1776,7 @@ const UnifiedInbox: React.FC = () => {
                   onChange={handleFileSelect}
                   className="hidden"
                   accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
+                  multiple
                 />
                 <div className="flex items-center gap-2">
                   {/* Actions */}
@@ -1785,7 +1844,7 @@ const UnifiedInbox: React.FC = () => {
                   {/* Send */}
                   <button
                     onClick={handleSendMessage}
-                    disabled={(!newMessage.trim() && !attachedFile) || sending || uploadingFile}
+                    disabled={(!newMessage.trim() && attachments.length === 0) || sending || uploadingFile}
                     className="business-icon-button text-white p-2.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
                     style={{
                       background: "var(--color-primary)",
@@ -2271,7 +2330,7 @@ const UnifiedInbox: React.FC = () => {
       onSelectImage={handleImageGallerySelect}
       onSelectMultipleImages={(images) => {
         if (images.length > 0) {
-          setAttachedFile({ url: images[0].url, name: images[0].filename, type: "image" });
+          setAttachments(prev => [...prev, ...images.map(img => ({ url: img.url, name: img.filename, type: "image" as const }))]);
         }
         setShowImageGallery(false);
       }}
