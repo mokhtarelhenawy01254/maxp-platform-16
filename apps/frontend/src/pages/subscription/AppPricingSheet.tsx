@@ -102,7 +102,7 @@ export default function AppPricingSheet() {
       
       const newSlug = editingApp.slug || editingApp.name.toLowerCase().replace(/\s+/g, '-');
       if (slugExists(newSlug, editingApp.id)) {
-        toast.error(t("subscription.slugExists", "الـ Slug موجود مسبقاً، الرجاء اختيار Slug آخر"));
+        toast.error(t("subscription.slugExists", "Slug already exists, please choose another"));
         return;
       }
       const payload = {
@@ -367,11 +367,11 @@ export default function AppPricingSheet() {
       setSelectedIds(new Set());
       toast.success(
         activate
-          ? t("subscription.bulkActivated", "تم تفعيل التطبيقات المحددة بنجاح")
-          : t("subscription.bulkDeactivated", "تم إيقاف التطبيقات المحددة بنجاح")
+          ? t("subscription.bulkActivated", "Selected apps activated successfully")
+          : t("subscription.bulkDeactivated", "Selected apps deactivated successfully")
       );
     } catch (err: any) {
-      toast.error(err.response?.data?.message || t("common.error", "حدث خطأ"));
+      toast.error(err.response?.data?.message || t("common.error", "An error occurred"));
     }
   };
 
@@ -387,10 +387,10 @@ export default function AppPricingSheet() {
       await Promise.all(promises);
       setApps((prev) => prev.filter((a) => !selectedIds.has(a.id)));
       setSelectedIds(new Set());
-      toast.success(t("subscription.bulkDeleted", "تم حذف التطبيقات المحددة بنجاح"));
+      toast.success(t("subscription.bulkDeleted", "Selected apps deleted successfully"));
       setDeleteConfirmId(null);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || t("common.error", "حدث خطأ"));
+      toast.error(err.response?.data?.message || t("common.error", "An error occurred"));
     }
   };
 
@@ -653,7 +653,7 @@ export default function AppPricingSheet() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-slate-500 dark:text-slate-400 font-cairo">
-                {t("subscription.filteredResults", "نتائج مُصفّاة: {{count}}", { count: processedApps.length })}
+                {t("subscription.filteredResults", "Filtered results: {{count}}", { count: processedApps.length })}
               </span>
               <Button
                 variant="ghost"
@@ -661,22 +661,22 @@ export default function AppPricingSheet() {
                 className="text-indigo-600 dark:text-indigo-400 font-cairo text-xs h-7"
                 onClick={() => { setSearchQuery(""); setSelectedCategory("ALL"); setSelectedPricingModel("ALL"); }}
               >
-                {t("common.clearFilters", "مسح الفلاتر")}
+                {t("common.clearFilters", "Clear Filters")}
               </Button>
             </div>
             {selectedIds.size > 0 && (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-slate-500 dark:text-slate-400 font-cairo">
-                  {t("subscription.selectedCount", "{{count}} مختار", { count: selectedIds.size })}
+                  {t("subscription.selectedCount", "{{count}} selected", { count: selectedIds.size })}
                 </span>
                 <Button variant="outline" size="sm" className="h-8 text-xs font-cairo text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={() => handleBulkToggleActive(true)}>
-                  {t("subscription.bulkActivate", "تفعيل الكل")}
+                  {t("subscription.bulkActivate", "Activate All")}
                 </Button>
                 <Button variant="outline" size="sm" className="h-8 text-xs font-cairo text-amber-600 border-amber-200 hover:bg-amber-50" onClick={() => handleBulkToggleActive(false)}>
-                  {t("subscription.bulkDeactivate", "إيقاف الكل")}
+                  {t("subscription.bulkDeactivate", "Deactivate All")}
                 </Button>
                 <Button variant="outline" size="sm" className="h-8 text-xs font-cairo text-red-600 border-red-200 hover:bg-red-50" onClick={handleBulkDelete}>
-                  {t("subscription.bulkDelete", "حذف المحدد")}
+                  {t("subscription.bulkDelete", "Delete Selected")}
                 </Button>
               </div>
             )}
@@ -1171,7 +1171,7 @@ export default function AppPricingSheet() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200/60 dark:border-slate-800 px-6 py-3">
             <div className="flex items-center gap-3">
               <span className="text-sm text-slate-500 dark:text-slate-400 font-cairo">
-                {t("subscription.showingResults", "عرض {{start}}-{{end}} من {{total}}", {
+                {t("subscription.showingResults", "Showing {{start}}-{{end}} of {{total}}", {
                   start: (page - 1) * pageSize + 1,
                   end: Math.min(page * pageSize, processedApps.length),
                   total: processedApps.length,
@@ -1242,7 +1242,7 @@ export default function AppPricingSheet() {
               />
             </div>
             <div className="space-y-2">
-              <Label>{t("subscription.appNameEn", "اسم التطبيق (English)")}</Label>
+              <Label>{t("subscription.appNameEn", "App Name (English)")}</Label>
               <Input
                 value={editingApp?.nameEn || ""}
                 onChange={(e) => setEditingApp({ ...editingApp, nameEn: e.target.value })}
@@ -1267,7 +1267,7 @@ export default function AppPricingSheet() {
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label>{t("subscription.imageUrl", "رابط الصورة")}</Label>
+              <Label>{t("subscription.imageUrl", "Image URL")}</Label>
               <Input
                 value={editingApp?.imageUrl || ""}
                 onChange={(e) => setEditingApp({ ...editingApp, imageUrl: e.target.value })}
@@ -1343,12 +1343,12 @@ export default function AppPricingSheet() {
             )}
             {editingApp?.pricingModel === "PAY_PER_USE" && (
               <div className="space-y-2">
-                <Label>{t("subscription.unitName", "اسم الوحدة")}</Label>
+                <Label>{t("subscription.unitName", "Unit Name")}</Label>
                 <Select
                   value={editingApp?.unitName || ""}
                   onValueChange={(val) => setEditingApp({ ...(editingApp ?? {}), unitName: val })}
                 >
-                  <SelectTrigger><SelectValue placeholder={t("subscription.selectUnit", "اختر الوحدة")} /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("subscription.selectUnit", "Select Unit")} /></SelectTrigger>
                   <SelectContent>
                     {["message", "request", "order", "user", "session", "GB", "month"].map((u) => (
                       <SelectItem key={u} value={u}>
@@ -1379,8 +1379,8 @@ export default function AppPricingSheet() {
 
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>{t("common.cancel", "إلغاء")}</Button>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleSaveApp}>{t("common.save", "حفظ")}</Button>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>{t("common.cancel", "Cancel")}</Button>
+            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleSaveApp}>{t("common.save", "Save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1391,26 +1391,26 @@ export default function AppPricingSheet() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
               <AlertTriangle size={20} />
-              {t("subscription.confirmDeleteTitle", "تأكيد الحذف")}
+              {t("subscription.confirmDeleteTitle", "Confirm Delete")}
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <p className="text-slate-600 dark:text-slate-400">
               {deleteConfirmId === "__bulk__"
-                ? t("subscription.confirmBulkDelete", "هل أنت متأكد من حذف التطبيقات المحددة؟")
-                : t("subscription.confirmDeleteApp", "هل أنت متأكد من حذف هذا التطبيق؟")}
+                ? t("subscription.confirmBulkDelete", "Are you sure you want to delete the selected apps?")
+                : t("subscription.confirmDeleteApp", "Are you sure you want to delete this app?")}
             </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
-              {t("common.cancel", "إلغاء")}
+              {t("common.cancel", "Cancel")}
             </Button>
             <Button
               variant="destructive"
               className="bg-red-600 hover:bg-red-700 text-white"
               onClick={deleteConfirmId === "__bulk__" ? confirmBulkDelete : confirmDeleteApp}
             >
-              {t("common.delete", "حذف")}
+              {t("common.delete", "Delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
