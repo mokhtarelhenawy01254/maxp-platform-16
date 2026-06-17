@@ -20,7 +20,7 @@ import {
   List,
 } from "lucide-react";
 
-const PostsManagement = () => {
+const PostsManagement = ({ embedded = false, defaultPlatform = null }) => {
   const { t } = useTranslation();
   const [posts, setPosts] = useState([]);
   const [pages, setPages] = useState([]);
@@ -203,13 +203,14 @@ const PostsManagement = () => {
       : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 md:p-8">
-      <div className="w-full">
+    <div className={embedded ? "h-full w-full bg-slate-50 dark:bg-gray-900 p-2 md:p-4 overflow-auto rounded-2xl" : "min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 md:p-8"}>
+      <div className="w-full h-full flex flex-col">
         {/* Header with Stats */}
-        <div className="mb-8 animate-fade-in">
+        <div className="mb-6 animate-fade-in">
           {/* Title Section */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-6">
-            <div className="flex items-center gap-4">
+          {!embedded && (
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-6">
+              <div className="flex items-center gap-4">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl blur-lg opacity-50 animate-pulse"></div>
                 <div className="relative p-4 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-2xl shadow-2xl">
@@ -224,8 +225,9 @@ const PostsManagement = () => {
                   {t("postsManagement.pageSubtitle")}
                 </p>
               </div>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Stats Cards */}
           {selectedPage && posts.length > 0 && (
