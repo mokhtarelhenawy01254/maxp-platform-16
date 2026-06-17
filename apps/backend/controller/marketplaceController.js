@@ -1820,6 +1820,31 @@ exports.subscribeToBundle = async (req, res) => {
       });
     }
 
+    // AI + Inbox Bundle uses PlatformSubscription flow (not wallet)
+    if (slug === 'ai-inbox-bundle') {
+      const prisma = getSharedPrismaClient();
+      const amount = 999;
+      const nextBillingDate = new Date();
+      nextBillingDate.setDate(nextBillingDate.getDate() + 30);
+      await prisma.$transaction(async (tx) => {
+        await tx.platformSubscription.upsert({
+          where: { companyId },
+          update: { plan: "PRO", status: "ACTIVE", monthlyFee: amount, nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
+          create: { companyId, plan: "PRO", status: "ACTIVE", monthlyFee: amount, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date() }
+        });
+        await tx.company.update({ where: { id: companyId }, data: { plan: "MESSAGING" } });
+        const aiApp = await tx.marketplaceApp.findUnique({ where: { slug: "ai-chat-basic" } });
+        if (aiApp) {
+          await tx.companyApp.upsert({
+            where: { companyId_appId: { companyId, appId: aiApp.id } },
+            update: { status: "ACTIVE" },
+            create: { companyId, appId: aiApp.id, status: "ACTIVE" }
+          });
+        }
+      });
+      return res.json({ success: true, message: "تم تفعيل باقة AI + Inbox بنجاح", data: { bundle: "ai-inbox-bundle", skipPayment: true } });
+    }
+
     const bundleAppIds = normalizeStringArray(bundle.appIds);
     if (bundleAppIds.length === 0) {
       return res.status(400).json({

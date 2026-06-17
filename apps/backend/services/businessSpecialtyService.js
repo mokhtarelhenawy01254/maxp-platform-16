@@ -377,27 +377,20 @@ async function resolveSpecialtyForRegistration(value) {
     await ensureDefaultSpecialties(prisma);
 
     const normalizedValue = String(value || '').trim();
-    if (normalizedValue) {
-      const specialty = await prisma.businessSpecialty.findFirst({
-        where: {
-          isActive: true,
-          OR: [{ id: normalizedValue }, { slug: normalizeSlug(normalizedValue) }],
-        },
-      });
-
-      if (!specialty) {
-        const error = new Error('التخصص المختار غير متاح');
-        error.statusCode = 400;
-        throw error;
-      }
-
-      return serializeSpecialty(specialty);
-    }
+    if (!normalizedValue) return null;
 
     const specialty = await prisma.businessSpecialty.findFirst({
-      where: { isActive: true },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      where: {
+        isActive: true,
+        OR: [{ id: normalizedValue }, { slug: normalizeSlug(normalizedValue) }],
+      },
     });
+
+    if (!specialty) {
+      const error = new Error('التخصص المختار غير متاح');
+      error.statusCode = 400;
+      throw error;
+    }
 
     return serializeSpecialty(specialty);
   });

@@ -189,13 +189,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   };
 
   const filterChainOfThought = (text: string): string => {
+    const reasoningLineRe = /^\*\s{3,}[A-Z]\w[\w\s/]*:/;
     return text
       .split('\n')
       .filter(line => {
         const trimmed = line.trim();
-        if (trimmed.startsWith('* Role:')) return false;
-        if (trimmed.startsWith('* Task:')) return false;
-        if (trimmed.startsWith('* Thinking:')) return false;
+        if (reasoningLineRe.test(trimmed)) return false;
         if (trimmed.startsWith('[') && trimmed.includes(']') && !trimmed.includes(':')) return false;
         return true;
       })

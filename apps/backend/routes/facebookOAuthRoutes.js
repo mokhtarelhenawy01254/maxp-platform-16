@@ -121,7 +121,26 @@ const OAUTH_ALLOWED_FRONTEND_ORIGINS = new Set([
 const getDefaultFacebookFrontendBaseUrl = () => envConfig.frontendUrl;
 
 const getFacebookOAuthTargetPath = (type) =>
-  type === "pixel" ? "/advertising/facebook-pixel" : "/settings/facebook";
+  type === "pixel" ? "/advertising/facebook-pixel" : "/settings/facebook-oauth";
+
+const sendPopupResponse = (res, data) => {
+  const message = { type: "facebook-oauth-callback", ...data };
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.send(`<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Facebook OAuth</title></head>
+<body><script>
+(window.opener || window.parent).postMessage(${JSON.stringify(message)}, "*");
+window.close();
+<\/script></body></html>`);
+};
+
+const sendCallbackRedirect = (res, popup, baseUrl, type, params) => {
+  if (popup) {
+    sendPopupResponse(res, params);
+  } else {
+    res.redirect(buildFacebookFrontendRedirectUrl(baseUrl, type, params));
+  }
+};
 
 const buildFacebookFrontendRedirectUrl = (baseUrl, type, params = {}) => {
   const redirectUrl = new URL(
@@ -160,7 +179,7 @@ const getRequestedFrontendOrigin = (req) =>
   normalizeRequestedFrontendOrigin(req.get("origin")) ||
   normalizeRequestedFrontendOrigin(req.get("referer"));
 
-const buildFacebookOAuthState = ({ companyId, userId, type, returnOrigin }) => {
+const buildFacebookOAuthState = ({ companyId, userId, type, returnOrigin, popup }) => {
   const stateParts = [
     companyId,
     userId,
@@ -176,6 +195,10 @@ const buildFacebookOAuthState = ({ companyId, userId, type, returnOrigin }) => {
     stateParts.push(returnOrigin);
   }
 
+  if (popup) {
+    stateParts.push("popup");
+  }
+
   return Buffer.from(stateParts.join("|")).toString("base64");
 };
 
@@ -184,16 +207,22 @@ const decodeFacebookOAuthState = (state, fallbackType) => {
   const decodedState = Buffer.from(normalizedState, "base64").toString("utf8");
 
   if (decodedState.includes("|")) {
-    const [cid, uid, ts, r, fifth, sixth] = decodedState.split("|");
+    const parts = decodedState.split("|");
+    const [cid, uid, ts, r] = parts;
 
     let type = fallbackType;
     let returnOrigin = null;
+    let popup = false;
 
-    if (fifth === "pixel" || fifth === "page") {
-      type = fifth;
-      returnOrigin = sixth || null;
-    } else if (fifth) {
-      returnOrigin = fifth;
+    for (let i = 4; i < parts.length; i++) {
+      const val = parts[i];
+      if (val === "pixel" || val === "page") {
+        type = val;
+      } else if (val === "popup") {
+        popup = true;
+      } else if (val && !returnOrigin) {
+        returnOrigin = val;
+      }
     }
 
     return {
@@ -205,6 +234,7 @@ const decodeFacebookOAuthState = (state, fallbackType) => {
         r,
         type,
         returnOrigin,
+        popup,
       },
     };
   }
@@ -695,7 +725,7 @@ const reconnectCompanyFacebookPages = async ({ companyId, pageIds }) => {
 router.get("/authorize", verifyToken.authenticateToken, async (req, res) => {
   try {
     const { appId } = getFacebookOAuthConfig();
-    const { companyId } = req.query;
+    const { companyId, popup } = req.query;
     const returnOrigin = getRequestedFrontendOrigin(req);
 
     if (!companyId) {
@@ -721,6 +751,7 @@ router.get("/authorize", verifyToken.authenticateToken, async (req, res) => {
       companyId,
       userId: req.user.id,
       returnOrigin,
+      popup: popup === "true",
     });
 
     const authUrl =
@@ -760,41 +791,31 @@ router.get("/callback", async (req, res) => {
       decodedState: callbackDecodedState,
       redirectBaseUrl: callbackRedirectBaseUrl,
       redirectType: callbackRedirectType,
+      stateData: callbackStateData,
     } = resolveOAuthCallbackContext(state);
+    const isPopup = callbackStateData?.popup === true;
 
     console.log("📥 Received Facebook OAuth callback");
 
     if (state) {
-      console.log("ðŸ” [DEBUG] Raw state from query:", state);
+      console.log("🔍 [DEBUG] Raw state from query:", state);
     }
     if (callbackDecodedState) {
-      console.log("ðŸ” [DEBUG] Decoded state string:", callbackDecodedState);
+      console.log("🔍 [DEBUG] Decoded state string:", callbackDecodedState);
     }
 
     if (error) {
       console.error(`❌ Facebook OAuth error: ${error}`);
-      return res.redirect(
-        buildFacebookFrontendRedirectUrl(
-          callbackRedirectBaseUrl,
-          callbackRedirectType,
-          {
-            error: `facebook_oauth_${error}`,
-          },
-        ),
-      );
+      return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, callbackRedirectType, {
+        error: `facebook_oauth_${error}`,
+      });
     }
 
     if (!code || !state) {
       console.error("❌ Missing code or state in callback");
-      return res.redirect(
-        buildFacebookFrontendRedirectUrl(
-          callbackRedirectBaseUrl,
-          callbackRedirectType,
-          {
-            error: "missing_code_or_state",
-          },
-        ),
-      );
+      return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, callbackRedirectType, {
+        error: "missing_code_or_state",
+      });
     }
 
     let stateData = {};
@@ -825,15 +846,9 @@ router.get("/callback", async (req, res) => {
         stateError.message,
       );
       console.error("❌ [DEBUG] Problematic string was:", state);
-      return res.redirect(
-        buildFacebookFrontendRedirectUrl(
-          callbackRedirectBaseUrl,
-          callbackRedirectType,
-          {
-            error: "invalid_state",
-          },
-        ),
-      );
+      return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, callbackRedirectType, {
+        error: "invalid_state",
+      });
     }
 
     // 🔄 Support both old and new (shorter) keys
@@ -844,22 +859,18 @@ router.get("/callback", async (req, res) => {
 
     if (!companyId) {
       console.error("❌ No companyId in state");
-      return res.redirect(
-        buildFacebookFrontendRedirectUrl(callbackRedirectBaseUrl, type, {
-          error: "no_company_id",
-        }),
-      );
+      return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
+        error: "no_company_id",
+      });
     }
 
     const stateAge = Date.now() - timestamp;
     const maxStateAge = 10 * 60 * 1000; // 10 minutes
     if (stateAge > maxStateAge) {
       console.error("❌ State expired");
-      return res.redirect(
-        buildFacebookFrontendRedirectUrl(callbackRedirectBaseUrl, type, {
-          error: "state_expired",
-        }),
-      );
+      return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
+        error: "state_expired",
+      });
     }
 
     const company = await getSharedPrismaClient().company.findUnique({
@@ -868,11 +879,9 @@ router.get("/callback", async (req, res) => {
 
     if (!company) {
       console.error(`❌ Company not found: ${companyId}`);
-      return res.redirect(
-        buildFacebookFrontendRedirectUrl(callbackRedirectBaseUrl, type, {
-          error: "company_not_found",
-        }),
-      );
+      return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
+        error: "company_not_found",
+      });
     }
 
     // ✅ تبادل الكود مع Facebook Access Token
@@ -932,11 +941,9 @@ router.get("/callback", async (req, res) => {
 
       // ✅ توجيه مباشرة لصفحة Pixels بعد نجاح الربط
       // لا نحتاج delay هنا لأن Token سيتم استخدامه لاحقاً من Frontend
-      return res.redirect(
-        buildFacebookFrontendRedirectUrl(callbackRedirectBaseUrl, type, {
-          success: "pixel_connected",
-        }),
-      );
+      return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
+        success: "pixel_connected",
+      });
     } else {
       console.log("✅ Saved user access token to company");
     }
@@ -1001,30 +1008,20 @@ router.get("/callback", async (req, res) => {
     console.log(`✅ Found ${allPages.length} pages (with paging)`);
 
     if (!allPages || !Array.isArray(allPages) || allPages.length === 0) {
-      const redirectUrl = buildFacebookFrontendRedirectUrl(
-        callbackRedirectBaseUrl,
-        type,
-        {
-          success: true,
-          pages: 0,
-          message: "no_pages_found",
-        },
-      );
-      return res.redirect(redirectUrl);
+      return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
+        success: true,
+        pages: 0,
+        message: "no_pages_found",
+      });
     }
 
     // 🚀 NEW: Background processing for high volumes to avoid timeouts
-    const redirectUrl = buildFacebookFrontendRedirectUrl(
-      callbackRedirectBaseUrl,
-      type,
-      {
-        success: true,
-        pages: allPages.length,
-        isProcessing: allPages.length > 10,
-        companyId,
-      },
-    );
-    res.redirect(redirectUrl);
+    sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
+      success: true,
+      pages: allPages.length,
+      isProcessing: allPages.length > 10,
+      companyId,
+    });
 
     // Process pages in background (capturing necessary data in closure)
     setImmediate(async () => {

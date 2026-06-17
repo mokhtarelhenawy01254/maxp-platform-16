@@ -33,6 +33,8 @@ class Intent(str, Enum):
     ORDERS_CREATE_DRAFT = "orders.create_draft"
     ORDERS_CREATE_CONFIRMED = "orders.create_confirmed"
     ORDERS = "orders"
+    ORDERS_CANCEL = "orders.cancel"
+    ORDERS_REFUND = "orders.refund"
     INVENTORY = "inventory"
     PRODUCTS = "products"
     CATALOG_CATEGORIES = "catalog.categories"
@@ -224,6 +226,20 @@ INTENT_POLICIES: dict[str, dict[str, Any]] = {
         "requiredSlots": [],
         "guardrails": [*DEFAULT_GUARDRAILS],
     },
+    "orders.cancel": {
+        "actionType": "write",
+        "riskLevel": "high",
+        "nextState": "cancel_order",
+        "requiredSlots": ["orderNumber", "cancelReason"],
+        "guardrails": [*DEFAULT_GUARDRAILS, "human_approval"],
+    },
+    "orders.refund": {
+        "actionType": "write",
+        "riskLevel": "high",
+        "nextState": "refund_order",
+        "requiredSlots": ["orderNumber", "refundReason"],
+        "guardrails": [*DEFAULT_GUARDRAILS, "human_approval", "refund_requires_review"],
+    },
     "inventory": {
         "actionType": "read",
         "riskLevel": "medium",
@@ -323,9 +339,17 @@ INTENT_CONFIGURED_TOOLS: dict[str, dict[str, Any]] = {
         "primaryTool": "order_lookup",
         "allowedTools": ["order_lookup", "order_summary", "order_recent_list"],
     },
+    "orders.cancel": {
+        "primaryTool": "order_cancel",
+        "allowedTools": ["order_cancel", "order_lookup", "customer_info"],
+    },
+    "orders.refund": {
+        "primaryTool": "order_refund",
+        "allowedTools": ["order_refund", "order_lookup", "customer_info"],
+    },
     "inventory": {
-        "primaryTool": "product_low_stock",
-        "allowedTools": ["product_low_stock", "inventory_check", "product_search"],
+        "primaryTool": "inventory_check",
+        "allowedTools": ["inventory_check", "product_search", "product_low_stock"],
     },
     "products": {
         "primaryTool": "product_search",
@@ -404,8 +428,8 @@ INTENT_CONFIGURED_TOOLS: dict[str, dict[str, Any]] = {
         ],
     },
     "sales": {
-        "primaryTool": "sales_revenue",
-        "allowedTools": ["sales_revenue", "company_snapshot"],
+        "primaryTool": "company_snapshot",
+        "allowedTools": ["company_snapshot", "sales_revenue", "order_summary", "order_recent_list"],
     },
     "customers": {
         "primaryTool": "customer_info",
@@ -451,6 +475,7 @@ class SlotValues:
     referencesPreviousProduct: bool | None = None
     shippingDestination: str | None = None
     exchangeReason: str | None = None
+    cancelReason: str | None = None
     refundReason: str | None = None
     complaintDetails: str | None = None
     listAll: bool | None = None
@@ -642,6 +667,7 @@ INTENT_CLASSIFICATION_SCHEMA = {
                 "referencesPreviousProduct",
                 "shippingDestination",
                 "exchangeReason",
+                "cancelReason",
                 "refundReason",
                 "complaintDetails",
                 "listAll",
@@ -668,6 +694,7 @@ INTENT_CLASSIFICATION_SCHEMA = {
                 "referencesPreviousProduct": {"type": ["boolean", "null"]},
                 "shippingDestination": {"type": ["string", "null"]},
                 "exchangeReason": {"type": ["string", "null"]},
+                "cancelReason": {"type": ["string", "null"]},
                 "refundReason": {"type": ["string", "null"]},
                 "complaintDetails": {"type": ["string", "null"]},
                 "listAll": {"type": ["boolean", "null"]},

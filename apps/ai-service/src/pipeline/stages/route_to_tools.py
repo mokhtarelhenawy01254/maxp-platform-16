@@ -235,6 +235,20 @@ def _populate_tool_params(ctx: PipelineContext, execution: dict | None) -> None:
             _first_slot(slots, "customerName", "customer_name", "phone", "email", "query")
             or ctx.message,
         )
+    elif tool_name == "order_cancel":
+        order_number = _first_slot(slots, "orderNumber", "order_number")
+        if order_number:
+            params.setdefault("order_number", order_number)
+        reason = _first_slot(slots, "cancelReason", "reason")
+        if reason:
+            params.setdefault("reason", reason)
+    elif tool_name == "order_refund":
+        order_number = _first_slot(slots, "orderNumber", "order_number")
+        if order_number:
+            params.setdefault("order_number", order_number)
+        reason = _first_slot(slots, "refundReason", "reason")
+        if reason:
+            params.setdefault("reason", reason)
     elif tool_name in {"order_create_draft", "order_create_confirmed"}:
         mapping = {
             "customer_name": ("customerName", "customer_name", "name"),

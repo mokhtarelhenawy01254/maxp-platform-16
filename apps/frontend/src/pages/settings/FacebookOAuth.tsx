@@ -6,8 +6,8 @@ import {
   PlusIcon,
   ArrowTopRightOnSquareIcon,
   ArrowPathIcon,
-  ShieldCheckIcon,
   UserGroupIcon,
+  ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { envConfig } from "../../config/environment";
@@ -308,21 +308,66 @@ const FacebookOAuth: React.FC = () => {
     }
   };
 
+  const popupRef = React.useRef<Window | null>(null);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === "facebook-oauth-callback") {
+        const data = event.data;
+        if (data.success) {
+          const pagesCount = data.pages || "0";
+          const skippedCount = data.skipped || "0";
+          let msg = `تم ربط ${pagesCount} صفحة بنجاح!`;
+          if (parseInt(skippedCount) > 0) {
+            msg += ` (تم تخطي ${skippedCount} صفحة)`;
+          }
+          setSuccess(msg);
+          if (data.skippedPages) {
+            setSkippedPages(data.skippedPages);
+          }
+          setTimeout(() => {
+            void loadOAuthStatus();
+            void loadSkippedPages();
+            emitFacebookPageSync(user?.companyId || null);
+          }, 2000);
+        } else if (data.error) {
+          setError(data.error);
+        }
+        if (popupRef.current && !popupRef.current.closed) {
+          popupRef.current.close();
+        }
+        popupRef.current = null;
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [loadOAuthStatus, loadSkippedPages, user?.companyId]);
+
   const handleConnectFacebook = async () => {
     if (!user?.companyId) {
       setError("معرف الشركة غير متوفر");
       return;
     }
 
+    // فتح popup فاضي على طول عشان نتجنب popup blocker
+    const popup = window.open(
+      "",
+      "facebook-oauth",
+      "width=600,height=800,scrollbars=yes,resizable=yes",
+    );
+    if (!popup) {
+      setError("تم حظر النافذة المنبثقة. يرجى السماح للنوافذ المنبثقة والمحاولة مرة أخرى.");
+      return;
+    }
+    popupRef.current = popup;
+
     try {
       setLoading(true);
       setError(null);
 
-      console.log("Connecting Facebook with company ID:", user.companyId);
-
-      // Get authorization URL from backend with companyId in URL directly
       const response = await fetch(
-        `${envConfig.apiUrl}/facebook-oauth/authorize?companyId=${user.companyId}&userId=${user.id}&returnOrigin=${encodeURIComponent(window.location.origin)}`,
+        `${envConfig.apiUrl}/facebook-oauth/authorize?companyId=${user.companyId}&userId=${user.id}&popup=true&returnOrigin=${encodeURIComponent(window.location.origin)}`,
         {
           headers: getAuthHeaders({ "Content-Type": "application/json" }),
         },
@@ -330,16 +375,18 @@ const FacebookOAuth: React.FC = () => {
 
       const data = await response.json();
 
-      console.log("Authorization Response:", data);
-
-      if (data.success) {
-        // Redirect to Facebook OAuth
-        console.log("Redirecting to:", data.authUrl);
-        window.location.href = data.authUrl;
+      if (data.success && data.authUrl) {
+        popup.location.href = data.authUrl;
       } else {
+        popup.close();
+        popupRef.current = null;
         setError(data.message || "فشل في إنشاء رابط الربط");
       }
     } catch (error) {
+      if (popupRef.current && !popupRef.current.closed) {
+        popupRef.current.close();
+      }
+      popupRef.current = null;
       console.error("Error initiating OAuth:", error);
       setError("خطأ في بدء عملية الربط");
     } finally {
@@ -539,43 +586,19 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
   }
 
   return (
-    <div className="w-full p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          ربط Facebook
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          ربط صفحات Facebook الخاصة بك بسهولة وأمان
-        </p>
-      </div>
-
-      {/* Debug Info (remove in production) */}
-      {import.meta.env.DEV && (
-        <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-800 rounded text-sm dark:text-gray-300">
-          <p>Company ID: {user?.companyId || "غير متوفر"}</p>
-          <p>User ID: {user?.id || "غير متوفر"}</p>
-          <button
-            onClick={handleDebug}
-            className="mt-2 px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-700 text-sm"
-          >
-            Debug Info
-          </button>
-        </div>
-      )}
-
+    <div className="w-full p-6 space-y-6" dir="rtl">
       {/* Success/Error Messages */}
       {success && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+        <div className="p-4 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl">
           <div className="flex items-center">
-            <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
-            <p className="text-green-800 whitespace-pre-line">{success}</p>
+            <CheckCircleIcon className="h-5 w-5 text-green-500 ml-3 shrink-0" />
+            <p className="text-green-800 dark:text-green-200 whitespace-pre-line">{success}</p>
             <button
               onClick={() => {
                 setSuccess(null);
                 setSkippedPages([]);
               }}
-              className="ml-auto text-green-600 hover:text-green-800"
+              className="mr-auto text-green-600 hover:text-green-800"
             >
               ×
             </button>
@@ -585,55 +608,55 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
 
       {/* Skipped Pages Warning */}
       {skippedPages.length > 0 && (
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div className="p-4 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-xl">
           <div className="flex items-start">
-            <ExclamationTriangleIcon className="h-6 w-6 text-yellow-500 mr-3 mt-0.5 flex-shrink-0" />
+            <ExclamationTriangleIcon className="h-6 w-6 text-yellow-500 ml-3 mt-0.5 shrink-0" />
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+              <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-200 mb-2">
                 صفحات لم يتم ربطها ({skippedPages.length})
               </h3>
-              <p className="text-sm text-yellow-800 mb-3">
+              <p className="text-sm text-yellow-800 dark:text-yellow-300 mb-3">
                 الصفحات التالية مربوطة بالفعل بشركة أخرى ولا يمكن ربطها:
               </p>
               <div className="space-y-2">
                 {skippedPages.map((page) => (
                   <div
                     key={page.pageId}
-                    className="flex items-center p-3 bg-white rounded-md border border-yellow-300"
+                    className="flex items-center p-3 bg-white dark:bg-gray-800 rounded-xl border border-yellow-300 dark:border-yellow-700"
                   >
-                    <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
-                      <span className="text-yellow-600 text-sm">📘</span>
+                    <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg flex items-center justify-center ml-3">
+                      <ChatBubbleLeftRightIcon className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">
+                      <h4 className="font-medium text-gray-900 dark:text-white">
                         {page.pageName}
                       </h4>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         Page ID: {page.pageId}
                       </p>
                     </div>
-                    <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                    <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 text-xs rounded-full shrink-0">
                       مربوطة بحساب آخر
                     </span>
                   </div>
                 ))}
               </div>
-              <div className="mt-4 p-3 bg-yellow-100 rounded-md">
-                <p className="text-sm text-yellow-900 mb-3">
-                  <strong>💡 ملاحظة:</strong> لربط هذه الصفحات، يجب أولاً فك
+              <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-xl">
+                <p className="text-sm text-yellow-900 dark:text-yellow-200 mb-3">
+                  <strong>ملاحظة:</strong> لربط هذه الصفحات، يجب أولاً فك
                   ربطها من الشركة الأخرى التي تستخدمها حالياً.
                 </p>
                 <button
                   onClick={resolveSkippedPages}
-                  className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 text-sm"
+                  className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm font-medium"
                 >
-                  ✓ تم الاطلاع - إخفاء هذا التنبيه
+                  تم الاطلاع - إخفاء هذا التنبيه
                 </button>
               </div>
             </div>
             <button
               onClick={resolveSkippedPages}
-              className="ml-2 text-yellow-600 hover:text-yellow-800 text-xl"
+              className="mr-2 text-yellow-600 hover:text-yellow-800 text-xl"
             >
               ×
             </button>
@@ -642,13 +665,13 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
       )}
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl">
           <div className="flex items-center">
-            <ExclamationTriangleIcon className="h-5 w-5 text-red-500 mr-2" />
-            <p className="text-red-800">{error}</p>
+            <ExclamationTriangleIcon className="h-5 w-5 text-red-500 ml-3 shrink-0" />
+            <p className="text-red-800 dark:text-red-200">{error}</p>
             <button
               onClick={() => setError(null)}
-              className="ml-auto text-red-600 hover:text-red-800"
+              className="mr-auto text-red-600 hover:text-red-800"
             >
               ×
             </button>
@@ -657,69 +680,68 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
       )}
 
       {/* OAuth Connection Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-        <div className="flex items-center mb-4">
-          <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mr-4">
-            <span className="text-white text-xl">📘</span>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm p-6">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20 shrink-0">
+            <ArrowTopRightOnSquareIcon className="h-6 w-6 text-white" />
           </div>
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Facebook OAuth
+              فيسبوك وإنستجرام
             </h2>
-            <p className="text-gray-600 dark:text-gray-300">
-              ربط آمن وسهل مع Facebook
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              اربط حساب فيسبوك أو إنستجرام عشان تقدر تستقبل رسايل العملاء وتدير المحادثات
             </p>
           </div>
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-4">
+          <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <span className="ml-2">جاري التحميل...</span>
+            <span className="mr-3 text-sm text-gray-500">جاري التحميل...</span>
           </div>
         ) : oauthStatus?.connected ? (
           <div className="space-y-4">
-            <div className="flex items-center text-green-600">
-              <CheckCircleIcon className="h-5 w-5 mr-2" />
-              <span className="font-medium">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-50 dark:bg-green-950/30 rounded-full">
+              <CheckCircleIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <span className="text-sm font-medium text-green-700 dark:text-green-300">
                 متصل - {connectedPagesCount} صفحة نشطة
               </span>
             </div>
 
             {disconnectedPagesCount > 0 && (
-              <p className="text-sm text-amber-700">
-                هناك {disconnectedPagesCount} صفحة غير متصلة ويمكن إعادة ربطها من
-                الأسفل.
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                هناك {disconnectedPagesCount} صفحة غير متصلة ويمكن إعادة ربطها من الأسفل.
               </p>
             )}
 
             <button
               onClick={handleConnectFacebook}
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-sm font-medium transition-colors"
             >
-              <PlusIcon className="h-4 w-4 mr-2" />
+              <PlusIcon className="h-4 w-4" />
               {loading ? "جاري التحميل..." : "إضافة صفحات أخرى"}
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="flex items-center text-gray-500">
-              <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
-              <span>غير متصل</span>
+          <div className="flex flex-col items-center py-6">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center mb-4">
+              <ExclamationTriangleIcon className="h-8 w-8 text-gray-400" />
             </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">غير متصل بأي صفحة Facebook</p>
 
             <button
               onClick={handleConnectFacebook}
               disabled={loading || !user?.companyId}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center text-lg"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-sm font-medium shadow-lg shadow-blue-600/20 transition-colors"
             >
-              <ArrowTopRightOnSquareIcon className="h-5 w-5 mr-2" />
-              {loading ? "جاري التحميل..." : "رابط مع Facebook"}
+              <ArrowTopRightOnSquareIcon className="h-5 w-5" />
+              {loading ? "جاري التحميل..." : "ربط مع Facebook"}
             </button>
 
             {!user?.companyId && (
-              <p className="text-sm text-red-600">معرف الشركة غير متوفر</p>
+              <p className="mt-2 text-sm text-red-600">معرف الشركة غير متوفر</p>
             )}
           </div>
         )}
@@ -727,22 +749,22 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
 
       {/* Connected Pages */}
       {pages.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-            <UserGroupIcon className="h-5 w-5 mr-2" />
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
+            <UserGroupIcon className="h-5 w-5 text-gray-500" />
             الصفحات المحفوظة ({pages.length})
           </h3>
 
-          <div className="mb-4 flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 md:flex-row md:items-center md:justify-between">
-            <label className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-200">
+          <div className="mb-4 flex flex-col gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-4 md:flex-row md:items-center md:justify-between">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
               <input
                 type="checkbox"
                 checked={allPagesSelected}
                 onChange={handleToggleSelectAll}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               تحديد الكل
-              <span className="mr-2 text-xs text-gray-500">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
                 ({selectedPageIds.length}/{pages.length})
               </span>
             </label>
@@ -751,166 +773,116 @@ ${(Array.isArray(data.pages) ? (data.pages as FacebookDebugPage[]) : [])
               <button
                 onClick={() => handleReconnectPages(selectedReconnectablePageIds)}
                 disabled={loading || selectedReconnectablePageIds.length === 0}
-                className="px-3 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-xs font-medium transition-colors"
               >
-                <ArrowPathIcon className="h-4 w-4 mr-2" />
+                <ArrowPathIcon className="h-3.5 w-3.5" />
                 إعادة ربط المحدد
               </button>
               <button
                 onClick={() => handleDisconnectPages(selectedConnectedPageIds)}
                 disabled={loading || selectedConnectedPageIds.length === 0}
-                className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed text-xs font-medium transition-colors"
               >
-                <TrashIcon className="h-4 w-4 mr-2" />
+                <TrashIcon className="h-3.5 w-3.5" />
                 فصل المحدد
               </button>
             </div>
           </div>
 
-          <div className="space-y-3">
-            {pages.map((page) => (
-              <div
-                key={page.id}
-                className="flex items-start justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg gap-4"
-              >
-                <div className="flex items-start flex-1">
-                  <input
-                    type="checkbox"
-                    checked={selectedPageIds.includes(page.id)}
-                    onChange={() => handleTogglePageSelection(page.id)}
-                    className="mt-3 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3"
-                  />
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                    <span className="text-blue-600 text-sm">📘</span>
+          {pages.length === 0 && !loading ? (
+            <div className="flex flex-col items-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
+              <UserGroupIcon className="h-12 w-12 text-gray-300 mb-3" />
+              <p className="text-sm text-gray-500">لا توجد صفحات</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pages.map((page) => (
+                <div
+                  key={page.id}
+                  className="flex items-start justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-xl gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                >
+                  <div className="flex items-start flex-1 min-w-0">
+                    <input
+                      type="checkbox"
+                      checked={selectedPageIds.includes(page.id)}
+                      onChange={() => handleTogglePageSelection(page.id)}
+                      className="mt-3 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 ml-3 shrink-0"
+                    />
+                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-xl flex items-center justify-center ml-3 shrink-0">
+                      <ChatBubbleLeftRightIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="font-medium text-gray-900 dark:text-white truncate">
+                        {page.pageName}
+                      </h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {page.pageId}
+                      </p>
+                      {page.connectedAt && (
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          متصل منذ: {formatDate(page.connectedAt)}
+                        </p>
+                      )}
+                      {page.disconnectedAt && page.status !== "connected" && (
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          تم الفصل في: {formatDate(page.disconnectedAt)}
+                        </p>
+                      )}
+                      {page.healthMessage && (
+                        <p className="text-xs text-amber-600 mt-0.5">
+                          {page.healthMessage}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white">
-                      {page.pageName}
-                    </h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Page ID: {page.pageId}
-                    </p>
-                    {page.connectedAt && (
-                      <p className="text-sm text-gray-500">
-                        متصل منذ: {formatDate(page.connectedAt)}
-                      </p>
+
+                  <div className="flex items-center gap-2 flex-wrap shrink-0">
+                    <span
+                      className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${
+                        page.status === "connected" && !page.needsReconnect
+                          ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+                          : page.needsReconnect
+                            ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
+                            : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                      }`}
+                    >
+                      {page.status === "connected"
+                        ? page.needsReconnect
+                          ? "يحتاج إعادة ربط"
+                          : "متصل"
+                        : "غير متصل"}
+                    </span>
+
+                    {page.canReconnect !== false && (
+                      <button
+                        onClick={() => handleReconnectPages([page.id])}
+                        disabled={loading || page.canReconnect === false}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg disabled:opacity-50 text-xs font-medium transition-colors"
+                        title="إعادة الربط"
+                      >
+                        <ArrowPathIcon className="h-3.5 w-3.5" />
+                        إعادة ربط
+                      </button>
                     )}
-                    {page.disconnectedAt && page.status !== "connected" && (
-                      <p className="text-sm text-gray-500">
-                        تم الفصل في: {formatDate(page.disconnectedAt)}
-                      </p>
-                    )}
-                    {page.healthMessage && (
-                      <p className="text-sm text-amber-700 mt-1">
-                        {page.healthMessage}
-                      </p>
+
+                    {page.status === "connected" && (
+                      <button
+                        onClick={() => handleDisconnectPages([page.id])}
+                        disabled={loading}
+                        className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg disabled:opacity-50 transition-colors"
+                        title="قطع الاتصال"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
                     )}
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 flex-wrap justify-end">
-                  <span
-                    className={`px-2 py-1 text-xs rounded-full ${
-                      page.status === "connected" && !page.needsReconnect
-                        ? "bg-green-100 text-green-800"
-                        : page.needsReconnect
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    {page.status === "connected"
-                      ? page.needsReconnect
-                        ? "يحتاج إعادة ربط"
-                        : "متصل"
-                      : "غير متصل"}
-                  </span>
-
-                  {page.canReconnect !== false && (
-                    <button
-                      onClick={() => handleReconnectPages([page.id])}
-                      disabled={loading || page.canReconnect === false}
-                      className="px-3 py-2 text-emerald-700 hover:bg-emerald-50 rounded-lg disabled:opacity-50 flex items-center"
-                      title="إعادة الربط"
-                    >
-                      <ArrowPathIcon className="h-4 w-4 mr-1" />
-                      إعادة ربط
-                    </button>
-                  )}
-
-                  {page.status === "connected" && (
-                    <button
-                      onClick={() => handleDisconnectPages([page.id])}
-                      disabled={loading}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50"
-                      title="قطع الاتصال"
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Benefits Card */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-lg p-6 mt-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <ShieldCheckIcon className="h-5 w-5 mr-2" />
-          مميزات الربط الآمن
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex items-start">
-            <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                آمان عالي
-              </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                لا نحفظ كلمات مرور أو بيانات حساسة
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start">
-            <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                سهولة الاستخدام
-              </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                ربط بنقرة واحدة بدون إدخال بيانات يدوياً
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start">
-            <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                إدارة متقدمة
-              </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                إضافة أو إزالة صفحات بسهولة
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start">
-            <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                صلاحيات محدودة
-              </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                نطلب فقط الصلاحيات الضرورية
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
