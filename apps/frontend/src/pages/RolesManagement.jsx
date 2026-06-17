@@ -59,10 +59,11 @@ const RolesManagement = () => {
     description: role.description || "",
     isBuiltIn: role.isBuiltIn || false,
     isActive: role.isActive !== false,
-    permissions: Array.isArray(role.permissions) ? role.permissions.map(p => ({
-      key: p.key || p,
-      name: p.name || p,
-    })) : [],
+    permissions: Array.isArray(role.permissions) ? role.permissions.map(p => {
+      if (typeof p === "string") return { key: p, name: p };
+      if (p.permission) return { key: p.permission.key, name: p.permission.name };
+      return { key: p.key || p, name: p.name || p };
+    }) : [],
     priority: role.priority || 0,
     companyId: role.companyId || null,
   });
@@ -183,7 +184,11 @@ const RolesManagement = () => {
 
   const handleEditRole = (roleKey, role) => {
     const perms = role.permissions && Array.isArray(role.permissions)
-      ? role.permissions.map(p => typeof p === "string" ? p : (p.key || p.name))
+      ? role.permissions.map(p => {
+          if (typeof p === "string") return p;
+          if (p.permission) return p.permission.key || p.permission.name;
+          return p.key || p.name;
+        })
       : [];
     setFormData({ name: role.name, description: role.description || "", permissions: perms, isActive: role.isActive !== false });
     setSelectedRole({ key: roleKey, id: role.id, ...role });
@@ -198,14 +203,18 @@ const RolesManagement = () => {
     groupedPermissions[domain].push(perm);
   }
 
+  const getPermName = (p) => {
+    if (!p) return "";
+    if (typeof p === "string") return p;
+    if (p.permission) return p.permission.name || p.permission.key;
+    return p.name || p.key || "";
+  };
+
   // Helper to render role permissions display
   const renderRolePermissions = (role) => {
     if (!role.permissions || role.permissions.length === 0) return <span className="text-xs text-muted-foreground">لا توجد صلاحيات</span>;
-    if (typeof role.permissions[0] === "string") {
-      return role.permissions.map((p, i) => <Badge key={i} variant="outline" className="text-xs">{p}</Badge>);
-    }
     return role.permissions.map((p, i) => (
-      <Badge key={i} variant="outline" className="text-xs">{p.name || p.key}</Badge>
+      <Badge key={i} variant="outline" className="text-xs">{getPermName(p)}</Badge>
     ));
   };
 
