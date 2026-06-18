@@ -25,6 +25,29 @@ const moment = require("moment-timezone");
 // ✅ FIX: Use lazy-loading pattern - don't call getSharedPrismaClient at module load time
 const getPrisma = () => getSharedPrismaClient();
 
+// ── In-Memory Search Cache ──────────────────────────────────────────────
+const searchCache = new Map();
+const SEARCH_CACHE_TTL = 8_000; // 8 seconds
+
+function getCachedSearch(key) {
+  const entry = searchCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > SEARCH_CACHE_TTL) {
+    searchCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCachedSearch(key, data) {
+  searchCache.set(key, { ts: Date.now(), data });
+  if (searchCache.size > 200) {
+    const oldest = searchCache.entries().next().value;
+    if (oldest) searchCache.delete(oldest[0]);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────
+
 /**
  * 🎮 Calculate Level based on XP
  * Formula: Level = floor(sqrt(XP / 100)) + 1
@@ -6478,16 +6501,29 @@ function getArabicVariants(text) {
 }
 
 /**
- * Generate Prisma-compatible contains conditions with Arabic normalization
- * Handles alef variants, yeh, teh marbuta, tashkeel, tatweel, and single-character search
+ * Generate Prisma-compatible search conditions with Arabic normalization
+ * Handles alef variants, yeh, teh marbuta, tashkeel, tatweel, single-character search.
+ * Adds startsWith conditions for exact-prefix matching to improve relevance.
  */
 function ac(field, value) {
   if (!value) return [{ [field]: { contains: value, mode: "insensitive" } }];
   const variants = getArabicVariants(value);
   const conditions = [];
+  const seen = new Set();
   for (const variant of variants) {
-    if (variant && variant.length > 0) {
+    if (!variant || variant.length === 0) continue;
+    const key = `c:${variant}`;
+    if (!seen.has(key)) {
+      seen.add(key);
       conditions.push({ [field]: { contains: variant, mode: "insensitive" } });
+    }
+    // Add startsWith for better prefix matching (higher relevance at query level)
+    if (variant.length >= 2) {
+      const skey = `s:${variant}`;
+      if (!seen.has(skey)) {
+        seen.add(skey);
+        conditions.push({ [field]: { startsWith: variant, mode: "insensitive" } });
+      }
     }
   }
   return conditions;
@@ -6511,12 +6547,23 @@ const searchModel = async (queryFn, logLabel) => {
 
 const globalSearch = async (req, res) => {
   try {
-    const { q } = req.query;
+    const { q, page: pageStr, maxResults: maxStr } = req.query;
     if (!q || !q.trim()) {
       return res.json({ success: true, data: [] });
     }
 
     const query = q.trim().replace(/\s+/g, " ");
+    const page = Math.max(1, parseInt(pageStr) || 1);
+    const maxResults = Math.min(50, Math.max(5, parseInt(maxStr) || 10));
+    const offset = (page - 1) * maxResults;
+
+    // Check cache first
+    const cacheKey = `${query}:${page}:${maxResults}`;
+    const cached = getCachedSearch(cacheKey);
+    if (cached) {
+      return res.json({ ...cached, meta: { ...cached.meta, cached: true } });
+    }
+
     const prisma = getPrisma();
     const searchStart = Date.now();
     const isShortQuery = query.replace(/\s/g, '').length <= 2;
@@ -6973,21 +7020,41 @@ const globalSearch = async (req, res) => {
     }
 
     // Apply relevance sorting: exact → startsWith → alphabetical
+    let visibleCount = 0;
+    const pagedResults = [];
     for (const group of results) {
       if (group.items && group.items.length > 1) {
         sortItems(group.items);
       }
+      // Apply pagination: skip groups until we reach the offset, then take up to maxResults items
+      if (visibleCount >= offset + maxResults) break;
+      if (visibleCount + group.items.length > offset) {
+        const groupStart = Math.max(0, offset - visibleCount);
+        const groupEnd = Math.min(group.items.length, offset + maxResults - visibleCount);
+        const sliced = group.items.slice(groupStart, groupEnd);
+        if (sliced.length > 0) {
+          pagedResults.push({ ...group, items: sliced });
+        }
+      }
+      visibleCount += group.items.length;
     }
 
-    return res.json({
+    const response = {
       success: true,
-      data: results,
+      data: pagedResults,
       meta: {
         total: totalCount,
         time: searchTime,
         query,
+        page,
+        maxResults,
+        totalPages: Math.ceil(totalCount / maxResults) || 1,
       },
-    });
+    };
+
+    setCachedSearch(cacheKey, response);
+
+    return res.json(response);
   } catch (error) {
     console.error("[SA-GLOBAL-SEARCH] Error:", error.message);
     return res.status(500).json({ success: false, error: "Search failed" });
