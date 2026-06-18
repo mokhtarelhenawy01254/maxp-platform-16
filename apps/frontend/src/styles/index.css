@@ -4241,9 +4241,19 @@ select {
 }
 
 .business-inbox-shell {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   height: 100%;
+}
+
+.business-inbox-stage {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
 }
 
 .app-shell-content:has(.business-inbox-shell) {
@@ -4383,6 +4393,7 @@ select {
   width: 312px;
   min-width: 292px;
   flex: 0 0 auto;
+  overflow-y: auto;
 }
 
 [data-theme="business-os-enterprise"] .business-inbox-column--context {

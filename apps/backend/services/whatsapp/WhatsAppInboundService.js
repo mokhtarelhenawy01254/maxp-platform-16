@@ -278,6 +278,7 @@ async function saveIncomingMessage(payload) {
           message: content,
           threadId: syncedConversation?.id || null,
           channel: 'WHATSAPP',
+          memoryContext: null,
         });
 
         const replyText = result.reply;
