@@ -177,73 +177,55 @@ jobs:
           echo "💡 If SSH times out, run on the server: sudo ufw allow ${{ env.SERVER_SSH_PORT }}/tcp && sudo ufw reload"
 
       # Prepare SSH Key & Test SSH Connection & Setup Staging
-      - name: Test SSH Connection
+      - name: Setup SSH Key
         shell: bash
         env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
-          SERVER_SSH_PORT: ${{ env.SERVER_SSH_PORT }}
         run: |
           set -euo pipefail
           install -m 700 -d "$HOME/.ssh"
           printf '%s\n' "$SERVER_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/maxp_deploy_key"
           chmod 600 "$HOME/.ssh/maxp_deploy_key"
 
-          # Pre-flight TCP check (informational only — not a hard failure).
-          # The actual SSH command below is the authoritative connectivity test.
-          echo "🔌 Checking TCP reachability of $SERVER_HOST:$SERVER_SSH_PORT ..."
-          TCP_REACHABLE=false
-          if command -v nc &>/dev/null && nc -z -w 10 "$SERVER_HOST" "$SERVER_SSH_PORT" 2>/dev/null; then
-            TCP_REACHABLE=true
-          elif timeout 10 bash -c "echo >/dev/tcp/$SERVER_HOST/$SERVER_SSH_PORT" 2>/dev/null; then
-            TCP_REACHABLE=true
-          fi
-          if [ "$TCP_REACHABLE" = false ]; then
-            echo "⚠️  TCP pre-flight could not reach $SERVER_HOST:$SERVER_SSH_PORT."
-            echo "   This may be a transient check failure; proceeding to SSH connection."
-            echo "   If SSH also fails, ensure port $SERVER_SSH_PORT is open to GitHub Actions IPs"
-            echo "   in your VPS provider's cloud firewall (not just ufw)."
-          else
-            echo "✅ TCP port $SERVER_SSH_PORT is reachable."
-          fi
-
-          ssh-keyscan -p "$SERVER_SSH_PORT" -H "$SERVER_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
-          SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
-          SSH_OPTS=(
-            -i "$SSH_KEY_PATH"
-            -p "$SERVER_SSH_PORT"
-            -o StrictHostKeyChecking=accept-new
-            -o ServerAliveInterval=30
-            -o ServerAliveCountMax=10
-            -o ConnectTimeout=30
-          )
-          timeout 15m ssh "${SSH_OPTS[@]}" "$SERVER_USER@$SERVER_HOST" 'bash -se' <<'REMOTE_SCRIPT'
-            set -euo pipefail
-            sudo -n true || {
-              echo "❌ Passwordless sudo is required for production deploys"
-              exit 1
-            }
-            DEPLOY_STAGING="$HOME/deploy_staging_${{ github.run_id }}_${{ github.run_attempt }}"
+      - name: Test SSH Connection (with retry)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ env.SERVER_SSH_PORT }}
+          debug: true
+          timeout: 60s
+          command_timeout: 30s
+          script: |
             echo "✅ SSH connection successful"
             echo "👤 User: $(whoami)"
             echo "🏠 Home: $HOME"
             echo "📁 Current dir: $(pwd)"
-            
-            echo "🧹 Running early cleanup to free space..."
-            sudo -n pm2 flush > /dev/null 2>&1 || true
-            sudo -n journalctl --vacuum-time=1d || echo "⚠️ Journalctl cleanup failed"
-            sudo -n npm cache clean --force || echo "⚠️ NPM cache cleanup failed"
-            
+            echo "📊 Disk space:"
+            df -h $HOME
+
+      - name: Setup Remote Staging Directory
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ env.SERVER_SSH_PORT }}
+          debug: true
+          timeout: 120s
+          command_timeout: 60s
+          envs: GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT
+          script: |
+            set -e
+            DEPLOY_STAGING="$HOME/deploy_staging_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
             echo "🚀 Creating staging directory..."
             rm -rf "$DEPLOY_STAGING"
             mkdir -p "$DEPLOY_STAGING/backend"
             mkdir -p "$DEPLOY_STAGING/frontend"
-            echo "📊 Disk Space after cleanup:"
+            echo "✅ Staging directory created: $DEPLOY_STAGING"
+            echo "📊 Disk space:"
             df -h $HOME
-            echo "🔒 Permissions for $DEPLOY_STAGING:"
-            ls -ld "$DEPLOY_STAGING"
-          REMOTE_SCRIPT
 
       # Deploy Tarballs to Server
       - name: Deploy Tarballs to Server
@@ -255,39 +237,46 @@ jobs:
         run: |
           set -euo pipefail
           SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
-          timeout 30m scp \
-            -i "$SSH_KEY_PATH" \
-            -P "$SERVER_SSH_PORT" \
-            -o StrictHostKeyChecking=accept-new \
-            -o ServerAliveInterval=30 \
-            -o ServerAliveCountMax=10 \
-            *.tar.gz \
-            "$SERVER_USER@$SERVER_HOST:deploy_staging_${{ github.run_id }}_${{ github.run_attempt }}/"
+          ssh-keyscan -p "$SERVER_SSH_PORT" -H "$SERVER_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
+          for i in 1 2 3; do
+            echo "🔄 SCP attempt $i/3..."
+            if timeout 30m scp \
+              -i "$SSH_KEY_PATH" \
+              -P "$SERVER_SSH_PORT" \
+              -o StrictHostKeyChecking=accept-new \
+              -o ServerAliveInterval=30 \
+              -o ServerAliveCountMax=10 \
+              -o ConnectTimeout=30 \
+              *.tar.gz \
+              "$SERVER_USER@$SERVER_HOST:deploy_staging_${{ github.run_id }}_${{ github.run_attempt }}/"; then
+              echo "✅ Tarballs transferred successfully"
+              break
+            else
+              echo "⚠️ SCP attempt $i failed"
+              if [ $i -eq 3 ]; then
+                echo "❌ All SCP attempts failed"
+                exit 1
+              fi
+              sleep 5
+            fi
+          done
 
       - name: Run Deployment Script on Server
-        shell: bash
+        uses: appleboy/ssh-action@v1.0.3
         env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_SSH_PORT: ${{ env.SERVER_SSH_PORT }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
           SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
           SUPER_ADMIN_PASSWORD: ${{ secrets.SUPER_ADMIN_PASSWORD }}
-        run: |
-          set -euo pipefail
-          SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
-          SSH_OPTS=(
-            -i "$SSH_KEY_PATH"
-            -p "$SERVER_SSH_PORT"
-            -o StrictHostKeyChecking=accept-new
-            -o ServerAliveInterval=30
-            -o ServerAliveCountMax=10
-            -o ConnectTimeout=30
-          )
-          REMOTE_ENV="$(printf 'GITHUB_RUN_ID=%q GITHUB_RUN_ATTEMPT=%q SUPER_ADMIN_EMAIL=%q SUPER_ADMIN_PASSWORD=%q' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$SUPER_ADMIN_EMAIL" "$SUPER_ADMIN_PASSWORD")"
-          timeout 50m ssh "${SSH_OPTS[@]}" "$SERVER_USER@$SERVER_HOST" "$REMOTE_ENV bash -se" <<'REMOTE_SCRIPT'
-            set -euo pipefail
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ env.SERVER_SSH_PORT }}
+          debug: true
+          timeout: 300s
+          command_timeout: 50m
+          envs: GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,SUPER_ADMIN_EMAIL,SUPER_ADMIN_PASSWORD
+          script: |
+            set -e
             sudo -n true || {
               echo "❌ Passwordless sudo is required for production deploys"
               exit 1
@@ -895,4 +884,3 @@ jobs:
             
             echo "✅ Deployment completed!"
             rm -rf "$DEPLOY_STAGING"
-          REMOTE_SCRIPT
