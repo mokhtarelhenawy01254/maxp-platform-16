@@ -280,34 +280,41 @@ function buildSandboxConversationId(companyId, userId, sessionId) {
 }
 
 function normalizeSandboxReply(text) {
-  if (!text) return text || '';
-  let cleaned = text;
+  if (!text || typeof text !== 'string') return text || '';
+  try {
+    let cleaned = text;
 
-  // Strip XML-like reasoning blocks: <thought>, <thinking>, <reason>, <analysis>, <reasoning>.
-  cleaned = cleaned.replace(/<(thought|thinking|reason|analysis|reasoning)[^>]*>[\s\S]*?<\/\1>/gsi, '');
-  cleaned = cleaned.replace(/<\/?(?:thought|thinking|reason|analysis|reasoning)[^>]*>/gi, '');
+    // Strip XML-like reasoning blocks: <thought>, <thinking>, <reason>, <analysis>, <reasoning>.
+    cleaned = cleaned.replace(/<(thought|thinking|reason|analysis|reasoning)[^>]*>[\s\S]*?<\/\1>/gi, '');
+    cleaned = cleaned.replace(/<\/?(?:thought|thinking|reason|analysis|reasoning)[^>]*>/gi, '');
 
-  // Split into lines and filter reasoning/draft lines that should never reach users.
-  const lines = cleaned.split('\n');
-  const draftMarkerRe = /^\s*[*\-\u2022\u25E6\u25AA]\s*\*?\s*(?:Draft\s+\d+|[A-Za-z][\w\s\/\.\(\)]*\?(?:\s+(?:Yes|No|Maybe|Y|N|true|false|✓|✗))?)[:)]?/i;
-  const reasoningKeywordRe = /^\s*[*\-\u2022\u25E6\u25AA]\s*(?:Option|Goal|Context|Constraint|User\sQuestion|Refined|Analysis|Reasoning|Input|Meaning|Language|Plan|Step|Note|Consideration|Evaluation|Draft)[\s\d]*:/i;
-  const bracketReasoningRe = /^\s*\[[^\]]+\]\s*(?:Yes|No|Maybe|Y|N|true|false|✓|✗)?\s*$/i;
+    // Split into lines and filter reasoning/draft lines that should never reach users.
+    const lines = cleaned.split('\n');
+    const bulletRe = /^\s*[*\-]\s*\*?\s*/;
+    const draftRe = /Draft\s+\d+/i;
+    const reasoningKeywordRe = /^\s*[*\-]\s*\*?\s*(?:Option|Goal|Context|Constraint|User\s*Question|Refined|Analysis|Reasoning|Input|Meaning|Language|Plan|Step|Note|Consideration|Evaluation|Draft)[\s\d]*:/i;
+    const checklistRe = /\?\s*(?:Yes|No|Maybe|Y|N|true|false|✓|✗)\b/i;
+    const bracketReasoningRe = /^\s*\[[^\]]+\]\s*(?:Yes|No|Maybe|Y|N|true|false|✓|✗)?\s*$/i;
 
-  const kept = [];
-  for (const rawLine of lines) {
-    const trimmed = rawLine.trim();
-    if (draftMarkerRe.test(trimmed)) continue;
-    if (reasoningKeywordRe.test(trimmed)) continue;
-    if (bracketReasoningRe.test(trimmed)) continue;
-    kept.push(rawLine);
+    const kept = [];
+    for (const rawLine of lines) {
+      const trimmed = rawLine.trim();
+      const isBullet = bulletRe.test(trimmed);
+      if (isBullet && (draftRe.test(trimmed) || reasoningKeywordRe.test(trimmed) || checklistRe.test(trimmed))) continue;
+      if (bracketReasoningRe.test(trimmed)) continue;
+      kept.push(rawLine);
+    }
+
+    cleaned = kept.join('\n').trim();
+
+    // Collapse more than two consecutive blank lines left by stripping reasoning.
+    cleaned = cleaned.replace(/\n\s*\n\s*\n+/g, '\n\n');
+
+    return cleaned || text;
+  } catch (err) {
+    console.error('[normalizeSandboxReply] error', err.message);
+    return text;
   }
-
-  cleaned = kept.join('\n').trim();
-
-  // Collapse more than two consecutive blank lines left by stripping reasoning.
-  cleaned = cleaned.replace(/\n\s*\n\s*\n+/g, '\n\n');
-
-  return cleaned || text;
 }
 
 function extractSandboxReply(taskResult) {
@@ -685,6 +692,7 @@ async function runSandboxChatTurn({
   const agentInfo = agentBundle.sandboxAgent;
   const modelSelectionFromTask = extractSandboxModelSelection(taskResult, agentInfo);
   const pipelineTrace = taskResult?.result?.pipelineTrace || null;
+  const compiledSystemPrompt = taskResult?.result?.compiledSystemPrompt || null;
 
   if (!sessionId) {
     await aiSandboxService.createSession({
@@ -941,15 +949,12 @@ async function listAgents(req, res) {
       role: a.role,
       icon: a.icon || '🤖',
       description: a.description || '',
-      soul: a.soul || a.persona?.soulInstructions || '',
-      rules: (() => { try { return typeof a.rules === 'string' ? JSON.parse(a.rules || '[]') : (a.rules || []); } catch { return []; } })(),
       skills: (() => { try { return typeof a.skillsRaw === 'string' ? JSON.parse(a.skillsRaw || '[]') : (a.allowedSkills || []); } catch { return []; } })(),
       allowedTools: a.allowedTools || a.allowed_tools || [],
       model: a.model || null,
       status: a.status,
       parentId: a.parentId || a.parent_id || null,
       templateSlug: a.templateSlug || a.template_slug || null,
-      createdBy: a.createdBy || a.created_by || null,
       createdAt: a.created_at || a.createdAt,
       departmentId: a.departmentId || a.department_id || null,
       departmentKey: a.departmentKey || a.department_key || null,
@@ -1404,6 +1409,7 @@ async function sendChatMessage(req, res) {
       compiledSystemPrompt: turnResult.compiledSystemPrompt || null,
     });
   } catch (error) {
+    console.error('[sendChatMessage] error', error);
     return sendCodeError(res, error.statusCode || 500, error.code || 'AI_SANDBOX_CHAT_FAILED');
   }
 }

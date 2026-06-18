@@ -86,6 +86,7 @@ jest.mock('../../services/aiServiceAdminClient', () => ({
     comment: 'python evaluation',
   })),
   getAgent: jest.fn(async () => mockSandboxAgentConfig || null),
+  listAgents: jest.fn(async () => [mockSandboxAgentConfig].filter(Boolean)),
 }));
 
 const AIProviderFactory = { getProvider: jest.fn(() => mockProviderClient), getActiveProvider: jest.fn(() => mockProviderClient) };
@@ -1089,7 +1090,7 @@ describe('AI sandbox route security', () => {
         '    *   Cheerful? Yes.',
         '',
         'Hello, how can I help you?',
-      ].join('\\n'),
+      ].join('\n'),
       tool_calls: [],
       runtime: 'python-agent',
     };
@@ -1143,9 +1144,7 @@ describe('AI sandbox route security', () => {
         message: 'Hello',
       });
 
-    console.error('RESPONSE BODY', response.status, response.body);
-    expect(response.status).toBe(200);
-    expect(response.body.reply).toBe('Python reply');
+    expect(response.body).toEqual(expect.objectContaining({ reply: 'Python reply', success: true }));
     expect(aiServiceAdminClient.chatWithAgent).toHaveBeenCalledWith(expect.objectContaining({
       message: 'Hello',
       agentConfig: expect.objectContaining({
