@@ -506,63 +506,29 @@ export default function AppPricingSheet() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50 pb-12">
-      {/* Page Header */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-0">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-3xl font-extrabold text-slate-900 dark:text-slate-50 tracking-tight font-cairo">
-                {t("subscription.pageTitle")}
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400 mt-2">
-                {t("subscription.pageDescription")}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                className="flex items-center gap-2 font-semibold font-cairo border-slate-300 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:hover:bg-indigo-950/30"
-                onClick={exportToCSV}
-                disabled={loading || processedApps.length === 0}
-              >
-                <FileSpreadsheet size={18} />
-                {t("subscription.exportToExcel")}
-              </Button>
-              {user?.role === "SUPER_ADMIN" && (
-                <Button
-                  className="flex items-center gap-2 font-semibold font-cairo bg-indigo-600 hover:bg-indigo-700 text-white"
-                  onClick={() => handleOpenDialog()}
-                >
-                  <Plus size={18} />
-                  {t("subscription.addApp", "إضافة تطبيق")}
-                </Button>
-              )}
-            </div>
-          </div>
-          {/* Subscription Navigation Tabs */}
-          <div className="flex gap-1 border-b-0">
-            {subscriptionTabs.map((tab) => {
-              const isActive = location.pathname === tab.path;
-              return (
-                <button
-                  key={tab.path}
-                  onClick={() => navigate(tab.path)}
-                  className={`px-5 py-3 text-sm font-semibold font-cairo transition-all duration-200 border-b-2 whitespace-nowrap ${
-                    isActive
-                      ? "border-indigo-600 text-indigo-700 dark:text-indigo-400 dark:border-indigo-500"
-                      : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:border-slate-300"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+    <div className="bg-transparent pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 flex justify-end gap-2">
+        <Button
+          variant="outline"
+          className="flex items-center gap-2 font-semibold font-cairo border-slate-300 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:hover:bg-indigo-950/30"
+          onClick={exportToCSV}
+          disabled={loading || processedApps.length === 0}
+        >
+          <FileSpreadsheet size={18} />
+          {t("subscription.exportToExcel")}
+        </Button>
+        {user?.role === "SUPER_ADMIN" && (
+          <Button
+            className="flex items-center gap-2 font-semibold font-cairo bg-indigo-600 hover:bg-indigo-700 text-white"
+            onClick={() => handleOpenDialog()}
+          >
+            <Plus size={18} />
+            {t("subscription.addApp", "إضافة تطبيق")}
+          </Button>
+        )}
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
         {/* KPI Cards (Modernized with Glassmorphism & Gradients) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(255,255,255,0.01)] bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl overflow-hidden relative group transition-all duration-300 hover:-translate-y-1">
