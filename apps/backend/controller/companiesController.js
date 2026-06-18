@@ -1339,6 +1339,7 @@ const getCompanyUsers = async (req, res) => {
               email: true,
               phone: true,
               avatar: true,
+              isActive: true,
               isEmailVerified: true,
               lastLoginAt: true,
               createdAt: true,
@@ -1540,20 +1541,21 @@ const getSingleUser = async (req, res) => {
         userId: userId,
       },
       include: {
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
-            avatar: true,
-            isEmailVerified: true,
-            lastLoginAt: true,
-            createdAt: true,
-            updatedAt: true,
-            // ✅ Include Employee fields directly from User
-            employeeNumber: true,
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+              avatar: true,
+              isActive: true,
+              isEmailVerified: true,
+              lastLoginAt: true,
+              createdAt: true,
+              updatedAt: true,
+              // ✅ Include Employee fields directly from User
+              employeeNumber: true,
             contractType: true,
             hireDate: true,
             baseSalary: true,
