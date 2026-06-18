@@ -817,10 +817,11 @@ class PayrollService {
       });
       const usersMap = new Map(users.map(u => [u.id, u]));
 
+      const uniqueEmployeeIds = new Set(payrolls.map(p => p.userId));
       const summary = {
         month,
         year,
-        totalEmployees: payrolls.length,
+        totalEmployees: uniqueEmployeeIds.size,
         totalBaseSalary: 0,
         totalAllowances: 0,
         totalDeductions: 0,
@@ -1150,11 +1151,14 @@ class PayrollService {
     // 💸 DEDUCTIONS INTEGRATION (الخصومات) - Daily Aware Logic
     // ---------------------------------------------------------
 
-    // التحقق من تفعيل الخصم التلقائي للموظف
-    const isAutoDeductionEnabled = employee.enableAutoDeduction !== false;
+    // التحقق من تفعيل الخصم التلقائي (على مستوى الشركة والموظف)
+    const isCompanyAutoDeductionEnabled = settings?.autoDeductionEnabled !== false;
+    const isEmployeeAutoDeductionEnabled = employee.enableAutoDeduction !== false;
+    const isAutoDeductionEnabled = isCompanyAutoDeductionEnabled && isEmployeeAutoDeductionEnabled;
     console.log('🔍 [PAYROLL-DEDUCTION] Auto deduction check:', {
       employeeId,
-      enableAutoDeduction: employee.enableAutoDeduction,
+      companyAutoDeduction: settings?.autoDeductionEnabled,
+      employeeAutoDeduction: employee.enableAutoDeduction,
       isAutoDeductionEnabled
     });
 
@@ -1200,6 +1204,11 @@ class PayrollService {
       });
     }
 
+    // حساب قيمة latePenalty من الخصومات التلقائية للتأخير (للتخزين في حقل latePenalty)
+    latePenalty = manualDeductions
+      .filter(d => d.category === 'AUTO_DEDUCTION' && d.type === 'LATE')
+      .reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
+
     manualDeductions.forEach(d => {
       addDailyPenalty(d.date, parseFloat(d.amount), `يدوي: ${d.reason}`, 'manual');
     });
@@ -1238,40 +1247,88 @@ class PayrollService {
       }
     });
 
-    // 3. Late Penalty (Tiered / Escalation) - فقط إذا كان الخصم التلقائي مفعل
+    // 3. Late Penalty - يتم تخطي إعادة الحساب إذا كان الخصم التلقائي مفعلاً
+    // لأن الخصم التلقائي ينشئ سجلات ManualDeduction (مع مراعاة المدة المسموحة)
+    // ويتم تضمينها تلقائياً في الخصومات أعلاه
     if (isAutoDeductionEnabled) {
+      console.log('🔍 [PAYROLL-DEDUCTION] Auto deduction is enabled - skipping late penalty recalculation (already handled via ManualDeduction records with grace period)');
+    } else {
+      // إذا كان الخصم التلقائي معطلاً، نحتاج لحساب غرامات التأخير يدوياً
+      // مع مراعاة المدة المسموحة (grace period) من رصيد المرونة
+      console.log('🔍 [PAYROLL-DEDUCTION] Auto deduction disabled - calculating late penalties manually with grace period');
+
       const lateOccurrences = attendance.filter(a => (a.lateMinutes > 0 || a.status === 'LATE')).sort((a, b) => new Date(a.date) - new Date(b.date));
       const delayPenaltyTiers = settings?.delayPenaltyTiers ? JSON.parse(settings.delayPenaltyTiers) : [];
       const lateWarningLevels = settings?.lateWarningLevels ? JSON.parse(settings.lateWarningLevels) : [];
       const monthlyLateLimit = parseInt(settings?.monthlyLateLimit) || 3;
+      const gracePeriodMinutes = settings?.gracePeriodMinutes || 60;
 
       console.log('🔍 [PAYROLL-DEDUCTION] Processing late penalties:', {
         lateOccurrencesCount: lateOccurrences.length,
         delayPenaltyTiersCount: delayPenaltyTiers.length,
         lateWarningLevelsCount: lateWarningLevels.length,
-        monthlyLateLimit
+        monthlyLateLimit,
+        gracePeriodMinutes
       });
 
-      let lateDescription = [];
+      // جلب رصيد المرونة الحالي للموظف (المدة المسموحة)
+      const latenessBalance = await this.prisma.latenessBalance.findUnique({
+        where: {
+          employeeId_month_year: {
+            employeeId,
+            month: parseInt(month),
+            year: parseInt(year)
+          }
+        }
+      });
+
+      let remainingGrace = gracePeriodMinutes - (latenessBalance?.graceMinutesUsed || 0);
+      if (remainingGrace < 0) remainingGrace = 0;
+      let cumulativeLateMinutes = latenessBalance?.totalLateMinutes || 0;
 
       if (delayPenaltyTiers && delayPenaltyTiers.length > 0) {
         lateOccurrences.forEach(occ => {
           const mins = occ.lateMinutes || 0;
-          const applicableTier = [...delayPenaltyTiers].sort((a, b) => b.minMinutes - a.minMinutes).find(t => mins >= t.minMinutes);
+          // تطبيق المدة المسموحة: نحتسب فقط الدقائق التي تتجاوز رصيد المرونة المتبقي
+          let effectiveLateMinutes = mins;
+          if (remainingGrace > 0) {
+            const graceUsed = Math.min(effectiveLateMinutes, remainingGrace);
+            remainingGrace -= graceUsed;
+            effectiveLateMinutes -= graceUsed;
+          }
+          if (effectiveLateMinutes <= 0) return;
+
+          const applicableTier = [...delayPenaltyTiers].sort((a, b) => b.minMinutes - a.minMinutes).find(t => effectiveLateMinutes >= t.minMinutes);
           if (applicableTier) {
             const amount = dailyRate * (parseFloat(applicableTier.deductionDays) || 0);
             console.log('🔍 [PAYROLL-DEDUCTION] Applying tier penalty:', {
               date: occ.date,
               minutes: mins,
+              effectiveMinutes: effectiveLateMinutes,
               tier: applicableTier,
-              amount
+              amount,
+              remainingGrace
             });
-            addDailyPenalty(occ.date, amount, `تأخير ${mins}د`);
+            addDailyPenalty(occ.date, amount, `تأخير ${mins}د (بعد خصم ${mins - effectiveLateMinutes}د مسموحة)`);
           }
         });
       } else {
         lateOccurrences.forEach((occ, index) => {
           const rank = index + 1;
+          const mins = occ.lateMinutes || 0;
+
+          // تطبيق المدة المسموحة: نحتسب فقط الدقائق التي تتجاوز رصيد المرونة المتبقي
+          let effectiveLateMinutes = mins;
+          if (remainingGrace > 0) {
+            const graceUsed = Math.min(effectiveLateMinutes, remainingGrace);
+            remainingGrace -= graceUsed;
+            effectiveLateMinutes -= graceUsed;
+          }
+
+          cumulativeLateMinutes += mins;
+          // للمدة المسموحة نستخدم cumulative بدلاً من الفردي
+          if (effectiveLateMinutes <= 0) return;
+
           if (rank > monthlyLateLimit) {
             const occurrenceSeq = rank - monthlyLateLimit;
             const level = lateWarningLevels.find(l => l.count === occurrenceSeq) || (lateWarningLevels.length > 0 ? lateWarningLevels[lateWarningLevels.length - 1] : null);
@@ -1281,15 +1338,14 @@ class PayrollService {
                 date: occ.date,
                 rank,
                 level,
-                amount
+                amount,
+                remainingGrace
               });
-              addDailyPenalty(occ.date, amount, `تأخير رقم ${rank}`);
+              addDailyPenalty(occ.date, amount, `تأخير رقم ${rank} (بعد خصم المسموح)`);
             }
           }
         });
       }
-    } else {
-      console.log('🔍 [PAYROLL-DEDUCTION] Auto deduction disabled - skipping late penalties');
     }
 
     // Early Leave
