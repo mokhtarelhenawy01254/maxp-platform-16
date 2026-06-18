@@ -44,6 +44,8 @@ interface MarketplaceApp {
   pricingModel: string; // FREE, PAY_PER_USE, SUBSCRIPTION
   unitPrice?: number;
   unitName?: string;
+  freeUnitsIncluded?: number;
+  minimumCharge?: number;
   monthlyPrice?: number;
   yearlyPrice?: number;
   trialDays: number;
@@ -123,6 +125,8 @@ export default function AppPricingSheet() {
         yearlyPrice: Number(editingApp.yearlyPrice) || 0,
         unitPrice: Number(editingApp.unitPrice) || 0,
         unitName: editingApp.unitName || "",
+        freeUnitsIncluded: Number(editingApp.freeUnitsIncluded) || 0,
+        minimumCharge: Number(editingApp.minimumCharge) || 0,
         trialDays: Number(editingApp.trialDays) || 0,
         isActive: editingApp.isActive ?? true,
       };
@@ -807,9 +811,7 @@ export default function AppPricingSheet() {
                         {renderSortIcon("name")}
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300 font-cairo">
-                      {t("subscription.description")}
-                    </th>
+
                     <th className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300 font-cairo">
                       {t("subscription.pricingModel")}
                     </th>
@@ -879,30 +881,13 @@ export default function AppPricingSheet() {
                           </div>
                           <div>
                             <div className="text-sm font-bold">{i18n.language === "ar" ? app.name : app.nameEn || app.name}</div>
-                            <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-1.5">
+                            <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
                               {getCategoryLabel(app.category)}
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <button
-                                      className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400"
-                                      onClick={(e) => copyToClipboard(app.slug, e)}
-                                    >
-                                      <Copy size={11} />
-                                    </button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="text-xs">
-                                    {t("common.copySlug", "نسخ الـ Slug")}: {app.slug}
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400 max-w-xs truncate font-cairo">
-                        {app.description}
-                      </td>
+
                       <td className="px-6 py-4 text-sm font-cairo">
                         {getPricingModelBadge(app.pricingModel)}
                       </td>
@@ -939,11 +924,23 @@ export default function AppPricingSheet() {
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-800 dark:text-slate-200 font-cairo">
                         {app.unitPrice ? (
-                          <div className="flex items-center gap-1.5 font-bold">
-                            <span>
-                              {app.unitPrice} <span className="text-xs font-normal text-slate-400">{t("subscription.egp")}</span>
-                            </span>
-                            <span className="text-xs font-normal text-slate-400">/ {app.unitName ? t(`subscription.units.${app.unitName}`, app.unitName) : t("subscription.unit")}</span>
+                          <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-1.5 font-bold">
+                              <span>
+                                {app.unitPrice} <span className="text-xs font-normal text-slate-400">{t("subscription.egp")}</span>
+                              </span>
+                              <span className="text-xs font-normal text-slate-400">/ {app.unitName ? t(`subscription.units.${app.unitName}`, app.unitName) : t("subscription.unit")}</span>
+                            </div>
+                            {(app.freeUnitsIncluded ?? 0) > 0 && (
+                              <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                                +{app.freeUnitsIncluded} {t("subscription.freeUnits", "مجاني")}
+                              </span>
+                            )}
+                            {(app.minimumCharge ?? 0) > 0 && (
+                              <span className="text-xs text-amber-600 dark:text-amber-400">
+                                {t("subscription.minCharge", "حد أدنى")}: {app.minimumCharge} {t("subscription.egp")}
+                              </span>
+                            )}
                           </div>
                         ) : (
                           <span className="text-slate-400">-</span>
@@ -1042,21 +1039,6 @@ export default function AppPricingSheet() {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20"
-                                  onClick={(e) => copyToClipboard(app.slug, e)}
-                                >
-                                  <Copy size={14} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="text-xs">{t("common.copySlug", "نسخ الـ Slug")}</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -1073,7 +1055,6 @@ export default function AppPricingSheet() {
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50" onClick={(e) => { e.stopPropagation(); handleOpenDialog(app); }}>
                                 <Pencil size={14} />
                               </Button>
-
                             </div>
                           )}
                         </div>
@@ -1239,21 +1220,6 @@ export default function AppPricingSheet() {
                       </span>
                     )}
                     <div className="flex items-center gap-1 ml-auto">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50/50"
-                              onClick={(e) => copyToClipboard(app.slug, e)}
-                            >
-                              <Copy size={13} />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="text-xs">{app.slug}</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
                       <Button
                         variant="outline"
                         size="sm"
@@ -1450,31 +1416,67 @@ export default function AppPricingSheet() {
             )}
 
             {editingApp?.pricingModel === "PAY_PER_USE" && (
-              <div className="space-y-2">
-                <Label>{t("subscription.unitPrice", "سعر الوحدة")}</Label>
-                <Input
-                  type="number"
-                  value={editingApp?.unitPrice || 0}
-                  onChange={(e) => setEditingApp({ ...editingApp, unitPrice: Number(e.target.value) })}
-                />
-              </div>
-            )}
-            {editingApp?.pricingModel === "PAY_PER_USE" && (
-              <div className="space-y-2">
-                <Label>{t("subscription.unitName", "Unit Name")}</Label>
-                <Select
-                  value={editingApp?.unitName || ""}
-                  onValueChange={(val) => setEditingApp({ ...(editingApp ?? {}), unitName: val })}
-                >
-                  <SelectTrigger><SelectValue placeholder={t("subscription.selectUnit", "Select Unit")} /></SelectTrigger>
-                  <SelectContent>
-                    {["message", "request", "order", "user", "session", "GB", "month"].map((u) => (
-                      <SelectItem key={u} value={u}>
-                        {t(`subscription.units.${u}`, u)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-3 md:col-span-2 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+                <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
+                  {t("subscription.usagePricingSettings", "إعدادات التسعير حسب الاستخدام")}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>{t("subscription.unitPrice", "سعر الوحدة (جنيه)")}</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={editingApp?.unitPrice || 0}
+                      onChange={(e) => setEditingApp({ ...editingApp, unitPrice: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("subscription.unitName", "نوع الوحدة")}</Label>
+                    <Select
+                      value={editingApp?.unitName || ""}
+                      onValueChange={(val) => setEditingApp({ ...(editingApp ?? {}), unitName: val })}
+                    >
+                      <SelectTrigger><SelectValue placeholder={t("subscription.selectUnit", "اختر نوع الوحدة")} /></SelectTrigger>
+                      <SelectContent>
+                        {["message", "request", "order", "user", "session", "GB", "month", "email", "sms", "call", "lead", "product"].map((u) => (
+                          <SelectItem key={u} value={u}>
+                            {t(`subscription.units.${u}`, u)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>
+                      {t("subscription.freeUnitsIncluded", "وحدات مجانية مضمنة")}
+                      <span className="text-xs font-normal text-slate-400 mr-1">
+                        ({t("subscription.freeUnitsHint", "تُحتسب مجاناً قبل الفوترة")})
+                      </span>
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={editingApp?.freeUnitsIncluded || 0}
+                      onChange={(e) => setEditingApp({ ...editingApp, freeUnitsIncluded: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>
+                      {t("subscription.minimumCharge", "الحد الأدنى للفوترة (جنيه/شهر)")}
+                      <span className="text-xs font-normal text-slate-400 mr-1">
+                        ({t("subscription.minimumChargeHint", "0 = بدون حد أدنى")})
+                      </span>
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={editingApp?.minimumCharge || 0}
+                      onChange={(e) => setEditingApp({ ...editingApp, minimumCharge: Number(e.target.value) })}
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
