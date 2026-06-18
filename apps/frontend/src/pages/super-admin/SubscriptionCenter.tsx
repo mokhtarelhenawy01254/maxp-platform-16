@@ -35,7 +35,7 @@ import type { StorefrontThemeCatalogItem } from "../../services/storefrontThemeC
 import tokenManager from "../../utils/tokenManager";
 import SuperAdminPaymentSettings from "./SuperAdminPaymentSettings";
 import {
-  Check, X, Plus, Pencil, Trash2, Download, Upload, RefreshCw, Save, Search, Eye, Archive, Star, ShoppingBag, Package, Building2, Store, CreditCard,
+  Check, X, Plus, Pencil, Trash2, Download, Upload, RefreshCw, Save, Search, Eye, Archive, ShoppingBag, Package, Building2, Store, CreditCard,
 } from "lucide-react";
 
 type SubscriptionCenterProps = {
@@ -359,7 +359,7 @@ const createDefaultPlanFormData = (): PlanFormData => ({
 });
 
 const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
-  initialTab = 0,
+  initialTab = 1,
   storefrontThemesOnly = false,
   pageTitle = "مركز إدارة الاشتراكات والفوترة",
   pageDescription = "إدارة الخطط الأساسية، تطبيقات المتجر، والعروض المخصصة للمؤسسات",
@@ -368,10 +368,10 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Platform Plans State
-  const [plans, setPlans] = useState<PlatformPlan[]>([]);
-  const [planDialog, setPlanDialog] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<PlatformPlan | null>(null);
+
+
+
+
 
   // Marketplace State
   const [apps, setApps] = useState<MarketplaceManagementItem[]>([]);
@@ -454,14 +454,14 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
       }
 
       const [
-        plansRes,
+
         appsRes,
         pricingRes,
         bundlesRes,
         enterpriseRes,
         themesRes,
       ] = await Promise.allSettled([
-        axios.get(buildApiUrl("admin/plans/plans"), { headers }),
+
         axios.get(buildApiUrl("super-admin/marketplace-management/apps"), {
           headers,
         }),
@@ -481,9 +481,9 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
         }),
       ]);
 
-      if (plansRes.status === "fulfilled" && plansRes.value.data.success) {
-        setPlans(plansRes.value.data.data as PlatformPlan[]);
-      }
+
+
+
       if (appsRes.status === "fulfilled" && appsRes.value.data.success) {
         setApps(appsRes.value.data.data as MarketplaceManagementItem[]);
       }
@@ -506,7 +506,6 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
       }
 
       const allFailed = [
-        plansRes,
         appsRes,
         pricingRes,
         bundlesRes,
@@ -592,7 +591,7 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
       {!storefrontThemesOnly ? (
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm mb-3 overflow-x-auto">
           <div className="flex gap-1 p-1" role="tablist">
-            <Button variant={activeTab === 0 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(0)}><Star className="h-4 w-4 ml-1" />خطط المنصة</Button>
+
             <Button variant={activeTab === 1 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(1)}><ShoppingBag className="h-4 w-4 ml-1" />تطبيقات المتجر</Button>
             <Button variant={activeTab === 2 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(2)}><Package className="h-4 w-4 ml-1" />الباقات والأسعار</Button>
             <Button variant={activeTab === 3 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(3)}><Building2 className="h-4 w-4 ml-1" />تعاقدات المؤسسات</Button>
@@ -602,16 +601,16 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
         </div>
       ) : null}
 
-      {!storefrontThemesOnly && activeTab === 0 && (
-        <PlatformPlansTab
-          plans={plans}
-          onEdit={(p) => {
-            setSelectedPlan(p);
-            setPlanDialog(true);
-          }}
-          onRefresh={fetchAllData}
-        />
-      )}
+
+
+
+
+
+
+
+
+
+
       {!storefrontThemesOnly && activeTab === 1 && (
         <MarketplaceAppsTab
           apps={apps}
@@ -732,246 +731,246 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
         />
       )}
 
-      {/* Plan Edit Dialog */}
-      <EditPlanDialog
-        open={planDialog}
-        onClose={() => {
-          setPlanDialog(false);
-          setSelectedPlan(null);
-        }}
-        plan={selectedPlan}
-        onSave={async (planData) => {
-          try {
-            const planType = planData.planType || selectedPlan?.planType;
-            await axios.put(
-              buildApiUrl(`admin/plans/plans/${planType}`),
-              planData,
-              { headers: getAuthHeaders() },
-            );
-            toast.success("تم حفظ الخطة بنجاح");
-            setPlanDialog(false);
-            await fetchAllData();
-          } catch (err) {
-            console.error("Save error:", err);
-            toast.error("خطأ في حفظ الخطة");
-          }
-        }}
-      />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     </div>
   );
 };
 
 // Sub-components for Tabs
 
-const PlatformPlansTab = ({
-  plans,
-  onEdit,
-  onRefresh,
-}: {
-  plans: PlatformPlan[];
-  onEdit: (plan: PlatformPlan | null) => void;
-  onRefresh: () => Promise<void> | void;
-}) => {
-  const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
 
-  const getPlanColor = (planType: string) => {
-    const colors: { [key: string]: string } = {
-      BASIC: "#3b82f6",
-      PRO: "#8b5cf6",
-      ENTERPRISE: "#f59e0b",
-      CUSTOM: "#10b981",
-    };
-    return colors[planType] || "#6b7280";
-  };
 
-  const formatFeatureValue = (value: unknown) => {
-    if (value === -1) return "غير محدود";
-    if (value === true) return "✓";
-    if (value === false || value === undefined || value === null) return "✗";
-    return value;
-  };
 
-  const calculateTotalRevenue = (plan: PlatformPlan) => {
-    return (plan.stats?.activeCompanies || 0) * (plan.price || 0);
-  };
 
-  const toggleExpand = (planType: string) => {
-    setExpandedPlan(expandedPlan === planType ? null : planType);
-  };
 
-  return (
-    <div>
-      {/* Summary Stats */}
-      <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-3 mb-3" style={{ backgroundColor: "#dbeafe", color: "#1e40af" }}>
-        <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-12 md:col-span-3">
-            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
-              {plans.reduce(
-                (sum, p) => sum + (p.stats?.activeCompanies || 0),
-                0,
-              )}
-            </h4>
-            <p className="text-sm leading-6">إجمالي الشركات المشتركة</p>
-          </div>
-          <div className="col-span-12 md:col-span-3">
-            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
-              {plans
-                .reduce((sum, p) => sum + calculateTotalRevenue(p), 0)
-                .toLocaleString()}{" "}
-              ج.م
-            </h4>
-            <p className="text-sm leading-6">إجمالي الإيرادات الشهرية</p>
-          </div>
-          <div className="col-span-12 md:col-span-3">
-            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
-              {plans.length}
-            </h4>
-            <p className="text-sm leading-6">عدد الخطط المتاحة</p>
-          </div>
-          <div className="col-span-12 md:col-span-3">
-            <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
-              {plans.filter((p) => p.isCustom).length}
-            </h4>
-            <p className="text-sm leading-6">خطط مخصصة</p>
-          </div>
-        </div>
-      </div>
 
-      <div className="flex justify-between items-center mb-3">
-        <h6 className="text-base font-semibold leading-none">خطط المنصة الأساسية</h6>
-        <Button variant="default" onClick={() => onEdit(null)}>
-          <Plus className="h-4 w-4 ml-1" />
-          إنشاء خطة جديدة
-        </Button>
-      </div>
 
-      <div className="grid grid-cols-12 gap-4">
-        {plans.map((plan) => {
-          const features = parsePlanFeatures(plan.features);
-          const isExpanded = expandedPlan === plan.planType;
-          const monthlyRevenue = calculateTotalRevenue(plan);
 
-          return (
-            <div key={plan.planType} className="col-span-12 md:col-span-6 lg:col-span-4">
-              <Card className="h-full" style={{ borderTop: `4px solid ${getPlanColor(plan.planType)}`, transition: "all 0.3s ease" }}>
-                <CardContent>
-                  {/* Plan Header */}
-                  <div className="text-center mb-2">
-                    <h5 className="scroll-m-18 text-lg font-semibold tracking-tight font-bold">
-                      {plan.name}
-                    </h5>
-                    <Badge className="mt-0.5" style={{ backgroundColor: getPlanColor(plan.planType), color: "white" }}>
-                      {plan.planType}
-                    </Badge>
-                    <h4 className="scroll-m-20 text-xl font-semibold tracking-tight text-primary my-1">
-                      {plan.price?.toLocaleString()} {plan.currency || "ج.م"}
-                    </h4>
-                    <p className="text-sm leading-6 text-muted-foreground">
-                      /{" "}
-                      {plan.billingCycle === "monthly"
-                        ? "شهرياً"
-                        : plan.billingCycle === "yearly"
-                          ? "سنوياً"
-                          : "ربع سنوي"}
-                    </p>
-                  </div>
 
-                  {/* Stats Row */}
-                  <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-2 mb-2 bg-muted/50">
-                    <div className="grid grid-cols-12 gap-1 text-center">
-                      <div className="col-span-6">
-                        <h6 className="text-base font-semibold leading-none font-bold text-green-600">
-                          {plan.stats?.activeCompanies || 0}
-                        </h6>
-                        <span className="text-xs text-muted-foreground block">الشركات</span>
-                      </div>
-                      <div className="col-span-6">
-                        <h6 className="text-base font-semibold leading-none font-bold text-primary">
-                          {monthlyRevenue.toLocaleString()}
-                        </h6>
-                        <span className="text-xs text-muted-foreground block">ج.م/شهر</span>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Quick Features Preview */}
-                  <div className="mb-2">
-                    <p className="text-sm font-medium text-muted-foreground font-bold">
-                      أبرز المميزات:
-                    </p>
-                    <div className="flex flex-wrap gap-0.5">
-                      <Badge variant="outline" className="text-xs"><Check className="h-3 w-3 ml-0.5" />{`${formatFeatureValue(features.maxUsers)} مستخدم`}</Badge>
-                      <Badge variant="outline" className="text-xs"><Check className="h-3 w-3 ml-0.5" />{`${formatFeatureValue(features.maxCustomers)} عميل`}</Badge>
-                      <Badge variant="outline" className="text-xs"><Check className="h-3 w-3 ml-0.5" />{`${formatFeatureValue(features.storageLimit)} GB تخزين`}</Badge>
-                      {features.apiAccess && (
-                        <Badge variant="default" className="bg-green-500 text-xs"><Check className="h-3 w-3 ml-0.5" />API</Badge>
-                      )}
-                      {features.prioritySupport && (
-                        <Badge variant="default" className="bg-blue-500 text-xs"><Check className="h-3 w-3 ml-0.5" />دعم مميز</Badge>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* Description */}
-                  <p className="text-sm leading-6 text-muted-foreground mb-2" style={{ minHeight: 40 }}>
-                    {plan.description || "لا يوجد وصف"}
-                  </p>
 
-                  {/* Expandable Features List */}
-                  {isExpanded && (
-                    <div>
-                      <Separator className="my-2" />
-                      <p className="text-sm font-medium text-muted-foreground">تفاصيل المميزات:</p>
-                      <ul className="space-y-1 mb-2">
-                        <li className="py-0.5"><div><span className="font-medium">{`المستخدمين: ${formatFeatureValue(features.maxUsers)}`}</span><span className="text-sm text-muted-foreground block">{`العملاء: ${formatFeatureValue(features.maxCustomers)}`}</span></div></li>
-                        <li className="py-0.5"><div><span className="font-medium">{`المحادثات: ${formatFeatureValue(features.maxConversations)}`}</span><span className="text-sm text-muted-foreground block">{`الرسائل: ${formatFeatureValue(features.maxMessages)}`}</span></div></li>
-                        <li className="py-0.5"><div><span className="font-medium">{`ردود تلقائية: ${formatFeatureValue(features.aiResponses)}`}</span><span className="text-sm text-muted-foreground block">{`التخزين: ${formatFeatureValue(features.storageLimit)} GB`}</span></div></li>
-                        <li className="py-0.5"><div><span className="font-medium">{`سير العمل: ${formatFeatureValue(features.automatedWorkflows)}`}</span><span className="text-sm text-muted-foreground block">{`الحقول المخصصة: ${formatFeatureValue(features.customFields)}`}</span></div></li>
-                        <li className="py-0.5"><div><span className="font-medium">{`الاحتفاظ بالبيانات: ${formatFeatureValue(features.dataRetention)} يوم`}</span><span className="text-sm text-muted-foreground block">{`SLA: ${features.sla || "غير محدد"}`}</span></div></li>
-                      </ul>
-                      <div className="flex flex-wrap gap-1">
-                        {features.customBranding && <Badge variant="outline" className="text-xs">علامة تجارية</Badge>}
-                        {features.advancedReports && <Badge variant="outline" className="text-xs">تقارير متقدمة</Badge>}
-                        {features.apiAccess && <Badge variant="default" className="bg-blue-500 text-xs">API</Badge>}
-                        {features.prioritySupport && <Badge variant="default" className="bg-blue-500 text-xs">دعم أولوية</Badge>}
-                        {features.customIntegrations && <Badge variant="outline" className="text-xs">تكاملات</Badge>}
-                        {features.whatsappBusiness && <Badge variant="outline" className="text-xs">واتساب</Badge>}
-                        {features.facebookMessenger && <Badge variant="outline" className="text-xs">ماسنجر</Badge>}
-                        {features.webChat && <Badge variant="outline" className="text-xs">دردشة</Badge>}
-                        {features.mobileApp && <Badge variant="default" className="bg-green-500 text-xs">تطبيق</Badge>}
-                        {features.multiLanguage && <Badge variant="outline" className="text-xs">متعدد اللغات</Badge>}
-                        {features.exportData && <Badge variant="outline" className="text-xs">تصدير</Badge>}
-                        {features.dedicatedSupport && <Badge variant="default" className="bg-green-500 text-xs">دعم مخصص</Badge>}
-                      </div>
-                    </div>
-                  )}
 
-                  {/* Actions */}
-                  <div className="flex justify-between items-center mt-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button size="sm" onClick={() => toggleExpand(plan.planType)} variant="ghost">
-                            {isExpanded ? "إخفاء" : "المزيد"}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>{isExpanded ? "إخفاء التفاصيل" : "عرض التفاصيل"}</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <Button variant="outline" size="sm" onClick={() => onEdit(plan)}>
-                      <Pencil className="h-4 w-4 ml-1" />
-                      تعديل
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 type CatalogDiffFieldChange = {
   field: string;
@@ -3086,436 +3085,436 @@ const MarketplaceItemDialog = ({
   );
 };
 
-const EditPlanDialog = ({
-  open,
-  onClose,
-  plan,
-  onSave,
-}: {
-  open: boolean;
-  onClose: () => void;
-  plan: PlatformPlan | null;
-  onSave: (
-    data: Omit<PlanFormData, "features"> & { features: string },
-  ) => Promise<void> | void;
-}) => {
-  const [formData, setFormData] = useState<PlanFormData>(() =>
-    createDefaultPlanFormData(),
-  );
-  const [activeTab, setActiveTab] = useState(0);
-  const [errors, setErrors] = useState<PlanFieldErrors>({});
 
-  const billingCycles: Array<{ value: BillingCycle; label: string }> = [
-    { value: "monthly", label: "شهري" },
-    { value: "quarterly", label: "ربع سنوي" },
-    { value: "yearly", label: "سنوي" },
-  ];
 
-  const currencies: Array<{ value: string; label: string }> = [
-    { value: "EGP", label: "جنيه مصري (EGP)" },
-    { value: "USD", label: "دولار أمريكي (USD)" },
-    { value: "SAR", label: "ريال سعودي (SAR)" },
-    { value: "AED", label: "درهم إماراتي (AED)" },
-  ];
 
-  useEffect(() => {
-    const defaultFormData = createDefaultPlanFormData();
 
-    if (plan) {
-      setFormData({
-        ...defaultFormData,
-        planType: plan.planType || "",
-        name: plan.name || "",
-        nameEn: plan.nameEn || "",
-        price: plan.price || 0,
-        currency: plan.currency || "EGP",
-        billingCycle: plan.billingCycle || "monthly",
-        description: plan.description || "",
-        descriptionEn: plan.descriptionEn || "",
-        features: parsePlanFeatures(plan.features),
-      });
-    } else {
-      setFormData(defaultFormData);
-    }
-    setActiveTab(0);
-    setErrors({});
-  }, [plan, open]);
 
-  const clearError = useCallback((key: PlanFieldErrorKey) => {
-    setErrors((prev) => {
-      if (!prev[key]) {
-        return prev;
-      }
 
-      const nextErrors = { ...prev };
-      delete nextErrors[key];
-      return nextErrors;
-    });
-  }, []);
 
-  const updateField = useCallback(
-    <K extends keyof Omit<PlanFormData, "features">>(
-      name: K,
-      value: PlanFormData[K],
-    ) => {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-      clearError(name);
-    },
-    [clearError],
-  );
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value, type } = e.target;
-    const fieldName = name as keyof Omit<PlanFormData, "features">;
-    const nextValue =
-      type === "number"
-        ? Number(value)
-        : (value as PlanFormData[typeof fieldName]);
 
-    updateField(fieldName, nextValue as PlanFormData[typeof fieldName]);
-  };
 
-  const handleFeatureChange = <K extends keyof PlatformPlanFeatures>(
-    featureKey: K,
-    value: PlatformPlanFeatures[K],
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      features: {
-        ...prev.features,
-        [featureKey]: value,
-      },
-    }));
-    clearError(featureKey);
-  };
 
-  const validate = () => {
-    const newErrors: PlanFieldErrors = {};
 
-    if (!formData.planType.trim()) {
-      newErrors.planType = "نوع الخطة مطلوب";
-    }
-    if (!formData.name.trim()) {
-      newErrors.name = "اسم الخطة مطلوب";
-    }
-    if (formData.price < 0) {
-      newErrors.price = "السعر يجب أن يكون 0 أو أكثر";
-    }
-    if (formData.features.maxUsers < -1) {
-      newErrors.maxUsers = "الحد الأقصى للمستخدمين غير صالح (-1 للغير محدود)";
-    }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
-  const handleSave = () => {
-    if (!validate()) return;
 
-    const dataToSave = {
-      ...formData,
-      features: JSON.stringify(formData.features),
-    };
-    onSave(dataToSave);
-  };
 
-  const formatFeatureValue = (value: unknown) => {
-    if (value === -1 || value === true) return "✓";
-    if (
-      value === false ||
-      value === undefined ||
-      value === null ||
-      value === ""
-    )
-      return "✗";
-    return value;
-  };
 
-  const numericFeatures: Array<{
-    key: NumericPlanFeatureKey;
-    label: string;
-    helper: string;
-  }> = [
-    {
-      key: "maxUsers",
-      label: "الحد الأقصى للمستخدمين",
-      helper: "-1 للغير محدود",
-    },
-    {
-      key: "maxCustomers",
-      label: "الحد الأقصى للعملاء",
-      helper: "-1 للغير محدود",
-    },
-    {
-      key: "maxConversations",
-      label: "الحد الأقصى للمحادثات",
-      helper: "-1 للغير محدود",
-    },
-    {
-      key: "maxMessages",
-      label: "الحد الأقصى للرسائل",
-      helper: "-1 للغير محدود",
-    },
-    {
-      key: "aiResponses",
-      label: "الردود التلقائية",
-      helper: "-1 للغير محدود",
-    },
-    { key: "customFields", label: "الحقول المخصصة", helper: "-1 للغير محدود" },
-    {
-      key: "automatedWorkflows",
-      label: "سير العمل التلقائي",
-      helper: "-1 للغير محدود",
-    },
-    {
-      key: "dataRetention",
-      label: "الاحتفاظ بالبيانات (أيام)",
-      helper: "-1 للغير محدود",
-    },
-    { key: "storageLimit", label: "حد التخزين (GB)", helper: "-1 للغير محدود" },
-  ];
 
-  const booleanFeatures: Array<{
-    key: BooleanPlanFeatureKey;
-    label: string;
-  }> = [
-    { key: "customBranding", label: "العلامة التجارية المخصصة" },
-    { key: "advancedReports", label: "التقارير المتقدمة" },
-    { key: "apiAccess", label: "الوصول للـ API" },
-    { key: "prioritySupport", label: "الدعم ذو الأولوية" },
-    { key: "customIntegrations", label: "التكاملات المخصصة" },
-    { key: "whatsappBusiness", label: "واتساب بزنس" },
-    { key: "facebookMessenger", label: "فيسبوك ماسنجر" },
-    { key: "webChat", label: "الدردشة على الموقع" },
-    { key: "mobileApp", label: "تطبيق الجوال" },
-    { key: "multiLanguage", label: "متعدد اللغات" },
-    { key: "exportData", label: "تصدير البيانات" },
-    { key: "dedicatedSupport", label: "دعم مخصص" },
-    { key: "customDevelopment", label: "تطوير مخصص" },
-    { key: "onPremiseDeployment", label: "النشر المحلي" },
-  ];
 
-  const [dialogActiveTab, setDialogActiveTab] = useState(0);
 
-  return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>
-            <div className="flex items-center gap-2">
-              {plan ? <Pencil className="h-5 w-5 text-primary" /> : <Plus className="h-5 w-5 text-green-500" />}
-              <h6 className="text-base font-semibold leading-none">
-                {plan ? `تعديل خطة ${plan.name}` : "إنشاء خطة جديدة"}
-              </h6>
-            </div>
-          </DialogTitle>
-        </DialogHeader>
 
-        <div className="flex gap-1 border-b px-3">
-          <Button variant={dialogActiveTab === 0 ? "default" : "ghost"} size="sm" onClick={() => setDialogActiveTab(0)}>المعلومات الأساسية</Button>
-          <Button variant={dialogActiveTab === 1 ? "default" : "ghost"} size="sm" onClick={() => setDialogActiveTab(1)}>الحدود والأرقام</Button>
-          <Button variant={dialogActiveTab === 2 ? "default" : "ghost"} size="sm" onClick={() => setDialogActiveTab(2)}>المميزات المتقدمة</Button>
-          <Button variant={dialogActiveTab === 3 ? "default" : "ghost"} size="sm" onClick={() => setDialogActiveTab(3)}>معاينة</Button>
-        </div>
 
-        <div className="pt-3">
-          {/* Tab 1: Basic Info */}
-          {dialogActiveTab === 0 && (
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 md:col-span-6">
-                <div className="space-y-1">
-                  <Label>نوع الخطة (Plan Type) *</Label>
-                  <Input
-                    name="planType"
-                    value={formData.planType}
-                    onChange={handleChange}
-                    disabled={!!plan}
-                    className={errors.planType ? "border-red-500" : ""}
-                    placeholder="مثال: PRO"
-                  />
-                  {errors.planType && <p className="text-sm text-red-500">{errors.planType}</p>}
-                  {!errors.planType && plan && <p className="text-xs text-muted-foreground">لا يمكن تغيير نوع الخطة</p>}
-                  {!errors.planType && !plan && <p className="text-xs text-muted-foreground">مثال: BASIC, PRO, ENTERPRISE أو CUSTOM1</p>}
-                </div>
-              </div>
-              <div className="col-span-12 md:col-span-6">
-                <div className="space-y-1">
-                  <Label>الاسم (العربية) *</Label>
-                  <Input name="name" value={formData.name} onChange={handleChange} className={errors.name ? "border-red-500" : ""} placeholder="الخطة الاحترافية" />
-                  {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
-                </div>
-              </div>
-              <div className="col-span-12 md:col-span-6">
-                <div className="space-y-1">
-                  <Label>الاسم (English)</Label>
-                  <Input name="nameEn" value={formData.nameEn} onChange={handleChange} placeholder="Professional Plan" />
-                </div>
-              </div>
-              <div className="col-span-12 md:col-span-6">
-                <div className="space-y-1">
-                  <Label>السعر *</Label>
-                  <div className="relative">
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{formData.currency}</span>
-                    <Input name="price" type="number" value={formData.price} onChange={handleChange} className={`pr-12 ${errors.price ? "border-red-500" : ""}`} />
-                  </div>
-                  {errors.price && <p className="text-sm text-red-500">{errors.price}</p>}
-                </div>
-              </div>
-              <div className="col-span-12 md:col-span-6">
-                <div className="space-y-2">
-                  <Label>العملة</Label>
-                  <Select value={formData.currency} onValueChange={(v) => updateField("currency", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {currencies.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="col-span-12 md:col-span-6">
-                <div className="space-y-2">
-                  <Label>دورة الفوترة</Label>
-                  <Select value={formData.billingCycle} onValueChange={(v) => updateField("billingCycle", v as BillingCycle)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {billingCycles.map((b) => (
-                        <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="col-span-12">
-                <div className="space-y-1">
-                  <Label>وصف الخطة (عربي)</Label>
-                  <Textarea name="description" rows={2} value={formData.description} onChange={handleChange} placeholder="وصف مختصر للخطة ومميزاتها الرئيسية" />
-                </div>
-              </div>
-              <div className="col-span-12">
-                <div className="space-y-1">
-                  <Label>الوصف (English)</Label>
-                  <Textarea name="descriptionEn" rows={2} value={formData.descriptionEn} onChange={handleChange} placeholder="Brief description of the plan" />
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Tab 2: Numeric Limits */}
-          {activeTab === 1 && (
-            <div className="grid grid-cols-12 gap-2">
-              <div className="col-span-12">
-                <Alert variant="default" className="mb-2 border-blue-500/50 text-blue-700">
-                  أدخل -1 للقيم غير المحدودة. القيم تُحسب بالشهر ما عدا dataRetention (أيام).
-                </Alert>
-              </div>
-              {numericFeatures.map((feature) => (
-                <div key={feature.key} className="col-span-12 sm:col-span-6 md:col-span-4">
-                  <div className="space-y-1">
-                    <Label>{feature.label}</Label>
-                    <Input type="number" value={formData.features[feature.key]} onChange={(e) => handleFeatureChange(feature.key, parseInt(e.target.value) || 0)} />
-                    <p className="text-xs text-muted-foreground">{feature.helper}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
 
-          {/* Tab 3: Boolean Features */}
-          {activeTab === 2 && (
-            <div className="grid grid-cols-12 gap-2">
-              <div className="col-span-12">
-                <Alert variant="default" className="mb-2 border-blue-500/50 text-blue-700">
-                  مميزات إضافية متوفرة في هذه الخطة.
-                </Alert>
-              </div>
-              {booleanFeatures.map((feature) => (
-                <div key={feature.key} className="col-span-12 sm:col-span-6 md:col-span-4">
-                  <div
-                    className="rounded-lg border p-2 flex items-center justify-between"
-                    style={{
-                      backgroundColor: formData.features[feature.key] ? "#f0fdf4" : "var(--card)",
-                      borderColor: formData.features[feature.key] ? "#22c55e" : "var(--border)",
-                    }}
-                  >
-                    <span className={`text-sm ${formData.features[feature.key] ? "font-semibold" : ""}`}>
-                      {feature.label}
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={!!formData.features[feature.key]}
-                      onChange={(e) => handleFeatureChange(feature.key, e.target.checked)}
-                      style={{ width: 20, height: 20, cursor: "pointer" }}
-                    />
-                  </div>
-                </div>
-              ))}
-              <div className="col-span-12 md:col-span-4">
-                <div className="space-y-1">
-                  <Label>اتفاقية مستوى الخدمة (SLA)</Label>
-                  <Input value={formData.features.sla || ""} onChange={(e) => handleFeatureChange("sla", e.target.value)} placeholder="99.9%" />
-                  <p className="text-xs text-muted-foreground">مثال: 99.9%</p>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Tab 4: Preview */}
-          {activeTab === 3 && (
-            <div>
-              <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-3 mb-3" style={{ backgroundColor: "#dbeafe", color: "#1e40af" }}>
-                <h4 className="scroll-m-20 text-xl font-semibold tracking-tight font-bold">
-                  {formData.name || "اسم الخطة"}
-                </h4>
-                <h5 className="scroll-m-18 text-lg font-semibold tracking-tight mt-1">
-                  {formData.price} {formData.currency} /{billingCycles.find((b) => b.value === formData.billingCycle)?.label}
-                </h5>
-                <p className="text-base leading-7 mt-1 opacity-90">
-                  {formData.description || "لا يوجد وصف"}
-                </p>
-              </div>
 
-              <h6 className="text-base font-semibold leading-none">ملخص المميزات:</h6>
-              <div className="grid grid-cols-12 gap-1">
-                {numericFeatures.map((f) => (
-                  <div key={f.key} className="col-span-12 sm:col-span-6">
-                    <Badge variant={formData.features[f.key] === -1 ? "default" : "secondary"} className={formData.features[f.key] === -1 ? "bg-green-500 w-full justify-start" : "w-full justify-start"}>
-                      {`${f.label}: ${formatFeatureValue(formData.features[f.key])}`}
-                    </Badge>
-                  </div>
-                ))}
-                {booleanFeatures.map((f) => (
-                  <div key={f.key} className="col-span-12 sm:col-span-6">
-                    <Badge
-                      variant={formData.features[f.key] ? "default" : "outline"}
-                      className={formData.features[f.key] ? "bg-green-500 w-full justify-start" : "w-full justify-start"}
-                    >
-                      {formData.features[f.key] ? <Check className="h-3 w-3 ml-0.5" /> : <X className="h-3 w-3 ml-0.5" />}
-                      {f.label}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
 
-        <DialogFooter className="px-3 py-2">
-          <Button variant="outline" onClick={onClose}>إلغاء</Button>
-          <Button
-            variant="default"
-            onClick={handleSave}
-            disabled={Object.keys(errors).length > 0 && dialogActiveTab === 0}
-          >
-            {plan ? <><Save className="h-4 w-4 ml-1" />حفظ التغييرات</> : <><Plus className="h-4 w-4 ml-1" />إنشاء الخطة</>}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export default SubscriptionCenter;
