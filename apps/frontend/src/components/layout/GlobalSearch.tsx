@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { Search, Loader2, Building2, Users, Code2, BarChart3, DollarSign, Key, Ticket, X, Package, ShoppingCart, UserRound, MessageSquare, Facebook, Briefcase, TrendingUp, Tag, FolderTree, Store, Megaphone, UserCheck, FileText } from "lucide-react";
@@ -18,9 +18,14 @@ type SearchResultItem = {
 
 type SearchResultGroup = {
   type: string;
-  label: string;
   icon: string;
   items: SearchResultItem[];
+};
+
+type SearchMeta = {
+  total: number;
+  time: number;
+  query: string;
 };
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -51,90 +56,62 @@ const AR = {
   searching: "جاري البحث...",
   noResults: "لا توجد نتائج",
   tryAdjusting: "حاول بتغيير كلمة البحث",
-  hint: "اكتب أي كلمة أو حرف للبحث في جميع أقسام النظام",
+  hint: "اكتب أي كلمة أو حرف للبحث في جميع أقسام النظام (Ctrl+K)",
+  resultsCount: "نتائج",
+  inMs: "مللي ثانية",
   categories: {
     companies: "الشركات", users: "المستخدمين", projects: "مشاريع التطوير",
-    tasks: "مهام التطوير", generalTasks: "المهام العامة", subscriptions: "الاشتراكات", aiKeys: "مفاتيح الذكاء الاصطناعي",
-    tickets: "تذاكر الدعم", products: "المنتجات", orders: "الطلبات",
-    customers: "العملاء", conversations: "المحادثات", facebookPages: "صفحات فيسبوك",
-    whatsappSessions: "جلسات واتساب", employees: "الموظفين", competitors: "المنافسون",
-    coupons: "الكوبونات", categories: "التصنيفات", merchants: "التجار",
-    broadcastCampaigns: "الحملات الإعلانية", departments: "الأقسام", positions: "المناصب",
-    invoices: "الفواتير",
-    tasks: "المهام العامة",
-    messages: "رسائل المحادثات",
-    faqs: "الأسئلة الشائعة",
-    knowledgeBases: "قاعدة المعرفة",
-    storePages: "صفحات المتجر",
-    productReviews: "تقييمات المنتجات",
-    jobPostings: "الوظائف",
-    applicants: "المتقدمون",
-    recruitmentForms: "نماذج التوظيف",
-    goals: "الأهداف",
-    feedbacks: "الملاحظات",
-    supportMessages: "رسائل الدعم",
-    whatsAppQuickReplies: "الردود السريعة",
-    workReportForms: "نماذج تقارير العمل",
-    promotions: "العروض الترويجية",
-    facebookComments: "تعليقات فيسبوك",
-    customerNotes: "ملاحظات العملاء",
-    competitorReports: "تقارير المنافسين",
-    appExplanations: "شروحات التطبيقات",
+    tasks: "مهام التطوير", generalTasks: "المهام العامة", subscriptions: "الاشتراكات",
+    aiKeys: "مفاتيح الذكاء الاصطناعي", tickets: "تذاكر الدعم", products: "المنتجات",
+    orders: "الطلبات", customers: "العملاء", conversations: "المحادثات",
+    facebookPages: "صفحات فيسبوك", whatsappSessions: "جلسات واتساب",
+    employees: "الموظفين", competitors: "المنافسون", coupons: "الكوبونات",
+    categories: "التصنيفات", merchants: "التجار", broadcastCampaigns: "الحملات الإعلانية",
+    departments: "الأقسام", positions: "المناصب", invoices: "الفواتير",
+    messages: "رسائل المحادثات", faqs: "الأسئلة الشائعة", knowledgeBases: "قاعدة المعرفة",
+    storePages: "صفحات المتجر", productReviews: "تقييمات المنتجات", jobPostings: "الوظائف",
+    applicants: "المتقدمون", recruitmentForms: "نماذج التوظيف", goals: "الأهداف",
+    feedbacks: "الملاحظات", supportMessages: "رسائل الدعم", whatsAppQuickReplies: "الردود السريعة",
+    workReportForms: "نماذج تقارير العمل", promotions: "العروض الترويجية",
+    facebookComments: "تعليقات فيسبوك", customerNotes: "ملاحظات العملاء",
+    competitorReports: "تقارير المنافسين", appExplanations: "شروحات التطبيقات",
     conversationMemories: "ذاكرة المحادثات",
   },
 };
+
 const typeLabelMap: Record<string, string> = {
   companies: AR.categories.companies, users: AR.categories.users, projects: AR.categories.projects,
   tasks: AR.categories.tasks, subscriptions: AR.categories.subscriptions, aiKeys: AR.categories.aiKeys,
   tickets: AR.categories.tickets, products: AR.categories.products, orders: AR.categories.orders,
-  customers: AR.categories.customers, conversations: AR.categories.conversations, facebookPages: AR.categories.facebookPages,
-  whatsappSessions: AR.categories.whatsappSessions, employees: AR.categories.employees, competitors: AR.categories.competitors,
+  customers: AR.categories.customers, conversations: AR.categories.conversations,
+  facebookPages: AR.categories.facebookPages, whatsappSessions: AR.categories.whatsappSessions,
+  employees: AR.categories.employees, competitors: AR.categories.competitors,
   coupons: AR.categories.coupons, categories: AR.categories.categories, merchants: AR.categories.merchants,
-  broadcastCampaigns: AR.categories.broadcastCampaigns, departments: AR.categories.departments, positions: AR.categories.positions,
-  invoices: AR.categories.invoices,
-  generalTasks: AR.categories.generalTasks,
-  messages: AR.categories.messages,
-  faqs: AR.categories.faqs,
-  knowledgeBases: AR.categories.knowledgeBases,
-  storePages: AR.categories.storePages,
-  productReviews: AR.categories.productReviews,
-  jobPostings: AR.categories.jobPostings,
-  applicants: AR.categories.applicants,
-  recruitmentForms: AR.categories.recruitmentForms,
-  goals: AR.categories.goals,
-  feedbacks: AR.categories.feedbacks,
-  supportMessages: AR.categories.supportMessages,
-  whatsAppQuickReplies: AR.categories.whatsAppQuickReplies,
-  workReportForms: AR.categories.workReportForms,
-  promotions: AR.categories.promotions,
-  facebookComments: AR.categories.facebookComments,
-  customerNotes: AR.categories.customerNotes,
-  competitorReports: AR.categories.competitorReports,
-  appExplanations: AR.categories.appExplanations,
-  conversationMemories: AR.categories.conversationMemories,
+  broadcastCampaigns: AR.categories.broadcastCampaigns, departments: AR.categories.departments,
+  positions: AR.categories.positions, invoices: AR.categories.invoices,
+  generalTasks: AR.categories.generalTasks, messages: AR.categories.messages,
+  faqs: AR.categories.faqs, knowledgeBases: AR.categories.knowledgeBases,
+  storePages: AR.categories.storePages, productReviews: AR.categories.productReviews,
+  jobPostings: AR.categories.jobPostings, applicants: AR.categories.applicants,
+  recruitmentForms: AR.categories.recruitmentForms, goals: AR.categories.goals,
+  feedbacks: AR.categories.feedbacks, supportMessages: AR.categories.supportMessages,
+  whatsAppQuickReplies: AR.categories.whatsAppQuickReplies, workReportForms: AR.categories.workReportForms,
+  promotions: AR.categories.promotions, facebookComments: AR.categories.facebookComments,
+  customerNotes: AR.categories.customerNotes, competitorReports: AR.categories.competitorReports,
+  appExplanations: AR.categories.appExplanations, conversationMemories: AR.categories.conversationMemories,
 };
 
 const statusColorMap: Record<string, string> = {
-  active: "bg-emerald-500",
-  inactive: "bg-gray-400",
-  ACTIVE: "bg-emerald-500",
-  INACTIVE: "bg-gray-400",
-  PLANNING: "bg-blue-500",
-  IN_PROGRESS: "bg-amber-500",
-  COMPLETED: "bg-emerald-500",
-  BACKLOG: "bg-gray-400",
-  TODO: "bg-blue-500",
-  DONE: "bg-emerald-500",
-  CANCELLED: "bg-red-500",
-  OPEN: "bg-blue-500",
-  CLOSED: "bg-emerald-500",
-  PENDING: "bg-amber-500",
-  CONNECTED: "bg-emerald-500",
-  DISCONNECTED: "bg-gray-400",
-  DRAFT: "bg-gray-400",
-  SENT: "bg-blue-500",
-  DELIVERED: "bg-emerald-500",
-  FAILED: "bg-red-500",
+  active: "bg-emerald-500", inactive: "bg-gray-400",
+  ACTIVE: "bg-emerald-500", INACTIVE: "bg-gray-400",
+  PLANNING: "bg-blue-500", IN_PROGRESS: "bg-amber-500",
+  COMPLETED: "bg-emerald-500", BACKLOG: "bg-gray-400",
+  TODO: "bg-blue-500", DONE: "bg-emerald-500",
+  CANCELLED: "bg-red-500", OPEN: "bg-blue-500",
+  CLOSED: "bg-emerald-500", PENDING: "bg-amber-500",
+  CONNECTED: "bg-emerald-500", DISCONNECTED: "bg-gray-400",
+  DRAFT: "bg-gray-400", SENT: "bg-blue-500",
+  DELIVERED: "bg-emerald-500", FAILED: "bg-red-500",
 };
 
 const getStatusDot = (status?: string) => {
@@ -143,6 +120,40 @@ const getStatusDot = (status?: string) => {
   return <span className={cn("inline-block size-1.5 rounded-full flex-shrink-0", color)} />;
 };
 
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function highlightText(text: string, query: string): React.ReactNode {
+  if (!query || !text) return text;
+  const escaped = escapeRegex(query.trim());
+  const parts = text.split(new RegExp(`(${escaped})`, "gi"));
+  if (parts.length === 1) return text;
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === query.trim().toLowerCase() || part.toLowerCase() === query.trim().toLowerCase()
+          ? <mark key={i} className="bg-amber-200 dark:bg-amber-700/60 text-inherit rounded-sm px-0.5">{part}</mark>
+          : part
+      )}
+    </>
+  );
+}
+
+const loadingSkeleton = (
+  <div className="px-4 py-4 space-y-3">
+    {[1, 2, 3].map((i) => (
+      <div key={i} className="flex items-center gap-3 animate-pulse">
+        <div className="size-8 rounded-lg bg-muted/30" />
+        <div className="flex-1 space-y-1.5">
+          <div className="h-3.5 w-3/4 rounded bg-muted/30" />
+          <div className="h-2.5 w-1/2 rounded bg-muted/20" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 const GlobalSearch: React.FC = () => {
   const { actualTheme } = useTheme();
   const navigate = useNavigate();
@@ -150,34 +161,62 @@ const GlobalSearch: React.FC = () => {
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResultGroup[]>([]);
+  const [meta, setMeta] = useState<SearchMeta | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [searchTriggered, setSearchTriggered] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const abortRef = useRef<AbortController>();
+
+  const allItems = useMemo(() => {
+    const items: (SearchResultItem & { groupIndex: number })[] = [];
+    results.forEach((group, gi) => {
+      group.items.forEach((item) => {
+        items.push({ ...item, groupIndex: gi });
+      });
+    });
+    return items;
+  }, [results]);
 
   const performSearch = useCallback(async (q: string) => {
     const trimmed = q.trim().replace(/\s+/g, " ");
     if (!trimmed) {
       setResults([]);
+      setMeta(null);
       setIsOpen(false);
       setHasSearched(false);
+      setSelectedIndex(-1);
       return;
     }
 
     setIsLoading(true);
+    setSelectedIndex(-1);
+
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       const res = await apiClient.get("/super-admin/global-search", {
         params: { q: trimmed },
         _skipErrorToast: true,
+        signal: controller.signal,
       });
       const data = res.data?.data || [];
+      const responseMeta = res.data?.meta;
       setResults(data);
+      setMeta(responseMeta || null);
       setIsOpen(true);
       setHasSearched(true);
     } catch {
+      // Abort errors (cancelled requests) silently ignored
       setResults([]);
+      setMeta(null);
       setHasSearched(true);
     } finally {
       setIsLoading(false);
@@ -188,14 +227,41 @@ const GlobalSearch: React.FC = () => {
     const val = e.target.value;
     setQuery(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => performSearch(val), 300);
+    debounceRef.current = setTimeout(() => {
+      performSearch(val);
+      setSearchTriggered(true);
+    }, 150);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!isOpen && allItems.length > 0) { setIsOpen(true); return; }
+      setSelectedIndex((prev) => (prev < allItems.length - 1 ? prev + 1 : 0));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : allItems.length - 1));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (selectedIndex >= 0 && selectedIndex < allItems.length) {
+        handleItemClick(allItems[selectedIndex]);
+      } else {
+        performSearch(query);
+      }
+    } else if (e.key === "Escape") {
+      setIsOpen(false);
+      inputRef.current?.blur();
+    }
   };
 
   const handleClear = () => {
     setQuery("");
     setResults([]);
+    setMeta(null);
     setIsOpen(false);
     setHasSearched(false);
+    setSelectedIndex(-1);
+    setSearchTriggered(false);
     inputRef.current?.focus();
   };
 
@@ -203,7 +269,10 @@ const GlobalSearch: React.FC = () => {
     setIsOpen(false);
     setQuery("");
     setResults([]);
+    setMeta(null);
     setHasSearched(false);
+    setSelectedIndex(-1);
+    setSearchTriggered(false);
     navigate(item.link);
   };
 
@@ -218,12 +287,35 @@ const GlobalSearch: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        inputRef.current?.focus();
+        if (query) setIsOpen(true);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [query]);
+
+  useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (abortRef.current) abortRef.current.abort();
     };
   }, []);
 
+  useEffect(() => {
+    if (selectedIndex >= 0 && listRef.current) {
+      const items = listRef.current.querySelectorAll("[data-search-item]");
+      if (items[selectedIndex]) {
+        items[selectedIndex].scrollIntoView({ block: "nearest" });
+      }
+    }
+  }, [selectedIndex]);
+
   const hasResults = results.length > 0;
+  const totalResults = meta?.total || 0;
 
   return (
     <div ref={containerRef} className="relative flex-1 max-w-md mx-2 sm:mx-4" dir="rtl">
@@ -244,10 +336,15 @@ const GlobalSearch: React.FC = () => {
         <input
           ref={inputRef}
           type="text"
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
           value={query}
           onChange={handleChange}
+          onKeyDown={handleKeyDown}
           onFocus={() => { if (results.length > 0) setIsOpen(true); }}
           placeholder={AR.placeholder}
+          dir="auto"
           className={cn(
             "h-9 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground",
             "pr-2 pl-2",
@@ -258,10 +355,19 @@ const GlobalSearch: React.FC = () => {
           <button
             onClick={handleClear}
             className="flex items-center px-2 text-muted-foreground hover:text-foreground transition-colors order-0"
+            aria-label="مسح البحث"
           >
             <X className="size-4" />
           </button>
         )}
+        <div className="hidden sm:flex items-center pl-2 order-2">
+                        <kbd className={cn(
+                            "inline-flex items-center gap-0.5 rounded border px-1.5 py-0.5 text-[10px] font-medium",
+                            isDark ? "border-white/10 text-gray-500" : "border-gray-300 text-gray-400"
+                          )}>
+                            ⌘K
+                          </kbd>
+        </div>
       </div>
 
       {isOpen && (
@@ -272,8 +378,8 @@ const GlobalSearch: React.FC = () => {
             isDark ? "bg-[#1e293b] border-white/10" : "bg-white border-gray-200"
           )}>
             {isLoading && (
-              <div className="flex items-center gap-3 px-4 py-6">
-                <Loader2 className="size-5 animate-spin text-muted-foreground" />
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-inherit/10">
+                <Loader2 className="size-4 animate-spin text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">{AR.searching}</span>
               </div>
             )}
@@ -287,8 +393,8 @@ const GlobalSearch: React.FC = () => {
             )}
 
             {!isLoading && hasResults && (
-              <div className="max-h-[70vh] overflow-y-auto">
-                {results.map((group) => (
+              <div ref={listRef} className="max-h-[70vh] overflow-y-auto" role="listbox">
+                {results.map((group, gi) => (
                   <div key={group.type}>
                     <div className={cn(
                       "flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider",
@@ -303,43 +409,59 @@ const GlobalSearch: React.FC = () => {
                         {group.items.length}
                       </span>
                     </div>
-                    {group.items.map((item) => (
-                      <button
-                        key={`${group.type}-${item.id}`}
-                        onClick={() => handleItemClick(item)}
-                        className={cn(
-                          "flex w-full items-center gap-3 px-4 py-2.5 text-right transition-colors",
-                          isDark
-                            ? "hover:bg-blue-500/10 text-gray-300"
-                            : "hover:bg-blue-50 text-gray-700"
-                        )}
-                      >
-                        {item.image ? (
-                          <img src={item.image} alt="" className="size-8 rounded-lg object-cover flex-shrink-0" />
-                        ) : (
-                          <div className={cn(
-                            "flex size-8 items-center justify-center rounded-lg flex-shrink-0 text-xs font-bold",
-                            isDark ? "bg-[#0f172a] text-gray-400" : "bg-gray-100 text-gray-500"
-                          )}>
-                            {item.title?.charAt(0)}
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0 text-right">
-                          <div className="flex items-center gap-2">
-                            {getStatusDot(item.status)}
-                            <span className="text-sm font-medium truncate">{item.title}</span>
-                          </div>
-                          {item.subtitle && (
-                            <span className={cn(
-                              "block text-xs truncate mt-0.5",
-                              isDark ? "text-gray-500" : "text-gray-400"
-                            )}>
-                              {item.subtitle}
-                            </span>
+                    {group.items.map((item, ii) => {
+                      const globalIdx = allItems.findIndex(
+                        (ai) => ai.id === item.id && ai.groupIndex === gi
+                      );
+                      const isSelected = selectedIndex === globalIdx;
+                      return (
+                        <button
+                          key={`${group.type}-${item.id}`}
+                          data-search-item
+                          role="option"
+                          aria-selected={isSelected}
+                          onClick={() => handleItemClick(item)}
+                          onMouseEnter={() => setSelectedIndex(globalIdx)}
+                          className={cn(
+                            "flex w-full items-center gap-3 px-4 py-2.5 text-right transition-colors",
+                            isDark
+                              ? "hover:bg-blue-500/10 text-gray-300"
+                              : "hover:bg-blue-50 text-gray-700",
+                            isSelected && (isDark ? "bg-blue-500/15 ring-1 ring-blue-500/20" : "bg-blue-50 ring-1 ring-blue-200")
                           )}
-                        </div>
-                      </button>
-                    ))}
+                        >
+                          {item.image ? (
+                            <img src={item.image} alt="" className="size-8 rounded-lg object-cover flex-shrink-0" />
+                          ) : (
+                            <div className={cn(
+                              "flex size-8 items-center justify-center rounded-lg flex-shrink-0 text-xs font-bold",
+                              isDark ? "bg-[#0f172a] text-gray-400" : "bg-gray-100 text-gray-500"
+                            )}>
+                              {item.title?.charAt(0)}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0 text-right">
+                            <div className="flex items-center gap-2">
+                              {getStatusDot(item.status)}
+                              <span className="text-sm font-medium truncate">
+                                {highlightText(item.title, query)}
+                              </span>
+                            </div>
+                            {item.subtitle && (
+                              <span className={cn(
+                                "block text-xs truncate mt-0.5",
+                                isDark ? "text-gray-500" : "text-gray-400"
+                              )}>
+                                {highlightText(item.subtitle, query)}
+                              </span>
+                            )}
+                          </div>
+                          {isSelected && (
+                            <span className="size-3 text-muted-foreground/40 flex-shrink-0">❯</span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
@@ -351,6 +473,25 @@ const GlobalSearch: React.FC = () => {
                 <p className="text-xs text-muted-foreground/50">
                   {AR.hint}
                 </p>
+              </div>
+            )}
+
+            {(hasResults || hasSearched) && !isLoading && (
+              <div className={cn(
+                "flex items-center justify-between px-4 py-1.5 border-t text-[10px]",
+                isDark ? "border-white/5 text-gray-500" : "border-gray-100 text-gray-400"
+              )}>
+                <span>
+                  {totalResults > 0 && `${totalResults} ${AR.resultsCount}`}
+                  {meta?.time != null && ` · ${meta.time}${AR.inMs}`}
+                </span>
+                <span className="flex items-center gap-1">
+                  <span>↑↓</span>
+                  <span className="mx-1">·</span>
+                  <span>↵</span>
+                  <span className="mx-1">·</span>
+                  <span>Esc</span>
+                </span>
               </div>
             )}
           </div>
