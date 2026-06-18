@@ -659,6 +659,9 @@ describe('AI sandbox route security', () => {
         message: 'Hello',
       });
 
+    if (response.status !== 200) {
+      throw new Error('Unexpected status ' + response.status + ' body=' + JSON.stringify(response.body));
+    }
     expect(response.status).toBe(200);
     expect(response.body.tokens).toEqual({ input: 1000, output: 2000, total: 3000 });
     expect(response.body.cost).toBeCloseTo(0.000675, 10);
@@ -1076,7 +1079,43 @@ describe('AI sandbox route security', () => {
     expect(mockProviderClient.generateContent).not.toHaveBeenCalled();
   });
 
+  test('strips internal reasoning and draft markers from the sandbox reply', async () => {
+    mockAiServiceChatResult = {
+      status: 'ok',
+      reply: [
+        '*   *Draft 1 (Formal - Incorrect):* Salutations. (Too formal).',
+        '    *   *Draft 2 (Colloquial):* Hey! (Better).',
+        '    *   Egyptian dialect? Yes.',
+        '    *   Cheerful? Yes.',
+        '',
+        'Hello, how can I help you?',
+      ].join('\\n'),
+      tool_calls: [],
+      runtime: 'python-agent',
+    };
+
+    const response = await request(app)
+      .post('/ai-sandbox/chat')
+      .send({
+        sessionId: 'session_1',
+        agentId: 'agent_sales',
+        provider: 'GOOGLE',
+        model: 'gemini-2.5-flash',
+        keyId: 'key_google',
+        message: 'Hello',
+      });
+
+    if (response.status !== 200) {
+      throw new Error('Unexpected status ' + response.status + ' body=' + JSON.stringify(response.body));
+    }
+    expect(response.status).toBe(200);
+    expect(response.body.reply).toBe('Hello, how can I help you?');
+    expect(response.body.reply).not.toContain('Draft 1');
+    expect(response.body.reply).not.toContain('Egyptian dialect');
+  });
+
   test('normalizes set-like agent tools before sending the selected agent config to Python', async () => {
+
     aiServiceAdminClient.getAgent.mockResolvedValueOnce({
       id: 'agent_sales',
       name: 'Sales Agent',
@@ -1104,6 +1143,7 @@ describe('AI sandbox route security', () => {
         message: 'Hello',
       });
 
+    console.error('RESPONSE BODY', response.status, response.body);
     expect(response.status).toBe(200);
     expect(response.body.reply).toBe('Python reply');
     expect(aiServiceAdminClient.chatWithAgent).toHaveBeenCalledWith(expect.objectContaining({

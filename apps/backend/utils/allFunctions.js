@@ -1393,7 +1393,7 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
         return await prisma.conversation.findFirst({
           where: {
             customerId: customer.id,
-            status: { in: ['ACTIVE', 'RESOLVED'] }
+            channel: 'FACEBOOK'
           },
           orderBy: { updatedAt: 'desc' }
         });

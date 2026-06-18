@@ -280,7 +280,34 @@ function buildSandboxConversationId(companyId, userId, sessionId) {
 }
 
 function normalizeSandboxReply(text) {
-  return (text || '').replace(/<thought[^>]*>.*?<\/thought>/gs, '').replace(/<\/?thought[^>]*>/g, '').trim() || text;
+  if (!text) return text || '';
+  let cleaned = text;
+
+  // Strip XML-like reasoning blocks: <thought>, <thinking>, <reason>, <analysis>, <reasoning>.
+  cleaned = cleaned.replace(/<(thought|thinking|reason|analysis|reasoning)[^>]*>[\s\S]*?<\/\1>/gsi, '');
+  cleaned = cleaned.replace(/<\/?(?:thought|thinking|reason|analysis|reasoning)[^>]*>/gi, '');
+
+  // Split into lines and filter reasoning/draft lines that should never reach users.
+  const lines = cleaned.split('\n');
+  const draftMarkerRe = /^\s*[*\-\u2022\u25E6\u25AA]\s*\*?\s*(?:Draft\s+\d+|[A-Za-z][\w\s\/\.\(\)]*\?(?:\s+(?:Yes|No|Maybe|Y|N|true|false|✓|✗))?)[:)]?/i;
+  const reasoningKeywordRe = /^\s*[*\-\u2022\u25E6\u25AA]\s*(?:Option|Goal|Context|Constraint|User\sQuestion|Refined|Analysis|Reasoning|Input|Meaning|Language|Plan|Step|Note|Consideration|Evaluation|Draft)[\s\d]*:/i;
+  const bracketReasoningRe = /^\s*\[[^\]]+\]\s*(?:Yes|No|Maybe|Y|N|true|false|✓|✗)?\s*$/i;
+
+  const kept = [];
+  for (const rawLine of lines) {
+    const trimmed = rawLine.trim();
+    if (draftMarkerRe.test(trimmed)) continue;
+    if (reasoningKeywordRe.test(trimmed)) continue;
+    if (bracketReasoningRe.test(trimmed)) continue;
+    kept.push(rawLine);
+  }
+
+  cleaned = kept.join('\n').trim();
+
+  // Collapse more than two consecutive blank lines left by stripping reasoning.
+  cleaned = cleaned.replace(/\n\s*\n\s*\n+/g, '\n\n');
+
+  return cleaned || text;
 }
 
 function extractSandboxReply(taskResult) {
