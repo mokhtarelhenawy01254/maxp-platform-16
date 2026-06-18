@@ -389,31 +389,27 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
         "parent_id": cfg.get("parent_id"),
     }
 
-    if template_slug:
-        return await BaseAgent.from_template(
-            str(template_slug),
-            body.company_id,
-            overrides=overrides,
-            session=session,
+    if not template_slug:
+        if cfg.get("role"):
+            templates_result = await session.execute(
+                select(AgentTemplate).where(AgentTemplate.role == cfg["role"])
+            )
+            _found = templates_result.scalar_one_or_none()
+            if _found:
+                template_slug = _found.slug
+                logger.info("resolved_template_from_role", role=cfg["role"], slug=template_slug)
+
+    if not template_slug:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Agent {cfg['id']} has no template_slug and no template found for role '{cfg.get('role')}'",
         )
 
-    return BaseAgent(
-        BaseAgentConfig(
-            id=cfg["id"],
-            name=cfg["name"],
-            role=cfg["role"] or "CUSTOM",
-            company_id=body.company_id,
-            allowed_tools=cfg.get("allowed_tools") or [],
-            allowed_skills=cfg.get("allowed_skills") or [],
-            allowed_channels=cfg.get("allowed_channels") or [],
-            model=cfg.get("model") or "gemini-2.5-flash",
-            provider=cfg.get("provider"),
-            key_id=cfg.get("key_id") or cfg.get("keyId"),
-            persona=cfg.get("persona") or {},
-            policies=cfg.get("policies") or {},
-            instructions=cfg.get("instructions") or {},
-            status=cfg.get("status") or "ACTIVE",
-        )
+    return await BaseAgent.from_template(
+        str(template_slug),
+        body.company_id,
+        overrides=overrides,
+        session=session,
     )
 
 
@@ -470,6 +466,13 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         template = templates_result.scalar_one_or_none()
         if template:
             template_slug = template.slug
+
+    if not template:
+        raise HTTPException(
+            status_code=400,
+            detail=f"No template found for role '{role}' or slug '{template_slug}'. "
+                   "Every agent must have a template (single source of truth).",
+        )
 
     name = body.name or (template.name if template else f"{role} Agent")
     if template:
