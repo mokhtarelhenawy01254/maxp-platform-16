@@ -36,7 +36,7 @@ import tokenManager from "../../utils/tokenManager";
 import SuperAdminPaymentSettings from "./SuperAdminPaymentSettings";
 import AppPricingSheet from "../subscription/AppPricingSheet";
 import {
-  Check, X, Plus, Pencil, Trash2, Download, Upload, RefreshCw, Save, Search, Eye, Archive, DollarSign, ShoppingBag, Package, Building2, Store, CreditCard,
+  Check, X, Plus, Pencil, Trash2, Download, Upload, RefreshCw, Save, Search, Eye, Archive, Star, DollarSign, ShoppingBag, Package, Building2, Store, CreditCard,
 } from "lucide-react";
 
 type SubscriptionCenterProps = {

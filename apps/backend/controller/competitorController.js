@@ -46,6 +46,7 @@ exports.create = async (req, res) => {
       strengths,
       weaknesses,
       socialProfiles,
+      status,
     } = req.body;
 
     // Validate required fields
@@ -91,6 +92,7 @@ exports.create = async (req, res) => {
         employeeCount,
         strengths,
         weaknesses,
+        status: status || 'NEW',
         companyId,
       },
     });
@@ -134,6 +136,27 @@ exports.update = async (req, res) => {
     res.json({ success: true, data: competitor });
   } catch (error) {
     console.error('Error updating competitor:', error);
+    res.status(500).json({ success: false, error: t('competitor.update_failed') });
+  }
+};
+
+exports.updateStatus = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { status } = req.body;
+    const validStatuses = ['NEW', 'FOLLOWING', 'COMPLETED'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, error: 'Invalid status value' });
+    }
+    const competitor = await getPrisma().competitor.findFirst({ where: { id: req.params.id, companyId } });
+    if (!competitor) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    const updated = await getPrisma().competitor.update({
+      where: { id: req.params.id },
+      data: { status },
+    });
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Error updating competitor status:', error);
     res.status(500).json({ success: false, error: t('competitor.update_failed') });
   }
 };

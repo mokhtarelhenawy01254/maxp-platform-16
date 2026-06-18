@@ -45,6 +45,7 @@ export const menuGroups = [
     { text: i18n.t("superAdmin.sidebar.marketplaceManagement"), icon: <Globe className="size-5" />, path: "/super-admin/marketplace-management" },
     { text: i18n.t("superAdmin.sidebar.marketplaceCoverage"), icon: <Shield className="size-5" />, path: "/super-admin/marketplace-coverage" },
     { text: i18n.t("superAdmin.sidebar.storefrontThemes"), icon: <Palette className="size-5" />, path: "/super-admin/storefront-themes" },
+    { text: i18n.t("superAdmin.sidebar.appPricingSheet"), icon: <DollarSign className="size-5" />, path: "/super-admin/app-pricing" },
     { text: i18n.t("superAdmin.sidebar.customerSubscriptions"), icon: <Tag className="size-5" />, path: "/super-admin/subscriptions" },
     { text: i18n.t("superAdmin.sidebar.customerInvoices"), icon: <BarChart3 className="size-5" />, path: "/super-admin/invoices" },
     { text: i18n.t("superAdmin.sidebar.customerPayments"), icon: <DollarSign className="size-5" />, path: "/super-admin/payments" },

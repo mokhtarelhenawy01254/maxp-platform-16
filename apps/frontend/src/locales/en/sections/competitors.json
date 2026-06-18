@@ -54,6 +54,11 @@
   "status": "Status",
   "active": "Active",
   "inactive": "Inactive",
+  "statuses": {
+    "NEW": "New",
+    "FOLLOWING": "Following",
+    "COMPLETED": "Completed"
+  },
   "products": "Products",
   "ads": {
     "overview": "Ad Overview",

@@ -1742,7 +1742,7 @@ const AppContent = () => {
               path="/super-admin/app-pricing"
               element={
                 <Layout>
-                  <AppPricingSheet />
+                  <SubscriptionCenter initialTab={6} />
                 </Layout>
               }
             />

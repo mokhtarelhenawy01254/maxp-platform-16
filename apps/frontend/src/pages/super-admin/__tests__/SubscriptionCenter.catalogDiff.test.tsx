@@ -13,6 +13,10 @@ jest.mock("sonner", () => ({
 jest.mock("../../../utils/urlHelper", () => ({
   buildApiUrl: (endpoint: string) => endpoint,
 }));
+jest.mock("../../subscription/AppPricingSheet", () => ({
+  __esModule: true,
+  default: () => null,
+}));
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 const mockedToast = toast as unknown as {
@@ -20,7 +24,7 @@ const mockedToast = toast as unknown as {
   error: jest.Mock;
 };
 
-function mockMainEndpoint(url: string, data: any) {
+function mockMainEndpoint(url: string, data: unknown) {
   if (url.includes("admin/plans/plans")) {
     return Promise.resolve({ data: { success: true, data: [] } });
   }

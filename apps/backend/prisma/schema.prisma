@@ -1787,6 +1787,7 @@ model Competitor {
   description String?
   notes       String?
   isActive    Boolean  @default(true)
+  status      String   @default("NEW")
   metadata    Json?
   companyId   String
   createdAt   DateTime @default(now())

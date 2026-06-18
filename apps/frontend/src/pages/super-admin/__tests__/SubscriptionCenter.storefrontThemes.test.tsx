@@ -14,12 +14,18 @@ jest.mock("sonner", () => ({
 jest.mock("../../../utils/urlHelper", () => ({
   buildApiUrl: (endpoint: string) => endpoint,
 }));
+jest.mock("../../subscription/AppPricingSheet", () => ({
+  __esModule: true,
+  default: () => null,
+}));
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 const mockedToast = toast as unknown as {
   success: jest.Mock;
   error: jest.Mock;
 };
+
+const originalPointerEvent = globalThis.PointerEvent;
 
 const storefrontThemesPayload = [
   {
@@ -121,6 +127,24 @@ const storefrontThemesPayload = [
 ];
 
 describe("SubscriptionCenter storefront themes bulk actions", () => {
+  beforeAll(() => {
+    if (!globalThis.PointerEvent) {
+      Object.defineProperty(globalThis, "PointerEvent", {
+        configurable: true,
+        writable: true,
+        value: MouseEvent,
+      });
+    }
+  });
+
+  afterAll(() => {
+    Object.defineProperty(globalThis, "PointerEvent", {
+      configurable: true,
+      writable: true,
+      value: originalPointerEvent,
+    });
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     (global.localStorage.getItem as jest.Mock).mockReturnValue("test-token");
@@ -224,8 +248,12 @@ describe("SubscriptionCenter storefront themes bulk actions", () => {
 
     expect(await screen.findByText("كتالوج قوالب المتجر")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText("تحديد المعروض"));
-    expect(screen.getByText(/2 قالب محدد/i)).toBeInTheDocument();
+    const selectDisplayedCheckbox = screen.getAllByLabelText("تحديد المعروض")[0];
+    if (!selectDisplayedCheckbox) {
+      throw new Error("Select displayed themes checkbox was not rendered");
+    }
+    fireEvent.click(selectDisplayedCheckbox);
+    expect(await screen.findByText(/2 قالب محدد/i)).toBeInTheDocument();
     expect(screen.getByText(/مستخدم حاليًا لدى 1 شركة/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /أرشفة المحدد/i }));

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Search, RefreshCw, Plus, Pencil, Trash2, X, AlertTriangle, ExternalLink, Eye, CheckCircle2, Circle } from 'lucide-react';
+import { Search, RefreshCw, Plus, Pencil, Trash2, X, AlertTriangle, ExternalLink, Eye, CheckCircle2, Circle, ChevronDown } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 
 interface SocialProfile {
@@ -23,10 +23,19 @@ interface Competitor {
   strengths: string | null;
   weaknesses: string | null;
   isActive: boolean;
+  status: string;
   createdAt: string;
   socialProfiles: SocialProfile[];
   _count: { products: number; ads: number; reports: number };
 }
+
+const STATUS_OPTIONS = ['NEW', 'FOLLOWING', 'COMPLETED'] as const;
+
+const statusStyles: Record<string, string> = {
+  NEW: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+  FOLLOWING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+  COMPLETED: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border-gray-200 dark:border-gray-700',
+};
 
 interface DevTask {
   id: string;
@@ -71,6 +80,7 @@ const CompetitorList: React.FC = () => {
   const [pendingTasks, setPendingTasks] = useState<{ title: string; completed: boolean }[]>([]);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTaskText, setEditingTaskText] = useState('');
+  const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null);
 
   const fetchCompetitors = useCallback(async () => {
     setIsLoading(true);
@@ -234,6 +244,24 @@ const CompetitorList: React.FC = () => {
     }
   };
 
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    try {
+      await apiClient.patch(`/competitors/${id}/status`, { status: newStatus });
+      setCompetitors(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
+      setOpenStatusDropdown(null);
+    } catch {
+      console.error('Failed to update status');
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = () => setOpenStatusDropdown(null);
+    if (openStatusDropdown) {
+      document.addEventListener('click', handleClickOutside);
+    }
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [openStatusDropdown]);
+
   const handleDelete = async (id: string) => {
     try {
       await apiClient.delete(`/competitors/${id}`);
@@ -290,9 +318,29 @@ const CompetitorList: React.FC = () => {
                   <div>
                     <h3 className="font-semibold">{c.name}</h3>
                     <div className="flex flex-wrap items-center gap-1 mt-1">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${c.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-500'}`}>
-                        {c.isActive ? t('competitors.active') : t('competitors.inactive')}
-                      </span>
+                      <div className="relative">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setOpenStatusDropdown(openStatusDropdown === c.id ? null : c.id); }}
+                          className={`text-xs px-2 py-0.5 rounded-full border inline-flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity ${statusStyles[c.status] || statusStyles.NEW}`}
+                        >
+                          {t(`competitors.statuses.${c.status}`)}
+                          <ChevronDown size={10} />
+                        </button>
+                        {openStatusDropdown === c.id && (
+                          <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-lg z-20 min-w-[120px] py-1" onClick={e => e.stopPropagation()}>
+                            {STATUS_OPTIONS.map(s => (
+                              <button
+                                key={s}
+                                onClick={() => handleStatusChange(c.id, s)}
+                                className={`w-full text-right px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 ${c.status === s ? 'font-bold' : ''}`}
+                              >
+                                <span className={`w-2 h-2 rounded-full ${s === 'NEW' ? 'bg-blue-500' : s === 'FOLLOWING' ? 'bg-amber-500' : 'bg-gray-400'}`} />
+                                {t(`competitors.statuses.${s}`)}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       {c.activityType && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
                           {t(`competitors.activityTypes.${c.activityType}`)}
