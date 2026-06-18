@@ -499,8 +499,6 @@ export default function AppPricingSheet() {
   // Subscription nav tabs config
   const subscriptionTabs = [
     { label: t("subscription.tabAppPricing", "أسعار التطبيقات"), path: "/super-admin/app-pricing" },
-    { label: t("subscription.tabSubscriptions", "الاشتراكات"), path: "/super-admin/subscriptions" },
-    { label: t("subscription.tabPlatformSubscriptions", "اشتراكات المنصة"), path: "/super-admin/platform-subscriptions" },
   ];
 
   return (
