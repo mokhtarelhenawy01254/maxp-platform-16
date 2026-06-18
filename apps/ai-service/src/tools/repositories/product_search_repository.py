@@ -23,15 +23,37 @@ class ProductSearchRepository(BaseRepository):
         """Search active products by name, SKU, or tags."""
         clean_query = (query or "").strip()
         params: dict[str, Any] = {"company_id": company_id, "limit": min(limit, 50)}
+        order_rank = ""
 
         if clean_query:
-            pattern = f"%{clean_query}%"
-            params["pattern"] = pattern
-            where = '''
-                (p.name ILIKE :pattern
-                 OR p.sku ILIKE :pattern
-                 OR COALESCE(p.tags, '') ILIKE :pattern)
-            '''
+            params["full_pattern"] = f"%{clean_query}%"
+
+            # Split into meaningful words (3+ chars) to catch partial matches and typos
+            words = [w for w in clean_query.split() if len(w) >= 3]
+
+            if len(words) > 1:
+                word_parts: list[str] = []
+                for i, word in enumerate(words[:6]):
+                    key = f"word_{i}"
+                    params[key] = f"%{word}%"
+                    word_parts.append(
+                        f"(p.name ILIKE :{key} OR p.sku ILIKE :{key} OR COALESCE(p.tags,'') ILIKE :{key})"
+                    )
+                word_clause = " OR ".join(word_parts)
+                where = f"""
+                    (p.name ILIKE :full_pattern
+                     OR p.sku ILIKE :full_pattern
+                     OR COALESCE(p.tags, '') ILIKE :full_pattern
+                     OR {word_clause})
+                """
+                # Exact phrase matches rank above word-only matches
+                order_rank = "CASE WHEN p.name ILIKE :full_pattern THEN 0 ELSE 1 END,"
+            else:
+                where = """
+                    (p.name ILIKE :full_pattern
+                     OR p.sku ILIKE :full_pattern
+                     OR COALESCE(p.tags, '') ILIKE :full_pattern)
+                """
         else:
             where = "TRUE"
 
@@ -48,6 +70,7 @@ class ProductSearchRepository(BaseRepository):
               AND p."isActive" = TRUE
               AND {where}
             ORDER BY
+              {order_rank}
               CASE WHEN p."isFeatured" = TRUE THEN 0 ELSE 1 END,
               p.name ASC
             LIMIT :limit
