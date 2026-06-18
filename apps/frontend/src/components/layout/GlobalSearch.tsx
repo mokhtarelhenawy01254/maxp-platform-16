@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Search, Loader2, Building2, Users, Code2, BarChart3, DollarSign, Key, Ticket, X, Package, ShoppingCart, UserRound, MessageSquare, Facebook, Briefcase, TrendingUp, Tag, FolderTree, Store, Megaphone, UserCheck, FileText, HelpCircle, BookOpen, Target, Zap, ClipboardList, Star, Brain, Layout } from "lucide-react";
+import { Search, Loader2, Building2, Users, Code2, BarChart3, DollarSign, Key, Ticket, Package, ShoppingCart, UserRound, MessageSquare, Facebook, Briefcase, TrendingUp, Tag, FolderTree, Store, Megaphone, UserCheck, FileText, HelpCircle, BookOpen, Target, Zap, ClipboardList, Star, Brain, Layout } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { apiClient } from "../../services/apiClient";
 import { cn } from "@/lib/utils";
@@ -369,15 +369,7 @@ const GlobalSearch: React.FC = () => {
             isDark ? "text-white" : "text-gray-900"
           )}
         />
-        {query && (
-          <button
-            onClick={handleClear}
-            className="flex items-center px-2 text-muted-foreground hover:text-foreground transition-colors order-0"
-            aria-label="مسح البحث"
-          >
-            <X className="size-4" />
-          </button>
-        )}
+
       </div>
 
       {isOpen && (
@@ -502,13 +494,7 @@ const GlobalSearch: React.FC = () => {
                   {totalResults > 0 && `${totalResults} ${AR.resultsCount}`}
                   {meta?.time != null && ` · ${meta.time}${AR.inMs}`}
                 </span>
-                <span className="flex items-center gap-1">
-                  <span>↑↓</span>
-                  <span className="mx-1">·</span>
-                  <span>↵</span>
-                  <span className="mx-1">·</span>
-                  <span>Esc</span>
-                </span>
+
               </div>
             )}
           </div>
