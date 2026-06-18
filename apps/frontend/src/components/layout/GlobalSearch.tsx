@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Search, Loader2, Building2, Users, Code2, BarChart3, DollarSign, Key, Ticket, X, Package, ShoppingCart, UserRound, MessageSquare, Facebook, Briefcase, TrendingUp, Tag, FolderTree, Store, Megaphone, UserCheck, FileText } from "lucide-react";
+import { Search, Loader2, Building2, Users, Code2, BarChart3, DollarSign, Key, Ticket, Package, ShoppingCart, UserRound, MessageSquare, Facebook, Briefcase, TrendingUp, Tag, FolderTree, Store, Megaphone, UserCheck, FileText, HelpCircle, BookOpen, Target, Zap, ClipboardList, Star, Brain, Layout } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { apiClient } from "../../services/apiClient";
 import { cn } from "@/lib/utils";
@@ -49,6 +49,14 @@ const iconMap: Record<string, React.ReactNode> = {
   Megaphone: <Megaphone className="size-4" />,
   UserCheck: <UserCheck className="size-4" />,
   FileText: <FileText className="size-4" />,
+  HelpCircle: <HelpCircle className="size-4" />,
+  BookOpen: <BookOpen className="size-4" />,
+  Target: <Target className="size-4" />,
+  Zap: <Zap className="size-4" />,
+  ClipboardList: <ClipboardList className="size-4" />,
+  Star: <Star className="size-4" />,
+  Brain: <Brain className="size-4" />,
+  Layout: <Layout className="size-4" />,
 };
 
 const AR = {
@@ -56,7 +64,7 @@ const AR = {
   searching: "جاري البحث...",
   noResults: "لا توجد نتائج",
   tryAdjusting: "حاول بتغيير كلمة البحث",
-  hint: "اكتب أي كلمة أو حرف للبحث في جميع أقسام النظام (Ctrl+K)",
+  hint: "اكتب أي كلمة أو حرف للبحث في جميع أقسام النظام",
   resultsCount: "نتائج",
   inMs: "مللي ثانية",
   categories: {
@@ -129,10 +137,11 @@ function highlightText(text: string, query: string): React.ReactNode {
   const escaped = escapeRegex(query.trim());
   const parts = text.split(new RegExp(`(${escaped})`, "gi"));
   if (parts.length === 1) return text;
+  const qLower = query.trim().toLowerCase();
   return (
     <>
       {parts.map((part, i) =>
-        part.toLowerCase() === query.trim().toLowerCase() || part.toLowerCase() === query.trim().toLowerCase()
+        part.toLowerCase() === qLower
           ? <mark key={i} className="bg-amber-200 dark:bg-amber-700/60 text-inherit rounded-sm px-0.5">{part}</mark>
           : part
       )}
@@ -167,6 +176,7 @@ const GlobalSearch: React.FC = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [searchTriggered, setSearchTriggered] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -191,11 +201,13 @@ const GlobalSearch: React.FC = () => {
       setIsOpen(false);
       setHasSearched(false);
       setSelectedIndex(-1);
+      setSearchError(null);
       return;
     }
 
     setIsLoading(true);
     setSelectedIndex(-1);
+    setSearchError(null);
 
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
@@ -213,11 +225,15 @@ const GlobalSearch: React.FC = () => {
       setMeta(responseMeta || null);
       setIsOpen(true);
       setHasSearched(true);
-    } catch {
-      // Abort errors (cancelled requests) silently ignored
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return;
+      }
+      console.error("[GlobalSearch] API error:", err);
       setResults([]);
       setMeta(null);
       setHasSearched(true);
+      setSearchError("تعذر إكمال البحث. حاول مرة أخرى.");
     } finally {
       setIsLoading(false);
     }
@@ -262,6 +278,7 @@ const GlobalSearch: React.FC = () => {
     setHasSearched(false);
     setSelectedIndex(-1);
     setSearchTriggered(false);
+    setSearchError(null);
     inputRef.current?.focus();
   };
 
@@ -273,6 +290,7 @@ const GlobalSearch: React.FC = () => {
     setHasSearched(false);
     setSelectedIndex(-1);
     setSearchTriggered(false);
+    setSearchError(null);
     navigate(item.link);
   };
 
@@ -351,23 +369,7 @@ const GlobalSearch: React.FC = () => {
             isDark ? "text-white" : "text-gray-900"
           )}
         />
-        {query && (
-          <button
-            onClick={handleClear}
-            className="flex items-center px-2 text-muted-foreground hover:text-foreground transition-colors order-0"
-            aria-label="مسح البحث"
-          >
-            <X className="size-4" />
-          </button>
-        )}
-        <div className="hidden sm:flex items-center pl-2 order-2">
-                        <kbd className={cn(
-                            "inline-flex items-center gap-0.5 rounded border px-1.5 py-0.5 text-[10px] font-medium",
-                            isDark ? "border-white/10 text-gray-500" : "border-gray-300 text-gray-400"
-                          )}>
-                            ⌘K
-                          </kbd>
-        </div>
+
       </div>
 
       {isOpen && (
@@ -384,7 +386,14 @@ const GlobalSearch: React.FC = () => {
               </div>
             )}
 
-            {!isLoading && !hasResults && hasSearched && (
+            {!isLoading && searchError && (
+              <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
+                <Search className="size-8 text-red-400/50" />
+                <p className="text-sm font-medium text-red-500">{searchError}</p>
+              </div>
+            )}
+
+            {!isLoading && !searchError && !hasResults && hasSearched && (
               <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
                 <Search className="size-8 text-muted-foreground/40" />
                 <p className="text-sm font-medium text-muted-foreground">{AR.noResults}</p>
@@ -485,13 +494,7 @@ const GlobalSearch: React.FC = () => {
                   {totalResults > 0 && `${totalResults} ${AR.resultsCount}`}
                   {meta?.time != null && ` · ${meta.time}${AR.inMs}`}
                 </span>
-                <span className="flex items-center gap-1">
-                  <span>↑↓</span>
-                  <span className="mx-1">·</span>
-                  <span>↵</span>
-                  <span className="mx-1">·</span>
-                  <span>Esc</span>
-                </span>
+
               </div>
             )}
           </div>

@@ -6445,22 +6445,69 @@ function normalizeArabic(text) {
 }
 
 /**
+ * Generate all Arabic character variants for a given text
+ * Produces alternative spellings for alef, yeh, teh marbuta, waw, and kaf variants
+ */
+function getArabicVariants(text) {
+  if (!text || text.length === 0) return [];
+  const results = new Set();
+  const normalized = normalizeArabic(text);
+  results.add(text);
+  if (normalized !== text && normalized.length > 0) results.add(normalized);
+
+  const replacements = {
+    'ا': ['أ', 'إ', 'آ'], 'أ': ['ا', 'إ', 'آ'],
+    'إ': ['ا', 'أ', 'آ'], 'آ': ['ا', 'أ', 'إ'],
+    'ي': ['ى', 'ئ'], 'ى': ['ي', 'ئ'], 'ئ': ['ي', 'ى'],
+    'ة': ['ه'], 'ه': ['ة'],
+    'ؤ': ['و'], 'و': ['ؤ'],
+    'گ': ['ك'], 'ك': ['گ'],
+  };
+
+  const chars = [...normalized];
+  for (let pos = 0; pos < chars.length; pos++) {
+    const ch = chars[pos];
+    const alts = replacements[ch];
+    if (!alts) continue;
+    for (const alt of alts) {
+      const variant = chars.slice(0, pos).join('') + alt + chars.slice(pos + 1).join('');
+      if (variant.length > 0) results.add(variant);
+    }
+  }
+  return [...results];
+}
+
+/**
  * Generate Prisma-compatible contains conditions with Arabic normalization
- * Handles alef variants, yeh, teh marbuta, tashkeel, and tatweel
+ * Handles alef variants, yeh, teh marbuta, tashkeel, tatweel, and single-character search
  */
 function ac(field, value) {
   if (!value) return [{ [field]: { contains: value, mode: "insensitive" } }];
-  const normalized = normalizeArabic(value);
-  const conditions = [{ [field]: { contains: value, mode: "insensitive" } }];
-  if (normalized !== value && normalized.length > 0) {
-    conditions.push({ [field]: { contains: normalized, mode: "insensitive" } });
-    // Also search with each normalized character individually for partial Arabic matches
-    if (normalized.length === 1) {
-      conditions.push({ [field]: { contains: normalized, mode: "insensitive" } });
+  const variants = getArabicVariants(value);
+  const conditions = [];
+  for (const variant of variants) {
+    if (variant && variant.length > 0) {
+      conditions.push({ [field]: { contains: variant, mode: "insensitive" } });
     }
   }
   return conditions;
 }
+
+const searchModel = async (queryFn, logLabel) => {
+  const t0 = Date.now();
+  try {
+    const result = await queryFn();
+    const elapsed = Date.now() - t0;
+    if (elapsed > 1000) {
+      console.warn(`[SA-GLOBAL-SEARCH] Slow query [${logLabel}]: ${elapsed}ms`);
+    }
+    return result;
+  } catch (err) {
+    const elapsed = Date.now() - t0;
+    console.error(`[SA-GLOBAL-SEARCH] Error querying [${logLabel}] after ${elapsed}ms: ${err.message}`);
+    return [];
+  }
+};
 
 const globalSearch = async (req, res) => {
   try {
@@ -6472,6 +6519,9 @@ const globalSearch = async (req, res) => {
     const query = q.trim().replace(/\s+/g, " ");
     const prisma = getPrisma();
     const searchStart = Date.now();
+    const isShortQuery = query.replace(/\s/g, '').length <= 2;
+
+    const run = (name, fn) => searchModel(fn, name);
 
     const [
       companies, users, devProjects, devTasks, subscriptions, aiKeys, tickets,
@@ -6484,7 +6534,7 @@ const globalSearch = async (req, res) => {
       supportMessages, whatsAppQuickReplies, workReportForms, promotions,
       facebookComments, customerNotes, competitorReports, appExplanations, conversationMemories,
     ] = await Promise.all([
-      prisma.company.findMany({
+      run('companies', () => prisma.company.findMany({
         where: {
           OR: [
             ...ac('name', query),
@@ -6494,10 +6544,10 @@ const globalSearch = async (req, res) => {
           ],
         },
         select: { id: true, name: true, email: true, logo: true, slug: true, isActive: true },
-        take: 5,
+        take: isShortQuery ? 5 : 10,
         orderBy: { createdAt: "desc" },
-      }),
-      prisma.user.findMany({
+      })),
+      run('users', () => prisma.user.findMany({
         where: {
           OR: [
             ...ac('firstName', query),
@@ -6506,10 +6556,10 @@ const globalSearch = async (req, res) => {
           ],
         },
         select: { id: true, firstName: true, lastName: true, email: true, avatar: true, role: true, isActive: true },
-        take: 5,
+        take: isShortQuery ? 5 : 10,
         orderBy: { createdAt: "desc" },
-      }),
-      prisma.devProject.findMany({
+      })),
+      run('devProjects', () => prisma.devProject.findMany({
         where: {
           OR: [
             ...ac('name', query),
@@ -6517,10 +6567,10 @@ const globalSearch = async (req, res) => {
           ],
         },
         select: { id: true, name: true, description: true, status: true, color: true },
-        take: 5,
+        take: isShortQuery ? 5 : 10,
         orderBy: { createdAt: "desc" },
-      }),
-      prisma.devTask.findMany({
+      })),
+      run('devTasks', () => prisma.devTask.findMany({
         where: {
           OR: [
             ...ac('title', query),
@@ -6528,204 +6578,204 @@ const globalSearch = async (req, res) => {
           ],
         },
         select: { id: true, title: true, status: true, priority: true, projectId: true },
-        take: 5,
+        take: isShortQuery ? 5 : 10,
         orderBy: { createdAt: "desc" },
-      }),
-      prisma.platformSubscription.findMany({
+      })),
+      run('subscriptions', () => prisma.platformSubscription.findMany({
         where: {
           company: {
             OR: ac('name', query),
           },
         },
         select: { id: true, plan: true, status: true, company: { select: { id: true, name: true, logo: true } } },
-        take: 5,
+        take: isShortQuery ? 5 : 10,
         orderBy: { nextBillingDate: "asc" },
-      }),
-      prisma.aiKey.findMany({
+      })),
+      run('aiKeys', () => prisma.aiKey.findMany({
         where: { OR: [...ac('name', query), ...ac('provider', query)] },
         select: { id: true, name: true, provider: true, isActive: true, keyType: true },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.supportTicket.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('tickets', () => prisma.supportTicket.findMany({
         where: { OR: [...ac('subject', query), ...ac('ticketId', query)] },
         select: { id: true, ticketId: true, subject: true, status: true, category: true, priority: true },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.product.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('products', () => prisma.product.findMany({
         where: { OR: [...ac('name', query), ...ac('sku', query), ...ac('description', query)], deletedAt: null },
         select: { id: true, name: true, sku: true, price: true, mainImage: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.order.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('orders', () => prisma.order.findMany({
         where: { OR: [...ac('orderNumber', query), ...ac('customerName', query), ...ac('customerPhone', query)] },
         select: { id: true, orderNumber: true, customerName: true, customerPhone: true, total: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.customer.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('customers', () => prisma.customer.findMany({
         where: { OR: [...ac('firstName', query), ...ac('lastName', query), ...ac('phone', query), ...ac('email', query)] },
         select: { id: true, firstName: true, lastName: true, phone: true, email: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.conversation.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('conversations', () => prisma.conversation.findMany({
         where: { OR: ac('subject', query) },
         select: { id: true, subject: true, status: true, channel: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { lastMessageAt: "desc" },
-      }),
-      prisma.facebookPage.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { lastMessageAt: "desc" },
+      })),
+      run('facebookPages', () => prisma.facebookPage.findMany({
         where: { OR: ac('pageName', query) },
         select: { id: true, pageId: true, pageName: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.whatsAppSession.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('whatsappSessions', () => prisma.whatsAppSession.findMany({
         where: { OR: [...ac('name', query), ...ac('phoneNumber', query)] },
         select: { id: true, name: true, phoneNumber: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.employee.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('employees', () => prisma.employee.findMany({
         where: { OR: [...ac('firstName', query), ...ac('lastName', query), ...ac('employeeNumber', query), ...ac('email', query)] },
         select: { id: true, firstName: true, lastName: true, employeeNumber: true, email: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.competitor.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('competitors', () => prisma.competitor.findMany({
         where: { OR: [...ac('name', query), ...ac('slug', query)] },
         select: { id: true, name: true, slug: true, platform: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.coupon.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('coupons', () => prisma.coupon.findMany({
         where: { OR: [...ac('code', query), ...ac('name', query)] },
         select: { id: true, code: true, name: true, type: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.category.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('categories', () => prisma.category.findMany({
         where: { OR: ac('name', query) },
         select: { id: true, name: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.merchant.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('merchants', () => prisma.merchant.findMany({
         where: { OR: [...ac('name', query), ...ac('email', query)] },
         select: { id: true, name: true, email: true, phone: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.broadcastCampaign.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('broadcastCampaigns', () => prisma.broadcastCampaign.findMany({
         where: { OR: ac('name', query) },
         select: { id: true, name: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.department.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('departments', () => prisma.department.findMany({
         where: { OR: [...ac('name', query), ...ac('code', query)] },
         select: { id: true, name: true, code: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.position.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('positions', () => prisma.position.findMany({
         where: { OR: ac('title', query) },
         select: { id: true, title: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.invoice.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('invoices', () => prisma.invoice.findMany({
         where: { OR: ac('invoiceNumber', query) },
         select: { id: true, invoiceNumber: true, status: true, totalAmount: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.task.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('tasks', () => prisma.task.findMany({
         where: { OR: [...ac('title', query), ...ac('description', query)] },
         select: { id: true, title: true, status: true, priority: true, dueDate: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.message.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('messages', () => prisma.message.findMany({
         where: { OR: ac('content', query) },
         select: { id: true, content: true, conversationId: true, role: true, createdAt: true, conversation: { select: { subject: true, companyId: true, company: { select: { name: true } } } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.faq.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('faqs', () => prisma.faq.findMany({
         where: { OR: [...ac('question', query), ...ac('answer', query)] },
         select: { id: true, question: true, category: true, tags: true, companyId: true },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.knowledgeBase.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('knowledgeBases', () => prisma.knowledgeBase.findMany({
         where: { OR: [...ac('title', query), ...ac('content', query)] },
         select: { id: true, title: true, category: true, tags: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.storePage.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('storePages', () => prisma.storePage.findMany({
         where: { OR: [...ac('title', query), ...ac('slug', query)] },
         select: { id: true, title: true, slug: true, isPublished: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.productReview.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('productReviews', () => prisma.productReview.findMany({
         where: { OR: [...ac('title', query), ...ac('comment', query)] },
         select: { id: true, title: true, comment: true, rating: true, customerName: true, productId: true, companyId: true, product: { select: { name: true } }, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.jobPosting.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('jobPostings', () => prisma.jobPosting.findMany({
         where: { OR: [...ac('title', query), ...ac('description', query), ...ac('department', query)] },
         select: { id: true, title: true, department: true, location: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.applicant.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('applicants', () => prisma.applicant.findMany({
         where: { OR: [...ac('name', query), ...ac('email', query), ...ac('phone', query), ...ac('skills', query)] },
         select: { id: true, name: true, email: true, phone: true, status: true, jobPostingId: true, companyId: true, company: { select: { name: true } }, jobPosting: { select: { title: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.recruitmentForm.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('recruitmentForms', () => prisma.recruitmentForm.findMany({
         where: { OR: [...ac('title', query), ...ac('description', query)] },
         select: { id: true, title: true, slug: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.goal.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('goals', () => prisma.goal.findMany({
         where: { OR: [...ac('title', query), ...ac('description', query)] },
         select: { id: true, title: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.feedback.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('feedbacks', () => prisma.feedback.findMany({
         where: { OR: [...ac('content', query), ...ac('adminReply', query)] },
         select: { id: true, content: true, type: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.supportMessage.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('supportMessages', () => prisma.supportMessage.findMany({
         where: { OR: ac('content', query) },
         select: { id: true, content: true, ticketId: true, senderRole: true, createdAt: true, ticket: { select: { subject: true, companyId: true, company: { select: { name: true } } } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.whatsAppQuickReply.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('whatsAppQuickReplies', () => prisma.whatsAppQuickReply.findMany({
         where: { OR: [...ac('title', query), ...ac('shortcut', query), ...ac('content', query)] },
         select: { id: true, title: true, shortcut: true, content: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.workReportForm.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('workReportForms', () => prisma.workReportForm.findMany({
         where: { OR: [...ac('title', query), ...ac('description', query)] },
         select: { id: true, title: true, description: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.promotion.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('promotions', () => prisma.promotion.findMany({
         where: { OR: [...ac('name', query), ...ac('description', query)] },
         select: { id: true, name: true, description: true, type: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.facebookComment.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('facebookComments', () => prisma.facebookComment.findMany({
         where: { OR: ac('message', query) },
         select: { id: true, message: true, senderName: true, postId: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.customerNote.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('customerNotes', () => prisma.customerNote.findMany({
         where: { OR: ac('content', query) },
         select: { id: true, content: true, customerId: true, companyId: true, customer: { select: { firstName: true, lastName: true, phone: true } }, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.competitorReport.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('competitorReports', () => prisma.competitorReport.findMany({
         where: { OR: [...ac('title', query), ...ac('summary', query)] },
         select: { id: true, title: true, summary: true, competitorId: true, companyId: true, company: { select: { name: true } }, competitor: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.appExplanation.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('appExplanations', () => prisma.appExplanation.findMany({
         where: { OR: [...ac('title', query), ...ac('content', query)] },
         select: { id: true, title: true, slug: true, companyId: true },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.conversationMemory.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('conversationMemories', () => prisma.conversationMemory.findMany({
         where: { OR: [...ac('userMessage', query), ...ac('aiResponse', query)] },
         select: { id: true, userMessage: true, conversationId: true, companyId: true, conversation: { select: { subject: true, company: { select: { name: true } } } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
     ]);
 
     const searchTime = Date.now() - searchStart;
@@ -6733,6 +6783,25 @@ const globalSearch = async (req, res) => {
     const results = [];
     const seenIds = new Set();
     let totalCount = 0;
+
+    // Sort items by relevance: exact match → startsWith → contains → alphabetical
+    const normalizedQuery = normalizeArabic(query.toLowerCase());
+    function sortItems(items) {
+      return items.sort((a, b) => {
+        const aNorm = normalizeArabic((a.title || '').toLowerCase());
+        const bNorm = normalizeArabic((b.title || '').toLowerCase());
+
+        const aExact = aNorm === normalizedQuery;
+        const bExact = bNorm === normalizedQuery;
+        if (aExact !== bExact) return aExact ? -1 : 1;
+
+        const aStarts = aNorm.startsWith(normalizedQuery);
+        const bStarts = bNorm.startsWith(normalizedQuery);
+        if (aStarts !== bStarts) return aStarts ? -1 : 1;
+
+        return aNorm.localeCompare(bNorm, 'ar');
+      });
+    }
 
     if (companies.length) {
       const items = companies.map((c) => ({ id: c.id, title: c.name, subtitle: c.email || c.slug, image: c.logo, status: c.isActive ? "active" : "inactive", link: "/super-admin/companies" }));
@@ -6901,6 +6970,13 @@ const globalSearch = async (req, res) => {
     if (conversationMemories.length) {
       const items = conversationMemories.map((m) => ({ id: m.id, title: m.userMessage?.substring(0, 80), subtitle: m.conversation?.subject || "", link: "/super-admin/companies-v2" }));
       results.push({ type: "conversationMemories", icon: "Brain", items }); totalCount += items.length;
+    }
+
+    // Apply relevance sorting: exact → startsWith → alphabetical
+    for (const group of results) {
+      if (group.items && group.items.length > 1) {
+        sortItems(group.items);
+      }
     }
 
     return res.json({

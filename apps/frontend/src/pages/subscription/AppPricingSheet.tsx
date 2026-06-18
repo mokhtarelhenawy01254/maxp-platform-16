@@ -492,7 +492,6 @@ export default function AppPricingSheet() {
       toast.error(t("subscription.exportError"));
     }
   };
-
   const renderSortIcon = (field: SortField) => {
     if (sortField !== field) return <ArrowUpDown size={14} className="text-gray-400 dark:text-gray-500" />;
     if (sortOrder === "asc") return <ArrowUp size={14} className="text-indigo-600 dark:text-indigo-400" />;
