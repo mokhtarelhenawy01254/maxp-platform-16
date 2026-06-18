@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Search, Loader2, Building2, Users, Code2, BarChart3, DollarSign, Key, Ticket, X, Package, ShoppingCart, UserRound, MessageSquare, Facebook, Briefcase, TrendingUp, Tag, FolderTree, Store, Megaphone, UserCheck, FileText } from "lucide-react";
+import { Search, Loader2, Building2, Users, Code2, BarChart3, DollarSign, Key, Ticket, X, Package, ShoppingCart, UserRound, MessageSquare, Facebook, Briefcase, TrendingUp, Tag, FolderTree, Store, Megaphone, UserCheck, FileText, HelpCircle, BookOpen, Target, Zap, ClipboardList, Star, Brain, Layout } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { apiClient } from "../../services/apiClient";
 import { cn } from "@/lib/utils";
@@ -49,6 +49,14 @@ const iconMap: Record<string, React.ReactNode> = {
   Megaphone: <Megaphone className="size-4" />,
   UserCheck: <UserCheck className="size-4" />,
   FileText: <FileText className="size-4" />,
+  HelpCircle: <HelpCircle className="size-4" />,
+  BookOpen: <BookOpen className="size-4" />,
+  Target: <Target className="size-4" />,
+  Zap: <Zap className="size-4" />,
+  ClipboardList: <ClipboardList className="size-4" />,
+  Star: <Star className="size-4" />,
+  Brain: <Brain className="size-4" />,
+  Layout: <Layout className="size-4" />,
 };
 
 const AR = {
@@ -56,7 +64,7 @@ const AR = {
   searching: "جاري البحث...",
   noResults: "لا توجد نتائج",
   tryAdjusting: "حاول بتغيير كلمة البحث",
-  hint: "اكتب أي كلمة أو حرف للبحث في جميع أقسام النظام (Ctrl+K)",
+  hint: "اكتب أي كلمة أو حرف للبحث في جميع أقسام النظام",
   resultsCount: "نتائج",
   inMs: "مللي ثانية",
   categories: {
@@ -129,10 +137,11 @@ function highlightText(text: string, query: string): React.ReactNode {
   const escaped = escapeRegex(query.trim());
   const parts = text.split(new RegExp(`(${escaped})`, "gi"));
   if (parts.length === 1) return text;
+  const qLower = query.trim().toLowerCase();
   return (
     <>
       {parts.map((part, i) =>
-        part.toLowerCase() === query.trim().toLowerCase() || part.toLowerCase() === query.trim().toLowerCase()
+        part.toLowerCase() === qLower
           ? <mark key={i} className="bg-amber-200 dark:bg-amber-700/60 text-inherit rounded-sm px-0.5">{part}</mark>
           : part
       )}
@@ -360,14 +369,6 @@ const GlobalSearch: React.FC = () => {
             <X className="size-4" />
           </button>
         )}
-        <div className="hidden sm:flex items-center pl-2 order-2">
-                        <kbd className={cn(
-                            "inline-flex items-center gap-0.5 rounded border px-1.5 py-0.5 text-[10px] font-medium",
-                            isDark ? "border-white/10 text-gray-500" : "border-gray-300 text-gray-400"
-                          )}>
-                            ⌘K
-                          </kbd>
-        </div>
       </div>
 
       {isOpen && (
