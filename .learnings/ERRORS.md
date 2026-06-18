@@ -4263,3 +4263,23 @@ px jest tests/services/DatabaseAuthState.test.js --runInBand.
 - Evidence: Manual `node server.js` on `/var/www/backend2` failed with `Cannot find module 'dotenv'`; worker logs failed with `Cannot find module 'bullmq'`; after reinstalling dependencies, backend listened on `3008` while Nginx production configs proxy to `3007`.
 - Workaround: On the VPS, reinstall backend dependencies with Puppeteer downloads disabled, generate Prisma with `./node_modules/.bin/prisma generate --schema=prisma/schema`, sync `prisma/generated/postgresql_v2` to `node_modules/.prisma/client`, and ensure `backend/ecosystem.config.js` runs production on `PORT=3007` before PM2 reload.
 - Verification: `curl https://maxp.online/api/v1/health` returned `status: OK`, `swan.maxp.online/shop` returned HTTP 200, and PM2 stayed online.
+
+### 2026-06-18 - Frontend type-check can exceed the default Codex command timeout
+- Context: Running `npm run type-check` in `apps/frontend` timed out after about 124 seconds during a focused Super Admin sidebar/app-pricing change, without emitting TypeScript diagnostics.
+- Workaround: Re-run the same command with a longer timeout before treating it as a code failure; use focused ESLint on changed files for quicker feedback while waiting on full `tsc`.
+
+### 2026-06-18 - SubscriptionCenter Jest tests can parse Vite-only import.meta through AppPricingSheet
+- Context: `npm run test:catalog-diff-smoke` failed before running tests because `SubscriptionCenter` imports `AppPricingSheet`, which imports `apiClient.ts`; Jest then hit `import.meta.env` and threw `Cannot use 'import.meta' outside a module`.
+- Workaround: Mock `../../subscription/AppPricingSheet` in `SubscriptionCenter` unit tests that are not testing the pricing sheet itself.
+
+### 2026-06-18 - Base UI checkbox labels can match both visible control and hidden input in tests
+- Context: `SubscriptionCenter.storefrontThemes.test.tsx` used `getByLabelText("تحديد المعروض")` and failed after rendering because Base UI exposes both the visible checkbox element and a hidden input with the same label.
+- Workaround: Use `getAllByLabelText(...)[0]` with a guard, or query by role when the accessible name is unique.
+
+### 2026-06-18 - MaxP ecosystem config lives under apps/backend
+- Context: A deploy-context search checked `backend\ecosystem.config.js` from the repo root and failed because this workspace keeps the backend app under `apps/backend`.
+- Workaround: Use `apps/backend/ecosystem.config.js` for PM2/deploy context checks in this repo.
+
+### 2026-06-18 - GitHub CLI may not be logged in during desktop deploy follow-up
+- Context: `gh auth status` returned "not logged into any GitHub hosts" while preparing to push and watch the MaxP production workflow.
+- Workaround: Use ordinary `git push` with the configured remote credentials, then run `gh` with a temporary `GH_TOKEN` sourced from the configured GitHub remote only when Actions inspection is required. Do not print the token.
