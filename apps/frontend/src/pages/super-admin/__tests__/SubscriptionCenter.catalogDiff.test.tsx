@@ -84,7 +84,7 @@ describe("SubscriptionCenter Catalog Diff UI", () => {
     );
 
     const tabs = await screen.findAllByRole("tab");
-    const marketplaceTab = tabs[1];
+    const marketplaceTab = tabs[0];
     if (!marketplaceTab) {
       throw new Error("Marketplace tab was not rendered");
     }
@@ -157,7 +157,7 @@ describe("SubscriptionCenter Catalog Diff UI", () => {
     render(<SubscriptionCenter />);
 
     const tabs = await screen.findAllByRole("tab");
-    const marketplaceTab = tabs[1];
+    const marketplaceTab = tabs[0];
     if (!marketplaceTab) {
       throw new Error("Marketplace tab was not rendered");
     }
