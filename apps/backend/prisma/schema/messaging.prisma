@@ -10,6 +10,7 @@ model Conversation {
   lastMessageAt             DateTime?
   lastMessagePreview        String?
   isRead                    Boolean              @default(false)
+  isPinned                  Boolean              @default(false)
   metadata                  String?
   companyId                 String
   createdAt                 DateTime             @default(now())

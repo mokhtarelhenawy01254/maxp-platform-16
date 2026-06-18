@@ -260,7 +260,7 @@ const getUnifiedConversations = async (req, res) => {
                     name: `${conv.user.firstName || ''} ${conv.user.lastName || ''}`.trim(),
                     avatar: conv.user.avatar
                 } : null,
-                isPinned: false,
+                isPinned: conv.isPinned || false,
                 isMuted: false,
                 tags: conv.tags ? conv.tags.split(',').map(t => t.trim()) : [],
                 metadata: {
