@@ -36,7 +36,7 @@ export interface SessionDetail extends SessionSummary {
     cost: number;
     toolCalls: ToolCall[];
     timestamp: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
     responseAttachments?: MessageAttachment[];
     runtime?: string;
   }>;
@@ -56,7 +56,7 @@ export interface StreamChunk {
   keyName?: string;
   cost?: number;
   sessionId?: string;
-  pipelineTrace?: any;
+  pipelineTrace?: Record<string, unknown>;
   runtime?: string;
 }
 
@@ -74,7 +74,7 @@ export interface SendMessageResponse {
   keyScope?: "central";
   cost: number;
   sessionId: string;
-  pipelineTrace?: any;
+  pipelineTrace?: Record<string, unknown>;
   runtime?: string;
 }
 
@@ -211,6 +211,7 @@ export const sandboxApi = {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ sessionId, message, agentId, model, provider, keyId, attachments }),
+      signal: AbortSignal.timeout(120000),
     });
 
     if (!response.ok) {
@@ -238,6 +239,7 @@ export const sandboxApi = {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ sessionId, message, agentId, model, provider, keyId, attachments }),
+      signal: AbortSignal.timeout(120000),
     });
 
     if (!response.ok) {
@@ -250,7 +252,7 @@ export const sandboxApi = {
     const decoder = new TextDecoder();
     let buffer = "";
 
-    while (true) {
+    while (true as boolean) {
       const { done, value } = await reader.read();
       if (done) break;
 
