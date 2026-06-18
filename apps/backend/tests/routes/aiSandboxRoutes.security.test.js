@@ -1115,6 +1115,43 @@ describe('AI sandbox route security', () => {
     expect(response.body.reply).not.toContain('Egyptian dialect');
   });
 
+  test('strips agent persona/goal reasoning and first-person monologue from reply', async () => {
+    mockAiServiceChatResult = {
+      status: 'ok',
+      reply: [
+        "*   User's question: \"هو سعره كام ؟\"",
+        '    *   Agent Identity: "سمسم"',
+        '    *   Agent Persona/Goal: A clever salesman, speaks Egyptian Arabic, cheerful style.',
+        '    *   Constraints: Must stick to the persona.',
+        '    *   Knowledge Base: Contains generic products, but goal says sells international perfumes called Noussa.',
+        '    *   The user has not mentioned a specific perfume or product.',
+        '    *   I need to ask the user which perfume they are interested in.',
+        '    *   "يا باشا/يا فندم، نورتني! بس قولي قصدك على أنهي واحد من برفانات ' + String.fromCharCode(39) + 'نوسه' + String.fromCharCode(39) + ' العالمية؟ عشان أقولك سعره وأظبطك في أحلى ريحة! 😉"',
+        '',
+        'يا باشا نورتني! بس قولي قصدك على أنهي واحد من برفانات "نوسه" العالمية؟ عشان أقولك سعره وأظبطك في أحلى ريحة! 😉',
+      ].join('\n'),
+      tool_calls: [],
+      runtime: 'python-agent',
+    };
+
+    const response = await request(app)
+      .post('/ai-sandbox/chat')
+      .send({
+        sessionId: 'session_1',
+        agentId: 'agent_sales',
+        provider: 'GOOGLE',
+        model: 'gemini-2.5-flash',
+        keyId: 'key_google',
+        message: 'هو سعره كام ؟',
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.reply).not.toContain("Agent Identity");
+    expect(response.body.reply).not.toContain("Knowledge Base");
+    expect(response.body.reply).not.toContain("I need to ask");
+    expect(response.body.reply).toContain("يا باشا نورتني");
+  });
+
   test('normalizes set-like agent tools before sending the selected agent config to Python', async () => {
 
     aiServiceAdminClient.getAgent.mockResolvedValueOnce({
