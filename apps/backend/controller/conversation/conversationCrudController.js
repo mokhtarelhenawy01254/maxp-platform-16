@@ -244,15 +244,11 @@ const getConversations = async (req, res) => {
         // 🆕 Add server-side search filter (search in customer name, last message, and phone)
         if (search && search.trim()) {
             const searchTerm = search.trim();
-            queryWhere.AND = [
-                {
-                    OR: [
-                        { lastMessagePreview: { contains: searchTerm } },
-                        { customer: { firstName: { contains: searchTerm } } },
-                        { customer: { lastName: { contains: searchTerm } } },
-                        { customer: { phone: { contains: searchTerm } } },
-                    ]
-                }
+            queryWhere.OR = [
+                { lastMessagePreview: { contains: searchTerm } },
+                { customer: { firstName: { contains: searchTerm } } },
+                { customer: { lastName: { contains: searchTerm } } },
+                { customer: { phone: { contains: searchTerm } } },
             ];
         }
 

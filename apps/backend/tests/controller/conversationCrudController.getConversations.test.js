@@ -129,11 +129,10 @@ describe('conversationCrudController.getConversations', () => {
 
     await getConversations(req, res);
 
-    // Verify search was passed to Prisma where clause
+    // Verify search was passed to Prisma where clause as top-level OR
     const findManyCall = prisma.conversation.findMany.mock.calls[0][0];
-    expect(findManyCall.where.AND).toBeDefined();
-    expect(findManyCall.where.AND[0].OR).toBeDefined();
-    expect(findManyCall.where.AND[0].OR).toContainEqual(
+    expect(findManyCall.where.OR).toBeDefined();
+    expect(findManyCall.where.OR).toContainEqual(
       { customer: { firstName: { contains: 'محمد' } } }
     );
 
@@ -175,7 +174,7 @@ describe('conversationCrudController.getConversations', () => {
     await getConversations(req, res);
 
     const findManyCall = prisma.conversation.findMany.mock.calls[0][0];
-    expect(findManyCall.where.AND[0].OR).toContainEqual(
+    expect(findManyCall.where.OR).toContainEqual(
       { lastMessagePreview: { contains: 'طلب' } }
     );
 
@@ -200,8 +199,7 @@ describe('conversationCrudController.getConversations', () => {
     await getConversations(req, res);
 
     const countCall = prisma.conversation.count.mock.calls[0][0];
-    expect(countCall.where.AND).toBeDefined();
-    expect(countCall.where.AND[0].OR).toBeDefined();
+    expect(countCall.where.OR).toBeDefined();
   });
 
   test('returns empty results when search matches nothing', async () => {
