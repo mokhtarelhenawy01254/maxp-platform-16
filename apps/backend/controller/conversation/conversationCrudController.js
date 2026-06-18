@@ -241,6 +241,21 @@ const getConversations = async (req, res) => {
         // For unreplied, filter directly from database using the new column
         const queryWhere = tabWhere;
 
+        // 🆕 Add server-side search filter (search in customer name, last message, and phone)
+        if (search && search.trim()) {
+            const searchTerm = search.trim();
+            queryWhere.AND = [
+                {
+                    OR: [
+                        { lastMessagePreview: { contains: searchTerm } },
+                        { customer: { firstName: { contains: searchTerm } } },
+                        { customer: { lastName: { contains: searchTerm } } },
+                        { customer: { phone: { contains: searchTerm } } },
+                    ]
+                }
+            ];
+        }
+
         try {
             // 🔧 FIX: Use executeWithRetry to handle connection errors
             conversations = await executeWithRetry(async () => {
