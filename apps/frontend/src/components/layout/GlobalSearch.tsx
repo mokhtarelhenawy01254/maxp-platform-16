@@ -176,6 +176,7 @@ const GlobalSearch: React.FC = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [searchTriggered, setSearchTriggered] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -200,11 +201,13 @@ const GlobalSearch: React.FC = () => {
       setIsOpen(false);
       setHasSearched(false);
       setSelectedIndex(-1);
+      setSearchError(null);
       return;
     }
 
     setIsLoading(true);
     setSelectedIndex(-1);
+    setSearchError(null);
 
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
@@ -222,11 +225,15 @@ const GlobalSearch: React.FC = () => {
       setMeta(responseMeta || null);
       setIsOpen(true);
       setHasSearched(true);
-    } catch {
-      // Abort errors (cancelled requests) silently ignored
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return;
+      }
+      console.error("[GlobalSearch] API error:", err);
       setResults([]);
       setMeta(null);
       setHasSearched(true);
+      setSearchError("تعذر إكمال البحث. حاول مرة أخرى.");
     } finally {
       setIsLoading(false);
     }
@@ -271,6 +278,7 @@ const GlobalSearch: React.FC = () => {
     setHasSearched(false);
     setSelectedIndex(-1);
     setSearchTriggered(false);
+    setSearchError(null);
     inputRef.current?.focus();
   };
 
@@ -282,6 +290,7 @@ const GlobalSearch: React.FC = () => {
     setHasSearched(false);
     setSelectedIndex(-1);
     setSearchTriggered(false);
+    setSearchError(null);
     navigate(item.link);
   };
 
@@ -385,7 +394,14 @@ const GlobalSearch: React.FC = () => {
               </div>
             )}
 
-            {!isLoading && !hasResults && hasSearched && (
+            {!isLoading && searchError && (
+              <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
+                <Search className="size-8 text-red-400/50" />
+                <p className="text-sm font-medium text-red-500">{searchError}</p>
+              </div>
+            )}
+
+            {!isLoading && !searchError && !hasResults && hasSearched && (
               <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
                 <Search className="size-8 text-muted-foreground/40" />
                 <p className="text-sm font-medium text-muted-foreground">{AR.noResults}</p>
