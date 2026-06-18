@@ -26,6 +26,9 @@ type SearchMeta = {
   total: number;
   time: number;
   query: string;
+  page?: number;
+  maxResults?: number;
+  totalPages?: number;
 };
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -177,6 +180,8 @@ const GlobalSearch: React.FC = () => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [searchTriggered, setSearchTriggered] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -193,7 +198,7 @@ const GlobalSearch: React.FC = () => {
     return items;
   }, [results]);
 
-  const performSearch = useCallback(async (q: string) => {
+  const performSearch = useCallback(async (q: string, pg?: number) => {
     const trimmed = q.trim().replace(/\s+/g, " ");
     if (!trimmed) {
       setResults([]);
@@ -202,6 +207,8 @@ const GlobalSearch: React.FC = () => {
       setHasSearched(false);
       setSelectedIndex(-1);
       setSearchError(null);
+      setPage(1);
+      setTotalPages(1);
       return;
     }
 
@@ -215,7 +222,7 @@ const GlobalSearch: React.FC = () => {
 
     try {
       const res = await apiClient.get("/super-admin/global-search", {
-        params: { q: trimmed },
+        params: { q: trimmed, page: pg || 1 },
         _skipErrorToast: true,
         signal: controller.signal,
       });
@@ -223,6 +230,8 @@ const GlobalSearch: React.FC = () => {
       const responseMeta = res.data?.meta;
       setResults(data);
       setMeta(responseMeta || null);
+      setPage(responseMeta?.page || 1);
+      setTotalPages(responseMeta?.totalPages || 1);
       setIsOpen(true);
       setHasSearched(true);
     } catch (err: unknown) {
@@ -242,6 +251,8 @@ const GlobalSearch: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setQuery(val);
+    setPage(1);
+    setTotalPages(1);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       performSearch(val);
@@ -279,6 +290,8 @@ const GlobalSearch: React.FC = () => {
     setSelectedIndex(-1);
     setSearchTriggered(false);
     setSearchError(null);
+    setPage(1);
+    setTotalPages(1);
     inputRef.current?.focus();
   };
 
@@ -291,6 +304,8 @@ const GlobalSearch: React.FC = () => {
     setSelectedIndex(-1);
     setSearchTriggered(false);
     setSearchError(null);
+    setPage(1);
+    setTotalPages(1);
     navigate(item.link);
   };
 
@@ -494,7 +509,29 @@ const GlobalSearch: React.FC = () => {
                   {totalResults > 0 && `${totalResults} ${AR.resultsCount}`}
                   {meta?.time != null && ` · ${meta.time}${AR.inMs}`}
                 </span>
-
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => performSearch(query, page - 1)}
+                      disabled={page <= 1}
+                      className={cn("px-1.5 py-0.5 rounded text-[10px] transition-colors",
+                        page <= 1 ? "opacity-30 cursor-not-allowed" : "hover:bg-white/10",
+                      )}
+                    >
+                      ‹
+                    </button>
+                    <span className="px-1">{page} / {totalPages}</span>
+                    <button
+                      onClick={() => performSearch(query, page + 1)}
+                      disabled={page >= totalPages}
+                      className={cn("px-1.5 py-0.5 rounded text-[10px] transition-colors",
+                        page >= totalPages ? "opacity-30 cursor-not-allowed" : "hover:bg-white/10",
+                      )}
+                    >
+                      ›
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
