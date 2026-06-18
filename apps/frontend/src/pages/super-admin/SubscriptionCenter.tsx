@@ -34,8 +34,9 @@ import { toast } from "sonner";
 import type { StorefrontThemeCatalogItem } from "../../services/storefrontThemeCatalogService";
 import tokenManager from "../../utils/tokenManager";
 import SuperAdminPaymentSettings from "./SuperAdminPaymentSettings";
+import AppPricingSheet from "../subscription/AppPricingSheet";
 import {
-  Check, X, Plus, Pencil, Trash2, Download, Upload, RefreshCw, Save, Search, Eye, Archive, ShoppingBag, Package, Building2, Store, CreditCard,
+  Check, X, Plus, Pencil, Trash2, Download, Upload, RefreshCw, Save, Search, Eye, Archive, DollarSign, ShoppingBag, Package, Building2, Store, CreditCard,
 } from "lucide-react";
 
 type SubscriptionCenterProps = {
@@ -591,12 +592,12 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
       {!storefrontThemesOnly ? (
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm mb-3 overflow-x-auto">
           <div className="flex gap-1 p-1" role="tablist">
-
-            <Button variant={activeTab === 1 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(1)}><ShoppingBag className="h-4 w-4 ml-1" />تطبيقات المتجر</Button>
-            <Button variant={activeTab === 2 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(2)}><Package className="h-4 w-4 ml-1" />الباقات والأسعار</Button>
-            <Button variant={activeTab === 3 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(3)}><Building2 className="h-4 w-4 ml-1" />تعاقدات المؤسسات</Button>
-            <Button variant={activeTab === 4 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(4)}><Store className="h-4 w-4 ml-1" />قوالب المتجر</Button>
-            <Button variant={activeTab === 5 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(5)}><CreditCard className="h-4 w-4 ml-1" />إعدادات الدفع</Button>
+            <Button variant={activeTab === 1 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(1)} role="tab" aria-selected={activeTab === 1}><ShoppingBag className="h-4 w-4 ml-1" />تطبيقات المتجر</Button>
+            <Button variant={activeTab === 2 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(2)} role="tab" aria-selected={activeTab === 2}><Package className="h-4 w-4 ml-1" />الباقات والأسعار</Button>
+            <Button variant={activeTab === 3 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(3)} role="tab" aria-selected={activeTab === 3}><Building2 className="h-4 w-4 ml-1" />تعاقدات المؤسسات</Button>
+            <Button variant={activeTab === 4 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(4)} role="tab" aria-selected={activeTab === 4}><Store className="h-4 w-4 ml-1" />قوالب المتجر</Button>
+            <Button variant={activeTab === 5 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(5)} role="tab" aria-selected={activeTab === 5}><CreditCard className="h-4 w-4 ml-1" />إعدادات الدفع</Button>
+            <Button variant={activeTab === 6 ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(6)} role="tab" aria-selected={activeTab === 6}><DollarSign className="h-4 w-4 ml-1" />أسعار التطبيقات</Button>
           </div>
         </div>
       ) : null}
@@ -658,6 +659,9 @@ const SubscriptionCenter: React.FC<SubscriptionCenterProps> = ({
         <div className="p-3">
           <SuperAdminPaymentSettings />
         </div>
+      )}
+      {!storefrontThemesOnly && activeTab === 6 && (
+        <AppPricingSheet />
       )}
 
       {/* Marketplace Item Dialog */}
