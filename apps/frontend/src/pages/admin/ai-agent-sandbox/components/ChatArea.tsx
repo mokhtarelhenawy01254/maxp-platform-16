@@ -200,15 +200,16 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       // Filter reasoning/draft lines that should never reach users.
       const bulletRe = /^\s*[-*]\s*\*?\s*/;
       const draftRe = /Draft\s+\d+/i;
-      const reasoningKeywordRe = /^\s*[-*]\s*\*?\s*(?:Option|Goal|Context|Constraint|User\s*Question|Refined|Analysis|Reasoning|Input|Meaning|Language|Plan|Step|Note|Consideration|Evaluation|Draft)[\s\d]*:/i;
+      const reasoningKeywordRe = /^\s*[-*]\s*\*?\s*(?:Option|Goal|Context|Constraint|User\s*Question|Agent\s*(?:Identity|Persona)|Persona|Knowledge\s*Base|Knowledge|Refined|Analysis|Reasoning|Input|Meaning|Language|Plan|Step|Note|Consideration|Evaluation|Draft|Final(?:\s*Answer)?|Response|Output)[\s\d]*:/i;
       const checklistRe = /\?\s*(?:Yes|No|Maybe|Y|N|true|false|✓|✗)\b/i;
       const bracketReasoningRe = /^\s*\[[^\]]+\]\s*(?:Yes|No|Maybe|Y|N|true|false|✓|✗)?\s*$/i;
+      const monologueRe = /^\s*[-*]\s*\*?\s*(?:The\s+user|I\s+(?:need|should|will|must|think|can|have)|Usually,|The\s+goal|The\s+persona|Agent\s+(?:Identity|Persona)|Knowledge\s*Base|Final(?:\s+answer)?|Response|Output)\b/i;
 
       const kept: string[] = [];
       for (const rawLine of cleaned.split('\n')) {
         const trimmed = rawLine.trim();
         const isBullet = bulletRe.test(trimmed);
-        if (isBullet && (draftRe.test(trimmed) || reasoningKeywordRe.test(trimmed) || checklistRe.test(trimmed))) continue;
+        if (isBullet && (draftRe.test(trimmed) || reasoningKeywordRe.test(trimmed) || checklistRe.test(trimmed) || monologueRe.test(trimmed))) continue;
         if (bracketReasoningRe.test(trimmed)) continue;
         kept.push(rawLine);
       }

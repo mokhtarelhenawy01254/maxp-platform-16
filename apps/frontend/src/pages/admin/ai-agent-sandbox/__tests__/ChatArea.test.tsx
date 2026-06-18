@@ -82,6 +82,48 @@ describe("ChatArea", () => {
     expect(screen.getByText(/وعليكم السلام يا باشا/)).toBeInTheDocument();
   });
 
+  it("strips agent persona/goal reasoning and first-person monologue", () => {
+    const messages = [
+      {
+        id: "m1",
+        role: "assistant" as const,
+        content: [
+          '*   User\'s question: "هو سعره كام ؟"',
+          '    *   Agent Identity: "سمسم"',
+          '    *   Agent Persona/Goal: A clever salesman, speaks Egyptian Arabic, cheerful style.',
+          '    *   Constraints: Must stick to the persona.',
+          '    *   Knowledge Base: Contains generic products, but goal says sells international perfumes called Noussa.',
+          '    *   The user has not mentioned a specific perfume or product.',
+          '    *   I need to ask the user which perfume they are interested in.',
+          '    *   "يا باشا/يا فندم، نورتني! بس قولي قصدك على أنهي واحد من برفانات ' + String.fromCharCode(39) + 'نوسه' + String.fromCharCode(39) + ' العالمية؟ عشان أقولك سعره وأظبطك في أحلى ريحة! 😉"',
+          '',
+          'يا باشا نورتني! بس قولي قصدك على أنهي واحد من برفانات "نوسه" العالمية؟ عشان أقولك سعره وأظبطك في أحلى ريحة! 😉',
+        ].join('\n'),
+        timestamp: new Date().toISOString(),
+        model: "gemma-4-31b-it",
+        provider: "GOOGLE",
+      },
+    ];
+
+    render(
+      <ChatArea
+        messages={messages}
+        agent={agent}
+        model="gemma-4-31b-it"
+        providers={providers}
+        isLoading={false}
+        isStreaming={false}
+        canSend={true}
+        onSendMessage={jest.fn()}
+      />
+    );
+
+    expect(screen.queryByText(/Agent Identity/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Knowledge Base/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/I need to ask/)).not.toBeInTheDocument();
+    expect(screen.getByText(/يا باشا نورتني/)).toBeInTheDocument();
+  });
+
   it("renders normal assistant replies unchanged", () => {
     const messages = [
       {
