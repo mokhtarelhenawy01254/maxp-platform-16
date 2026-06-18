@@ -1699,14 +1699,6 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/super-admin/plans"
-              element={
-                <Layout>
-                  <SubscriptionCenter />
-                </Layout>
-              }
-            />
-            <Route
               path="/super-admin/storefront-themes"
               element={
                 <Layout>

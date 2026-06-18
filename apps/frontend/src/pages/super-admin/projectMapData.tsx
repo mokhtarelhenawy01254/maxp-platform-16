@@ -260,7 +260,7 @@ export const projectStructure: ProjectNode[] = [
         icon: <Globe className="w-4 h-4" />,
         description: "إدارة الشركات (Multi-tenancy)، الخطط، والمدفوعات.",
         businessValue: "إدارة آلاف المشتركين والشركات من لوحة واحدة.",
-        details: ["/super-admin/companies", "/super-admin/plans"],
+        details: ["/super-admin/companies", "/super-admin/marketplace-management"],
         status: "stable",
       },
       {
