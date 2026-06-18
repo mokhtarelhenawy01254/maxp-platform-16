@@ -10,3 +10,10 @@
 - **Documentation Compliance**: The CI enforces a strict `verify-docs.js` check. If any source code files are modified, a corresponding `.md` file must be updated/created in the relevant `docs/` folder (e.g. `apps/frontend/docs/`), OR the commit message must contain `[no-doc]`.
 - **Translations/i18n**: Whenever translation files or components using translations change, `npm run build` runs `i18n:merge`. These generated `translation.json` files must be staged and committed alongside the original code.
 - **Git Workflow**: Always adhere to the `git add && git commit && git pull --rebase && git push` workflow to prevent stash data loss.
+
+## 2026-06-18: Platform Plans Center Removal
+- Removed the Platform Plans (خطط المنصة) administration tab and route from the Super Admin dashboard.
+- Frontend files updated: `SubscriptionCenter.tsx`, `App.tsx`, `SuperAdminSidebar.tsx`, `projectMapData.tsx`.
+- Automated test updated: `SubscriptionCenter.catalogDiff.test.tsx`.
+- Added documentation under `apps/frontend/docs/super-admin-plans-center-removal.md` to satisfy CI requirements.
+- Left the database models and backend routes intact to support active subscriptions.
