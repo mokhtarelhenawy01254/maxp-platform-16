@@ -189,26 +189,37 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   };
 
   const filterChainOfThought = (text: string): string => {
-    // Reasoning markers: * Draft 1:, * Draft 2 (Formal):, * Option 1:, * Analysis:, * Reasoning:,
-    // and self-check lists such as * Egyptian dialect? Yes.
-    const draftMarkerRe = /^\s*[*\-\u2022\u25E6\u25AA]\s*\*?\s*(?:Draft\s+\d+|[A-Za-z][\w\s/\.\(\)]*\?(?:\s+(?:Yes|No|Maybe|Y|N|true|false|✓|✗))?)[:)]?/i;
-    const reasoningKeywordRe = /^\s*[*\-\u2022\u25E6\u25AA]\s*(?:Option|Goal|Context|Constraint|User\sQuestion|Refined|Analysis|Reasoning|Input|Meaning|Language|Plan|Step|Note|Consideration|Evaluation|Draft)[\s\d]*:/i;
-    const bracketReasoningRe = /^\s*\[[^\]]+\]\s*(?:Yes|No|Maybe|Y|N|true|false|✓|✗)?\s*$/i;
+    if (!text) return text || '';
+    try {
+      let cleaned = text;
 
-    const cleaned = text
-      .split('\n')
-      .filter(line => {
-        const trimmed = line.trim();
-        if (draftMarkerRe.test(trimmed)) return false;
-        if (reasoningKeywordRe.test(trimmed)) return false;
-        if (bracketReasoningRe.test(trimmed)) return false;
-        return true;
-      })
-      .join('\n')
-      .trim();
+      // Strip XML-like reasoning blocks: <thought>, <thinking>, <reason>, <analysis>, <reasoning>.
+      cleaned = cleaned.replace(/<(thought|thinking|reason|analysis|reasoning)[^>]*>[\s\S]*?<\/\1>/gi, '');
+      cleaned = cleaned.replace(/<\/?(?:thought|thinking|reason|analysis|reasoning)[^>]*>/gi, '');
 
-    // Collapse excessive blank lines left after stripping reasoning blocks.
-    return cleaned.replace(/\n\s*\n\s*\n+/g, '\n\n');
+      // Filter reasoning/draft lines that should never reach users.
+      const bulletRe = /^\s*[-*]\s*\*?\s*/;
+      const draftRe = /Draft\s+\d+/i;
+      const reasoningKeywordRe = /^\s*[-*]\s*\*?\s*(?:Option|Goal|Context|Constraint|User\s*Question|Refined|Analysis|Reasoning|Input|Meaning|Language|Plan|Step|Note|Consideration|Evaluation|Draft)[\s\d]*:/i;
+      const checklistRe = /\?\s*(?:Yes|No|Maybe|Y|N|true|false|✓|✗)\b/i;
+      const bracketReasoningRe = /^\s*\[[^\]]+\]\s*(?:Yes|No|Maybe|Y|N|true|false|✓|✗)?\s*$/i;
+
+      const kept: string[] = [];
+      for (const rawLine of cleaned.split('\n')) {
+        const trimmed = rawLine.trim();
+        const isBullet = bulletRe.test(trimmed);
+        if (isBullet && (draftRe.test(trimmed) || reasoningKeywordRe.test(trimmed) || checklistRe.test(trimmed))) continue;
+        if (bracketReasoningRe.test(trimmed)) continue;
+        kept.push(rawLine);
+      }
+
+      cleaned = kept.join('\n').trim();
+
+      // Collapse excessive blank lines left after stripping reasoning blocks.
+      return cleaned.replace(/\n\s*\n\s*\n+/g, '\n\n');
+    } catch {
+      return text;
+    }
   };
 
   const parseMessageContent = (content: string) => {
