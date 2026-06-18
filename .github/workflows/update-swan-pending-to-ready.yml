@@ -1,0 +1,67 @@
+name: Run backend one-off script (Swan pending → ready)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run only (no DB changes)'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      company_slug:
+        description: 'Company slug to target'
+        required: true
+        default: 'swan'
+        type: string
+      cutoff_date:
+        description: 'Update orders created before this ISO date'
+        required: true
+        default: '2026-06-16T00:00:00.000Z'
+        type: string
+
+jobs:
+  run-script:
+    name: Run one-off order status migration on server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Upload script to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          source: apps/backend/scripts/one-off/update-swan-pending-to-ready.js
+          target: /var/www/backend2/scripts/one-off/
+          strip_components: 4
+          overwrite: true
+
+      - name: Execute migration script on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd /var/www/backend2
+            echo "Current backend dir: $(pwd)"
+            ls -la scripts/one-off/update-swan-pending-to-ready.js
+
+            export COMPANY_SLUG="${{ github.event.inputs.company_slug }}"
+            export CUTOFF_DATE="${{ github.event.inputs.cutoff_date }}"
+            export DRY_RUN="${{ github.event.inputs.dry_run }}"
+            export SOURCE_STATUS="PENDING"
+            export TARGET_STATUS="READY_FOR_PROCESSING"
+
+            echo "Running with DRY_RUN=$DRY_RUN, COMPANY=$COMPANY_SLUG, CUTOFF=$CUTOFF_DATE"
+            node scripts/one-off/update-swan-pending-to-ready.js
