@@ -79,6 +79,8 @@ export default function AppPricingSheet() {
 
   // Bulk selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Inline trial days editing
+  const [trialDaysEdit, setTrialDaysEdit] = useState<Record<string, number>>({});
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -146,6 +148,30 @@ export default function AppPricingSheet() {
 
   const handleDeleteApp = async (id: string) => {
     setDeleteConfirmId(id);
+  };
+
+  const handleSaveTrialDays = async (app: MarketplaceApp, days: number) => {
+    try {
+      await apiClient.put(`/super-admin/marketplace-management/apps/${app.id}`, {
+        name: app.name,
+        slug: app.slug,
+        category: app.category,
+        description: app.description || "",
+        nameEn: app.nameEn || "",
+        imageUrl: app.imageUrl || "",
+        pricingModel: app.pricingModel,
+        monthlyPrice: app.monthlyPrice || 0,
+        yearlyPrice: app.yearlyPrice || 0,
+        unitPrice: app.unitPrice || 0,
+        unitName: app.unitName || "",
+        trialDays: days,
+        isActive: app.isActive ?? true,
+      });
+      setApps(prev => prev.map(a => a.id === app.id ? { ...a, trialDays: days } : a));
+      toast.success(t("subscription.trialDaysUpdated", "تم تحديث أيام التجربة المجانية"));
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || t("subscription.appSaveError", "حدث خطأ أثناء الحفظ"));
+    }
   };
 
   const confirmDeleteApp = async () => {
@@ -926,17 +952,31 @@ export default function AppPricingSheet() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm font-cairo">
-                        {app.trialDays > 0 ? (
-                          <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
-                            <Clock size={14} />
-                            <span>
-                              {app.trialDays} {t("subscription.days")}
-                            </span>
+                        {user?.role === "SUPER_ADMIN" ? (
+                          <div className="flex items-center gap-1.5">
+                            <Clock size={14} className="text-amber-500 shrink-0" />
+                            <input
+                              type="number"
+                              min={0}
+                              className="w-14 text-center text-amber-600 dark:text-amber-400 font-bold bg-transparent border-b border-dashed border-amber-300 dark:border-amber-700 focus:outline-none focus:border-amber-500 dark:focus:border-amber-400 transition-colors"
+                              value={trialDaysEdit[app.id] ?? app.trialDays}
+                              onChange={(e) => setTrialDaysEdit(prev => ({ ...prev, [app.id]: Number(e.target.value) }))}
+                              onBlur={() => {
+                                const days = trialDaysEdit[app.id] ?? app.trialDays;
+                                if (days !== app.trialDays) handleSaveTrialDays(app, days);
+                              }}
+                            />
+                            <span className="text-xs text-slate-400 dark:text-slate-500">{t("subscription.days")}</span>
                           </div>
                         ) : (
-                          <span className="text-slate-400 dark:text-slate-500 text-xs">
-                            {t("subscription.none")}
-                          </span>
+                          app.trialDays > 0 ? (
+                            <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
+                              <Clock size={14} />
+                              <span>{app.trialDays} {t("subscription.days")}</span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 dark:text-slate-500 text-xs">{t("subscription.none")}</span>
+                          )
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm font-cairo">
@@ -1035,9 +1075,7 @@ export default function AppPricingSheet() {
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50" onClick={(e) => { e.stopPropagation(); handleOpenDialog(app); }}>
                                 <Pencil size={14} />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); handleDeleteApp(app.id); }}>
-                                <Trash2 size={14} />
-                              </Button>
+
                             </div>
                           )}
                         </div>
@@ -1132,15 +1170,33 @@ export default function AppPricingSheet() {
                   {/* Top row: trial + active status + toggle */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="text-xs font-semibold font-cairo flex items-center gap-1.5">
-                      {app.trialDays > 0 ? (
-                        <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                          <Clock size={12} />
-                          {app.trialDays} {t("subscription.daysTrial")}
-                        </span>
+                      {user?.role === "SUPER_ADMIN" ? (
+                        <div className="flex items-center gap-1">
+                          <Clock size={12} className="text-amber-500 shrink-0" />
+                          <input
+                            type="number"
+                            min={0}
+                            className="w-12 text-center text-amber-600 dark:text-amber-400 font-bold bg-transparent border-b border-dashed border-amber-300 dark:border-amber-700 focus:outline-none focus:border-amber-500 dark:focus:border-amber-400 text-xs transition-colors"
+                            value={trialDaysEdit[app.id] ?? app.trialDays}
+                            onChange={(e) => setTrialDaysEdit(prev => ({ ...prev, [app.id]: Number(e.target.value) }))}
+                            onBlur={() => {
+                              const days = trialDaysEdit[app.id] ?? app.trialDays;
+                              if (days !== app.trialDays) handleSaveTrialDays(app, days);
+                            }}
+                          />
+                          <span className="text-slate-400 dark:text-slate-500 text-xs">{t("subscription.days")}</span>
+                        </div>
                       ) : (
-                        <span className="text-slate-400 dark:text-slate-500">
-                          {t("subscription.noTrialPeriod")}
-                        </span>
+                        app.trialDays > 0 ? (
+                          <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                            <Clock size={12} />
+                            {app.trialDays} {t("subscription.daysTrial")}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 dark:text-slate-500">
+                            {t("subscription.noTrialPeriod")}
+                          </span>
+                        )
                       )}
                     </div>
                     {/* Glowing Active Badge + Quick Toggle */}
@@ -1219,14 +1275,7 @@ export default function AppPricingSheet() {
                           >
                             <Pencil size={14} />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-red-600 dark:text-red-400 hover:text-red-800 hover:bg-red-50/50"
-                            onClick={() => handleDeleteApp(app.id)}
-                          >
-                            <Trash2 size={14} />
-                          </Button>
+
                         </>
                       )}
                     </div>
