@@ -5265,6 +5265,7 @@
     "savedImages": "Saved Images",
     "replyingTo": "Replying",
     "mediaAttachment": "Media/Attachment",
+    "videoNotSupported": "Your browser does not support video playback.",
     "image": "Image",
     "file": "File",
     "files": "Files",
