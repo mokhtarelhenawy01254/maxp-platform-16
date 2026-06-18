@@ -1557,15 +1557,64 @@ const UnifiedInbox: React.FC = () => {
                               )}
 
                               {/* Media from mediaUrl */}
-                              {msg.mediaUrl &&
-                                (msg.type === "image" ||
-                                  msg.mediaType?.includes("image")) && (
-                                  <img
-                                    src={msg.mediaUrl}
-                                    alt=""
-                                    className="rounded-lg max-w-full mb-1.5 cursor-pointer hover:opacity-90"
-                                  />
-                                )}
+                              {msg.mediaUrl && (() => {
+                                const isImage = msg.type === "image" || msg.mediaType?.includes("image");
+                                const isVideo = msg.type === "video" || msg.mediaType?.includes("video");
+                                const isAudio = msg.type === "audio" || msg.mediaType?.includes("audio");
+
+                                if (isImage) {
+                                  return (
+                                    <img
+                                      src={msg.mediaUrl}
+                                      alt=""
+                                      className="rounded-lg max-w-full mb-1.5 cursor-pointer hover:opacity-90"
+                                    />
+                                  );
+                                }
+
+                                if (isVideo) {
+                                  return (
+                                    <video
+                                      src={msg.mediaUrl}
+                                      controls
+                                      className="rounded-lg max-w-full mb-1.5"
+                                      style={{ maxHeight: "300px" }}
+                                    >
+                                      {t("unifiedInbox.videoNotSupported")}
+                                    </video>
+                                  );
+                                }
+
+                                if (isAudio) {
+                                  return (
+                                    <audio
+                                      src={msg.mediaUrl}
+                                      controls
+                                      className="w-full mb-1.5"
+                                      style={{ minWidth: "200px" }}
+                                    />
+                                  );
+                                }
+
+                                return (
+                                  <a
+                                    href={msg.mediaUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 rounded-lg mb-1.5 p-2 border"
+                                    style={{
+                                      borderColor: "var(--business-card-border)",
+                                      background: "color-mix(in srgb, var(--color-primary) 5%, var(--color-background))",
+                                    }}
+                                  >
+                                    <PaperClipIcon className="w-5 h-5 shrink-0" style={{ color: "var(--color-primary)" }} />
+                                    <span className="text-sm truncate" style={{ color: "var(--color-foreground)" }}>
+                                      {msg.mediaFileName || msg.mediaUrl.split("/").pop() || t("unifiedInbox.mediaAttachment")}
+                                    </span>
+                                    <span className="text-xs shrink-0" style={{ color: "var(--color-muted-foreground)" }}>⬇️</span>
+                                  </a>
+                                );
+                              })()}
 
                               {/* Media from content URL */}
                               {(() => {
@@ -1573,16 +1622,46 @@ const UnifiedInbox: React.FC = () => {
                                 if (!msg.content || !msg.content.startsWith("http")) return null;
                                 const url = msg.content.split(/[\s\n]/)[0];
                                 const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?|$)/i.test(url) || url.includes("fbcdn") || url.includes("cdninstagram");
-                                if (!isImage) return null;
-                                return (
-                                  <img
-                                    src={url}
-                                    alt=""
-                                    className="rounded-lg max-w-full mb-1.5 cursor-pointer hover:opacity-90"
-                                    loading="lazy"
-                                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                                  />
-                                );
+                                const isVideo = /\.(mp4|webm|mov|avi|mkv)(\?|$)/i.test(url);
+                                const isAudio = /\.(mp3|wav|ogg|aac|m4a|opus)(\?|$)/i.test(url);
+
+                                if (isImage) {
+                                  return (
+                                    <img
+                                      src={url}
+                                      alt=""
+                                      className="rounded-lg max-w-full mb-1.5 cursor-pointer hover:opacity-90"
+                                      loading="lazy"
+                                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                                    />
+                                  );
+                                }
+
+                                if (isVideo) {
+                                  return (
+                                    <video
+                                      src={url}
+                                      controls
+                                      className="rounded-lg max-w-full mb-1.5"
+                                      style={{ maxHeight: "300px" }}
+                                    >
+                                      {t("unifiedInbox.videoNotSupported")}
+                                    </video>
+                                  );
+                                }
+
+                                if (isAudio) {
+                                  return (
+                                    <audio
+                                      src={url}
+                                      controls
+                                      className="w-full mb-1.5"
+                                      style={{ minWidth: "200px" }}
+                                    />
+                                  );
+                                }
+
+                                return null;
                               })()}
 
                               {/* Text content (hide if it's a media URL shown above) */}
