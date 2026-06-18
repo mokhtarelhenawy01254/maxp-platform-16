@@ -51,7 +51,7 @@ class CompetitorService {
   }
 
   static async create(companyId, data) {
-    const { name, url, platform, logo, description, notes, activityType, location, targetMarket, foundedYear, employeeCount, strengths, weaknesses, socialProfiles } = data;
+    const { name, url, platform, logo, description, notes, activityType, location, targetMarket, foundedYear, employeeCount, strengths, weaknesses, socialProfiles, status } = data;
     const slug = data.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     // Transaction to create competitor and related social profiles
     const createdCompetitor = await getSharedPrismaClient().$transaction(async (tx) => {
@@ -71,6 +71,7 @@ class CompetitorService {
           employeeCount,
           strengths,
           weaknesses,
+          status: status || 'NEW',
           companyId,
         },
       });
@@ -120,6 +121,7 @@ class CompetitorService {
           strengths: data.strengths,
           weaknesses: data.weaknesses,
           isActive: data.isActive,
+          status: data.status,
         },
       });
 
