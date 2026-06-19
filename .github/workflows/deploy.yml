@@ -82,7 +82,7 @@ jobs:
       - name: Run AI Agent Test Suite
         working-directory: ./apps/backend
         run: |
-          npx jest --testPathPattern="tests/services/agent|tests/services/aiChat" --runInBand --testTimeout=30000 --forceExit
+          npx jest --testPathPatterns="tests/services/agent|tests/services/aiChat" --runInBand --testTimeout=30000 --forceExit
         continue-on-error: true
 
       # Build Frontend
