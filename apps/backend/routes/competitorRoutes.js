@@ -12,6 +12,7 @@ router.get('/auto-discover', controller.autoDiscover);
 router.get('/summary', controller.summary);
 router.get('/:id', controller.getById);
 router.put('/:id', controller.update);
+router.patch('/:id/status', controller.updateStatus);
 router.delete('/:id', controller.remove);
 
 router.get('/:id/products', controller.listProducts);

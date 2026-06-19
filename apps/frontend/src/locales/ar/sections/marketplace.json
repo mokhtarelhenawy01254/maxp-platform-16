@@ -36,6 +36,7 @@
   "bundleDetails": "تفاصيل الباقة",
   "noBundles": "لا توجد باقات متاحة حالياً",
   "noTools": "لا توجد أدوات متاحة ضمن هذا التنظيم حالياً",
+  "noSearchResults": "لا توجد نتائج لـ \"{{query}}\"",
   "loadingTools": "جاري تحميل الأدوات…",
   "searchPlaceholder": "ابحث عن أداة أو ميزة…",
   "sortLabel": "ترتيب",
@@ -89,5 +90,7 @@
   "installedCurrently": "{{count}} تطبيق مثبت حالياً.",
   "fetchError": "حدث خطأ أثناء تحميل بيانات المتجر. حاول مرة أخرى.",
   "retry": "إعادة المحاولة",
-"currencyUnit": "ج"
+  "currencyUnit": "ج",
+  "clearSearch": "مسح البحث",
+  "loadMore": "عرض المزيد ({{remaining}})"
 }

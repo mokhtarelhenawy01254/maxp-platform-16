@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import secrets
 import json
 import re
+import secrets
 import uuid
 from datetime import UTC, datetime
 from typing import Annotated, Any
@@ -13,18 +13,16 @@ from sqlalchemy import case, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from src.agents.base import BaseAgent, BaseAgentConfig
-from src.api.chat import sanitize_model_reply
+from src.agents.base import BaseAgent
 from src.agents.loader import get_template, list_templates, seed_templates
-from src.tools.registry import get_all_tools
 from src.api.admin.agents_schemas import (
     AgentChatRequest,
     AgentChatResponse,
     AgentCreate,
     AgentFileSkill,
-    AgentFileTool,
     AgentFilesResponse,
     AgentFilesSaveRequest,
+    AgentFileTool,
     AgentRead,
     AgentStatusUpdate,
     AgentSummary,
@@ -40,11 +38,14 @@ from src.api.admin.agents_schemas import (
     TeamMapResponse,
     ToolSummary,
 )
-from src.db.models.agent import Agent as AgentModel, AgentTemplate, AgentDepartment
+from src.api.chat import sanitize_model_reply
+from src.db.models.agent import Agent as AgentModel
+from src.db.models.agent import AgentTemplate
 from src.db.models.thread import Thread
 from src.db.session import get_session
 from src.llm.agent_client_factory import build_provider_client_async
 from src.pipeline.context import DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL
+from src.tools.registry import get_all_tools
 from src.workflows.approval import create_approval_draft
 
 logger = structlog.get_logger(__name__)
@@ -298,41 +299,6 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
     if raw_config:
         raw_config.setdefault("persona", {})["company_name"] = _company_display_name
 
-    # Fallback: read from ai.agents with new fields (previously from public.company_agents)
-    if not db_agent:
-        import json as _json
-        ca_row = await session.execute(
-            text("""
-                SELECT a.id, a.name, a.role, a.template_slug, a.model,
-                       a.soul, a.skills, a.status, a.parent_id, a.company_id
-                FROM ai.agents a
-                WHERE a.id = :agent_id AND a.company_id = :company_id AND a.status != 'ARCHIVED'
-            """),
-            {"agent_id": body.agent_id, "company_id": body.company_id},
-        )
-        ca = ca_row.mappings().one_or_none()
-        if ca:
-            raw_config = {
-                "id": ca["id"],
-                "name": ca["name"],
-                "role": ca["role"],
-                "company_id": body.company_id,
-                "template_slug": ca["template_slug"],
-                "model": ca["model"],
-                "persona": {
-                    "soulInstructions": ca["soul"] or "",
-                    "agentInstructions": "",
-                    "toolsInstructions": "",
-                    "company_name": _company_display_name,
-                },
-                "policies": {},
-                "allowed_tools": [],
-                "allowed_skills": _json.loads(ca["skills"]) if ca["skills"] else [],
-                "status": ca["status"],
-                "version": None,
-                "parent_id": ca["parent_id"],
-            }
-
     if request_config:
         req_tools = request_config.get("allowedTools") or request_config.get("allowed_tools")
         raw_config = {
@@ -389,35 +355,31 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
         "parent_id": cfg.get("parent_id"),
     }
 
-    if template_slug:
-        return await BaseAgent.from_template(
-            str(template_slug),
-            body.company_id,
-            overrides=overrides,
-            session=session,
+    if not template_slug and cfg.get("role"):
+        templates_result = await session.execute(
+            select(AgentTemplate).where(AgentTemplate.role == cfg["role"])
+        )
+        _found = templates_result.scalar_one_or_none()
+        if _found:
+            template_slug = _found.slug
+            logger.info("resolved_template_from_role", role=cfg["role"], slug=template_slug)
+
+    if not template_slug:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Agent {cfg['id']} has no template_slug and no template found for role '{cfg.get('role')}'",
         )
 
-    return BaseAgent(
-        BaseAgentConfig(
-            id=cfg["id"],
-            name=cfg["name"],
-            role=cfg["role"] or "CUSTOM",
-            company_id=body.company_id,
-            allowed_tools=cfg.get("allowed_tools") or [],
-            allowed_skills=cfg.get("allowed_skills") or [],
-            allowed_channels=cfg.get("allowed_channels") or [],
-            model=cfg.get("model") or "gemini-2.5-flash",
-            provider=cfg.get("provider"),
-            key_id=cfg.get("key_id") or cfg.get("keyId"),
-            persona=cfg.get("persona") or {},
-            policies=cfg.get("policies") or {},
-            instructions=cfg.get("instructions") or {},
-            status=cfg.get("status") or "ACTIVE",
-        )
+    return await BaseAgent.from_template(
+        str(template_slug),
+        body.company_id,
+        overrides=overrides,
+        session=session,
     )
 
 
 @router.get("/templates", response_model=list[AgentTemplateList])
+@router.get("/agent-templates", response_model=list[AgentTemplateList])
 async def list_agent_templates(session: SessionDep) -> list[AgentTemplateList]:
     """List all agent templates."""
     templates = await list_templates(session)
@@ -425,6 +387,7 @@ async def list_agent_templates(session: SessionDep) -> list[AgentTemplateList]:
 
 
 @router.get("/templates/{slug}", response_model=AgentTemplateRead)
+@router.get("/agent-templates/{slug}", response_model=AgentTemplateRead)
 async def get_agent_template(slug: str, session: SessionDep) -> AgentTemplateRead:
     """Get a specific agent template by slug."""
     template = await get_template(slug, session)
@@ -470,6 +433,13 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         template = templates_result.scalar_one_or_none()
         if template:
             template_slug = template.slug
+
+    if not template:
+        raise HTTPException(
+            status_code=400,
+            detail=f"No template found for role '{role}' or slug '{template_slug}'. "
+                   "Every agent must have a template (single source of truth).",
+        )
 
     name = body.name or (template.name if template else f"{role} Agent")
     if template:
@@ -645,7 +615,7 @@ async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentC
 
 def _clamp_score(value: Any, fallback: int) -> int:
     try:
-        numeric = int(round(float(value)))
+        numeric = round(float(value))
     except (TypeError, ValueError):
         return fallback
     return max(0, min(100, numeric))
@@ -797,12 +767,12 @@ async def get_manager_context(
     ) for t in templates]
 
     # Build full skill metadata — DB-first (ai.skills table), file fallback
-    from src.skills.integration import _get_skill_meta
     from src.db.models.skill import Skill as SkillModel
+    from src.skills.integration import _get_skill_meta
 
     skills = []
     try:
-        skill_rows = (await session.execute(select(SkillModel).where(SkillModel.enabled == True).order_by(SkillModel.name))).scalars().all()
+        skill_rows = (await session.execute(select(SkillModel).where(SkillModel.enabled).order_by(SkillModel.name))).scalars().all()
         for row in skill_rows:
             meta = _get_skill_meta(row.id)
             if meta:
@@ -834,6 +804,7 @@ async def get_manager_context(
     inbox = InboxSummary()
     try:
         from sqlalchemy import func as sa_func
+
         from src.db.models.task import AiAgentTask
         c = select(
             sa_func.count().label("total"),
@@ -1103,44 +1074,7 @@ async def _load_agent_for_files(
     if agent:
         return agent, _agent_config_from_record(agent)
 
-    import json as _json
-    ca_row = await session.execute(
-        text("""
-            SELECT a.id, a.name, a.role, a.icon, a.description, a.soul,
-                   a.rules, a.skills, a.channels, a.model, a.status, a.parent_id,
-                   a.template_slug, a.created_by,
-                   a.created_at, a.department_id, a.manager_type,
-                   ad.key AS department_key, ad.name AS department_name,
-                   ad.icon AS department_icon
-            FROM ai.agents a
-            LEFT JOIN ai.agent_departments ad ON ad.id = a.department_id
-            WHERE a.id = :agent_id
-              AND (a.company_id = :company_id OR :company_id IS NULL)
-        """),
-        {"agent_id": agent_id, "company_id": company_id or ""},
-    )
-    ca = ca_row.mappings().one_or_none()
-    if not ca:
-        return None, None
-
-    raw = {
-        "id": ca["id"], "name": ca["name"], "role": ca["role"],
-        "status": ca["status"], "model": ca["model"],
-        "template_slug": ca["template_slug"], "parent_id": ca["parent_id"],
-        "icon": ca["icon"] or "🤖", "description": ca["description"] or "",
-        "soul": ca["soul"] or "", "rules": [],
-        "skills": _json.loads(ca["skills"]) if ca["skills"] else [],
-        "channels": _json.loads(ca["channels"]) if ca.get("channels") else [],
-        "allowed_tools": [], "allowed_skills": [],
-        "created_by": ca["created_by"],
-        "created_at": str(ca["created_at"]) if ca["created_at"] else "",
-        "department_id": ca["department_id"], "department_key": ca["department_key"],
-        "department_name": ca["department_name"], "department_icon": ca["department_icon"],
-        "manager_type": ca["manager_type"],
-        "persona": {"soulInstructions": ca["soul"] or ""} if ca["soul"] else {},
-        "policies": {}, "config": {},
-    }
-    return None, raw
+    return None, None
 
 
 async def _build_agent_files_response(
@@ -1331,68 +1265,6 @@ async def save_agent_files(
 # ── Agent Template Management (2026 unified approach) ────────────────────
 
 
-@router.get("/agent-templates")
-async def list_agent_templates(
-    session: SessionDep,
-) -> list[dict[str, Any]]:
-    """List all agent templates (source of truth for agent definitions)."""
-    from src.agents.loader import list_templates
-    templates = await list_templates(session)
-    return [
-        {
-            "slug": t.slug,
-            "name": t.name,
-            "role": t.role,
-            "version": t.version,
-            "channels": t.channels,
-            "allowedTools": t.allowed_tools,
-            "allowedSkills": t.allowed_skills,
-            "instructionsSoul": t.instructions_soul or "",
-            "instructionsPersona": t.instructions_persona or "",
-            "instructionsTools": t.instructions_tools or "",
-            "instructionsAgents": t.instructions_agents or "",
-            "guardrails": t.guardrails,
-            "budget": t.budget,
-            "personaMeta": t.persona_meta,
-            "humanApproval": t.human_approval,
-            "handoffs": t.handoffs,
-            "mcpServers": t.mcp_servers,
-        }
-        for t in templates
-    ]
-
-
-@router.get("/agent-templates/{slug}")
-async def get_agent_template(
-    slug: str,
-    session: SessionDep,
-) -> dict[str, Any]:
-    """Get a single agent template by slug."""
-    from src.agents.loader import get_template
-    template = await get_template(slug, session)
-    if not template:
-        raise HTTPException(status_code=404, detail=f"Template not found: {slug}")
-    return {
-        "slug": template.slug,
-        "name": template.name,
-        "role": template.role,
-        "version": template.version,
-        "channels": template.channels,
-        "allowedTools": template.allowed_tools,
-        "allowedSkills": template.allowed_skills,
-        "instructionsSoul": template.instructions_soul or "",
-        "instructionsPersona": template.instructions_persona or "",
-        "instructionsTools": template.instructions_tools or "",
-        "instructionsAgents": template.instructions_agents or "",
-        "guardrails": template.guardrails,
-        "budget": template.budget,
-        "personaMeta": template.persona_meta,
-        "humanApproval": template.human_approval,
-        "handoffs": template.handoffs,
-        "mcpServers": template.mcp_servers,
-    }
-
-
 @router.post("/agent-templates")
 async def create_agent_template(
     body: dict[str, Any],
@@ -1469,9 +1341,8 @@ async def update_agent_template(
         if api_key in body:
             setattr(template, model_key, body[api_key])
     # Handle allowedSkills list
-    if "allowedSkills" in body or "rules" in body:
-        if "allowedSkills" in body:
-            template.allowed_skills = body["allowedSkills"]
+    if ("allowedSkills" in body or "rules" in body) and "allowedSkills" in body:
+        template.allowed_skills = body["allowedSkills"]
     await session.commit()
     await session.refresh(template)
     return {"slug": template.slug, "name": template.name, "role": template.role}
@@ -1494,7 +1365,7 @@ async def delete_agent_template(
     if agents_using.scalars().first():
         raise HTTPException(
             status_code=409,
-            detail=f"Cannot delete template: agents are using it",
+            detail="Cannot delete template: agents are using it",
         )
     await session.delete(template)
     await session.commit()

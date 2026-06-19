@@ -24,15 +24,16 @@
     "singleQuestionPerTurn": false
   },
   "allowedTools": [
+    "product.search",
     "order.lookup",
+    "order.cancel",
     "customer.info",
     "shipping.rates",
     "shipping.update",
-    "order.create_confirmed",
-    "order.cancel",
+    "order.create.confirmed",
     "order.refund",
     "whatsapp.send",
-    "agent.handoff"
+    "agent.handoff.to"
   ],
   "allowedSkills": [
     "customer-context-summary",

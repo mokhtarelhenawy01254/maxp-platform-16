@@ -10,6 +10,7 @@ import arMarketplace from "../locales/ar/sections/marketplace.json";
 import arSubscription from "../locales/ar/sections/subscription.json";
 import arAppPricing from "../locales/ar/sections/appPricing.json";
 import arAiKnowledgeQuestions from "../locales/ar/sections/aiKnowledgeQuestions.json";
+import arAuth from "../locales/ar/sections/auth.json";
 import enTranslation from "../locales/en/translation.json";
 import enSidebar from "../locales/en/sections/sidebar.json";
 import enOrders from "../locales/en/sections/orders.json";
@@ -19,6 +20,7 @@ import enMarketplace from "../locales/en/sections/marketplace.json";
 import enSubscription from "../locales/en/sections/subscription.json";
 import enAppPricing from "../locales/en/sections/appPricing.json";
 import enAiKnowledgeQuestions from "../locales/en/sections/aiKnowledgeQuestions.json";
+import enAuth from "../locales/en/sections/auth.json";
 import { getBackendUrl } from "../config/environment";
 
 // قائمة الدول العربية
@@ -124,6 +126,7 @@ i18n
           subscription: arSubscription,
           appPricing: arAppPricing,
           aiKnowledgeQuestions: arAiKnowledgeQuestions,
+          auth: arAuth,
         },
       },
       en: {
@@ -137,6 +140,7 @@ i18n
           subscription: enSubscription,
           appPricing: enAppPricing,
           aiKnowledgeQuestions: enAiKnowledgeQuestions,
+          auth: enAuth,
         },
       },
     },

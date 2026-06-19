@@ -240,6 +240,30 @@ async function listDepartments(companyId) {
   return request('GET', `/admin/departments${qs}`) || [];
 }
 
+async function getGuardrails(companyId) {
+  return request('GET', `/admin/settings/guardrails?company_id=${encodeURIComponent(companyId)}`);
+}
+
+async function updateGuardrails(companyId, data) {
+  return request('PUT', `/admin/settings/guardrails?company_id=${encodeURIComponent(companyId)}`, data);
+}
+
+async function getAutoReply(companyId) {
+  return request('GET', `/admin/settings/auto-reply?company_id=${encodeURIComponent(companyId)}`);
+}
+
+async function updateAutoReply(companyId, enabled) {
+  return request('PUT', `/admin/settings/auto-reply?company_id=${encodeURIComponent(companyId)}`, { autoReplyEnabled: enabled });
+}
+
+async function getGlobalFilterSettings(companyId) {
+  return request('GET', `/admin/settings/filters?company_id=${encodeURIComponent(companyId)}`);
+}
+
+async function updateGlobalFilterSettings(companyId, data) {
+  return request('PUT', `/admin/settings/filters?company_id=${encodeURIComponent(companyId)}`, data);
+}
+
 module.exports = {
   listTools,
   updateToolMeta,
@@ -272,4 +296,10 @@ module.exports = {
   triggerKnowledgeEmbeddingSync,
   embedKnowledgeItem,
   deleteKnowledgeEmbeddingItem,
+  getGuardrails,
+  updateGuardrails,
+  getAutoReply,
+  updateAutoReply,
+  getGlobalFilterSettings,
+  updateGlobalFilterSettings,
 };

@@ -1,369 +1,399 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import supportService from "../../services/supportService";
 import {
-  HelpCircle,
-  MessageSquare,
-  Plus,
-  Search,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  BookOpen,
-  Ticket,
-  ArrowRight,
-} from "lucide-react";
-import supportService, {
-  FAQ as FAQType,
-  Ticket as TicketType,
-} from "../../services/supportService";
+  ChatBubbleLeftRightIcon,
+  PlusIcon,
+  MagnifyingGlassIcon,
+  PaperAirplaneIcon,
+  XMarkIcon,
+  PaperClipIcon,
+} from "@heroicons/react/24/outline";
+import type { Ticket } from "../../services/supportService";
 
-const SupportCenter: React.FC = () => {
-  const [faqs, setFaqs] = useState<{ [key: string]: FAQType[] }>({});
-  const [recentTickets, setRecentTickets] = useState<TicketType[]>([]);
+const getStatusText = (status: string) => {
+  switch (status) {
+    case "open": return "مفتوحة";
+    case "in_progress": return "قيد المعالجة";
+    case "closed": return "مغلقة";
+    default: return status;
+  }
+};
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "open": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
+    case "in_progress": return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+    case "closed": return "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400";
+    default: return "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400";
+  }
+};
+
+const formatDate = (dateStr: string) => {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  if (diff < 86400000) return d.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
+  if (diff < 172800000) return "أمس";
+  return d.toLocaleDateString("ar-EG");
+};
+
+function NewTicketModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [subject, setSubject] = useState("");
+  const [category, setCategory] = useState("technical");
+  const [priority, setPriority] = useState("medium");
+  const [message, setMessage] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subject.trim() || !message.trim()) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("subject", subject);
+      fd.append("category", category);
+      fd.append("priority", priority);
+      fd.append("content", message);
+      if (file) fd.append("attachments", file);
+      await supportService.createTicket(fd);
+      onCreated();
+      onClose();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || "حدث خطأ أثناء إنشاء التذكرة");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">تذكرة جديدة</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+        </div>
+        {error && <p className="text-red-600 dark:text-red-400 mb-3 text-sm">{error}</p>}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الموضوع</label>
+            <input
+              value={subject}
+              onChange={e => setSubject(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="عنوان التذكرة"
+              required
+            />
+          </div>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">القسم</label>
+              <select
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="technical">تقني</option>
+                <option value="billing">فواتير</option>
+                <option value="inquiry">استفسار</option>
+                <option value="suggestion">اقتراح</option>
+                <option value="complaint">شكوى</option>
+              </select>
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الأولوية</label>
+              <select
+                value={priority}
+                onChange={e => setPriority(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              >
+                <option value="low">منخفضة</option>
+                <option value="medium">متوسطة</option>
+                <option value="high">عالية</option>
+                <option value="critical">عاجلة</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الرسالة</label>
+            <textarea
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="اكتب رسالتك..."
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">مرفقات (اختياري)</label>
+            <input
+              type="file"
+              onChange={e => setFile(e.target.files?.[0] || null)}
+              className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 dark:file:bg-blue-900/20 file:text-blue-600 dark:file:text-blue-400 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/30"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
+          >
+            {submitting ? "جاري الإرسال..." : "إرسال التذكرة"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export default function SupportCenter() {
+  const navigate = useNavigate();
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [showNewTicket, setShowNewTicket] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchTickets = async () => {
     try {
-      setLoading(true);
-
-      // Fetch FAQs
-      const faqData = await supportService.getFAQs();
-      setFaqs(faqData.faqs || {});
-
-      // Fetch recent tickets
-      const params = new URLSearchParams({ limit: "5" });
-      const ticketsData = await supportService.getUserTickets(params);
-      setRecentTickets(ticketsData.tickets || []);
-    } catch (error) {
-      console.error("Error fetching support data:", error);
+      const params = new URLSearchParams();
+      if (searchTerm) params.set("search", searchTerm);
+      const res = await supportService.getUserTickets(params);
+      setTickets(res?.tickets || []);
+    } catch {
+      // ignore
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFAQSearch = async () => {
-    if (!searchTerm.trim()) {
-      fetchData();
-      return;
-    }
+  useEffect(() => {
+    fetchTickets();
+  }, []);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const selectTicket = async (ticket: Ticket) => {
+    setSelectedTicket(ticket);
     try {
-      const params = new URLSearchParams({ search: searchTerm });
-      const data = await supportService.getFAQs(params);
-      setFaqs(data.faqs || {});
-    } catch (error) {
-      console.error("Error searching FAQs:", error);
+      const details = await supportService.getTicketDetails(ticket.ticketId);
+      setMessages((details as any)?.ticket?.messages || []);
+    } catch {
+      setMessages([]);
     }
   };
 
-  const rateFAQ = async (faqId: string, helpful: boolean) => {
+  const sendMessage = async () => {
+    if (!newMessage.trim() || !selectedTicket || sending) return;
+    setSending(true);
     try {
-      await supportService.rateFAQ(faqId, helpful);
-      // Refresh FAQs to show updated ratings
-      fetchData();
-    } catch (error) {
-      console.error("Error rating FAQ:", error);
+      const fd = new FormData();
+      fd.append("content", newMessage);
+      await supportService.addMessage(selectedTicket.ticketId, fd);
+      setNewMessage("");
+      // refresh messages
+      const details = await supportService.getTicketDetails(selectedTicket.ticketId);
+      setMessages((details as any)?.ticket?.messages || []);
+      // also refresh ticket list to update preview
+      fetchTickets();
+    } catch {
+      // ignore
+    } finally {
+      setSending(false);
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "open":
-        return (
-          <Clock className="w-4 h-4 text-orange-500 dark:text-orange-400" />
-        );
-      case "in_progress":
-        return (
-          <AlertCircle className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-        );
-      case "closed":
-        return (
-          <CheckCircle className="w-4 h-4 text-green-500 dark:text-green-400" />
-        );
-      default:
-        return <Clock className="w-4 h-4 text-gray-500 dark:text-gray-400" />;
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "open":
-        return "مفتوح";
-      case "in_progress":
-        return "قيد المعالجة";
-      case "closed":
-        return "مغلق";
-      default:
-        return status;
-    }
-  };
-
-  const getCategoryText = (category: string) => {
-    const categories: { [key: string]: string } = {
-      technical: "تقني",
-      billing: "فواتير",
-      inquiry: "استفسار",
-      suggestion: "اقتراح",
-      complaint: "شكوى",
-    };
-    return categories[category] || category;
-  };
+  const filteredTickets = tickets.filter(t =>
+    !searchTerm || t.subject.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
+      <div className="h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-            مركز الدعم الفني
-          </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-400">
-            نحن هنا لمساعدتك في حل جميع استفساراتك ومشاكلك
-          </p>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <Link
-            to="/support/tickets/new"
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-6 hover:shadow-lg dark:hover:shadow-gray-900/70 transition-shadow group border border-gray-200 dark:border-gray-700"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  إنشاء تذكرة جديدة
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  أرسل لنا استفسارك أو مشكلتك
-                </p>
-              </div>
-              <div className="bg-blue-100 dark:bg-blue-900/20 p-3 rounded-full group-hover:bg-blue-200 dark:group-hover:bg-blue-900/30 transition-colors">
-                <Plus className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
+    <div className="h-[calc(100vh-4rem)] bg-white dark:bg-gray-900 flex flex-col">
+      {/* Mobile: if no ticket selected, show list; if selected, show chat */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left: Conversations List */}
+        <div className={`w-full md:w-80 lg:w-96 border-l border-gray-200 dark:border-gray-700 flex flex-col ${selectedTicket ? 'hidden md:flex' : 'flex'}`}>
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-3">
+              <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">مركز الدعم</h1>
+              <button
+                onClick={() => setShowNewTicket(true)}
+                className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+                title="تذكرة جديدة"
+              >
+                <PlusIcon className="w-5 h-5" />
+              </button>
             </div>
-          </Link>
-
-          <Link
-            to="/support/tickets"
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-6 hover:shadow-lg dark:hover:shadow-gray-900/70 transition-shadow group border border-gray-200 dark:border-gray-700"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  تذاكري
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  تابع حالة تذاكر الدعم الخاصة بك
-                </p>
-              </div>
-              <div className="bg-green-100 dark:bg-green-900/20 p-3 rounded-full group-hover:bg-green-200 dark:group-hover:bg-green-900/30 transition-colors">
-                <Ticket className="w-6 h-6 text-green-600 dark:text-green-400" />
-              </div>
+            <div className="relative">
+              <MagnifyingGlassIcon className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="بحث في المحادثات..."
+                className="w-full pr-9 pl-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
-          </Link>
-
-          <Link
-            to="/support/faq"
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-6 hover:shadow-lg dark:hover:shadow-gray-900/70 transition-shadow group border border-gray-200 dark:border-gray-700"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  الأسئلة الشائعة
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  ابحث عن إجابات سريعة
-                </p>
-              </div>
-              <div className="bg-purple-100 dark:bg-purple-900/20 p-3 rounded-full group-hover:bg-purple-200 dark:group-hover:bg-purple-900/30 transition-colors">
-                <BookOpen className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              </div>
-            </div>
-          </Link>
-        </div>
-
-        {/* Search FAQs */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-6 mb-8 border border-gray-200 dark:border-gray-700">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-            <Search className="w-6 h-6 ml-2 text-gray-700 dark:text-gray-300" />
-            البحث في الأسئلة الشائعة
-          </h2>
-          <div className="flex gap-4">
-            <input
-              type="text"
-              placeholder="ابحث عن سؤالك..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleFAQSearch()}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
-            />
-            <button
-              onClick={handleFAQSearch}
-              className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-medium"
-            >
-              بحث
-            </button>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Popular FAQs */}
-          <div className="lg:col-span-2">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 flex items-center">
-              <HelpCircle className="w-6 h-6 ml-2 text-gray-700 dark:text-gray-300" />
-              الأسئلة الشائعة
-            </h2>
-
-            {Object.keys(faqs).length === 0 ? (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-8 text-center border border-gray-200 dark:border-gray-700">
-                <BookOpen className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-gray-400">
-                  لا توجد أسئلة شائعة متاحة حالياً
-                </p>
+          <div className="flex-1 overflow-y-auto">
+            {filteredTickets.length === 0 ? (
+              <div className="p-8 text-center">
+                <ChatBubbleLeftRightIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-gray-400 mb-4">لا توجد محادثات</p>
+                <button
+                  onClick={() => setShowNewTicket(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  بدء محادثة جديدة
+                </button>
               </div>
             ) : (
-              <div className="space-y-6">
-                {Object.entries(faqs).map(([category, categoryFaqs]) => (
-                  <div
-                    key={category}
-                    className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 border border-gray-200 dark:border-gray-700"
-                  >
-                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        {getCategoryText(category)}
-                      </h3>
-                    </div>
-                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {categoryFaqs.slice(0, 3).map((faq) => (
-                        <div
-                          key={faq.id}
-                          className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
-                        >
-                          <h4 className="text-md font-medium text-gray-900 dark:text-gray-100 mb-2">
-                            {faq.question}
-                          </h4>
-                          <p className="text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
-                            {faq.answer}
-                          </p>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4 space-x-reverse">
-                              <span className="text-sm text-gray-500 dark:text-gray-400">
-                                هل كان هذا مفيداً؟
-                              </span>
-                              <button
-                                onClick={() => rateFAQ(faq.id, true)}
-                                className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm transition-colors font-medium"
-                              >
-                                نعم ({faq.helpful || 0})
-                              </button>
-                              <button
-                                onClick={() => rateFAQ(faq.id, false)}
-                                className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm transition-colors font-medium"
-                              >
-                                لا ({faq.notHelpful || 0})
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {categoryFaqs.length > 3 && (
-                      <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 rounded-b-lg border-t border-gray-200 dark:border-gray-700">
-                        <Link
-                          to={`/support/faq?category=${category}`}
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center transition-colors font-medium"
-                        >
-                          عرض المزيد من {getCategoryText(category)}
-                          <ArrowRight className="w-4 h-4 mr-2" />
-                        </Link>
-                      </div>
+              filteredTickets.map(ticket => (
+                <button
+                  key={ticket.id}
+                  onClick={() => selectTicket(ticket)}
+                  className={`w-full text-right p-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${selectedTicket?.id === ticket.id ? 'bg-blue-50 dark:bg-blue-900/10' : ''}`}
+                >
+                  <div className="flex items-start justify-between mb-1">
+                    <span className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate flex-1 ml-2">
+                      {ticket.subject}
+                    </span>
+                    <span className="text-xs text-gray-400 whitespace-nowrap">{formatDate(ticket.updatedAt)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusColor(ticket.status)}`}>
+                      {getStatusText(ticket.status)}
+                    </span>
+                    {ticket.messages?.length > 0 && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {ticket.messages[ticket.messages.length - 1]?.content?.slice(0, 60)}
+                      </span>
                     )}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Recent Tickets */}
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 flex items-center">
-              <MessageSquare className="w-6 h-6 ml-2 text-gray-700 dark:text-gray-300" />
-              تذاكرك الأخيرة
-            </h2>
-
-            {recentTickets.length === 0 ? (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-8 text-center border border-gray-200 dark:border-gray-700">
-                <Ticket className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  لا توجد تذاكر دعم
-                </p>
-                <Link
-                  to="/support/tickets/new"
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-medium"
-                >
-                  <Plus className="w-4 h-4 ml-2" />
-                  إنشاء تذكرة جديدة
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {recentTickets.map((ticket) => (
-                  <Link
-                    key={ticket.id}
-                    to={`/support/tickets/${ticket.ticketId}`}
-                    className="block bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-900/50 p-4 hover:shadow-lg dark:hover:shadow-gray-900/70 transition-all border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">
-                        {ticket.subject}
-                      </h3>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap mr-2 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                        {ticket.ticketId}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2 space-x-reverse">
-                        {getStatusIcon(ticket.status)}
-                        <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                          {getStatusText(ticket.status)}
-                        </span>
-                      </div>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                        {getCategoryText(ticket.category)}
-                      </span>
-                    </div>
-                    <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      {new Date(ticket.createdAt).toLocaleDateString("ar-EG")}
-                    </div>
-                  </Link>
-                ))}
-
-                <Link
-                  to="/support/tickets"
-                  className="block text-center py-3 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors font-medium"
-                >
-                  عرض جميع التذاكر
-                </Link>
-              </div>
+                </button>
+              ))
             )}
           </div>
         </div>
+
+        {/* Right: Chat */}
+        <div className={`flex-1 flex flex-col ${!selectedTicket ? 'hidden md:flex' : 'flex'}`}>
+          {selectedTicket ? (
+            <>
+              {/* Chat Header */}
+              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-900">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setSelectedTicket(null)}
+                    className="md:hidden text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  >
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
+                  <div>
+                    <h2 className="font-medium text-gray-900 dark:text-gray-100 text-sm">{selectedTicket.subject}</h2>
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${getStatusColor(selectedTicket.status)}`}>
+                      {getStatusText(selectedTicket.status)}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-xs text-gray-400">{selectedTicket.ticketId}</span>
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-800/50">
+                {messages.length === 0 ? (
+                  <p className="text-center text-gray-400 dark:text-gray-500 py-8">لا توجد رسائل بعد</p>
+                ) : (
+                  messages.map((msg, idx) => (
+                    <div key={msg._id || idx} className={`flex ${msg.senderType === 'admin' ? 'justify-start' : 'justify-end'}`}>
+                      <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${msg.senderType === 'admin' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-br-2xl' : 'bg-blue-600 text-white rounded-bl-2xl'}`}>
+                        {msg.senderType === 'admin' && (
+                          <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">{msg.sender?.name || 'الدعم الفني'}</p>
+                        )}
+                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        {msg.attachments?.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {msg.attachments.map((att: any) => (
+                              <a
+                                key={att.filename}
+                                href={att.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`flex items-center gap-1 text-xs ${msg.senderType === 'admin' ? 'text-blue-600' : 'text-blue-200'} hover:underline`}
+                              >
+                                <PaperClipIcon className="w-3 h-3" />
+                                {att.originalName}
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                        <p className={`text-xs mt-1 ${msg.senderType === 'admin' ? 'text-gray-400' : 'text-blue-200'}`}>
+                          {formatDate(msg.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Message Input */}
+              <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+                <div className="flex items-center gap-2">
+                  <input
+                    value={newMessage}
+                    onChange={e => setNewMessage(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                    placeholder={selectedTicket.status === 'closed' ? 'التذكرة مغلقة' : 'اكتب رسالتك...'}
+                    disabled={selectedTicket.status === 'closed'}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:opacity-50"
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={!newMessage.trim() || sending || selectedTicket.status === 'closed'}
+                    className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  >
+                    <PaperAirplaneIcon className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-800/50">
+              <div className="text-center">
+                <ChatBubbleLeftRightIcon className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">اختر محادثة من القائمة</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {showNewTicket && (
+        <NewTicketModal
+          onClose={() => setShowNewTicket(false)}
+          onCreated={fetchTickets}
+        />
+      )}
     </div>
   );
-};
-
-export default SupportCenter;
+}

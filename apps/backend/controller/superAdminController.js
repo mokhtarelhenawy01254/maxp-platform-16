@@ -25,6 +25,29 @@ const moment = require("moment-timezone");
 // ✅ FIX: Use lazy-loading pattern - don't call getSharedPrismaClient at module load time
 const getPrisma = () => getSharedPrismaClient();
 
+// ── In-Memory Search Cache ──────────────────────────────────────────────
+const searchCache = new Map();
+const SEARCH_CACHE_TTL = 8_000; // 8 seconds
+
+function getCachedSearch(key) {
+  const entry = searchCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > SEARCH_CACHE_TTL) {
+    searchCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCachedSearch(key, data) {
+  searchCache.set(key, { ts: Date.now(), data });
+  if (searchCache.size > 200) {
+    const oldest = searchCache.entries().next().value;
+    if (oldest) searchCache.delete(oldest[0]);
+  }
+}
+// ────────────────────────────────────────────────────────────────────────
+
 /**
  * 🎮 Calculate Level based on XP
  * Formula: Level = floor(sqrt(XP / 100)) + 1
@@ -6478,31 +6501,74 @@ function getArabicVariants(text) {
 }
 
 /**
- * Generate Prisma-compatible contains conditions with Arabic normalization
- * Handles alef variants, yeh, teh marbuta, tashkeel, tatweel, and single-character search
+ * Generate Prisma-compatible search conditions with Arabic normalization
+ * Handles alef variants, yeh, teh marbuta, tashkeel, tatweel, single-character search.
+ * Adds startsWith conditions for exact-prefix matching to improve relevance.
  */
 function ac(field, value) {
   if (!value) return [{ [field]: { contains: value, mode: "insensitive" } }];
   const variants = getArabicVariants(value);
   const conditions = [];
+  const seen = new Set();
   for (const variant of variants) {
-    if (variant && variant.length > 0) {
+    if (!variant || variant.length === 0) continue;
+    const key = `c:${variant}`;
+    if (!seen.has(key)) {
+      seen.add(key);
       conditions.push({ [field]: { contains: variant, mode: "insensitive" } });
+    }
+    // Add startsWith for better prefix matching (higher relevance at query level)
+    if (variant.length >= 2) {
+      const skey = `s:${variant}`;
+      if (!seen.has(skey)) {
+        seen.add(skey);
+        conditions.push({ [field]: { startsWith: variant, mode: "insensitive" } });
+      }
     }
   }
   return conditions;
 }
 
+const searchModel = async (queryFn, logLabel) => {
+  const t0 = Date.now();
+  try {
+    const result = await queryFn();
+    const elapsed = Date.now() - t0;
+    if (elapsed > 1000) {
+      console.warn(`[SA-GLOBAL-SEARCH] Slow query [${logLabel}]: ${elapsed}ms`);
+    }
+    return result;
+  } catch (err) {
+    const elapsed = Date.now() - t0;
+    console.error(`[SA-GLOBAL-SEARCH] Error querying [${logLabel}] after ${elapsed}ms: ${err.message}`);
+    return [];
+  }
+};
+
 const globalSearch = async (req, res) => {
   try {
-    const { q } = req.query;
+    const { q, page: pageStr, maxResults: maxStr } = req.query;
     if (!q || !q.trim()) {
       return res.json({ success: true, data: [] });
     }
 
     const query = q.trim().replace(/\s+/g, " ");
+    const page = Math.max(1, parseInt(pageStr) || 1);
+    const maxResults = Math.min(50, Math.max(5, parseInt(maxStr) || 10));
+    const offset = (page - 1) * maxResults;
+
+    // Check cache first
+    const cacheKey = `${query}:${page}:${maxResults}`;
+    const cached = getCachedSearch(cacheKey);
+    if (cached) {
+      return res.json({ ...cached, meta: { ...cached.meta, cached: true } });
+    }
+
     const prisma = getPrisma();
     const searchStart = Date.now();
+    const isShortQuery = query.replace(/\s/g, '').length <= 2;
+
+    const run = (name, fn) => searchModel(fn, name);
 
     const [
       companies, users, devProjects, devTasks, subscriptions, aiKeys, tickets,
@@ -6515,7 +6581,7 @@ const globalSearch = async (req, res) => {
       supportMessages, whatsAppQuickReplies, workReportForms, promotions,
       facebookComments, customerNotes, competitorReports, appExplanations, conversationMemories,
     ] = await Promise.all([
-      prisma.company.findMany({
+      run('companies', () => prisma.company.findMany({
         where: {
           OR: [
             ...ac('name', query),
@@ -6525,10 +6591,10 @@ const globalSearch = async (req, res) => {
           ],
         },
         select: { id: true, name: true, email: true, logo: true, slug: true, isActive: true },
-        take: 10,
+        take: isShortQuery ? 5 : 10,
         orderBy: { createdAt: "desc" },
-      }),
-      prisma.user.findMany({
+      })),
+      run('users', () => prisma.user.findMany({
         where: {
           OR: [
             ...ac('firstName', query),
@@ -6537,10 +6603,10 @@ const globalSearch = async (req, res) => {
           ],
         },
         select: { id: true, firstName: true, lastName: true, email: true, avatar: true, role: true, isActive: true },
-        take: 10,
+        take: isShortQuery ? 5 : 10,
         orderBy: { createdAt: "desc" },
-      }),
-      prisma.devProject.findMany({
+      })),
+      run('devProjects', () => prisma.devProject.findMany({
         where: {
           OR: [
             ...ac('name', query),
@@ -6548,10 +6614,10 @@ const globalSearch = async (req, res) => {
           ],
         },
         select: { id: true, name: true, description: true, status: true, color: true },
-        take: 10,
+        take: isShortQuery ? 5 : 10,
         orderBy: { createdAt: "desc" },
-      }),
-      prisma.devTask.findMany({
+      })),
+      run('devTasks', () => prisma.devTask.findMany({
         where: {
           OR: [
             ...ac('title', query),
@@ -6559,304 +6625,204 @@ const globalSearch = async (req, res) => {
           ],
         },
         select: { id: true, title: true, status: true, priority: true, projectId: true },
-        take: 10,
+        take: isShortQuery ? 5 : 10,
         orderBy: { createdAt: "desc" },
-      }),
-      prisma.platformSubscription.findMany({
+      })),
+      run('subscriptions', () => prisma.platformSubscription.findMany({
         where: {
           company: {
             OR: ac('name', query),
           },
         },
         select: { id: true, plan: true, status: true, company: { select: { id: true, name: true, logo: true } } },
-        take: 10,
+        take: isShortQuery ? 5 : 10,
         orderBy: { nextBillingDate: "asc" },
-      }),
-      prisma.aiKey.findMany({
+      })),
+      run('aiKeys', () => prisma.aiKey.findMany({
         where: { OR: [...ac('name', query), ...ac('provider', query)] },
         select: { id: true, name: true, provider: true, isActive: true, keyType: true },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.supportTicket.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('tickets', () => prisma.supportTicket.findMany({
         where: { OR: [...ac('subject', query), ...ac('ticketId', query)] },
         select: { id: true, ticketId: true, subject: true, status: true, category: true, priority: true },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.product.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('products', () => prisma.product.findMany({
         where: { OR: [...ac('name', query), ...ac('sku', query), ...ac('description', query)], deletedAt: null },
         select: { id: true, name: true, sku: true, price: true, mainImage: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.order.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('orders', () => prisma.order.findMany({
         where: { OR: [...ac('orderNumber', query), ...ac('customerName', query), ...ac('customerPhone', query)] },
         select: { id: true, orderNumber: true, customerName: true, customerPhone: true, total: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.customer.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('customers', () => prisma.customer.findMany({
         where: { OR: [...ac('firstName', query), ...ac('lastName', query), ...ac('phone', query), ...ac('email', query)] },
         select: { id: true, firstName: true, lastName: true, phone: true, email: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.conversation.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('conversations', () => prisma.conversation.findMany({
         where: { OR: ac('subject', query) },
         select: { id: true, subject: true, status: true, channel: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { lastMessageAt: "desc" },
-      }),
-      prisma.facebookPage.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { lastMessageAt: "desc" },
+      })),
+      run('facebookPages', () => prisma.facebookPage.findMany({
         where: { OR: ac('pageName', query) },
         select: { id: true, pageId: true, pageName: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.whatsAppSession.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('whatsappSessions', () => prisma.whatsAppSession.findMany({
         where: { OR: [...ac('name', query), ...ac('phoneNumber', query)] },
         select: { id: true, name: true, phoneNumber: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.employee.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('employees', () => prisma.employee.findMany({
         where: { OR: [...ac('firstName', query), ...ac('lastName', query), ...ac('employeeNumber', query), ...ac('email', query)] },
         select: { id: true, firstName: true, lastName: true, employeeNumber: true, email: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.competitor.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('competitors', () => prisma.competitor.findMany({
         where: { OR: [...ac('name', query), ...ac('slug', query)] },
         select: { id: true, name: true, slug: true, platform: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.coupon.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('coupons', () => prisma.coupon.findMany({
         where: { OR: [...ac('code', query), ...ac('name', query)] },
         select: { id: true, code: true, name: true, type: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.category.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('categories', () => prisma.category.findMany({
         where: { OR: ac('name', query) },
         select: { id: true, name: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.merchant.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('merchants', () => prisma.merchant.findMany({
         where: { OR: [...ac('name', query), ...ac('email', query)] },
         select: { id: true, name: true, email: true, phone: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.broadcastCampaign.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('broadcastCampaigns', () => prisma.broadcastCampaign.findMany({
         where: { OR: ac('name', query) },
         select: { id: true, name: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.department.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('departments', () => prisma.department.findMany({
         where: { OR: [...ac('name', query), ...ac('code', query)] },
         select: { id: true, name: true, code: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.position.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('positions', () => prisma.position.findMany({
         where: { OR: ac('title', query) },
         select: { id: true, title: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.invoice.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('invoices', () => prisma.invoice.findMany({
         where: { OR: ac('invoiceNumber', query) },
         select: { id: true, invoiceNumber: true, status: true, totalAmount: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.task.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('tasks', () => prisma.task.findMany({
         where: { OR: [...ac('title', query), ...ac('description', query)] },
         select: { id: true, title: true, status: true, priority: true, dueDate: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.message.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('messages', () => prisma.message.findMany({
         where: { OR: ac('content', query) },
         select: { id: true, content: true, conversationId: true, role: true, createdAt: true, conversation: { select: { subject: true, companyId: true, company: { select: { name: true } } } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.faq.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('faqs', () => prisma.faq.findMany({
         where: { OR: [...ac('question', query), ...ac('answer', query)] },
         select: { id: true, question: true, category: true, tags: true, companyId: true },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.knowledgeBase.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('knowledgeBases', () => prisma.knowledgeBase.findMany({
         where: { OR: [...ac('title', query), ...ac('content', query)] },
         select: { id: true, title: true, category: true, tags: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.storePage.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('storePages', () => prisma.storePage.findMany({
         where: { OR: [...ac('title', query), ...ac('slug', query)] },
         select: { id: true, title: true, slug: true, isPublished: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.productReview.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('productReviews', () => prisma.productReview.findMany({
         where: { OR: [...ac('title', query), ...ac('comment', query)] },
         select: { id: true, title: true, comment: true, rating: true, customerName: true, productId: true, companyId: true, product: { select: { name: true } }, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.jobPosting.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('jobPostings', () => prisma.jobPosting.findMany({
         where: { OR: [...ac('title', query), ...ac('description', query), ...ac('department', query)] },
         select: { id: true, title: true, department: true, location: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.applicant.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('applicants', () => prisma.applicant.findMany({
         where: { OR: [...ac('name', query), ...ac('email', query), ...ac('phone', query), ...ac('skills', query)] },
         select: { id: true, name: true, email: true, phone: true, status: true, jobPostingId: true, companyId: true, company: { select: { name: true } }, jobPosting: { select: { title: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.recruitmentForm.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('recruitmentForms', () => prisma.recruitmentForm.findMany({
         where: { OR: [...ac('title', query), ...ac('description', query)] },
         select: { id: true, title: true, slug: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.goal.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('goals', () => prisma.goal.findMany({
         where: { OR: [...ac('title', query), ...ac('description', query)] },
         select: { id: true, title: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.feedback.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('feedbacks', () => prisma.feedback.findMany({
         where: { OR: [...ac('content', query), ...ac('adminReply', query)] },
         select: { id: true, content: true, type: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.supportMessage.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('supportMessages', () => prisma.supportMessage.findMany({
         where: { OR: ac('content', query) },
         select: { id: true, content: true, ticketId: true, senderRole: true, createdAt: true, ticket: { select: { subject: true, companyId: true, company: { select: { name: true } } } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.whatsAppQuickReply.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('whatsAppQuickReplies', () => prisma.whatsAppQuickReply.findMany({
         where: { OR: [...ac('title', query), ...ac('shortcut', query), ...ac('content', query)] },
         select: { id: true, title: true, shortcut: true, content: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.workReportForm.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('workReportForms', () => prisma.workReportForm.findMany({
         where: { OR: [...ac('title', query), ...ac('description', query)] },
         select: { id: true, title: true, description: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.promotion.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('promotions', () => prisma.promotion.findMany({
         where: { OR: [...ac('name', query), ...ac('description', query)] },
         select: { id: true, name: true, description: true, type: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.facebookComment.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('facebookComments', () => prisma.facebookComment.findMany({
         where: { OR: ac('message', query) },
         select: { id: true, message: true, senderName: true, postId: true, companyId: true, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.customerNote.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('customerNotes', () => prisma.customerNote.findMany({
         where: { OR: ac('content', query) },
         select: { id: true, content: true, customerId: true, companyId: true, customer: { select: { firstName: true, lastName: true, phone: true } }, company: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.competitorReport.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('competitorReports', () => prisma.competitorReport.findMany({
         where: { OR: [...ac('title', query), ...ac('summary', query)] },
         select: { id: true, title: true, summary: true, competitorId: true, companyId: true, company: { select: { name: true } }, competitor: { select: { name: true } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.appExplanation.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('appExplanations', () => prisma.appExplanation.findMany({
         where: { OR: [...ac('title', query), ...ac('content', query)] },
         select: { id: true, title: true, slug: true, companyId: true },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.conversationMemory.findMany({
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('conversationMemories', () => prisma.conversationMemory.findMany({
         where: { OR: [...ac('userMessage', query), ...ac('aiResponse', query)] },
         select: { id: true, userMessage: true, conversationId: true, companyId: true, conversation: { select: { subject: true, company: { select: { name: true } } } } },
-        take: 10, orderBy: { createdAt: "desc" },
-      }),
-      prisma.task.findMany({
-        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }] },
-        select: { id: true, title: true, status: true, priority: true, dueDate: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.message.findMany({
-        where: { content: { contains: query, mode: "insensitive" } },
-        select: { id: true, content: true, conversationId: true, role: true, createdAt: true, conversation: { select: { subject: true, companyId: true, company: { select: { name: true } } } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.faq.findMany({
-        where: { OR: [{ question: { contains: query, mode: "insensitive" } }, { answer: { contains: query, mode: "insensitive" } }] },
-        select: { id: true, question: true, category: true, tags: true, companyId: true },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.knowledgeBase.findMany({
-        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { content: { contains: query, mode: "insensitive" } }] },
-        select: { id: true, title: true, category: true, tags: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.storePage.findMany({
-        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { slug: { contains: query, mode: "insensitive" } }] },
-        select: { id: true, title: true, slug: true, isPublished: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.productReview.findMany({
-        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { comment: { contains: query, mode: "insensitive" } }] },
-        select: { id: true, title: true, comment: true, rating: true, customerName: true, productId: true, companyId: true, product: { select: { name: true } }, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.jobPosting.findMany({
-        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }, { department: { contains: query, mode: "insensitive" } }] },
-        select: { id: true, title: true, department: true, location: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.applicant.findMany({
-        where: { OR: [{ name: { contains: query, mode: "insensitive" } }, { email: { contains: query, mode: "insensitive" } }, { phone: { contains: query, mode: "insensitive" } }, { skills: { contains: query, mode: "insensitive" } }] },
-        select: { id: true, name: true, email: true, phone: true, status: true, jobPostingId: true, companyId: true, company: { select: { name: true } }, jobPosting: { select: { title: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.recruitmentForm.findMany({
-        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }] },
-        select: { id: true, title: true, slug: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.goal.findMany({
-        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }] },
-        select: { id: true, title: true, status: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.feedback.findMany({
-        where: { OR: [{ content: { contains: query, mode: "insensitive" } }, { adminReply: { contains: query, mode: "insensitive" } }] },
-        select: { id: true, content: true, type: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.supportMessage.findMany({
-        where: { content: { contains: query, mode: "insensitive" } },
-        select: { id: true, content: true, ticketId: true, senderRole: true, createdAt: true, ticket: { select: { subject: true, companyId: true, company: { select: { name: true } } } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.whatsAppQuickReply.findMany({
-        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { shortcut: { contains: query, mode: "insensitive" } }, { content: { contains: query, mode: "insensitive" } }] },
-        select: { id: true, title: true, shortcut: true, content: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.workReportForm.findMany({
-        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }] },
-        select: { id: true, title: true, description: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.promotion.findMany({
-        where: { OR: [{ name: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }] },
-        select: { id: true, name: true, description: true, type: true, isActive: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.facebookComment.findMany({
-        where: { message: { contains: query, mode: "insensitive" } },
-        select: { id: true, message: true, senderName: true, postId: true, companyId: true, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.customerNote.findMany({
-        where: { content: { contains: query, mode: "insensitive" } },
-        select: { id: true, content: true, customerId: true, companyId: true, customer: { select: { firstName: true, lastName: true, phone: true } }, company: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.competitorReport.findMany({
-        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { summary: { contains: query, mode: "insensitive" } }] },
-        select: { id: true, title: true, summary: true, competitorId: true, companyId: true, company: { select: { name: true } }, competitor: { select: { name: true } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.appExplanation.findMany({
-        where: { OR: [{ title: { contains: query, mode: "insensitive" } }, { content: { contains: query, mode: "insensitive" } }] },
-        select: { id: true, title: true, slug: true, companyId: true },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
-      prisma.conversationMemory.findMany({
-        where: { OR: [{ userMessage: { contains: query, mode: "insensitive" } }, { aiResponse: { contains: query, mode: "insensitive" } }] },
-        select: { id: true, userMessage: true, conversationId: true, companyId: true, conversation: { select: { subject: true, company: { select: { name: true } } } } },
-        take: 5, orderBy: { createdAt: "desc" },
-      }),
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
     ]);
 
     const searchTime = Date.now() - searchStart;
@@ -6865,15 +6831,21 @@ const globalSearch = async (req, res) => {
     const seenIds = new Set();
     let totalCount = 0;
 
-    // Sort items by relevance: prefix matches first, then alphabetical
+    // Sort items by relevance: exact match → startsWith → contains → alphabetical
     const normalizedQuery = normalizeArabic(query.toLowerCase());
     function sortItems(items) {
       return items.sort((a, b) => {
         const aNorm = normalizeArabic((a.title || '').toLowerCase());
         const bNorm = normalizeArabic((b.title || '').toLowerCase());
+
+        const aExact = aNorm === normalizedQuery;
+        const bExact = bNorm === normalizedQuery;
+        if (aExact !== bExact) return aExact ? -1 : 1;
+
         const aStarts = aNorm.startsWith(normalizedQuery);
         const bStarts = bNorm.startsWith(normalizedQuery);
         if (aStarts !== bStarts) return aStarts ? -1 : 1;
+
         return aNorm.localeCompare(bNorm, 'ar');
       });
     }
@@ -7046,83 +7018,43 @@ const globalSearch = async (req, res) => {
       const items = conversationMemories.map((m) => ({ id: m.id, title: m.userMessage?.substring(0, 80), subtitle: m.conversation?.subject || "", link: "/super-admin/companies-v2" }));
       results.push({ type: "conversationMemories", icon: "Brain", items }); totalCount += items.length;
     }
-    if (tasks.length) {
-      results.push({ type: "generalTasks", icon: "BarChart3", items: tasks.map((t) => ({ id: t.id, title: t.title, subtitle: `${t.status || ""} ${t.company?.name ? `- ${t.company.name}` : ""}`, status: t.status, link: "/super-admin/companies-v2" })) });
-    }
-    if (messages.length) {
-      results.push({ type: "messages", icon: "MessageSquare", items: messages.map((m) => ({ id: m.id, title: m.content?.substring(0, 80), subtitle: `${m.conversation?.subject || ""} ${m.conversation?.company?.name ? `- ${m.conversation.company.name}` : ""}`, status: m.role, link: "/super-admin/companies-v2" })) });
-    }
-    if (faqs.length) {
-      results.push({ type: "faqs", icon: "HelpCircle", items: faqs.map((f) => ({ id: f.id, title: f.question?.substring(0, 80), subtitle: `${f.category || ""} ${f.tags ? `#${f.tags}` : ""}`, link: "/super-admin/companies-v2" })) });
-    }
-    if (knowledgeBases.length) {
-      results.push({ type: "knowledgeBases", icon: "BookOpen", items: knowledgeBases.map((k) => ({ id: k.id, title: k.title, subtitle: `${k.category || ""} ${k.company?.name ? `- ${k.company.name}` : ""}`, link: "/super-admin/companies-v2" })) });
-    }
-    if (storePages.length) {
-      results.push({ type: "storePages", icon: "Layout", items: storePages.map((s) => ({ id: s.id, title: s.title, subtitle: `/${s.slug || ""} ${s.company?.name ? `- ${s.company.name}` : ""}`, status: s.isPublished ? "active" : "inactive", link: "/super-admin/companies-v2" })) });
-    }
-    if (productReviews.length) {
-      results.push({ type: "productReviews", icon: "Star", items: productReviews.map((r) => ({ id: r.id, title: r.title || r.comment?.substring(0, 60), subtitle: `${r.customerName || ""} ${r.product?.name ? `- ${r.product.name}` : ""}`, link: "/super-admin/companies-v2" })) });
-    }
-    if (jobPostings.length) {
-      results.push({ type: "jobPostings", icon: "Briefcase", items: jobPostings.map((j) => ({ id: j.id, title: j.title, subtitle: `${j.department || ""} ${j.location ? `(${j.location})` : ""}`, status: j.status, link: "/super-admin/companies-v2" })) });
-    }
-    if (applicants.length) {
-      results.push({ type: "applicants", icon: "UserRound", items: applicants.map((a) => ({ id: a.id, title: a.name, subtitle: `${a.email || a.phone || ""} ${a.jobPosting?.title ? `- ${a.jobPosting.title}` : ""}`, status: a.status, link: "/super-admin/companies-v2" })) });
-    }
-    if (recruitmentForms.length) {
-      results.push({ type: "recruitmentForms", icon: "FileText", items: recruitmentForms.map((f) => ({ id: f.id, title: f.title, subtitle: `${f.slug || ""} ${f.company?.name ? `- ${f.company.name}` : ""}`, status: f.isActive ? "active" : "inactive", link: "/super-admin/companies-v2" })) });
-    }
-    if (goals.length) {
-      results.push({ type: "goals", icon: "Target", items: goals.map((g) => ({ id: g.id, title: g.title, subtitle: g.company?.name || "", status: g.status, link: "/super-admin/companies-v2" })) });
-    }
-    if (feedbacks.length) {
-      results.push({ type: "feedbacks", icon: "MessageSquare", items: feedbacks.map((f) => ({ id: f.id, title: f.content?.substring(0, 80), subtitle: `${f.type || ""} ${f.company?.name ? `- ${f.company.name}` : ""}`, link: "/super-admin/companies-v2" })) });
-    }
-    if (supportMessages.length) {
-      results.push({ type: "supportMessages", icon: "Ticket", items: supportMessages.map((m) => ({ id: m.id, title: m.content?.substring(0, 80), subtitle: `${m.ticket?.subject || ""} ${m.ticket?.company?.name ? `- ${m.ticket.company.name}` : ""}`, link: "/admin/support" })) });
-    }
-    if (whatsAppQuickReplies.length) {
-      results.push({ type: "whatsAppQuickReplies", icon: "Zap", items: whatsAppQuickReplies.map((q) => ({ id: q.id, title: q.title, subtitle: `/${q.shortcut || ""} ${q.company?.name ? `- ${q.company.name}` : ""}`, link: "/super-admin/whatsapp" })) });
-    }
-    if (workReportForms.length) {
-      results.push({ type: "workReportForms", icon: "ClipboardList", items: workReportForms.map((f) => ({ id: f.id, title: f.title, subtitle: f.description?.substring(0, 60) || "", status: f.isActive ? "active" : "inactive", link: "/super-admin/companies-v2" })) });
-    }
-    if (promotions.length) {
-      results.push({ type: "promotions", icon: "Megaphone", items: promotions.map((p) => ({ id: p.id, title: p.name, subtitle: `${p.type || ""} ${p.company?.name ? `- ${p.company.name}` : ""}`, status: p.isActive ? "active" : "inactive", link: "/super-admin/companies-v2" })) });
-    }
-    if (facebookComments.length) {
-      results.push({ type: "facebookComments", icon: "Facebook", items: facebookComments.map((c) => ({ id: c.id, title: c.message?.substring(0, 80), subtitle: `${c.senderName || ""} ${c.company?.name ? `- ${c.company.name}` : ""}`, link: "/super-admin/companies-v2" })) });
-    }
-    if (customerNotes.length) {
-      results.push({ type: "customerNotes", icon: "FileText", items: customerNotes.map((n) => ({ id: n.id, title: n.content?.substring(0, 80), subtitle: `${n.customer?.firstName || ""} ${n.customer?.lastName || ""} ${n.customer?.phone || ""}`, link: "/super-admin/companies-v2" })) });
-    }
-    if (competitorReports.length) {
-      results.push({ type: "competitorReports", icon: "TrendingUp", items: competitorReports.map((r) => ({ id: r.id, title: r.title, subtitle: `${r.competitor?.name || ""} ${r.company?.name ? `- ${r.company.name}` : ""}`, link: "/super-admin/companies-v2" })) });
-    }
-    if (appExplanations.length) {
-      results.push({ type: "appExplanations", icon: "BookOpen", items: appExplanations.map((a) => ({ id: a.id, title: a.title, subtitle: a.slug || "", link: "/super-admin/app-explanations" })) });
-    }
-    if (conversationMemories.length) {
-      results.push({ type: "conversationMemories", icon: "Brain", items: conversationMemories.map((m) => ({ id: m.id, title: m.userMessage?.substring(0, 80), subtitle: m.conversation?.subject || "", link: "/super-admin/companies-v2" })) });
-    }
 
-    // Apply relevance sorting: prefix matches first, then alphabetical
+    // Apply relevance sorting: exact → startsWith → alphabetical
+    let visibleCount = 0;
+    const pagedResults = [];
     for (const group of results) {
       if (group.items && group.items.length > 1) {
         sortItems(group.items);
       }
+      // Apply pagination: skip groups until we reach the offset, then take up to maxResults items
+      if (visibleCount >= offset + maxResults) break;
+      if (visibleCount + group.items.length > offset) {
+        const groupStart = Math.max(0, offset - visibleCount);
+        const groupEnd = Math.min(group.items.length, offset + maxResults - visibleCount);
+        const sliced = group.items.slice(groupStart, groupEnd);
+        if (sliced.length > 0) {
+          pagedResults.push({ ...group, items: sliced });
+        }
+      }
+      visibleCount += group.items.length;
     }
 
-    return res.json({
+    const response = {
       success: true,
-      data: results,
+      data: pagedResults,
       meta: {
         total: totalCount,
         time: searchTime,
         query,
+        page,
+        maxResults,
+        totalPages: Math.ceil(totalCount / maxResults) || 1,
       },
-    });
+    };
+
+    setCachedSearch(cacheKey, response);
+
+    return res.json(response);
   } catch (error) {
     console.error("[SA-GLOBAL-SEARCH] Error:", error.message);
     return res.status(500).json({ success: false, error: "Search failed" });

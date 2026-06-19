@@ -54,6 +54,11 @@
   "status": "الحالة",
   "active": "نشط",
   "inactive": "غير نشط",
+  "statuses": {
+    "NEW": "جديد",
+    "FOLLOWING": "متابعة",
+    "COMPLETED": "منتهي"
+  },
   "products": "المنتجات",
   "ads": {
     "overview": "نظرة عامة على الإعلانات",

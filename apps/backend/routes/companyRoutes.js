@@ -35,7 +35,7 @@ router.get('/:id', validateCompanyId, verifyToken.authenticateToken, companiesCo
 // ✅ RESTRICTED: Only SUPER_ADMIN can create companies directly
 // Regular users get one company created during registration
 router.post('/', verifyToken.authenticateToken, verifyToken.requireSuperAdmin, companiesController.createNewCompany);
-router.put('/:id', validateCompanyId, verifyToken.authenticateToken, verifyToken.requireSuperAdmin, companiesController.updateCompany);
+router.put('/:companyId', validateCompanyId, verifyToken.authenticateToken, verifyToken.requireCompanyAccess, verifyToken.requireRole(['COMPANY_ADMIN', 'OWNER']), companiesController.updateCompany);
 router.delete('/:id', validateCompanyId, verifyToken.authenticateToken, verifyToken.requireSuperAdmin, companiesController.deleteCompany);
 // ==================== COMPANY USERS MANAGEMENT ====================
 router.get('/:companyId/users', validateCompanyId, verifyToken.authenticateToken, verifyToken.requireCompanyAccess, companiesController.getCompanyUsers);

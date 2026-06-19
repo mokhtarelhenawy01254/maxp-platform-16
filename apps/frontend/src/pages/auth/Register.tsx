@@ -79,21 +79,25 @@ const copyByLanguage = {
 };
 
 const Register: React.FC = () => {
-  const { i18n, t } = useTranslation();
+  const { i18n } = useTranslation();
   const language = i18n.language?.startsWith("en") ? "en" : "ar";
+  const isArabic = language === "ar";
   const copy = {
     ...copyByLanguage[language],
-    title: t("register.title"),
-    description: t("register.description"),
-    visualDescription: t("register.visualDescription"),
-    visualBadge: t("register.visualBadge"),
+    title: isArabic ? "تسجيل حساب جديد" : "New Account",
+    description: isArabic
+      ? "أنشئ حسابك وابدأ رحلة التحول الرقمي"
+      : "Create your account and start your digital transformation journey",
+    visualBadge: "Business OS",
+    visualDescription: isArabic
+      ? "منصة متكاملة تدير بها مبيعاتك، مخازنك، موظفيك، والتسويق — كل شيء في نظام واحد"
+      : "An integrated platform to manage sales, inventory, HR, and marketing — all in one system",
     stats: [
-      { label: t("register.statsStartLabel"), value: t("register.statsStartValue") },
-      { label: t("register.statsNoLimitLabel"), value: t("register.statsNoLimitValue") },
+      { label: isArabic ? "بدون بطاقة بنكية" : "No Card Required", value: isArabic ? "ابدأ فوراً" : "Start Now" },
+      { label: isArabic ? "غير محدود" : "Unlimited", value: isArabic ? "موظفين" : "Employees" },
     ],
-    submit: t("register.submit"),
+    submit: isArabic ? "إنشاء حساب" : "Create Account",
   };
-  const isArabic = language === "ar";
   const [searchParams] = useSearchParams();
   const partnerCode = searchParams.get("partner") || undefined;
   const theme = searchParams.get("theme") || undefined;
@@ -155,10 +159,12 @@ const Register: React.FC = () => {
       });
       const urlParams = new URLSearchParams(window.location.search);
       const redirectParam = urlParams.get("redirect");
+      const source = urlParams.get("source");
       const postAuthDest = getPostAuthDestination(userData);
-      
+
       const isValidRedirect = redirectParam && redirectParam !== "/" && !redirectParam.startsWith("/lp/");
-      const redirectPath = (isValidRedirect ? redirectParam : null) || postAuthDest || NEW_ACCOUNT_DESTINATION;
+      const sourceRedirect = source === "ai-inbox" ? "/marketplace/bundle/ai-inbox-bundle" : null;
+      const redirectPath = (isValidRedirect ? redirectParam : null) || sourceRedirect || postAuthDest || NEW_ACCOUNT_DESTINATION;
 
       trackPlatformSiteCompleteRegistration("auth_register", { destination: redirectPath, role: userData?.role || "UNKNOWN" });
       // Small delay to allow the React auth state (isAuthenticated) to settle before

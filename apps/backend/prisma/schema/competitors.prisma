@@ -15,6 +15,7 @@ model Competitor {
   strengths       String?              @db.Text
   weaknesses      String?              @db.Text
   isActive        Boolean              @default(true)
+  status          String               @default("NEW")
   metadata        Json?
   companyId       String
   createdAt       DateTime             @default(now())

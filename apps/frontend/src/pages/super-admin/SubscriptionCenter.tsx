@@ -342,6 +342,7 @@ const createDefaultMarketplaceFormData = (
   price: type === "pricing" ? 0 : undefined,
   unit: type === "pricing" ? "" : undefined,
   discount: type === "bundle" ? 0 : undefined,
+  trialDays: type === "bundle" ? 7 : undefined,
   apps: [],
   companyId: "",
   features: [],
@@ -2890,6 +2891,12 @@ const MarketplaceItemDialog = ({
                 <div className="space-y-1">
                   <Label>الخصم %</Label>
                   <Input name="discount" type="number" value={formData.discount ?? 0} onChange={handleChange} />
+                </div>
+              </div>
+              <div className="col-span-6 md:col-span-4">
+                <div className="space-y-1">
+                  <Label>فترة التجربة (أيام)</Label>
+                  <Input name="trialDays" type="number" min="0" max="365" value={formData.trialDays ?? 7} onChange={handleChange} />
                 </div>
               </div>
               <div className="col-span-12 md:col-span-4">

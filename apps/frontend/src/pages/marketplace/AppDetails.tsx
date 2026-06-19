@@ -345,13 +345,13 @@ export default function AppDetails() {
   return (
     <div className="bg-background min-h-screen overflow-x-hidden">
       <div className="mx-auto max-w-[1280px] px-4 pb-10 pt-5 sm:px-6 lg:px-8">
-        <Link
-          to={document.referrer.includes('/my-apps') ? '/my-apps' : '/marketplace'}
+        <button
+          onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 rounded-xl px-2 py-1 text-sm font-black text-muted-foreground transition-colors hover:text-foreground"
         >
           <ChevronRight size={18} aria-hidden="true" />
           العودة إلى التطبيقات
-        </Link>
+        </button>
 
         <section className="rounded-[1.75rem] bg-card mt-4 overflow-hidden rounded-[1.75rem]">
           <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:p-6">
@@ -674,12 +674,12 @@ export default function AppDetails() {
               <p className="text-muted-foreground mb-4 text-sm leading-6">
                 هل تحتاج مساعدة؟ فريق الدعم جاهز لمساعدتك.
               </p>
-              <button
-                type="button"
-                className="rounded-xl border bg-background w-full rounded-xl px-4 py-2 text-sm font-black transition-colors duration-200 hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+              <Link
+                to="/support"
+                className="rounded-xl border bg-background w-full rounded-xl px-4 py-2 text-sm font-black block text-center transition-colors duration-200 hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
               >
                 تواصل مع الدعم
-              </button>
+              </Link>
             </section>
           </aside>
         </div>

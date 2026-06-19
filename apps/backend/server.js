@@ -517,6 +517,7 @@ app.use("/api/v1/public", publicProductReviewRoutes);
 app.use("/api/v1/public/checkout-form-settings", checkoutFormSettingsRoutes);
 app.use("/api/v1/public/footer-settings", footerSettingsRoutes);
 app.use("/api/v1/public/promotion-settings", promotionSettingsRoutes);
+app.use("/api/v1/public/lp-pages", require("./routes/lpAdminRoutes").publicRouter);
 app.use("/api/v1/product-landings", productLandingPagesRoutes);
   console.log("✅ [DEBUG] Public Products, Orders & Storefront Routes Loaded");
 
@@ -695,6 +696,7 @@ app.use("/api/v1/ai-sandbox", aiSandboxRoutes);
 app.use("/api/v1/ai/agent-config", agentConfigRoutes);
 // app.use("/api/v1/ai-bridge", agentServiceBridgeRoutes); // REMOVED: catalog-mcp now calls Python directly
 app.use("/api/v1/proxy/ai-service", aiServiceAgentProxy);
+app.use("/api/v1/admin/lp-pages", require("./routes/lpAdminRoutes").adminRouter);
 app.use("/api/v1/proxy", proxyRoutes);
 
 // Platform & Super-Admin

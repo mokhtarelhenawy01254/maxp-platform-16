@@ -486,7 +486,7 @@ const AiInboxLanding: React.FC = () => {
               <button onClick={handleSubscribe} className="ai-btn ai-btn-primary">
                 ابدأ الاشتراك <ArrowLeft className="w-4 h-4" />
               </button>
-              <Link to="/marketplace/bundles" className="ai-btn ai-btn-secondary">
+              <Link to="/marketplace/bundle/ai-inbox-bundle" className="ai-btn ai-btn-secondary">
                 شوف كل الباقات
               </Link>
             </div>

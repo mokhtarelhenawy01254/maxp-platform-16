@@ -423,11 +423,10 @@ router.get('/auto-reply', async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
-    const prisma = getSharedPrismaClient();
-    const setting = await prisma.aiSetting.findUnique({ where: { companyId } });
-    return res.json({ success: true, autoReplyEnabled: setting?.autoReplyEnabled === true });
+    const data = await aiServiceAdminClient.getAutoReply(companyId);
+    return res.json({ success: true, autoReplyEnabled: data?.autoReplyEnabled === true });
   } catch (error) {
-    return res.status(500).json({ success: false, error: error.message });
+    return res.status(502).json({ success: false, error: error.message });
   }
 });
 
@@ -437,15 +436,10 @@ router.put('/auto-reply', async (req, res) => {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
     const enabled = req.body?.enabled === true;
-    const prisma = getSharedPrismaClient();
-    await prisma.aiSetting.upsert({
-      where: { companyId },
-      update: { autoReplyEnabled: enabled, updatedAt: new Date() },
-      create: { companyId, autoReplyEnabled: enabled },
-    });
+    await aiServiceAdminClient.updateAutoReply(companyId, enabled);
     return res.json({ success: true, autoReplyEnabled: enabled });
   } catch (error) {
-    return res.status(500).json({ success: false, error: error.message });
+    return res.status(502).json({ success: false, error: error.message });
   }
 });
 

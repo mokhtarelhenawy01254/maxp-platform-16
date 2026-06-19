@@ -74,6 +74,10 @@ export default function Bundles() {
   };
 
   const handleActivateBundle = async (bundleSlug: string) => {
+    if (bundleSlug.includes("ai-inbox") || bundleSlug.includes("messaging")) {
+      window.location.href = "/checkout/messaging";
+      return;
+    }
     try {
       setActivatingBundle(bundleSlug);
       const response = await apiClient.post(
@@ -84,7 +88,7 @@ export default function Bundles() {
       if (response.data.success) {
         toast.success(response.data.message);
         setTimeout(() => {
-          navigate("/marketplace/my-apps");
+          window.location.href = "/marketplace";
         }, 1500);
       }
     } catch (error: any) {

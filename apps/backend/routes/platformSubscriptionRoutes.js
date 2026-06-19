@@ -9,6 +9,7 @@ router.use(verifyToken.authenticateToken);
 
 // Messaging package checkout — before subscription check so new users can pay
 router.post('/messaging-checkout', platformSubscriptionController.messagingCheckout);
+router.post('/messaging-upgrade', platformSubscriptionController.messagingUpgrade);
 
 router.use(checkSubscription);
 

@@ -148,8 +148,8 @@ def test_get_agent_not_found(client, mock_session, valid_headers):
 
 
 def test_spawn_agent_success(client, mock_session, valid_headers):
-    # No template, no existing duplicate agent
-    setup_execute_mock(mock_session, template_return=None, agent_return=None)
+    template = _make_mock_template()
+    setup_execute_mock(mock_session, template_return=template, agent_return=None)
 
     resp = client.post(
         "/admin/agents/spawn",
@@ -194,9 +194,9 @@ def test_spawn_agent_with_template(client, mock_session, valid_headers):
 
 
 def test_spawn_agent_duplicate_conflict(client, mock_session, valid_headers):
-    # Template lookup returns None (or doesn't crash), duplicate check returns existing agent
+    template = _make_mock_template()
     existing = _make_mock_agent(agent_id="existing_id")
-    setup_execute_mock(mock_session, template_return=None, agent_return=existing)
+    setup_execute_mock(mock_session, template_return=template, agent_return=existing)
 
     resp = client.post(
         "/admin/agents/spawn",

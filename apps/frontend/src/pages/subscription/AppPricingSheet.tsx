@@ -1,11 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useLocation } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
 import {
   Search,
-  FileSpreadsheet,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -56,11 +54,19 @@ interface MarketplaceApp {
 type SortField = "name" | "monthlyPrice" | "unitPrice" | "trialDays";
 type SortOrder = "asc" | "desc" | null;
 
+const getApiErrorMessage = (error: unknown): string | undefined => {
+  if (!error || typeof error !== "object") return undefined;
+  const response = (error as { response?: unknown }).response;
+  if (!response || typeof response !== "object") return undefined;
+  const data = (response as { data?: unknown }).data;
+  if (!data || typeof data !== "object") return undefined;
+  const message = (data as { message?: unknown }).message;
+  return typeof message === "string" && message.trim() ? message : undefined;
+};
+
 export default function AppPricingSheet() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
 
   // State
   const [apps, setApps] = useState<MarketplaceApp[]>([]);
@@ -145,8 +151,8 @@ export default function AppPricingSheet() {
       const response = await apiClient.get<{ success: boolean; data: MarketplaceApp[] }>("/marketplace/apps", { params: { limit: 500 } });
       if (response.data?.success) setApps(response.data.data);
       setLoading(false);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || t("subscription.appSaveError", "حدث خطأ أثناء الحفظ"));
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err) || t("subscription.appSaveError", "حدث خطأ أثناء الحفظ"));
     }
   };
 
@@ -173,8 +179,8 @@ export default function AppPricingSheet() {
       });
       setApps(prev => prev.map(a => a.id === app.id ? { ...a, trialDays: days } : a));
       toast.success(t("subscription.trialDaysUpdated", "تم تحديث أيام التجربة المجانية"));
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || t("subscription.appSaveError", "حدث خطأ أثناء الحفظ"));
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err) || t("subscription.appSaveError", "حدث خطأ أثناء الحفظ"));
     }
   };
 
@@ -185,8 +191,8 @@ export default function AppPricingSheet() {
       toast.success(t("subscription.appDeleted", "تم حذف التطبيق بنجاح"));
       setApps(prev => prev.filter(a => a.id !== deleteConfirmId));
       setDeleteConfirmId(null);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || t("subscription.appDeleteError", "حدث خطأ أثناء الحذف"));
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err) || t("subscription.appDeleteError", "حدث خطأ أثناء الحذف"));
     }
   };
 
@@ -198,10 +204,10 @@ export default function AppPricingSheet() {
       const payload = { isActive: newStatus };
       await apiClient.put(`/super-admin/marketplace-management/apps/${app.id}`, payload);
       toast.success(t("subscription.appUpdated", "تم تحديث التطبيق بنجاح"));
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Revert on error
       setApps(prev => prev.map(a => a.id === app.id ? { ...a, isActive: app.isActive } : a));
-      toast.error(err.response?.data?.message || t("subscription.appSaveError", "حدث خطأ أثناء الحفظ"));
+      toast.error(getApiErrorMessage(err) || t("subscription.appSaveError", "حدث خطأ أثناء الحفظ"));
     }
   };
 
@@ -212,10 +218,10 @@ export default function AppPricingSheet() {
       setApps(prev => prev.map(a => a.id === app.id ? { ...a, isInstalled: newInstalled } : a));
       await apiClient.put(`/super-admin/marketplace-management/apps/${app.id}`, { isInstalled: newInstalled });
       toast.success(t("subscription.appUpdated", "تم تحديث التطبيق بنجاح"));
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Revert on error
       setApps(prev => prev.map(a => a.id === app.id ? { ...a, isInstalled: app.isInstalled } : a));
-      toast.error(err.response?.data?.message || t("subscription.appSaveError", "حدث خطأ أثناء الحفظ"));
+      toast.error(getApiErrorMessage(err) || t("subscription.appSaveError", "حدث خطأ أثناء الحفظ"));
     }
   };
 
@@ -418,8 +424,8 @@ export default function AppPricingSheet() {
           ? t("subscription.bulkActivated", "Selected apps activated successfully")
           : t("subscription.bulkDeactivated", "Selected apps deactivated successfully")
       );
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || t("common.error", "An error occurred"));
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err) || t("common.error", "An error occurred"));
     }
   };
 
@@ -437,59 +443,8 @@ export default function AppPricingSheet() {
       setSelectedIds(new Set());
       toast.success(t("subscription.bulkDeleted", "Selected apps deleted successfully"));
       setDeleteConfirmId(null);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || t("common.error", "An error occurred"));
-    }
-  };
-
-  // Export to CSV Functionality
-  const exportToCSV = () => {
-    try {
-      const headers = [
-        t("subscription.csvAppName"),
-        t("subscription.csvCategory"),
-        t("subscription.csvPricingModel"),
-        t("subscription.csvMonthlySubPrice"),
-        t("subscription.csvYearlySubPrice"),
-        t("subscription.csvUsageUnitPrice"),
-        t("subscription.csvFreeTrialDays"),
-        t("subscription.csvInstallationStatus"),
-        "Slug",
-        "ID",
-      ];
-
-      const rows = processedApps.map((app) => [
-        i18n.language === "ar" ? app.name : app.nameEn || app.name,
-        getCategoryLabel(app.category),
-        app.pricingModel === "FREE"
-          ? t("subscription.free")
-          : app.pricingModel === "PAY_PER_USE"
-            ? t("subscription.payAsYouGo")
-            : t("subscription.subscription"),
-        app.pricingModel === "SUBSCRIPTION" ? `${app.monthlyPrice || 0} ${t("subscription.egp")}` : "0",
-        app.pricingModel === "SUBSCRIPTION" && app.yearlyPrice ? `${app.yearlyPrice} ${t("subscription.egp")}` : "0",
-        app.unitPrice ? `${app.unitPrice} ${t("subscription.egp")} / ${app.unitName ? t(`subscription.units.${app.unitName}`, app.unitName) : ""}` : "-",
-        app.trialDays > 0 ? `${app.trialDays}` : "0",
-        app.isInstalled ? t("subscription.installed") : t("subscription.notInstalled"),
-        app.slug,
-        app.id,
-      ]);
-
-      const csvContent =
-        "\uFEFF" + // BOM UTF-8 representation for correct Arabic character display in Excel
-        [headers.join(","), ...rows.map((e) => e.map((val) => `"${val}"`).join(","))].join("\n");
-
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `maxp-apps-pricing-${new Date().toISOString().slice(0, 10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success(t("subscription.exportSuccess"));
-    } catch (error) {
-      toast.error(t("subscription.exportError"));
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err) || t("common.error", "An error occurred"));
     }
   };
 
@@ -500,24 +455,10 @@ export default function AppPricingSheet() {
     return <ArrowUpDown size={14} className="text-gray-400 dark:text-gray-500" />;
   };
 
-  // Subscription nav tabs config
-  const subscriptionTabs = [
-    { label: t("subscription.tabAppPricing", "أسعار التطبيقات"), path: "/super-admin/app-pricing" },
-  ];
-
   return (
     <div className="bg-transparent pb-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 flex justify-end gap-2">
-        <Button
-          variant="outline"
-          className="flex items-center gap-2 font-semibold font-cairo border-slate-300 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:hover:bg-indigo-950/30"
-          onClick={exportToCSV}
-          disabled={loading || processedApps.length === 0}
-        >
-          <FileSpreadsheet size={18} />
-          {t("subscription.exportToExcel")}
-        </Button>
-        {user?.role === "SUPER_ADMIN" && (
+      {user?.role === "SUPER_ADMIN" && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 flex justify-end gap-2">
           <Button
             className="flex items-center gap-2 font-semibold font-cairo bg-indigo-600 hover:bg-indigo-700 text-white"
             onClick={() => handleOpenDialog()}
@@ -525,8 +466,8 @@ export default function AppPricingSheet() {
             <Plus size={18} />
             {t("subscription.addApp", "إضافة تطبيق")}
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
         {/* KPI Cards (Modernized with Glassmorphism & Gradients) */}

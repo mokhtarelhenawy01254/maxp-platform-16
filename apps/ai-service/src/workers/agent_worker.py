@@ -8,8 +8,8 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import structlog
-
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.db.session import async_session
 from src.services.queue_service import QueuePriority, queue_service
 
@@ -149,7 +149,7 @@ async def handle_memory_consolidation(job: dict[str, Any]) -> None:
         provider = await factory.get_active_provider()
 
         for conv in conversations:
-            conv_id, customer_id, conv_company_id, metadata_raw, updated_at = conv
+            conv_id, customer_id, _conv_company_id, metadata_raw, _updated_at = conv
 
             msg_rows = await session.execute(
                 "SELECT content, is_from_customer, created_at FROM messages WHERE conversation_id = :conv_id ORDER BY created_at ASC",
@@ -589,15 +589,18 @@ async def handle_whatsapp_message(job: dict[str, Any]) -> None:
 
         await session.commit()
 
-        # 5. AI Process
-        from src.agents.base import BaseAgent, BaseAgentConfig
-        agent = BaseAgent(BaseAgentConfig(
-            id=f"wa_agent_{phone_number_id[:8]}",
-            name=f"WA Agent {phone_number_id[:8]}",
-            role="SALES",
-            company_id=company_id,
-            allowed_tools=[],
-        ))
+        # 5. AI Process — load from template (2026 system-prompt-driven pattern)
+        from src.agents.base import BaseAgent
+        agent = await BaseAgent.from_template(
+            "sales-agent",
+            company_id,
+            overrides={
+                "id": f"wa_agent_{phone_number_id[:8]}",
+                "name": f"WA Agent {phone_number_id[:8]}",
+                "persona": {"channel": "whatsapp"},
+            },
+            session=session,
+        )
 
         task_result = await agent.process_task({
             "description": message_text,
@@ -668,15 +671,18 @@ async def handle_telegram_message(job: dict[str, Any]) -> None:
 
         await session.commit()
 
-        # 4. AI Process
-        from src.agents.base import BaseAgent, BaseAgentConfig
-        agent = BaseAgent(BaseAgentConfig(
-            id=f"tg_agent_{company_id[:8]}",
-            name="TG Agent",
-            role="SALES",
-            company_id=company_id,
-            allowed_tools=[],
-        ))
+        # 4. AI Process — load from template (2026 system-prompt-driven pattern)
+        from src.agents.base import BaseAgent
+        agent = await BaseAgent.from_template(
+            "sales-agent",
+            company_id,
+            overrides={
+                "id": f"tg_agent_{company_id[:8]}",
+                "name": "TG Agent",
+                "persona": {"channel": "telegram"},
+            },
+            session=session,
+        )
 
         start_time = datetime.utcnow()
         task_result = await agent.process_task({
@@ -752,16 +758,31 @@ async def handle_scheduled_agent_task(job: dict[str, Any]) -> None:
 
     logger.info("executing scheduled agent task", company_id=company_id, type=task_type, job_id=job_id)
 
-    from src.agents.base import BaseAgent, BaseAgentConfig
+    from sqlalchemy import select
 
-    agent = BaseAgent(BaseAgentConfig(
-        id=agent_id or f"routine_{_generate_id()[:8]}",
-        name=f"Routine-{task_type}",
-        role="SALES" if task_type == "GENERAL" else task_type,
-        company_id=company_id,
-        allowed_tools=payload.get("tools", []),
-        model=payload.get("model"),
-    ))
+    from src.agents.base import BaseAgent
+    from src.db.models.agent import AgentTemplate
+
+    role = "SALES" if task_type == "GENERAL" else task_type
+    async with async_session() as session:
+        trow = await session.execute(
+            select(AgentTemplate).where(AgentTemplate.role == role).limit(1)
+        )
+        tpl = trow.scalar_one_or_none()
+        slug = tpl.slug if tpl else "sales-agent"
+
+        agent = await BaseAgent.from_template(
+            slug,
+            company_id,
+            overrides={
+                "id": agent_id or f"routine_{_generate_id()[:8]}",
+                "name": f"Routine-{task_type}",
+                "role": role,
+                "model": payload.get("model"),
+                "allowed_tools": payload.get("tools", []),
+            },
+            session=session,
+        )
 
     task_obj = {
         "description": f"Routine scheduled execution of type: {task_type}",

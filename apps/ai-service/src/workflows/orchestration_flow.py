@@ -121,7 +121,7 @@ async def run_orchestration(
             except Exception as exc2:
                 logger.warning("could not convert agent to tool", role=role, error=str(exc2))
 
-    ceo_agent = create_ceo_agent(
+    ceo_agent = await create_ceo_agent(
         specialized_agents_tools=sub_agent_tools,
         is_merchant=is_merchant,
         company_id=company_id,

@@ -120,6 +120,7 @@ async function updateMyProfile(req, res) {
       "gender",
       "dateOfBirth",
       "nationalId",
+      "timezone",
     ];
 
     for (const field of updatableFields) {
@@ -156,6 +157,8 @@ async function updateMyProfile(req, res) {
     if (allowedUpdates.lastName)
       userUpdateData.lastName = allowedUpdates.lastName;
     if (allowedUpdates.phone) userUpdateData.phone = allowedUpdates.phone;
+    if (allowedUpdates.timezone)
+      userUpdateData.timezone = allowedUpdates.timezone;
 
     if (Object.keys(userUpdateData).length > 0) {
       console.log("➡️ Before prisma.user.update");

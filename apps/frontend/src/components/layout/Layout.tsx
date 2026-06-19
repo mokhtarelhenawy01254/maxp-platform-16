@@ -7,6 +7,7 @@ import {
   MagnifyingGlassIcon,
   XMarkIcon,
   UsersIcon,
+  ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 import "../../styles/hr-theme.css";
 import { useTranslation } from "react-i18next";
@@ -27,7 +28,6 @@ import { apiClient } from "../../services/apiClient";
 import type { ApiRequestConfig } from "../../services/apiClient";
 import ActiveUsersMonitor from "../ActiveUsersMonitor";
 import { SidebarSettingsProvider, useSidebarSettings } from "../../contexts/SidebarSettingsContext";
-import { SectionGuide } from "@/components/guides/SectionGuide";
 import PageExplanations from "../common/PageExplanations";
 
 const SuperAdminLayout = React.lazy(() => import("./SuperAdminLayout"));
@@ -113,7 +113,8 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   };
 
   const companySettings = getCompanySettings();
-  const showSearchInHeader = companySettings.showOrderSearchInHeader !== false;
+  const hasEcommerce = user?.company?.activeApps?.includes('ecommerce-basic');
+  const showSearchInHeader = companySettings.showOrderSearchInHeader !== false && !!hasEcommerce;
 
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
   const useSuperAdminShell = shouldUseSuperAdminShell(
@@ -526,7 +527,13 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
               className="business-shell-language-switcher"
             />
             <NotificationDropdown className="business-shell-notification-slot" />
-            <SectionGuide />
+            <Link
+              to="/support"
+              className="business-icon-button"
+              title={t("header.support") || "الدعم الفني"}
+            >
+              <ChatBubbleLeftRightIcon className="h-5 w-5" />
+            </Link>
             <PageExplanations />
             
             {isSuperAdmin && (
