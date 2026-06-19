@@ -74,7 +74,7 @@ export default function BundleDetails() {
 
   const handleSubscribe = async () => {
     if (slug.includes("ai-inbox") || slug.includes("messaging")) {
-      window.location.href = "/checkout/messaging";
+      navigate("/checkout/messaging");
       return;
     }
     try {
