@@ -714,28 +714,101 @@ exports.messagingCheckout = async (req, res) => {
     const amount = 999;
     const prisma = getSharedPrismaClient();
 
+    // Read trialDays from the bundle (editable from super admin → bundles)
+    const inboxBundle = await prisma.appBundle.findUnique({ where: { slug: "ai-inbox-bundle" } });
+    const TRIAL_DAYS = inboxBundle?.trialDays ?? 7;
+
+    const trialEndDate = new Date();
+    trialEndDate.setDate(trialEndDate.getDate() + TRIAL_DAYS);
     const nextBillingDate = new Date();
     nextBillingDate.setDate(nextBillingDate.getDate() + 30);
+
     await prisma.$transaction(async (tx) => {
       await tx.platformSubscription.upsert({
         where: { companyId },
-        update: { plan: "PRO", status: "ACTIVE", monthlyFee: amount, nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
-        create: { companyId, plan: "PRO", status: "ACTIVE", monthlyFee: amount, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date() }
+        update: { plan: "PRO", status: "ACTIVE", monthlyFee: amount, trialEndDate, nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
+        create: { companyId, plan: "PRO", status: "ACTIVE", monthlyFee: amount, trialEndDate, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date() }
       });
-      await tx.company.update({ where: { id: companyId }, data: { plan: "MESSAGING" } });
-      // Activate AI Chat for the company
-      const aiApp = await tx.marketplaceApp.findUnique({ where: { slug: "ai-chat-basic" } });
-      if (aiApp) {
-        await tx.companyApp.upsert({
-          where: { companyId_appId: { companyId, appId: aiApp.id } },
-          update: { status: "ACTIVE" },
-          create: { companyId, appId: aiApp.id, status: "ACTIVE" }
-        });
+      await tx.company.update({ where: { id: companyId }, data: { plan: "PRO" } });
+      // Activate AI Chat + Unified Inbox for the company
+      for (const slug of ["ai-chat-basic", "unified-inbox"]) {
+        const app = await tx.marketplaceApp.findUnique({ where: { slug } });
+        if (app) {
+          await tx.companyApp.upsert({
+            where: { companyId_appId: { companyId, appId: app.id } },
+            update: { status: "ACTIVE" },
+            create: { companyId, appId: app.id, status: "ACTIVE" }
+          });
+        }
       }
     });
-    res.json({ success: true, message: "تم تفعيل الباقة تجريبياً", data: { skipPayment: true } });
+
+    res.json({
+      success: true,
+      message: `تم تفعيل الباقة تجريبياً لمدة ${TRIAL_DAYS} أيام`,
+      data: { skipPayment: true, trialDays: TRIAL_DAYS, trialEndDate: trialEndDate.toISOString() }
+    });
   } catch (error) {
     console.error("[MESSAGING-CHECKOUT] Error:", error);
+    res.status(500).json({ success: false, message: "خطأ أثناء إنشاء عملية الدفع" });
+  }
+};
+
+/**
+ * @route POST /api/v1/platform-subscription/messaging-upgrade
+ * @desc Upgrade messaging trial to paid via Kashier
+ * @access Protected
+ */
+exports.messagingUpgrade = async (req, res) => {
+  try {
+    const { companyId, email, phone } = req.user;
+    const amount = DEFAULT_PLAN_FEES.MESSAGING || 999;
+    const prisma = getSharedPrismaClient();
+
+    const sub = await prisma.platformSubscription.findUnique({ where: { companyId } });
+    if (!sub) return res.status(400).json({ success: false, message: "لا يوجد اشتراك نشط" });
+
+    const billingRecord = await prisma.billingHistory.create({
+      data: {
+        companyId,
+        type: "PLATFORM_FEE",
+        amount,
+        description: "ترقية باقة AI + Inbox (دفع كاشير)",
+        status: "PENDING"
+      }
+    });
+
+    const host = req.headers.host || "maxp.online";
+    const redirectUrl = `http://${host}/subscription?status=success&billingId=${billingRecord.id}`;
+    const baseDomain = process.env.MAIN_DOMAIN || "maxp.online";
+    const webhookUrl = `https://${baseDomain}/api/v1/public/platform-subscription/webhook`;
+
+    const session = await KashierService.createPaymentSession({
+      amount,
+      currency: "EGP",
+      orderId: `messaging-upgrade-${billingRecord.id}`,
+      customer: { email, reference: phone || companyId },
+      redirectUrl,
+      webhookUrl,
+      description: "AI + Inbox Bundle - دفع الاشتراك",
+    }, null);
+
+    if (!session.success) {
+      await prisma.billingHistory.update({
+        where: { id: billingRecord.id },
+        data: { status: "FAILED", description: `فشل إنشاء جلسة الدفع: ${session.error}` }
+      });
+      return res.status(502).json({ success: false, message: "فشل إنشاء جلسة الدفع في كاشير" });
+    }
+
+    await prisma.billingHistory.update({
+      where: { id: billingRecord.id },
+      data: { referenceId: session.sessionId }
+    });
+
+    res.json({ success: true, data: { sessionUrl: session.sessionUrl, billingId: billingRecord.id } });
+  } catch (error) {
+    console.error("[MESSAGING-UPGRADE] Error:", error);
     res.status(500).json({ success: false, message: "خطأ أثناء إنشاء عملية الدفع" });
   }
 };

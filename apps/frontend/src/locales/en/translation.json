@@ -726,7 +726,15 @@
     "acceptTerms": "I accept the Terms and Conditions",
     "alreadyHaveAccount": "Already have an account?",
     "dontHaveAccount": "Don't have an account?",
-    "backToLogin": "Back to Login"
+    "backToLogin": "Back to Login",
+    "visualStart": "Start Now",
+    "visualImmediately": "Immediately",
+    "visualWithout": "No Card Required",
+    "visualTrialPeriod": "Trial Period",
+    "secureSignIn": "Secure Sign In",
+    "sessionCheck": "Session Check",
+    "businessOs": "Business OS",
+    "brandName": "Max P Business OS"
   },
   "broadcast": {
     "title": "Broadcast",
@@ -1513,6 +1521,11 @@
     "status": "Status",
     "active": "Active",
     "inactive": "Inactive",
+    "statuses": {
+      "NEW": "New",
+      "FOLLOWING": "Following",
+      "COMPLETED": "Completed"
+    },
     "products": "Products",
     "ads": {
       "overview": "Ad Overview",
@@ -2796,6 +2809,7 @@
     "bundleDetails": "Bundle Details",
     "noBundles": "No bundles available at the moment",
     "noTools": "No tools available in this category yet",
+    "noSearchResults": "No results for \"{{query}}\"",
     "loadingTools": "Loading tools…",
     "searchPlaceholder": "Search for a tool or feature…",
     "sortLabel": "Sort",
@@ -2849,7 +2863,9 @@
     "installedCurrently": "{{count}} apps currently installed.",
     "fetchError": "An error occurred while loading marketplace data. Please try again.",
     "retry": "Retry",
-    "currencyUnit": "EGP"
+    "currencyUnit": "EGP",
+    "clearSearch": "Clear search",
+    "loadMore": "Load more ({{remaining}})"
   },
   "notifications": {
     "title": "Notifications",

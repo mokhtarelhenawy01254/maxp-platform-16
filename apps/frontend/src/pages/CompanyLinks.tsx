@@ -5,7 +5,6 @@ import {
   Eye,
   Globe,
   Link2,
-  Loader2,
   LockKeyhole,
   Pencil,
   Plus,
@@ -50,7 +49,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/toolti
 import {
   BusinessPageHero,
   BusinessPageShell,
-  BusinessSectionPanel,
 } from "../components/business/BusinessSurface";
 import { useAuth } from "../hooks/useAuthSimple";
 import api from "../services/api";
@@ -322,7 +320,6 @@ const CompanyLinks: React.FC = () => {
   return (
     <BusinessPageShell className="space-y-4 md:space-y-6" dir="rtl">
       <BusinessPageHero
-        eyebrow="TEAM · ACCESS"
         title={
           <span className="business-page-title-row">
             <span className="business-page-title-copy">
@@ -333,124 +330,71 @@ const CompanyLinks: React.FC = () => {
             </span>
           </span>
         }
-        description="إدارة روابط الشركة السريعة وروابط المشاركة الثابتة بشكل أوضح وأسهل على الموبايل والديسكتوب."
+        description="روابط الشركة السريعة وروابط المشاركة الثابتة."
         actions={
           canManage ? (
-            <Button
-              type="button"
-              onClick={() => {
-                resetForm();
-                setDialogOpen(true);
-              }}
-              className="h-11 w-full sm:w-auto"
-            >
-              <Plus className="size-4" />
-              {t("companyLinks.addLink")}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                onClick={() => {
+                  resetForm();
+                  setDialogOpen(true);
+                }}
+                className="h-11"
+              >
+                <Plus className="size-4" />
+                {t("companyLinks.addLink")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 rounded-xl"
+                onClick={shareToken ? () => void copyText(shareUrl, t("companyLinks.shareLinkCopied")) : generateShareLink}
+              >
+                <Link2 className="size-4" />
+                {shareToken ? t("companyLinks.copy") : t("companyLinks.createShareLink")}
+              </Button>
+              {shareToken ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  className="rounded-xl border-rose-500/30 text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
+                  onClick={revokeShareLink}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              ) : null}
+            </div>
           ) : null
         }
       />
 
-      {canManage ? (
-        <BusinessSectionPanel
-          title={t("companyLinks.fixedExternalLink")}
-          description="رابط ثابت يمكن مشاركته للوصول السريع إلى روابط الشركة."
-          contentClassName="space-y-4"
-        >
-          {shareToken ? (
-            <div className="flex flex-col gap-3 md:flex-row md:items-center">
-              <Input
-                value={shareUrl}
-                readOnly
-                className="h-11"
-                aria-label={String(t("companyLinks.fixedExternalLink"))}
-              />
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    void copyText(shareUrl, t("companyLinks.shareLinkCopied"))
-                  }
-                >
-                  <Copy className="size-4" />
-                  {t("companyLinks.copy")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={revokeShareLink}
-                  className="border-rose-500/30 text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
-                >
-                  <Trash2 className="size-4" />
-                  {t("common.cancel")}
-                </Button>
-              </div>
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="animate-pulse rounded-2xl border border-border/50 bg-muted/30 p-4"
+            >
+              <div className="h-4 w-40 rounded bg-muted" />
+              <div className="mt-2 h-3 w-56 rounded bg-muted" />
             </div>
-          ) : (
-            <Button type="button" variant="outline" onClick={generateShareLink}>
-              <Link2 className="size-4" />
-              {t("companyLinks.createShareLink")}
-            </Button>
-          )}
-
-          <Alert className="border-sky-500/20 bg-sky-500/5">
-            <ShieldAlert className="size-4" />
-            <AlertTitle>{t("companyLinks.fixedExternalLink")}</AlertTitle>
-            <AlertDescription>
-              {t("companyLinks.externalLinkWarning")}
-            </AlertDescription>
-          </Alert>
-        </BusinessSectionPanel>
-      ) : null}
-
-      <BusinessSectionPanel
-        title={t("companyLinks.title")}
-        description={
-          loading
-            ? "جارٍ تحميل الروابط..."
-            : links.length > 0
-              ? `${links.length} رابط متاح داخل الشركة`
-              : t("companyLinks.noLinks")
-        }
-        headerAside={
-          <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs text-muted-foreground">
-            <Globe className="size-3.5" />
-            {loading ? "جاري التحديث..." : `${links.length} رابط`}
-          </div>
-        }
-        contentClassName="p-0"
-      >
-        {loading ? (
-          <div className="flex min-h-[260px] flex-col items-center justify-center gap-3 px-6 text-center text-muted-foreground">
-            <Loader2 className="size-8 animate-spin text-primary" />
-            <p className="text-sm">جارٍ تحميل روابط الشركة...</p>
-          </div>
-        ) : error ? (
-          <div className="p-4">
-            <Alert variant="destructive">
-              <ShieldAlert className="size-4" />
-              <AlertTitle>تعذر تحميل الروابط</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          </div>
-        ) : links.length === 0 ? (
-          <div className="p-4">
-            <Alert>
-              <Link2 className="size-4" />
-              <AlertTitle>{t("companyLinks.noLinks")}</AlertTitle>
-              <AlertDescription>
-                أضف أول رابط للشركة ليظهر للفريق في هذا القسم.
-              </AlertDescription>
-            </Alert>
-          </div>
-        ) : (
-          <div className="grid gap-3 p-4">
-            {links.map((link) => (
-              <div
-                key={link.id}
-                className="rounded-[1.35rem] border border-border/70 bg-background/85 p-4 shadow-sm"
-              >
+          ))}
+        </div>
+      ) : error ? (
+        <Alert variant="destructive">
+          <ShieldAlert className="size-4" />
+          <AlertTitle>تعذر تحميل الروابط</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : links.length === 0 ? null : (
+        <div className="space-y-3">
+          {links.map((link) => (
+            <article
+              key={link.id}
+              className="group rounded-2xl border border-border/70 bg-background p-4 transition-all hover:border-primary/30 hover:shadow-md"
+            >
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div className="min-w-0 space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
@@ -492,6 +436,7 @@ const CompanyLinks: React.FC = () => {
                           type="button"
                           variant="outline"
                           size="icon-sm"
+                          className="rounded-xl"
                           onClick={() => openLink(link)}
                         >
                           <ExternalLink className="size-4" />
@@ -507,6 +452,7 @@ const CompanyLinks: React.FC = () => {
                             type="button"
                             variant="outline"
                             size="icon-sm"
+                            className="rounded-xl"
                             onClick={() =>
                               void copyText(
                                 link.username || "",
@@ -531,6 +477,7 @@ const CompanyLinks: React.FC = () => {
                               type="button"
                               variant="outline"
                               size="icon-sm"
+                              className="rounded-xl"
                               onClick={() => void showPassword(link)}
                             >
                               <Eye className="size-4" />
@@ -547,6 +494,7 @@ const CompanyLinks: React.FC = () => {
                               type="button"
                               variant="outline"
                               size="icon-sm"
+                              className="rounded-xl"
                               onClick={() => void copyPassword(link)}
                             >
                               <LockKeyhole className="size-4" />
@@ -567,6 +515,7 @@ const CompanyLinks: React.FC = () => {
                               type="button"
                               variant="outline"
                               size="icon-sm"
+                              className="rounded-xl"
                               onClick={() => startEditing(link)}
                             >
                               <Pencil className="size-4" />
@@ -581,7 +530,7 @@ const CompanyLinks: React.FC = () => {
                               type="button"
                               variant="outline"
                               size="icon-sm"
-                              className="border-rose-500/30 text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
+                              className="rounded-xl border-rose-500/30 text-rose-600 hover:bg-rose-500/10 hover:text-rose-700"
                               onClick={() => setLinkPendingDelete(link)}
                             >
                               <Trash2 className="size-4" />
@@ -593,11 +542,10 @@ const CompanyLinks: React.FC = () => {
                     ) : null}
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         )}
-      </BusinessSectionPanel>
 
       <Dialog
         open={dialogOpen}

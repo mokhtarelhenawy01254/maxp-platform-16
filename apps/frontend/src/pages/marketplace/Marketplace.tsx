@@ -4,28 +4,13 @@ import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
 import {
-  Store,
-  Users,
-  MessageSquare,
-  BarChart3,
-  Zap,
-  DollarSign,
-  TrendingUp,
-  Search,
-  Package,
-  Check,
-  ChevronLeft,
-  Sparkles,
-  Loader2,
-  Crown,
-  CheckCircle2,
-  Settings,
-  Layers3,
-  AlertTriangle,
-  X,
-  Filter,
+  Search, Package, ChevronLeft, Loader2, Crown,
+  Layers3, AlertTriangle, Filter, Zap, X,
+  Store, Users, MessageSquare, BarChart3, TrendingUp,
+  DollarSign, Sparkles, CheckCircle2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import AppCard from "./components/AppCard";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { tokenManager } from "../../utils/tokenManager";
 import { getApiUrl } from "../../config/environment";
@@ -35,7 +20,7 @@ import {
 } from "./featureCatalog";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, CardAction } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -71,7 +56,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-interface MarketplaceApp {
+export interface MarketplaceApp {
   id: string;
   slug: string;
   name: string;
@@ -353,8 +338,8 @@ export default function Marketplace() {
     useState<MarketplaceApp | null>(null);
   const [confirmUninstallApp, setConfirmUninstallApp] =
     useState<MarketplaceApp | null>(null);
-  const DISPLAY_INITIAL = 15;
-  const DISPLAY_INCREMENT = 12;
+  const DISPLAY_INITIAL = 24;
+  const DISPLAY_INCREMENT = 16;
   const [displayCount, setDisplayCount] = useState(DISPLAY_INITIAL);
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -381,7 +366,19 @@ export default function Marketplace() {
     if (sortParam) setSortBy(sortParam);
   }, []);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "/" && !["INPUT", "TEXTAREA"].includes((e.target as HTMLElement).tagName)) {
+        e.preventDefault();
+        document.getElementById("marketplace-search")?.focus();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
+
   const fetchData = useCallback(async () => {
+    window.scrollTo(0, 0);
     try {
       setLoading(true);
 
@@ -671,7 +668,7 @@ export default function Marketplace() {
   const installedAppsCount = apps.filter((app) => app.isInstalled).length;
   const discoverAppsCount = apps.filter((app) => !app.isInstalled).length;
   const isBundlesTab = activeTab === "BUNDLES";
-  const showAppFilters = !isBundlesTab;
+  const showAppFilters = activeTab !== "BUNDLES";
   const getDisplayedPrice = (app: MarketplaceApp) => {
     if (isEnterprise && app.pricingModel !== "FREE") {
       return app.pricingModel === "PAY_PER_USE"
@@ -695,9 +692,9 @@ export default function Marketplace() {
   );
 
   return (
-    <div className="min-h-screen overflow-x-hidden">
+    <div className="min-h-screen">
       <div className="mx-auto max-w-[1440px] px-4 pb-10 pt-5 sm:px-6 lg:px-8">
-        <Card className="overflow-hidden border p-4 sm:p-6 text-right">
+        <div className="rounded-2xl bg-card border border-border/50 p-4 sm:p-6 text-right shadow-sm">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="order-2 lg:order-1">
               <div className="flex flex-wrap items-center justify-center gap-2 text-xs sm:justify-end sm:text-right">
@@ -724,7 +721,7 @@ export default function Marketplace() {
             </div>
 
             <div className="order-1 lg:order-2">
-              <h1 className="text-3xl font-black leading-tight text-foreground sm:text-4xl">
+              <h1 className="text-2xl font-bold leading-tight text-foreground tracking-tight sm:text-3xl">
                 {t('marketplace.pageTitle')}
               </h1>
               <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-muted-foreground">
@@ -740,7 +737,7 @@ export default function Marketplace() {
               <TabsTrigger value="BUNDLES" onClick={() => setSelectedCategory("")}>{t('marketplace.savingsBundles')}</TabsTrigger>
             </TabsList>
           </Tabs>
-        </Card>
+        </div>
 
         <div
           className={`mt-5 grid grid-cols-1 gap-5 ${
@@ -750,7 +747,7 @@ export default function Marketplace() {
           {/* Sidebar */}
           {showAppFilters && (
           <aside className="hidden lg:block lg:self-start">
-            <Card className="sticky top-5 overflow-hidden py-2 text-right">
+            <div className="sticky top-5 rounded-2xl bg-card border border-border/50 py-2 text-right shadow-sm">
               <button
                 type="button"
                 onClick={() => {
@@ -760,7 +757,7 @@ export default function Marketplace() {
                 }}
                 aria-pressed={selectedCategory === "" && selectedCollection === "ALL" && activeTab === "APPS"}
                 className={cn(
-                  "block w-full px-4 py-2.5 text-right text-sm font-black transition-colors",
+                  "block w-full px-4 py-2.5 text-right text-sm font-bold transition-colors",
                   selectedCategory === "" && selectedCollection === "ALL" && activeTab === "APPS"
                     ? "bg-primary/10 text-foreground"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -782,7 +779,7 @@ export default function Marketplace() {
                     }}
                     aria-pressed={selectedCollection === collection.id && activeTab === "APPS"}
                     className={cn(
-                      "block w-full px-4 py-2.5 text-right text-sm font-black transition-colors",
+                      "block w-full px-4 py-2.5 text-right text-sm font-bold transition-colors",
                       selectedCollection === collection.id && activeTab === "APPS"
                         ? "bg-primary/10 text-foreground"
                         : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -794,7 +791,9 @@ export default function Marketplace() {
 
               <Separator className="my-2" />
 
-              {categories.map((cat) => (
+              {categories.map((cat) => {
+                const CatIcon = categoryIcons[cat.category];
+                return (
                 <button
                   type="button"
                   key={cat.category}
@@ -805,25 +804,27 @@ export default function Marketplace() {
                   }}
                   aria-pressed={selectedCategory === cat.category}
                   className={cn(
-                    "block w-full px-4 py-2.5 text-right text-sm font-black transition-colors",
+                    "flex w-full items-center gap-2 px-4 py-2.5 text-right text-sm font-bold transition-colors",
                     selectedCategory === cat.category
                       ? "bg-primary/10 text-foreground"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground"
                   )}
                 >
+                  {CatIcon && <CatIcon size={15} aria-hidden="true" />}
                   {cat.name}
                 </button>
-              ))}
+                );
+              })}
 
               <Separator className="my-2" />
 
               <Link
                 to="/marketplace/themes"
-                className="block px-4 py-2.5 text-right text-sm font-black text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                className="block px-4 py-2.5 text-right text-sm font-bold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 {t('sidebar.storeThemes')}
               </Link>
-            </Card>
+            </div>
           </aside>
           )}
 
@@ -832,7 +833,7 @@ export default function Marketplace() {
             <div className="mb-4">
               <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                 <div className="min-w-0 text-right">
-                  <h2 className="text-lg font-black text-foreground sm:text-xl">
+                  <h2 className="text-lg font-bold text-foreground sm:text-xl">
                     {isBundlesTab
                       ? t('marketplace.featuredBundles')
                       : activeTab === "INSTALLED"
@@ -870,6 +871,16 @@ export default function Marketplace() {
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="h-10 w-full pr-11 text-sm"
                     />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label={t('marketplace.clearSearch')}
+                      >
+                        <X size={15} />
+                      </button>
+                    )}
                   </div>
 
                   <div className="flex h-10 items-center gap-3 rounded-xl border bg-background px-4 text-sm text-muted-foreground">
@@ -895,12 +906,12 @@ export default function Marketplace() {
                       visibleApps.length === 0 ||
                       visibleApps.every((app) => app.isInstalled)
                     }
-                    className="h-10 gap-2 px-4 text-sm font-black"
+                    className="h-10 gap-2 px-4 text-sm font-bold"
                   >
                     {isInstallingAll ? (
-                      <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                      <Loader2 data-icon="inline-start" className="animate-spin" />
                     ) : (
-                      <Zap size={16} className="fill-current" aria-hidden="true" />
+                      <Zap data-icon="inline-start" />
                     )}
                     {t('marketplace.activateAll')}
                   </Button>
@@ -913,14 +924,14 @@ export default function Marketplace() {
                 <div className="flex flex-1 gap-2 overflow-x-auto pb-1 scroll-snap-x">
                   <Badge
                     variant={selectedCategory === "" && selectedCollection === "ALL" && activeTab === "APPS" ? "default" : "outline"}
-                    className="cursor-pointer whitespace-nowrap scroll-snap-start text-xs font-black"
+                    className="cursor-pointer whitespace-nowrap scroll-snap-start text-xs font-bold"
                     onClick={() => { setSelectedCategory(""); setSelectedCollection("ALL"); setActiveTab("APPS"); }}
                   >
                     {t('marketplace.allTools')}
                   </Badge>
                   <Badge
                     variant={activeTab === "BUNDLES" ? "default" : "outline"}
-                    className="cursor-pointer whitespace-nowrap scroll-snap-start text-xs font-black"
+                    className="cursor-pointer whitespace-nowrap scroll-snap-start text-xs font-bold"
                     onClick={() => { setSelectedCategory(""); setActiveTab("BUNDLES"); }}
                   >
                     {t('marketplace.savingsBundles')}
@@ -931,7 +942,7 @@ export default function Marketplace() {
                       <Badge
                         key={collection.id}
                         variant={selectedCollection === collection.id ? "default" : "outline"}
-                        className="cursor-pointer whitespace-nowrap scroll-snap-start text-xs font-black"
+                        className="cursor-pointer whitespace-nowrap scroll-snap-start text-xs font-bold"
                         onClick={() => { setSelectedCollection(collection.id); setActiveTab("APPS"); }}
                       >
                         {collection.label}
@@ -940,7 +951,7 @@ export default function Marketplace() {
                 </div>
                 <Sheet>
                   <SheetTrigger asChild>
-                    <Button variant="outline" size="sm" className="shrink-0 gap-1.5 text-xs font-black">
+                    <Button variant="outline" size="sm" className="shrink-0 gap-1.5 text-xs font-bold">
                       <Filter size={14} />
                       {t('marketplace.filters')}
                     </Button>
@@ -953,7 +964,7 @@ export default function Marketplace() {
                       <button
                         type="button"
                         onClick={() => { setSelectedCategory(""); setSelectedCollection("ALL"); setActiveTab("APPS"); }}
-                        className={cn("block w-full rounded-lg px-3 py-2 text-right text-sm font-black transition-colors", selectedCategory === "" && selectedCollection === "ALL" && activeTab === "APPS" ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground")}
+                        className={cn("block w-full rounded-lg px-3 py-2 text-right text-sm font-bold transition-colors", selectedCategory === "" && selectedCollection === "ALL" && activeTab === "APPS" ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground")}
                       >
                         {t('marketplace.allApps')}
                       </button>
@@ -962,7 +973,7 @@ export default function Marketplace() {
                           key={collection.id}
                           type="button"
                           onClick={() => { setSelectedCategory(""); setSelectedCollection(collection.id); setActiveTab("APPS"); }}
-                          className={cn("block w-full rounded-lg px-3 py-2 text-right text-sm font-black transition-colors", selectedCollection === collection.id && activeTab === "APPS" ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground")}
+                          className={cn("block w-full rounded-lg px-3 py-2 text-right text-sm font-bold transition-colors", selectedCollection === collection.id && activeTab === "APPS" ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground")}
                         >
                           {collection.label}
                         </button>
@@ -973,13 +984,13 @@ export default function Marketplace() {
                           key={cat.category}
                           type="button"
                           onClick={() => { setSelectedCategory(cat.category); setSelectedCollection("ALL"); setActiveTab("APPS"); }}
-                          className={cn("block w-full rounded-lg px-3 py-2 text-right text-sm font-black transition-colors", selectedCategory === cat.category ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground")}
+                          className={cn("block w-full rounded-lg px-3 py-2 text-right text-sm font-bold transition-colors", selectedCategory === cat.category ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground")}
                         >
                           {cat.name}
                         </button>
                       ))}
                       <Separator className="my-2" />
-                      <Link to="/marketplace/themes" className="block rounded-lg px-3 py-2 text-right text-sm font-black text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+                      <Link to="/marketplace/themes" className="block rounded-lg px-3 py-2 text-right text-sm font-bold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
                         {t('sidebar.storeThemes')}
                       </Link>
                     </div>
@@ -994,24 +1005,26 @@ export default function Marketplace() {
               /* Bundles Grid */
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 {bundles.map((bundle) => (
-                  <Card key={bundle.id} className="group p-4 text-right transition-transform hover:-translate-y-0.5">
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1 text-right">
-                        <h3 className="mb-1.5 text-base font-black text-foreground transition-colors group-hover:text-primary sm:text-lg">
-                          {bundle.name}
-                        </h3>
-                        <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
-                          {bundle.description}
-                        </p>
+                  <Card key={bundle.id} className="group text-right transition-transform hover:-translate-y-0.5 border-border/50" style={{ boxShadow: "0 28px 72px -48px rgba(7, 17, 32, 0.42)" }}>
+                    <CardHeader className="px-5 pt-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <CardTitle className="text-base font-bold sm:text-lg group-hover:text-primary">
+                            {bundle.name}
+                          </CardTitle>
+                          <CardDescription className="mt-1.5 line-clamp-2">
+                            {bundle.description}
+                          </CardDescription>
+                        </div>
+                        <Badge variant="secondary" className="shrink-0 border px-3 text-xs font-bold">
+                          {t('marketplace.savePercent', { percent: bundle.discount })}
+                        </Badge>
                       </div>
-                      <Badge variant="secondary" className="shrink-0 border px-3 text-xs font-black">
-                        {t('marketplace.savePercent', { percent: bundle.discount })}
-                      </Badge>
-                    </div>
+                    </CardHeader>
 
-                    <div className="mt-4 flex items-center justify-between gap-3">
-                      <div className="text-right">
-                        <span className="text-lg font-black text-foreground">
+                    <CardFooter className="justify-between gap-3 px-5 pb-5 pt-4">
+                      <div>
+                        <span className="text-lg font-bold text-foreground">
                           {t('marketplace.bundlePrice', { price: bundle.monthlyPrice })}
                         </span>
                         <span className="mr-1 text-xs text-muted-foreground">
@@ -1021,10 +1034,10 @@ export default function Marketplace() {
                       <Button variant="outline" size="sm" asChild>
                         <Link to={`/marketplace/bundle/${bundle.slug}`}>
                           {t('marketplace.bundleDetails')}
-                          <ChevronLeft size={16} aria-hidden="true" />
+                          <ChevronLeft data-icon="inline-end" />
                         </Link>
                       </Button>
-                    </div>
+                    </CardFooter>
                   </Card>
                 ))}
                 {bundles.length === 0 && (
@@ -1036,30 +1049,16 @@ export default function Marketplace() {
               </div>
             ) : /* Apps Grid */
               loading ? (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <Card key={i} className="p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex min-w-0 flex-1 items-start justify-end gap-3">
-                          <div className="min-w-0 space-y-2">
-                            <Skeleton className="h-5 w-28" />
-                            <Skeleton className="h-3 w-20" />
-                          </div>
-                          <Skeleton className="h-11 w-11 shrink-0 rounded-xl" />
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <Card key={i} className="px-4 py-3 border-border/50" style={{ boxShadow: "0 28px 72px -48px rgba(7, 17, 32, 0.42)" }}>
+                      <div className="flex items-center gap-2.5 animate-pulse">
+                        <Skeleton className="size-9 shrink-0 rounded-lg" />
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <Skeleton className="h-4 w-28" />
+                          <Skeleton className="h-3 w-16" />
                         </div>
-                      </div>
-                      <div className="mt-3 space-y-2">
-                        <Skeleton className="h-3 w-full" />
-                        <Skeleton className="h-3 w-3/4" />
-                        <Skeleton className="h-3 w-1/2" />
-                      </div>
-                      <div className="mt-3 flex gap-1.5">
-                        <Skeleton className="h-5 w-16 rounded-full" />
-                        <Skeleton className="h-5 w-16 rounded-full" />
-                      </div>
-                      <div className="mt-4 flex items-center justify-between">
-                        <Skeleton className="h-3 w-16" />
-                        <Skeleton className="h-8 w-24 rounded-full" />
+                        <Skeleton className="h-8 w-16 shrink-0 rounded-lg" />
                       </div>
                     </Card>
                   ))}
@@ -1068,134 +1067,51 @@ export default function Marketplace() {
                 <Card className="border-dashed py-16 text-center">
                   <Package size={42} className="mx-auto mb-4 text-muted-foreground" aria-hidden="true" />
                   <p className="text-muted-foreground">
-                    {t('marketplace.noTools')}
+                    {searchQuery ? t('marketplace.noSearchResults', { query: searchQuery }) : t('marketplace.noTools')}
                   </p>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-                  {displayedApps.map((app) => {
-                    const Icon = categoryIcons[app.category] || Package;
-                    const textIcon = shouldUseTextIcon(app.icon) ? app.icon?.trim() : null;
-                    const accessKind = getFeatureAccessKind(app.pricingModel);
-                    return (
-                      <Card
+                <>
+                  {!isBundlesTab && !selectedCategory && displayedApps.filter(a => a.isFeatured).length > 0 && (
+                    <div className="mb-6">
+                      <div className="mb-3 flex items-center gap-2">
+                        <Sparkles size={14} className="text-primary" />
+                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('marketplace.featured')}</h3>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
+                        {displayedApps.filter(a => a.isFeatured).slice(0, 4).map((app) => (
+                          <AppCard
+                            key={app.id}
+                            app={app}
+                            isEnterprise={isEnterprise}
+                            installingApp={installingApp}
+                            uninstallingApp={uninstallingApp}
+                            onQuickInstall={handleQuickInstall}
+                            onUninstall={(a) => setConfirmUninstallApp(a)}
+                            featured
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {displayedApps.filter(a => !a.isFeatured).map((app) => (
+                      <AppCard
                         key={app.id}
-                        className={cn(
-                          "group flex min-h-[220px] flex-col p-5 text-right transition-all hover:-translate-y-0.5",
-                          app.isInstalled && "border-success/50",
-                          app.isFeatured && "border-primary/30 shadow-sm",
-                          app.pricingModel === "FREE" && "border-muted"
-                        )}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <Link
-                            to={`/marketplace/${app.slug}`}
-                            aria-label={t('marketplace.details') + ' ' + app.name}
-                            className="rounded-lg p-1 text-muted-foreground transition-colors hover:text-foreground"
-                          >
-                            <Settings size={17} aria-hidden="true" />
-                          </Link>
-
-                          <div className="flex min-w-0 flex-1 items-start justify-end gap-3">
-                            <div className="min-w-0">
-                              <h3 className="truncate text-base font-black text-foreground sm:text-lg">
-                                {app.name}
-                              </h3>
-                              <div className="mt-1 text-sm font-bold text-primary">
-                                {getDisplayedPrice(app)}
-                              </div>
-                            </div>
-                            <div
-                              className={cn(
-                                "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl",
-                                app.isInstalled
-                                  ? "bg-success/10 text-success"
-                                  : app.isFeatured
-                                    ? "bg-primary/15 text-primary ring-1 ring-primary/20"
-                                    : "bg-primary/10 text-primary"
-                              )}
-                            >
-                              {textIcon || <Icon size={24} aria-hidden="true" />}
-                            </div>
-                          </div>
-                        </div>
-
-                        <p className="mt-3 line-clamp-2 text-sm leading-6 text-muted-foreground">
-                          {app.description}
-                        </p>
-
-                        <div className="mt-3 flex flex-wrap justify-end gap-1.5">
-                          {app.isFeatured && (
-                            <Badge variant="default" className="text-[10px] font-black">
-                              {t('marketplace.featured')}
-                            </Badge>
-                          )}
-                          {app.isInstalled && (
-                            <Badge variant="outline" className="inline-flex items-center gap-1 text-[10px] font-black text-success border-success/30">
-                              <Check size={10} strokeWidth={3} aria-hidden="true" />
-                              {t('marketplace.installed')}
-                            </Badge>
-                          )}
-                          <Badge variant="outline" className="text-[10px] font-black">
-                            {getFeatureAccessLabel(accessKind)}
-                          </Badge>
-                          <Badge variant="ghost" className="text-[10px] font-black text-muted-foreground">
-                            {getToolRoleLabel(app, t)}
-                          </Badge>
-                        </div>
-
-                        <div className="mt-auto flex items-center justify-between gap-3 pt-4">
-                          <Link
-                            to={`/marketplace/${app.slug}`}
-                            className="text-xs font-black text-muted-foreground transition-colors hover:text-primary"
-                          >
-                            {t('marketplace.details')}
-                          </Link>
-                          {app.isInstalled ? (
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex items-center gap-1 text-xs font-black text-success">
-                                <Check size={10} strokeWidth={3} />
-                                {t('marketplace.active')}
-                              </span>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-1 border-red-200 text-xs font-black text-red-500 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
-                                onClick={(e) => { e.stopPropagation(); setConfirmUninstallApp(app); }}
-                                disabled={uninstallingApp === app.slug}
-                              >
-                                {uninstallingApp === app.slug ? (
-                                  <Loader2 size={12} className="animate-spin" />
-                                ) : (
-                                  <X size={12} strokeWidth={3} />
-                                )}
-                                {t('marketplace.deactivate')}
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button
-                              size="sm"
-                              className="gap-1 rounded-full px-3 text-[11px] font-black h-8"
-                              onClick={(e) => handleQuickInstall(e, app)}
-                              disabled={installingApp === app.slug}
-                            >
-                              {installingApp === app.slug ? (
-                                <Loader2 size={12} className="animate-spin" aria-hidden="true" />
-                              ) : (
-                                <Zap size={12} className="fill-current" aria-hidden="true" />
-                              )}
-                              {installingApp === app.slug ? t('marketplace.activatingNow') : t('marketplace.activate')}
-                            </Button>
-                          )}
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
+                        app={app}
+                        isEnterprise={isEnterprise}
+                        installingApp={installingApp}
+                        uninstallingApp={uninstallingApp}
+                        onQuickInstall={handleQuickInstall}
+                        onUninstall={(a) => setConfirmUninstallApp(a)}
+                      />
+                    ))}
+                  </div>
+                </>
               )}
               {hasMoreApps && activeTab !== "INSTALLED" && (
                 <div className="mt-6 text-center">
-                  <Button variant="outline" onClick={() => setDisplayCount((prev) => prev + DISPLAY_INCREMENT)} className="gap-2 px-8 font-black">
+                  <Button variant="outline" onClick={() => setDisplayCount((prev) => prev + DISPLAY_INCREMENT)} className="gap-2 px-8 font-bold">
                     {t('marketplace.loadMore', { remaining: visibleApps.length - displayCount })}
                   </Button>
                 </div>
@@ -1214,7 +1130,7 @@ export default function Marketplace() {
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl border bg-primary/10 text-2xl text-primary">
+                  <div className="flex size-12 items-center justify-center rounded-xl border bg-primary/10 text-2xl text-primary">
                     {dialogTextIcon || <DialogIcon size={24} aria-hidden="true" />}
                   </div>
                   <div>
@@ -1225,15 +1141,17 @@ export default function Marketplace() {
               </DialogHeader>
               <div className="space-y-4">
                 <Button variant="outline" className={cn("relative w-full justify-between p-4 text-right", showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "SUBSCRIPTION" && "border-primary bg-primary/5")} onClick={() => { executeInstall(showPricingDialog, "SUBSCRIPTION"); setShowPricingDialog(null); }} disabled={showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "SUBSCRIPTION"}>
-                  {showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "SUBSCRIPTION" && <span className="absolute left-0 top-0 rounded-br-lg bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">{t('marketplace.currentlyActive')}</span>}
+                  {showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "SUBSCRIPTION" && <span className="absolute left-0 top-0 rounded-br-lg bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground">{t('marketplace.currentlyActive')}</span>}
                   <span className="font-bold">{showPricingDialog.activePricingModel === "PAY_PER_USE" ? t('marketplace.upgradeToMonthly') : t('marketplace.monthlySubscription')}</span>
                   <span className="font-bold text-primary">{(showPricingDialog.monthlyPrice ?? 0) > 0 ? t('marketplace.monthlyPrice', { price: showPricingDialog.monthlyPrice }) : t('marketplace.freePrice')}</span>
                 </Button>
-                <Button variant="outline" className={cn("relative w-full justify-between p-4 text-right", showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "PAY_PER_USE" && "border-warning bg-warning/5")} onClick={() => { executeInstall(showPricingDialog, "PAY_PER_USE"); setShowPricingDialog(null); }} disabled={showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "PAY_PER_USE"}>
-                  {showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "PAY_PER_USE" && <span className="absolute left-0 top-0 rounded-br-lg bg-warning px-2 py-0.5 text-[10px] font-bold text-warning-foreground">{t('marketplace.currentlyActive')}</span>}
-                  <span className="flex items-center gap-1 font-bold">{t('marketplace.payPerUseLabel')}<Zap size={14} className="fill-current text-warning" aria-hidden="true" /></span>
-                  <span className="font-bold text-warning">{showPricingDialog.unitPrice || 0} {t('marketplace.currencyUnit')} / {showPricingDialog.unitName || t('marketplace.perUnit')}</span>
-                </Button>
+                {showPricingDialog.pricingModel === "PAY_PER_USE" && (
+                  <Button variant="outline" className={cn("relative w-full justify-between p-4 text-right", showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "PAY_PER_USE" && "border-warning bg-warning/5")} onClick={() => { executeInstall(showPricingDialog, "PAY_PER_USE"); setShowPricingDialog(null); }} disabled={showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "PAY_PER_USE"}>
+                    {showPricingDialog.isInstalled && showPricingDialog.activePricingModel === "PAY_PER_USE" && <span className="absolute left-0 top-0 rounded-br-lg bg-warning px-2 py-0.5 text-xs font-bold text-warning-foreground">{t('marketplace.currentlyActive')}</span>}
+                    <span className="flex items-center gap-1 font-bold">{t('marketplace.payPerUseLabel')}<Zap size={14} className="fill-current text-warning" aria-hidden="true" /></span>
+                    <span className="font-bold text-warning">{showPricingDialog.unitPrice ?? 0} {t('marketplace.currencyUnit')} / {showPricingDialog.unitName || t('marketplace.perUnit')}</span>
+                  </Button>
+                )}
               </div>
             </DialogContent>
           );
@@ -1245,15 +1163,15 @@ export default function Marketplace() {
         {confirmUninstallApp && (
           <AlertDialogContent>
             <AlertDialogHeader>
-              <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
-                <AlertTriangle size={28} className="text-red-600" />
+              <div className="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-destructive/10">
+                <AlertTriangle size={28} className="text-destructive" />
               </div>
               <AlertDialogTitle className="text-center">{t('marketplace.deactivateTitle', { name: confirmUninstallApp.name })}</AlertDialogTitle>
               <AlertDialogDescription className="text-center">{t('marketplace.deactivateConfirm')}<br />{t('marketplace.deactivateWarning')}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="gap-3">
               <AlertDialogCancel disabled={uninstallingApp === confirmUninstallApp.slug}>{t('marketplace.goBack')}</AlertDialogCancel>
-              <AlertDialogAction onClick={() => handleUninstall(confirmUninstallApp)} disabled={uninstallingApp === confirmUninstallApp.slug} className="bg-red-600 hover:bg-red-700">
+              <AlertDialogAction onClick={() => handleUninstall(confirmUninstallApp)} disabled={uninstallingApp === confirmUninstallApp.slug} className="bg-destructive hover:bg-destructive/90">
                 {uninstallingApp === confirmUninstallApp.slug ? (
                   <span className="inline-flex items-center justify-center gap-2"><Loader2 size={16} className="animate-spin" />{t('marketplace.activating')}</span>
                 ) : t('marketplace.confirmDeactivation')}

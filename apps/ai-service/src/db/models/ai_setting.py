@@ -13,9 +13,16 @@ class AiSetting(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     company_id: Mapped[str] = mapped_column("companyId", String, nullable=False, index=True, unique=True)
+    autoReplyEnabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    promptTemplate: Mapped[str | None] = mapped_column(Text, nullable=True)
+    responseRules: Mapped[str | None] = mapped_column(Text, nullable=True)
+    modelSettings: Mapped[str | None] = mapped_column(Text, nullable=True)
     writeToolScopes: Mapped[str | None] = mapped_column(Text, nullable=True)
     humanApprovalRequiredForWrite: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     maxRepliesPerCustomer: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
+    autoFilterEnabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    negativeKeywords: Mapped[str | None] = mapped_column(Text, nullable=True)
+    negativeCommentAction: Mapped[str] = mapped_column(String, nullable=False, default="hide")
     createdAt: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

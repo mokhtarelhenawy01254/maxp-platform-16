@@ -407,84 +407,60 @@ router.post('/scheduler/jobs/:id/run', async (req, res) => {
   }
 });
 
-// ── Settings & Audit (Node-only) ────────────────────────────────────────
-
-const buildSettings = (aiSetting) => {
-  const ms = parseJson(aiSetting?.modelSettings);
-  const ws = parseJson(aiSetting?.writeToolScopes);
-  const p = ms.agenticPolicies || {};
-  return {
-    maxDiscountPercent: ws.maxDiscountPercent ?? p.maxDiscountPercent ?? 20,
-    maxPriceIncreasePercent: p.maxPriceIncreasePercent ?? ws.maxPriceChangePercent ?? 15,
-    maxPriceDecreasePercent: p.maxPriceDecreasePercent ?? ws.maxPriceChangePercent ?? 25,
-    dailyBudgetUSD: ms.dailyCostLimit ?? p.dailyBudgetUSD ?? 5,
-    requireApprovalForWrite: aiSetting?.humanApprovalRequiredForWrite ?? true,
-    emergencyStopActive: Boolean(p.emergencyStopActive),
-    blockedProducts: Array.isArray(ws.blockedProducts) ? ws.blockedProducts : [],
-    blockedActions: Array.isArray(ws.blockedActions) ? ws.blockedActions : [],
-    maxRepliesPerCustomer: aiSetting?.maxRepliesPerCustomer ?? 5,
-  };
-};
+// ── Settings & Audit ────────────────────────────────────────────────────
 
 router.get('/settings', async (req, res) => {
-  const companyId = getCompanyId(req);
-  if (!companyId) return res.status(400).json({ error: 'companyId is required' });
-  const prisma = getSharedPrismaClient();
-  const aiSetting = await prisma.aiSetting.findUnique({ where: { companyId } });
-  return res.json({ success: true, settings: buildSettings(aiSetting) });
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ error: 'companyId is required' });
+    const data = await aiServiceAdminClient.getGuardrails(companyId);
+    const ms = data?.modelSettings || {};
+    const ws = data?.writeToolScopes || {};
+    const p = ms.agenticPolicies || {};
+    return res.json({ success: true, settings: {
+      maxDiscountPercent: ws.maxDiscountPercent ?? p.maxDiscountPercent ?? 20,
+      maxPriceIncreasePercent: p.maxPriceIncreasePercent ?? ws.maxPriceChangePercent ?? 15,
+      maxPriceDecreasePercent: p.maxPriceDecreasePercent ?? ws.maxPriceChangePercent ?? 25,
+      dailyBudgetUSD: ms.dailyCostLimit ?? p.dailyBudgetUSD ?? 5,
+      requireApprovalForWrite: data?.humanApprovalRequiredForWrite ?? true,
+      emergencyStopActive: Boolean(p.emergencyStopActive),
+      blockedProducts: Array.isArray(ws.blockedProducts) ? ws.blockedProducts : [],
+      blockedActions: Array.isArray(ws.blockedActions) ? ws.blockedActions : [],
+      maxRepliesPerCustomer: data?.maxRepliesPerCustomer ?? 5,
+    } });
+  } catch (error) {
+    return res.status(502).json({ success: false, error: error.message });
+  }
 });
 
 router.put('/settings', async (req, res) => {
-  const companyId = getCompanyId(req);
-  if (!companyId) return res.status(400).json({ error: 'companyId is required' });
-  const prisma = getSharedPrismaClient();
-  const existing = await prisma.aiSetting.findUnique({ where: { companyId } });
-  const currMS = parseJson(existing?.modelSettings);
-  const currWS = parseJson(existing?.writeToolScopes);
-  const inc = req.body || {};
-  const maxPctCh = Math.max(Number(inc.maxPriceIncreasePercent) || 0, Number(inc.maxPriceDecreasePercent) || 0);
-  await prisma.aiSetting.upsert({
-    where: { companyId },
-    update: {
-      modelSettings: JSON.stringify({
-        ...currMS,
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ error: 'companyId is required' });
+    const inc = req.body || {};
+    const result = await aiServiceAdminClient.updateGuardrails(companyId, {
+      modelSettings: {
         dailyCostLimit: Number(inc.dailyBudgetUSD) || 5,
         agenticPolicies: {
-          ...(currMS.agenticPolicies || {}),
           maxPriceIncreasePercent: Number(inc.maxPriceIncreasePercent) || 15,
           maxPriceDecreasePercent: Number(inc.maxPriceDecreasePercent) || 25,
           dailyBudgetUSD: Number(inc.dailyBudgetUSD) || 5,
           emergencyStopActive: Boolean(inc.emergencyStopActive),
         },
-      }),
-      writeToolScopes: JSON.stringify({
-        ...currWS,
+      },
+      writeToolScopes: {
         maxDiscountPercent: Number(inc.maxDiscountPercent) || 20,
-        maxPriceChangePercent: maxPctCh || 30,
+        maxPriceChangePercent: Math.max(Number(inc.maxPriceIncreasePercent) || 0, Number(inc.maxPriceDecreasePercent) || 0) || 30,
         blockedProducts: Array.isArray(inc.blockedProducts) ? inc.blockedProducts : [],
         blockedActions: Array.isArray(inc.blockedActions) ? inc.blockedActions : [],
-      }),
+      },
       humanApprovalRequiredForWrite: inc.requireApprovalForWrite !== false,
       maxRepliesPerCustomer: Number(inc.maxRepliesPerCustomer) || 5,
-    },
-    create: {
-      companyId,
-      modelSettings: JSON.stringify({
-        dailyCostLimit: 5,
-        agenticPolicies: {
-          maxPriceIncreasePercent: 15, maxPriceDecreasePercent: 25,
-          dailyBudgetUSD: 5, emergencyStopActive: false,
-        },
-      }),
-      writeToolScopes: JSON.stringify({
-        maxDiscountPercent: 20, maxPriceChangePercent: 30,
-        blockedProducts: [], blockedActions: [],
-      }),
-      humanApprovalRequiredForWrite: true,
-      maxRepliesPerCustomer: 5,
-    },
-  });
-  return res.json({ success: true, settings: buildSettings({ ...existing, ...inc }) });
+    });
+    return res.json({ success: true, settings: req.body });
+  } catch (error) {
+    return res.status(502).json({ success: false, error: error.message });
+  }
 });
 
 router.get('/audit-trail', async (req, res) => {

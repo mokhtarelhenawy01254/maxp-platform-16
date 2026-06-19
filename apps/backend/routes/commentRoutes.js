@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const commentController = require("../controller/commentController");
 const verifyToken = require("../utils/verifyToken");
+const aiServiceAdminClient = require("../services/aiServiceAdminClient");
 
 // Get all comments with filtering and pagination
 router.use((req, res, next) => {
@@ -115,16 +116,38 @@ router.get(
   commentController.getPageResponseMethod,
 );
 
-// NEW: Automated Filter Settings
+// NEW: Automated Filter Settings — proxied to Python ai-service
 router.get(
   "/filter-settings/global",
   verifyToken.authenticateToken,
-  commentController.getGlobalFilterSettings,
+  async (req, res) => {
+    try {
+      const user = req.user;
+      const companyId = user?.companyId;
+      if (!companyId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+      const data = await aiServiceAdminClient.getGlobalFilterSettings(companyId);
+      return res.json({ success: true, ...data });
+    } catch (error) {
+      console.error('❌ [FILTER-SETTINGS] Error fetching global settings:', error);
+      res.status(502).json({ success: false, error: error.message });
+    }
+  },
 );
 router.put(
   "/filter-settings/global",
   verifyToken.authenticateToken,
-  commentController.updateGlobalFilterSettings,
+  async (req, res) => {
+    try {
+      const user = req.user;
+      const companyId = user?.companyId;
+      if (!companyId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+      await aiServiceAdminClient.updateGlobalFilterSettings(companyId, req.body);
+      return res.json({ success: true });
+    } catch (error) {
+      console.error('❌ [FILTER-SETTINGS] Error updating global settings:', error);
+      res.status(502).json({ success: false, error: error.message });
+    }
+  },
 );
 router.get(
   "/filter-settings/page/:pageId",

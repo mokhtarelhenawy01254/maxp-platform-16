@@ -728,6 +728,62 @@
     "updatedAt": "2026-05-04T00:00:00.000Z"
   },
   {
+    "id": "cat-app-unified-inbox",
+    "slug": "unified-inbox",
+    "name": "Unified Inbox",
+    "nameEn": "Unified Inbox",
+    "description": "صندوق وارد موحد يجمع محادثاتك من كل المنصات في مكان واحد مع إمكانية الرد المباشر.",
+    "category": "PRODUCTIVITY",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 299,
+    "yearlyPrice": 2999,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "الشركات التي تدير محادثات عبر منصات متعددة وتريد توحيدها.",
+      "surface": "داخل صندوق الوارد الموحد ومشاهدة المحادثات والرد عليها.",
+      "outcome": "توفير وقت الفريق وتقليل التشتت بين المنصات المختلفة."
+    },
+    "features": {
+      "multiPlatform": {
+        "enabled": true,
+        "name": "دعم المنصات المتعددة",
+        "description": "ربط فيسبوك، واتساب، تليجرام، وإنستجرام في صندوق واحد.",
+        "access": "PAID"
+      },
+      "unifiedReplies": {
+        "enabled": true,
+        "name": "الرد الموحد",
+        "description": "الرد على جميع المنصات من مكان واحد بدون التنقل بينها.",
+        "access": "PAID"
+      },
+      "conversationHistory": {
+        "enabled": true,
+        "name": "سجل المحادثات",
+        "description": "حفظ وتتبع كامل المحادثات مع العملاء عبر المنصات.",
+        "access": "PAID"
+      },
+      "teamInbox": {
+        "enabled": true,
+        "name": "فريق العمل المشترك",
+        "description": "توزيع المحادثات على أعضاء الفريق ومتابعة الردود.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": true,
+    "icon": "inbox",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-06-19T00:00:00.000Z",
+    "updatedAt": "2026-06-19T00:00:00.000Z"
+  },
+  {
     "id": "cat-app-notification-automation",
     "slug": "notification-automation",
     "name": "Notification Automation",

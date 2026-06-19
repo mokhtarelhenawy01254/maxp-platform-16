@@ -1,117 +1,113 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuthSimple";
+import { apiClient } from "../services/apiClient";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "../components/ui/table";
 import LoadingSpinner from "../components/ui/LoadingSpinner";
+import { toast } from "sonner";
 
 const CustomerPayments = () => {
   const { user } = useAuth();
-  const [payments, setPayments] = useState([]);
+  const [wallet, setWallet] = useState(null);
+  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [recharging, setRecharging] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => { fetchPayments(); }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  const fetchPayments = async () => {
+  const fetchData = async () => {
     try {
-      const mockPayments = [
-        { id: "pay-1", paymentNumber: "PAY-202507-001", amount: 7500, method: "WALLET_TRANSFER", status: "COMPLETED", paidAt: "2025-07-15T10:30:00Z", invoice: { invoiceNumber: "INV-202507-12345678" } },
-        { id: "pay-2", paymentNumber: "PAY-202506-002", amount: 7500, method: "WALLET_TRANSFER", status: "COMPLETED", paidAt: "2025-06-15T14:20:00Z", invoice: { invoiceNumber: "INV-202506-87654321" } },
-        { id: "pay-3", paymentNumber: "PAY-202508-003", amount: 7500, method: "WALLET_TRANSFER", status: "PENDING", paidAt: null, invoice: { invoiceNumber: "INV-202508-31819812" } },
-      ];
-      setPayments(mockPayments);
-    } catch (error) {
-      console.error("خطأ في جلب المدفوعات:", error);
+      setLoading(true);
+      const [walletRes, txRes] = await Promise.allSettled([
+        apiClient.get("/wallet/balance"),
+        apiClient.get("/wallet/transactions?limit=20"),
+      ]);
+      if (walletRes.status === "fulfilled") setWallet(walletRes.value.data.data);
+      if (txRes.status === "fulfilled") {
+        const td = txRes.value.data.data;
+        setTransactions(Array.isArray(td) ? td : td?.transactions || td?.data || []);
+      }
+    } catch (err) {
+      console.error("خطأ في جلب البيانات:", err);
       setError("خطأ في الاتصال بالخادم");
     } finally { setLoading(false); }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "COMPLETED": return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200";
-      case "PENDING": return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200";
-      case "FAILED": return "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200";
-      default: return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200";
+  const [showRechargeModal, setShowRechargeModal] = useState(false);
+  const [rechargeAmount, setRechargeAmount] = useState("");
+
+  const handleRecharge = async () => {
+    const amount = parseFloat(rechargeAmount);
+    if (!amount || amount <= 0) { toast.error("أدخل مبلغاً صحيحاً"); return; }
+    setRecharging(true);
+    try {
+      const res = await apiClient.post("/wallet/kashier/create-session", { amount });
+      if (res.data?.success && res.data?.data?.sessionUrl) {
+        window.location.href = res.data.data.sessionUrl;
+      } else {
+        toast.error(res.data?.message || "فشل إنشاء جلسة الدفع");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "خطأ في الاتصال ببوابة الدفع");
+    } finally {
+      setRecharging(false);
     }
   };
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case "COMPLETED": return "مكتملة";
-      case "PENDING": return "في الانتظار";
-      case "FAILED": return "فشلت";
-      default: return status;
-    }
-  };
-
-  const getMethodText = (method) => {
-    switch (method) {
-      case "WALLET_TRANSFER": return "تحويل محفظة";
-      case "BANK_TRANSFER": return "تحويل بنكي";
-      case "CREDIT_CARD": return "بطاقة ائتمان";
-      case "CASH": return "نقداً";
-      default: return method;
-    }
-  };
-
+  const toNumber = (v) => v === null || v === undefined ? 0 : typeof v === "number" ? v : parseFloat(v.toString()) || 0;
   const formatCurrency = (amount) => new Intl.NumberFormat("ar-EG", { style: "currency", currency: "EGP", minimumFractionDigits: 0 }).format(amount);
-  const formatDate = (dateString) => new Date(dateString).toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" });
-  const totalAmount = payments.reduce((sum, p) => p.status === "COMPLETED" ? sum + p.amount : sum, 0);
+  const formatDate = (d) => new Date(d).toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
   if (loading) return <div className="flex justify-center items-center min-h-[400px]"><LoadingSpinner size="lg" /></div>;
 
   return (
     <div className="p-3 min-h-screen bg-background transition-colors duration-200">
-      <h1 className="text-2xl font-bold mb-4">💰 مدفوعاتي</h1>
+      <h1 className="text-2xl font-bold mb-4">المدفوعات</h1>
 
       {error && <Alert variant="destructive" className="mb-6"><AlertDescription>{error}</AlertDescription></Alert>}
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-        {[
-          { label: "إجمالي المدفوعات", value: payments.length, color: "text-blue-600 dark:text-blue-400" },
-          { label: "إجمالي المبلغ المدفوع", value: formatCurrency(totalAmount), color: "text-green-600 dark:text-green-400" },
-          { label: "مدفوعات مكتملة", value: payments.filter(p => p.status === "COMPLETED").length, color: "text-green-600 dark:text-green-400" },
-          { label: "في الانتظار", value: payments.filter(p => p.status === "PENDING").length, color: "text-yellow-600 dark:text-yellow-400" },
-        ].map((card, i) => (
-          <div key={i} className="rounded-xl border bg-card text-card-foreground p-4 shadow-sm">
-            <p className={`text-lg font-bold ${card.color}`}>{card.value}</p>
-            <p className="text-sm text-muted-foreground">{card.label}</p>
+      {wallet && (
+        <div className="rounded-xl border bg-card text-card-foreground p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">رصيد المحفظة</p>
+              <p className="text-2xl font-bold">{toNumber(wallet.balance).toFixed(2)} ج.م</p>
+            </div>
+            <button
+              onClick={() => setShowRechargeModal(true)}
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition"
+            >
+              شحن
+            </button>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       <div className="rounded-xl border bg-card text-card-foreground">
         <div className="p-4">
-          <h2 className="text-base font-semibold mb-4">سجل المدفوعات</h2>
-          {payments.length === 0 ? (
-            <Alert><AlertDescription>لا توجد مدفوعات حالياً</AlertDescription></Alert>
+          <h2 className="text-base font-semibold mb-4">سجل الحركات</h2>
+          {transactions.length === 0 ? (
+            <Alert><AlertDescription>لا توجد حركات حالياً</AlertDescription></Alert>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>رقم الدفع</TableHead>
-                  <TableHead>رقم الفاتورة</TableHead>
+                  <TableHead>الوصف</TableHead>
                   <TableHead>المبلغ</TableHead>
-                  <TableHead>طريقة الدفع</TableHead>
-                  <TableHead>تاريخ الدفع</TableHead>
-                  <TableHead>الحالة</TableHead>
+                  <TableHead>التاريخ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {payments.map((payment) => (
-                  <TableRow key={payment.id}>
-                    <TableCell className="font-bold">{payment.paymentNumber}</TableCell>
-                    <TableCell>{payment.invoice?.invoiceNumber || "غير محدد"}</TableCell>
-                    <TableCell className="font-bold text-green-600 dark:text-green-400">{formatCurrency(payment.amount)}</TableCell>
-                    <TableCell>{getMethodText(payment.method)}</TableCell>
-                    <TableCell>{payment.paidAt ? formatDate(payment.paidAt) : "غير محدد"}</TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getStatusColor(payment.status)}`}>
-                        {getStatusText(payment.status)}
-                      </span>
+                {transactions.map((tx) => (
+                  <TableRow key={tx.id}>
+                    <TableCell>{tx.description || tx.paymentNumber || "-"}</TableCell>
+                    <TableCell className="font-bold text-green-600 dark:text-green-400">
+                      {toNumber(tx.amount) >= 0 ? "+" : ""}{toNumber(tx.amount).toFixed(2)} ج.م
                     </TableCell>
+                    <TableCell>{tx.createdAt ? formatDate(tx.createdAt) : "غير محدد"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -119,6 +115,32 @@ const CustomerPayments = () => {
           )}
         </div>
       </div>
+
+      {showRechargeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold">شحن المحفظة</h2>
+              <button onClick={() => { setShowRechargeModal(false); setRechargeAmount(""); }} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+            </div>
+            <input
+              type="number"
+              value={rechargeAmount}
+              onChange={(e) => setRechargeAmount(e.target.value)}
+              placeholder="المبلغ (جنيه)"
+              min="1"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 mb-4 focus:outline-none focus:ring-2 focus:ring-stone-900"
+            />
+            <button
+              onClick={handleRecharge}
+              disabled={recharging || !rechargeAmount}
+              className="w-full bg-stone-900 hover:bg-stone-800 disabled:bg-stone-300 text-white px-4 py-3 rounded-xl font-bold transition"
+            >
+              {recharging ? "جاري الشحن..." : "تأكيد الشحن"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

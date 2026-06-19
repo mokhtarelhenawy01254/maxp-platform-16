@@ -1004,7 +1004,7 @@ const createNewCompany = async (req, res) => {
 
 const updateCompany = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { companyId: id } = req.params;
     const {
       name,
       email,
@@ -1020,6 +1020,17 @@ const updateCompany = async (req, res) => {
       timezone,
       settings: incomingSettings,
     } = req.body;
+
+    // Non-super-admin users cannot change sensitive fields
+    const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
+    const sensitiveFields = ['plan', 'isActive'];
+    const attemptedSensitive = sensitiveFields.filter(f => req.body[f] !== undefined);
+    if (!isSuperAdmin && attemptedSensitive.length > 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'لا يمكن تعديل الخطة أو حالة التفعيل. هذا متاح لمدير النظام فقط',
+      });
+    }
 
     // Check if company exists
     const existingCompany = await getSharedPrismaClient().company.findUnique({

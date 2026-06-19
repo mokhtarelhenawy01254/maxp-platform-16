@@ -34,6 +34,7 @@ from agent_framework import (
     FunctionTool,
     SkillsProvider,
     SkillsSource,
+    UserInputRequiredException,
 )
 
 try:

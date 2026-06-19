@@ -7366,6 +7366,7 @@ model AppBundle {
   nameEn       String?
   description  String
   appIds       Json
+  trialDays    Int      @default(7)
   monthlyPrice Decimal  @db.Decimal(10, 2)
   yearlyPrice  Decimal? @db.Decimal(10, 2)
   discount     Decimal  @db.Decimal(5, 2)

@@ -726,7 +726,15 @@
     "acceptTerms": "أوافق على الشروط والأحكام",
     "alreadyHaveAccount": "لديك حساب بالفعل؟",
     "dontHaveAccount": "ليس لديك حساب؟",
-    "backToLogin": "العودة لتسجيل الدخول"
+    "backToLogin": "العودة لتسجيل الدخول",
+    "visualStart": "ابدأ فوراً",
+    "visualImmediately": "فوراً",
+    "visualWithout": "بدون بطاقة بنكية",
+    "visualTrialPeriod": "فترة تجريبية",
+    "secureSignIn": "تسجيل دخول آمن",
+    "sessionCheck": "التحقق من الجلسة",
+    "businessOs": "نظام تشغيل الأعمال",
+    "brandName": "ماكس بي لنظام تشغيل الأعمال"
   },
   "broadcast": {
     "title": "البث",
@@ -1508,6 +1516,11 @@
     "status": "الحالة",
     "active": "نشط",
     "inactive": "غير نشط",
+    "statuses": {
+      "NEW": "جديد",
+      "FOLLOWING": "متابعة",
+      "COMPLETED": "منتهي"
+    },
     "products": "المنتجات",
     "ads": {
       "overview": "نظرة عامة على الإعلانات",
@@ -2791,6 +2804,7 @@
     "bundleDetails": "تفاصيل الباقة",
     "noBundles": "لا توجد باقات متاحة حالياً",
     "noTools": "لا توجد أدوات متاحة ضمن هذا التنظيم حالياً",
+    "noSearchResults": "لا توجد نتائج لـ \"{{query}}\"",
     "loadingTools": "جاري تحميل الأدوات…",
     "searchPlaceholder": "ابحث عن أداة أو ميزة…",
     "sortLabel": "ترتيب",
@@ -2844,7 +2858,9 @@
     "installedCurrently": "{{count}} تطبيق مثبت حالياً.",
     "fetchError": "حدث خطأ أثناء تحميل بيانات المتجر. حاول مرة أخرى.",
     "retry": "إعادة المحاولة",
-    "currencyUnit": "ج"
+    "currencyUnit": "ج",
+    "clearSearch": "مسح البحث",
+    "loadMore": "عرض المزيد ({{remaining}})"
   },
   "notifications": {
     "title": "الإشعارات",
@@ -4309,7 +4325,7 @@
     "gapAnalysis": "تحليل الفجوات",
     "competitorReports": "تقارير المنافسين",
     "competitorSettings": "إعدادات المنافسين",
-    "companyManagementSection": "إدارة الشركة",
+    "companyManagementSection": "إدارة شركاتي",
     "companyPolicy": "سياسة الشركة",
     "companySettings": "إعدادات الشركة",
     "conversations": "المحادثات",

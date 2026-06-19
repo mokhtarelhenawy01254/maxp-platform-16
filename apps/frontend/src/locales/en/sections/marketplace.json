@@ -36,6 +36,7 @@
   "bundleDetails": "Bundle Details",
   "noBundles": "No bundles available at the moment",
   "noTools": "No tools available in this category yet",
+  "noSearchResults": "No results for \"{{query}}\"",
   "loadingTools": "Loading tools…",
   "searchPlaceholder": "Search for a tool or feature…",
   "sortLabel": "Sort",
@@ -89,5 +90,7 @@
   "installedCurrently": "{{count}} apps currently installed.",
   "fetchError": "An error occurred while loading marketplace data. Please try again.",
   "retry": "Retry",
-"currencyUnit": "EGP"
+  "currencyUnit": "EGP",
+  "clearSearch": "Clear search",
+  "loadMore": "Load more ({{remaining}})"
 }

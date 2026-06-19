@@ -72,6 +72,7 @@ export const menuGroups = [
     { text: i18n.t("superAdmin.sidebar.facebookOAuth"), icon: <Facebook className="size-5" />, path: "/super-admin/facebook-oauth" },
     { text: i18n.t("superAdmin.sidebar.metaPixel"), icon: <Facebook className="size-5" />, path: "/super-admin/platform-site-meta-pixel" },
     { text: i18n.t("superAdmin.sidebar.homepageTemplates"), icon: <Globe className="size-5" />, path: "/super-admin/homepage-templates" },
+    { text: "صفحات اللاندينغ /lp", icon: <Globe className="size-5" />, path: "/super-admin/landing-pages" },
     { text: i18n.t("superAdmin.sidebar.productDesigns"), icon: <Palette className="size-5" />, path: "/super-admin/product-designs" },
     { text: i18n.t("superAdmin.sidebar.staffAccess"), icon: <Briefcase className="size-5" />, path: "/super-admin/staff-access" },
     { text: i18n.t("superAdmin.sidebar.superAdminUsers"), icon: <Shield className="size-5" />, path: "/super-admin/users" },

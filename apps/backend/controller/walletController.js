@@ -809,6 +809,57 @@ class WalletController {
       });
     }
   }
+
+  static async createKashierRechargeSession(req, res) {
+    try {
+      const { companyId } = req.user;
+
+      if (!companyId || companyId === 'null' || companyId === 'undefined') {
+        return res.status(400).json({ success: false, message: 'يجب تحديد الشركة' });
+      }
+
+      const { amount } = req.body;
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ success: false, message: 'المبلغ يجب أن يكون أكبر من صفر' });
+      }
+
+      const baseDomain = process.env.MAIN_DOMAIN || 'maxp.online';
+      const orderNumber = `WLT-${Date.now()}`;
+      const redirectUrl = `https://${baseDomain}/payments`;
+      const webhookUrl = `https://${baseDomain}/api/v1/payment/kashier/webhook`;
+
+      const KashierService = require('../services/kashierService');
+      const session = await KashierService.createPaymentSession(
+        {
+          amount: parseFloat(amount),
+          currency: 'EGP',
+          orderId: orderNumber,
+          customer: { email: req.user.email, reference: `wallet:${companyId}:${amount}` },
+          redirectUrl,
+          webhookUrl,
+          description: `شحن المحفظة: ${amount} جنيه`,
+        },
+        companyId,
+      );
+
+      if (!session.success) {
+        return res.status(502).json({ success: false, message: 'فشل إنشاء جلسة الدفع' });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          sessionUrl: session.sessionUrl,
+          sessionId: session.sessionId,
+          orderNumber,
+        },
+      });
+    } catch (error) {
+      console.error('[KASHIER-RECHARGE] Error:', error);
+      res.status(500).json({ success: false, message: 'حدث خطأ أثناء إنشاء جلسة الدفع' });
+    }
+  }
 }
 
 module.exports = WalletController;

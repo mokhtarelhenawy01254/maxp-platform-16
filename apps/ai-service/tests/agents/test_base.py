@@ -664,19 +664,16 @@ class TestProcessTask:
 
     @pytest.mark.asyncio
     async def test_process_task_sdk_user_input_request_marks_paused(self, agent: BaseAgent):
-        sdk_session = object()
-        approval_request = MagicMock()
-        approval_request.id = "approval_1"
-        approval_request.name = "order.cancel"
-        approval_request.arguments = {"orderId": "o_1"}
+        from agent_framework import UserInputRequiredException
 
-        sdk_response = MagicMock()
-        sdk_response.text = ""
-        sdk_response.user_input_requests = [approval_request]
+        exc = UserInputRequiredException(contents=[])
+        exc.id = "approval_1"
+        exc.name = "order.cancel"
+        exc.arguments = {"orderId": "o_1"}
 
         framework_agent = MagicMock()
-        framework_agent.create_session.return_value = sdk_session
-        framework_agent.run = AsyncMock(return_value=sdk_response)
+        framework_agent.create_session.return_value = object()
+        framework_agent.run = AsyncMock(side_effect=exc)
 
         with patch.object(agent, "build", return_value=framework_agent):
             result = await agent.process_task({
@@ -798,6 +795,7 @@ class TestProcessTask:
             rounds=1,
             repaired=False,
             thread_id="thread_1",
+            system_prompt="",
         )
 
         with patch("src.agents.base.execute_pipeline", new=AsyncMock(return_value=fake_ctx)):
@@ -851,11 +849,12 @@ class TestProcessTask:
     @pytest.mark.asyncio
     async def test_process_task_streamed_yields_events(self, agent: BaseAgent):
         ctx_seq = [
-            MagicMock(early_return=None, final_reply=None, executed_tools=[]),
-            MagicMock(early_return=None, final_reply=None, executed_tools=[]),
-            MagicMock(early_return=None, final_reply=None, executed_tools=[]),
-            MagicMock(early_return=None, final_reply=None, executed_tools=[]),
-            MagicMock(early_return=None, final_reply="done", executed_tools=[]),
+            MagicMock(early_return=None, final_reply=None, executed_tools=[],
+                      system_prompt="", thread_id="t1", rounds=0, repaired=False)
+            for _ in range(6)
+        ] + [
+            MagicMock(early_return=None, final_reply="done", executed_tools=[],
+                      system_prompt="", thread_id="t1", rounds=0, repaired=False),
         ]
         iter_ctx = iter(ctx_seq)
 
@@ -865,6 +864,8 @@ class TestProcessTask:
         with patch("src.agents.base.resolve_intent", side_effect=fake_stage), \
              patch("src.agents.base.route_to_tools", side_effect=fake_stage), \
              patch("src.agents.base.execute_tools", side_effect=fake_stage), \
+             patch("src.agents.base.retrieve_knowledge", side_effect=fake_stage), \
+             patch("src.agents.base.retrieve_episodic_memory", side_effect=fake_stage), \
              patch("src.agents.base.handle_fallback", side_effect=fake_stage), \
              patch("src.agents.base.validate_reply", side_effect=fake_stage):
             events = []

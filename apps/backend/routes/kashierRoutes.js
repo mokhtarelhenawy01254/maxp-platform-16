@@ -178,17 +178,50 @@ router.post('/kashier/webhook', async (req, res) => {
     }
 
     const prisma = getPrisma();
+    const paymentStatus = status === 'CAPTURED' || status === 'SUCCESS' ? 'COMPLETED' : 'FAILED';
+
+    // Check if this is a wallet recharge via customer reference
+    const customerRef = payload.data?.customer?.reference || payload.customer?.reference || '';
+    if (customerRef.startsWith('wallet:')) {
+      const parts = customerRef.split(':');
+      const walletCompanyId = parts[1];
+      const rechargeAmount = parseFloat(parts[2]);
+
+      if (paymentStatus === 'COMPLETED' && walletCompanyId && rechargeAmount > 0) {
+        const companyWallet = await prisma.companyWallet.upsert({
+          where: { companyId: walletCompanyId },
+          update: { balance: { increment: rechargeAmount } },
+          create: { companyId: walletCompanyId, balance: rechargeAmount, currency: 'EGP' },
+        });
+
+        await prisma.transaction.create({
+          data: {
+            walletId: companyWallet.id,
+            type: 'DEPOSIT',
+            amount: rechargeAmount,
+            status: 'COMPLETED',
+            description: `شحن المحفظة عبر كاشير: ${rechargeAmount} جنيه`,
+            referenceId: sessionId,
+          },
+        });
+
+        console.log(`[KASHIER-WEBHOOK] Wallet recharge completed for company ${walletCompanyId}: ${rechargeAmount} EGP`);
+      }
+
+      return res.json({ success: true, message: 'Wallet recharge processed' });
+    }
+
+    // Existing order flow
     const orders = await prisma.order.findMany({
       where: { metadata: { contains: sessionId } },
     });
 
     if (orders.length === 0) {
-      console.warn('[KASHIER-WEBHOOK] No order found for session:', sessionId);
-      return res.status(200).json({ success: true, message: 'Order not found, acknowledged' });
+      console.warn('[KASHIER-WEBHOOK] No order or recharge found for session:', sessionId);
+      return res.status(200).json({ success: true, message: 'Not found, acknowledged' });
     }
 
     const order = orders[0];
-    const paymentStatus = status === 'CAPTURED' || status === 'SUCCESS' ? 'COMPLETED' : 'FAILED';
 
     await prisma.order.update({
       where: { id: order.id },

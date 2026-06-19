@@ -62,7 +62,7 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
       <div className="elite-auth-visual">
         <div className="visual-content animate-fade-up">
           <span className="visual-badge">
-            {visualBadge || "BUSINESS OS"}
+            {visualBadge || t("auth.businessOs")}
           </span>
           <h1 className="visual-title">
             {visualTitle || (
@@ -106,7 +106,7 @@ export const AuthSurface: React.FC<AuthSurfaceProps> = ({
         <div className={cn("elite-form-container animate-fade-up", wide && "elite-form-container--wide")}>
           <Link to="/" className="elite-brand-logo">
             <div className="logo-icon">M</div>
-            <span className="logo-text">MAX P BUSINESS OS</span>
+            <span className="logo-text">{t("auth.brandName")}</span>
           </Link>
 
           <div className="form-header">

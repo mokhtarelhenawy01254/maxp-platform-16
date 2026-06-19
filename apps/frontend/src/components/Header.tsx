@@ -14,6 +14,7 @@ import {
   ArrowRightOnRectangleIcon,
   Cog6ToothIcon,
   MagnifyingGlassIcon,
+  ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 
 import { useTimer } from "../contexts/TimerContext";
@@ -301,6 +302,15 @@ const Header: React.FC = () => {
 
             {/* Notifications */}
             <NotificationDropdown />
+
+            {/* Support */}
+            <Link
+              to="/support"
+              className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              title={t("header.support") || "الدعم الفني"}
+            >
+              <ChatBubbleLeftRightIcon className="h-5 w-5" />
+            </Link>
 
             {/* Profile Dropdown */}
             <div className="relative">

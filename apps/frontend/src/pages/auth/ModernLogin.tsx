@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
 import { trackPlatformSiteLogin } from "../../utils/platformSiteMetaPixel";
@@ -14,6 +15,7 @@ interface LoginFormData {
 }
 
 const ModernLogin: React.FC = () => {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -96,7 +98,7 @@ const ModernLogin: React.FC = () => {
       <AuthSurface
         title="جاري التحقق من الجلسة"
         description="نراجع حالة الحساب ونجهّز مساحة العمل المناسبة لك."
-        eyebrow="Session Check"
+        eyebrow={t("auth.sessionCheck")}
         visualTitle="نحن نؤمّن بياناتك"
         visualDescription="تشفير عالي المستوى وأمان فائق لضمان سلامة بيانات شركتك في كل مرة تسجل فيها الدخول."
       >
@@ -112,7 +114,7 @@ const ModernLogin: React.FC = () => {
     <AuthSurface
       title="الدخول إلى مساحة العمل"
       description="أدخل بريدك وكلمة المرور للوصول إلى لوحة التشغيل الخاصة بك."
-      eyebrow="Secure Sign In"
+      eyebrow={t("auth.secureSignIn")}
       footer={
         <div className="elite-form-link-row">
           <span>ليس لديك حساب؟</span>

@@ -1,4 +1,4 @@
-import React, { Suspense } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./hooks/useAuthSimple";
 import tokenManager from "./utils/tokenManager";
@@ -241,6 +241,9 @@ const FacebookBlockedCustomers = React.lazy(
 
 const InstagramSettings = React.lazy(
   () => import("./pages/settings/InstagramSettings"),
+);
+const CompanySettingsPage = React.lazy(
+  () => import("./pages/settings/CompanySettings"),
 );
 const AgentInboxKeyPage = React.lazy(
   () => import("./pages/settings/AgentInboxKeyPage"),
@@ -816,6 +819,9 @@ const PlatformSiteMetaPixel = React.lazy(
 const PlatformSiteHomepageTemplates = React.lazy(
   () => import("./pages/super-admin/PlatformSiteHomepageTemplates"),
 );
+const SuperAdminLandingPages = React.lazy(
+  () => import("./pages/super-admin/SuperAdminLandingPages"),
+);
 const PlatformSignupCoupons = React.lazy(
   () => import("./pages/super-admin/PlatformSignupCoupons"),
 );
@@ -923,8 +929,8 @@ const PartnerDashboard = React.lazy(
 );
 
 const PaymentPage = React.lazy(() => import("./pages/PaymentPage"));
+const MessagingCheckout = React.lazy(() => import("./pages/payment/MessagingCheckout"));
 const WalletManagement = React.lazy(() => import("./pages/WalletManagement"));
-const CustomerInvoices = React.lazy(() => import("./pages/CustomerInvoices"));
 const CustomerPayments = React.lazy(() => import("./pages/CustomerPayments"));
 const SubscriptionRenewalPayment = React.lazy(
   () => import("./pages/SubscriptionRenewalPayment"),
@@ -954,17 +960,8 @@ const StorefrontThemesMarketplace = React.lazy(
 );
 const AppDetails = React.lazy(() => import("./pages/marketplace/AppDetails"));
 const AppSettings = React.lazy(() => import("./pages/marketplace/AppSettings"));
-const MarketplaceFeatureAudit = React.lazy(
-  () => import("./pages/marketplace/FeatureAudit"),
-);
-const MyApps = React.lazy(() => import("./pages/marketplace/MyApps"));
 const CustomerWalletRouteEntry = React.lazy(
   () => import("./pages/wallet/WalletRouteEntry"),
-);
-const BillingWalletRouteEntry = React.lazy(() =>
-  import("./pages/wallet/WalletRouteEntry").then((module) => ({
-    default: module.BillingWalletRouteEntry,
-  })),
 );
 const Bundles = React.lazy(() => import("./pages/marketplace/Bundles"));
 const BundleDetails = React.lazy(
@@ -974,9 +971,6 @@ const BundleDetails = React.lazy(
 // Platform Subscription
 const PlatformPlans = React.lazy(
   () => import("./pages/subscription/PlatformPlans"),
-);
-const MySubscription = React.lazy(
-  () => import("./pages/subscription/MySubscription"),
 );
 const UsageStats = React.lazy(() => import("./pages/subscription/UsageStats"));
 const AppPricingSheet = React.lazy(
@@ -1235,6 +1229,7 @@ if (typeof window !== "undefined") {
   p["/affiliates"] = () => import("./pages/affiliates/AffiliateDashboard");
   p["/hr"] = () => import("./pages/hr/HRDashboard");
   p["/settings"] = () => import("./pages/settings/Settings");
+  p["/settings/company"] = () => import("./pages/settings/CompanySettings");
   p["/facebook-inbox"] = () => import("./pages/facebook-inbox/FacebookInbox");
   p["/instagram-inbox"] = () => import("./pages/instagram-inbox/InstagramInbox");
   p["/unified-inbox"] = () => import("./pages/unified-inbox/UnifiedInbox");
@@ -1245,7 +1240,6 @@ if (typeof window !== "undefined") {
   p["/support"] = () => import("./pages/support/SupportCenter");
   p["/profile"] = () => import("./pages/profile/Profile");
   p["/marketplace"] = () => import("./pages/marketplace/Marketplace");
-  p["/subscription"] = () => import("./pages/subscription/MySubscription");
   p["/broadcast"] = () => import("./pages/broadcast/BroadcastDashboard");
 }
 
@@ -1255,6 +1249,18 @@ const AppContent = () => {
   const { isAuthenticated, isLoading, user } = useAuth();
   const { pathname } = useLocation();
   const isDev = import.meta.env.DEV || import.meta.env.MODE === "development";
+
+  const [activeLpSlugs, setActiveLpSlugs] = useState<Set<string> | null>(null);
+
+  useEffect(() => {
+    fetch("/api/v1/public/lp-pages", { credentials: "include" })
+      .then((r) => {
+        if (!r.ok) throw new Error("API not available");
+        return r.json();
+      })
+      .then((pages: any[]) => setActiveLpSlugs(new Set(pages.filter((p) => p.isActive).map((p) => p.slug))))
+      .catch(() => setActiveLpSlugs(null));
+  }, []);
 
   // Subdomain Detection Logic
   const hostname = window.location.hostname;
@@ -1312,6 +1318,7 @@ const AppContent = () => {
     currentPath.startsWith("/payment/") ||
     currentPath.startsWith("/apply/") ||
     currentPath.startsWith("/for-merchants") ||
+    currentPath.startsWith("/lp/") ||
     currentPath.startsWith("/theme-demo/") ||
     currentPath.startsWith("/store") ||
     currentPath.startsWith("/cafe-demo") ||
@@ -1546,10 +1553,10 @@ const AppContent = () => {
             />
             <Route path="/shadcn-demo" element={<ShadcnDemo />} />
             <Route path="/for-merchants" element={<MaxPMerchantsLanding />} />
-            <Route path="/lp/mg" element={<MgAgencyLeadLanding />} />
-            <Route path="/lp/mg-agency" element={<MgAgencyLeadLanding />} />
-            <Route path="/lp/messaging" element={<MessagingLanding />} />
-            <Route path="/lp/ai-inbox" element={<AiInboxLanding />} />
+            {activeLpSlugs && !activeLpSlugs.has("mg") ? <Route path="/lp/mg" element={<Navigate to="/" replace />} /> : <Route path="/lp/mg" element={<MgAgencyLeadLanding />} />}
+            {activeLpSlugs && !activeLpSlugs.has("mg-agency") ? <Route path="/lp/mg-agency" element={<Navigate to="/" replace />} /> : <Route path="/lp/mg-agency" element={<MgAgencyLeadLanding />} />}
+            {activeLpSlugs && !activeLpSlugs.has("messaging") ? <Route path="/lp/messaging" element={<Navigate to="/" replace />} /> : <Route path="/lp/messaging" element={<MessagingLanding />} />}
+            {activeLpSlugs && !activeLpSlugs.has("ai-inbox") ? <Route path="/lp/ai-inbox" element={<Navigate to="/" replace />} /> : <Route path="/lp/ai-inbox" element={<AiInboxLanding />} />}
             <Route
               path="/preview/platform-home/:variantId"
               element={<PlatformLandingPreviewPage />}
@@ -1757,6 +1764,14 @@ const AppContent = () => {
             <Route
               path="/super-admin/pages"
               element={<Navigate to="/super-admin/dashboard" replace />}
+            />
+            <Route
+              path="/super-admin/landing-pages"
+              element={
+                <Layout>
+                  <SuperAdminLandingPages />
+                </Layout>
+              }
             />
             <Route
               path="/super-admin/homepage-templates"
@@ -2172,6 +2187,14 @@ const AppContent = () => {
               path="/payment/subscription-renewal"
               element={<SubscriptionRenewalPayment />}
             />
+            <Route
+              path="/checkout/messaging"
+              element={
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div></div>}>
+                  <MessagingCheckout />
+                </Suspense>
+              }
+            />
             {/* Protected Routes with ProtectedRoute component (handles auth internally) */}
             {/* Protected Routes - Only accessible when authenticated */}
             {isLoading ? (
@@ -2242,14 +2265,6 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/marketplace/feature-audit"
-                  element={
-                    <Layout>
-                      <MarketplaceFeatureAudit />
-                    </Layout>
-                  }
-                />
-                <Route
                   path="/templates"
                   element={<Navigate to="/marketplace/themes" replace />}
                 />
@@ -2274,14 +2289,6 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <AppDetails />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/my-apps"
-                  element={
-                    <Layout>
-                      <MyApps />
                     </Layout>
                   }
                 />
@@ -2312,7 +2319,7 @@ const AppContent = () => {
                 />
                 <Route
                   path="/marketplace/wallet"
-                  element={<Navigate to="/billing/wallet" replace />}
+                  element={<Navigate to="/payments" replace />}
                 />
                 {/* Platform Subscription Routes */}
                 <Route
@@ -2408,14 +2415,6 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <CustomerWalletRouteEntry />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/billing/wallet"
-                  element={
-                    <Layout>
-                      <BillingWalletRouteEntry />
                     </Layout>
                   }
                 />
@@ -2671,28 +2670,11 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
-                {/* Test Chat */}
-                <Route
-                  path="/invoices"
-                  element={
-                    <Layout>
-                      <CustomerInvoices />
-                    </Layout>
-                  }
-                />
                 <Route
                   path="/payments"
                   element={
                     <Layout>
                       <CustomerPayments />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/subscription"
-                  element={
-                    <Layout>
-                      <MySubscription />
                     </Layout>
                   }
                 />
@@ -3023,46 +3005,6 @@ const AppContent = () => {
                 />
                 
                 <Route
-                  path="/companies"
-                  element={
-                    <Layout>
-                      <CompaniesManagement />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/super-admin/changelog"
-                  element={
-                    <Layout>
-                      <Changelog />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/users"
-                  element={
-                    <Layout>
-                      <UsersManagement />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/employee-stats"
-                  element={
-                    <Layout>
-                      <EmployeeStatsReport />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/roles"
-                  element={
-                    <Layout>
-                      <RolesManagement />
-                    </Layout>
-                  }
-                />
-                <Route
                   path="/company-links"
                   element={<Navigate to="/my-companies/links" replace />}
                 />
@@ -3087,6 +3029,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <Settings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/company"
+                  element={
+                    <Layout>
+                      <CompanySettingsPage />
                     </Layout>
                   }
                 />
@@ -4339,28 +4289,11 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
-                {/* Test Chat */}
-                <Route
-                  path="/invoices"
-                  element={
-                    <Layout>
-                      <CustomerInvoices />
-                    </Layout>
-                  }
-                />
                 <Route
                   path="/payments"
                   element={
                     <Layout>
                       <CustomerPayments />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/subscription"
-                  element={
-                    <Layout>
-                      <MySubscription />
                     </Layout>
                   }
                 />
@@ -4678,59 +4611,6 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <ReportsPage />
-                    </Layout>
-                  }
-                />
-                
-                <Route
-                  path="/companies"
-                  element={
-                    <Layout>
-                      <CompaniesManagement />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/super-admin/changelog"
-                  element={
-                    <Layout>
-                      <Changelog />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/users"
-                  element={
-                    <Layout>
-                      <UsersManagement />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/employee-stats"
-                  element={
-                    <Layout>
-                      <EmployeeStatsReport />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/roles"
-                  element={
-                    <Layout>
-                      <RolesManagement />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/company-links"
-                  element={<Navigate to="/my-companies/links" replace />}
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <Layout fullWidth>
-                      <Profile />
                     </Layout>
                   }
                 />

@@ -14,11 +14,7 @@ vi.mock("../pages/wallet/CustomerWallet", () => ({
   default: () => <div>Customer Wallet Screen</div>,
 }));
 
-vi.mock("../pages/marketplace/Wallet", () => ({
-  default: () => <div>Company Wallet Screen</div>,
-}));
-
-import CustomerWalletRouteEntry, { BillingWalletRouteEntry } from "../pages/wallet/WalletRouteEntry";
+import CustomerWalletRouteEntry from "../pages/wallet/WalletRouteEntry";
 
 describe("wallet route split", () => {
   it("renders customer wallet on /wallet for customer users", () => {
@@ -31,7 +27,7 @@ describe("wallet route split", () => {
       <MemoryRouter initialEntries={["/wallet"]}>
         <Routes>
           <Route path="/wallet" element={<CustomerWalletRouteEntry />} />
-          <Route path="/billing/wallet" element={<div>Billing Wallet Route</div>} />
+          <Route path="/payments" element={<div>Payments Page</div>} />
         </Routes>
       </MemoryRouter>,
     );
@@ -39,7 +35,7 @@ describe("wallet route split", () => {
     expect(screen.getByText("Customer Wallet Screen")).toBeTruthy();
   });
 
-  it("redirects non-customer users away from /wallet", () => {
+  it("redirects non-customer users away from /wallet to /payments", () => {
     mockUseAuth.mockReturnValue({
       isLoading: false,
       user: { role: "OWNER" },
@@ -49,29 +45,11 @@ describe("wallet route split", () => {
       <MemoryRouter initialEntries={["/wallet"]}>
         <Routes>
           <Route path="/wallet" element={<CustomerWalletRouteEntry />} />
-          <Route path="/billing/wallet" element={<div>Billing Wallet Route</div>} />
+          <Route path="/payments" element={<div>Payments Page</div>} />
         </Routes>
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Billing Wallet Route")).toBeTruthy();
-  });
-
-  it("redirects customer users away from company billing wallet", () => {
-    mockUseAuth.mockReturnValue({
-      isLoading: false,
-      user: { role: "CUSTOMER" },
-    });
-
-    render(
-      <MemoryRouter initialEntries={["/billing/wallet"]}>
-        <Routes>
-          <Route path="/billing/wallet" element={<BillingWalletRouteEntry />} />
-          <Route path="/wallet" element={<div>Customer Wallet Route</div>} />
-        </Routes>
-      </MemoryRouter>,
-    );
-
-    expect(screen.getByText("Customer Wallet Route")).toBeTruthy();
+    expect(screen.getByText("Payments Page")).toBeTruthy();
   });
 });

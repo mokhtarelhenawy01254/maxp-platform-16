@@ -1410,16 +1410,54 @@ exports.installApp = async (req, res) => {
           }
         });
 
-        await tx.companyWallet.upsert({
-          where: { companyId },
-          update: {},
-          create: {
-            id: uuidv4(),
-            companyId,
-            balance: 0,
-            currency: 'EGP'
-          }
+        let wallet = await tx.companyWallet.findUnique({
+          where: { companyId }
         });
+
+        if (!wallet) {
+          wallet = await tx.companyWallet.create({
+            data: {
+              id: uuidv4(),
+              companyId,
+              balance: 0,
+              currency: 'EGP'
+            }
+          });
+        }
+
+        const cost =
+          requestedPricingModel === 'SUBSCRIPTION'
+            ? Number(app.monthlyPrice)
+            : requestedPricingModel === 'PAY_PER_USE'
+              ? Number(app.unitPrice || 0)
+              : 0;
+
+        if (cost > 0 && Number(wallet.balance) < cost) {
+          throw new Error(
+            `رصيد المحفظة غير كافٍ. المطلوب: ${cost} ${wallet.currency}، المتوفر: ${wallet.balance} ${wallet.currency}`
+          );
+        }
+
+        if (cost > 0) {
+          await tx.companyWallet.update({
+            where: { companyId },
+            data: {
+              balance: { decrement: cost },
+              totalSpent: { increment: cost }
+            }
+          });
+
+          await tx.transaction.create({
+            data: {
+              id: uuidv4(),
+              walletId: wallet.id,
+              type: 'PAYMENT',
+              amount: cost,
+              description: `تفعيل ${app.name}${requestedPricingModel === 'SUBSCRIPTION' ? ' (اشتراك شهري)' : ' (وحدة)'}`,
+              referenceId: `APP_${app.slug}_${Date.now()}`
+            }
+          });
+        }
 
         return {
           installation: appInst,
@@ -1455,6 +1493,13 @@ exports.installApp = async (req, res) => {
         success: false,
         message: error.code === 'REQUIRED_APPS_MISSING' ? 'التطبيقات المطلوبة غير مثبتة' : error.message,
         requiredApps: error.requiredApps
+      });
+    }
+
+    if (error.message && error.message.includes('رصيد المحفظة')) {
+      return res.status(402).json({
+        success: false,
+        message: error.message
       });
     }
 
@@ -1833,13 +1878,16 @@ exports.subscribeToBundle = async (req, res) => {
           create: { companyId, plan: "PRO", status: "ACTIVE", monthlyFee: amount, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date() }
         });
         await tx.company.update({ where: { id: companyId }, data: { plan: "MESSAGING" } });
-        const aiApp = await tx.marketplaceApp.findUnique({ where: { slug: "ai-chat-basic" } });
-        if (aiApp) {
-          await tx.companyApp.upsert({
-            where: { companyId_appId: { companyId, appId: aiApp.id } },
-            update: { status: "ACTIVE" },
-            create: { companyId, appId: aiApp.id, status: "ACTIVE" }
-          });
+        const appSlugs = ["ai-chat-basic", "unified-inbox"];
+        for (const slug of appSlugs) {
+          const app = await tx.marketplaceApp.findUnique({ where: { slug } });
+          if (app) {
+            await tx.companyApp.upsert({
+              where: { companyId_appId: { companyId, appId: app.id } },
+              update: { status: "ACTIVE" },
+              create: { companyId, appId: app.id, status: "ACTIVE" }
+            });
+          }
         }
       });
       return res.json({ success: true, message: "تم تفعيل باقة AI + Inbox بنجاح", data: { bundle: "ai-inbox-bundle", skipPayment: true } });
