@@ -736,6 +736,7 @@ async function updateCustomerPreferences(req, res) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function getCategoryForEvent(eventType) {
+  if (eventType.startsWith('TASK_')) return 'TASKS';
   if (eventType.startsWith('ORDER_') || eventType.startsWith('PAYMENT_')) return 'ORDER';
   if (eventType === 'NEW_SIGNUP_WELCOME') return 'CUSTOMER';
   if (

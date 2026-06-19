@@ -792,7 +792,7 @@ function formatProductResponse(product, options = {}) {
     preOrderMessage: product.preOrderMessage,
     showFakeStock: product.showFakeStock,
     category: formatPublicCategoryResponse(product.category),
-    mainImage: normalizedMainImage || normalizedImages[0] || null,
+    mainImage: normalizedImages.length > 0 ? normalizedImages[0] : (normalizedMainImage || null),
     images: normalizedImages,
     volumeDiscounts,
     variants,

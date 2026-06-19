@@ -23,6 +23,8 @@ interface Notification {
   isRead: boolean;
   readAt: string | null;
   createdAt: string;
+  whatsappStatus?: "sent" | "failed" | "pending" | null;
+  whatsappLogId?: string | null;
 }
 
 const TaskNotifications: React.FC = () => {
@@ -40,10 +42,8 @@ const TaskNotifications: React.FC = () => {
     try {
       setLoading(true);
       const token = getAccessToken();
-      const url =
-        filter === "unread"
-          ? "tasks/notifications?unreadOnly=true"
-          : "tasks/notifications";
+      const filterParam = filter === "unread" ? "&unreadOnly=true" : "";
+      const url = `tasks/notifications?includeWhatsapp=true${filterParam}`;
 
       const response = await fetch(buildApiUrl(url), {
         headers: { Authorization: `Bearer ${token}` },
@@ -58,6 +58,22 @@ const TaskNotifications: React.FC = () => {
       console.error("Error fetching notifications:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resendWhatsApp = async (notificationId: string) => {
+    try {
+      const token = getAccessToken();
+      const response = await fetch(buildApiUrl(`tasks/notifications/${notificationId}/resend-whatsapp`), {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (data.success) {
+        fetchNotifications();
+      }
+    } catch (error) {
+      console.error("Error resending notification:", error);
     }
   };
 
@@ -242,6 +258,28 @@ const TaskNotifications: React.FC = () => {
                     >
                       عرض التفاصيل ←
                     </Link>
+                  )}
+                  {notification.whatsappStatus && (
+                    <div className="mt-2 flex items-center gap-2 text-xs">
+                      {notification.whatsappStatus === "sent" && (
+                        <span className="text-green-600 dark:text-green-400 flex items-center">
+                          <CheckCircleIcon className="h-3.5 w-3.5 ml-1" />✓ أُرسلت عبر واتساب
+                        </span>
+                      )}
+                      {notification.whatsappStatus === "failed" && (
+                        <button
+                          onClick={() => resendWhatsApp(notification.id)}
+                          className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 flex items-center"
+                        >
+                          <ExclamationTriangleIcon className="h-3.5 w-3.5 ml-1" />✗ فشل الإرسال — إعادة إرسال
+                        </button>
+                      )}
+                      {notification.whatsappStatus === "pending" && (
+                        <span className="text-yellow-600 dark:text-yellow-400 flex items-center">
+                          <ClockIcon className="h-3.5 w-3.5 ml-1" />⏳ في انتظار الإرسال
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

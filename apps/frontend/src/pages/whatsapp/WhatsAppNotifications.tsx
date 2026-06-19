@@ -118,6 +118,20 @@ interface NotificationSettings {
   payrollEnabled: boolean;
   birthdayWishEnabled: boolean;
   warningNotificationEnabled: boolean;
+  taskNotificationsEnabled: boolean;
+  taskCreatedEnabled: boolean;
+  taskUpdatedEnabled: boolean;
+  taskStatusChangedEnabled: boolean;
+  taskCommentedEnabled: boolean;
+  taskAttachmentAddedEnabled: boolean;
+  taskDeletedEnabled: boolean;
+  taskWatcherAddedEnabled: boolean;
+  taskExecutionCheckEnabled: boolean;
+  taskDeadlineReminderEnabled: boolean;
+  taskOverdueEnabled: boolean;
+  taskSubtaskCreatedEnabled: boolean;
+  taskChecklistItemCompletedEnabled: boolean;
+  taskTimeEntryAddedEnabled: boolean;
   rateLimitPerMinute: number;
   quietHoursEnabled: boolean;
   quietHoursStart: string;
@@ -166,7 +180,8 @@ type TabId =
   | "abandoned-cart"
   | "marketing"
   | "company"
-  | "hr";
+  | "hr"
+  | "tasks";
 
 const categoryBadgeClasses: Record<string, string> = {
   ORDERS:
@@ -402,6 +417,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
           icon: Bell,
         },
         { id: "hr", label: t("whatsappNotifications.tabs.hr"), icon: Briefcase },
+        { id: "tasks", label: "المهام", icon: Briefcase },
       ] satisfies Array<{
         id: TabId;
         label: string;
@@ -444,6 +460,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
         MARKETING: t("whatsappNotifications.tabs.marketing"),
         ABANDONED_CART: t("whatsappNotifications.tabs.abandonedCart"),
         HR: t("whatsappNotifications.tabs.hr"),
+        TASKS: "المهام",
         SYSTEM: systemLabel,
       };
     },
@@ -496,6 +513,22 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       PAYROLL_READY: t("whatsappNotifications.hr.payroll"),
       BIRTHDAY_EMPLOYEE: t("whatsappNotifications.hr.birthday"),
       WARNING_ISSUED: t("whatsappNotifications.hr.warnings"),
+      // أحداث المهام
+      TASK_CREATED: "إنشاء مهمة جديدة",
+      TASK_UPDATED: "تحديث مهمة",
+      TASK_STATUS_CHANGED: "تغيير حالة مهمة",
+      TASK_COMMENTED: "تعليق على مهمة",
+      TASK_ATTACHMENT_ADDED: "مرفق جديد",
+      TASK_DELETED: "حذف مهمة",
+      TASK_WATCHER_ADDED: "إضافة مراقب",
+      TASK_EXECUTION_CHECK: "سؤال تنفيذ مهمة",
+      TASK_EXECUTION_CHECK_SENT: "تم إرسال سؤال تنفيذ",
+      TASK_EXECUTION_RESPONSE: "رد المنفذ",
+      TASK_DEADLINE_REMINDER: "تذكير باقتراب الموعد",
+      TASK_OVERDUE: "مهمة متأخرة",
+      TASK_SUBTASK_CREATED: "مهمة فرعية جديدة",
+      TASK_TIME_ENTRY_ADDED: "تسجيل وقت",
+      TASK_CHECKLIST_ITEM_COMPLETED: "إتمام عنصر قائمة",
       ANNOUNCEMENT: t("whatsappNotifications.marketing.promotional"),
       OTP: i18n.language === "ar" ? "كود تسجيل الدخول عبر واتساب" : "WhatsApp login code",
     }),
@@ -1030,6 +1063,64 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       },
     ],
     [t],
+  );
+
+  const taskOptions = useMemo(
+    () => [
+      {
+        key: "taskCreatedEnabled" as const,
+        label: "إنشاء مهمة جديدة",
+      },
+      {
+        key: "taskUpdatedEnabled" as const,
+        label: "تحديث مهمة",
+      },
+      {
+        key: "taskStatusChangedEnabled" as const,
+        label: "تغيير حالة مهمة",
+      },
+      {
+        key: "taskCommentedEnabled" as const,
+        label: "تعليق على مهمة",
+      },
+      {
+        key: "taskAttachmentAddedEnabled" as const,
+        label: "مرفق جديد",
+      },
+      {
+        key: "taskDeletedEnabled" as const,
+        label: "حذف مهمة",
+      },
+      {
+        key: "taskWatcherAddedEnabled" as const,
+        label: "إضافة مراقب",
+      },
+      {
+        key: "taskExecutionCheckEnabled" as const,
+        label: "سؤال تنفيذ مهمة",
+      },
+      {
+        key: "taskDeadlineReminderEnabled" as const,
+        label: "تذكير باقتراب الموعد",
+      },
+      {
+        key: "taskOverdueEnabled" as const,
+        label: "مهمة متأخرة",
+      },
+      {
+        key: "taskSubtaskCreatedEnabled" as const,
+        label: "مهمة فرعية جديدة",
+      },
+      {
+        key: "taskChecklistItemCompletedEnabled" as const,
+        label: "إتمام عنصر قائمة",
+      },
+      {
+        key: "taskTimeEntryAddedEnabled" as const,
+        label: "تسجيل وقت",
+      },
+    ],
+    [],
   );
 
   const manualAdminRecipientCount = useMemo(() => {
@@ -2014,6 +2105,45 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
               {settings.hrNotificationsEnabled ? (
                 <div className="grid gap-3 md:grid-cols-2">
                   {hrOptions.map((item) => (
+                    <FeatureToggle
+                      key={item.key}
+                      label={item.label}
+                      checked={Boolean(settings[item.key])}
+                      onCheckedChange={(checked) =>
+                        updateSetting(item.key, checked)
+                      }
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </WhatsAppSurfaceCard>
+        </TabsContent>
+
+        <TabsContent value="tasks" className="space-y-4">
+          <WhatsAppSurfaceCard
+            title="إشعارات المهام"
+            description={
+              i18n.language === "ar"
+                ? "اضبط إشعارات المهام المرسلة عبر واتساب للمنفذين والمراقبين."
+                : "Configure WhatsApp task notifications for assignees and watchers."
+            }
+          >
+            <div className="space-y-4">
+              <SectionHeader
+                icon={Briefcase}
+                title="المهام"
+                description={pageDescription}
+                checked={settings.taskNotificationsEnabled}
+                onCheckedChange={(checked) =>
+                  updateSetting("taskNotificationsEnabled", checked)
+                }
+                toneClass="bg-amber-500/10 text-amber-700"
+              />
+
+              {settings.taskNotificationsEnabled ? (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {taskOptions.map((item) => (
                     <FeatureToggle
                       key={item.key}
                       label={item.label}

@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import {
   CalendarIcon,
+  ClipboardDocumentIcon,
   ClipboardDocumentListIcon,
   EyeIcon,
   FolderIcon,
@@ -9,6 +10,7 @@ import {
   TrashIcon,
   UserIcon,
 } from "@heroicons/react/24/outline";
+import { toast } from "sonner";
 
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
@@ -80,6 +82,28 @@ export const TaskTable: React.FC<TaskTableProps> = ({
 
   const normalizeTaskStatus = (status: string | null | undefined): string =>
     String(status || "").toLowerCase();
+
+  const copyTaskDetails = async (task: Task) => {
+    const details = [
+      `المهمة: ${task.title}`,
+      `الوصف: ${task.description || "لا يوجد"}`,
+      `الحالة: ${getStatusText(task.status)}`,
+      `الأولوية: ${getPriorityText(task.priority)}`,
+      `المشروع: ${task.projectName || "بدون مشروع"}`,
+      `المسؤول: ${task.assignedToName || "غير محدد"}`,
+      `البداية: ${task.startDate ? formatDate(task.startDate) : "غير محدد"}`,
+      `الاستحقاق: ${task.dueDate ? formatDate(task.dueDate) : "بدون موعد"}`,
+      `التقدم: ${task.progress}%`,
+      `الرابط: ${window.location.origin}/tasks/${task.id}`,
+    ].join("\n");
+
+    try {
+      await navigator.clipboard.writeText(details);
+      toast.success("تم نسخ المهمة إلى الحافظة");
+    } catch {
+      toast.error("فشل نسخ المهمة");
+    }
+  };
 
   return (
     <div
@@ -266,6 +290,16 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                 >
                   <PencilIcon className="size-4" />
                   <span className="sr-only">تعديل</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 rounded-full"
+                  onClick={() => copyTaskDetails(task)}
+                >
+                  <ClipboardDocumentIcon className="size-4" />
+                  <span className="sr-only">نسخ</span>
                 </Button>
                 <Button
                   type="button"
@@ -475,6 +509,16 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                       >
                         <PencilIcon className="size-4" />
                         <span className="sr-only">تعديل</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 rounded-full"
+                        onClick={() => copyTaskDetails(task)}
+                      >
+                        <ClipboardDocumentIcon className="size-4" />
+                        <span className="sr-only">نسخ</span>
                       </Button>
                       <Button
                         type="button"

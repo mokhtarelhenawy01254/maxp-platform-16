@@ -1998,6 +1998,29 @@ const taskController = {
         data: subtask,
         message: "تم إنشاء المهمة الفرعية بنجاح",
       });
+
+      await taskNotificationService.notifyTaskStakeholders({
+        companyId,
+        task: parentTask,
+        actorUserId: createdBy,
+        type: "subtask_created",
+        title: "مهمة فرعية جديدة",
+        message: `تم إنشاء مهمة فرعية "${title}" ضمن المهمة "${parentTask.title}"`,
+        includeAssignee: true,
+        includeCreator: true,
+        includeWatchers: true,
+        excludeUserIds: [createdBy],
+        whatsappData: {
+          templateName: "TASK_SUBTASK_CREATED",
+          taskTitle: parentTask.title,
+          variables: taskNotificationHelpers.buildTaskVariables(parentTask, {
+            parentTaskTitle: parentTask.title,
+            subtaskTitle: title,
+          }),
+        },
+        logActivity: true,
+        activityDescription: `تم إرسال إشعار مهمة فرعية جديدة: ${title}`,
+      });
     } catch (error) {
       console.error("Error creating subtask:", error);
       res
@@ -2251,6 +2274,36 @@ const taskController = {
         data: timeEntry,
         message: "تم بدء تتبع الوقت",
       });
+
+      const taskForNotif = timeEntry.task || await getSharedPrismaClient().task.findFirst({
+        where: { id: taskId, companyId },
+        select: { id: true, title: true, assignedTo: true, createdBy: true },
+      });
+
+      if (taskForNotif) {
+        await taskNotificationService.notifyTaskStakeholders({
+          companyId,
+          task: taskForNotif,
+          actorUserId: userId,
+          type: "time_entry_added",
+          title: "بدء تتبع وقت",
+          message: `بدأ ${req.user.firstName || "مستخدم"} تتبع الوقت على المهمة "${taskForNotif.title}"`,
+          includeAssignee: true,
+          includeCreator: true,
+          includeWatchers: true,
+          excludeUserIds: [userId],
+          whatsappData: {
+            templateName: "TASK_TIME_ENTRY_ADDED",
+            taskTitle: taskForNotif.title,
+            variables: taskNotificationHelpers.buildTaskVariables(taskForNotif, {
+              entryType: "بدء تتبع",
+              duration: "جاري...",
+            }),
+          },
+          logActivity: true,
+          activityDescription: "تم إرسال إشعار بدء تتبع الوقت",
+        });
+      }
     } catch (error) {
       console.error("Error starting time tracking:", error);
       res.status(500).json({ success: false, error: "فشل في بدء تتبع الوقت" });
@@ -2293,6 +2346,32 @@ const taskController = {
         success: true,
         data: updatedEntry,
         message: `تم إيقاف تتبع الوقت. المدة: ${duration} دقيقة`,
+      });
+
+      await taskNotificationService.notifyTaskStakeholders({
+        companyId,
+        task: timeEntry.task ? { id: timeEntry.taskId, title: timeEntry.task.title, assignedTo: timeEntry.userId, companyId } : { id: timeEntry.taskId, companyId },
+        actorUserId: userId,
+        type: "time_entry_added",
+        title: "إيقاف تتبع وقت",
+        message: `أوقف ${req.user.firstName || "مستخدم"} تتبع الوقت على المهمة. المدة: ${duration} دقيقة`,
+        includeAssignee: true,
+        includeCreator: true,
+        includeWatchers: true,
+        excludeUserIds: [userId],
+        whatsappData: {
+          templateName: "TASK_TIME_ENTRY_ADDED",
+          taskTitle: timeEntry.task?.title || "المهمة",
+          variables: taskNotificationHelpers.buildTaskVariables({
+            id: timeEntry.taskId,
+            title: timeEntry.task?.title || "المهمة",
+          }, {
+            entryType: "إيقاف تتبع",
+            duration: `${duration} دقيقة`,
+          }),
+        },
+        logActivity: true,
+        activityDescription: `تم إرسال إشعار إيقاف تتبع الوقت: ${duration} دقيقة`,
       });
     } catch (error) {
       console.error("Error stopping time tracking:", error);
@@ -2348,6 +2427,36 @@ const taskController = {
         data: timeEntry,
         message: "تم إضافة سجل الوقت بنجاح",
       });
+
+      const taskForTimeEntry = timeEntry.task || await getSharedPrismaClient().task.findFirst({
+        where: { id: taskId, companyId },
+        select: { id: true, title: true, assignedTo: true, createdBy: true },
+      });
+
+      if (taskForTimeEntry) {
+        await taskNotificationService.notifyTaskStakeholders({
+          companyId,
+          task: taskForTimeEntry,
+          actorUserId: userId,
+          type: "time_entry_added",
+          title: "تسجيل وقت يدوي",
+          message: `تم تسجيل ${calculatedDuration} دقيقة على المهمة "${taskForTimeEntry.title}"`,
+          includeAssignee: true,
+          includeCreator: true,
+          includeWatchers: true,
+          excludeUserIds: [userId],
+          whatsappData: {
+            templateName: "TASK_TIME_ENTRY_ADDED",
+            taskTitle: taskForTimeEntry.title,
+            variables: taskNotificationHelpers.buildTaskVariables(taskForTimeEntry, {
+              entryType: "تسجيل يدوي",
+              duration: `${calculatedDuration} دقيقة`,
+            }),
+          },
+          logActivity: true,
+          activityDescription: `تم إرسال إشعار تسجيل وقت: ${calculatedDuration} دقيقة`,
+        });
+      }
     } catch (error) {
       console.error("Error adding manual time entry:", error);
       res.status(500).json({ success: false, error: "فشل في إضافة سجل الوقت" });
@@ -2611,7 +2720,7 @@ const taskController = {
     try {
       const companyId = req.user.companyId;
       const userId = req.user.userId;
-      const { unreadOnly } = req.query;
+      const { unreadOnly, includeWhatsapp } = req.query;
 
       const where = { userId, companyId };
       if (unreadOnly === "true") where.isRead = false;
@@ -2627,10 +2736,92 @@ const taskController = {
         where: { userId, companyId, isRead: false },
       });
 
-      res.json({ success: true, data: { notifications, unreadCount } });
+      let enrichedNotifications = notifications;
+      if (includeWhatsapp === "true") {
+        const phone = req.user.phone;
+        if (phone) {
+          const normalizedPhone = phone.replace(/\D/g, "");
+          const logs = await getSharedPrismaClient().whatsAppNotificationLog.findMany({
+            where: {
+              companyId,
+              recipientPhone: { contains: normalizedPhone.slice(-10) },
+              eventType: { in: notifications.map((n) => `TASK_${n.type.toUpperCase().replace(/-/g, "_")}`) },
+              createdAt: {
+                gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+              },
+            },
+            orderBy: { createdAt: "desc" },
+            select: { id: true, status: true, eventType: true, createdAt: true },
+          });
+
+          const logMap = new Map();
+          for (const log of logs) {
+            const key = log.eventType.replace("TASK_", "").toLowerCase();
+            if (!logMap.has(key) || log.createdAt > logMap.get(key).createdAt) {
+              logMap.set(key, { whatsappLogId: log.id, whatsappStatus: log.status === "SENT" ? "sent" : log.status === "FAILED" ? "failed" : "pending" });
+            }
+          }
+
+          enrichedNotifications = notifications.map((n) => ({
+            ...n,
+            ...(logMap.get(n.type) || { whatsappStatus: null, whatsappLogId: null }),
+          }));
+        }
+      }
+
+      res.json({ success: true, data: { notifications: enrichedNotifications, unreadCount } });
     } catch (error) {
       console.error("Error fetching notifications:", error);
       res.status(500).json({ success: false, error: "فشل في جلب الإشعارات" });
+    }
+  },
+
+  resendTaskNotificationWhatsApp: async (req, res) => {
+    try {
+      const { notificationId } = req.params;
+      const companyId = req.user.companyId;
+      const userId = req.user.userId;
+
+      const notification = await getSharedPrismaClient().taskNotification.findFirst({
+        where: { id: notificationId, userId, companyId },
+        include: { task: { select: { id: true, title: true } } },
+      });
+
+      if (!notification) {
+        return res.status(404).json({ success: false, error: "الإشعار غير موجود" });
+      }
+
+      const task = notification.task || await getSharedPrismaClient().task.findFirst({
+        where: { id: notification.taskId, companyId },
+        select: { id: true, title: true },
+      });
+
+      const result = await taskNotificationService.notify({
+        companyId,
+        taskId: notification.taskId,
+        userId,
+        type: notification.type,
+        title: notification.title,
+        message: notification.message,
+        link: notification.link,
+        whatsappData: {
+          templateName: `TASK_${notification.type.toUpperCase().replace(/-/g, "_")}`,
+          taskTitle: task?.title || "مهمة",
+          variables: taskNotificationHelpers.buildTaskVariables(task || { id: notification.taskId, title: task?.title || "مهمة" }),
+        },
+        actorUserId: userId,
+        logActivity: true,
+        activityDescription: "إعادة إرسال إشعار واتساب يدويًا",
+      });
+
+      res.json({
+        success: true,
+        data: result,
+        message: result?.whatsappResult?.success ? "تم إعادة إرسال الإشعار" : "تم إنشاء الإشعار",
+      });
+    } catch (error) {
+      console.error("Error resending notification:", error);
+      res.status(500).json({ success: false, error: "فشل في إعادة إرسال الإشعار" });
     }
   },
 
@@ -2773,6 +2964,41 @@ const taskController = {
         data: updatedTask,
         message: "تم تحديث ترتيب المهمة",
       });
+
+      if (oldStatus !== newStatus) {
+        const taskForOrderNotif = await getSharedPrismaClient().task.findFirst({
+          where: { id: taskId, companyId },
+          include: {
+            assignee: { select: { id: true, firstName: true, lastName: true } },
+            creator: { select: { id: true, firstName: true, lastName: true } },
+            taskWatchers: { select: { userId: true } },
+          },
+        });
+
+        if (taskForOrderNotif) {
+          await taskNotificationService.notifyTaskStakeholders({
+            companyId,
+            task: taskForOrderNotif,
+            actorUserId: userId,
+            type: "status_changed",
+            title: "تحديث حالة المهمة",
+            message: `تم تغيير حالة المهمة "${updatedTask.title}" إلى ${taskNotificationHelpers.normalizeStatusLabel(newStatus)}`,
+            includeAssignee: true,
+            includeCreator: true,
+            includeWatchers: true,
+            whatsappData: {
+              templateName: "TASK_STATUS_CHANGED",
+              taskTitle: updatedTask.title,
+              variables: taskNotificationHelpers.buildTaskVariables(taskForOrderNotif, {
+                oldStatus: taskNotificationHelpers.normalizeStatusLabel(oldStatus),
+                newStatus: taskNotificationHelpers.normalizeStatusLabel(newStatus),
+              }),
+            },
+            logActivity: true,
+            activityDescription: `تم إرسال إشعار تغيير حالة من Kanban: ${oldStatus} ← ${newStatus}`,
+          });
+        }
+      }
     } catch (error) {
       console.error("Error updating task order:", error);
       res
@@ -3407,6 +3633,28 @@ const taskController = {
         include: { items: true },
       });
       res.json({ success: true, data: checklist });
+
+      const taskForChecklist = await getSharedPrismaClient().task.findFirst({
+        where: { id: taskId, companyId },
+        select: { id: true, title: true, assignedTo: true, createdBy: true },
+      });
+
+      if (taskForChecklist) {
+        await taskNotificationService.notifyTaskStakeholders({
+          companyId,
+          task: taskForChecklist,
+          actorUserId: req.user.userId,
+          type: "checklist_created",
+          title: "قائمة تحقق جديدة",
+          message: `تم إنشاء قائمة تحقق "${title}" في المهمة "${taskForChecklist.title}"`,
+          includeAssignee: true,
+          includeCreator: true,
+          includeWatchers: true,
+          excludeUserIds: [req.user.userId],
+          logActivity: true,
+          activityDescription: `تم إرسال إشعار قائمة تحقق جديدة: ${title}`,
+        });
+      }
     } catch (error) {
       console.error("Error creating checklist:", error);
       res
@@ -3480,6 +3728,45 @@ const taskController = {
         data: updateData,
       });
       res.json({ success: true, data: item });
+
+      if (isCompleted !== undefined && item.isCompleted !== undefined) {
+        const checklistItemTask = await getSharedPrismaClient().taskChecklist.findUnique({
+          where: { id: item.checklistId },
+          select: { taskId: true, title: true, companyId: true },
+        });
+
+        if (checklistItemTask) {
+          const parentTask = await getSharedPrismaClient().task.findFirst({
+            where: { id: checklistItemTask.taskId, companyId },
+            select: { id: true, title: true, assignedTo: true, createdBy: true, companyId: true },
+          });
+
+          if (parentTask) {
+            await taskNotificationService.notifyTaskStakeholders({
+              companyId,
+              task: parentTask,
+              actorUserId: userId,
+              type: "checklist_item_completed",
+              title: item.isCompleted ? "تم إتمام عنصر" : "تم إعادة فتح عنصر",
+              message: `${item.isCompleted ? "تم إتمام" : "تم إعادة فتح"} العنصر "${item.content}" في قائمة "${checklistItemTask.title}" بالمهمة "${parentTask.title}"`,
+              includeAssignee: true,
+              includeCreator: true,
+              includeWatchers: true,
+              excludeUserIds: [userId],
+              whatsappData: {
+                templateName: "TASK_CHECKLIST_ITEM_COMPLETED",
+                taskTitle: parentTask.title,
+                variables: taskNotificationHelpers.buildTaskVariables(parentTask, {
+                  itemContent: item.content,
+                  completedBy: req.user.firstName || "مستخدم",
+                }),
+              },
+              logActivity: true,
+              activityDescription: `تم إرسال إشعار إتمام عنصر: ${item.content}`,
+            });
+          }
+        }
+      }
     } catch (error) {
       console.error("Error updating checklist item:", error);
       res.status(500).json({ success: false, error: "فشل في تحديث العنصر" });

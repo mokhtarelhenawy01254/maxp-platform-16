@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ArrowPathIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, BellIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 
 import { Button } from "../../../components/ui/button";
 import type { TaskScopeFilter, TaskSortBy } from "../types";
@@ -271,6 +271,20 @@ export const TaskSettingsTab: React.FC<TaskSettingsTabProps> = ({
               label="إظهار شريط الأوامر في الجوال"
             />
           </div>
+        </div>
+
+        <div className="rounded-[28px] border border-border/70 bg-card/65 p-5">
+          <h3 className="text-base font-semibold text-foreground">إشعارات واتساب</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            تحكم في إشعارات المهام المرسلة عبر واتساب — شغّل أو أوقف كل حدث على حدة.
+          </p>
+          <a
+            href="/whatsapp/notifications?tab=tasks"
+            className="mt-3 inline-flex items-center rounded-2xl bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+          >
+            <BellIcon className="size-4 ml-2" />
+            فتح إعدادات إشعارات واتساب
+          </a>
         </div>
 
         {isManager ? (

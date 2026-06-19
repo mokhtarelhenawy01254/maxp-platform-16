@@ -8,8 +8,8 @@ const taskNotificationService = require('../services/taskNotificationService');
 function startTaskDeadlineScheduler() {
     console.log('⏰ [TASK-DEADLINE-CRON] Initializing Task Deadline Cron Service...');
 
-    // Runs every day at 9 AM
-    cron.schedule('0 9 * * *', async () => {
+    // Runs every 2 hours
+    cron.schedule('0 */2 * * *', async () => {
         console.log('⏰ [TASK-DEADLINE-CRON] Checking for approaching deadlines...');
         const prisma = getSharedPrismaClient();
 
@@ -69,6 +69,25 @@ function startTaskDeadlineScheduler() {
                     actorUserId: task.assignedTo,
                     logActivity: true,
                     activityDescription: 'تم إرسال تذكير واتساب باقتراب موعد التسليم'
+                });
+
+                await taskNotificationService.notifyTaskStakeholders({
+                    companyId: task.companyId,
+                    task,
+                    actorUserId: task.assignedTo,
+                    type: 'deadline_approaching',
+                    title: 'تنبيه: اقتراب موعد تسليم مهمة',
+                    message: `المهمة "${task.title}" تقترب من موعد استحقاقها (${new Date(task.dueDate).toLocaleDateString('ar-EG')})`,
+                    includeAssignee: false,
+                    includeCreator: true,
+                    includeWatchers: true,
+                    whatsappData: {
+                        templateName: 'TASK_DEADLINE_REMINDER',
+                        taskTitle: task.title,
+                        variables: taskNotificationService.helpers.buildTaskVariables(task)
+                    },
+                    logActivity: true,
+                    activityDescription: 'تم إرسال تذكير واتساب للمراقبين باقتراب موعد التسليم'
                 });
             }
 

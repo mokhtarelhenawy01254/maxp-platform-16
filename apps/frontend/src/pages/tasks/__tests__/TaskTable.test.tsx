@@ -1,9 +1,13 @@
 import React from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 import { TaskTable } from "../components/TaskTable";
 import type { Task } from "../types";
+
+jest.mock("sonner", () => ({
+  toast: { success: jest.fn(), error: jest.fn() },
+}));
 
 const buildTask = (status: Task["status"]): Task => ({
   id: "task-1",
@@ -131,5 +135,106 @@ describe("TaskTable employee status actions", () => {
       "task-1",
       "completed",
     );
+  });
+});
+
+describe("TaskTable copy to clipboard", () => {
+  beforeEach(() => {
+    Object.defineProperty(global.navigator, "clipboard", {
+      value: { writeText: jest.fn().mockResolvedValue(undefined) },
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  it("copies task details to clipboard", async () => {
+    renderTaskTable(buildTask("pending"));
+
+    fireEvent.click(screen.getAllByRole("button", { name: /نسخ/i })[0]);
+
+    await waitFor(() => {
+      expect(global.navigator.clipboard.writeText).toHaveBeenCalled();
+    });
+    const text = (global.navigator.clipboard.writeText as jest.Mock).mock
+      .calls[0][0];
+
+    expect(text).toContain("متابعة العميل");
+    expect(text).toContain("تحديث الحالة من شاشة الموظف");
+    expect(text).toContain("pending");
+    expect(text).toContain("medium");
+    expect(text).toContain("إطلاق المنصة");
+    expect(text).toContain("موظف التجربة");
+    expect(text).toContain("2026-05-01");
+    expect(text).toContain(window.location.origin + "/tasks/task-1");
+  });
+
+  it("shows success toast when clipboard succeeds", async () => {
+    const toastSuccess = require("sonner").toast.success;
+
+    renderTaskTable(buildTask("in_progress"));
+
+    fireEvent.click(screen.getAllByRole("button", { name: /نسخ/i })[0]);
+
+    await waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledWith("تم نسخ المهمة إلى الحافظة");
+    });
+  });
+
+  it("shows error toast when clipboard fails", async () => {
+    (global.navigator.clipboard.writeText as jest.Mock).mockRejectedValue(
+      new Error("denied"),
+    );
+    const toastError = require("sonner").toast.error;
+
+    renderTaskTable(buildTask("completed"));
+
+    fireEvent.click(screen.getAllByRole("button", { name: /نسخ/i })[0]);
+
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith("فشل نسخ المهمة");
+    });
+  });
+
+  it("renders copy button for each task in both views", () => {
+    render(
+      <MemoryRouter
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <TaskTable
+          paginatedTasks={[buildTask("pending"), buildTask("in_progress")]}
+          filteredAndSortedTasks={[
+            buildTask("pending"),
+            buildTask("in_progress"),
+          ]}
+          searchQuery=""
+          selectedTasks={[]}
+          handleSelectTask={jest.fn()}
+          handleSelectAll={jest.fn()}
+          isOverdue={jest.fn(() => false)}
+          getStatusColor={jest.fn(() => "")}
+          getStatusText={jest.fn(
+            (statusValue: Task["status"]) => statusValue,
+          )}
+          getStatusIcon={jest.fn(() => null)}
+          getPriorityColor={jest.fn(() => "")}
+          getPriorityText={jest.fn(
+            (priorityValue: Task["priority"]) => priorityValue,
+          )}
+          formatDate={jest.fn((value: string) => value)}
+          updateTaskStatus={jest.fn()}
+          deleteTask={jest.fn()}
+          setSelectedTask={jest.fn()}
+          setShowTaskModal={jest.fn()}
+          setEditingTask={jest.fn()}
+          setShowEditTaskModal={jest.fn()}
+          currentPage={1}
+          setCurrentPage={jest.fn()}
+          totalPages={1}
+          serverTotalTasks={2}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByRole("button", { name: /نسخ/i }).length).toBe(4);
   });
 });

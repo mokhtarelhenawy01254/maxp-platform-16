@@ -864,6 +864,42 @@ const DEFAULT_TEMPLATES = {
 
 هذا إشعار للمتابعة فقط.`,
     variables: ['userName', 'taskTitle']
+  },
+
+  TASK_SUBTASK_CREATED: {
+    name: 'مهمة فرعية جديدة',
+    content: `مرحباً {userName} 👋
+    
+تم إنشاء مهمة فرعية ضمن المهمة: {parentTaskTitle}
+📌 العنوان: {subtaskTitle}
+📅 تاريخ الاستحقاق: {dueDate}
+
+يرجى مراجعة التفاصيل في لوحة التحكم.`,
+    variables: ['userName', 'parentTaskTitle', 'subtaskTitle', 'dueDate']
+  },
+
+  TASK_TIME_ENTRY_ADDED: {
+    name: 'تسجيل وقت على مهمة',
+    content: `مرحباً {userName} ⏱️
+
+تم تسجيل وقت على المهمة: {taskTitle}
+⏱️ المدة: {duration}
+📝 النوع: {entryType}
+
+تم تحديث إجمالي الوقت المسجل للمهمة.`,
+    variables: ['userName', 'taskTitle', 'duration', 'entryType']
+  },
+
+  TASK_CHECKLIST_ITEM_COMPLETED: {
+    name: 'إتمام عنصر في قائمة التحقق',
+    content: `مرحباً {userName} ✅
+
+{itemContent}
+في المهمة: {taskTitle}
+من إنجاز: {completedBy}
+
+تم تسجيل الإنجاز في سجل المهمة.`,
+    variables: ['userName', 'itemContent', 'taskTitle', 'completedBy']
   }
 }
 
@@ -1182,6 +1218,10 @@ function getModuleSettingKey(eventType) {
     eventType === 'MANUAL_DEDUCTION'
   ) {
     return 'hrNotificationsEnabled';
+  }
+
+  if (eventType.startsWith('TASK_')) {
+    return 'taskNotificationsEnabled';
   }
 
   return null;

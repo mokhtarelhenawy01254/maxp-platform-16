@@ -353,3 +353,5 @@ apps/frontend/.env.*.local
 # Lives outside apps/ at the repo root
 _archive/
 _archive/**
+
+chrome_profile/

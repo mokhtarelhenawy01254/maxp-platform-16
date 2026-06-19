@@ -193,6 +193,10 @@ router.put(
   "/notifications/read-all",
   taskController.markAllNotificationsAsRead,
 );
+router.post(
+  "/notifications/:notificationId/resend-whatsapp",
+  taskController.resendTaskNotificationWhatsApp,
+);
 
 // ==================== Attachments Routes ====================
 router.get("/:taskId/attachments", taskController.getAttachments);
