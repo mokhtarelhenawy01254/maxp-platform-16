@@ -183,11 +183,14 @@ const bootstrapApp = async (): Promise<void> => {
   root.render(<AdminAppBootstrap />);
   scheduleOptionalGoogleFonts();
 
-  import("./utils/pushNotifications")
-    .then(({ registerPushServiceWorker }) => registerPushServiceWorker())
-    .catch((error) => {
-      console.warn("[bootstrap] Failed to register push service worker.", error);
-    });
+  // ponytail: push notifications are non-critical; load after interactive
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(() => {
+      import("./utils/pushNotifications")
+        .then(({ registerPushServiceWorker }) => registerPushServiceWorker())
+        .catch(() => {});
+    }, { timeout: 5000 });
+  }
 };
 
 void bootstrapApp()

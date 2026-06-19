@@ -1,26 +1,8 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
-import arTranslation from "../locales/ar/translation.json";
-import arSidebar from "../locales/ar/sections/sidebar.json";
-import arOrders from "../locales/ar/sections/orders.json";
-import arAppDashboard from "../locales/ar/sections/appDashboard.json";
-import arCompetitors from "../locales/ar/sections/competitors.json";
-import arMarketplace from "../locales/ar/sections/marketplace.json";
-import arSubscription from "../locales/ar/sections/subscription.json";
-import arAppPricing from "../locales/ar/sections/appPricing.json";
-import arAiKnowledgeQuestions from "../locales/ar/sections/aiKnowledgeQuestions.json";
-import arAuth from "../locales/ar/sections/auth.json";
-import enTranslation from "../locales/en/translation.json";
-import enSidebar from "../locales/en/sections/sidebar.json";
-import enOrders from "../locales/en/sections/orders.json";
-import enAppDashboard from "../locales/en/sections/appDashboard.json";
-import enCompetitors from "../locales/en/sections/competitors.json";
-import enMarketplace from "../locales/en/sections/marketplace.json";
-import enSubscription from "../locales/en/sections/subscription.json";
-import enAppPricing from "../locales/en/sections/appPricing.json";
-import enAiKnowledgeQuestions from "../locales/en/sections/aiKnowledgeQuestions.json";
-import enAuth from "../locales/en/sections/auth.json";
+import ar from "../locales/ar/translation.json";
+import en from "../locales/en/translation.json";
 import { getBackendUrl } from "../config/environment";
 
 // قائمة الدول العربية
@@ -115,34 +97,8 @@ i18n
   .use(initReactI18next)
   .init({
     resources: {
-      ar: {
-        translation: {
-          ...arTranslation,
-          sidebar: arSidebar,
-          orders: arOrders,
-          appDashboard: arAppDashboard,
-          competitors: arCompetitors,
-          marketplace: arMarketplace,
-          subscription: arSubscription,
-          appPricing: arAppPricing,
-          aiKnowledgeQuestions: arAiKnowledgeQuestions,
-          auth: arAuth,
-        },
-      },
-      en: {
-        translation: {
-          ...enTranslation,
-          sidebar: enSidebar,
-          orders: enOrders,
-          appDashboard: enAppDashboard,
-          competitors: enCompetitors,
-          marketplace: enMarketplace,
-          subscription: enSubscription,
-          appPricing: enAppPricing,
-          aiKnowledgeQuestions: enAiKnowledgeQuestions,
-          auth: enAuth,
-        },
-      },
+      ar: { translation: ar },
+      en: { translation: en },
     },
     lng: initialLanguage,
     fallbackLng: "ar",

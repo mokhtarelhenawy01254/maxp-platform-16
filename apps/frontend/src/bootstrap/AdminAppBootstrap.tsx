@@ -3,10 +3,9 @@ import { BrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../utils/queryClient";
 
-import AppRoot from "../AppRoot";
-import { Toaster } from "sonner";
-import { ThemeProvider } from "../components/theme-provider";
-
+const AppRoot = React.lazy(() => import("../AppRoot"));
+const ThemeProvider = React.lazy(() => import("../components/theme-provider").then(m => ({ default: m.ThemeProvider })));
+const LazyToaster = React.lazy(() => import("sonner").then(m => ({ default: m.Toaster })));
 const LazyErrorBoundary = React.lazy(() => import("../components/ErrorBoundary"));
 
 const RouteAwareErrorBoundary: React.FC<{ children: React.ReactNode }> = ({
@@ -19,19 +18,21 @@ const RouteAwareErrorBoundary: React.FC<{ children: React.ReactNode }> = ({
 
 const AdminAppBootstrap: React.FC = () => (
   <QueryClientProvider client={queryClient}>
-  <ThemeProvider defaultTheme="light" storageKey="max-store-theme">
-    <BrowserRouter
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
-      <RouteAwareErrorBoundary>
-        <AppRoot />
-      </RouteAwareErrorBoundary>
-      <Toaster position="top-right" richColors />
-    </BrowserRouter>
-  </ThemeProvider>
+  <React.Suspense fallback={null}>
+    <ThemeProvider defaultTheme="light" storageKey="max-store-theme">
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        <RouteAwareErrorBoundary>
+          <AppRoot />
+        </RouteAwareErrorBoundary>
+        <LazyToaster position="top-right" richColors />
+      </BrowserRouter>
+    </ThemeProvider>
+  </React.Suspense>
   </QueryClientProvider>
 );
 

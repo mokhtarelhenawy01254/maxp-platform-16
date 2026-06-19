@@ -777,9 +777,6 @@ const AIHubLayout = React.lazy(
 const AgenticRAGLab = React.lazy(
   () => import("./pages/admin/AgenticRAGLab"),
 );
-const AgentManagerPage = React.lazy(
-  () => import("./pages/admin/AgentManagerPage"),
-);
 const AgentCatalogPage = React.lazy(
   () => import("./pages/admin/AgentCatalogPage"),
 );
@@ -791,9 +788,6 @@ const AgentSkillsPage = React.lazy(
 );
 const AgentToolsPage = React.lazy(
   () => import("./pages/admin/AgentToolsPage"),
-);
-const SubAgentsPage = React.lazy(
-  () => import("./pages/admin/SubAgentsPage"),
 );
 const AIAgentSandboxPage = React.lazy(
   () => import("./pages/admin/ai-agent-sandbox/AIAgentSandboxPage"),
@@ -6015,14 +6009,6 @@ const AppContent = () => {
                 />
                 {/* Merchant AI Pages */}
                 <Route
-                  path="/admin/agent-manager"
-                  element={
-                    <Layout fullWidth>
-                      <AgentManagerPage />
-                    </Layout>
-                  }
-                />
-                <Route
                   path="/admin/agent-config"
                   element={<Navigate to="/admin/agent-profiles?agent=ceo" replace />}
                 />
@@ -6085,14 +6071,6 @@ const AppContent = () => {
                 <Route
                   path="/admin/ai-tools"
                   element={<Navigate to="/admin/ai-hub?tab=tools" replace />}
-                />
-                <Route
-                  path="/admin/sub-agents"
-                  element={
-                    <Layout fullWidth>
-                      <SubAgentsPage />
-                    </Layout>
-                  }
                 />
                 <Route
                   path="/admin/ai-scheduler"
