@@ -22,6 +22,9 @@ import {
 import {
   Sheet, SheetContent,
 } from "@/components/ui/sheet";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import tokenManager from "../../../utils/tokenManager";
@@ -42,9 +45,10 @@ function useIsMobile(breakpoint = 1024) {
   return isMobile;
 }
 
-type Tab = "soul" | "agents" | "tools-md" | "tools" | "skills-json";
+type Tab = "settings" | "advanced";
+type AdvancedTab = "soul" | "agents" | "tools-md" | "skills-json";
 
-const FILE_KEYS: Record<string, string> = {
+const FILE_LABELS: Record<AdvancedTab, string> = {
   soul: "SOUL.md",
   agents: "AGENTS.md",
   "tools-md": "TOOLS.md",
@@ -297,7 +301,8 @@ export default function AgentProfilesPage() {
   const [selectedId, setSelectedId] = useState<string | null>(agentIdFromUrl);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [tab, setTab] = useState<Tab>("soul");
+  const [tab, setTab] = useState<Tab>("settings");
+  const [advancedFile, setAdvancedFile] = useState<AdvancedTab>("soul");
   const [profile, setProfile] = useState<AgentProfileResponse | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -311,6 +316,7 @@ export default function AgentProfilesPage() {
   const [draftModel, setDraftModel] = useState("");
   const [draftName, setDraftName] = useState("");
   const [draftIcon, setDraftIcon] = useState("🤖");
+  const [draftDescription, setDraftDescription] = useState("");
   const [draftFiles, setDraftFiles] = useState<Record<string, string>>({});
   const [draftAllowedTools, setDraftAllowedTools] = useState<string[]>([]);
   const [draftAllowedSkills, setDraftAllowedSkills] = useState<string[]>([]);
@@ -338,6 +344,7 @@ export default function AgentProfilesPage() {
       draftModel !== (profile.agent.model || "")
       || draftName !== (profile.agent.name || "")
       || draftIcon !== (profile.agent.icon || "🤖")
+      || draftDescription !== (profile.agent.description || "")
       || JSON.stringify(draftAllowedTools) !== JSON.stringify(profile.allowedTools || [])
       || JSON.stringify(draftAllowedSkills) !== JSON.stringify(profile.skillIds || [])
       || JSON.stringify(draftToolAutonomy) !== JSON.stringify(
@@ -348,14 +355,18 @@ export default function AgentProfilesPage() {
         )
       || !FILES_EQUAL(draftFiles, profile.files)
     );
-  }, [profile, draftModel, draftName, draftIcon, draftAllowedTools, draftAllowedSkills, draftToolAutonomy, draftConfig, draftFiles]);
+  }, [profile, draftModel, draftName, draftIcon, draftDescription, draftAllowedTools, draftAllowedSkills, draftToolAutonomy, draftConfig, draftFiles]);
+
+  const advancedFileOptions: { key: AdvancedTab; label: string }[] = [
+    { key: "soul", label: t("agentProfiles.tabs.soul") },
+    { key: "agents", label: t("agentProfiles.tabs.agents") },
+    { key: "tools-md", label: t("agentProfiles.tabs.toolsMd") },
+    { key: "skills-json", label: t("agentProfiles.tabs.skillsJson") },
+  ];
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: "soul",   label: t("agentProfiles.tabs.soul"),   icon: <BookOpen className="size-4" /> },
-    { key: "agents", label: t("agentProfiles.tabs.agents"),  icon: <Users className="size-4" /> },
-    { key: "tools-md",  label: t("agentProfiles.tabs.toolsMd"),  icon: <Wrench className="size-4" /> },
-    { key: "tools", label: t("agentProfiles.tabs.tools"),   icon: <Shield className="size-4" /> },
-    { key: "skills-json", label: t("agentProfiles.tabs.skillsJson"), icon: <FileCode className="size-4" /> },
+    { key: "settings", label: t("agentProfiles.tabs.settings"), icon: <Shield className="size-4" aria-hidden="true" /> },
+    { key: "advanced", label: t("agentProfiles.tabs.advanced"), icon: <FileCode className="size-4" aria-hidden="true" /> },
   ];
 
   const loadAgents = useCallback(async () => {
@@ -430,11 +441,14 @@ export default function AgentProfilesPage() {
           setDraftModel(data.agent.model || "");
           setDraftName(data.agent.name);
           setDraftIcon(data.agent.icon || "🤖");
+          setDraftDescription(data.agent.description || "");
           setDraftFiles({ ...data.files });
           setDraftAllowedTools(data.allowedTools || []);
           setDraftAllowedSkills(data.skillIds || []);
           setDraftToolAutonomy((data.agent as { toolAutonomy?: Record<string, string> }).toolAutonomy || {});
-          setDraftConfig((data.agent as { config?: Record<string, string> }).config || {});
+          const loadedConfig = (data.agent as { config?: Record<string, string> }).config || {};
+          setDraftConfig(loadedConfig);
+          if (loadedConfig.soul_persona) generateSoulFromConfig(loadedConfig);
         }
       })
       .catch((err) => { if (!cancelled) setProfileError(err?.message || "Failed to load profile"); })
@@ -491,6 +505,7 @@ export default function AgentProfilesPage() {
     setProfileError(null);
     const body: Record<string, unknown> = {
       name: draftName || profile.agent.name,
+      description: draftDescription || profile.agent.description,
       role: profile.agent.role,
       model: draftModel || profile.agent.model,
       icon: draftIcon,
@@ -507,7 +522,7 @@ export default function AgentProfilesPage() {
     if (data) {
       setProfile((prev) => prev ? {
         ...prev,
-        agent: { ...prev.agent, model: draftModel || prev.agent.model, name: draftName || prev.agent.name, icon: draftIcon, toolAutonomy: draftToolAutonomy, config: draftConfig } as typeof prev.agent,
+        agent: { ...prev.agent, model: draftModel || prev.agent.model, name: draftName || prev.agent.name, description: draftDescription || prev.agent.description, icon: draftIcon, toolAutonomy: draftToolAutonomy, config: draftConfig } as typeof prev.agent,
         allowedTools: draftAllowedTools,
         skillIds: draftAllowedSkills,
         files: { ...draftFiles },
@@ -582,6 +597,14 @@ export default function AgentProfilesPage() {
   };
 
   const selectedAgent = agents.find((a) => a.id === selectedId);
+
+  /* ── Update page title ── */
+  useEffect(() => {
+    if (selectedAgent?.name) {
+      document.title = selectedAgent.name + " — " + t("agentProfiles.sidebar.title");
+    }
+  }, [selectedAgent?.name, t]);
+
   const channels = useMemo(() => getAgentChannels(profile), [profile]);
   const active = isActive(profile?.agent?.status);
   const createdStr = relativeTime((profile?.agent as { createdAt?: string })?.createdAt, t, i18n.language);
@@ -613,23 +636,77 @@ export default function AgentProfilesPage() {
     return <FieldEditor label={fileKey} value={content} onChange={(v) => updateFile(fileKey, v)} minRows={12} disablePreview={fileKey === "SKILLS.json"} />;
   };
 
+  const generateSoulFromConfig = (config: Record<string, string>) => {
+    const persona = config.soul_persona || "";
+    const goal = config.soul_goal || "";
+    const toneMap: Record<string, string> = {
+      friendly: "ودود ومتعاون",
+      formal: "رسمي ومهني",
+      concise: "مختصر ومباشر",
+      detailed: "مفصل وشامل",
+    };
+    const tone = toneMap[config.soul_tone || ""] || "";
+    const tasks = config.soul_tasks || "";
+    const boundaries = config.soul_boundaries || "";
+    const langMap: Record<string, string> = {
+      auto: "حسب لغة العميل (عربي أو إنجليزي)",
+      ar: "العربية",
+      en: "English",
+    };
+    const language = langMap[config.soul_language || ""] || "";
+    const welcome = config.soul_welcome || "";
+    const escalationMap: Record<string, string> = {
+      knowledge_ask: "إذا كنت لا تعرف الإجابة، اسأل التاجر عبر لوحة التحكم.",
+      escalate_human: "إذا كنت لا تعرف الإجابة، حول المحادثة إلى فريق الدعم البشري.",
+      apologize: "إذا كنت لا تعرف الإجابة، اعتذر للعميل واطلب منه التواصل مع الدعم.",
+    };
+    const escalation = escalationMap[config.soul_escalation || ""] || escalationMap.knowledge_ask;
+
+    const parts: string[] = [];
+    if (persona || goal) {
+      const line = goal
+        ? `أنت ${persona}، ${goal}.`
+        : `أنت ${persona}.`;
+      parts.push(line);
+    }
+    if (tone) parts.push(`\n## أسلوب الرد\n${tone}`);
+    if (tasks) parts.push(`\n## المهام الأساسية\n${tasks}`);
+    if (boundaries) parts.push(`\n## الحدود\n${boundaries}`);
+    if (welcome) parts.push(`\n## رسالة الترحيب\n${welcome}`);
+    if (escalation) parts.push(`\n## عندما لا تعرف الإجابة\n${escalation}`);
+    if (language) parts.push(`\n## لغة الرد\n${language}`);
+
+    const soulContent = parts.join("\n\n");
+    setDraftFiles((prev) => ({ ...prev, "SOUL.md": soulContent }));
+    if (!editing) setEditing(true);
+  };
+
+  const handleSoulFieldChange = (key: string, value: string) => {
+    const newConfig = { ...draftConfig, [key]: value };
+    setDraftConfig(newConfig);
+    generateSoulFromConfig(newConfig);
+  };
+
   const discardChanges = () => {
     if (!profile) return;
     setEditing(false);
     setDraftModel(profile.agent.model || "");
     setDraftName(profile.agent.name);
     setDraftIcon(profile.agent.icon || "🤖");
+    setDraftDescription(profile.agent.description || "");
     setDraftFiles({ ...profile.files });
     setDraftAllowedTools(profile.allowedTools || []);
     setDraftAllowedSkills(profile.skillIds || []);
     setDraftToolAutonomy((profile.agent as { toolAutonomy?: Record<string, string> }).toolAutonomy || {});
-    setDraftConfig((profile.agent as { config?: Record<string, string> }).config || {});
+    const discardedConfig = (profile.agent as { config?: Record<string, string> }).config || {};
+    setDraftConfig(discardedConfig);
+    if (discardedConfig.soul_persona) generateSoulFromConfig(discardedConfig);
   };
 
   const sidebarContent = (
     <aside className="w-64 flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col overflow-hidden">
       <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
-        <Bot className="size-4 text-indigo-600" />
+        <Bot className="size-4 text-indigo-600" aria-hidden="true" />
         <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200">{t("agentProfiles.sidebar.title")}</h2>
         {!agentsLoading && <Badge variant="secondary" className="text-xs mr-auto">{agents.length}</Badge>}
         <button onClick={() => setCreateOpen(true)}
@@ -668,10 +745,10 @@ export default function AgentProfilesPage() {
             <button key={agent.id} onClick={() => {
               if (hasUnsavedChanges && selectedId !== agent.id && !window.confirm(t("agentProfiles.sidebar.unsavedConfirm"))) return;
               setSelectedId(agent.id);
-              setTab("soul");
+              setTab("settings");
               setMobileDrawerOpen(false);
             }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left transition-colors ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                 selectedId === agent.id
                   ? "bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800"
                   : "hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-transparent"
@@ -687,10 +764,6 @@ export default function AgentProfilesPage() {
                     profile && selectedId === agent.id && active ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600"
                   }`} />
                 </div>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{agent.role}</p>
-                {(agent.departmentName) && (
-                  <p className="text-[9px] text-slate-400 dark:text-slate-500 truncate">{agent.departmentIcon} {agent.departmentName}</p>
-                )}
               </div>
             </button>
           ))
@@ -718,36 +791,48 @@ export default function AgentProfilesPage() {
         {/* Header */}
         <div className="px-4 lg:px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
           {/* Mobile header row */}
-          <div className="flex items-center gap-2 mb-1 lg:hidden">
+          <div className="flex items-center gap-2 mb-3 lg:hidden">
             <button onClick={() => setMobileDrawerOpen(true)}
-              className="flex items-center justify-center size-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+              className="flex items-center justify-center size-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               aria-label={t("agentProfiles.sidebar.title")}
             >
-              <Menu className="size-5" />
+              <Menu className="size-5" aria-hidden="true" />
             </button>
             <Badge variant="secondary" className="text-xs mr-auto">{agents.length}</Badge>
             <button onClick={() => navigate("/admin/ai-chat")}
-              className="flex items-center justify-center size-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-indigo-600"
+              className="flex items-center justify-center size-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-indigo-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              aria-label={t("agentProfiles.header.chatWithManager")}
               title={t("agentProfiles.header.chatWithManager")}
             >
-              <MessageSquare className="size-4" />
+              <MessageSquare className="size-4" aria-hidden="true" />
+            </button>
+            <button onClick={() => loadAgents()}
+              className="flex items-center justify-center size-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-indigo-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              aria-label={t("agentProfiles.header.refresh")}
+              title={t("agentProfiles.header.refresh")}
+              disabled={agentsLoading}
+            >
+              <RefreshCw className={cn("size-4", agentsLoading && "animate-spin")} aria-hidden="true" />
             </button>
             <button onClick={() => setCreateOpen(true)}
-              className="flex items-center justify-center size-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-indigo-600"
+              className="flex items-center justify-center size-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-indigo-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              aria-label={t("agentProfiles.sidebar.addTitle")}
               title={t("agentProfiles.sidebar.addTitle")}
             >
-              <Plus className="size-5" />
+              <Plus className="size-5" aria-hidden="true" />
             </button>
           </div>
+
           {selectedAgent ? (
-            <div className="flex flex-col lg:flex-row items-start gap-3">
-              <div className="flex items-start gap-3 w-full">
+            <div className="space-y-3">
+              {/* Identity row */}
+              <div className="flex items-start gap-3">
                 {editing ? (
                   <div className="flex flex-col items-center gap-1">
                     <div className="grid grid-cols-4 gap-0.5">
                       {AGENT_ICONS.map((icon) => (
                         <button key={icon} type="button" onClick={() => { setDraftIcon(icon); if (!editing) setEditing(true); }}
-                          className={`size-7 flex items-center justify-center rounded-md text-sm border transition-all ${
+                          className={`size-7 flex items-center justify-center rounded-md text-sm border transition-colors ${
                             draftIcon === icon
                               ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 dark:border-indigo-600"
                               : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
@@ -769,102 +854,106 @@ export default function AgentProfilesPage() {
                     )}
                     {profile && (
                       <>
-                        <span className={`inline-block size-2 rounded-full ${active ? "bg-emerald-500" : "bg-slate-300"}`} />
+                        <span className={`inline-block size-2 rounded-full ${active ? "bg-emerald-500" : "bg-slate-300"}`} aria-hidden="true" />
                         <span className="text-xs text-slate-500">{active ? t("agentProfiles.header.status.active") : t("agentProfiles.header.status.paused")}</span>
                         {channels.map((ch) => (
                           <span key={ch} className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded font-medium">{t(`agentProfiles.channel.${ch}`)}</span>
                         ))}
-                        {createdStr && <span className="text-xs text-slate-400"><Clock className="inline-block size-3 ml-1" />{createdStr}</span>}
+                        {createdStr && <span className="text-xs text-slate-400"><Clock className="inline-block size-3 ml-1" aria-hidden="true" />{createdStr}</span>}
                       </>
                     )}
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">{selectedAgent.role}</p>
                 </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {profile && (
+                    <div className="flex items-center gap-1.5 rounded-lg border bg-slate-50 dark:bg-slate-800 px-3 py-1.5">
+                      <Switch checked={active} onCheckedChange={toggleStatus} disabled={statusSaving} />
+                      <span className="text-xs font-medium text-slate-500">{statusSaving ? "..." : active ? t("agentProfiles.header.status.active_toggle") : t("agentProfiles.header.status.paused_toggle")}</span>
+                    </div>
+                  )}
+                  {profile?.agent.templateSlug && (
+                    <span className="text-xs font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1.5 rounded">{profile.agent.templateSlug}</span>
+                  )}
+                  {profile && selectedAgent?.role !== "CEO" && (
+                    <button onClick={() => setDeleteConfirm(selectedId)}
+                      className="flex items-center justify-center size-8 rounded-lg border border-transparent hover:border-red-200 dark:hover:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-400 hover:text-red-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                      aria-label={t("agentProfiles.header.deleteTitle")}
+                      title={t("agentProfiles.header.deleteTitle")}
+                    >
+                      <Trash2 className="size-3.5" aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0 w-full lg:w-auto justify-end lg:justify-start">
-                {profile && (
-                  <div className="flex items-center gap-1.5 rounded-lg border bg-slate-50 dark:bg-slate-800 px-3 py-1.5">
-                    <Switch checked={active} onCheckedChange={toggleStatus} disabled={statusSaving} />
-                    <span className="text-xs font-medium text-slate-500">{statusSaving ? "..." : active ? t("agentProfiles.header.status.active_toggle") : t("agentProfiles.header.status.paused_toggle")}</span>
+
+              {/* Toolbar row */}
+              {profile && (
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-xs font-medium text-slate-500 whitespace-nowrap border-b border-dashed border-slate-300 cursor-help">{t("agentProfiles.header.model")}</span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[220px] text-xs">
+                          {t("agentProfiles.help.model")}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <Select value={draftModel} onValueChange={(v) => { setDraftModel(v ?? ""); if (!editing) setEditing(true); }}>
+                      <SelectTrigger className="h-9 text-sm border-slate-200 dark:border-slate-700 rounded-lg flex-1 min-w-0">
+                        <SelectValue placeholder={models.length > 0 ? t("agentProfiles.header.modelPlaceholder") : t("agentProfiles.header.noModels")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {draftModel && !models.some((m) => m.modelName === draftModel) && (
+                          <SelectItem value={draftModel} className="text-sm">
+                            <span className="font-medium">{draftModel}</span>
+                            <span className="text-xs text-slate-400 mr-2">{t("agentProfiles.header.current")}</span>
+                          </SelectItem>
+                        )}
+                        {models.map((m) => (
+                          <SelectItem key={m.id} value={m.modelName} className="text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{m.modelName}</span>
+                              <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{m.provider}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                )}
-                {profile?.agent.templateSlug && (
-                  <span className="text-xs font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1.5 rounded">{profile.agent.templateSlug}</span>
-                )}
-                {profile && selectedAgent?.role !== "CEO" && (
-                  <button onClick={() => setDeleteConfirm(selectedId)}
-                    className="flex items-center justify-center size-8 rounded-lg border border-transparent hover:border-red-200 dark:hover:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-400 hover:text-red-600 transition-all"
-                    title={t("agentProfiles.header.deleteTitle")}
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
-                )}
-              </div>
+                  <div className="flex gap-2 shrink-0 self-end lg:self-auto">
+                    <Button variant="outline" size="sm" className="h-9 text-xs" onClick={() => navigate("/admin/ai-chat")}>
+                      <MessageSquare className="size-3.5 ml-1.5" aria-hidden="true" />{t("agentProfiles.header.chatWithManager")}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="size-9" onClick={loadAgents} disabled={agentsLoading} aria-label={t("agentProfiles.header.refresh")} title={t("agentProfiles.header.refresh")}>
+                      <RefreshCw className={cn("size-3.5", agentsLoading && "animate-spin")} aria-hidden="true" />
+                    </Button>
+                    {hasUnsavedChanges && (
+                      <Button size="sm" variant="outline" className="h-9 text-xs px-3" onClick={discardChanges}>
+                        <X className="size-3.5 ml-1.5" aria-hidden="true" />{t("agentProfiles.header.discard")}
+                      </Button>
+                    )}
+                    <Button size="sm" className="h-9 text-xs px-4" onClick={saveProfile} disabled={profileSaving || !hasUnsavedChanges}>
+                      {profileSaving ? <Loader2 className="size-3.5 animate-spin ml-1.5" aria-hidden="true" /> : <Save className="size-3.5 ml-1.5" aria-hidden="true" />}
+                      {profileSaving ? t("agentProfiles.header.saving") : hasUnsavedChanges ? t("agentProfiles.header.save") : t("agentProfiles.header.saved")}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-sm text-slate-400">{t("agentProfiles.header.noSelection")}</p>
           )}
-
-          {/* Toolbar: Chat + Refresh */}
-          <div className="mt-3 hidden lg:flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => navigate("/admin/ai-chat")}>
-              <MessageSquare className="size-3.5 ml-1.5" />{t("agentProfiles.header.chatWithManager")}
-            </Button>
-            <Button variant="ghost" size="icon" className="size-8" onClick={loadAgents} disabled={agentsLoading}>
-              <RefreshCw className={cn("size-3.5", agentsLoading && "animate-spin")} />
-            </Button>
-          </div>
-
-          {/* Model + Save */}
-          {profile && (
-            <div className="mt-3 flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <span className="text-xs font-medium text-slate-500 whitespace-nowrap">{t("agentProfiles.header.model")}</span>
-                <Select value={draftModel} onValueChange={(v) => { setDraftModel(v ?? ""); if (!editing) setEditing(true); }}>
-                  <SelectTrigger className="h-9 text-sm border-slate-200 dark:border-slate-700 rounded-lg flex-1 min-w-0">
-                    <SelectValue placeholder={models.length > 0 ? t("agentProfiles.header.modelPlaceholder") : t("agentProfiles.header.noModels")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {draftModel && !models.some((m) => m.modelName === draftModel) && (
-                      <SelectItem value={draftModel} className="text-sm">
-                        <span className="font-medium">{draftModel}</span>
-                        <span className="text-xs text-slate-400 mr-2">{t("agentProfiles.header.current")}</span>
-                      </SelectItem>
-                    )}
-                    {models.map((m) => (
-                      <SelectItem key={m.id} value={m.modelName} className="text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{m.modelName}</span>
-                          <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{m.provider}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex gap-2 shrink-0 self-end lg:self-auto">
-                {hasUnsavedChanges && (
-                  <Button size="sm" variant="outline" className="h-9 text-xs px-3" onClick={discardChanges}>
-                    <X className="size-3.5 ml-1.5" />{t("agentProfiles.header.discard")}
-                  </Button>
-                )}
-                <Button size="sm" className="h-9 text-xs px-4" onClick={saveProfile} disabled={profileSaving || !hasUnsavedChanges}>
-                  {profileSaving ? <Loader2 className="size-3.5 animate-spin ml-1.5" /> : <Save className="size-3.5 ml-1.5" />}
-                  {profileSaving ? t("agentProfiles.header.saving") : hasUnsavedChanges ? t("agentProfiles.header.save") : t("agentProfiles.header.saved")}
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
-
-        {/* Metadata Grid */}
         {selectedAgent && <MetadataGrid agent={selectedAgent} resolvedParentName={resolvedParentName} />}
 
         {/* Tabs */}
         <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 lg:px-6 flex gap-1 overflow-x-auto scrollbar-thin">
           {tabs.map(({ key, label, icon }) => (
             <button key={key} onClick={() => setTab(key)}
-              className={`flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+              className={`flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors whitespace-nowrap rounded-t-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                 tab === key ? "border-indigo-600 text-indigo-600 dark:text-indigo-400" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
               }`}
             >
@@ -896,34 +985,162 @@ export default function AgentProfilesPage() {
           )}
 
           {profileError && !profileLoading && (
-            <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl max-w-lg mb-4">
+            <div role="alert" aria-live="polite" className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl max-w-lg mb-4">
               <AlertCircle className="size-5 text-red-500 flex-shrink-0 mt-0.5" />
               <span className="flex-1 text-sm text-red-600 dark:text-red-400">{profileError}</span>
-              <button onClick={() => setProfileError(null)} className="text-red-500 hover:text-red-700 font-bold">&times;</button>
+              <button onClick={() => setProfileError(null)} className="text-red-500 hover:text-red-700 font-bold" aria-label={t("agentProfiles.header.discard")}>&times;</button>
             </div>
           )}
 
           {!profileLoading && !profileError && profile && (
             <>
-              {(["soul", "agents", "tools-md"] as Tab[]).includes(tab) && (
-                <div className="max-w-3xl">{renderFileContent(FILE_KEYS[tab])}</div>
+              {tab === "settings" && (
+                <div className="space-y-6 max-w-3xl">
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Bot className="size-4 text-indigo-500" aria-hidden="true" />
+                      <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">{t("agentProfiles.settings.basicInfo")}</h3>
+                    </div>
+
+                    {/* Persona */}
+                    <div>
+                      <label className="text-xs font-medium text-slate-500 block mb-1">{t("agentProfiles.settings.persona")}</label>
+                      <Input value={draftConfig.soul_persona || ""} onChange={(e) => handleSoulFieldChange("soul_persona", e.target.value)}
+                        placeholder={t("agentProfiles.settings.personaPlaceholder")} className="h-9 text-sm" />
+                      <p className="text-[10px] text-slate-400 mt-1">{t("agentProfiles.settings.personaHint")}</p>
+                    </div>
+
+                    {/* Goal */}
+                    <div>
+                      <label className="text-xs font-medium text-slate-500 block mb-1">{t("agentProfiles.settings.goal")}</label>
+                      <Textarea value={draftConfig.soul_goal || ""} onChange={(e) => handleSoulFieldChange("soul_goal", e.target.value)}
+                        placeholder={t("agentProfiles.settings.goalPlaceholder")} className="text-sm min-h-[60px] resize-y" />
+                      <p className="text-[10px] text-slate-400 mt-1">{t("agentProfiles.settings.goalHint")}</p>
+                    </div>
+
+                    {/* Tone */}
+                    <div>
+                      <label className="text-xs font-medium text-slate-500 block mb-1">{t("agentProfiles.settings.tone")}</label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { key: "friendly", label: t("agentProfiles.settings.toneFriendly") },
+                          { key: "formal", label: t("agentProfiles.settings.toneFormal") },
+                          { key: "concise", label: t("agentProfiles.settings.toneConcise") },
+                          { key: "detailed", label: t("agentProfiles.settings.toneDetailed") },
+                        ].map((opt) => (
+                          <button key={opt.key} type="button"
+                            className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                              (draftConfig.soul_tone || "friendly") === opt.key
+                                ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400"
+                                : "border-slate-200 dark:border-slate-700 text-slate-500 hover:border-slate-300"
+                            }`}
+                            onClick={() => handleSoulFieldChange("soul_tone", opt.key)}
+                          >{opt.label}</button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1.5">{t("agentProfiles.settings.toneHint")}</p>
+                    </div>
+
+                    {/* Tasks */}
+                    <div>
+                      <label className="text-xs font-medium text-slate-500 block mb-1">{t("agentProfiles.settings.tasks")}</label>
+                      <Textarea value={draftConfig.soul_tasks || ""} onChange={(e) => handleSoulFieldChange("soul_tasks", e.target.value)}
+                        placeholder={t("agentProfiles.settings.tasksPlaceholder")} className="text-sm min-h-[60px] resize-y" />
+                      <p className="text-[10px] text-slate-400 mt-1">{t("agentProfiles.settings.tasksHint")}</p>
+                    </div>
+
+                    {/* Boundaries */}
+                    <div>
+                      <label className="text-xs font-medium text-slate-500 block mb-1">{t("agentProfiles.settings.boundaries")}</label>
+                      <Textarea value={draftConfig.soul_boundaries || ""} onChange={(e) => handleSoulFieldChange("soul_boundaries", e.target.value)}
+                        placeholder={t("agentProfiles.settings.boundariesPlaceholder")} className="text-sm min-h-[60px] resize-y" />
+                      <p className="text-[10px] text-slate-400 mt-1">{t("agentProfiles.settings.boundariesHint")}</p>
+                    </div>
+
+                    {/* Language */}
+                    <div>
+                      <label className="text-xs font-medium text-slate-500 block mb-1">{t("agentProfiles.settings.language")}</label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { key: "auto", label: t("agentProfiles.settings.languageAuto") },
+                          { key: "ar", label: t("agentProfiles.settings.languageAr") },
+                          { key: "en", label: t("agentProfiles.settings.languageEn") },
+                        ].map((opt) => (
+                          <button key={opt.key} type="button"
+                            className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                              (draftConfig.soul_language || "auto") === opt.key
+                                ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400"
+                                : "border-slate-200 dark:border-slate-700 text-slate-500 hover:border-slate-300"
+                            }`}
+                            onClick={() => handleSoulFieldChange("soul_language", opt.key)}
+                          >{opt.label}</button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1.5">{t("agentProfiles.settings.languageHint")}</p>
+                    </div>
+
+                    {/* Welcome Message */}
+                    <div>
+                      <label className="text-xs font-medium text-slate-500 block mb-1">{t("agentProfiles.settings.welcome")}</label>
+                      <Input value={draftConfig.soul_welcome || ""} onChange={(e) => handleSoulFieldChange("soul_welcome", e.target.value)}
+                        placeholder={t("agentProfiles.settings.welcomePlaceholder")} className="h-9 text-sm" />
+                      <p className="text-[10px] text-slate-400 mt-1">{t("agentProfiles.settings.welcomeHint")}</p>
+                    </div>
+
+                    {/* Escalation */}
+                    <div>
+                      <label className="text-xs font-medium text-slate-500 block mb-1">{t("agentProfiles.settings.escalation")}</label>
+                      <Select value={draftConfig.soul_escalation || "knowledge_ask"}
+                        onValueChange={(v) => handleSoulFieldChange("soul_escalation", v)}>
+                        <SelectTrigger className="h-9 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="knowledge_ask">يسألني عبر لوحة التحكم</SelectItem>
+                          <SelectItem value="escalate_human">يحول المحادثة لبشر</SelectItem>
+                          <SelectItem value="apologize">يعتذر ويقول مايعرفش</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[10px] text-slate-400 mt-1">{t("agentProfiles.settings.escalationHint")}</p>
+                    </div>
+
+                  </div>
+                </div>
               )}
-              {tab === "skills-json" && (
-                <div className="max-w-3xl">{renderFileContent("SKILLS.json")}</div>
-              )}
-              {tab === "tools" && (
-                <ToolsAndSkillsTab
-                  allTools={allTools}
-                  allSkills={allSkills}
-                  draftAllowedTools={draftAllowedTools}
-                  draftAllowedSkills={draftAllowedSkills}
-                  draftToolAutonomy={draftToolAutonomy}
-                  draftConfig={draftConfig}
-                  onAllowedToolsChange={setDraftAllowedTools}
-                  onAllowedSkillsChange={setDraftAllowedSkills}
-                  onToolAutonomyChange={setDraftToolAutonomy}
-                  onConfigChange={setDraftConfig}
-                />
+              {tab === "advanced" && (
+                <div className="space-y-6 max-w-3xl">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-slate-500 whitespace-nowrap">{t("agentProfiles.tabs.advancedFile")}</span>
+                    <Select value={advancedFile} onValueChange={(v) => setAdvancedFile(v as AdvancedTab)}>
+                      <SelectTrigger className="h-9 text-sm flex-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {advancedFileOptions.map((opt) => (
+                          <SelectItem key={opt.key} value={opt.key} className="text-sm">
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {renderFileContent(FILE_LABELS[advancedFile])}
+
+                  <Separator />
+
+                  <ToolsAndSkillsTab
+                    allTools={allTools}
+                    allSkills={allSkills}
+                    draftAllowedTools={draftAllowedTools}
+                    draftAllowedSkills={draftAllowedSkills}
+                    draftToolAutonomy={draftToolAutonomy}
+                    draftConfig={draftConfig}
+                    onAllowedToolsChange={setDraftAllowedTools}
+                    onAllowedSkillsChange={setDraftAllowedSkills}
+                    onToolAutonomyChange={setDraftToolAutonomy}
+                    onConfigChange={setDraftConfig}
+                  />
+                </div>
               )}
             </>
           )}
@@ -952,19 +1169,20 @@ export default function AgentProfilesPage() {
 
       {/* ── Create Agent Dialog ── */}
       <Dialog open={createOpen} onOpenChange={(o) => { if (!o && !creating) setCreateOpen(false); }}>
-        <DialogContent className="sm:max-w-lg p-0 gap-0 max-h-[85vh]">
-          <div className="flex flex-col max-h-[85vh]">
-            <div className="p-5 pb-0 flex-shrink-0">
-              <DialogHeader className="mb-4">
+        <DialogContent className="sm:max-w-lg !p-0 !gap-0 !max-h-[min(85vh,640px)]">
+          <div className="flex flex-col overflow-hidden">
+            <div className="px-5 pt-5 pb-3 flex-shrink-0">
+              <DialogHeader className="mb-0">
                 <DialogTitle className="text-base flex items-center gap-2">
                   <span className="size-6 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-sm">✨</span>
                   {t("agentProfiles.create.title")}
                 </DialogTitle>
               </DialogHeader>
             </div>
-            <div className="overflow-y-auto px-5 pb-2 flex-1 scrollbar-thin">
-              <section className="mb-4">
-                <div className="flex items-center gap-1.5 mb-2">
+
+            <div className="overflow-y-auto px-5 pb-3 flex-1 min-h-0 scrollbar-thin">
+              <section className="mb-3">
+                <div className="flex items-center gap-1.5 mb-1.5">
                   <span className="size-1.5 rounded-full bg-indigo-500" />
                   <h4 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("agentProfiles.create.template")}</h4>
                 </div>
@@ -976,25 +1194,25 @@ export default function AgentProfilesPage() {
                 ) : (
                   <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
                     <button type="button" onClick={() => setNewAgentTemplate(null)}
-                      className={`flex flex-col items-center gap-1 p-2.5 min-w-[80px] rounded-xl border-2 text-center transition-all shrink-0 ${
+                      className={`flex flex-col items-center gap-1 p-2 min-w-[72px] rounded-xl border-2 text-center transition-colors shrink-0 ${
                         !newAgentTemplate
                           ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30"
                           : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
                       }`}
                     >
-                      <span className={`size-8 flex items-center justify-center rounded-lg text-lg transition-all ${!newAgentTemplate ? "bg-indigo-100 dark:bg-indigo-900/40" : "bg-slate-100 dark:bg-slate-800"}`}>⚙️</span>
+                      <span className={`size-7 flex items-center justify-center rounded-lg text-base transition-colors ${!newAgentTemplate ? "bg-indigo-100 dark:bg-indigo-900/40" : "bg-slate-100 dark:bg-slate-800"}`}>⚙️</span>
                       <p className={`text-[10px] font-semibold ${!newAgentTemplate ? "text-indigo-700 dark:text-indigo-400" : "text-slate-600 dark:text-slate-400"}`}>{t("agentProfiles.create.custom")}</p>
                       {!newAgentTemplate && <span className="size-1 rounded-full bg-indigo-500" />}
                     </button>
                     {templates.map((tpl) => (
                       <button key={tpl.slug} type="button" onClick={() => { setNewAgentTemplate(tpl.slug); if (!newAgentName) setNewAgentName(tpl.name); }}
-                        className={`flex flex-col items-center gap-1 p-2.5 min-w-[80px] rounded-xl border-2 text-center transition-all shrink-0 ${
+                        className={`flex flex-col items-center gap-1 p-2 min-w-[72px] rounded-xl border-2 text-center transition-colors shrink-0 ${
                           newAgentTemplate === tpl.slug
                             ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30"
                             : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
                         }`}
                       >
-                        <span className={`size-8 flex items-center justify-center rounded-lg text-lg transition-all ${newAgentTemplate === tpl.slug ? "bg-indigo-100 dark:bg-indigo-900/40" : "bg-slate-100 dark:bg-slate-800"}`}>
+                        <span className={`size-7 flex items-center justify-center rounded-lg text-base transition-colors ${newAgentTemplate === tpl.slug ? "bg-indigo-100 dark:bg-indigo-900/40" : "bg-slate-100 dark:bg-slate-800"}`}>
                           {templateIcon(tpl.slug)}
                         </span>
                         <p className={`text-[10px] font-semibold leading-tight ${newAgentTemplate === tpl.slug ? "text-indigo-700 dark:text-indigo-400" : "text-slate-600 dark:text-slate-400"}`}>{tpl.name}</p>
@@ -1006,8 +1224,8 @@ export default function AgentProfilesPage() {
                 )}
               </section>
 
-              <section className="mb-4">
-                <div className="flex items-center gap-1.5 mb-2">
+              <section className="mb-3">
+                <div className="flex items-center gap-1.5 mb-1.5">
                   <span className="size-1.5 rounded-full bg-indigo-500" />
                   <h4 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("agentProfiles.create.identity")}</h4>
                 </div>
@@ -1017,35 +1235,35 @@ export default function AgentProfilesPage() {
                     <div className="grid grid-cols-4 gap-0.5">
                       {AGENT_ICONS.map((icon) => (
                         <button key={icon} type="button" onClick={() => setNewAgentIcon(icon)} title={icon}
-                          className={`size-8 flex items-center justify-center rounded-lg text-base border transition-all ${
+                          className={`size-7 flex items-center justify-center rounded-lg text-sm border transition-colors shadow-sm ${
                             newAgentIcon === icon
-                              ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 dark:border-indigo-600 shadow-sm"
+                              ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 dark:border-indigo-600"
                               : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50"
                           }`}
                         >{icon}</button>
                       ))}
                     </div>
                   </div>
-                  <div className="flex-1 space-y-2">
+                  <div className="flex-1 space-y-1.5">
                     <div>
                       <label htmlFor="new-agent-name" className="text-[9px] font-medium text-slate-400 block mb-0.5">{t("agentProfiles.create.name")}</label>
-                      <Input id="new-agent-name" placeholder={t("agentProfiles.create.namePlaceholder")} value={newAgentName} onChange={(e) => setNewAgentName(e.target.value)} disabled={creating} className="h-8 text-sm" />
+                      <Input id="new-agent-name" placeholder={t("agentProfiles.create.namePlaceholder")} value={newAgentName} onChange={(e) => setNewAgentName(e.target.value)} disabled={creating} className="h-7 text-sm" />
                     </div>
                     <div>
                       <label htmlFor="new-agent-desc" className="text-[9px] font-medium text-slate-400 block mb-0.5">{t("agentProfiles.create.description")}</label>
-                      <Input id="new-agent-desc" placeholder={t("agentProfiles.create.descPlaceholder")} value={newAgentDesc} onChange={(e) => setNewAgentDesc(e.target.value)} disabled={creating} className="h-8 text-sm" />
+                      <Input id="new-agent-desc" placeholder={t("agentProfiles.create.descPlaceholder")} value={newAgentDesc} onChange={(e) => setNewAgentDesc(e.target.value)} disabled={creating} className="h-7 text-sm" />
                     </div>
                   </div>
                 </div>
               </section>
 
-              <section className="mb-4">
-                <div className="flex items-center gap-1.5 mb-2">
+              <section>
+                <div className="flex items-center gap-1.5 mb-1.5">
                   <span className="size-1.5 rounded-full bg-indigo-500" />
                   <h4 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("agentProfiles.create.model")}</h4>
                 </div>
                 <Select value={newAgentModel} onValueChange={setNewAgentModel} disabled={creating}>
-                  <SelectTrigger id="new-agent-model" className="w-full h-8 text-sm">
+                  <SelectTrigger id="new-agent-model" className="w-full h-7 text-sm">
                     <SelectValue placeholder={t("agentProfiles.create.modelPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1063,9 +1281,9 @@ export default function AgentProfilesPage() {
               </section>
             </div>
 
-            <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30 p-4 flex-shrink-0">
-              <div className="flex items-center gap-2.5 mb-3">
-                <span className="text-xl flex-shrink-0">{newAgentIcon}</span>
+            <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/30 px-5 py-3 flex-shrink-0">
+              <div className="flex items-center gap-2.5 mb-2">
+                <span className="text-lg flex-shrink-0">{newAgentIcon}</span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{newAgentName || t("agentProfiles.create.namePreview")}</p>
@@ -1086,7 +1304,7 @@ export default function AgentProfilesPage() {
               </div>
 
               {createError && (
-                <div className="flex items-start gap-2 p-2.5 mb-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl">
+                <div className="flex items-start gap-2 p-2 mb-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl">
                   <AlertCircle className="size-3.5 text-red-500 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-red-600 dark:text-red-400">{createError}</p>
                 </div>
@@ -1242,7 +1460,7 @@ function ToolsAndSkillsTab({
       {/* ── Tools Section ── */}
       <div>
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <Wrench className="size-4 text-slate-500" />
+          <Wrench className="size-4 text-slate-500" aria-hidden="true" />
           <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{t("agentProfiles.tools.title")}</p>
           <Badge variant="secondary" className="text-xs">{enabledToolsCount} / {allTools.length}</Badge>
           <div className="mr-auto flex gap-1">
@@ -1270,19 +1488,21 @@ function ToolsAndSkillsTab({
                   {readTools.map((tool) => {
                     const enabled = draftAllowedTools.includes(tool.name);
                     return (
-                      <div key={tool.name} role="button" tabIndex={0} onClick={() => toggleTool(tool.name)}
-                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleTool(tool.name); } }}
-                        className={cn(
-                          "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer transition-all",
-                          enabled ? "border-indigo-400/40 bg-indigo-500/5" : "border-slate-200 dark:border-slate-700 hover:border-indigo-400/20 opacity-60",
+                      <div key={tool.name} className={cn("flex items-center rounded-lg border text-sm transition-colors overflow-hidden", enabled ? "border-indigo-400/40 bg-indigo-500/5" : "border-slate-200 dark:border-slate-700 hover:border-indigo-400/20 opacity-60")}>
+                        <button type="button" onClick={() => toggleTool(tool.name)}
+                          className="flex-1 flex items-center gap-2 px-3 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                        >
+                          <Switch checked={enabled} className="pointer-events-none shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className={cn("text-xs font-semibold truncate", enabled ? "text-indigo-700 dark:text-indigo-400" : "text-slate-500")}>{tool.name}</p>
+                            {tool.description && <p className="text-[0.65rem] text-slate-500 truncate mt-0.5">{tool.description}</p>}
+                          </div>
+                        </button>
+                        {enabled && (
+                          <div className="px-2">
+                            <AutonomySelect toolName={tool.name} />
+                          </div>
                         )}
-                      >
-                        <Switch checked={enabled} className="pointer-events-none shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <p className={cn("text-xs font-semibold truncate", enabled ? "text-indigo-700 dark:text-indigo-400" : "text-slate-500")}>{tool.name}</p>
-                          {tool.description && <p className="text-[0.65rem] text-slate-500 truncate mt-0.5">{tool.description}</p>}
-                        </div>
-                        {enabled && <AutonomySelect toolName={tool.name} />}
                       </div>
                     );
                   })}
@@ -1296,19 +1516,21 @@ function ToolsAndSkillsTab({
                   {writeTools.map((tool) => {
                     const enabled = draftAllowedTools.includes(tool.name);
                     return (
-                      <div key={tool.name} role="button" tabIndex={0} onClick={() => toggleTool(tool.name)}
-                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleTool(tool.name); } }}
-                        className={cn(
-                          "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer transition-all",
-                          enabled ? "border-amber-400/40 bg-amber-500/5" : "border-slate-200 dark:border-slate-700 hover:border-amber-400/20 opacity-60",
+                      <div key={tool.name} className={cn("flex items-center rounded-lg border text-sm transition-colors overflow-hidden", enabled ? "border-amber-400/40 bg-amber-500/5" : "border-slate-200 dark:border-slate-700 hover:border-amber-400/20 opacity-60")}>
+                        <button type="button" onClick={() => toggleTool(tool.name)}
+                          className="flex-1 flex items-center gap-2 px-3 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                        >
+                          <Switch checked={enabled} className="pointer-events-none shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className={cn("text-xs font-semibold truncate", enabled ? "text-amber-600 dark:text-amber-400" : "text-slate-500")}>{tool.name}</p>
+                            {tool.description && <p className="text-[0.65rem] text-slate-500 truncate mt-0.5">{tool.description}</p>}
+                          </div>
+                        </button>
+                        {enabled && (
+                          <div className="px-2">
+                            <AutonomySelect toolName={tool.name} />
+                          </div>
                         )}
-                      >
-                        <Switch checked={enabled} className="pointer-events-none shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <p className={cn("text-xs font-semibold truncate", enabled ? "text-amber-600 dark:text-amber-400" : "text-slate-500")}>{tool.name}</p>
-                          {tool.description && <p className="text-[0.65rem] text-slate-500 truncate mt-0.5">{tool.description}</p>}
-                        </div>
-                        {enabled && <AutonomySelect toolName={tool.name} />}
                       </div>
                     );
                   })}
@@ -1372,7 +1594,7 @@ function ToolsAndSkillsTab({
       {/* ── Skills Section ── */}
       <div>
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <Shield className="size-4 text-slate-500" />
+          <Shield className="size-4 text-slate-500" aria-hidden="true" />
           <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{t("agentProfiles.skills.title")}</p>
           <Badge variant="secondary" className="text-xs">{enabledSkillsCount} / {allSkills.length}</Badge>
           <div className="mr-auto flex gap-1">
@@ -1396,10 +1618,9 @@ function ToolsAndSkillsTab({
             {filteredSkills.map((skill) => {
               const enabled = draftAllowedSkills.includes(skill.id);
               return (
-                <div key={skill.id} role="button" tabIndex={0} onClick={() => toggleSkill(skill.id)}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSkill(skill.id); } }}
+                <button key={skill.id} type="button" onClick={() => toggleSkill(skill.id)}
                   className={cn(
-                    "flex items-start gap-3 rounded-lg border p-3 text-sm cursor-pointer transition-all",
+                    "w-full flex items-start gap-3 rounded-lg border p-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 text-left",
                     enabled ? "border-indigo-400/40 bg-indigo-500/5" : "border-slate-200 dark:border-slate-700 hover:border-indigo-400/20 opacity-60",
                   )}
                 >
@@ -1417,7 +1638,7 @@ function ToolsAndSkillsTab({
                       </div>
                     )}
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -1440,24 +1661,26 @@ function ToolsAndSkillsTab({
             }).map((tool) => {
               const enabled = draftAllowedTools.includes(tool.name);
               return (
-                <div key={tool.name} role="button" tabIndex={0} onClick={() => toggleTool(tool.name)}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleTool(tool.name); } }}
-                  className={cn("flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer transition-all",
-                    enabled ? "border-indigo-400/40 bg-indigo-500/5" : "border-slate-200 dark:border-slate-700 hover:border-indigo-400/20",
-                  )}
+                <div key={tool.name} className={cn("flex items-center rounded-lg border text-sm transition-colors overflow-hidden", enabled ? "border-indigo-400/40 bg-indigo-500/5" : "border-slate-200 dark:border-slate-700 hover:border-indigo-400/20")}
                 >
-                  <Switch checked={enabled} className="pointer-events-none shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className={cn("text-xs font-semibold", enabled ? "text-indigo-700 dark:text-indigo-400" : "text-slate-500")}>{tool.name}</p>
-                    {tool.description && <p className="text-[0.65rem] text-slate-500 truncate">{tool.description}</p>}
-                  </div>
+                  <button type="button" onClick={() => toggleTool(tool.name)}
+                    className="flex-1 flex items-center gap-2 px-3 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  >
+                    <Switch checked={enabled} className="pointer-events-none shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className={cn("text-xs font-semibold", enabled ? "text-indigo-700 dark:text-indigo-400" : "text-slate-500")}>{tool.name}</p>
+                      {tool.description && <p className="text-[0.65rem] text-slate-500 truncate">{tool.description}</p>}
+                    </div>
+                  </button>
                   {enabled && (
-                    <select value={draftToolAutonomy[tool.name] || "auto"} onChange={(e) => { e.stopPropagation(); setToolAutonomy(tool.name, e.target.value); }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="h-6 rounded border bg-background px-1 text-[0.6rem]"
-                    >
-                      {autonomyOptions.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
-                    </select>
+                    <div className="px-2">
+                      <select value={draftToolAutonomy[tool.name] || "auto"} onChange={(e) => { e.stopPropagation(); setToolAutonomy(tool.name, e.target.value); }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-6 rounded border bg-background px-1 text-[0.6rem]"
+                      >
+                        {autonomyOptions.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
+                      </select>
+                    </div>
                   )}
                 </div>
               );
@@ -1482,9 +1705,8 @@ function ToolsAndSkillsTab({
             }).map((skill) => {
               const enabled = draftAllowedSkills.includes(skill.id);
               return (
-                <div key={skill.id} role="button" tabIndex={0} onClick={() => toggleSkill(skill.id)}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleSkill(skill.id); } }}
-                  className={cn("flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer transition-all",
+                <button key={skill.id} type="button" onClick={() => toggleSkill(skill.id)}
+                  className={cn("w-full flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
                     enabled ? "border-indigo-400/40 bg-indigo-500/5" : "border-slate-200 dark:border-slate-700 hover:border-indigo-400/20",
                   )}
                 >
@@ -1493,7 +1715,7 @@ function ToolsAndSkillsTab({
                     <p className={cn("text-xs font-semibold", enabled ? "text-indigo-700 dark:text-indigo-400" : "text-slate-500")}>{skill.displayName || skill.id}</p>
                     {skill.description && <p className="text-[0.65rem] text-slate-500 truncate">{skill.description}</p>}
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>

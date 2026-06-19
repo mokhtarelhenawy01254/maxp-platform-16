@@ -56,7 +56,14 @@
       "agents": "Agents",
       "toolsMd": "Tools (MD)",
       "tools": "Tools",
-      "skillsJson": "Skills (JSON)"
+      "skillsJson": "Skills (JSON)",
+      "settings": "Settings",
+      "advanced": "Advanced",
+      "advancedFile": "Advanced file"
+    },
+    "help": {
+      "model": "Determines the AI engine powering this assistant. Stronger models understand nuance but are slower",
+      "tools": "Permissions that enable the assistant to perform specific tasks"
     },
     "sidebar": {
       "title": "Agent Profiles",
@@ -76,14 +83,17 @@
         "paused_toggle": "Pause"
       },
       "deleteTitle": "Delete",
-      "noSelection": "No agent selected",
+      "noSelection": "No assistant selected",
+      "chatWithManager": "Chat",
+      "saved": "Saved",
       "model": "Model",
       "modelPlaceholder": "Select model",
       "noModels": "No models available",
       "current": "Current",
       "discard": "Discard",
       "saving": "Saving...",
-      "save": "Save"
+      "save": "Save",
+      "refresh": "Refresh agent list"
     },
     "channel": {
       "facebook": "Facebook",
@@ -127,6 +137,62 @@
       "deleteSuccess": "Deleted successfully",
       "deleteFailed": "Delete failed"
     },
+    "empty": {
+      "title": "No assistants yet",
+      "desc": "Create your first AI assistant to help manage your store tasks",
+      "chatCta": "Try chat"
+    },
+    "settings": {
+      "basicInfo": "Basic Info",
+      "agentName": "Assistant Name",
+      "agentNamePlaceholder": "Enter assistant name",
+      "description": "Description",
+      "descriptionPlaceholder": "Brief description of the assistant's role",
+      "purpose": "What does this assistant do?",
+      "purposePlaceholder": "Example: Helps me manage Facebook orders and reply to customers",
+      "purposeHint": "Describe in plain language what you want this assistant to do",
+      "channels": "Available Channels",
+      "channelsDesc": "Channels this assistant operates on",
+      "autonomy": "Autonomy Level",
+      "autonomyDesc": "Determines how independently the assistant can act",
+      "suggest": "Suggest only",
+      "suggestDesc": "Suggests actions and waits for your approval",
+      "approval": "Ask first",
+      "approvalDesc": "Handles simple tasks, asks for approval on important ones",
+      "auto": "Work automatically",
+      "autoDesc": "Performs all tasks within its permissions",
+      "status": "Assistant Status",
+      "active": "Active",
+      "paused": "Paused",
+      "persona": "Agent Persona",
+      "personaHint": "Describe the persona the agent will use with customers",
+      "personaPlaceholder": "e.g. Friendly, professional, quick to respond",
+      "goal": "Primary Goal",
+      "goalHint": "What is the main outcome this assistant should achieve?",
+      "goalPlaceholder": "e.g. Help customers choose products and complete orders",
+      "tone": "Tone of Voice",
+      "toneHint": "Choose the tone that fits your store and customers",
+      "toneFriendly": "Friendly",
+      "toneFormal": "Formal",
+      "toneConcise": "Concise",
+      "toneDetailed": "Detailed",
+      "tasks": "Core Tasks",
+      "tasksHint": "List the tasks the agent can help with",
+      "tasksPlaceholder": "e.g. Answer questions, search products, create orders",
+      "boundaries": "Boundaries",
+      "boundariesHint": "Define what the agent must not do",
+      "boundariesPlaceholder": "e.g. Do not change prices, do not cancel orders without approval",
+      "language": "Reply Language",
+      "languageHint": "Choose the default language for replies",
+      "languageAuto": "Auto",
+      "languageAr": "Arabic",
+      "languageEn": "English",
+      "welcome": "Welcome Message",
+      "welcomeHint": "Optional greeting shown to the customer at the start of a chat",
+      "welcomePlaceholder": "e.g. Hello! I am your personal assistant, how can I help?",
+      "escalation": "When Unsure",
+      "escalationHint": "What should the assistant do when it does not know the answer?"
+    },
     "autonomy": {
       "auto": "Auto",
       "approval": "Approval",
@@ -164,6 +230,14 @@
       "helpStep2": "Step 2: Copy the link",
       "helpStep3": "Step 3: Paste the link here",
       "helpStep4": "Step 4: Select the sheet"
+    },
+    "archive": {
+      "title": "Archive Agent",
+      "confirm": "Are you sure you want to archive <strong>{{name}}</strong>?",
+      "note": "The agent will be removed from the active list but data is preserved.",
+      "cancel": "Cancel",
+      "archiving": "Archiving...",
+      "confirmButton": "Archive"
     }
   },
   "agentSkills": {
@@ -544,7 +618,7 @@
     "subtitle": "Intelligent Agents Center",
     "tabs": {
       "agents": "Agents",
-      "sandbox": "Agent Testing",
+      "sandbox": "Sandbox",
       "rag": "Knowledge Base",
       "tools": "Tools",
       "skills": "Skills",
@@ -4427,13 +4501,13 @@
     "agentWorkspace": "Confirmation Center",
     "aiAgentMap": "Agent Map",
     "aiAgentsTeam": "Agent Team",
-    "agentProfiles": "Agent Team",
+    "agentProfiles": "Agent Profiles",
     "aiCatalog": "AI Product Catalog",
     "aiAgentSkills": "Agent Skills",
     "aiAgentTools": "Agent Tools",
     "aiOperatorSection": "Agent Team",
     "aiKnowledgeQuestions": "AI Knowledge Questions",
-    "aiRagLab": "Knowledge Base",
+    "aiRagLab": "RAG Lab",
     "aiSubAgents": "Sub-Agents",
     "aiAgentSandbox": "Agent Testing",
     "aiScheduler": "Language Task Scheduler",
