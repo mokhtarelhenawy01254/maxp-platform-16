@@ -28,7 +28,7 @@ async function createInitialSuperAdmin() {
 
     // Get parameters from command line or use defaults
     const email = getArg('email', 'superadmin@system.com');
-    const password = getArg('password', 'SuperAdmin123!');
+    const password = process.env.PASSWORD || getArg('password', 'SuperAdmin123!');
     const firstName = getArg('firstName', 'مدير');
     const lastName = getArg('lastName', 'النظام');
 

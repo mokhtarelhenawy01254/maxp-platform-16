@@ -436,6 +436,7 @@
   will-change: transform;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  touch-action: auto;
   /* Safe area support for notched devices */
   padding-top: env(safe-area-inset-top, 0);
   padding-bottom: env(safe-area-inset-bottom, 0);

@@ -87,16 +87,12 @@ class AuthService {
   /**
    * Refresh access token
    */
+  // ponytail: refresh token is httpOnly cookie, sent automatically with credentials:'include'
   async refreshToken(): Promise<{ accessToken: string; refreshToken: string }> {
-    const refreshToken = this.getRefreshToken();
-    if (!refreshToken) {
-      throw new Error("No refresh token available");
-    }
-
     const response = await apiClient.post<{
       accessToken: string;
       refreshToken: string;
-    }>("/auth/refresh", { refreshToken });
+    }>("/auth/refresh");
 
     return response.data;
   }

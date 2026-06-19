@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -249,7 +249,6 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export default function CompanyAIAgents() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const [agents, setAgents] = useState<CompanyAgent[]>([]);
   const [models, setModels] = useState<ModelOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -403,19 +402,6 @@ export default function CompanyAIAgents() {
   );
 
   useEffect(() => {
-    if (loading || orderedAgents.length === 0) return;
-    const requested = searchParams.get("agent");
-    const resolvedAgent = requested?.toLowerCase() === "ceo"
-      ? ceoAgent
-      : orderedAgents.find((agent) => agent.id === requested);
-    const nextAgent = resolvedAgent || ceoAgent || orderedAgents[0];
-    if (!nextAgent) return;
-
-    if (selectedAgentId !== nextAgent.id) setSelectedAgentId(nextAgent.id);
-    if (requested !== nextAgent.id) setSearchParams({ agent: nextAgent.id }, { replace: true });
-  }, [ceoAgent, loading, orderedAgents, searchParams, selectedAgentId, setSearchParams]);
-
-  useEffect(() => {
     if (selectedAgentId) loadProfile(selectedAgentId);
   }, [selectedAgentId, loadProfile]);
 
@@ -475,7 +461,6 @@ export default function CompanyAIAgents() {
         setNewAgentDesc("");
         await load();
         setSelectedAgentId(data.agent.id);
-        setSearchParams({ agent: data.agent.id });
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "فشل تعيين الوكيل الجديد");
@@ -498,9 +483,8 @@ export default function CompanyAIAgents() {
       return;
     }
     setSelectedAgentId(agent.id);
-    setSearchParams({ agent: agent.id });
     setMobileSheetOpen(false);
-  }, [hasUnsavedChanges, setSearchParams]);
+  }, [hasUnsavedChanges]);
 
   const saveProfile = async () => {
     if (!selectedAgentId || !profile) return;

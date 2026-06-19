@@ -24,6 +24,8 @@ class InputGuardrail(BaseGuardrail):
 
 # Default input guardrails
 INPUT_GUARDRAILS = [
-    InputGuardrail("PROMPT_INJECTION", r"ignore previous instructions|system prompt", "Prompt injection detected"),
-    InputGuardrail("SENSITIVE_DATA", r"password|secret|api_key", "Sensitive data detected in input"),
+    InputGuardrail("PROMPT_INJECTION", r"ignore previous instructions|system prompt|forget (all )?(instructions|rules|guidelines)|you are (now|no longer)|new instructions|ignore everything", "Prompt injection detected"),
+    InputGuardrail("PROMPT_INJECTION_AR", r"تجاهل|انس التعليمات|انت الآن|لا تلتفت|غير تعليماتك", "Prompt injection detected (Arabic)"),
+    InputGuardrail("SENSITIVE_DATA", r"password|secret|api_key|token.*=|bearer\s+\w+", "Sensitive data detected in input"),
+    InputGuardrail("ENCODED_PAYLOAD", r"base64|btoa|atob|eval\(|fromCharCode", "Encoded payload detected"),
 ]

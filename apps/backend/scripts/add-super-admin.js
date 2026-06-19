@@ -12,7 +12,7 @@ async function addSuperAdmin() {
     };
 
     const email = getArg('email', 'admin2@mokhtarelhenawy.com');
-    const password = getArg('password', 'SuperAdmin@2026!');
+    const password = process.env.PASSWORD || getArg('password', 'SuperAdmin@2026!');
     const firstName = getArg('firstName', 'Super');
     const lastName = getArg('lastName', 'Admin');
 

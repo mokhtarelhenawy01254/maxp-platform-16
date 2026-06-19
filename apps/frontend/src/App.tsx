@@ -780,9 +780,6 @@ const AgenticRAGLab = React.lazy(
 const AgentManagerPage = React.lazy(
   () => import("./pages/admin/AgentManagerPage"),
 );
-const CompanyAIAgents = React.lazy(
-  () => import("./pages/admin/CompanyAIAgents"),
-);
 const AgentCatalogPage = React.lazy(
   () => import("./pages/admin/AgentCatalogPage"),
 );
@@ -954,7 +951,7 @@ const BulkSearchPage = React.lazy(
 );
 
 // Marketplace System
-const Marketplace = React.lazy(() => import("./pages/marketplace/Marketplace"));
+const MarketplaceV2 = React.lazy(() => import("./pages/marketplace/MarketplaceV2"));
 const StorefrontThemesMarketplace = React.lazy(
   () => import("./pages/marketplace/StorefrontThemes"),
 );
@@ -1239,7 +1236,7 @@ if (typeof window !== "undefined") {
   p["/reports"] = () => import("./pages/reports/Reports");
   p["/support"] = () => import("./pages/support/SupportCenter");
   p["/profile"] = () => import("./pages/profile/Profile");
-  p["/marketplace"] = () => import("./pages/marketplace/Marketplace");
+  p["/marketplace"] = () => import("./pages/marketplace/MarketplaceV2");
   p["/broadcast"] = () => import("./pages/broadcast/BroadcastDashboard");
 }
 
@@ -2252,9 +2249,13 @@ const AppContent = () => {
                   path="/marketplace"
                   element={
                     <Layout>
-                      <Marketplace />
+                      <MarketplaceV2 />
                     </Layout>
                   }
+                />
+                <Route
+                  path="/marketplace/v2"
+                  element={<Navigate to="/marketplace" replace />}
                 />
                 <Route
                   path="/marketplace/themes"
@@ -6023,7 +6024,7 @@ const AppContent = () => {
                 />
                 <Route
                   path="/admin/agent-config"
-                  element={<Navigate to="/admin/ai-hub?agent=ceo" replace />}
+                  element={<Navigate to="/admin/agent-profiles?agent=ceo" replace />}
                 />
                 <Route
                   path="/admin/ai-chat"
@@ -6043,7 +6044,7 @@ const AppContent = () => {
                 />
                 <Route
                   path="/admin/ai-agents"
-                  element={<Navigate to="/admin/ai-hub?tab=agents" replace />}
+                  element={<Navigate to="/admin/agent-profiles" replace />}
                 />
                 <Route
                   path="/admin/ai-hub"

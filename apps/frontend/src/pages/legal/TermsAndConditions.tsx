@@ -6,6 +6,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import ReactQuill from "react-quill";
+import DOMPurify from "dompurify";
 import "react-quill/dist/quill.snow.css";
 import "../../../styles/quill-dark-mode.css";
 
@@ -166,7 +167,7 @@ const TermsAndConditions: React.FC = () => {
         ) : (
           <div
             className="prose prose-lg dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: content }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
           />
         )}
       </div>

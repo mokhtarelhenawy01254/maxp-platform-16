@@ -1,0 +1,146 @@
+{
+  "time": {
+    "now": "الآن",
+    "minutesAgo": "منذ {minutes} دقيقة",
+    "hoursAgo": "منذ {hours} ساعة",
+    "daysAgo": "منذ {days} يوم"
+  },
+  "editor": {
+    "emptyContent": "لا يوجد محتوى",
+    "linesWords": "{lines} سطر، {words} كلمة",
+    "edit": "تحرير",
+    "preview": "معاينة",
+    "collapse": "طي",
+    "expand": "توسيع",
+    "placeholder": "اكتب محتوى الهوية هنا..."
+  },
+  "skillCard": {
+    "tools": "الأدوات",
+    "noTools": "لا توجد أدوات"
+  },
+  "metadata": {
+    "title": "بيانات تعريفية",
+    "noDepartment": "لا يوجد قسم",
+    "department": "القسم",
+    "unspecified": "غير محدد",
+    "level": "المستوى",
+    "manager": "المدير",
+    "none": "لا يوجد",
+    "createdBy": "تم الإنشاء بواسطة",
+    "system": "النظام"
+  },
+  "tabs": {
+    "soul": "الهوية",
+    "agents": "الوكلاء",
+    "toolsMd": "الأدوات (MD)",
+    "tools": "الأدوات",
+    "skillsJson": "المهارات (JSON)"
+  },
+  "sidebar": {
+    "title": "ملفات الوكلاء",
+    "addTitle": "إضافة وكيل",
+    "search": "بحث",
+    "noResults": "لا توجد نتائج",
+    "unsavedConfirm": "لديك تغييرات غير محفوظة. هل تريد المتابعة؟"
+  },
+  "icon": {
+    "label": "أيقونة"
+  },
+  "header": {
+    "status": {
+      "active": "نشط",
+      "paused": "متوقف",
+      "active_toggle": "تفعيل",
+      "paused_toggle": "إيقاف"
+    },
+    "deleteTitle": "حذف",
+    "noSelection": "لم يتم تحديد وكيل",
+    "model": "الموديل",
+    "modelPlaceholder": "اختر الموديل",
+    "noModels": "لا توجد موديلات متاحة",
+    "current": "الحالي",
+    "discard": "تجاهل",
+    "saving": "جارٍ الحفظ...",
+    "save": "حفظ"
+  },
+  "channel": {
+    "facebook": "فيسبوك",
+    "whatsapp": "واتساب",
+    "dashboard": "لوحة التحكم"
+  },
+  "create": {
+    "title": "إنشاء وكيل جديد",
+    "template": "قالب",
+    "loadingTemplates": "جارٍ تحميل القوالب...",
+    "custom": "مخصص",
+    "toolsCount": "{n} أداة · {m} مهارة",
+    "identity": "الهوية",
+    "name": "الاسم",
+    "namePlaceholder": "أدخل اسم الوكيل",
+    "description": "الوصف",
+    "descPlaceholder": "وصف الوكيل",
+    "model": "الموديل",
+    "modelPlaceholder": "اختر الموديل",
+    "noModel": "بدون موديل",
+    "namePreview": "اسم الوكيل",
+    "descPreview": "وصف مختصر",
+    "cancel": "إلغاء",
+    "creating": "جارٍ الإنشاء...",
+    "submit": "إنشاء"
+  },
+  "delete": {
+    "title": "حذف الوكيل",
+    "confirm": "هل أنت متأكد؟",
+    "irreversible": "لا يمكن التراجع عن هذا الإجراء.",
+    "cancel": "إلغاء",
+    "deleting": "جارٍ الحذف...",
+    "confirmButton": "حذف"
+  },
+  "toast": {
+    "invalidSkillsJson": "مهارات JSON غير صالحة",
+    "saveSuccess": "تم الحفظ بنجاح",
+    "saveFailed": "فشل الحفظ",
+    "createSuccess": "تم الإنشاء بنجاح",
+    "createFailed": "فشل الإنشاء",
+    "deleteSuccess": "تم الحذف بنجاح",
+    "deleteFailed": "فشل الحذف"
+  },
+  "autonomy": {
+    "auto": "تلقائي",
+    "approval": "موافقة",
+    "blocked": "محظور"
+  },
+  "tools": {
+    "title": "الأدوات",
+    "add": "إضافة",
+    "enableAll": "تفعيل الكل",
+    "disableAll": "تعطيل الكل",
+    "search": "بحث",
+    "empty": "لا توجد أدوات",
+    "readOnly": "قراءة",
+    "write": "كتابة",
+    "addDialogTitle": "إضافة أدوات",
+    "addSearch": "بحث في الأدوات..."
+  },
+  "skills": {
+    "title": "المهارات",
+    "add": "إضافة",
+    "enableAll": "تفعيل الكل",
+    "disableAll": "تعطيل الكل",
+    "search": "بحث",
+    "empty": "لا توجد مهارات",
+    "addDialogTitle": "إضافة مهارات",
+    "addSearch": "بحث في المهارات..."
+  },
+  "googleSheets": {
+    "title": "جداول بيانات Google",
+    "desc": "ربط جداول بيانات Google",
+    "productsLabel": "المنتجات",
+    "ordersLabel": "الطلبات",
+    "helpTitle": "تعليمات",
+    "helpStep1": "الخطوة 1: افتح مستند Google Sheets",
+    "helpStep2": "الخطوة 2: انسخ الرابط",
+    "helpStep3": "الخطوة 3: الصق الرابط هنا",
+    "helpStep4": "الخطوة 4: اختر الصفحة"
+  }
+}

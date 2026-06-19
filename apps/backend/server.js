@@ -12,6 +12,7 @@ const path = require("path");
 const fs = require("fs");
 const dotenv = require("dotenv");
 const v8 = require("v8");
+const helmet = require("helmet");
 const { buildMemoryPressureSnapshot } = require("./services/memoryPressureMonitorService");
 
 // 1. Load base .env (tracked file)
@@ -440,6 +441,7 @@ const captureRawJsonBody = (req, res, buf, encoding) => {
 };
 
 // Body Parsers & Security
+app.use(helmet());
 app.use(express.json({ limit: "15mb", verify: captureRawJsonBody }));
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 app.use(cookieParser());
@@ -512,12 +514,12 @@ app.use(
 app.use("/api/v1/public/platform", publicPlatformRoutes);
 app.use("/api/v1/public/affiliates", publicAffiliateRoutes);
 app.use("/api/v1/public/merchants", publicMerchantRoutes);
+app.use("/api/v1/public/lp-pages", require("./routes/lpAdminRoutes").publicRouter);
 app.use("/api/v1/public", publicCouponsRoutes);
 app.use("/api/v1/public", publicProductReviewRoutes);
 app.use("/api/v1/public/checkout-form-settings", checkoutFormSettingsRoutes);
 app.use("/api/v1/public/footer-settings", footerSettingsRoutes);
 app.use("/api/v1/public/promotion-settings", promotionSettingsRoutes);
-app.use("/api/v1/public/lp-pages", require("./routes/lpAdminRoutes").publicRouter);
 app.use("/api/v1/product-landings", productLandingPagesRoutes);
   console.log("✅ [DEBUG] Public Products, Orders & Storefront Routes Loaded");
 

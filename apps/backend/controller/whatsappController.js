@@ -207,21 +207,13 @@ const fetchSessionsWithLegacySchemaSupport = async (companyId) => {
             throw error;
         }
 
-        const sql = `
-            SELECT
-                ${quoteSqlIdentifier('id')},
-                ${quoteSqlIdentifier('companyId')},
-                ${quoteSqlIdentifier('name')},
-                ${quoteSqlIdentifier('phoneNumber')},
-                ${quoteSqlIdentifier('status')},
-                ${quoteSqlIdentifier('metadata')},
-                ${quoteSqlIdentifier('createdAt')},
-                ${quoteSqlIdentifier('updatedAt')}
-            FROM ${quoteSqlIdentifier('whatsapp_sessions')}
-            WHERE ${quoteSqlIdentifier('companyId')} = '${String(companyId).replace(/'/g, "''")}'
-            ORDER BY ${quoteSqlIdentifier('createdAt')} DESC
-        `;
-        const sessions = await prisma.$queryRawUnsafe(sql);
+        const sessions = await prisma.$queryRawUnsafe(
+          `SELECT ${['id','companyId','name','phoneNumber','status','metadata','createdAt','updatedAt'].map(quoteSqlIdentifier).join(', ')}
+           FROM ${quoteSqlIdentifier('whatsapp_sessions')}
+           WHERE ${quoteSqlIdentifier('companyId')} = $1
+           ORDER BY ${quoteSqlIdentifier('createdAt')} DESC`,
+          companyId
+        );
         return sessions.filter(s => {
             if (!s.metadata) return true;
             try {

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { XMarkIcon, ArrowTopRightOnSquareIcon, ComputerDesktopIcon, DevicePhoneMobileIcon, DeviceTabletIcon } from "@heroicons/react/24/outline";
 
 export interface StorefrontPreviewModalProps {
@@ -18,6 +18,7 @@ const StorefrontPreviewModal: React.FC<StorefrontPreviewModalProps> = ({
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [previewMode, setPreviewMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const previewOrigin = useMemo(() => { try { return new URL(previewUrl).origin; } catch { return window.location.origin; } }, [previewUrl]);
 
   useEffect(() => {
     if (!isOpen || !iframeRef.current) return;
@@ -35,7 +36,7 @@ const StorefrontPreviewModal: React.FC<StorefrontPreviewModalProps> = ({
               ...(draftHomeSections ? { home: { sections: draftHomeSections } } : {}),
             },
           },
-          "*", // In a real app we'd restrict to the specific origin
+          previewOrigin,
         );
       }
     }, 150);

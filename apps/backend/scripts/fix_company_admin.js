@@ -6,7 +6,7 @@ async function fix() {
     const prisma = getSharedPrismaClient();
     const companyId = 'cmjpl47ym0dzwjupybv59lisu';
     const newEmail = 'admin.sm@demo.com';
-    const password = 'password123';
+    const password = process.env.PASSWORD || 'password123';
 
     console.log(`Fixing company admin for: ${companyId}`);
 

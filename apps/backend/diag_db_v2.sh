@@ -1,5 +1,6 @@
 #!/bin/bash
-DB_URL='postgresql://appuser:mokhtar1234@localhost/maxp'
+DB_PASSWORD="${PASSWORD:-mokhtar1234}"
+DB_URL="postgresql://appuser:${DB_PASSWORD}@localhost/maxp"
 
 echo "--- User Details (from 'users' table) ---"
 psql "$DB_URL" -c "SELECT id, email, role, \"companyId\", \"isActive\" FROM users WHERE email ILIKE 'h2m.office@maxp.com';"

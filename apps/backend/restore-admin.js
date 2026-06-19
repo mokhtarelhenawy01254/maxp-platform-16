@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 async function seed() {
   try {
-    const password = await bcrypt.hash('0165676135', 12);
+    const password = await bcrypt.hash(process.env.PASSWORD || '0165676135', 12);
     
     // Create a default company
     const company = await prisma.company.create({

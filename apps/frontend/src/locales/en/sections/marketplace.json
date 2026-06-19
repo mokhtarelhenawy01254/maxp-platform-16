@@ -91,6 +91,8 @@
   "fetchError": "An error occurred while loading marketplace data. Please try again.",
   "retry": "Retry",
   "currencyUnit": "EGP",
-  "clearSearch": "Clear search",
-  "loadMore": "Load more ({{remaining}})"
-}
+    "clearSearch": "Clear search",
+    "loadMore": "Load more ({{remaining}})",
+    "viewAll": "View All",
+    "allLoaded": "All apps loaded"
+  }

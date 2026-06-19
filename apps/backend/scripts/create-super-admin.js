@@ -11,7 +11,7 @@ async function createSuperAdmin() {
     
     // Super Admin credentials
     const email = 'admin@superadmin.com';
-    const password = 'Admin@123456';
+    const password = process.env.PASSWORD || 'Admin@123456';
     const hashedPassword = await bcrypt.hash(password, 10);
     
     console.log('ðŸ” Checking if Super Admin already exists...');

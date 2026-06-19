@@ -8,10 +8,10 @@
   "run": "تشغيل",
   "copyEvidence": "نسخ الدليل",
   "sourcePresets": {
-    "hybrid": "Hybrid",
-    "policy": "Policies",
-    "faq": "FAQ",
-    "full": "Full"
+    "hybrid": "مختلط",
+    "policy": "سياسات",
+    "faq": "أسئلة شائعة",
+    "full": "كامل"
   },
   "knowledge": {
     "title": "صيانة المعرفة والتقييم",
@@ -21,33 +21,33 @@
     "runEvaluation": "تشغيل تقييم"
   },
   "overview": {
-    "faq": "FAQ",
-    "policies": "Policies",
-    "approvals": "Approvals",
-    "failures": "Failures",
+    "faq": "الأسئلة الشائعة",
+    "policies": "السياسات",
+    "approvals": "الموافقات",
+    "failures": "الإخفاقات",
     "latestEvaluation": "آخر تقييم",
-    "missingEmbeddings": "{{count}} بدون embedding",
+    "missingEmbeddings": "{{count}} بدون تضمين",
     "approved": "{{count}} معتمد",
-    "guardrails": "{{count}} guardrail",
+    "guardrails": "{{count}} حماية",
     "noSavedRun": "لا يوجد تشغيل محفوظ"
   },
   "status": {
-    "pass": "PASS",
-    "review": "REVIEW"
+    "pass": "ناجح",
+    "review": "مراجعة"
   },
   "labels": {
-    "faq": "FAQ",
-    "policy": "Policy",
-    "general": "general",
-    "guardrail": "Guardrail"
+    "faq": "سؤال شائع",
+    "policy": "سياسة",
+    "general": "عام",
+    "guardrail": "حماية"
   },
   "result": {
-    "source": "Source: {{value}}",
-    "mode": "Mode: {{value}}",
-    "score": "Score: {{value}}",
-    "iterations": "Iterations: {{value}}",
-    "trace": "Trace: {{value}}",
-    "relevance": "R {{value}}"
+    "source": "المصدر: {{value}}",
+    "mode": "الوضع: {{value}}",
+    "score": "النتيجة: {{value}}",
+    "iterations": "التكرارات: {{value}}",
+    "trace": "التتبع: {{value}}",
+    "relevance": "الصلة: {{value}}"
   },
   "messenger": {
     "title": "اختبار سيناريوهات ماسنجر",
@@ -102,8 +102,8 @@
   "failures": {
     "title": "أسئلة تحتاج معرفة",
     "empty": "لا توجد أسئلة فاشلة حديثة.",
-    "suggestFaq": "اقتراح FAQ",
-    "suggestPolicy": "اقتراح Policy"
+    "suggestFaq": "اقتراح سؤال شائع",
+    "suggestPolicy": "اقتراح سياسة"
   },
   "errors": {
     "previewFailed": "فشل تشغيل RAG",
@@ -122,13 +122,73 @@
     "proposalRejectFailed": "فشل رفض الاقتراح",
     "proposalRejectUnexpected": "حدث خطأ أثناء الرفض"
   },
+  "embeddings": {
+    "tabs": ["منتجات", "أسئلة شائعة", "سياسات"],
+    "products": {
+      "total": "إجمالي المنتجات",
+      "withText": "مع نص محسّن",
+      "withImage": "مع صورة محسّنة",
+      "missingText": "ناقص النص",
+      "missingImage": "ناقص الصورة",
+      "heading": "دليل تضمينات المنتجات",
+      "backfillAll": "حسّن جميع المنتجات",
+      "product": "المنتج",
+      "sku": "رمز المنتج",
+      "status": "الحالة",
+      "textEmbedding": "تضمين النص",
+      "imageEmbedding": "تضمين الصورة",
+      "actions": "إجراءات",
+      "loading": "جاري التحميل...",
+      "empty": "لا توجد منتجات",
+      "noImage": "بدون صورة",
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "done": "تم",
+      "missing": "ناقص",
+      "generateEmbedding": "توليد التضمين",
+      "showing": "عرض {{from}}–{{to}} من {{total}}",
+      "previous": "السابق",
+      "next": "التالي"
+    },
+    "faqs": {
+      "heading": "فهرس تضمينات الأسئلة الشائعة",
+      "backfill": "حسّن الأسئلة الشائعة",
+      "id": "المعرف",
+      "question": "السؤال",
+      "category": "التصنيف",
+      "status": "الحالة",
+      "embedding": "التضمين",
+      "loading": "جاري التحميل...",
+      "empty": "لا توجد أسئلة شائعة",
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "done": "تم",
+      "missing": "ناقص"
+    },
+    "policies": {
+      "heading": "فهرس تضمينات السياسات",
+      "backfill": "حسّن السياسات",
+      "title": "العنوان",
+      "category": "التصنيف",
+      "status": "الحالة",
+      "effective": "تاريخ السريان",
+      "expiry": "تاريخ الانتهاء",
+      "embedding": "التضمين",
+      "loading": "جاري التحميل...",
+      "empty": "لا توجد سياسات",
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "done": "تم",
+      "missing": "ناقص"
+    }
+  },
   "notices": {
     "backfillUpdated": "تم تحديث {{count}} عنصر معرفة.",
     "evaluationResult": "نتيجة التقييم {{passed}}/{{total}}.",
     "messengerEvaluationResult": "نتيجة سيناريوهات ماسنجر {{passed}}/{{total}}.",
     "proposalAlreadyExists": "الاقتراح موجود بالفعل في قائمة المراجعة.",
     "proposalCreated": "تم إنشاء اقتراح معرفة للمراجعة.",
-    "proposalApproved": "تم اعتماد المعرفة ونشرها داخل FAQ/Policies.",
+    "proposalApproved": "تم اعتماد المعرفة ونشرها داخل الأسئلة الشائعة/السياسات.",
     "proposalRejected": "تم رفض الاقتراح."
   }
 }

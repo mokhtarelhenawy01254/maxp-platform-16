@@ -330,16 +330,10 @@ apps/backend/scratch/**
 # Local env files with secrets (templates like .env.example
 # are tracked, so we use a negative-lookahead pattern)
 apps/backend/.env
-apps/backend/.env.archive
-apps/backend/.env.production
-apps/backend/.env.production.fixed
-apps/backend/.env.test
-apps/backend/.env.local
-apps/backend/.env.*.local
+apps/backend/.env.*
 apps/frontend/.env
-apps/frontend/.env.production
-apps/frontend/.env.local
-apps/frontend/.env.*.local
+apps/frontend/.env.*
+apps/ai-service/.env*
 # Allow templates to be committed
 !apps/backend/.env.example
 !apps/backend/.env.postgres.example

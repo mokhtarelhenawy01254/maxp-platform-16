@@ -19,6 +19,7 @@ import { useVisualTheme } from "../../contexts/VisualThemeContext";
 import { BUSINESS_THEME_ID } from "../../config/themes";
 import { SidebarLayoutType } from "../../types/layout";
 import SidebarLayoutFactory from "./sidebar/SidebarLayoutFactory";
+import ThreeTierSidebar from "./sidebar/ThreeTierSidebar";
 import { shouldUseSuperAdminShell } from "./layoutMode";
 import CompanySwitcher from "../common/CompanySwitcher";
 import LanguageSwitcher from "../common/LanguageSwitcher";
@@ -603,18 +604,57 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     >
       {isHorizontalLayout ? (
         <div className="flex flex-col h-screen w-full overflow-hidden">
-          <SidebarLayoutFactory
-            layout={currentLayout}
-            isCollapsed={isSidebarCollapsed}
-            toggleSidebar={toggleSidebar}
-            sections={filteredSections}
-            collapsedSections={collapsedSections}
-            toggleSection={toggleSection}
-            currentPath={sidebarCurrentPath}
-            t={t}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-          />
+          <div className="hidden lg:block">
+            <SidebarLayoutFactory
+              layout={currentLayout}
+              isCollapsed={isSidebarCollapsed}
+              toggleSidebar={toggleSidebar}
+              sections={filteredSections}
+              collapsedSections={collapsedSections}
+              toggleSection={toggleSection}
+              currentPath={sidebarCurrentPath}
+              t={t}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+            />
+          </div>
+
+          {/* Mobile drawer for horizontal layout */}
+          {isMobile ? (
+            <div
+              className="business-mobile-overlay"
+              data-open={isMobileMenuOpen ? "true" : "false"}
+              dir={i18n.dir()}
+            >
+              <div
+                className="business-mobile-backdrop"
+                data-open={isMobileMenuOpen ? "true" : "false"}
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+              <div
+                className={`business-mobile-drawer ${
+                  i18n.dir() === "rtl" ? "right-0" : "left-0"
+                }`}
+                data-open={isMobileMenuOpen ? "true" : "false"}
+                role="dialog"
+                aria-modal="true"
+                aria-label={t("sidebar.navigation") || "Navigation"}
+              >
+                <ThreeTierSidebar
+                  isCollapsed={false}
+                  mobileMode={true}
+                  toggleSidebar={() => setIsMobileMenuOpen(false)}
+                  sections={filteredSections}
+                  collapsedSections={collapsedSections}
+                  toggleSection={toggleSection}
+                  currentPath={sidebarCurrentPath}
+                  t={t}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                />
+              </div>
+            </div>
+          ) : null}
 
           <div className="flex-1 w-full flex flex-col overflow-hidden">
             {showTrialBanner ? (

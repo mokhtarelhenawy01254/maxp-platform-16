@@ -1,5 +1,6 @@
 #!/bin/bash
-DB_URL='postgresql://appuser:mokhtar1234@localhost/maxp'
+DB_PASSWORD="${PASSWORD:-mokhtar1234}"
+DB_URL="postgresql://appuser:${DB_PASSWORD}@localhost/maxp"
 echo "--- Tables ---"
 psql "$DB_URL" -t -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND (table_name ILIKE '%user%' OR table_name ILIKE '%company%');"
 

@@ -91,6 +91,8 @@
   "fetchError": "حدث خطأ أثناء تحميل بيانات المتجر. حاول مرة أخرى.",
   "retry": "إعادة المحاولة",
   "currencyUnit": "ج",
-  "clearSearch": "مسح البحث",
-  "loadMore": "عرض المزيد ({{remaining}})"
-}
+    "clearSearch": "مسح البحث",
+    "loadMore": "عرض المزيد ({{remaining}})",
+    "viewAll": "عرض الكل",
+    "allLoaded": "تم عرض جميع التطبيقات"
+  }

@@ -18,6 +18,7 @@ import { STOREFRONT_REVIEWS_SECTION_ID } from '../utils/pdpCheckout';
 import ReviewMediaGallery from '../components/ReviewMediaGallery';
 import WriteReviewDialog from '../components/WriteReviewDialog';
 import { resolveSectionVariant } from '../variants';
+import { sanitizeStorefrontHtml } from '../utils/html';
 import { useDeferredSectionActivation } from '../hooks/useDeferredSectionActivation';
 import { resolveSectionContentAlign } from '../utils/contentAlignment';
 
@@ -736,7 +737,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ section, settings }) =>
             <div
               className="prose prose-sm max-w-none leading-relaxed text-[#1a3328]/60"
               dangerouslySetInnerHTML={{
-                __html: product?.description || (prefersArabicCopy ? 'لا يوجد وصف متاح.' : 'No description available.'),
+                __html: sanitizeStorefrontHtml(product?.description) || (prefersArabicCopy ? 'لا يوجد وصف متاح.' : 'No description available.'),
               }}
             />
           </div>

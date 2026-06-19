@@ -1,13 +1,9 @@
-/**
- * Token Manager
- *
- * Handles token persistence with per-tab isolation using sessionStorage
- * and global persistence using localStorage.
- */
-
 const ACCESS_TOKEN_KEY = "accessToken";
 const LEGACY_ACCESS_TOKEN_KEY = "token";
-const REFRESH_TOKEN_KEY = "refreshToken";
+
+// ponytail: refreshToken now lives in httpOnly cookie (set by backend), not localStorage
+// Access token stays in sessionStorage (tab-scoped, cleared on close)
+// This prevents XSS from stealing long-lived refresh tokens
 
 const readToken = (key: string): string | null =>
   sessionStorage.getItem(key) || localStorage.getItem(key);
@@ -23,21 +19,12 @@ const clearToken = (key: string): void => {
 };
 
 export const tokenManager = {
-  /**
-   * Get the best available access token.
-   * Prioritizes the canonical key and self-heals legacy storage when needed.
-   */
   getAccessToken(): string | null {
     const accessToken = readToken(ACCESS_TOKEN_KEY);
-    if (accessToken) {
-      return accessToken;
-    }
+    if (accessToken) return accessToken;
 
     const legacyToken = readToken(LEGACY_ACCESS_TOKEN_KEY);
-    if (legacyToken) {
-      writeToken(ACCESS_TOKEN_KEY, legacyToken);
-    }
-
+    if (legacyToken) writeToken(ACCESS_TOKEN_KEY, legacyToken);
     return legacyToken;
   },
 
@@ -52,46 +39,29 @@ export const tokenManager = {
 
   createAuthHeaders(additionalHeaders: Record<string, string> = {}): Record<string, string> {
     const authorization = this.getAuthorizationHeaderValue();
-
     return {
       ...(authorization ? { Authorization: authorization } : {}),
       ...additionalHeaders,
     };
   },
 
-
-
-  /**
-   * Set access token.
-   * Keeps the legacy key mirrored temporarily while older screens are migrated.
-   */
   setAccessToken(token: string): void {
     writeToken(ACCESS_TOKEN_KEY, token);
     writeToken(LEGACY_ACCESS_TOKEN_KEY, token);
   },
 
-  /**
-   * Get refresh token.
-   * Refresh tokens are usually global, so we prioritize localStorage.
-   */
+  // ponytail: refresh token is httpOnly cookie now, no client-side storage needed
   getRefreshToken(): string | null {
-    return localStorage.getItem(REFRESH_TOKEN_KEY) || sessionStorage.getItem(REFRESH_TOKEN_KEY);
+    return null;
   },
 
-  /**
-   * Set refresh token globally.
-   */
-  setRefreshToken(token: string): void {
-    writeToken(REFRESH_TOKEN_KEY, token);
+  setRefreshToken(_token: string): void {
+    // no-op: refresh token is set as httpOnly cookie by backend
   },
 
-  /**
-   * Clear all tokens from all storage types.
-   */
   clearTokens(): void {
     clearToken(ACCESS_TOKEN_KEY);
     clearToken(LEGACY_ACCESS_TOKEN_KEY);
-    clearToken(REFRESH_TOKEN_KEY);
   },
 };
 

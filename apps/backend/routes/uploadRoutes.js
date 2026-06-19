@@ -184,12 +184,11 @@ router.post('/multiple', upload.array('images', 10), (req, res) => {
 // Delete image
 router.delete('/file/:filename', (req, res) => {
   try {
-    const filename = req.params.filename;
+    const filename = path.basename(req.params.filename);
     const filePath = path.join(productsDir, filename);
 
-    if (fs.existsSync(filePath)) {
+    if (path.resolve(filePath).startsWith(path.resolve(productsDir)) && fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
-      //console.log('Image deleted successfully:', filename);
       
       res.json({
         success: true,

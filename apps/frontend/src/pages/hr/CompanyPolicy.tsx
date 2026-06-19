@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import DOMPurify from "dompurify";
 import {
   FileText,
   Plus,
@@ -449,7 +450,7 @@ const CompanyPolicy: React.FC = () => {
 
           <div className="mt-6 prose prose-lg dark:prose-invert max-w-none">
             <div
-              dangerouslySetInnerHTML={{ __html: viewingPolicy?.content || "" }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(viewingPolicy?.content || "") }}
             />
           </div>
 

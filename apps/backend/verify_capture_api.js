@@ -3,7 +3,7 @@ const axios = require('axios');
 async function verifyCapture() {
   const API_URL = 'http://localhost:3007/api/v1';
   const email = 'mokhtar@mokhtar.mokhtar';
-  const password = 'SuperAdmin@123';
+  const password = process.env.PASSWORD || 'SuperAdmin@123';
   const templateId = 'femme-chic';
   const originCompanyId = 'cmmhkxobb0000vpk440j1n6ui'; // MaxP Platform
 

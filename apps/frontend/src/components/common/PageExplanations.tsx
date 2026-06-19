@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { PlayCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
+import DOMPurify from "dompurify";
 
 interface Explanation {
   id: string;
@@ -165,7 +166,7 @@ const PageExplanations: React.FC = () => {
               {/* Text content */}
               <div
                 className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: selectedExp.content }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedExp.content) }}
               />
             </div>
           </div>

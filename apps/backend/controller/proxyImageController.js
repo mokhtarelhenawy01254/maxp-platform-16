@@ -427,10 +427,10 @@ const resolveLegacyWhatsAppSessionMetaConfig = async (prisma, sessionId) => {
   const sql = `
     SELECT ${selectColumns.map(quoteSqlIdentifier).join(", ")}
     FROM ${quoteSqlIdentifier("whatsapp_sessions")}
-    WHERE ${quoteSqlIdentifier("id")} = '${escapeSqlLiteral(sessionId)}'
+    WHERE ${quoteSqlIdentifier("id")} = $1
     LIMIT 1
   `;
-  const rows = await prisma.$queryRawUnsafe(sql);
+  const rows = await prisma.$queryRawUnsafe(sql, sessionId);
   const sessionRow = Array.isArray(rows) ? rows[0] : null;
 
   if (!sessionRow) {

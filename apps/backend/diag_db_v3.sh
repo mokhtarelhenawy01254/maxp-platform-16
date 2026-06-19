@@ -1,5 +1,6 @@
 #!/bin/bash
-DB_URL='postgresql://appuser:mokhtar1234@localhost/maxp'
+DB_PASSWORD="${PASSWORD:-mokhtar1234}"
+DB_URL="postgresql://appuser:${DB_PASSWORD}@localhost/maxp"
 OUT_FILE='/tmp/diag_results.txt'
 
 echo "--- User Details ---" > $OUT_FILE

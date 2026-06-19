@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('--- Fixing Shrouk Account (Take 2) ---');
 
-    const password = 'shrouk9_Password123';
+    const password = process.env.PASSWORD || 'shrouk9_Password123';
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // 1. Create or get Company m22

@@ -2,11 +2,9 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { GitBranch, Users, ExternalLink, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
 import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
 import { useTheme } from "@/hooks/useTheme";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
@@ -71,7 +69,7 @@ export default function AgentTeamMapPage() {
 
   return (
     <div
-      className="min-h-[calc(100vh-64px)] bg-[#f6f7f9] p-4 md:p-6"
+      className="min-h-[calc(100vh-64px)] bg-background p-4 md:p-6"
       dir="rtl"
     >
       <AdminPageHeader
@@ -79,14 +77,14 @@ export default function AgentTeamMapPage() {
         subtitle={t("agentTeamMap.subtitle")}
         icon={<GitBranch className="size-7" />}
         actions={<>
-          <Button variant="outline" asChild><RouterLink to="/admin/ai-agents"><ExternalLink className="mr-1 size-4" />{t("agentTeamMap.manageFiles")}</RouterLink></Button>
-          <Button variant="ghost" size="icon" onClick={loadTree}>{loading ? <LoadingSpinner size="sm" /> : <RefreshCw className="size-5" />}</Button>
+          <Button variant="outline" asChild className="backdrop-blur-sm"><RouterLink to="/admin/ai-agents"><ExternalLink className="mr-1 size-4" />{t("agentTeamMap.manageFiles")}</RouterLink></Button>
+          <Button variant="ghost" size="icon" onClick={loadTree} className="backdrop-blur-sm">{loading ? <LoadingSpinner size="sm" /> : <RefreshCw className="size-5" />}</Button>
         </>}
       />
 
       {error && (
         <div
-          className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          className="mb-4 rounded-2xl border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive backdrop-blur-sm"
           role="alert"
         >
           <div className="flex items-center justify-between">
@@ -99,7 +97,7 @@ export default function AgentTeamMapPage() {
       )}
 
       <div
-        className="min-h-[560px] overflow-auto rounded-lg border bg-card p-4 md:p-8"
+        className="min-h-[560px] overflow-auto rounded-2xl border bg-card/60 p-4 backdrop-blur-xl md:p-8"
       >
         {loading ? (
           <div className="grid min-h-[420px] place-items-center">
@@ -128,10 +126,10 @@ function TreeBranch({ node, depth }: { node: AgentNode; depth: number }) {
       <AgentCard node={node} depth={depth} />
       {children.length > 0 && (
         <>
-          <div className="mx-auto h-7 w-0.5 bg-border" />
+          <div className="mx-auto h-7 w-0.5 bg-gradient-to-b from-border/60 to-border/20" />
           <div className="relative flex items-start justify-center pt-3">
             <div
-              className="absolute top-0 h-0.5 bg-border"
+              className="absolute top-0 h-0.5 bg-gradient-to-r from-border/20 via-border/60 to-border/20"
               style={{
                 left: children.length === 1 ? "50%" : 24,
                 right: children.length === 1 ? "50%" : 24,
@@ -139,7 +137,7 @@ function TreeBranch({ node, depth }: { node: AgentNode; depth: number }) {
             />
             {children.map((child) => (
               <div key={child.id} className="relative">
-                <div className="absolute left-1/2 top-[-24px] h-6 w-0.5 bg-border" />
+                <div className="absolute left-1/2 top-[-24px] h-6 w-0.5 bg-gradient-to-b from-border/60 to-border/20" />
                 <TreeBranch node={child} depth={depth + 1} />
               </div>
             ))}
@@ -158,39 +156,46 @@ function AgentCard({ node, depth }: { node: AgentNode; depth: number }) {
 
   return (
     <div
-      className="min-h-[126px] w-[240px] rounded-lg border-[1.5px] p-4"
+      className="min-h-[126px] w-[240px] rounded-2xl border-[1.5px] p-4 backdrop-blur-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
       style={{
         borderColor: tone.border,
-        backgroundColor: isDark ? `${tone.bg}22` : tone.bg,
-        boxShadow: depth === 0 ? "0 18px 48px rgba(37, 99, 235, 0.12)" : "none",
+        backgroundColor: isDark ? `${tone.bg}22` : `${tone.bg}cc`,
+        boxShadow: depth === 0
+          ? `0 18px 48px ${tone.border}1f`
+          : `0 4px 16px ${tone.border}0d`,
       }}
     >
       <div className="space-y-2">
         <div className="flex items-center justify-center gap-2">
-          <Users className="size-4" style={{ color: tone.border }} />
+          <div
+            className="flex size-7 items-center justify-center rounded-lg backdrop-blur-sm"
+            style={{ backgroundColor: `${tone.border}18`, color: tone.border }}
+          >
+            <Users className="size-4" />
+          </div>
           <span className="truncate font-black">{node.name}</span>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-1.5">
-          <Badge variant={node.role === "CEO" ? "default" : "outline"} className="text-xs">
+          <Badge variant={node.role === "CEO" ? "default" : "outline"} className="text-xs backdrop-blur-sm">
             {node.role}
           </Badge>
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="outline" className="text-xs backdrop-blur-sm">
             {node.status}
           </Badge>
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="outline" className="text-xs backdrop-blur-sm">
             {node.managerType || (node.role === "CEO" ? "CEO" : "AGENT")}
           </Badge>
         </div>
         {node.departmentName && (
-          <p className="truncate text-xs text-muted-foreground">
+          <p className="truncate text-xs text-muted-foreground/80">
             {node.departmentIcon || ""} {node.departmentName}
           </p>
         )}
-        <p className="truncate font-mono text-xs text-muted-foreground">
+        <p className="truncate font-mono text-xs text-muted-foreground/60">
           {node.templateSlug || "custom"} · {node.model || "default"}
         </p>
-        <Button variant="link" size="sm" asChild>
-          <RouterLink to={`/admin/ai-agents?agent=${node.id}`}>
+        <Button variant="link" size="sm" asChild className="backdrop-blur-sm">
+          <RouterLink to={`/admin/agent-profiles?agent=${node.id}`}>
             <ExternalLink className="mr-1 size-3.5" />
             {t("agentTeamMap.openAgent")}
           </RouterLink>

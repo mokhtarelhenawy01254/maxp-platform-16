@@ -16,7 +16,7 @@
   "aiCatalog": "كتالوج المنتجات (البوت)",
   "aiAgentSkills": "مهارات الوكلاء",
   "aiAgentTools": "أدوات الوكلاء",
-  "aiOperatorSection": "العميل الذكي AI",
+  "aiOperatorSection": "فريق الايجنت",
   "aiKnowledgeQuestions": "استفسارات المعرفة",
   "aiRagLab": "مختبر RAG",
   "aiSubAgents": "الوكلاء الفرعيون",

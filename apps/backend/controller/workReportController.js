@@ -243,9 +243,52 @@ const evaluateFormula = (formula, numericContext = {}) => {
     throw new Error('صيغة المعادلة تحتوي على رموز غير مدعومة');
   }
 
-  // eslint-disable-next-line no-new-func
-  const result = Function(`"use strict"; return (${expression});`)();
+  // ponytail: safe eval via math expr parser, not Function()
+  const result = evaluateSafeMath(expression);
   return Number.isFinite(result) ? Number(result.toFixed(4)) : null;
+};
+
+// ponytail: recursive descent parser, upgrades to mathjs if complex funcs needed
+function evaluateSafeMath(expr) {
+  let pos = 0;
+  const peek = () => expr[pos];
+  const next = () => expr[pos++];
+  const eat = (c) => { while (peek() === ' ') next(); if (peek() === c) { next(); return true; } return false; };
+  const parseNumber = () => {
+    while (peek() === ' ') next();
+    let num = '';
+    while (/[0-9.]/.test(peek())) num += next();
+    return num ? parseFloat(num) : null;
+  };
+  const parseFactor = () => {
+    if (eat('(')) { const v = parseExpr(); eat(')'); return v; }
+    const n = parseNumber();
+    if (n === null) throw new Error('Invalid expression');
+    return n;
+  };
+  const parseTerm = () => {
+    let v = parseFactor();
+    while (peek() === '*' || peek() === '/') {
+      const op = next();
+      const r = parseFactor();
+      v = op === '*' ? v * r : v / r;
+    }
+    return v;
+  };
+  const parseExpr = () => {
+    let v = peek() === '-' ? (next(), -parseFactor()) : parseTerm();
+    while (peek() === '+' || peek() === '-') {
+      const op = next();
+      const r = parseTerm();
+      v = op === '+' ? v + r : v - r;
+    }
+    return v;
+  };
+  const result = parseExpr();
+  // ponytail: global lock, per-account locks if throughput matters
+  validateRemainingInput();
+  return result;
+  function validateRemainingInput() { while (peek() === ' ') next(); if (peek()) throw new Error('Unexpected characters after expression'); }
 };
 
 const normalizeFieldDefinition = (field, index) => {

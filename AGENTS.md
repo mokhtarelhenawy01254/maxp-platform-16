@@ -18,3 +18,12 @@
 
 ## Language
 - User prefers Arabic for conversation, English for code and technical output unless specified otherwise
+
+## Browser Isolation — Multi-Task Conflict Prevention
+- **Every task that uses the browser MUST create its own isolated context.** This prevents cookie/session/auth conflicts between tasks running simultaneously.
+- Pattern:
+  ```
+  chrome-devtools_new_page({ url: "<target>", isolatedContext: "task-<short-description>" })
+  ```
+- Close pages when done with `close_page` to free resources.
+- NEVER rely on pages created by other tasks. Always create your own. They are not shared.

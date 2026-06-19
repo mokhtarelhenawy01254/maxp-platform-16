@@ -15,7 +15,7 @@ const getRedisConfig = () => {
         // Handle TLS
         if (url.startsWith('rediss://')) {
             options.tls = {
-                rejectUnauthorized: false
+                rejectUnauthorized: process.env.NODE_ENV === 'production' ? true : false,
             };
         }
 
@@ -40,7 +40,7 @@ const getRedisConfig = () => {
 
         if (process.env.REDIS_TLS === 'true' || process.env.REDIS_PORT === '6380') {
             config.tls = {
-                rejectUnauthorized: false
+                rejectUnauthorized: process.env.NODE_ENV === 'production' ? true : false,
             };
         }
 

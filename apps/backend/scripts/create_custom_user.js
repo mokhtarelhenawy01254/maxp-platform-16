@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 async function createCustomUser() {
     try {
         const email = 'testuser@example.com';
-        const password = 'Password123!';
+        const password = process.env.PASSWORD || 'Password123!';
         const firstName = 'Test';
         const lastName = 'User';
 

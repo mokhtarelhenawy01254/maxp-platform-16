@@ -222,8 +222,8 @@ const createEnvironmentConfig = () => {
     // CORS Origins - Allow both www, non-www, and all subdomains
     // Using function to dynamically validate origins
     corsOrigins: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
+      // Deny requests with no origin (prevents sandboxed iframe / null origin attacks)
+      if (!origin) return callback(new Error('CORS: origin required'), false);
 
       const isAllowed = allowedOriginPatterns.some(pattern => {
         if (pattern instanceof RegExp) {

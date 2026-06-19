@@ -484,6 +484,7 @@ export default function AgentCatalogPage() {
   const { t } = useTranslation();
   const { derivedTheme } = useTheme();
   const isDark = derivedTheme === "dark";
+  const isMobile = useIsMobile();
 
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -736,8 +737,8 @@ export default function AgentCatalogPage() {
         title={t("aiCatalog.title")}
         subtitle={t("aiCatalog.subtitle")}
         icon={<ShoppingBag className="size-7" />}
-        actions={<>
-          <div className="relative w-full md:w-[260px]">
+        actions={isMobile ? <div className="flex items-center gap-2"><TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={fetchProducts}>{loading ? <LoadingSpinner size="sm" /> : <RefreshCw className="size-5" />}</Button></TooltipTrigger><TooltipContent>Refresh</TooltipContent></Tooltip></TooltipProvider></div> : <>
+          <div className="relative w-[260px]">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder={t("aiCatalog.search")} value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} className="pl-8" />
           </div>
@@ -746,11 +747,52 @@ export default function AgentCatalogPage() {
         </>}
       />
 
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <AdminDataCard icon={<ShoppingBag className="size-5" />} label={t("aiCatalog.totalProducts")} value={stats.total} accentColor="99,102,241" />
-        <AdminDataCard icon={<Package className="size-5" />} label={t("aiCatalog.outOfStock")} value={stats.outOfStock} accentColor="239,68,68" />
-        <AdminDataCard icon={<TrendingUp className="size-5" />} label={t("aiCatalog.avgPrice")} value={stats.avgPrice} accentColor="34,197,94" />
-      </div>
+      {isMobile && (
+        <div className="sticky top-0 z-10 -mx-4 mb-4 bg-background px-4 pb-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder={t("aiCatalog.search")} value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} className="pl-8" />
+          </div>
+        </div>
+      )}
+
+      {isMobile ? (
+        <div className="mb-4 flex gap-3 overflow-x-auto px-0 scrollbar-none">
+          <div className="flex shrink-0 items-center gap-3 rounded-xl border bg-card p-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: "rgba(99,102,241,0.1)", color: "rgb(99,102,241)" }}>
+              <ShoppingBag className="size-4" />
+            </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground">{t("aiCatalog.totalProducts")}</p>
+              <p className="text-lg font-black">{stats.total}</p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-3 rounded-xl border bg-card p-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: "rgba(239,68,68,0.1)", color: "rgb(239,68,68)" }}>
+              <Package className="size-4" />
+            </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground">{t("aiCatalog.outOfStock")}</p>
+              <p className="text-lg font-black">{stats.outOfStock}</p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-3 rounded-xl border bg-card p-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: "rgba(34,197,94,0.1)", color: "rgb(34,197,94)" }}>
+              <TrendingUp className="size-4" />
+            </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground">{t("aiCatalog.avgPrice")}</p>
+              <p className="text-lg font-black">{stats.avgPrice}</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <AdminDataCard icon={<ShoppingBag className="size-5" />} label={t("aiCatalog.totalProducts")} value={stats.total} accentColor="99,102,241" />
+          <AdminDataCard icon={<Package className="size-5" />} label={t("aiCatalog.outOfStock")} value={stats.outOfStock} accentColor="239,68,68" />
+          <AdminDataCard icon={<TrendingUp className="size-5" />} label={t("aiCatalog.avgPrice")} value={stats.avgPrice} accentColor="34,197,94" />
+        </div>
+      )}
 
       {/* Error */}
       {error && (
@@ -767,248 +809,225 @@ export default function AgentCatalogPage() {
         </div>
       )}
 
-      {/* Products Table */}
+      {/* Products Content */}
       <div className="animate-in fade-in duration-800">
-        <div
-          className={cn(
-            "overflow-hidden rounded-xl border",
-            isDark ? "border-white/8" : "border-black/6",
-          )}
-        >
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow
-                  className={cn(
-                    isDark ? "bg-white/3" : "bg-black/2",
-                  )}
-                >
-                  <TableHead className="w-[60px] font-extrabold">
-                    {t("aiCatalog.image")}
-                  </TableHead>
-                  <TableHead className="font-extrabold">
-                    {t("aiCatalog.title")}
-                  </TableHead>
-                  <TableHead className="font-extrabold">
-                    {t("aiCatalog.sku")}
-                  </TableHead>
-                  <TableHead className="text-center font-extrabold">
-                    {t("aiCatalog.price")}
-                  </TableHead>
-                  <TableHead className="text-center font-extrabold">
-                    {t("aiCatalog.stock")}
-                  </TableHead>
-                  <TableHead className="text-center font-extrabold">
-                    {t("aiCatalog.variants")}
-                  </TableHead>
-                  <TableHead className="w-[140px] text-center font-extrabold">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={`skeleton-${i}`}>
-                      {Array.from({ length: 7 }).map((_, j) => (
-                        <TableCell key={j}>
-                          <Skeleton className="h-6 w-full" />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : products.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="py-16 text-center">
-                      <div className="flex flex-col items-center gap-4">
-                        <ShoppingBag className="size-14 text-muted-foreground/50" />
-                        <p className="font-semibold text-muted-foreground">
-                          {t("aiCatalog.empty")}
-                        </p>
-                        <Button
-                          variant="outline"
-                          onClick={openAddForm}
-                        >
-                          <Plus className="mr-1 size-4" />
-                          {t("aiCatalog.addProduct")}
-                        </Button>
+        {isMobile ? (
+          <>
+            {/* Loading skeletons for mobile */}
+            {loading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex gap-3 rounded-xl border bg-card p-3">
+                    <Skeleton className="size-20 shrink-0 rounded-lg" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-1/3" />
+                      <Skeleton className="h-5 w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : products.length === 0 ? (
+              <div className="flex flex-col items-center gap-4 py-16">
+                <ShoppingBag className="size-14 text-muted-foreground/50" />
+                <p className="font-semibold text-muted-foreground">{t("aiCatalog.empty")}</p>
+                <Button variant="outline" onClick={openAddForm}>
+                  <Plus className="mr-1 size-4" />
+                  {t("aiCatalog.addProduct")}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {products.map((product) => {
+                  let thumb = product.mainImage || "";
+                  if (!thumb && product.images) {
+                    try { const imgs = JSON.parse(product.images); thumb = Array.isArray(imgs) ? imgs[0] || "" : ""; } catch {}
+                  }
+                  const variantCount = product.variants?.length || 0;
+                  return (
+                    <div
+                      key={product.id}
+                      onClick={() => openEditForm(product)}
+                      className="flex gap-3 rounded-xl border bg-card p-3 active:scale-[0.98] transition-transform cursor-pointer"
+                    >
+                      <div className="size-20 shrink-0 overflow-hidden rounded-lg">
+                        {thumb ? (
+                          <img src={thumb} alt={product.name} className="size-full object-cover" />
+                        ) : (
+                          <div className={cn("flex size-full items-center justify-center", isDark ? "bg-white/6" : "bg-black/4")}>
+                            <ImageIcon className="size-6 text-muted-foreground/50" />
+                          </div>
+                        )}
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  products.map((product) => {
-                    let thumb = product.mainImage || "";
-                    if (!thumb && product.images) {
-                      try {
-                        const imgs = JSON.parse(product.images);
-                        thumb = Array.isArray(imgs) ? imgs[0] || "" : "";
-                      } catch {
-                        /* empty */
-                      }
-                    }
-                    const variantCount = product.variants?.length || 0;
-
-                    return (
-                      <TableRow
-                        key={product.id}
-                        className="cursor-pointer transition-colors"
-                        onClick={() => openEditForm(product)}
-                      >
-                        <TableCell>
-                          <Avatar className="size-11 rounded-md">
-                            <AvatarImage src={thumb || undefined} alt={product.name} />
-                            <AvatarFallback
-                              className={cn(
-                                "rounded-md",
-                                isDark ? "bg-white/6" : "bg-black/4",
-                              )}
-                            >
-                              <ImageIcon className="size-5" />
-                            </AvatarFallback>
-                          </Avatar>
-                        </TableCell>
-                        <TableCell>
-                          <span className="max-w-[220px] truncate text-sm font-bold">
-                            {product.name}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <code className="text-xs text-muted-foreground">
-                            {product.sku || "—"}
-                          </code>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className="font-bold text-xs">
-                            {product.price?.toFixed(2)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge
-                            variant={product.stock > 0 ? "outline" : "destructive"}
-                            className={cn(
-                              "font-bold text-xs",
-                              product.stock > 0 && "border-success text-success",
-                            )}
-                          >
+                      <div className="flex min-w-0 flex-1 flex-col justify-between">
+                        <div>
+                          <p className="truncate text-sm font-bold">{product.name}</p>
+                          <p className="text-xs text-muted-foreground">{product.sku || "—"}</p>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-base font-black">{product.price?.toFixed(2)}</span>
+                          <Badge variant={product.stock > 0 ? "outline" : "destructive"} className={cn("text-[0.7rem]", product.stock > 0 && "border-success text-success")}>
                             {product.stock}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {variantCount > 0 ? (
-                            <Badge variant="outline" className="text-[0.7rem]">
-                              <Palette className="mr-0.5 size-3.5" />
+                        </div>
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          {variantCount > 0 && (
+                            <Badge variant="outline" className="text-[0.6rem]">
+                              <Palette className="ml-0.5 size-3" />
                               {variantCount}
                             </Badge>
-                          ) : (
-                            <span className="text-xs text-muted-foreground/50">
-                              —
-                            </span>
                           )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div
-                            className="flex items-center justify-center gap-1"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    onClick={() => openEditForm(product)}
-                                  >
-                                    <Pencil className="size-3.5 text-primary" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  {t("aiCatalog.editProduct")}
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    onClick={() => handleDuplicate(product)}
-                                  >
-                                    <Copy className="size-3.5" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Duplicate</TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    onClick={() => setDeleteTarget(product)}
-                                  >
-                                    <Trash2 className="size-3.5 text-destructive" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Delete</TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                          <Button variant="ghost" size="icon-xs" onClick={() => openEditForm(product)}>
+                            <Pencil className="size-3.5 text-primary" />
+                          </Button>
+                          <Button variant="ghost" size="icon-xs" onClick={() => handleDuplicate(product)}>
+                            <Copy className="size-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon-xs" onClick={() => setDeleteTarget(product)}>
+                            <Trash2 className="size-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Mobile pagination */}
+            {!loading && products.length > 0 && (
+              <div className="mt-4 flex items-center justify-between border-t pt-4">
+                <span className="text-xs text-muted-foreground">
+                  {page * rowsPerPage + 1}-{Math.min((page + 1) * rowsPerPage, totalCount)} / {totalCount}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+                    السابق
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={page >= Math.ceil(totalCount / rowsPerPage) - 1} onClick={() => setPage((p) => p + 1)}>
+                    التالي
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className={cn("overflow-hidden rounded-xl border", isDark ? "border-white/8" : "border-black/6")}>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className={cn(isDark ? "bg-white/3" : "bg-black/2")}>
+                      <TableHead className="w-[60px] font-extrabold">{t("aiCatalog.image")}</TableHead>
+                      <TableHead className="font-extrabold">{t("aiCatalog.title")}</TableHead>
+                      <TableHead className="font-extrabold">{t("aiCatalog.sku")}</TableHead>
+                      <TableHead className="text-center font-extrabold">{t("aiCatalog.price")}</TableHead>
+                      <TableHead className="text-center font-extrabold">{t("aiCatalog.stock")}</TableHead>
+                      <TableHead className="text-center font-extrabold">{t("aiCatalog.variants")}</TableHead>
+                      <TableHead className="w-[140px] text-center font-extrabold">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {loading ? (
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <TableRow key={`skeleton-${i}`}>
+                          {Array.from({ length: 7 }).map((_, j) => (
+                            <TableCell key={j}><Skeleton className="h-6 w-full" /></TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : products.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="py-16 text-center">
+                          <div className="flex flex-col items-center gap-4">
+                            <ShoppingBag className="size-14 text-muted-foreground/50" />
+                            <p className="font-semibold text-muted-foreground">{t("aiCatalog.empty")}</p>
+                            <Button variant="outline" onClick={openAddForm}>
+                              <Plus className="mr-1 size-4" />
+                              {t("aiCatalog.addProduct")}
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          {!loading && products.length > 0 && (
-            <div className="flex items-center justify-between border-t px-4 py-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  {t("rowsPerPage") || "Rows per page:"}
-                </span>
-                <select
-                  value={rowsPerPage}
-                  onChange={(e) => {
-                    setRowsPerPage(parseInt(e.target.value, 10));
-                    setPage(0);
-                  }}
-                  className="rounded-md border border-input bg-background px-2 py-1 text-sm"
-                >
-                  {[5, 10, 25, 50].map((n) => (
-                    <option key={n} value={n}>{n}</option>
-                  ))}
-                </select>
+                    ) : (
+                      products.map((product) => {
+                        let thumb = product.mainImage || "";
+                        if (!thumb && product.images) {
+                          try { const imgs = JSON.parse(product.images); thumb = Array.isArray(imgs) ? imgs[0] || "" : ""; } catch {}
+                        }
+                        const variantCount = product.variants?.length || 0;
+                        return (
+                          <TableRow key={product.id} className="cursor-pointer transition-colors" onClick={() => openEditForm(product)}>
+                            <TableCell>
+                              <Avatar className="size-11 rounded-md">
+                                <AvatarImage src={thumb || undefined} alt={product.name} />
+                                <AvatarFallback className={cn("rounded-md", isDark ? "bg-white/6" : "bg-black/4")}>
+                                  <ImageIcon className="size-5" />
+                                </AvatarFallback>
+                              </Avatar>
+                            </TableCell>
+                            <TableCell><span className="max-w-[220px] truncate text-sm font-bold">{product.name}</span></TableCell>
+                            <TableCell><code className="text-xs text-muted-foreground">{product.sku || "—"}</code></TableCell>
+                            <TableCell className="text-center"><Badge variant="outline" className="font-bold text-xs">{product.price?.toFixed(2)}</Badge></TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant={product.stock > 0 ? "outline" : "destructive"} className={cn("font-bold text-xs", product.stock > 0 && "border-success text-success")}>
+                                {product.stock}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {variantCount > 0 ? (
+                                <Badge variant="outline" className="text-[0.7rem]">
+                                  <Palette className="mr-0.5 size-3.5" />
+                                  {variantCount}
+                                </Badge>
+                              ) : <span className="text-xs text-muted-foreground/50">—</span>}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon-sm" onClick={() => openEditForm(product)}>
+                                    <Pencil className="size-3.5 text-primary" />
+                                  </Button>
+                                </TooltipTrigger><TooltipContent>{t("aiCatalog.editProduct")}</TooltipContent></Tooltip></TooltipProvider>
+                                <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon-sm" onClick={() => handleDuplicate(product)}>
+                                    <Copy className="size-3.5" />
+                                  </Button>
+                                </TooltipTrigger><TooltipContent>Duplicate</TooltipContent></Tooltip></TooltipProvider>
+                                <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTarget(product)}>
+                                    <Trash2 className="size-3.5 text-destructive" />
+                                  </Button>
+                                </TooltipTrigger><TooltipContent>Delete</TooltipContent></Tooltip></TooltipProvider>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 0}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  السابق
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  {t("pagination.page", "صفحة {{page}} من {{total}}", {
-                    page: page + 1,
-                    total: Math.max(1, Math.ceil(totalCount / rowsPerPage)),
-                  })}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= Math.ceil(totalCount / rowsPerPage) - 1}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  التالي
-                </Button>
-              </div>
+              {!loading && products.length > 0 && (
+                <div className="flex items-center justify-between border-t px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">{t("rowsPerPage") || "Rows per page:"}</span>
+                    <select value={rowsPerPage} onChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }} className="rounded-md border border-input bg-background px-2 py-1 text-sm">
+                      {[5, 10, 25, 50].map((n) => (<option key={n} value={n}>{n}</option>))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>السابق</Button>
+                    <span className="text-sm text-muted-foreground">
+                      {t("pagination.page", "صفحة {{page}} من {{total}}", { page: page + 1, total: Math.max(1, Math.ceil(totalCount / rowsPerPage)) })}
+                    </span>
+                    <Button variant="outline" size="sm" disabled={page >= Math.ceil(totalCount / rowsPerPage) - 1} onClick={() => setPage((p) => p + 1)}>التالي</Button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/* Form Drawer */}
@@ -1066,6 +1085,16 @@ export default function AgentCatalogPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* FAB for mobile */}
+      {isMobile && (
+        <button
+          onClick={openAddForm}
+          className="fixed bottom-6 left-6 z-50 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_32px_rgba(99,102,241,0.4)] transition-all active:scale-90 hover:scale-105"
+        >
+          <Plus className="size-6" />
+        </button>
+      )}
     </div>
   );
 }

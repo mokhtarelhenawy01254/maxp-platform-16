@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { Bot } from "lucide-react";
 
 // Lazy-loaded sub-components for AI pages
-const CompanyAIAgents = React.lazy(() => import("./CompanyAIAgents"));
 const AIAgentSandboxPage = React.lazy(() => import("./ai-agent-sandbox/AIAgentSandboxPage"));
 const AgenticRAGLab = React.lazy(() => import("./AgenticRAGLab"));
 const AgentToolsPage = React.lazy(() => import("./AgentToolsPage"));
@@ -14,7 +13,7 @@ import ChannelRoutingPage from "./ChannelRoutingPage";
 
 export default function AIHubLayout() {
   const [searchParams] = useSearchParams();
-  const activeTab = searchParams.get("tab") || "agents";
+  const activeTab = searchParams.get("tab") || "sandbox";
   const { t } = useTranslation();
 
   useLayoutEffect(() => {
@@ -66,7 +65,6 @@ export default function AIHubLayout() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
           </div>
         }>
-           {activeTab === "agents" && <CompanyAIAgents />}
            {activeTab === "sandbox" && <AIAgentSandboxPage />}
            {activeTab === "rag" && <AgenticRAGLab />}
            {activeTab === "tools" && <AgentToolsPage />}

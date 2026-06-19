@@ -1,0 +1,146 @@
+{
+  "time": {
+    "now": "Now",
+    "minutesAgo": "{minutes} min ago",
+    "hoursAgo": "{hours}h ago",
+    "daysAgo": "{days}d ago"
+  },
+  "editor": {
+    "emptyContent": "No content",
+    "linesWords": "{lines} lines, {words} words",
+    "edit": "Edit",
+    "preview": "Preview",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "placeholder": "Write SOUL.md content here..."
+  },
+  "skillCard": {
+    "tools": "Tools",
+    "noTools": "No tools"
+  },
+  "metadata": {
+    "title": "Metadata",
+    "noDepartment": "No Department",
+    "department": "Department",
+    "unspecified": "Unspecified",
+    "level": "Level",
+    "manager": "Manager",
+    "none": "None",
+    "createdBy": "Created by",
+    "system": "System"
+  },
+  "tabs": {
+    "soul": "Soul",
+    "agents": "Agents",
+    "toolsMd": "Tools (MD)",
+    "tools": "Tools",
+    "skillsJson": "Skills (JSON)"
+  },
+  "sidebar": {
+    "title": "Agent Profiles",
+    "addTitle": "Add Agent",
+    "search": "Search",
+    "noResults": "No results",
+    "unsavedConfirm": "You have unsaved changes. Continue?"
+  },
+  "icon": {
+    "label": "Icon"
+  },
+  "header": {
+    "status": {
+      "active": "Active",
+      "paused": "Paused",
+      "active_toggle": "Activate",
+      "paused_toggle": "Pause"
+    },
+    "deleteTitle": "Delete",
+    "noSelection": "No agent selected",
+    "model": "Model",
+    "modelPlaceholder": "Select model",
+    "noModels": "No models available",
+    "current": "Current",
+    "discard": "Discard",
+    "saving": "Saving...",
+    "save": "Save"
+  },
+  "channel": {
+    "facebook": "Facebook",
+    "whatsapp": "WhatsApp",
+    "dashboard": "Dashboard"
+  },
+  "create": {
+    "title": "Create New Agent",
+    "template": "Template",
+    "loadingTemplates": "Loading templates...",
+    "custom": "Custom",
+    "toolsCount": "{n} tools · {m} skills",
+    "identity": "Identity",
+    "name": "Name",
+    "namePlaceholder": "Enter agent name",
+    "description": "Description",
+    "descPlaceholder": "Agent description",
+    "model": "Model",
+    "modelPlaceholder": "Select model",
+    "noModel": "No model",
+    "namePreview": "Agent Name",
+    "descPreview": "Brief description",
+    "cancel": "Cancel",
+    "creating": "Creating...",
+    "submit": "Create"
+  },
+  "delete": {
+    "title": "Delete Agent",
+    "confirm": "Are you sure?",
+    "irreversible": "This action cannot be undone.",
+    "cancel": "Cancel",
+    "deleting": "Deleting...",
+    "confirmButton": "Delete"
+  },
+  "toast": {
+    "invalidSkillsJson": "Invalid Skills JSON",
+    "saveSuccess": "Saved successfully",
+    "saveFailed": "Save failed",
+    "createSuccess": "Created successfully",
+    "createFailed": "Create failed",
+    "deleteSuccess": "Deleted successfully",
+    "deleteFailed": "Delete failed"
+  },
+  "autonomy": {
+    "auto": "Auto",
+    "approval": "Approval",
+    "blocked": "Blocked"
+  },
+  "tools": {
+    "title": "Tools",
+    "add": "Add",
+    "enableAll": "Enable All",
+    "disableAll": "Disable All",
+    "search": "Search",
+    "empty": "No tools",
+    "readOnly": "Read",
+    "write": "Write",
+    "addDialogTitle": "Add Tools",
+    "addSearch": "Search tools..."
+  },
+  "skills": {
+    "title": "Skills",
+    "add": "Add",
+    "enableAll": "Enable All",
+    "disableAll": "Disable All",
+    "search": "Search",
+    "empty": "No skills",
+    "addDialogTitle": "Add Skills",
+    "addSearch": "Search skills..."
+  },
+  "googleSheets": {
+    "title": "Google Sheets",
+    "desc": "Connect Google Sheets",
+    "productsLabel": "Products",
+    "ordersLabel": "Orders",
+    "helpTitle": "Help",
+    "helpStep1": "Step 1: Open Google Sheets document",
+    "helpStep2": "Step 2: Copy the link",
+    "helpStep3": "Step 3: Paste the link here",
+    "helpStep4": "Step 4: Select the sheet"
+  }
+}

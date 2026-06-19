@@ -35,15 +35,8 @@ export const shouldClearSessionOnRefreshFailure = (
 export const refreshSessionTokens = async (
   fetchImpl: FetchImpl = fetch,
 ): Promise<SessionRefreshResult> => {
-  const refreshToken = tokenManager.getRefreshToken();
-
-  if (!refreshToken) {
-    return {
-      ok: false,
-      reason: "missing_refresh_token",
-      message: "No refresh token available",
-    };
-  }
+  // ponytail: refresh token is now httpOnly cookie, sent automatically with credentials:'include'
+  // No need to read from tokenManager
 
   try {
     const response = await fetchImpl(`${getApiUrl()}/auth/refresh`, {
@@ -52,20 +45,17 @@ export const refreshSessionTokens = async (
         "Content-Type": "application/json",
       },
       credentials: "include",
-      body: JSON.stringify({ refreshToken }),
     });
 
     const payload = await parseResponseJson(response);
 
     if (response.ok && payload?.accessToken) {
-      const nextRefreshToken = payload?.refreshToken || refreshToken;
       tokenManager.setAccessToken(payload.accessToken);
-      tokenManager.setRefreshToken(nextRefreshToken);
 
       return {
         ok: true,
         accessToken: payload.accessToken,
-        refreshToken: nextRefreshToken,
+        refreshToken: "",
       };
     }
 

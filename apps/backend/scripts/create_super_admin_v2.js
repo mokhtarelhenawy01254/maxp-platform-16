@@ -37,7 +37,7 @@ async function createSuperAdmin() {
 
         // 2. Create Super Admin User
         const email = 'admin@mokhtarelhenawy.com';
-        const password = 'Admin@123456';
+        const password = process.env.PASSWORD || 'Admin@123456';
         const hashedPassword = await bcrypt.hash(password, 10);
 
         console.log('ðŸ” Checking for user...');

@@ -431,7 +431,6 @@ export const getSidebarConfig = (
             title: t('sidebar.aiOperatorSection'),
             icon: SparklesIcon,
             items: [
-                { to: '/admin/ai-hub?tab=agents', icon: UserGroupIcon, label: t('sidebar.aiAgentsTeam') },
                 { to: '/admin/agent-profiles', icon: UserGroupIcon, label: t('sidebar.agentProfiles') },
                 { to: '/admin/ai-catalog', icon: ShoppingBagIcon, label: t('sidebar.aiCatalog') },
                 { to: '/admin/ai-agent-map', icon: QueueListIcon, label: t('sidebar.aiAgentMap') },

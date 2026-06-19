@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 async function createSuperAdmin() {
     const email = 'superadmin@maxp.com';
-    const password = 'SuperAdmin@2026';
+    const password = process.env.PASSWORD || 'SuperAdmin@2026';
     
     try {
         console.log(`🚀 Creating Super Admin: ${email}`);

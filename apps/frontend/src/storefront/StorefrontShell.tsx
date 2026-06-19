@@ -27,6 +27,7 @@ import {
 } from "./utils/paths";
 import { useStorefrontSettings } from "./hooks/useStorefrontSettings";
 import { formatStorefrontCurrency } from "./utils/currency";
+import { sanitizeStorefrontHtml } from "./utils/html";
 import { StorefrontHead } from "./engine/StorefrontHead";
 import type {
   StorefrontPageConfig,
@@ -5144,7 +5145,7 @@ const DynamicStorefrontPage: React.FC = () => {
         </div>
         <div 
           className="prose dark:prose-invert max-w-none text-foreground leading-relaxed space-y-6"
-          dangerouslySetInnerHTML={{ __html: dbPage.content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeStorefrontHtml(dbPage.content) }}
         />
       </div>
     );

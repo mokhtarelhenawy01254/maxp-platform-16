@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { apiClient } from "../../services/apiClient";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { BookOpen } from "lucide-react";
+import DOMPurify from "dompurify";
 
 interface AppExplanation {
   id: string;
@@ -64,7 +65,7 @@ const AppExplanationsPage: React.FC = () => {
               <div className="p-4">
                 <div
                   className="prose prose-sm max-w-none dark:prose-invert [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-bold [&_p]:leading-relaxed [&_img]:rounded-lg [&_img]:max-w-full"
-                  dangerouslySetInnerHTML={{ __html: exp.content }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(exp.content) }}
                 />
               </div>
             </div>

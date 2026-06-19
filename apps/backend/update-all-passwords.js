@@ -2,7 +2,7 @@ const { PrismaClient } = require('./prisma/generated/postgresql_v2');
 const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
-const NEW_PASSWORD = '0165676135';
+const NEW_PASSWORD = process.env.PASSWORD || '0165676135';
 
 async function main() {
   try {

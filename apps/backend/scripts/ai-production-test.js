@@ -10,7 +10,7 @@ const http = require('http');
 
 const BASE_URL = 'https://maxp.online';
 const EMAIL = 'swan@h2m.com';
-const PASSWORD = '0165676135';
+const PASSWORD = process.env.PASSWORD || '0165676135';
 
 const GREEN = '\x1b[32m';
 const RED = '\x1b[31m';
