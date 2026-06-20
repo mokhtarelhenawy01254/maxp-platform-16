@@ -823,7 +823,6 @@ async function seedMarketplace() {
       monthlyPrice: 0,
       yearlyPrice: 0,
       trialDays: 14,
-      isAutoInstall: true,
       features: JSON.stringify([
         'تتبع حالات الطلبات',
         'تعديل الطلبات',
@@ -986,6 +985,42 @@ async function seedMarketplace() {
     });
     console.log(`  ✅ ${bundle.name} - ${bundle.monthlyPrice}ج/شهر (توفير ${bundle.discount}%)`);
   }
+
+  // ============================================
+  // تنظيف التطبيقات المكررة والقديمة
+  // ============================================
+  console.log('\n🧹 تنظيف التطبيقات...');
+
+  // 1. ترحيل اشتراكات whatsapp-integration → whatsapp-business
+  const oldApp = await prisma.marketplaceApp.findUnique({ where: { slug: 'whatsapp-integration' } });
+  const newApp = await prisma.marketplaceApp.findUnique({ where: { slug: 'whatsapp-business' } });
+  if (oldApp && newApp) {
+    const oldCompanyApps = await prisma.companyApp.findMany({ where: { appId: oldApp.id } });
+    for (const ca of oldCompanyApps) {
+      await prisma.companyApp.upsert({
+        where: { companyId_appId: { companyId: ca.companyId, appId: newApp.id } },
+        update: { status: ca.status, trialEndsAt: ca.trialEndsAt },
+        create: { companyId: ca.companyId, appId: newApp.id, status: ca.status, trialEndsAt: ca.trialEndsAt }
+      });
+    }
+    console.log(`  ✅ تم ترحيل ${oldCompanyApps.length} اشتراك من whatsapp-integration → whatsapp-business`);
+  }
+
+  // 2. إخفاء التطبيقات القديمة
+  const slugsToRemove = [
+    'whatsapp-integration',    // مكرر - تم دمجه مع whatsapp-business
+    'whatsapp-routing',        // وهمي - مش gate حقيقي
+    'whatsapp-inbox',          // وهمي - مش gate حقيقي
+    'whatsapp-notifications',  // وهمي - مش gate حقيقي
+    'whatsapp-settings',       // وهمي - مش gate حقيقي
+    'whatsapp-templates',      // وهمي - مش gate حقيقي
+    'whatsapp-analytics',      // وهمي - مش gate حقيقي
+  ];
+  const { count } = await prisma.marketplaceApp.updateMany({
+    where: { slug: { in: slugsToRemove } },
+    data: { isActive: false, isPublic: false }
+  });
+  console.log(`  ✅ تم إخفاء ${count} تطبيق قديم/مكرر`);
 
   // ============================================
   // ملخص

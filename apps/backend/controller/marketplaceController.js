@@ -1883,7 +1883,7 @@ exports.subscribeToBundle = async (req, res) => {
           create: { companyId, plan: "PRO", status: subscriptionStatus, monthlyFee: amount, trialEndDate, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date() }
         });
         await tx.company.update({ where: { id: companyId }, data: { plan: "MESSAGING" } });
-        const appSlugs = ["ai-chat-basic", "unified-inbox", "whatsapp-integration"];
+        const appSlugs = ["ai-chat-basic", "unified-inbox", "whatsapp-business"];
         for (const slug of appSlugs) {
           const app = await tx.marketplaceApp.findUnique({ where: { slug } });
           if (app) {

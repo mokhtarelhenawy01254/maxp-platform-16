@@ -422,7 +422,7 @@ export const getSidebarConfig = (
                 { to: '/unified-inbox', icon: ChatBubbleLeftRightIcon, label: t('sidebar.unifiedInbox') },
                 { to: '/unified-inbox/connections', icon: LinkIcon, label: t('sidebar.platformConnections') },
             ],
-            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['unified-inbox', 'crm-basic'])
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('unified-inbox')
         },
 
         // 1️⃣.6 العميل الذكي AI (للأدمن والمالك - عند تفعيل ai-chat-basic)
@@ -498,7 +498,7 @@ export const getSidebarConfig = (
                 { to: '/whatsapp/analytics', icon: ChartBarIcon, label: t('sidebar.whatsappAnalytics') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-business'),
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('whatsapp-business')
         },
 
         // 2️⃣.6 تليجرام

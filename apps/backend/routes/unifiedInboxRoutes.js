@@ -6,6 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../utils/verifyToken');
+const { checkAppAccess } = require('../middleware/checkAppAccess');
 const unifiedInboxController = require('../controller/unifiedInboxController');
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -15,30 +16,35 @@ const unifiedInboxController = require('../controller/unifiedInboxController');
 // Get unified conversations (all platforms)
 router.get('/conversations',
     verifyToken.authenticateToken,
+    checkAppAccess('unified-inbox'),
     unifiedInboxController.getUnifiedConversations
 );
 
 // Get messages for a specific conversation
 router.get('/conversations/:id/messages',
     verifyToken.authenticateToken,
+    checkAppAccess('unified-inbox'),
     unifiedInboxController.getConversationMessages
 );
 
 // Send a message to a conversation
 router.post('/conversations/:id/messages',
     verifyToken.authenticateToken,
+    checkAppAccess('unified-inbox'),
     unifiedInboxController.sendUnifiedMessage
 );
 
 // Update conversation (status, assignment, etc.)
 router.put('/conversations/:id',
     verifyToken.authenticateToken,
+    checkAppAccess('unified-inbox'),
     unifiedInboxController.updateUnifiedConversation
 );
 
 // Delete conversation
 router.delete('/conversations/:id',
     verifyToken.authenticateToken,
+    checkAppAccess('unified-inbox'),
     unifiedInboxController.deleteUnifiedConversation
 );
 
@@ -49,6 +55,7 @@ router.delete('/conversations/:id',
 // Get unified inbox stats
 router.get('/stats',
     verifyToken.authenticateToken,
+    checkAppAccess('unified-inbox'),
     unifiedInboxController.getUnifiedStats
 );
 
@@ -59,18 +66,21 @@ router.get('/stats',
 // Get customer profile
 router.get('/customer/:customerId',
     verifyToken.authenticateToken,
+    checkAppAccess('unified-inbox'),
     unifiedInboxController.getCustomerProfile
 );
 
 // Update customer (notes, etc.)
 router.put('/customer/:customerId',
     verifyToken.authenticateToken,
+    checkAppAccess('unified-inbox'),
     unifiedInboxController.updateCustomer
 );
 
 // Snooze conversation
 router.post('/conversations/:id/snooze',
     verifyToken.authenticateToken,
+    checkAppAccess('unified-inbox'),
     unifiedInboxController.snoozeConversation
 );
 
@@ -81,6 +91,7 @@ router.post('/conversations/:id/snooze',
 // Get quick replies
 router.get('/quick-replies',
     verifyToken.authenticateToken,
+    checkAppAccess('unified-inbox'),
     unifiedInboxController.getQuickReplies
 );
 
@@ -91,6 +102,7 @@ router.get('/quick-replies',
 // Get unified inbox settings
 router.get('/settings',
     verifyToken.authenticateToken,
+    checkAppAccess('unified-inbox'),
     unifiedInboxController.getSettings
 );
 

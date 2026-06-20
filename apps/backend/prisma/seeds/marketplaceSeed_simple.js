@@ -49,17 +49,18 @@ async function seedMarketplace() {
         isFeatured: true
       },
       {
-        slug: 'whatsapp-integration',
-        name: 'تكامل WhatsApp Business',
+        slug: 'whatsapp-business',
+        name: 'WhatsApp Business API',
         category: 'COMMUNICATION',
-        description: 'تكامل كامل مع WhatsApp Business API',
+        description: 'تكامل كامل مع WhatsApp Business API. إرسال واستقبال الرسائل والردود التلقائية.',
         icon: '💬',
         monthlyPrice: 199,
         yearlyPrice: 1990,
-        trialDays: 0,
-        features: JSON.stringify(['WhatsApp Business API', 'ردود سريعة', 'قوالب الرسائل']),
+        trialDays: 14,
+        features: JSON.stringify(['WhatsApp Business API', 'ردود سريعة', 'قوالب الرسائل', 'ردود تلقائية', 'تقارير الرسائل', 'إشعارات الطلبات']),
         isActive: true,
-        isPopular: true
+        isPopular: true,
+        isFeatured: true
       },
       {
         slug: 'crm-basic',
@@ -119,7 +120,7 @@ async function seedMarketplace() {
         slug: 'business-bundle',
         name: 'باقة الأعمال',
         description: 'باقة شاملة للشركات المتوسطة: جميع الأدوات الأساسية',
-        appIds: JSON.stringify(['ecommerce-basic', 'crm-basic', 'hr-basic', 'ai-chat-basic', 'whatsapp-integration']),
+        appIds: JSON.stringify(['ecommerce-basic', 'crm-basic', 'hr-basic', 'ai-chat-basic', 'whatsapp-business']),
         monthlyPrice: 899,
         yearlyPrice: 8990,
         discount: 40,
@@ -130,7 +131,7 @@ async function seedMarketplace() {
         slug: 'messaging-bundle',
         name: 'باقة المراسلة',
         description: 'كل أدوات المحادثات: واتساب + تلجرام + انستجرام + ماسنجر في صندوق واحد مع AI Agent',
-        appIds: JSON.stringify(['crm-basic', 'whatsapp-integration', 'telegram-business']),
+        appIds: JSON.stringify(['crm-basic', 'whatsapp-business', 'telegram-business']),
         monthlyPrice: 999,
         yearlyPrice: 9990,
         discount: 69,
