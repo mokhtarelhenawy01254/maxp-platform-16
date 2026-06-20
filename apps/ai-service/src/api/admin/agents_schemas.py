@@ -43,6 +43,9 @@ class AgentTemplateList(BaseModel):
     channels: list[str]
     allowed_tools: list[str]
     allowed_skills: list[str]
+    persona_meta: dict[str, Any] = {}
+    instructions_soul: str | None = None
+    budget: dict[str, Any] = {}
 
 
 class AgentCreate(BaseModel):

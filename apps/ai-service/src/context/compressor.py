@@ -23,7 +23,7 @@ def count_tokens(text: str | None) -> int:
 async def compress_history(
     messages: list[dict[str, Any]],
     max_tokens: int = 1000,
-    keep_recent: int = 4,
+    keep_recent: int = 15,
     llm_client: Any = None,
 ) -> tuple[list[dict[str, Any]], str | None]:
     """Compress conversation history if it exceeds max_tokens budget.
@@ -34,7 +34,7 @@ async def compress_history(
     Args:
         messages: List of {"role": str, "content": str} message dicts.
         max_tokens: The maximum token budget allowed for the history.
-        keep_recent: The number of recent messages to preserve as-is.
+        keep_recent: The number of recent messages to preserve as-is (15 = all, no compression).
         llm_client: Optional LLM client to generate a summary.
         
     Returns:

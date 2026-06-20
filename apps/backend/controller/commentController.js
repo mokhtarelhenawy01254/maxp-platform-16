@@ -6,6 +6,23 @@ const postResponseSettingsMemory = new Map();
 const pageResponseSettingsMemory = new Map();
 const LEGACY_RESPONSE_PROMPT_FIELD = 'ai' + 'Prompt';
 
+// Periodic cleanup to prevent unbounded memory growth
+const MAP_MAX_SIZE = 500;
+setInterval(() => {
+  if (postResponseSettingsMemory.size > MAP_MAX_SIZE) {
+    const keys = [...postResponseSettingsMemory.keys()];
+    for (let i = 0; i < keys.length - MAP_MAX_SIZE; i++) {
+      postResponseSettingsMemory.delete(keys[i]);
+    }
+  }
+  if (pageResponseSettingsMemory.size > MAP_MAX_SIZE) {
+    const keys = [...pageResponseSettingsMemory.keys()];
+    for (let i = 0; i < keys.length - MAP_MAX_SIZE; i++) {
+      pageResponseSettingsMemory.delete(keys[i]);
+    }
+  }
+}, 60000).unref();
+
 // Get all Facebook comments with filtering and pagination
 const getFacebookComments = async (req, res) => {
   try {

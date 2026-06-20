@@ -169,7 +169,6 @@ async def run_orchestration(
 
         pipeline_stages = [
             resolve_intent,
-            retrieve_knowledge,
             route_to_tools,
             execute_tools,
             handle_fallback,

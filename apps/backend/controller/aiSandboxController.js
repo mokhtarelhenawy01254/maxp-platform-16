@@ -655,7 +655,10 @@ async function runSandboxChatTurn({
   const resolvedSessionId = sessionId || generateSandboxSessionId();
   const conversationId = buildSandboxConversationId(companyId, userId, resolvedSessionId);
   const toolMemory = hydrateSandboxWorkingMemory(companyId, conversationId, existingSession?.messages || []);
-  const promptCtx = mergeSandboxToolMemory({ messageText, sessionId: resolvedSessionId }, toolMemory);
+  const conversationHistory = (existingSession?.messages || [])
+    .filter(m => m.role === 'user' || m.role === 'assistant')
+    .map(m => ({ role: m.role, content: m.content }));
+  const promptCtx = mergeSandboxToolMemory({ messageText, sessionId: resolvedSessionId, recentMessages: conversationHistory }, toolMemory);
   const agentBundle = await createSandboxRuntimeAgent(companyId, agentId, modelSelection);
   if (!agentBundle) {
     throw createHttpError('AGENT_NOT_FOUND', 400);
@@ -1441,6 +1444,9 @@ async function streamChatMessage(req, res) {
     const resolvedSessionId = safeSessionId || generateSandboxSessionId();
     const conversationId = buildSandboxConversationId(companyId, userId, resolvedSessionId);
     const toolMemory = hydrateSandboxWorkingMemory(companyId, conversationId, existingSession?.messages || []);
+    const conversationHistory = (existingSession?.messages || [])
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => ({ role: m.role, content: m.content }));
     const agentBundle = await createSandboxRuntimeAgent(companyId, agentId, modelSelection);
     if (!agentBundle) {
       throw createHttpError('AGENT_NOT_FOUND', 400);
@@ -1468,7 +1474,7 @@ async function streamChatMessage(req, res) {
       messageText,
       threadId: resolvedSessionId,
       conversationId,
-      memoryContext: mergeSandboxToolMemory({ messageText, sessionId: resolvedSessionId }, toolMemory),
+      memoryContext: mergeSandboxToolMemory({ messageText, sessionId: resolvedSessionId, recentMessages: conversationHistory }, toolMemory),
       attachments: safeAttachments,
       modelSelection,
       channel: 'FACEBOOK',
@@ -1848,3 +1854,5 @@ module.exports = {
   getRun,
   resumeRun,
 };
+
+// restart 09:53:24
