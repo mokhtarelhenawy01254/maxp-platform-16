@@ -158,6 +158,7 @@ export default function SupportCenter() {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [showNewTicket, setShowNewTicket] = useState(false);
@@ -214,9 +215,11 @@ export default function SupportCenter() {
     }
   };
 
-  const filteredTickets = tickets.filter(t =>
-    !searchTerm || t.subject.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTickets = tickets.filter(t => {
+    const matchesSearch = !searchTerm || t.subject.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || t.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   if (loading) {
     return (
@@ -231,7 +234,7 @@ export default function SupportCenter() {
       {/* Mobile: if no ticket selected, show list; if selected, show chat */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Conversations List */}
-        <div className={`w-full md:w-80 lg:w-96 border-l border-gray-200 dark:border-gray-700 flex flex-col ${selectedTicket ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`w-full md:w-80 lg:w-96 border-s border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/30 flex flex-col ${selectedTicket ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-3">
               <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">مركز الدعم</h1>
@@ -243,14 +246,35 @@ export default function SupportCenter() {
                 <PlusIcon className="w-5 h-5" />
               </button>
             </div>
-            <div className="relative">
+            <div className="relative mb-3">
               <MagnifyingGlassIcon className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 placeholder="بحث في المحادثات..."
-                className="w-full pr-9 pl-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pr-9 pl-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+            </div>
+            {/* Filter Tabs */}
+            <div className="flex gap-1 text-xs">
+              {[
+                { key: "all", label: "الكل" },
+                { key: "open", label: "مفتوحة" },
+                { key: "in_progress", label: "قيد المعالجة" },
+                { key: "closed", label: "مغلقة" },
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setStatusFilter(tab.key)}
+                  className={`px-2.5 py-1 rounded-full transition-colors ${
+                    statusFilter === tab.key
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -274,7 +298,7 @@ export default function SupportCenter() {
                   className={`w-full text-right p-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${selectedTicket?.id === ticket.id ? 'bg-blue-50 dark:bg-blue-900/10' : ''}`}
                 >
                   <div className="flex items-start justify-between mb-1">
-                    <span className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate flex-1 ml-2">
+                    <span dir="auto" className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate flex-1 ml-2">
                       {ticket.subject}
                     </span>
                     <span className="text-xs text-gray-400 whitespace-nowrap">{formatDate(ticket.updatedAt)}</span>
@@ -329,7 +353,7 @@ export default function SupportCenter() {
                         {msg.senderType === 'admin' && (
                           <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">{msg.sender?.name || 'الدعم الفني'}</p>
                         )}
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        <p dir="auto" className="text-sm whitespace-pre-wrap">{msg.content}</p>
                         {msg.attachments?.length > 0 && (
                           <div className="mt-2 space-y-1">
                             {msg.attachments.map((att: any) => (
