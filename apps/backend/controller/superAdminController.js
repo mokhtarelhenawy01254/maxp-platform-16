@@ -6580,6 +6580,7 @@ const globalSearch = async (req, res) => {
       jobPostings, applicants, recruitmentForms, goals, feedbacks,
       supportMessages, whatsAppQuickReplies, workReportForms, promotions,
       facebookComments, customerNotes, competitorReports, appExplanations, conversationMemories,
+      systemSettings, notifications, activityLogs, devReleases,
     ] = await Promise.all([
       run('companies', () => prisma.company.findMany({
         where: {
@@ -6823,6 +6824,26 @@ const globalSearch = async (req, res) => {
         select: { id: true, userMessage: true, conversationId: true, companyId: true, conversation: { select: { subject: true, company: { select: { name: true } } } } },
         take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
       })),
+      run('systemSettings', () => prisma.systemSettings.findMany({
+        where: { OR: [...ac('systemName', query), ...ac('description', query)] },
+        select: { id: true, systemName: true, description: true, isEnabled: true, config: true },
+        take: isShortQuery ? 5 : 10, orderBy: { updatedAt: "desc" },
+      })),
+      run('notifications', () => prisma.notification.findMany({
+        where: { OR: [...ac('title', query), ...ac('message', query), ...ac('type', query)] },
+        select: { id: true, title: true, message: true, type: true, isRead: true, createdAt: true },
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('activityLogs', () => prisma.activityLog.findMany({
+        where: { OR: [...ac('action', query), ...ac('description', query), ...ac('targetType', query), ...ac('targetName', query)] },
+        select: { id: true, action: true, description: true, targetType: true, targetName: true, createdAt: true },
+        take: isShortQuery ? 5 : 10, orderBy: { createdAt: "desc" },
+      })),
+      run('devReleases', () => prisma.devRelease.findMany({
+        where: { OR: [...ac('version', query), ...ac('name', query), ...ac('changelog', query)] },
+        select: { id: true, version: true, name: true, changelog: true, status: true, releasedAt: true },
+        take: isShortQuery ? 5 : 10, orderBy: { releasedAt: "desc" },
+      })),
     ]);
 
     const searchTime = Date.now() - searchStart;
@@ -7036,6 +7057,22 @@ const globalSearch = async (req, res) => {
     if (conversationMemories.length) {
       const items = conversationMemories.map((m) => ({ id: m.id, title: m.userMessage?.substring(0, 80), subtitle: m.conversation?.subject || "", link: "/super-admin/companies-v2" }));
       results.push({ type: "conversationMemories", icon: "Brain", items }); totalCount += items.length;
+    }
+    if (systemSettings.length) {
+      const items = systemSettings.map((s) => ({ id: s.id, title: s.systemName, subtitle: s.description?.substring(0, 80) || "", status: s.isEnabled ? "active" : "inactive", link: "/super-admin/system-management" }));
+      results.push({ type: "systemSettings", icon: "Settings", items }); totalCount += items.length;
+    }
+    if (notifications.length) {
+      const items = notifications.map((n) => ({ id: n.id, title: n.title || n.message?.substring(0, 60), subtitle: `${n.type || ""} ${n.isRead ? "" : "• جديد"}`, status: n.isRead ? "read" : "unread", link: "/super-admin/notifications" }));
+      results.push({ type: "notifications", icon: "Bell", items }); totalCount += items.length;
+    }
+    if (activityLogs.length) {
+      const items = activityLogs.map((l) => ({ id: l.id, title: l.action, subtitle: `${l.targetType || ""} ${l.targetName ? `- ${l.targetName}` : ""} ${l.description ? `(${l.description.substring(0, 60)})` : ""}`, link: "/super-admin/activity-logs" }));
+      results.push({ type: "activityLogs", icon: "History", items }); totalCount += items.length;
+    }
+    if (devReleases.length) {
+      const items = devReleases.map((r) => ({ id: r.id, title: `${r.name || r.version}`, subtitle: r.changelog?.substring(0, 80) || "", status: r.status, link: "/super-admin/dev-releases" }));
+      results.push({ type: "devReleases", icon: "GitTag", items }); totalCount += items.length;
     }
 
     // Apply relevance sorting: exact → startsWith → alphabetical

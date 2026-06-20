@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Search, Loader2, Building2, Users, Code2, BarChart3, DollarSign, Key, Ticket, Package, ShoppingCart, UserRound, MessageSquare, Facebook, Briefcase, TrendingUp, Tag, FolderTree, Store, Megaphone, UserCheck, FileText, HelpCircle, BookOpen, Target, Zap, ClipboardList, Star, Brain, Layout, Command, ArrowLeft, X } from "lucide-react";
+import { Search, Loader2, Building2, Users, Code2, BarChart3, DollarSign, Key, Ticket, Package, ShoppingCart, UserRound, MessageSquare, Facebook, Briefcase, TrendingUp, Tag, FolderTree, Store, Megaphone, UserCheck, FileText, HelpCircle, BookOpen, Target, Zap, ClipboardList, Star, Brain, Layout, Command, ArrowLeft, X, Settings, Bell, History, Rocket } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { apiClient } from "../../services/apiClient";
 import { cn } from "@/lib/utils";
@@ -60,6 +60,10 @@ const iconMap: Record<string, React.ReactNode> = {
   Star: <Star className="size-4" />,
   Brain: <Brain className="size-4" />,
   Layout: <Layout className="size-4" />,
+  Settings: <Settings className="size-4" />,
+  Bell: <Bell className="size-4" />,
+  History: <History className="size-4" />,
+  Rocket: <Rocket className="size-4" />,
 };
 
 const AR = {
@@ -85,8 +89,12 @@ const AR = {
     feedbacks: "الملاحظات", supportMessages: "رسائل الدعم", whatsAppQuickReplies: "الردود السريعة",
     workReportForms: "نماذج تقارير العمل", promotions: "العروض الترويجية",
     facebookComments: "تعليقات فيسبوك", customerNotes: "ملاحظات العملاء",
-    competitorReports: "تقارير المنافسين", appExplanations: "شروحات التطبيقات",
+    competitorReports: "تقارير المنافسين",     appExplanations: "شروحات التطبيقات",
     conversationMemories: "ذاكرة المحادثات",
+    systemSettings: "إعدادات النظام",
+    notifications: "الإشعارات",
+    activityLogs: "سجل النشاطات",
+    devReleases: "الإصدارات والتحديثات",
   },
 };
 
@@ -110,6 +118,8 @@ const typeLabelMap: Record<string, string> = {
   promotions: AR.categories.promotions, facebookComments: AR.categories.facebookComments,
   customerNotes: AR.categories.customerNotes, competitorReports: AR.categories.competitorReports,
   appExplanations: AR.categories.appExplanations, conversationMemories: AR.categories.conversationMemories,
+  systemSettings: AR.categories.systemSettings, notifications: AR.categories.notifications,
+  activityLogs: AR.categories.activityLogs, devReleases: AR.categories.devReleases,
 };
 
 const statusColorMap: Record<string, string> = {
@@ -120,7 +130,8 @@ const statusColorMap: Record<string, string> = {
   TODO: "bg-blue-500", DONE: "bg-emerald-500",
   CANCELLED: "bg-red-500", OPEN: "bg-blue-500",
   CLOSED: "bg-emerald-500", PENDING: "bg-amber-500",
-  CONNECTED: "bg-emerald-500", DISCONNECTED: "bg-gray-400",
+  CONNECTED: "bg-emerald-500",   DISCONNECTED: "bg-gray-400",
+  read: "bg-gray-400", unread: "bg-blue-500",
   DRAFT: "bg-gray-400", SENT: "bg-blue-500",
   DELIVERED: "bg-emerald-500", FAILED: "bg-red-500",
 };
