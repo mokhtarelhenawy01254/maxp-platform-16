@@ -21,11 +21,6 @@ import {
 } from "./helpers";
 
 // ponytail: PLAN_OPTIONS, DEFAULT_PLAN_COPY removed — plan tiers deleted
-    description: "بداية مناسبة للشركات الجديدة مع الأدوات الأساسية والتشغيل اليومي.",
-    highlights: ["تشغيل أساسي", "عدد محدود من الأعضاء", "انطلاقة سريعة"],
-  },
-  PRO: {
-// ponytail: PLAN_OPTIONS, DEFAULT_PLAN_COPY removed — plan tiers deleted
 
 const INITIAL_EMPLOYEE_FORM = {
   firstName: "",
