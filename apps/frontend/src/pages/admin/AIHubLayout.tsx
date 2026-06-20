@@ -5,9 +5,6 @@ import { Bot } from "lucide-react";
 
 // Lazy-loaded sub-components for AI pages
 const AIAgentSandboxPage = React.lazy(() => import("./ai-agent-sandbox/AIAgentSandboxPage"));
-const AgenticRAGLab = React.lazy(() => import("./AgenticRAGLab"));
-const AgentToolsPage = React.lazy(() => import("./AgentToolsPage"));
-const AgentSkillsPage = React.lazy(() => import("./AgentSkillsPage"));
 import ChannelRoutingPage from "./ChannelRoutingPage";
 
 export default function AIHubLayout() {
@@ -65,9 +62,6 @@ export default function AIHubLayout() {
           </div>
         }>
            {activeTab === "sandbox" && <AIAgentSandboxPage />}
-           {activeTab === "rag" && <AgenticRAGLab />}
-           {activeTab === "tools" && <AgentToolsPage />}
-           {activeTab === "skills" && <AgentSkillsPage />}
            {activeTab === "routing" && <ChannelRoutingPage />}
         </React.Suspense>
       </div>

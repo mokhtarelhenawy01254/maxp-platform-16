@@ -774,9 +774,6 @@ const SuperAdminProductEmbeddings = React.lazy(
   () => import("./pages/super-admin/SuperAdminProductEmbeddings"),
 );
 // Merchant AI Pages
-const AIChatPage = React.lazy(
-  () => import("./pages/admin/AIChatPage"),
-);
 const AIHubLayout = React.lazy(
   () => import("./pages/admin/AIHubLayout"),
 );
@@ -6029,18 +6026,6 @@ const AppContent = () => {
                   element={<Navigate to="/admin/agent-profiles?agent=ceo" replace />}
                 />
                 <Route
-                  path="/admin/ai-chat"
-                  element={
-                    <Layout fullWidth>
-                      <AIChatPage />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/admin/ai-rag-lab"
-                  element={<Navigate to="/admin/ai-hub?tab=rag" replace />}
-                />
-                <Route
                   path="/admin/ai-agent-sandbox"
                   element={<Navigate to="/admin/ai-hub?tab=sandbox" replace />}
                 />
@@ -6071,14 +6056,6 @@ const AppContent = () => {
                       <AgentCatalogPage />
                     </Layout>
                   }
-                />
-                <Route
-                  path="/admin/ai-skills"
-                  element={<Navigate to="/admin/ai-hub?tab=skills" replace />}
-                />
-                <Route
-                  path="/admin/ai-tools"
-                  element={<Navigate to="/admin/ai-hub?tab=tools" replace />}
                 />
                 <Route
                   path="/admin/ai-knowledge-questions"

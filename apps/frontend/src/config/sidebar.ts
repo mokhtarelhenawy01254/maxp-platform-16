@@ -433,16 +433,10 @@ export const getSidebarConfig = (
             items: [
                 { to: '/admin/agent-profiles', icon: UserGroupIcon, label: t('sidebar.agentProfiles') },
                 { to: '/admin/ai-catalog', icon: ShoppingBagIcon, label: t('sidebar.aiCatalog') },
-                { to: '/admin/ai-agent-map', icon: QueueListIcon, label: t('sidebar.aiAgentMap') },
-                { to: '/admin/ai-hub?tab=skills', icon: AcademicCapIcon, label: t('sidebar.aiAgentSkills') },
-                { to: '/admin/ai-hub?tab=tools', icon: WrenchScrewdriverIcon, label: t('sidebar.aiAgentTools') },
-                { to: '/admin/ai-chat', icon: ChatBubbleLeftRightIcon, label: t('sidebar.ceoAgentChat') },
                 { to: '/admin/ai-knowledge-questions', icon: LightBulbIcon, label: t('sidebar.aiKnowledgeQuestions') },
-                { to: '/admin/ai-hub?tab=rag', icon: BeakerIcon, label: t('sidebar.aiRagLab') },
                 { to: '/admin/ai-hub?tab=sandbox', icon: BeakerIcon, label: t('sidebar.aiAgentSandbox') },
                 { to: '/admin/faqs', icon: QuestionMarkCircleIcon, label: t('sidebar.faqs') },
                 { to: '/admin/policies', icon: ClipboardDocumentCheckIcon, label: t('sidebar.policies') },
-                { to: '/admin/ai-hub?tab=scheduler', icon: ClockIcon, label: t('sidebar.aiScheduler') },
                 { to: '/admin/ai-hub?tab=routing', icon: ArrowPathRoundedSquareIcon, label: t('sidebar.channelRouting') },
             ]
         }] : []),
