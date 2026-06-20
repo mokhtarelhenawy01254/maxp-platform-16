@@ -572,7 +572,7 @@ class PayrollService {
       const taxAmount = parseFloat(data.taxAmount !== undefined ? data.taxAmount : existing.taxAmount);
 
       updateData.grossSalary = baseSalary + totalAllowances + overtimeAmount + bonuses;
-      updateData.netSalary = updateData.grossSalary - totalDeductions - socialInsurance - taxAmount;
+      updateData.netSalary = Math.max(0, updateData.grossSalary - totalDeductions - socialInsurance - taxAmount);
 
       const payroll = await this.prisma.payroll.update({
         where: { id: payrollId },
