@@ -37,7 +37,14 @@ const Login: React.FC = () => {
         if (isSystemRole) {
           redirectPath = "/super-admin/dashboard";
         } else {
-          redirectPath = "/company-dashboard";
+          const userCompany = userData.company || (userData.companies || []).find((c: { isCurrent?: boolean }) => c.isCurrent);
+          const userApps: string[] = userCompany?.activeApps ?? [];
+          const appSet = new Set(userApps.map((a: string) => a.toLowerCase()));
+          if (appSet.has("unified-inbox") && !appSet.has("ecommerce-basic")) {
+            redirectPath = "/unified-inbox";
+          } else {
+            redirectPath = "/company-dashboard";
+          }
         }
       }
 

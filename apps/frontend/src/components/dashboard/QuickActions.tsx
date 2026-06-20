@@ -9,6 +9,8 @@ import {
   CurrencyDollarIcon,
   ChatBubbleLeftRightIcon,
   RocketLaunchIcon,
+  SparklesIcon,
+  LinkIcon,
 } from "@heroicons/react/24/outline";
 import { cn } from "../../lib/utils";
 
@@ -17,80 +19,101 @@ interface QuickAction {
   labelKey: string;
   icon: React.ComponentType<{ className?: string }>;
   path: string;
+  appSlug?: string;
 }
 
 const primaryActions: QuickAction[] = [
-  { key: "orders", labelKey: "quickActions.orders", icon: ShoppingCartIcon, path: "/orders" },
-  { key: "products", labelKey: "quickActions.products", icon: CubeIcon, path: "/products" },
-  { key: "customers", labelKey: "quickActions.customers", icon: UserGroupIcon, path: "/customers" },
-  { key: "whatsapp", labelKey: "quickActions.whatsapp", icon: ChatBubbleLeftRightIcon, path: "/whatsapp" },
+  { key: "orders", labelKey: "quickActions.orders", icon: ShoppingCartIcon, path: "/orders", appSlug: "ecommerce-basic" },
+  { key: "products", labelKey: "quickActions.products", icon: CubeIcon, path: "/products", appSlug: "ecommerce-basic" },
+  { key: "customers", labelKey: "quickActions.customers", icon: UserGroupIcon, path: "/customers", appSlug: "crm-basic" },
+  { key: "whatsapp", labelKey: "quickActions.whatsapp", icon: ChatBubbleLeftRightIcon, path: "/whatsapp", appSlug: "whatsapp-business" },
+  { key: "inbox", labelKey: "quickActions.inbox", icon: ChatBubbleLeftRightIcon, path: "/unified-inbox", appSlug: "unified-inbox" },
+  { key: "ai-agent", labelKey: "quickActions.aiAgent", icon: SparklesIcon, path: "/admin/ai-hub", appSlug: "ai-chat-basic" },
+  { key: "connections", labelKey: "quickActions.connections", icon: LinkIcon, path: "/unified-inbox/connections", appSlug: "unified-inbox" },
 ];
 
 const secondaryActions: QuickAction[] = [
-  { key: "analytics", labelKey: "quickActions.analytics", icon: ChartBarIcon, path: "/analytics/orders" },
-  { key: "marketing", labelKey: "quickActions.marketing", icon: CurrencyDollarIcon, path: "/marketing" },
-  { key: "storefront", labelKey: "quickActions.storefront", icon: RocketLaunchIcon, path: "/settings/store" },
+  { key: "analytics", labelKey: "quickActions.analytics", icon: ChartBarIcon, path: "/analytics/orders", appSlug: "ecommerce-basic" },
+  { key: "marketing", labelKey: "quickActions.marketing", icon: CurrencyDollarIcon, path: "/marketing", appSlug: "facebook-ads-pro" },
+  { key: "storefront", labelKey: "quickActions.storefront", icon: RocketLaunchIcon, path: "/settings/store", appSlug: "ecommerce-basic" },
   { key: "settings", labelKey: "quickActions.settings", icon: Cog6ToothIcon, path: "/settings" },
 ];
 
-export function QuickActions() {
+interface QuickActionsProps {
+  activeApps?: string[];
+}
+
+export function QuickActions({ activeApps = [] }: QuickActionsProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const activeLower = activeApps.map((a) => a.toLowerCase());
+
+  const filterActions = (actions: QuickAction[]) =>
+    actions.filter((a) => !a.appSlug || activeLower.includes(a.appSlug));
+
+  const visiblePrimary = filterActions(primaryActions);
+  const visibleSecondary = filterActions(secondaryActions);
+
+  if (visiblePrimary.length === 0 && visibleSecondary.length === 0) return null;
 
   return (
     <div className="p-5 rounded-2xl bg-card border border-border/50 shadow-sm" style={{ boxShadow: "0 28px 72px -48px rgba(7, 17, 32, 0.42)" }}>
       <h3 className="text-sm font-semibold text-foreground mb-4">{t("quickActions.title")}</h3>
       <div className="space-y-3">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {primaryActions.map((action) => (
-            <button
-              key={action.key}
-              type="button"
-              onClick={() => navigate(action.path)}
-              className={cn(
-                "flex items-center gap-3 p-3 rounded-xl",
-                "bg-card border border-border/50 shadow-sm",
-                "transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:shadow-md",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                "group",
-              )}
-              aria-label={t(action.labelKey)}
-            >
-              <div className={cn(
-                "p-2 rounded-lg shrink-0 text-white",
-                "transition-transform duration-200 group-hover:scale-110",
-              )}
-                style={{ background: `color-mix(in srgb, var(--color-primary) 85%, white)` }}
+        {visiblePrimary.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {visiblePrimary.map((action) => (
+              <button
+                key={action.key}
+                type="button"
+                onClick={() => navigate(action.path)}
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-xl",
+                  "bg-card border border-border/50 shadow-sm",
+                  "transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:shadow-md",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  "group",
+                )}
+                aria-label={t(action.labelKey)}
               >
-                <action.icon className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-semibold text-foreground truncate">
+                <div className={cn(
+                  "p-2 rounded-lg shrink-0 text-white",
+                  "transition-transform duration-200 group-hover:scale-110",
+                )}
+                  style={{ background: `color-mix(in srgb, var(--color-primary) 85%, white)` }}
+                >
+                  <action.icon className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-semibold text-foreground truncate">
+                  {t(action.labelKey)}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+        {visibleSecondary.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {visibleSecondary.map((action) => (
+              <button
+                key={action.key}
+                type="button"
+                onClick={() => navigate(action.path)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
+                  "text-xs font-medium text-muted-foreground",
+                  "transition-all duration-200 hover:text-foreground",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                )}
+                style={{
+                  background: "color-mix(in srgb, var(--color-border) 30%, transparent)",
+                }}
+              >
+                <action.icon className="w-3.5 h-3.5" />
                 {t(action.labelKey)}
-              </span>
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {secondaryActions.map((action) => (
-            <button
-              key={action.key}
-              type="button"
-              onClick={() => navigate(action.path)}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
-                "text-xs font-medium text-muted-foreground",
-                "transition-all duration-200 hover:text-foreground",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              )}
-              style={{
-                background: "color-mix(in srgb, var(--color-border) 30%, transparent)",
-              }}
-            >
-              <action.icon className="w-3.5 h-3.5" />
-              {t(action.labelKey)}
-            </button>
-          ))}
-        </div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

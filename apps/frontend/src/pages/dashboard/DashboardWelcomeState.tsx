@@ -1,21 +1,30 @@
 import { useNavigate } from "react-router-dom";
-import { RocketLaunchIcon, ShoppingCartIcon, CubeIcon, ChatBubbleLeftRightIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { RocketLaunchIcon, ShoppingCartIcon, CubeIcon, ChatBubbleLeftRightIcon, Cog6ToothIcon, SparklesIcon, LinkIcon } from "@heroicons/react/24/outline";
 
 interface Step {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   path: string;
+  slug?: string;
 }
 
-const steps: Step[] = [
-  { label: "إضافة منتج", icon: CubeIcon, path: "/products/new" },
-  { label: "إعداد المتجر", icon: ShoppingCartIcon, path: "/settings/store" },
-  { label: "ربط قناة تواصل", icon: ChatBubbleLeftRightIcon, path: "/whatsapp" },
+const ALL_STEPS: Step[] = [
+  { label: "إضافة منتج", icon: CubeIcon, path: "/products/new", slug: "ecommerce-basic" },
+  { label: "إعداد المتجر", icon: ShoppingCartIcon, path: "/settings/store", slug: "ecommerce-basic" },
+  { label: "ربط قناة تواصل", icon: ChatBubbleLeftRightIcon, path: "/unified-inbox/connections" },
+  { label: "إعداد الذكاء الاصطناعي", icon: SparklesIcon, path: "/admin/ai-hub", slug: "ai-chat-basic" },
   { label: "ضبط الإعدادات", icon: Cog6ToothIcon, path: "/settings" },
 ];
 
-export default function DashboardWelcomeState() {
+export default function DashboardWelcomeState({ activeApps = [] }: { activeApps?: string[] }) {
   const navigate = useNavigate();
+  const activeLower = activeApps.map((a) => a.toLowerCase());
+
+  const steps = ALL_STEPS.filter((s) => !s.slug || activeLower.includes(s.slug));
+
+  const subtitle = steps.length === 1 && steps[0].slug === "ai-chat-basic"
+    ? "اختر خطوتك الأولى — اربط قنوات التواصل وفعّل الذكاء الاصطناعي للرد على العملاء."
+    : "اختر خطوتك الأولى لبدء تشغيل منصتك — أضف منتجات، اربط قنوات تواصل، أو جهز متجرك.";
 
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center max-w-lg mx-auto">
@@ -23,7 +32,7 @@ export default function DashboardWelcomeState() {
         <RocketLaunchIcon className="w-10 h-10" style={{ color: "var(--color-primary)" }} />
       </div>
       <h2 className="text-xl font-bold text-foreground mb-2">مرحباً بك في MaxP</h2>
-      <p className="text-sm text-muted-foreground mb-8 max-w-sm">اختر خطوتك الأولى لبدء تشغيل منصتك — أضف منتجات، اربط قنوات تواصل، أو جهز متجرك.</p>
+      <p className="text-sm text-muted-foreground mb-8 max-w-sm">{subtitle}</p>
       <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
         {steps.map((step) => {
           const Icon = step.icon;

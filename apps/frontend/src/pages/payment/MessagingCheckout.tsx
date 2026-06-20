@@ -76,7 +76,7 @@ const MessagingCheckout: React.FC = () => {
             <p className="text-sm opacity-80 mb-2">تم تفعيل الباقة تجريبياً لمدة {trialInfo?.trialDays || 7} أيام</p>
             <p className="text-xs opacity-50 mb-6">جرّب كل المميزات بدون دفع. بعد انتهاء الفترة التجريبية، اشترك لاستمرار الخدمة.</p>
             <div className="flex flex-col gap-3">
-              <button onClick={() => window.location.href = "/company-dashboard"} className="px-8 py-3 rounded-full bg-teal-600 text-white font-bold text-sm hover:bg-teal-500 transition-colors">
+              <button onClick={() => window.location.href = "/unified-inbox"} className="px-8 py-3 rounded-full bg-teal-600 text-white font-bold text-sm hover:bg-teal-500 transition-colors">
                 ابدأ الآن
               </button>
               <button onClick={handleUpgrade} className="px-8 py-2 rounded-full bg-white/10 text-white font-semibold text-sm hover:bg-white/20 transition-colors border border-white/20">

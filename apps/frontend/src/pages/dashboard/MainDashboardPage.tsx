@@ -10,6 +10,7 @@ import {
   ChartBarIcon,
 } from "@heroicons/react/24/outline";
 import { cn } from "../../lib/utils";
+import { useAuth } from "../../hooks/useAuthSimple";
 import { useDashboardData } from "../../hooks/useDashboardData";
 import { MetricCard } from "../../components/dashboard/MetricCard";
 import { QuickActions } from "../../components/dashboard/QuickActions";
@@ -106,6 +107,11 @@ function toISODate(date: Date): string {
 export default function MainDashboardPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const activeApps: string[] = user?.company?.activeApps ?? [];
+  const hasEcommerce = activeApps.some((a) => a.toLowerCase() === "ecommerce-basic");
+  const hasInbox = activeApps.some((a) => a.toLowerCase() === "unified-inbox");
+  const hasAI = activeApps.some((a) => a.toLowerCase() === "ai-chat-basic");
   const locale = i18n.language?.startsWith("ar") ? "ar-EG" : "en-US";
 
   const [period, setPeriod] = useState<PeriodPreset>("today");
@@ -225,7 +231,15 @@ export default function MainDashboardPage() {
   if (isEmpty) {
     return (
       <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto">
-        <DashboardWelcomeState />
+        <DashboardWelcomeState activeApps={activeApps} />
+      </div>
+    );
+  }
+
+  if (!hasEcommerce) {
+    return (
+      <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto">
+        <DashboardWelcomeState activeApps={activeApps} />
       </div>
     );
   }
@@ -365,7 +379,7 @@ export default function MainDashboardPage() {
         />
       </div>
 
-      <QuickActions />
+      <QuickActions activeApps={activeApps} />
 
       <div className="p-5 rounded-2xl bg-card border border-border/50 shadow-sm" style={{ boxShadow: "0 28px 72px -48px rgba(7, 17, 32, 0.42)" }}>
         <h3 className="text-sm font-semibold text-foreground mb-4">
