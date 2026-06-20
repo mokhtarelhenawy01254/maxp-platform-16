@@ -6831,22 +6831,41 @@ const globalSearch = async (req, res) => {
     const seenIds = new Set();
     let totalCount = 0;
 
-    // Sort items by relevance: exact match → startsWith → contains → alphabetical
+    // Sort items by relevance score: exact match → startsWith → word boundary → contains → shorter first
     const normalizedQuery = normalizeArabic(query.toLowerCase());
+    const queryWords = normalizedQuery.split(/\s+/).filter(Boolean);
+    function computeRelevance(title) {
+      const normalized = normalizeArabic((title || '').toLowerCase());
+      let score = 0;
+      if (normalized === normalizedQuery) {
+        score += 1000;
+      } else if (normalized.startsWith(normalizedQuery)) {
+        score += 500;
+      } else {
+        const wordMatch = queryWords.some(w => {
+          const regex = new RegExp(`(^|\\s)${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s|$)`, 'i');
+          return regex.test(normalized);
+        });
+        if (wordMatch) {
+          score += 300;
+        } else if (normalized.includes(normalizedQuery)) {
+          score += 200;
+        } else {
+          const hasAnyWord = queryWords.some(w => normalized.includes(w));
+          if (hasAnyWord) score += 100;
+        }
+      }
+      score += Math.max(0, 50 - normalized.length);
+      return score;
+    }
     function sortItems(items) {
       return items.sort((a, b) => {
-        const aNorm = normalizeArabic((a.title || '').toLowerCase());
-        const bNorm = normalizeArabic((b.title || '').toLowerCase());
-
-        const aExact = aNorm === normalizedQuery;
-        const bExact = bNorm === normalizedQuery;
-        if (aExact !== bExact) return aExact ? -1 : 1;
-
-        const aStarts = aNorm.startsWith(normalizedQuery);
-        const bStarts = bNorm.startsWith(normalizedQuery);
-        if (aStarts !== bStarts) return aStarts ? -1 : 1;
-
-        return aNorm.localeCompare(bNorm, 'ar');
+        const aScore = computeRelevance(a.title || '');
+        const bScore = computeRelevance(b.title || '');
+        if (aScore !== bScore) return bScore - aScore;
+        return normalizeArabic((a.title || '').toLowerCase()).localeCompare(
+          normalizeArabic((b.title || '').toLowerCase()), 'ar'
+        );
       });
     }
 

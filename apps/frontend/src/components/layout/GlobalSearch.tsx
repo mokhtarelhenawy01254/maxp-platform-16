@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Search, Loader2, Building2, Users, Code2, BarChart3, DollarSign, Key, Ticket, Package, ShoppingCart, UserRound, MessageSquare, Facebook, Briefcase, TrendingUp, Tag, FolderTree, Store, Megaphone, UserCheck, FileText, HelpCircle, BookOpen, Target, Zap, ClipboardList, Star, Brain, Layout } from "lucide-react";
+import { Search, Loader2, Building2, Users, Code2, BarChart3, DollarSign, Key, Ticket, Package, ShoppingCart, UserRound, MessageSquare, Facebook, Briefcase, TrendingUp, Tag, FolderTree, Store, Megaphone, UserCheck, FileText, HelpCircle, BookOpen, Target, Zap, ClipboardList, Star, Brain, Layout, Command, ArrowLeft, X } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { apiClient } from "../../services/apiClient";
 import { cn } from "@/lib/utils";
@@ -63,7 +63,7 @@ const iconMap: Record<string, React.ReactNode> = {
 };
 
 const AR = {
-  placeholder: "ابحث في النظام بالكامل...",
+  placeholder: "ابحث في جميع أجزاء النظام...",
   searching: "جاري البحث...",
   noResults: "لا توجد نتائج",
   tryAdjusting: "حاول بتغيير كلمة البحث",
@@ -178,7 +178,6 @@ const GlobalSearch: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [searchTriggered, setSearchTriggered] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -256,7 +255,6 @@ const GlobalSearch: React.FC = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       performSearch(val);
-      setSearchTriggered(true);
     }, 150);
   };
 
@@ -288,7 +286,6 @@ const GlobalSearch: React.FC = () => {
     setIsOpen(false);
     setHasSearched(false);
     setSelectedIndex(-1);
-    setSearchTriggered(false);
     setSearchError(null);
     setPage(1);
     setTotalPages(1);
@@ -302,7 +299,6 @@ const GlobalSearch: React.FC = () => {
     setMeta(null);
     setHasSearched(false);
     setSelectedIndex(-1);
-    setSearchTriggered(false);
     setSearchError(null);
     setPage(1);
     setTotalPages(1);
@@ -384,16 +380,33 @@ const GlobalSearch: React.FC = () => {
             isDark ? "text-white" : "text-gray-900"
           )}
         />
-
+        {query && (
+          <button
+            onClick={handleClear}
+            className="flex items-center px-2 text-muted-foreground/50 hover:text-muted-foreground transition-colors order-2"
+          >
+            <X className="size-3.5" />
+          </button>
+        )}
+        <div className="hidden sm:flex items-center px-2 order-3">
+          <kbd className={cn(
+            "inline-flex items-center gap-0.5 rounded-md border px-1.5 py-0.5 text-[10px] font-medium",
+            isDark ? "border-white/10 bg-white/5 text-gray-400" : "border-gray-200 bg-gray-50 text-gray-400"
+          )}>
+            <Command className="size-2.5" />
+            K
+          </kbd>
+        </div>
       </div>
 
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div className={cn(
-            "absolute top-full mt-2 w-full min-w-[320px] sm:min-w-[400px] rounded-xl border shadow-xl z-50 overflow-hidden",
+            "absolute top-full mt-2 w-full min-w-[320px] sm:min-w-[450px] rounded-xl border shadow-xl z-50 overflow-hidden",
+            "animate-in fade-in slide-in-from-top-2 duration-150",
             isDark ? "bg-[#1e293b] border-white/10" : "bg-white border-gray-200"
-          )}>
+          )} style={{ right: 0, left: 'auto' }}>
             {isLoading && (
               <div className="flex items-center gap-3 px-4 py-3 border-b border-inherit/10">
                 <Loader2 className="size-4 animate-spin text-muted-foreground" />
@@ -421,8 +434,8 @@ const GlobalSearch: React.FC = () => {
                 {results.map((group, gi) => (
                   <div key={group.type}>
                     <div className={cn(
-                      "flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider",
-                      isDark ? "text-gray-400 bg-[#0f172a]/50" : "text-gray-500 bg-gray-50"
+                      "flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider sticky top-0 z-10",
+                      isDark ? "text-gray-400 bg-[#0f172a]/95 backdrop-blur-sm" : "text-gray-500 bg-gray-50/95 backdrop-blur-sm"
                     )}>
                       {iconMap[group.icon] || <Search className="size-3.5" />}
                       <span>{typeLabelMap[group.type] || group.type}</span>
@@ -480,9 +493,10 @@ const GlobalSearch: React.FC = () => {
                               </span>
                             )}
                           </div>
-                          {isSelected && (
-                            <span className="size-3 text-muted-foreground/40 flex-shrink-0">❯</span>
-                          )}
+                          <ArrowLeft className={cn(
+                            "size-3 flex-shrink-0 transition-opacity",
+                            isSelected ? "opacity-60" : "opacity-0"
+                          )} />
                         </button>
                       );
                     })}
@@ -508,6 +522,7 @@ const GlobalSearch: React.FC = () => {
                 <span>
                   {totalResults > 0 && `${totalResults} ${AR.resultsCount}`}
                   {meta?.time != null && ` · ${meta.time}${AR.inMs}`}
+                  {meta?.cached && ' ·⚡'}
                 </span>
                 {totalPages > 1 && (
                   <div className="flex items-center gap-1">
