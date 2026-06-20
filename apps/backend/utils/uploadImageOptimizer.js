@@ -90,8 +90,8 @@ const writeOptimizedVariant = async (sourceFilePath, variantFilePath, options) =
 
   const tempFilePath = `${variantFilePath}.tmp-${process.pid}-${Date.now()}`;
 
-  try {
-    let pipeline = sharp(sourceFilePath, { sequentialRead: true })
+    try {
+    const pipeline = sharp(sourceFilePath, { sequentialRead: true })
       .rotate()
       .resize(options.width, null, {
         fit: 'inside',
@@ -101,7 +101,7 @@ const writeOptimizedVariant = async (sourceFilePath, variantFilePath, options) =
     switch (options.format) {
       case 'webp':
       default:
-        pipeline = pipeline.webp({
+        pipeline.webp({
           quality: options.quality,
           effort: 4,
           smartSubsample: true,
@@ -110,6 +110,7 @@ const writeOptimizedVariant = async (sourceFilePath, variantFilePath, options) =
     }
 
     await pipeline.toFile(tempFilePath);
+    pipeline.destroy();
 
     try {
       fs.renameSync(tempFilePath, variantFilePath);

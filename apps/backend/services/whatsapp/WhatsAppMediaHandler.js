@@ -202,28 +202,29 @@ async function uploadMedia(source, mimetype, originalName = '') {
  * ضغط صورة
  */
 async function compressImage(buffer, maxSize) {
-    if (!sharp) return buffer; // Skip compression if sharp is not available
+    if (!sharp) return buffer;
 
     try {
         let quality = 80;
         let compressed = buffer;
 
         while (compressed.length > maxSize && quality > 10) {
-            compressed = await sharp(buffer)
-                .jpeg({ quality })
-                .toBuffer();
+            const p = sharp(buffer).jpeg({ quality });
+            compressed = await p.toBuffer();
+            p.destroy();
             quality -= 10;
         }
 
         if (compressed.length > maxSize) {
-            // تصغير الأبعاد
-            const metadata = await sharp(buffer).metadata();
+            const m = sharp(buffer).metadata();
+            const metadata = await m;
             const scale = Math.sqrt(maxSize / compressed.length);
 
-            compressed = await sharp(buffer)
+            const p = sharp(buffer)
                 .resize(Math.floor(metadata.width * scale), Math.floor(metadata.height * scale))
-                .jpeg({ quality: 70 })
-                .toBuffer();
+                .jpeg({ quality: 70 });
+            compressed = await p.toBuffer();
+            p.destroy();
         }
 
         return compressed;
@@ -238,10 +239,10 @@ async function compressImage(buffer, maxSize) {
  */
 async function createThumbnail(buffer, width = 200, height = 200) {
     try {
-        return await sharp(buffer)
-            .resize(width, height, { fit: 'cover' })
-            .jpeg({ quality: 60 })
-            .toBuffer();
+        const p = sharp(buffer).resize(width, height, { fit: 'cover' }).jpeg({ quality: 60 });
+        const result = await p.toBuffer();
+        p.destroy();
+        return result;
     } catch (error) {
         console.error('❌ Error creating thumbnail:', error);
         return null;

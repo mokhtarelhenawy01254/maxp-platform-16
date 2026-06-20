@@ -121,10 +121,10 @@ const isTransformableContentType = (contentType) =>
   TRANSFORMABLE_CONTENT_TYPES.has(normalizeContentType(contentType));
 
 const transformImageBuffer = async (buffer, transformOptions) => {
-  let pipeline = sharp(buffer, { animated: false }).rotate();
+  const pipeline = sharp(buffer, { animated: false }).rotate();
 
   if (transformOptions.width) {
-    pipeline = pipeline.resize({
+    pipeline.resize({
       width: transformOptions.width,
       fit: "inside",
       withoutEnlargement: true,
@@ -132,20 +132,22 @@ const transformImageBuffer = async (buffer, transformOptions) => {
   }
 
   if (transformOptions.format === "avif") {
-    pipeline = pipeline.avif({ quality: transformOptions.quality });
+    pipeline.avif({ quality: transformOptions.quality });
   } else if (transformOptions.format === "jpeg") {
-    pipeline = pipeline.jpeg({
+    pipeline.jpeg({
       quality: transformOptions.quality,
       mozjpeg: true,
     });
   } else {
-    pipeline = pipeline.webp({
+    pipeline.webp({
       quality: transformOptions.quality,
       effort: 4,
     });
   }
 
-  return pipeline.toBuffer();
+  const result = await pipeline.toBuffer();
+  pipeline.destroy();
+  return result;
 };
 
 const isAllowedDirectUrl = (targetUrl) => {

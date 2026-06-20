@@ -25,13 +25,14 @@ const processImage = async (inputPath, outputDir, options = {}) => {
             fs.mkdirSync(outputDir, { recursive: true });
         }
 
-        const info = await sharp(inputPath)
+        const p = sharp(inputPath)
             .resize(width, null, {
                 withoutEnlargement: true,
                 fit: 'inside'
             })
-            .webp({ quality })
-            .toFile(outputPath);
+            .webp({ quality });
+        const info = await p.toFile(outputPath);
+        p.destroy();
 
         // Delete original if not requested to keep
         if (!keepOriginal && inputPath !== outputPath) {
