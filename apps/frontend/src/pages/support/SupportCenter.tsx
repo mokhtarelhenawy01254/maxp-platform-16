@@ -234,7 +234,7 @@ export default function SupportCenter() {
       {/* Mobile: if no ticket selected, show list; if selected, show chat */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Conversations List */}
-        <div className={`w-full md:w-80 lg:w-96 border-s border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/30 flex flex-col ${selectedTicket ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`w-full md:w-80 lg:w-80 shrink-0 border-s border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/30 flex flex-col ${selectedTicket ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-3">
               <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">مركز الدعم</h1>
@@ -320,7 +320,7 @@ export default function SupportCenter() {
         </div>
 
         {/* Right: Chat */}
-        <div className={`flex-1 flex flex-col ${!selectedTicket ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`flex-1 min-w-0 flex flex-col ${!selectedTicket ? 'hidden md:flex' : 'flex'}`}>
           {selectedTicket ? (
             <>
               {/* Chat Header */}
