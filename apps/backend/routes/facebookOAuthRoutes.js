@@ -1141,6 +1141,24 @@ router.get("/callback", async (req, res) => {
                   },
                 });
                 console.log(`📸 [BG-OAuth] Linked Instagram account ${igAccountId} (${igAccountName}) to page ${page.name}`);
+
+                // Subscribe Instagram account to webhooks for DM delivery
+                try {
+                  await axios.post(
+                    `${FACEBOOK_GRAPH_API_BASE_URL}/${igAccountId}/subscribed_apps`,
+                    {},
+                    {
+                      params: {
+                        subscribed_fields: "messages,messaging_seen",
+                        access_token: page.access_token,
+                      },
+                      timeout: 10000,
+                    },
+                  );
+                  console.log(`✅ [BG-OAuth] Subscribed Instagram account ${igAccountId} to webhooks`);
+                } catch (igSubError) {
+                  console.warn(`⚠️ [BG-OAuth] Could not subscribe Instagram account ${igAccountId} to webhooks:`, igSubError.response?.data?.error?.message || igSubError.message);
+                }
               }
             } catch (igError) {
               console.warn(`⚠️ [BG-OAuth] Could not fetch Instagram account for page ${page.name}:`, igError.message);
