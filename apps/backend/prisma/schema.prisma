@@ -2178,10 +2178,57 @@ model Company {
   moderatorNotifications          ModeratorNotification[]
   moderatorDashboardCaches        ModeratorDashboardCache[]
   inboxSettings                   InboxSettings?
+  followUp                        FollowUp?
 
   @@index([businessSpecialtyId])
   @@index([planConfigurationId])
   @@map("companies")
+}
+
+model FollowUp {
+  id                  String   @id @default(cuid())
+  companyId           String   @unique
+  company             Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  status              String   @default("unassigned")
+  assignedOwnerId     String?
+  assignedOwnerName   String?
+  assignedOwnerEmail  String?
+  assignedOwnerRole   String?
+  lastNote            String?
+  updatedAt           DateTime?
+  contactedAt         DateTime?
+  resolvedAt          DateTime?
+  nextActionAt        DateTime?
+  lastReminderSentAt  DateTime?
+  lastEscalatedAt     DateTime?
+  createdAt           DateTime @default(now())
+
+  history FollowUpHistory[]
+
+  @@map("company_follow_ups")
+}
+
+model FollowUpHistory {
+  id                  String   @id @default(cuid())
+  followUpId          String
+  followUp            FollowUp @relation(fields: [followUpId], references: [id], onDelete: Cascade)
+  occurredAt          DateTime
+  status              String
+  note                String?
+  action              String   @default("updated")
+  nextActionAt        DateTime?
+  actorId             String?
+  actorName           String?
+  actorEmail          String?
+  actorRole           String?
+  assignedOwnerId     String?
+  assignedOwnerName   String?
+  assignedOwnerEmail  String?
+  assignedOwnerRole   String?
+  createdAt           DateTime @default(now())
+
+  @@index([followUpId])
+  @@map("follow_up_history")
 }
 
 model User {

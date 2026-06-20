@@ -103,14 +103,6 @@ const deleteSignupCouponRules = () => {
   ];
 };
 
-const updateOnboardingSettingsRules = () => {
-  return [
-    body("defaultTrialDays")
-      .isInt({ min: 0, max: 365 })
-      .withMessage("مدة التجربة يجب أن تكون بين 0 و365 يومًا"),
-  ];
-};
-
 const upsertBusinessSpecialtyRules = () => {
   return [
     body("slug")
@@ -182,7 +174,6 @@ module.exports = {
   upsertSignupCouponRules,
   updateSignupCouponRules,
   deleteSignupCouponRules,
-  updateOnboardingSettingsRules,
   upsertBusinessSpecialtyRules,
   updateBusinessSpecialtyRules,
   deleteBusinessSpecialtyRules,

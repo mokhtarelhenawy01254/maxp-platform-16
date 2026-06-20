@@ -9,7 +9,7 @@ import { Switch } from "../../components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import {
   CompanyHeroCard, StatusBadge, MiniStat, MetricCard, FormField, EmptyState, ResponsiveOverlay, ModalFooter,
-  CompanyActivationCenter, CompanyBillingSection, CompanyTeamSection, CompanyWalletSection,
+  CompanyBillingSection, CompanyTeamSection, CompanyWalletSection,
   CompanySubscriptionSection, CompanyLimitsSection, CompanyUsageSection,
 } from "./company-details";
 import { formatDate, formatCurrency, getRoleLabel } from "./company-details/helpers";
@@ -33,8 +33,8 @@ const SuperAdminCompanyDetails = () => {
     scrollToActivationSection, reviewAlerts, detailMetrics, financialMetrics, ownerUser,
     refreshCompanyWorkspace, refreshing, openTopUpModal, openEditModal, handleLoginAsAdmin,
     planAction, bundleAction, appAction, installAllLoading, activationLoading, activationError,
-    currentPlanType, resolvedPlanCatalog, orderedCatalogApps, resolvedBundles, appNameBySlug,
-    handleAssignPlatformPlan, handleInstallApp, handleSubscribeBundle, handleActivateAllTools, refreshActivationCatalog,
+    orderedCatalogApps, resolvedBundles, appNameBySlug,
+    handleInstallApp, handleSubscribeBundle, handleActivateAllTools, refreshActivationCatalog,
     companyUsers, usersLoading, facebookPages, pagesLoading, openAddEmployeeModal, setTransferOpen,
     editOpen, setEditOpen, editSaving, editForm, setEditForm, editErrors, handleSaveCompany,
     transferOpen, transferLoading, changeOwnerTargetUserId, setChangeOwnerTargetUserId, handleTransferOwnership,
@@ -93,7 +93,7 @@ const SuperAdminCompanyDetails = () => {
             <TabsTrigger value="financial" className="rounded-lg px-4 py-2 text-sm font-bold data-active:bg-background data-active:text-foreground data-active:shadow-sm">مالي</TabsTrigger>
             <TabsTrigger value="management" className="rounded-lg px-4 py-2 text-sm font-bold data-active:bg-background data-active:text-foreground data-active:shadow-sm">الإدارة</TabsTrigger>
             <TabsTrigger value="team" className="rounded-lg px-4 py-2 text-sm font-bold data-active:bg-background data-active:text-foreground data-active:shadow-sm">فريق</TabsTrigger>
-            <TabsTrigger value="activation" className="rounded-lg px-4 py-2 text-sm font-bold data-active:bg-background data-active:text-foreground data-active:shadow-sm">تفعيل</TabsTrigger>
+
           </TabsList>
 
           <TabsContent value="general" className="pt-4">
@@ -149,18 +149,7 @@ const SuperAdminCompanyDetails = () => {
             />
           </TabsContent>
 
-          <TabsContent value="activation" className="pt-4">
-            <CompanyActivationCenter
-              review={review} planAction={planAction} bundleAction={bundleAction} appAction={appAction}
-              installAllLoading={installAllLoading} activationLoading={activationLoading} activationError={activationError}
-              currentPlanType={currentPlanType} resolvedPlanCatalog={resolvedPlanCatalog}
-              orderedCatalogApps={orderedCatalogApps} resolvedBundles={resolvedBundles}
-              reviewCurrency={reviewCurrency} appNameBySlug={appNameBySlug}
-              handleAssignPlatformPlan={handleAssignPlatformPlan} handleInstallApp={handleInstallApp}
-              handleSubscribeBundle={handleSubscribeBundle} handleActivateAllTools={handleActivateAllTools}
-              openTopUpModal={openTopUpModal} refreshActivationCatalog={refreshActivationCatalog}
-            />
-          </TabsContent>
+
         </Tabs>
       ) : null}
 

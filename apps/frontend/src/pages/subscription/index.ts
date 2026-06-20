@@ -1,3 +1,2 @@
-export { default as PlatformPlans } from "./PlatformPlans";
-export { default as UsageStats } from "./UsageStats";
+// ponytail: PlatformPlans, UsageStats removed — plan comparison/stats replaced by app/bundle marketplace
 export { default as AppPricingSheet } from "./AppPricingSheet";

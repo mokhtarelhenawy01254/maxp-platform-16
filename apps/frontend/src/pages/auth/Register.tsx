@@ -6,7 +6,7 @@ import { useAuth } from "../../hooks/useAuthSimple";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
 import { trackPlatformSiteCompleteRegistration } from "../../utils/platformSiteMetaPixel";
-import { getPostAuthDestination } from "../../utils/companyOnboarding";
+import { getPostAuthDestination } from "../../utils/authRouting";
 
 const NEW_ACCOUNT_DESTINATION = "/marketplace";
 

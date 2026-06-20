@@ -12,11 +12,7 @@ export {
 export type * from "./types";
 export { default as DashboardSurfaceCard } from "./DashboardSurfaceCard";
 export { default as DashboardStatusStrip } from "./DashboardStatusStrip";
-export { default as DashboardIntroBand } from "./DashboardIntroBand";
-export { default as OnboardingResumeCard } from "./OnboardingResumeCard";
-export { default as ActivationLaunchCard } from "./ActivationLaunchCard";
 export { default as DashboardOperationsPanel } from "./DashboardOperationsPanel";
-export { default as QuickStartChecklist } from "./QuickStartChecklist";
 export { default as DateRangeToolbar } from "./DateRangeToolbar";
 export { default as DashboardEmptyState } from "./DashboardEmptyState";
 export { default as TopProductsPanel } from "./TopProductsPanel";

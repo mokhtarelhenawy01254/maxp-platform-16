@@ -121,12 +121,6 @@ export interface QuickStats {
   activeCompanies: number;
   enterpriseCompanies: number;
   connectedFacebookPages: number;
-  activated: number;
-  trackedCompanies: number;
-  untrackedCompanies: number;
-  registeredNoStart: number;
-  onboardingInProgress: number;
-  activationInProgress: number;
   followUpNow: number;
   escalationDue: number;
   urgentEscalationDue: number;

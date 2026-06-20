@@ -88,12 +88,7 @@ export function CompanyFilters({
     STALE_72H: stats.stale72h,
   };
   const funnelStageCounts: Record<string, number> = {
-    ALL: stats.trackedCompanies + stats.untrackedCompanies,
-    registered_no_start: stats.registeredNoStart,
-    onboarding_in_progress: stats.onboardingInProgress,
-    activation_in_progress: stats.activationInProgress,
-    activated: stats.activated,
-    untracked: stats.untrackedCompanies,
+    ALL: stats.totalCompanies,
   };
 
   return (

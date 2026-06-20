@@ -4,10 +4,11 @@ const jwt = require('jsonwebtoken');
 const socketService = require('../services/socketService');
 const { sendBrowserPushToUser } = require('../services/browserPushService');
 const { generateUniqueCompanySlug, ensureCompanySlug } = require('../utils/companySlug');
-const { getCompanyFunnelAnalytics } = require('../utils/companyFunnelAnalytics');
 const {
     FOLLOW_UP_STATUSES,
     getCompanyFollowUp,
+    getCompanyFollowUpFromDb,
+    saveFollowUpToDb,
     mergeCompanyFollowUpSettings,
 } = require('../utils/companyFollowUp');
 const {
@@ -20,11 +21,8 @@ const {
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 
 const REVIEW_RECENT_LIMIT = 5;
-const DEFAULT_PLATFORM_FEES = Object.freeze({
-    BASIC: 99,
-    PRO: 199,
-    ENTERPRISE: 499,
-});
+const DEFAULT_PLATFORM_FEES = Object.freeze({});
+// ponytail: per-plan fees removed — platform fee now per-app/bundle
 const ACTIVE_COMPANY_APP_STATUSES = ['TRIAL', 'ACTIVE'];
 const FOLLOW_UP_OWNER_ROLES = ['SUPER_ADMIN', 'Project Manager', 'Team Lead', 'Developer', 'Tester'];
 const FOLLOW_UP_NOTIFICATION_TYPES = Object.freeze({
@@ -224,8 +222,8 @@ const getCurrentMonthWindow = () => {
     return { start, end };
 };
 
-const getDefaultPlatformFee = (plan) =>
-    DEFAULT_PLATFORM_FEES[plan] || DEFAULT_PLATFORM_FEES.BASIC;
+const getDefaultPlatformFee = (plan) => 0;
+// ponytail: per-plan fees removed
 
 const isMissingTableError = (error, tableName) =>
     String(error?.message || '').includes(`The table \`public.${tableName}\` does not exist`);
@@ -237,7 +235,6 @@ const buildSyntheticPlatformSubscription = (company, monthlyFee) => {
     return {
         id: `fallback-${company.id}`,
         companyId: company.id,
-        plan: company.plan || 'BASIC',
         monthlyFee,
         status: 'ACTIVE',
         billingDay: 1,
@@ -446,35 +443,79 @@ const buildCompanyDetailsInclude = ({ includeCouponRedemptions = true } = {}) =>
 const getAllCompanies = async (req, res) => {
     try {
         const prisma = getSharedPrismaClient();
-        const rawCompanies = await prisma.company.findMany({
-            include: {
-                _count: {
-                    select: {
-                        users: true,
-                        customers: true,
-                        facebookPages: true
-                    }
-                }
-            },
-            orderBy: {
-                createdAt: 'desc'
-            }
-        });
 
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize) || 20));
+        const search = (req.query.search || '').trim();
+        const status = req.query.status || 'ALL';
+        const plan = req.query.plan || 'ALL';
+        const savedView = req.query.savedView || 'ALL';
+
+        const now = new Date();
+        const ACTIONABLE = ['pending', 'contacted', 'waiting'];
+
+        const buildSavedViewWhere = (view) => {
+            if (view === 'FOLLOW_UP_NOW') return { followUp: { status: { in: ACTIONABLE }, OR: [{ nextActionAt: { lte: now } }, { nextActionAt: null }] } };
+            if (view === 'MY_TODAY') return { followUp: { status: { in: ACTIONABLE }, assignedOwnerId: req.user.id, OR: [{ nextActionAt: { lte: now } }, { nextActionAt: null }] } };
+            if (view === 'ESCALATION_DUE') return { followUp: { status: { in: ACTIONABLE }, nextActionAt: { lte: new Date(now.getTime() - 24 * 60 * 60 * 1000) } } };
+            if (view === 'STALE_72H') return { followUp: null, createdAt: { lte: new Date(now.getTime() - 72 * 60 * 60 * 1000) } };
+            return {};
+        };
+
+        const conditions = [];
+        if (search) conditions.push({ OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+            { phone: { contains: search, mode: 'insensitive' } },
+            { website: { contains: search, mode: 'insensitive' } },
+        ]});
+        if (status === 'ACTIVE' || status === 'INACTIVE') conditions.push({ isActive: status === 'ACTIVE' });
+        if (plan !== 'ALL') conditions.push({ plan });
+        if (savedView !== 'ALL') conditions.push(buildSavedViewWhere(savedView));
+        const where = conditions.length === 1 ? conditions[0] : { AND: conditions };
+
+        const skip = (page - 1) * pageSize;
+
+        const [rawCompanies, total] = await Promise.all([
+            prisma.company.findMany({
+                where,
+                include: {
+                    _count: {
+                        select: {
+                            users: true,
+                            customers: true,
+                            facebookPages: true
+                        }
+                    }
+                },
+                skip,
+                take: pageSize,
+                orderBy: { createdAt: 'desc' }
+            }),
+            prisma.company.count({ where })
+        ]);
+
+        // ponytail: bulk slug ensure — no loop overhead once slug exists
+        const companies = [];
         for (const company of rawCompanies) {
-            await ensureCompanySlug(company, { prisma });
+            if (!company.slug) await ensureCompanySlug(company, { prisma });
+            companies.push({ ...company, followUp: await getCompanyFollowUpFromDb(prisma, company) });
         }
 
-        const companies = rawCompanies.map((company) => ({
-            ...company,
-            funnelAnalytics: getCompanyFunnelAnalytics(company),
-            followUp: getCompanyFollowUp(company),
-        }));
+        const [totalCompanies, activeCompanies, followUpNow, myDueToday, escalationDue, stale72h] = await Promise.all([
+            prisma.company.count(),
+            prisma.company.count({ where: { isActive: true } }),
+            prisma.company.count({ where: buildSavedViewWhere('FOLLOW_UP_NOW') }),
+            prisma.company.count({ where: buildSavedViewWhere('MY_TODAY') }),
+            prisma.company.count({ where: buildSavedViewWhere('ESCALATION_DUE') }),
+            prisma.company.count({ where: buildSavedViewWhere('STALE_72H') }),
+        ]);
 
         res.json({
             success: true,
             message: 'تم جلب الشركات بنجاح',
-            data: { companies }
+            data: { companies, total, page, pageSize, totalPages: Math.ceil(total / pageSize) },
+            meta: { stats: { totalCompanies, activeCompanies, followUpNow, myDueToday, escalationDue, urgentEscalationDue: 0, stale72h } }
         });
 
     } catch (error) {
@@ -529,10 +570,11 @@ const getCompanyDetails = async (req, res) => {
 
         const { start: periodStart, end: periodEnd } = getCurrentMonthWindow();
         const resolvedPlan = company.plan || 'BASIC';
+        // ponytail: planConfiguration/planLimit queries removed — limits now per-app/bundle
+        const adjustedLimits = {};
+        const bonusSnapshot = {};
 
         const [
-            planConfig,
-            planLimit,
             employeeCount,
             ordersThisMonth,
             installedApps,
@@ -548,18 +590,6 @@ const getCompanyDetails = async (req, res) => {
             paymentStats,
         ] = await executeWithRetry(async () => {
             return await Promise.all([
-                prisma.planConfiguration.findFirst({
-                    where: {
-                        isActive: true,
-                        planType: resolvedPlan,
-                    },
-                    select: {
-                        price: true,
-                    },
-                }),
-                prisma.planLimit.findUnique({
-                    where: { plan: resolvedPlan },
-                }),
                 prisma.employee.count({
                     where: { companyId },
                 }),
@@ -752,10 +782,7 @@ const getCompanyDetails = async (req, res) => {
                 ? await findCouponByCode(company.signupCouponCode, prisma)
                 : null);
 
-        const bonusSnapshot = buildCompanyBonusSnapshot(company);
-        const baseLimits = withEnterpriseOverrides(planLimit, company.platformEnterprisePlan);
-        const adjustedLimits = applyPlanLimitBonuses(baseLimits, company);
-        const currentSeats = Math.max(toNumber(company._count?.users), toNumber(employeeCount));
+        // ponytail: plan limits removed — per-app/bundle limits used instead
 
         const usageLookup = new Map(
             usageByApp.map((entry) => [
@@ -785,11 +812,10 @@ const getCompanyDetails = async (req, res) => {
             buildSyntheticPlatformSubscription(
                 company,
                 toNumber(
-                    company.platformEnterprisePlan?.customMonthlyFee ??
-                        planConfig?.price,
-                    getDefaultPlatformFee(resolvedPlan),
+                    company.platformEnterprisePlan?.customMonthlyFee ?? 0,
                 ),
             );
+        const currentSeats = Math.max(toNumber(company._count?.users), toNumber(employeeCount));
 
         const invoiceStatsMap = invoiceStats.reduce((acc, entry) => {
             acc[entry.status] = entry._count?._all || 0;
@@ -814,7 +840,6 @@ const getCompanyDetails = async (req, res) => {
             },
             subscription: {
                 id: resolvedSubscription.id,
-                plan: resolvedSubscription.plan || resolvedPlan,
                 monthlyFee: toNumber(
                     company.platformEnterprisePlan?.customMonthlyFee ??
                         resolvedSubscription.monthlyFee,
@@ -880,7 +905,7 @@ const getCompanyDetails = async (req, res) => {
                 }),
             },
             limits: {
-                plan: resolvedPlan,
+                // ponytail: plan-based limits removed — per-app/bundle limits apply
                 features: {
                     advancedReports: Boolean(adjustedLimits?.hasAdvancedReports),
                     apiAccess: Boolean(adjustedLimits?.hasAPIAccess),
@@ -957,8 +982,7 @@ const getCompanyDetails = async (req, res) => {
             data: {
                 company: {
                     ...company,
-                    funnelAnalytics: getCompanyFunnelAnalytics(company),
-                    followUp: getCompanyFollowUp(company),
+                    followUp: await getCompanyFollowUpFromDb(prisma, company),
                 },
                 review,
             }
@@ -1118,6 +1142,8 @@ const updateCompanyFollowUp = async (req, res) => {
                 settings: merged.serializedSettings,
             },
         });
+
+        await saveFollowUpToDb(prisma, companyId, merged.followUp);
 
         const automationActions = [];
         if (markReminderSent === true) {

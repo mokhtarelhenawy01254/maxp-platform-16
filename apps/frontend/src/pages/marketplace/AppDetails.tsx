@@ -329,7 +329,7 @@ export default function AppDetails() {
     );
   }
 
-  const isEnterprise = user?.company?.plan === "ENTERPRISE";
+  const isEnterprise = false; // ponytail: enterprise plan system removed
   const featureItems = getMarketplaceFeatureItems(app);
   const limitations = safeParseJson(app.limitations);
   const requiredApps = safeParseJson(app.requiredApps);

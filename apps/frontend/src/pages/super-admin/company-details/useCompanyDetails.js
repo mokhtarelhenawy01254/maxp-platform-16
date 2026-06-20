@@ -11,7 +11,6 @@ import {
   formatRelativeDateLabel,
   getCount,
   getStatusMeta,
-  buildPlanHighlights,
   getBundleAppSlugs,
   getDaysUntil,
   getDefaultPricingModel,
@@ -21,26 +20,12 @@ import {
   extractErrorMessage,
 } from "./helpers";
 
-const PLAN_OPTIONS = [
-  { value: "BASIC", label: "أساسي" },
-  { value: "PRO", label: "احترافي" },
-  { value: "ENTERPRISE", label: "مؤسسي" },
-];
-
-const DEFAULT_PLAN_COPY = {
-  BASIC: {
+// ponytail: PLAN_OPTIONS, DEFAULT_PLAN_COPY removed — plan tiers deleted
     description: "بداية مناسبة للشركات الجديدة مع الأدوات الأساسية والتشغيل اليومي.",
     highlights: ["تشغيل أساسي", "عدد محدود من الأعضاء", "انطلاقة سريعة"],
   },
   PRO: {
-    description: "خطة تشغيل موسعة للشركات التي بدأت تنمو وتحتاج أدوات أقوى.",
-    highlights: ["تقارير متقدمة", "دعم أدوات أكثر", "سعة تشغيل أعلى"],
-  },
-  ENTERPRISE: {
-    description: "خطة مرنة للشركات الكبيرة مع حدود أعلى وتجهيزات أوسع.",
-    highlights: ["حدود موسعة", "API Access", "تشغيل مؤسسي"],
-  },
-};
+// ponytail: PLAN_OPTIONS, DEFAULT_PLAN_COPY removed — plan tiers deleted
 
 const INITIAL_EMPLOYEE_FORM = {
   firstName: "",
@@ -104,7 +89,7 @@ export function useCompanyDetails() {
 
   const [activationLoading, setActivationLoading] = useState(true);
   const [activationError, setActivationError] = useState("");
-  const [catalogPlans, setCatalogPlans] = useState([]);
+  const [catalogPlans, setCatalogPlans] = useState([]); // ponytail: kept as state placeholder, not used for plan tiers
   const [catalogApps, setCatalogApps] = useState([]);
   const [catalogBundles, setCatalogBundles] = useState([]);
   const [planAction, setPlanAction] = useState("");
@@ -173,14 +158,12 @@ export function useCompanyDetails() {
     if (!companyId) { setCatalogPlans([]); setCatalogApps([]); setCatalogBundles([]); setActivationLoading(false); setActivationError(""); return; }
     setActivationLoading(true); setActivationError("");
     try {
-      const [plansResult, appsResult, bundlesResult] = await Promise.allSettled([
-        apiClient.get("/admin/plans/plans"),
+      // ponytail: /admin/plans/plans removed — plan catalog deleted
+      setCatalogPlans([]);
+      const [appsResult, bundlesResult] = await Promise.allSettled([
         apiClient.get("/marketplace/apps", getCompanyScopedRequestConfig({ params: { sort: "featured" }, _skipTransientRetry: true })),
         apiClient.get("/marketplace/bundles", getCompanyScopedRequestConfig({ _skipTransientRetry: true })),
       ]);
-      if (plansResult.status === "fulfilled" && plansResult.value.data?.success)
-        setCatalogPlans(Array.isArray(plansResult.value.data.data) ? plansResult.value.data.data : []);
-      else setCatalogPlans([]);
       if (appsResult.status === "fulfilled" && appsResult.value.data?.success)
         setCatalogApps(Array.isArray(appsResult.value.data.data) ? appsResult.value.data.data : []);
       else setCatalogApps([]);
@@ -306,10 +289,7 @@ export function useCompanyDetails() {
 
   const refreshReviewAndCatalog = async () => { await Promise.all([refreshCompanyWorkspace({ background: true }), refreshActivationCatalog()]); };
 
-  const resolvedPlanCatalog = useMemo(() => PLAN_OPTIONS.map((option) => {
-    const matchedPlan = catalogPlans.find((plan) => plan.planType === option.value);
-    return { planType: option.value, name: matchedPlan?.name || getStatusMeta("plan", option.value).label, description: matchedPlan?.description || DEFAULT_PLAN_COPY[option.value]?.description || "", highlights: buildPlanHighlights(matchedPlan || option) };
-  }), [catalogPlans]);
+  // ponytail: resolvedPlanCatalog and currentPlanType removed — plan tiers deleted
 
   const companyInstalledAppsBySlug = useMemo(() => {
     const entries = (review?.usage?.installedApps || []).filter((companyApp) => ["ACTIVE", "TRIAL"].includes(companyApp.status));
@@ -333,19 +313,10 @@ export function useCompanyDetails() {
     return { ...bundle, appSlugs, installedCount, totalApps: appSlugs.length, isComplete: appSlugs.length > 0 && installedCount === appSlugs.length };
   }), [catalogBundles, installedCatalogAppSlugs]);
 
-  const currentPlanType = review?.subscription?.plan || company?.plan || "BASIC";
+  // ponytail: currentPlanType removed — plan tiers deleted
 
-  const handleAssignPlatformPlan = async (planType) => {
-    if (!companyId || !planType) return;
-    try {
-      setPlanAction(planType);
-      const response = await apiClient.post("/platform-subscription/upgrade", { newPlan: planType }, getCompanyScopedRequestConfig());
-      if (response.data?.success) { toast.success(`تم تفعيل خطة ${getStatusMeta("plan", planType).label} للشركة بنجاح`); await refreshReviewAndCatalog(); }
-      else toast.error(response.data?.message || "فشل في تفعيل الخطة");
-    } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في تفعيل الخطة")); }
-    finally { setPlanAction(""); }
-  };
-
+  // ponytail: handleAssignPlatformPlan removed — no plan tiers to assign
+  
   const handleInstallApp = async (app) => {
     if (!companyId || !app?.slug) return;
     try {
@@ -430,8 +401,8 @@ export function useCompanyDetails() {
     refreshCompanyWorkspace, refreshing,
     openTopUpModal, openEditModal, handleLoginAsAdmin,
     planAction, bundleAction, appAction, installAllLoading, activationLoading, activationError,
-    currentPlanType, resolvedPlanCatalog, orderedCatalogApps, resolvedBundles, appNameBySlug,
-    handleAssignPlatformPlan, handleInstallApp, handleSubscribeBundle, handleActivateAllTools, refreshActivationCatalog,
+    orderedCatalogApps, resolvedBundles, appNameBySlug,
+    handleInstallApp, handleSubscribeBundle, handleActivateAllTools, refreshActivationCatalog,
     companyUsers, usersLoading, facebookPages, pagesLoading, openAddEmployeeModal,
     editOpen, setEditOpen, editSaving, editForm, setEditForm, editErrors,
     handleSaveCompany, transferOpen, setTransferOpen, transferLoading, changeOwnerTargetUserId, setChangeOwnerTargetUserId,

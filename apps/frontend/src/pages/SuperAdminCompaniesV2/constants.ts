@@ -18,12 +18,7 @@ export const PLAN_OPTIONS = [
 ] as const;
 
 export const FUNNEL_STAGE_FILTERS = [
-  { value: "ALL", label: "كل الرحلات" },
-  { value: "registered_no_start", label: "سجل ولم يبدأ" },
-  { value: "onboarding_in_progress", label: "Onboarding جارٍ" },
-  { value: "activation_in_progress", label: "التفعيل جارٍ" },
-  { value: "activated", label: "مفعلة" },
-  { value: "untracked", label: "بدون Funnel" },
+  { value: "ALL", label: "الكل" },
 ] as const;
 
 export const FOLLOW_UP_SAVED_VIEWS = [

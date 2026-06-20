@@ -360,18 +360,7 @@ const getOrderDetailFeatureAccess = async (companyId) => {
   if (!companyId) return defaultAccess;
 
   const prisma = getSharedPrismaClient();
-  const company = await prisma.company.findUnique({
-    where: { id: companyId },
-    select: { plan: true }
-  });
-
-  if (company?.plan === 'ENTERPRISE') {
-    return {
-      orderSource: true,
-      campaignAttribution: true,
-      confirmationDistribution: true
-    };
-  }
+  // ponytail: ENTERPRISE plan bypass removed — order features now per-app
 
   const companyApps = await prisma.companyApp.findMany({
     where: {

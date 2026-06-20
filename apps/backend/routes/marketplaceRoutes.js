@@ -21,6 +21,6 @@ router.post('/apps/:slug/install', verifyToken.authenticateToken, marketplaceCon
 router.post('/apps/:slug/uninstall', verifyToken.authenticateToken, marketplaceController.uninstallApp);
 router.post('/apps/:appId/review', verifyToken.authenticateToken, marketplaceController.addReview);
 router.post('/bundles/:slug/subscribe', verifyToken.authenticateToken, marketplaceController.subscribeToBundle);
-router.post('/unlimited/subscribe', verifyToken.authenticateToken, marketplaceController.subscribeToUnlimited);
+// ponytail: /unlimited/subscribe removed — plan system deleted
 
 module.exports = router;

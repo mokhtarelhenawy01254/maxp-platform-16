@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
 import { trackPlatformSiteLogin } from "../../utils/platformSiteMetaPixel";
-import { companyNeedsOnboarding, getPostAuthDestination } from "../../utils/companyOnboarding";
+import { getPostAuthDestination } from "../../utils/authRouting";
 import { Lock, Mail, Eye, EyeOff } from "lucide-react";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 
@@ -33,9 +33,8 @@ const ModernLogin: React.FC = () => {
 
   useEffect(() => {
     if (!isAuthLoading && isAuthenticated && user) {
-      navigate(getPostAuthDestination(user), {
-        replace: true,
-      });
+      const dest = getPostAuthDestination(user);
+      if (dest) navigate(dest, { replace: true });
     }
   }, [isAuthenticated, isAuthLoading, navigate, user]);
 
@@ -66,13 +65,11 @@ const ModernLogin: React.FC = () => {
       const userData = await login(formData);
       const postAuthDestination = getPostAuthDestination(userData);
       const redirectPath =
-        (postAuthDestination === "/company-dashboard" || postAuthDestination === "/apps") &&
+        postAuthDestination === "/marketplace" &&
         from &&
-        from !== "/company-dashboard" &&
-        from !== "/apps" &&
+        from !== "/marketplace" &&
         !from.startsWith("/lp/") &&
-        from !== "/" &&
-        !companyNeedsOnboarding(userData?.company)
+        from !== "/"
           ? from
           : postAuthDestination;
 

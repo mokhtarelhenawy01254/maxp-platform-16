@@ -262,131 +262,21 @@ const mockEndpoint = async (req, res) => {
       //console.log('Using default product count');
     }
 
-    // Create data structure that exactly matches what frontend expects
-    const mockData = {
-      success: true,
-      data: {
-        currentPlan: "basic",
-        planLimits: {
-          products: 1000,
-          orders: 5000,
-          storage: "10GB",
-          apiCalls: 10000,
-        },
-        currentUsage: {
-          products: productCount,
-          orders: 0,
-          storage: "1.2GB",
-          apiCalls: 150,
-        },
-        usagePercentage: {
-          products: Number(((productCount / 1000) * 100).toFixed(1)),
-          orders: 0.0,
-          storage: 12.0,
-          apiCalls: 1.5,
-        },
-        // Add the exact structure frontend expects for the map function
-        usageMetrics: [
-          {
-            name: "المنتجات",
-            current: productCount,
-            limit: 1000,
-            percentage: Number(((productCount / 1000) * 100).toFixed(1)),
-            unit: "منتج",
-            color: "#3B82F6",
-            icon: "📦",
-          },
-          {
-            name: "الطلبات",
-            current: 0,
-            limit: 5000,
-            percentage: 0.0,
-            unit: "طلب",
-            color: "#10B981",
-            icon: "🛒",
-          },
-          {
-            name: "التخزين",
-            current: 1.2,
-            limit: 10,
-            percentage: 12.0,
-            unit: "جيجا",
-            color: "#F59E0B",
-            icon: "💾",
-          },
-          {
-            name: "استدعاءات API",
-            current: 150,
-            limit: 10000,
-            percentage: 1.5,
-            unit: "استدعاء",
-            color: "#8B5CF6",
-            icon: "🔗",
-          },
-        ],
-      },
-    };
-
-    res.json(mockData);
-  } catch (error) {
-    console.error("Error in usage mock:", error);
-
-    // Return safe fallback
     res.json({
       success: true,
       data: {
-        currentPlan: "basic",
-        planLimits: {
-          products: 1000,
-          orders: 5000,
-          storage: "10GB",
-          apiCalls: 10000,
+        currentUsage: {
+          products: productCount,
+          orders: 0,
         },
-        currentUsage: { products: 0, orders: 0, storage: "0GB", apiCalls: 0 },
-        usagePercentage: {
-          products: 0.0,
-          orders: 0.0,
-          storage: 0.0,
-          apiCalls: 0.0,
-        },
-        usageMetrics: [
-          {
-            name: "المنتجات",
-            current: 0,
-            limit: 1000,
-            percentage: 0.0,
-            unit: "منتج",
-            color: "#3B82F6",
-            icon: "📦",
-          },
-          {
-            name: "الطلبات",
-            current: 0,
-            limit: 5000,
-            percentage: 0.0,
-            unit: "طلب",
-            color: "#10B981",
-            icon: "🛒",
-          },
-          {
-            name: "التخزين",
-            current: 0,
-            limit: 10,
-            percentage: 0.0,
-            unit: "جيجا",
-            color: "#F59E0B",
-            icon: "💾",
-          },
-          {
-            name: "استدعاءات API",
-            current: 0,
-            limit: 10000,
-            percentage: 0.0,
-            unit: "استدعاء",
-            color: "#8B5CF6",
-            icon: "🔗",
-          },
-        ],
+      },
+    });
+  } catch (error) {
+    console.error("Error in usage mock:", error);
+    res.json({
+      success: true,
+      data: {
+        currentUsage: { products: 0, orders: 0 },
       },
     });
   }
@@ -407,92 +297,16 @@ const safeUsageEndpoint = async (req, res) => {
       //console.log('Could not fetch counts, using defaults');
     }
 
-    // Safe usage data with guaranteed numeric values
-    const safeUsageData = {
-      currentPlan: "basic",
-      planName: "الخطة الأساسية",
-      planLimits: {
-        products: 1000,
-        orders: 5000,
-        storage: 10, // GB as number
-        apiCalls: 10000,
-      },
-      currentUsage: {
-        products: Number(productCount) || 0,
-        orders: Number(orderCount) || 0,
-        storage: 1.2, // GB as number
-        apiCalls: 150,
-      },
-      usagePercentage: {
-        products:
-          Number((((Number(productCount) || 0) / 1000) * 100).toFixed(1)) || 0,
-        orders:
-          Number((((Number(orderCount) || 0) / 5000) * 100).toFixed(1)) || 0,
-        storage: 12.0,
-        apiCalls: 1.5,
-      },
-      // Detailed metrics for charts/tables
-      detailedMetrics: [
-        {
-          id: "products",
-          name: "المنتجات",
-          nameEn: "Products",
-          current: Number(productCount) || 0,
-          limit: 1000,
-          percentage:
-            Number((((Number(productCount) || 0) / 1000) * 100).toFixed(1)) ||
-            0,
-          unit: "منتج",
-          unitEn: "products",
-          color: "#3B82F6",
-          icon: "📦",
-        },
-        {
-          id: "orders",
-          name: "الطلبات",
-          nameEn: "Orders",
-          current: Number(orderCount) || 0,
-          limit: 5000,
-          percentage:
-            Number((((Number(orderCount) || 0) / 5000) * 100).toFixed(1)) || 0,
-          unit: "طلب",
-          unitEn: "orders",
-          color: "#10B981",
-          icon: "🛒",
-        },
-        {
-          id: "storage",
-          name: "التخزين",
-          nameEn: "Storage",
-          current: 1.2,
-          limit: 10,
-          percentage: 12.0,
-          unit: "جيجا",
-          unitEn: "GB",
-          color: "#F59E0B",
-          icon: "💾",
-        },
-        {
-          id: "apiCalls",
-          name: "استدعاءات API",
-          nameEn: "API Calls",
-          current: 150,
-          limit: 10000,
-          percentage: 1.5,
-          unit: "استدعاء",
-          unitEn: "calls",
-          color: "#8B5CF6",
-          icon: "🔗",
-        },
-      ],
-    };
-
     res.json({
       success: true,
-      data: safeUsageData,
+      data: {
+        products: Number(productCount) || 0,
+        orders: Number(orderCount) || 0,
+      },
     });
   } catch (error) {
-    console.error("Error fetching safe usage data:", error);
+    console.error("Error in safe usage:", error);
+
     res.status(500).json({
       success: false,
       error: "Failed to fetch usage data",
@@ -500,60 +314,7 @@ const safeUsageEndpoint = async (req, res) => {
   }
 };
 
-const companyPlansEndpoint = async (req, res) => {
-  try {
-    const plans = [
-      {
-        id: "basic",
-        name: "الخطة الأساسية",
-        price: 0,
-        currency: "EGP",
-        features: [
-          "حتى 1000 منتج",
-          "حتى 5000 طلب شهرياً",
-          "10 جيجا تخزين",
-          "دعم فني أساسي",
-        ],
-        limits: {
-          products: 1000,
-          orders: 5000,
-          storage: "10GB",
-          apiCalls: 10000,
-        },
-      },
-      {
-        id: "pro",
-        name: "الخطة الاحترافية",
-        price: 299,
-        currency: "EGP",
-        features: [
-          "منتجات غير محدودة",
-          "طلبات غير محدودة",
-          "100 جيجا تخزين",
-          "دعم فني متقدم",
-          "تقارير مفصلة",
-        ],
-        limits: {
-          products: -1, // unlimited
-          orders: -1,
-          storage: "100GB",
-          apiCalls: 100000,
-        },
-      },
-    ];
-
-    res.json({
-      success: true,
-      data: plans,
-    });
-  } catch (error) {
-    console.error("Error fetching plans:", error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to fetch plans",
-    });
-  }
-};
+// ponytail: companyPlansEndpoint removed — plan tiers deleted
 
 const getCompanyInfoEndpoint = async (req, res) => {
   try {
@@ -726,7 +487,6 @@ const getAllCompanies = async (req, res) => {
       page = 1,
       limit = 25,
       search = "",
-      plan = "",
       isActive = "",
       sortBy = "createdAt",
       sortOrder = "desc",
@@ -742,7 +502,6 @@ const getAllCompanies = async (req, res) => {
       ];
     }
 
-    if (plan) where.plan = plan;
     if (isActive !== "") where.isActive = isActive === "true";
 
     // حساب التصفح
@@ -754,8 +513,6 @@ const getAllCompanies = async (req, res) => {
     const orderBy = {};
     if (sortBy === "name") {
       orderBy.name = sortOrder;
-    } else if (sortBy === "plan") {
-      orderBy.plan = sortOrder;
     } else if (sortBy === "createdAt") {
       orderBy.createdAt = sortOrder;
     } else {
@@ -3483,118 +3240,18 @@ const FrontendSpecificSafeEndpoint = async (req, res) => {
       //console.log('Using default count');
     }
 
-    // Create the exact structure that frontend expects
-    const frontendSafeData = {
-      success: true,
-      data: {
-        currentPlan: "basic",
-        planName: "الخطة الأساسية",
-        planLimits: {
-          products: Number(1000),
-          orders: Number(5000),
-          storage: "10GB",
-          apiCalls: Number(10000),
-        },
-        currentUsage: {
-          products: Number(productCount) || Number(0),
-          orders: Number(0),
-          storage: "1.2GB",
-          apiCalls: Number(150),
-        },
-        usagePercentage: {
-          products:
-            Number((((Number(productCount) || 0) / 1000) * 100).toFixed(1)) ||
-            Number(0),
-          orders: Number(0),
-          storage: Number(12),
-          apiCalls: Number(1.5),
-        },
-        // This is what the frontend maps over
-        usageData: [
-          {
-            name: "المنتجات",
-            current: Number(productCount) || Number(0),
-            limit: Number(1000),
-            percentage:
-              Number((((Number(productCount) || 0) / 1000) * 100).toFixed(1)) ||
-              Number(0),
-            unit: "منتج",
-            color: "#3B82F6",
-            icon: "📦",
-          },
-          {
-            name: "الطلبات",
-            current: Number(0),
-            limit: Number(5000),
-            percentage: Number(0),
-            unit: "طلب",
-            color: "#10B981",
-            icon: "🛒",
-          },
-          {
-            name: "التخزين",
-            current: Number(1.2),
-            limit: Number(10),
-            percentage: Number(12),
-            unit: "جيجا",
-            color: "#F59E0B",
-            icon: "💾",
-          },
-          {
-            name: "استدعاءات API",
-            current: Number(150),
-            limit: Number(10000),
-            percentage: Number(1.5),
-            unit: "استدعاء",
-            color: "#8B5CF6",
-            icon: "🔗",
-          },
-        ],
-      },
-    };
-
-    res.json(frontendSafeData);
-  } catch (error) {
-    console.error("Frontend safe endpoint error:", error);
-
-    // Ultra-safe fallback
     res.json({
       success: true,
       data: {
-        currentPlan: "basic",
-        planName: "الخطة الأساسية",
-        planLimits: {
-          products: 1000,
-          orders: 5000,
-          storage: "10GB",
-          apiCalls: 10000,
-        },
-        currentUsage: { products: 0, orders: 0, storage: "0GB", apiCalls: 0 },
-        usagePercentage: { products: 0, orders: 0, storage: 0, apiCalls: 0 },
-        usageData: [
-          {
-            name: "المنتجات",
-            current: 0,
-            limit: 1000,
-            percentage: 0,
-            unit: "منتج",
-            color: "#3B82F6",
-            icon: "📦",
-          },
-          {
-            name: "الطلبات",
-            current: 0,
-            limit: 5000,
-            percentage: 0,
-            unit: "طلب",
-            color: "#10B981",
-            icon: "🛒",
-          },
-          {
-            name: "التخزين",
-            current: 0,
-            limit: 10,
-            percentage: 0,
+        products: Number(productCount) || 0,
+      },
+    });
+  } catch (error) {
+    console.error("Frontend safe endpoint error:", error);
+    res.json({
+      success: true,
+      data: {
+        products: 0,
             unit: "جيجا",
             color: "#F59E0B",
             icon: "💾",
@@ -4085,7 +3742,7 @@ module.exports = {
   REMOVEDDangerousFallbackEndpoint,
   companyUsageEndpoint,
   mockEndpoint,
-  companyPlansEndpoint,
+// ponytail: companyPlansEndpoint removed
   getCompanyInfoEndpoint,
   safeUsageEndpoint,
   updateCompanyCurrency,

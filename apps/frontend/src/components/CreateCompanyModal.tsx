@@ -24,7 +24,6 @@ interface FormData {
   phone: string;
   website: string;
   address: string;
-  plan: string;
   currency: string;
   timezone: string;
 }
@@ -41,18 +40,13 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
     phone: "",
     website: "",
     address: "",
-    plan: "BASIC",
     currency: "EGP",
     timezone: "Africa/Cairo",
   });
 
   const [errors, setErrors] = useState<Partial<FormData>>({});
 
-  const plans = [
-    { value: "BASIC", label: "أساسية - Basic" },
-    { value: "PROFESSIONAL", label: "احترافية - Professional" },
-    { value: "ENTERPRISE", label: "مؤسسية - Enterprise" },
-  ];
+  // ponytail: plans removed — no plan tiers
 
   const currencies = [
     { value: "EGP", label: "جنيه مصري - EGP", symbol: "ج.م" },
@@ -103,7 +97,6 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
         phone: formData.phone.trim() || undefined,
         website: formData.website.trim() || undefined,
         address: formData.address.trim() || undefined,
-        plan: formData.plan,
         currency: formData.currency,
         timezone: formData.timezone,
       });
@@ -295,25 +288,8 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
               </div>
             </div>
 
-            {/* Plan, Currency, Timezone */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  الخطة
-                </label>
-                <select
-                  value={formData.plan}
-                  onChange={(e) => handleChange("plan", e.target.value)}
-                  className="block w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2.5 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  {plans.map((plan) => (
-                    <option key={plan.value} value={plan.value}>
-                      {plan.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
+            {/* Currency, Timezone */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   العملة

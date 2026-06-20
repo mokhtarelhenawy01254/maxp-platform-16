@@ -129,12 +129,7 @@ const PLAN_FILTERS = [
 ];
 
 const FUNNEL_STAGE_FILTERS = [
-  { value: "ALL", label: "كل الرحلات" },
-  { value: "registered_no_start", label: "سجل ولم يبدأ" },
-  { value: "onboarding_in_progress", label: "Onboarding جارٍ" },
-  { value: "activation_in_progress", label: "التفعيل جارٍ" },
-  { value: "activated", label: "مفعلة" },
-  { value: "untracked", label: "بدون Funnel" },
+  { value: "ALL", label: "الكل" },
 ];
 
 const FOLLOW_UP_SAVED_VIEWS = [
@@ -2646,12 +2641,7 @@ const SuperAdminCompanies = () => {
                   <div className="-mx-1 flex gap-2 overflow-x-auto px-1">
                     {FUNNEL_STAGE_FILTERS.map((option) => {
                       const countByStage = {
-                        ALL: quickStats.trackedCompanies + quickStats.untrackedCompanies,
-                        registered_no_start: quickStats.registeredNoStart,
-                        onboarding_in_progress: quickStats.onboardingInProgress,
-                        activation_in_progress: quickStats.activationInProgress,
-                        activated: quickStats.activated,
-                        untracked: quickStats.untrackedCompanies,
+                        ALL: quickStats.totalCompanies,
                       };
 
                       return (

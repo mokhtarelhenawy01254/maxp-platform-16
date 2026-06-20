@@ -1877,12 +1877,12 @@ exports.subscribeToBundle = async (req, res) => {
       const nextBillingDate = new Date();
       nextBillingDate.setDate(nextBillingDate.getDate() + 30);
       await prisma.$transaction(async (tx) => {
+        // ponytail: subscription now tracks status only, not plan pricing
         await tx.platformSubscription.upsert({
           where: { companyId },
-          update: { plan: "PRO", status: subscriptionStatus, monthlyFee: amount, trialEndDate, nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
-          create: { companyId, plan: "PRO", status: subscriptionStatus, monthlyFee: amount, trialEndDate, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date() }
+          update: { status: subscriptionStatus, trialEndDate, nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
+          create: { companyId, status: subscriptionStatus, trialEndDate, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date() }
         });
-        await tx.company.update({ where: { id: companyId }, data: { plan: "MESSAGING" } });
         const appSlugs = ["ai-chat-basic", "unified-inbox", "whatsapp-business"];
         for (const slug of appSlugs) {
           const app = await tx.marketplaceApp.findUnique({ where: { slug } });
@@ -2046,103 +2046,4 @@ exports.subscribeToBundle = async (req, res) => {
   }
 };
 
-/**
- * @route POST /api/v1/marketplace/unlimited/subscribe
- * @desc Subscribe to Unlimited Platform Access (Enterprise Plan)
- * @access Protected
- */
-exports.subscribeToUnlimited = async (req, res) => {
-  try {
-    const { companyId } = req.user;
-
-    if (!companyId) {
-      return res.status(400).json({
-        success: false,
-        message: 'يجب تحديد الشركة للاشتراك في الخطة الشاملة'
-      });
-    }
-    const UNLIMITED_PRICE = 999; // Could be moved to settings later
-
-    // 1. Check if already on Enterprise
-    const company = await executeWithRetry(async () => {
-      return await getSharedPrismaClient().company.findUnique({
-        where: { id: companyId },
-        select: { plan: true, name: true }
-      });
-    });
-
-    if (company && company.plan === 'ENTERPRISE') {
-      return res.status(400).json({
-        success: false,
-        message: 'شركتك تملك بالفعل وصولاً كاملاً وغير محدود للمنصة'
-      });
-    }
-
-    // 2. Process Transaction
-    await executeWithRetry(async () => {
-      return await getSharedPrismaClient().$transaction(async (tx) => {
-        // Wallet check
-        let wallet = await tx.companyWallet.findUnique({ where: { companyId } });
-        if (!wallet) {
-          wallet = await tx.companyWallet.create({
-            data: { id: uuidv4(), companyId, balance: 0 }
-          });
-        }
-
-        if (Number(wallet.balance) < UNLIMITED_PRICE) {
-          throw new Error(`رصيد المحفظة غير كافٍ للاشتراك الشامل. المطلوب: ${UNLIMITED_PRICE} ج، المتوفر: ${wallet.balance} ج`);
-        }
-
-        // Deduct
-        await tx.companyWallet.update({
-          where: { companyId },
-          data: { balance: { decrement: UNLIMITED_PRICE }, totalSpent: { increment: UNLIMITED_PRICE } }
-        });
-
-        // Record Transaction
-        await tx.transaction.create({
-          data: {
-            id: uuidv4(),
-            walletId: wallet.id,
-            type: 'PAYMENT',
-            amount: UNLIMITED_PRICE,
-            description: 'الاشتراك في "الوصول اللانهائي" لجميع أدوات المنصة',
-            referenceId: `PLATFORM_UNLIMITED_${Date.now()}`
-          }
-        });
-
-        // 3. Upgrade Company Plan
-        await tx.company.update({
-          where: { id: companyId },
-          data: { plan: 'ENTERPRISE' }
-        });
-
-        // 4. Record Billing History
-        await tx.billingHistory.create({
-          data: {
-            id: uuidv4(),
-            companyId,
-            type: 'MARKETPLACE_PURCHASE',
-            amount: UNLIMITED_PRICE,
-            description: 'ترقية الحساب إلى الاشتراك الشامل (Unlimited Access)',
-            status: 'SUCCESS'
-          }
-        });
-      });
-    });
-
-    res.json({
-      success: true,
-      message: 'مبروك! 🎉 تمت ترقية حسابك للوصول اللانهائي. جميع أدوات المتجر متاحة لك الآن مجاناً.'
-    });
-
-  } catch (error) {
-    console.error('Error subscribing to unlimited plan:', error);
-    res.status(400).json({
-      success: false,
-      message: 'خطأ في معالجة الاشتراك الشامل'
-    });
-  }
-};
-
-
+// ponytail: subscribeToUnlimited removed — unlimited access model removed with plan system

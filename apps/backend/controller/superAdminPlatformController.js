@@ -7,11 +7,10 @@ const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedD
  */
 exports.getAllSubscriptions = async (req, res) => {
   try {
-    const { page = 1, limit = 20, status, plan, search } = req.query;
+    const { page = 1, limit = 20, status, search } = req.query;
 
     const where = {};
     if (status) where.status = status;
-    if (plan) where.plan = plan;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -25,7 +24,6 @@ exports.getAllSubscriptions = async (req, res) => {
                 id: true,
                 name: true,
                 email: true,
-                plan: true,
                 isActive: true,
                 createdAt: true
               }
@@ -42,9 +40,8 @@ exports.getAllSubscriptions = async (req, res) => {
     // Calculate statistics
     const stats = await executeWithRetry(async () => {
       return await getSharedPrismaClient().platformSubscription.groupBy({
-        by: ['status', 'plan'],
-        _count: true,
-        _sum: { monthlyFee: true }
+        by: ['status'],
+        _count: true
       });
     });
 
@@ -94,24 +91,6 @@ exports.getBillingOverview = async (req, res) => {
       });
     });
 
-    // Get revenue by plan using PlatformSubscription model
-    const rawRevenueByPlan = await executeWithRetry(async () => {
-      return await getSharedPrismaClient().platformSubscription.groupBy({
-        by: ['plan'],
-        where: {
-          status: 'ACTIVE'
-        },
-        _sum: { monthlyFee: true },
-        _count: true
-      });
-    });
-
-    // Map plan to plan for frontend compatibility
-    const revenueByPlan = rawRevenueByPlan.map(item => ({
-      ...item,
-      plan: item.plan || 'BASIC'
-    }));
-
     // Get failed payments using BillingHistory model
     const failedPayments = await executeWithRetry(async () => {
       return await getSharedPrismaClient().billingHistory.findMany({
@@ -150,29 +129,15 @@ exports.getBillingOverview = async (req, res) => {
       });
     });
 
-    // Get MRR (Monthly Recurring Revenue)
-    const mrrSum = await executeWithRetry(async () => {
-      return await getSharedPrismaClient().platformSubscription.aggregate({
-        where: { status: 'ACTIVE' },
-        _sum: { monthlyFee: true }
-      });
-    });
-
     res.json({
       success: true,
       data: {
         totalRevenue: Number(totalRevenueSum._sum.amount || 0),
-        mrr: Number(mrrSum._sum.monthlyFee || 0),
         activeSubscriptions: Number(activeSubscriptions || 0),
         revenueByType: revenueByType.map(r => ({ 
           ...r, 
           _sum: { amount: Number(r._sum.amount || 0) },
           _count: Number(r._count || 0)
-        })),
-        revenueByPlan: revenueByPlan.map(p => ({ 
-          ...p, 
-          _sum: { monthlyFee: Number(p._sum.monthlyFee || 0) },
-          _count: Number(p._count || 0)
         })),
         failedPayments: failedPayments.map(p => ({
           ...p,
@@ -283,12 +248,10 @@ exports.getMarketplaceStats = async (req, res) => {
 exports.updateSubscription = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, plan, monthlyFee } = req.body;
+    const { status } = req.body;
 
     const updateData = {};
     if (status) updateData.status = status;
-    if (plan) updateData.plan = plan;
-    if (monthlyFee) updateData.monthlyFee = monthlyFee;
 
     const subscription = await executeWithRetry(async () => {
       return await getSharedPrismaClient().platformSubscription.update({
@@ -324,31 +287,7 @@ exports.updateSubscription = async (req, res) => {
  * @desc Update plan limits
  * @access Super Admin
  */
-exports.updatePlanLimit = async (req, res) => {
-  try {
-    const { plan } = req.params;
-    const updateData = req.body;
-
-    const planLimit = await executeWithRetry(async () => {
-      return await getSharedPrismaClient().planLimit.update({
-        where: { plan },
-        data: updateData
-      });
-    });
-
-    res.json({
-      success: true,
-      message: 'تم تحديث حدود الخطة بنجاح',
-      data: planLimit
-    });
-  } catch (error) {
-    console.error('Error updating plan limit:', error);
-    res.status(500).json({
-      success: false,
-      message: 'خطأ في تحديث حدود الخطة'
-    });
-  }
-};
+// ponytail: updatePlanLimit removed — plan limits system deleted
 
 /**
  * @route POST /api/v1/super-admin/platform/retry-failed-payment/:id

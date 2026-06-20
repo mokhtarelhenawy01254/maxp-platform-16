@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../../services/apiClient";
 import { toast } from "sonner";
 import { extractErrorMessage, enrichCompanies } from "../utils";
-import type { Company, FacebookPageResult, FollowUpOwner, CompanyUser, FollowUpFormData, EmployeeFormData } from "../types";
+import type { Company, FacebookPageResult, FollowUpOwner, CompanyUser, FollowUpFormData, EmployeeFormData, QuickStats } from "../types";
 
 export function useAdmin() {
   let user = null;
@@ -13,21 +13,46 @@ export function useAdmin() {
   return user as { id: string; [key: string]: unknown } | null;
 }
 
-export function useCompanies() {
+export interface CompaniesFilters {
+  search?: string;
+  status?: string;
+  plan?: string;
+  savedView?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export function useCompanies(filters: CompaniesFilters = {}) {
   const admin = useAdmin();
 
+  const queryKey = ["super-admin", "companies", filters];
+
   const query = useQuery({
-    queryKey: ["super-admin", "companies"],
+    queryKey,
     queryFn: async () => {
-      const res = await apiClient.get("/admin/companies");
+      const params = new URLSearchParams();
+      if (filters.search) params.set("search", filters.search);
+      if (filters.status && filters.status !== "ALL") params.set("status", filters.status);
+      if (filters.plan && filters.plan !== "ALL") params.set("plan", filters.plan);
+      if (filters.page) params.set("page", String(filters.page));
+      if (filters.pageSize) params.set("pageSize", String(filters.pageSize));
+      if (filters.savedView && filters.savedView !== "ALL") params.set("savedView", filters.savedView);
+      const qs = params.toString();
+      const res = await apiClient.get(`/admin/companies${qs ? `?${qs}` : ""}`);
       if (!res.data?.success) throw new Error(res.data?.message || "فشل في تحميل الشركات");
-      return res.data.data?.companies as Company[] || [];
+      return {
+        companies: (res.data.data?.companies || []) as Company[],
+        total: (res.data.data?.total as number) || 0,
+        totalPages: (res.data.data?.totalPages as number) || 1,
+        stats: (res.data.meta?.stats as QuickStats) || null,
+      };
     },
     staleTime: 30_000,
   });
 
-  const enriched = query.data ? enrichCompanies(query.data, admin?.id || null) : [];
-  return { ...query, companies: enriched, admin };
+  const enriched = query.data?.companies ? enrichCompanies(query.data.companies, admin?.id || null) : [];
+  const serverStats = query.data?.stats || null;
+  return { ...query, companies: enriched, total: query.data?.total || 0, totalPages: query.data?.totalPages || 1, serverStats, admin };
 }
 
 export function useBulkMutations() {

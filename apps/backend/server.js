@@ -170,7 +170,6 @@ const adminAnalyticsRoutes = require("./routes/adminAnalyticsRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const adminCompanyRoutes = require("./routes/adminCompanyRoutes");
 const adminWhatsAppRoutes = require("./routes/adminWhatsAppRoutes");
-const adminPlansRoutes = require("./routes/adminPlansRoutes");
 const affiliateRoutes = require("./routes/affiliateRoutes");
 const affiliateSettingsRoutes = require("./routes/affiliateSettingsRoutes");
 const platformRevenueRoutes = require("./routes/platformRevenueRoutes");
@@ -270,7 +269,6 @@ const smartRepliesRoutes = require("./routes/smartRepliesRoutes");
 const shippingZoneRoutes = require("./routes/shippingZoneRoutes");
 const storePagesRoutes = require("./routes/storePagesRoutes");
 
-const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const superAdminRoutes = require("./routes/superAdminRoutes");
 const appExplanationsRoutes = require("./routes/appExplanationsRoutes");
 const supportRoutes = require("./routes/supportRoutes");
@@ -718,8 +716,7 @@ app.use("/api/v1/admin/whatsapp", adminWhatsAppRoutes);
 app.use("/api/v1/admin/wallet", adminWalletRoutes);
 app.use("/api/v1/admin/payments", paymentRoutes);
 app.use("/api/v1/admin/invoices", invoiceRoutes);
-app.use("/api/v1/admin/subscriptions", subscriptionRoutes);
-app.use("/api/v1/admin/plans", adminPlansRoutes);
+// ponytail: legacy plan routes removed — app/bundle pricing replaces them
 app.use("/api/v1/admin/schedulers", schedulerRoutes);
 // Backward-compatible alias for legacy admin tools that still call /api/v1/admin/*
 app.use("/api/v1/admin", systemManagementRoutes);

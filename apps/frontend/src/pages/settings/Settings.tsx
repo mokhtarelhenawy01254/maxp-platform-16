@@ -75,7 +75,7 @@ const Settings: React.FC = () => {
 
   useEffect(() => {
     if (tab === "billing") {
-      navigate("/subscription", { replace: true });
+      navigate("/marketplace", { replace: true });
       return;
     }
 
@@ -104,7 +104,7 @@ const Settings: React.FC = () => {
 
         <button
           type="button"
-          onClick={() => navigate("/subscription")}
+          onClick={() => navigate("/marketplace")}
           className="inline-flex items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:bg-indigo-900/30"
         >
           <CreditCardIcon className="h-5 w-5" />

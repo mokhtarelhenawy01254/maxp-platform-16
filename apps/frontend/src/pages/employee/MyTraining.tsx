@@ -49,7 +49,7 @@ const typeLabels: Record<string, string> = {
     management: "إداري / قيادي",
     safety: "صحة وسلامة",
     language: "لغات",
-    onboarding: "تأهيل جديد",
+
     compliance: "امتثال وقوانين",
     other: "أخرى",
 };

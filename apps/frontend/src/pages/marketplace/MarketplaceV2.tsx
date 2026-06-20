@@ -111,7 +111,7 @@ interface MarketplaceApiError {
   };
 }
 
-const UNLIMITED_SUBSCRIPTION_PRICE = 999;
+// ponytail: UNLIMITED_SUBSCRIPTION_PRICE removed — unlimited plan system deleted
 const MARKETPLACE_APPS_FETCH_LIMIT = 200;
 
 const categoryIcons: Record<string, LucideIcon> = {
@@ -244,7 +244,7 @@ export default function MarketplaceV2() {
     setSearchParams(p, { replace: true });
   }, [selectedCategory, searchQuery, sortBy, setSearchParams]);
 
-  const isEnterprise = user?.company?.plan === "ENTERPRISE";
+  const isEnterprise = false; // ponytail: enterprise plan system removed
 
   const collectionFiltered = apps.filter(a => matchesCollection(a, collection));
   const filteredApps = showInstalled ? collectionFiltered.filter(a => a.isInstalled) : collectionFiltered;
@@ -376,18 +376,7 @@ export default function MarketplaceV2() {
     setIsInstallingAll(false);
   };
 
-  const handleSubscribeUnlimited = async () => {
-    if (!window.confirm(t('marketplace.unlimitedConfirm', { price: UNLIMITED_SUBSCRIPTION_PRICE }))) return;
-    try {
-      const res = await fetch(`${getApiUrl()}/marketplace/unlimited/subscribe`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${tokenManager.getAccessToken()}`, "Content-Type": "application/json" },
-      });
-      const json = await res.json();
-      if (json.success) { toast.success(json.message); window.location.reload(); }
-      else toast.error(json.message);
-    } catch { toast.error(t('marketplace.processError')); }
-  };
+// ponytail: handleSubscribeUnlimited removed — unlimited plan system deleted
 
   const getPrice = (app: MarketplaceApp) => {
     if (isEnterprise && app.pricingModel !== "FREE") {
@@ -409,17 +398,7 @@ export default function MarketplaceV2() {
           <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-0.5 flex-wrap">
-                {isEnterprise ? (
-                  <Badge variant="secondary" className="gap-1 border px-2 py-0.5 font-bold text-[10px]">
-                    <Crown size={11} />
-                    {t('marketplace.unlimitedActive')}
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="cursor-pointer gap-1 border px-2 py-0.5 font-bold text-[10px] transition-colors hover:bg-primary/10" onClick={handleSubscribeUnlimited}>
-                    <Crown size={11} />
-                    {t('marketplace.unlimitedAccess')}
-                  </Badge>
-                )}
+                {/* ponytail: unlimited badge removed — plan system deleted */}
                 <span className="text-muted-foreground">{t('marketplace.appCount', { count: apps.length })}</span>
                 <span className="text-muted-foreground">{t('marketplace.installedCount', { count: installedCount })}</span>
                 {activeSpecialty && (
@@ -590,10 +569,9 @@ export default function MarketplaceV2() {
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   {featuredApps.slice(0, 4).map((app, i) => (
                     <div key={app.id} className={i === 0 ? "sm:col-span-2 lg:col-span-2 sm:row-span-1" : ""}>
-                      <FeaturedAppCard
+                        <FeaturedAppCard
                         app={app}
                         index={i}
-                        isEnterprise={isEnterprise}
                         installingApp={installingApp}
                         onQuickInstall={handleQuickInstall}
                       />
@@ -656,7 +634,6 @@ export default function MarketplaceV2() {
                 <div key={app.id} className="animate-in fade-in slide-in-from-bottom-3 duration-500" style={{ animationDelay: `${(i % 20) * 40}ms`, animationFillMode: "backwards" }}>
                   <AppCardV2
                     app={app}
-                    isEnterprise={isEnterprise}
                     installingApp={installingApp}
                     uninstallingApp={uninstallingApp}
                     onQuickInstall={handleQuickInstall}
@@ -748,8 +725,8 @@ export default function MarketplaceV2() {
 }
 
 /* ─── Featured App Card (Bento style) ─── */
-function FeaturedAppCard({ app, index, isEnterprise, installingApp, onQuickInstall }: {
-  app: MarketplaceApp; index: number; isEnterprise: boolean;
+function FeaturedAppCard({ app, index, installingApp, onQuickInstall }: {
+  app: MarketplaceApp; index: number;
   installingApp: string | null; onQuickInstall: (e: React.MouseEvent, app: MarketplaceApp) => void;
 }) {
   const { t } = useTranslation();
@@ -807,13 +784,11 @@ function FeaturedAppCard({ app, index, isEnterprise, installingApp, onQuickInsta
 
         <div className="mt-auto flex items-center justify-between gap-2 pt-2.5">
           <span className="text-[11px] font-bold text-primary">
-            {isEnterprise && app.pricingModel !== "FREE"
-              ? (app.pricingModel === "PAY_PER_USE" ? t('marketplace.includedByUsage') : t('marketplace.includedInPlan'))
-              : app.pricingModel === "FREE"
-                ? t('marketplace.freePrice')
-                : app.monthlyPrice
-                  ? `${app.monthlyPrice} ${t('marketplace.currencyUnit')}${t('marketplace.perMonth')}`
-                  : t('marketplace.contactUs')}
+            {app.pricingModel === "FREE"
+              ? t('marketplace.freePrice')
+              : app.monthlyPrice
+                ? `${app.monthlyPrice} ${t('marketplace.currencyUnit')}${t('marketplace.perMonth')}`
+                : t('marketplace.contactUs')}
           </span>
           <Button
             size="sm"
@@ -840,8 +815,8 @@ function FeaturedAppCard({ app, index, isEnterprise, installingApp, onQuickInsta
 }
 
 /* ─── Standard App Card ─── */
-function AppCardV2({ app, isEnterprise, installingApp, uninstallingApp, onQuickInstall, onUninstall, onShowPricing }: {
-  app: MarketplaceApp; isEnterprise: boolean; installingApp: string | null; uninstallingApp: string | null;
+function AppCardV2({ app, installingApp, uninstallingApp, onQuickInstall, onUninstall, onShowPricing }: {
+  app: MarketplaceApp;
   onQuickInstall: (e: React.MouseEvent, app: MarketplaceApp) => void;
   onUninstall: (app: MarketplaceApp) => void;
   onShowPricing: (app: MarketplaceApp | null) => void;
@@ -852,9 +827,6 @@ function AppCardV2({ app, isEnterprise, installingApp, uninstallingApp, onQuickI
   const gradient = categoryGradients[app.category] || "from-primary/10 to-primary/5";
 
   const getPrice = (a: MarketplaceApp) => {
-    if (isEnterprise && a.pricingModel !== "FREE") {
-      return a.pricingModel === "PAY_PER_USE" ? t('marketplace.includedByUsage') : t('marketplace.includedInPlan');
-    }
     if (a.pricingModel === "FREE") return t('marketplace.freePrice');
     if (a.pricingModel === "PAY_PER_USE") return a.unitPrice ? `${a.unitPrice} ${t('marketplace.currencyUnit')}${t('marketplace.perUnit')}` : t('marketplace.payPerUse');
     if (a.monthlyPrice) return `${a.monthlyPrice} ${t('marketplace.currencyUnit')}${t('marketplace.perMonth')}`;

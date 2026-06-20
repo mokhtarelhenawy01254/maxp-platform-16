@@ -129,57 +129,7 @@
     "setupStore": "Set up store",
     "storeAnalytics": "Store analytics"
   },
-  "onboardingSteps": {
-    "welcome": {
-      "title": "Review the starter flow",
-      "description": "Finish the quick overview before activating company data."
-    },
-    "operations": {
-      "title": "Complete operating details",
-      "description": "Set the business name, category, and workspace currency."
-    },
-    "identity": {
-      "title": "Confirm the interface identity",
-      "description": "Choose the visual tone before inviting the wider team."
-    },
-    "integrations": {
-      "title": "Decide the primary contact channel",
-      "description": "Connect the main WhatsApp channel or record a clear deferral."
-    }
-  },
-  "activationSteps": {
-    "catalog": {
-      "title": "Add the first sellable product",
-      "description": "Start with one clear product so the store journey can be tested end to end.",
-      "actionLabel": "Add product"
-    },
-    "storefront": {
-      "title": "Review the public storefront link",
-      "description": "Open the public storefront and confirm the link, name, and identity look right.",
-      "actionLabel": "Open store"
-    },
-    "channel": {
-      "title": "Confirm the primary contact channel",
-      "description": "Connect the main WhatsApp channel or clearly defer activation without blocking operations.",
-      "actionLabel": "Manage channel"
-    },
-    "orders": {
-      "title": "Run the first test order",
-      "description": "Test the journey from the store or create a manual order to confirm the full flow.",
-      "actionLabel": "Create order"
-    }
-  },
-  "onboardingCard": {
-    "badge": "Activation journey",
-    "stepsComplete": "steps complete",
-    "title": "Complete workspace setup",
-    "action": "Complete setup"
-  },
-  "activationCard": {
-    "badge": "First launch",
-    "stepsComplete": "steps complete",
-    "title": "Launch the first real value"
-  },
+
   "operations": {
     "title": "What needs attention now",
     "kicker": "Operating pulse",

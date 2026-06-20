@@ -208,8 +208,7 @@ router.get('/company-performance', authenticateToken, requireSuperAdmin, async (
         return {
           id: company.id,
           name: company.name,
-          plan: company.plan,
-          isActive: company.isActive,
+            isActive: company.isActive,
           createdAt: company.createdAt,
           totalUsers: company._count.users,
           totalCustomers: company._count.customers,
@@ -243,73 +242,58 @@ router.get('/company-performance', authenticateToken, requireSuperAdmin, async (
   }
 });
 
-// Revenue Analytics (if applicable)
+// Revenue Analytics
 router.get('/revenue', authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
     const { period = '12' } = req.query; // months
     const months = parseInt(period);
 
-    // Plan pricing (you can move this to database later)
-    const planPricing = {
-      BASIC: 99,
-      PRO: 299,
-      ENTERPRISE: 599
-    };
-
-    // Get companies by plan
-    const companiesByPlan = await getSharedPrismaClient().company.groupBy({
-      by: ['plan'],
-      _count: {
-        plan: true
-      },
-      where: {
-        isActive: true
-      }
+    // Get actual revenue from billing history
+    const billingRevenue = await getSharedPrismaClient().billingHistory.aggregate({
+      where: { status: 'SUCCESS' },
+      _sum: { amount: true }
     });
 
-    // Calculate monthly recurring revenue
-    let totalMRR = 0;
-    const revenueByPlan = companiesByPlan.map(group => {
-      const planRevenue = (planPricing[group.plan] || 0) * group._count.plan;
-      totalMRR += planRevenue;
+    const totalRevenue = Number(billingRevenue._sum.amount || 0);
 
-      return {
-        plan: group.plan,
-        companies: group._count.plan,
-        pricePerCompany: planPricing[group.plan] || 0,
-        totalRevenue: planRevenue
-      };
-    });
-
-    // Projected annual revenue
-    const projectedARR = totalMRR * 12;
-
-    // Monthly growth simulation (you can replace with real data)
+    // Monthly revenue from billing history
     const monthlyRevenue = [];
     for (let i = months - 1; i >= 0; i--) {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
+      const startOfMonth = new Date();
+      startOfMonth.setMonth(startOfMonth.getMonth() - i);
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
 
-      // Simulate growth (replace with real historical data)
-      const growthFactor = 1 + (months - i) * 0.05;
-      const monthRevenue = Math.round(totalMRR * growthFactor);
+      const endOfMonth = new Date(startOfMonth);
+      endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+
+      const monthData = await getSharedPrismaClient().billingHistory.aggregate({
+        where: {
+          status: 'SUCCESS',
+          createdAt: { gte: startOfMonth, lt: endOfMonth }
+        },
+        _sum: { amount: true }
+      });
 
       monthlyRevenue.push({
-        month: date.toISOString().slice(0, 7), // YYYY-MM format
-        revenue: monthRevenue,
-        companies: Math.round(companiesByPlan.reduce((sum, p) => sum + p._count.plan, 0) * growthFactor)
+        month: startOfMonth.toISOString().slice(0, 7),
+        revenue: Number(monthData._sum.amount || 0)
       });
     }
+
+    // Active companies count
+    const activeCompanies = await getSharedPrismaClient().company.count({
+      where: { isActive: true }
+    });
 
     res.json({
       success: true,
       message: 'تم جلب بيانات الإيرادات بنجاح',
       data: {
-        totalMRR,
-        projectedARR,
-        revenueByPlan,
+        totalRevenue,
+        activeCompanies,
         monthlyRevenue,
-        averageRevenuePerCompany: Math.round(totalMRR / Math.max(1, companiesByPlan.reduce((sum, p) => sum + p._count.plan, 0)))
+        averageRevenuePerCompany: Math.round(totalRevenue / Math.max(1, activeCompanies))
       }
     });
 

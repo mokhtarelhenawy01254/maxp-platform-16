@@ -11,54 +11,29 @@ class BillingService {
      * Create a PlatformSubscription for a new company on registration.
      * Called automatically after company creation.
      */
-    async createSubscription(companyId, plan = 'BASIC', trialDays = 0) {
+    async createSubscription(companyId) {
         const prisma = getSharedPrismaClient();
-        const planFees = { BASIC: 0, PRO: 299, ENTERPRISE: 999 };
-        const monthlyFee = planFees[plan] ?? 0;
-
+        // ponytail: platform-level trial removed — app-level trials (CompanyApp) handle it
         const nextBillingDate = new Date();
-        const daysToAdd = trialDays > 0 ? trialDays : 30;
-        nextBillingDate.setDate(nextBillingDate.getDate() + daysToAdd);
-
-        const trialEndDate = trialDays > 0
-            ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000)
-            : null;
-
-        const status = trialDays > 0 ? 'TRIAL' : 'ACTIVE';
+        nextBillingDate.setDate(nextBillingDate.getDate() + 30);
 
         try {
             const subscription = await executeWithRetry(async () => {
                 return await prisma.platformSubscription.upsert({
                     where: { companyId },
-                    update: { plan, monthlyFee, status, nextBillingDate, trialEndDate },
+                    update: { status: 'ACTIVE', nextBillingDate },
                     create: {
                         companyId,
-                        plan,
-                        monthlyFee,
-                        status,
+                        status: 'ACTIVE',
                         billingDay: new Date().getDate(),
                         nextBillingDate,
-                        trialEndDate,
                     }
                 });
             });
 
-            await this.recordBillingEvent(companyId, 'PLATFORM_FEE', 0, 'SUCCESS',
-                `Subscription created: ${plan} plan ${trialDays > 0 ? `(${trialDays} days trial)` : ''}`);
+            await this.recordBillingEvent(companyId, 'PLATFORM_FEE', 0, 'SUCCESS', 'Subscription created');
 
-            WhatsAppNotificationService.sendSubscriptionCreatedNotification({
-                companyId,
-                planName: plan,
-                monthlyFee,
-                currency: 'EGP',
-                billingCycle: 'monthly',
-                nextBillingDate,
-                trialDays
-            }).catch((notificationError) => {
-                console.error(`❌ [BILLING] Failed to send subscription created notification for ${companyId}:`, notificationError.message);
-            });
-
-            console.log(`✅ [BILLING] Subscription created for company ${companyId} (${plan}) - Status: ${status}`);
+            console.log(`✅ [BILLING] Subscription created for company ${companyId}`);
             return subscription;
         } catch (error) {
             console.error(`❌ [BILLING] Failed to create subscription for ${companyId}:`, error.message);
@@ -77,7 +52,7 @@ class BillingService {
             });
 
             if (!subscription) {
-                return { active: false, plan: 'NONE', status: 'NOT_FOUND' };
+                return { active: false, status: 'NOT_FOUND' };
             }
 
             const now = new Date();
@@ -87,17 +62,15 @@ class BillingService {
 
             return {
                 active: subscription.status === 'ACTIVE',
-                plan: subscription.plan,
                 status: subscription.status,
                 nextBillingDate: subscription.nextBillingDate,
                 trialEndDate: subscription.trialEndDate,
                 trialRemainingDays,
-                monthlyFee: subscription.monthlyFee,
                 failedAttempts: subscription.failedAttempts,
             };
         } catch (error) {
             console.error(`❌ [BILLING] getSubscriptionStatus error for ${companyId}:`, error.message);
-            return { active: false, plan: 'NONE', status: 'ERROR' };
+            return { active: false, status: 'ERROR' };
         }
     }
 
@@ -154,72 +127,9 @@ class BillingService {
         }
     }
 
-    /**
-     * Upgrade a company's plan.
-     */
-    async upgradePlan(companyId, newPlan) {
-        const prisma = getSharedPrismaClient();
-        const planFees = { BASIC: 0, PRO: 299, ENTERPRISE: 999 };
-        const monthlyFee = planFees[newPlan] ?? 0;
+// ponytail: upgradePlan removed — pricing now per-app/bundle, not plan tiers
 
-        try {
-            await executeWithRetry(async () => {
-                await prisma.platformSubscription.update({
-                    where: { companyId },
-                    data: { plan: newPlan, monthlyFee }
-                });
-                // Also update company plan
-                await prisma.company.update({
-                    where: { id: companyId },
-                    data: { plan: newPlan }
-                });
-            });
-
-            await this.recordBillingEvent(companyId, 'PLATFORM_FEE', 0, 'SUCCESS',
-                `Plan upgraded to ${newPlan}`);
-
-            const currentSubscription = await prisma.platformSubscription.findUnique({
-                where: { companyId },
-                select: {
-                    nextBillingDate: true
-                }
-            });
-
-            WhatsAppNotificationService.sendSubscriptionRenewedNotification({
-                companyId,
-                planName: newPlan,
-                monthlyFee,
-                currency: 'EGP',
-                billingCycle: 'monthly',
-                nextBillingDate: currentSubscription?.nextBillingDate || null
-            }).catch((notificationError) => {
-                console.error(`❌ [BILLING] Failed to send subscription renewal notification for ${companyId}:`, notificationError.message);
-            });
-
-            console.log(`✅ [BILLING] Plan upgraded for ${companyId} → ${newPlan}`);
-        } catch (error) {
-            console.error(`❌ [BILLING] upgradePlan error for ${companyId}:`, error.message);
-            throw error;
-        }
-    }
-
-    /**
-     * Get plan limits from the PlanLimit table.
-     */
-    async getPlanLimits(plan) {
-        const prisma = getSharedPrismaClient();
-        try {
-            const limits = await prisma.planLimit.findUnique({ where: { plan } });
-            if (!limits) {
-                // Sensible defaults if no limits row exists
-                return { maxEmployees: 5, maxProducts: 100, maxOrdersPerMonth: 500, hasAdvancedReports: false, hasAPIAccess: false };
-            }
-            return limits;
-        } catch (error) {
-            console.error(`❌ [BILLING] getPlanLimits error for ${plan}:`, error.message);
-            return null;
-        }
-    }
+// ponytail: getPlanLimits removed — limits now come from installed apps, not plan tiers
 
     /**
      * Get billing history for a company (paginated).

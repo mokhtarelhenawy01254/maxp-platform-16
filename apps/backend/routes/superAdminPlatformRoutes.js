@@ -4,7 +4,7 @@ const superAdminPlatformController = require('../controller/superAdminPlatformCo
 const platformSiteHomepageController = require('../controller/platformSiteHomepageController');
 const platformSignupCouponController = require('../controller/platformSignupCouponController');
 const platformSiteMetaPixelController = require('../controller/platformSiteMetaPixelController');
-const platformOnboardingController = require('../controller/platformOnboardingController');
+const platformSpecialtyController = require('../controller/platformSpecialtyController');
 const superAdminSettingsController = require('../controller/superAdminSettingsController');
 const { authenticateToken, requireSuperAdmin } = require('../middleware/superAdminMiddleware');
 const platformValidator = require('../middleware/superAdminPlatformValidation');
@@ -61,42 +61,29 @@ router.delete(
   platformSignupCouponController.removeCoupon
 );
 
-// Platform Signup Onboarding
-router.get('/onboarding-settings', platformOnboardingController.getSettings);
-router.put(
-  '/onboarding-settings',
-  platformValidator.updateOnboardingSettingsRules(),
-  platformValidator.validate,
-  platformOnboardingController.updateSettings
-);
-router.get('/business-specialties', platformOnboardingController.listSpecialties);
+// Business Specialties
+router.get('/business-specialties', platformSpecialtyController.listSpecialties);
 router.post(
   '/business-specialties',
   platformValidator.upsertBusinessSpecialtyRules(),
   platformValidator.validate,
-  platformOnboardingController.createSpecialty
+  platformSpecialtyController.createSpecialty
 );
 router.put(
   '/business-specialties/:id',
   platformValidator.updateBusinessSpecialtyRules(),
   platformValidator.validate,
-  platformOnboardingController.updateSpecialty
+  platformSpecialtyController.updateSpecialty
 );
 router.delete(
   '/business-specialties/:id',
   platformValidator.deleteBusinessSpecialtyRules(),
   platformValidator.validate,
-  platformOnboardingController.removeSpecialty
+  platformSpecialtyController.removeSpecialty
 );
-router.get('/business-specialties/app-options', platformOnboardingController.getMarketplaceAppOptions);
+router.get('/business-specialties/app-options', platformSpecialtyController.getMarketplaceAppOptions);
 
-// Plan Limits Management
-router.put(
-  '/plan-limit/:plan',
-  platformValidator.updatePlanLimitRules(),
-  platformValidator.validate,
-  superAdminPlatformController.updatePlanLimit
-);
+// ponytail: /plan-limit/:plan route removed — plan limits deleted
 
 // Platform Central Settings
 router.get('/settings/kashier', superAdminSettingsController.getKashierSettings);

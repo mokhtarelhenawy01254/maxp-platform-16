@@ -33,7 +33,6 @@ function shouldUseTextIcon(icon?: string) {
 
 interface AppCardProps {
   app: MarketplaceApp;
-  isEnterprise: boolean;
   installingApp: string | null;
   uninstallingApp: string | null;
   onQuickInstall: (e: React.MouseEvent, app: MarketplaceApp) => void;
@@ -42,7 +41,7 @@ interface AppCardProps {
 }
 
 export default function AppCard({
-  app, isEnterprise, installingApp, uninstallingApp,
+  app, installingApp, uninstallingApp,
   onQuickInstall, onUninstall, featured,
 }: AppCardProps) {
   const { t } = useTranslation();
@@ -50,11 +49,7 @@ export default function AppCard({
   const textIcon = shouldUseTextIcon(app.icon) ? app.icon?.trim() : null;
 
   const getDisplayedPrice = (a: MarketplaceApp) => {
-    if (isEnterprise && a.pricingModel !== "FREE") {
-      return a.pricingModel === "PAY_PER_USE"
-        ? t('marketplace.includedByUsage')
-        : t('marketplace.includedInPlan');
-    }
+    // ponytail: isEnterprise removed — enterprise plan system deleted
     if (a.pricingModel === "FREE") return t('marketplace.freePrice');
     if (a.pricingModel === "PAY_PER_USE") {
       return a.unitPrice

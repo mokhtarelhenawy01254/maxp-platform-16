@@ -7,7 +7,6 @@ import {
 } from '../utils/sessionRefresh';
 import { repairMojibakeText } from '../utils/textEncoding';
 import socketService from '../services/socketService';
-import type { CompanyOnboardingState } from '../utils/companyOnboarding';
 
 interface Company {
   id: string;
@@ -25,7 +24,6 @@ interface Company {
   signupCouponCode?: string | null;
   isDefault?: boolean;
   isCurrent?: boolean;
-  onboarding?: CompanyOnboardingState | null;
   businessSpecialty?: {
     id: string;
     slug: string;

@@ -2,11 +2,10 @@ const express = require('express');
 const router = express.Router();
 const walletController = require('../controller/walletController');
 const verifyToken = require("../utils/verifyToken");
-const { checkSubscription } = require('../middleware/checkSubscription');
 
 // Middleware for all routes
 router.use(verifyToken.authenticateToken);
-router.use(checkSubscription);
+// ponytail: checkSubscription removed — wallet access not gated by plan anymore
 
 // --- Company Wallet & Billing Routes ---
 router.get('/balance', walletController.getBalance);

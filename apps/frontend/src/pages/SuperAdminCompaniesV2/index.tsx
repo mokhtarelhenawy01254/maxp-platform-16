@@ -312,11 +312,6 @@ function FollowUpFormContent({
 // ===== MAIN PAGE =====
 export default function SuperAdminCompaniesV2() {
   const navigate = useNavigate();
-  const { companies, isLoading, error: pageError, admin, refetch } = useCompanies();
-  const { bulkStatus, bulkDelete } = useBulkMutations();
-  const { createCompany, editCompany } = useCompanyMutations();
-  const facebookLookup = useFacebookLookup();
-
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
@@ -381,37 +376,42 @@ export default function SuperAdminCompaniesV2() {
   const [fbResults, setFbResults] = useState<import("./types").FacebookPageResult[]>([]);
   const [fbSearched, setFbSearched] = useState(false);
 
-  // Data integration
-  const enrichedCompanies = useMemo(() => enrichCompanies(companies, admin?.id || null), [companies, admin?.id]);
-  const quickStats = useMemo(() => computeQuickStats(enrichedCompanies, admin?.id || null), [enrichedCompanies, admin?.id]);
-
-  const filteredCompanies = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return enrichedCompanies.filter((c) => {
-      if (q && !c.name?.toLowerCase().includes(q) && !c.email?.toLowerCase().includes(q) && !c.phone?.toLowerCase().includes(q) && !c.website?.toLowerCase().includes(q)) return false;
-      if (status !== "ALL") { if (status === "ACTIVE" ? !c.isActive : c.isActive) return false; }
-      if (plan !== "ALL" && String(c.plan) !== String(plan)) return false;
-      if (funnelStage !== "ALL" && c.funnelSummary?.stageKey !== funnelStage) return false;
-      if (savedView !== "ALL") {
-        if (savedView === "FOLLOW_UP_NOW" && !c.funnelStaleStatus?.needsFollowUpNow) return false;
-        if (savedView === "MY_TODAY" && !(c.followUpReminder?.isMine && c.followUpReminder?.needsFollowUpToday)) return false;
-        if (savedView === "ESCALATION_DUE" && !(c.followUpAutomation?.needsEscalation || c.followUpAutomation?.needsUrgentEscalation)) return false;
-        if (savedView === "STALE_72H" && !c.funnelStaleStatus?.isStale72h) return false;
-      }
-      return true;
-    });
-  }, [enrichedCompanies, search, status, plan, funnelStage, savedView]);
-
-  const sortedCompanies = useMemo(() => sortCompanies(filteredCompanies, sort), [filteredCompanies, sort]);
   const pageSize = Number(rowsPerPage) || 10;
-  const totalPages = Math.max(1, Math.ceil(sortedCompanies.length / pageSize));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const paginatedCompanies = useMemo(() => sortedCompanies.slice((safeCurrentPage - 1) * pageSize, safeCurrentPage * pageSize), [pageSize, safeCurrentPage, sortedCompanies]);
+  const { bulkStatus, bulkDelete } = useBulkMutations();
+  const { createCompany, editCompany } = useCompanyMutations();
+  const facebookLookup = useFacebookLookup();
+
+  // Server-side data — filter params trigger refetch
+  const { companies, isLoading, error: pageError, admin, refetch, total, totalPages, serverStats } = useCompanies({
+    search,
+    status,
+    plan,
+    savedView,
+    page: currentPage,
+    pageSize,
+  });
+
+  // Enrichment + in-page sort
+  const enrichedCompanies = useMemo(() => enrichCompanies(companies, admin?.id || null), [companies, admin?.id]);
+  const sortedCompanies = useMemo(() => sortCompanies(enrichedCompanies, sort), [enrichedCompanies, sort]);
+
+  // Stats: DB-level totals + page-level enrichment stats
+  const pageStats = useMemo(() => computeQuickStats(sortedCompanies, admin?.id || null), [sortedCompanies, admin?.id]);
+  const quickStats = useMemo<QuickStats>(() => ({
+    totalCompanies: serverStats?.totalCompanies ?? pageStats.totalCompanies,
+    activeCompanies: serverStats?.activeCompanies ?? pageStats.activeCompanies,
+    enterpriseCompanies: serverStats?.enterpriseCompanies ?? pageStats.enterpriseCompanies,
+    connectedFacebookPages: pageStats.connectedFacebookPages,
+    followUpNow: serverStats?.followUpNow ?? pageStats.followUpNow,
+    escalationDue: serverStats?.escalationDue ?? pageStats.escalationDue,
+    urgentEscalationDue: serverStats?.urgentEscalationDue ?? pageStats.urgentEscalationDue,
+    stale72h: serverStats?.stale72h ?? pageStats.stale72h,
+    myDueToday: serverStats?.myDueToday ?? pageStats.myDueToday,
+  }), [serverStats, pageStats]);
 
   useEffect(() => { setCurrentPage(1); }, [search, savedView, status, plan, funnelStage, sort, rowsPerPage]);
-  useEffect(() => { if (currentPage > totalPages) setCurrentPage(totalPages); }, [currentPage, totalPages]);
 
-  const visibleIds = paginatedCompanies.map((c) => c.id);
+  const visibleIds = sortedCompanies.map((c) => c.id);
   const isAllVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
   const isSomeVisibleSelected = visibleIds.some((id) => selectedIds.includes(id)) && !isAllVisibleSelected;
   const filterCount = [status !== "ALL", plan !== "ALL", funnelStage !== "ALL"].filter(Boolean).length;
@@ -706,7 +706,7 @@ export default function SuperAdminCompaniesV2() {
                 <CardDescription className="text-sm text-muted-foreground/60">قاعدة بيانات متكاملة للتحكم في حسابات الشركات وأتمتة المتابعة.</CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" variant="outline" className="h-9 rounded-lg border-border/60 px-4 text-[13px] font-black" onClick={handleExport} disabled={!sortedCompanies.length}>
+                <Button type="button" variant="outline" className="h-9 rounded-lg border-border/60 px-4 text-[13px] font-black" onClick={handleExport} disabled={total === 0}>
                   <Download className="ml-1.5 size-3.5" /> تصدير
                 </Button>
                 <Button type="button" variant="outline" className="h-9 rounded-lg border-border/60 px-4 text-[13px] font-black" onClick={() => refetch()} disabled={isLoading}>
@@ -737,7 +737,7 @@ export default function SuperAdminCompaniesV2() {
                   )}
                 </Button>
                 <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/10 px-4 py-2">
-                  <span className="text-[13px] font-black text-foreground">{sortedCompanies.length} شركة</span>
+                  <span className="text-[13px] font-black text-foreground">{total} شركة</span>
                   <div className="h-4 w-px bg-primary/20" />
                   <span className="text-[13px] font-bold text-primary">{quickStats.activeCompanies} نشطة</span>
                 </div>
@@ -769,22 +769,7 @@ export default function SuperAdminCompaniesV2() {
                 </div>
                 <p className="mt-1 text-xs font-semibold text-emerald-600">{quickStats.activeCompanies} نشطة</p>
               </button>
-              <button
-                type="button"
-                onClick={() => { handleClearFilters(); setFunnelStage("activated"); }}
-                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-emerald-400/60 hover:bg-emerald-50/30 hover:shadow-md dark:bg-slate-950"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
-                    <CheckCircle2 className="size-4" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-black text-foreground">{quickStats.activated}</p>
-                    <p className="text-xs font-bold text-muted-foreground">مفعلة بالكامل</p>
-                  </div>
-                </div>
-                <p className="mt-1 text-xs font-semibold text-emerald-600">وصلت للإطلاق الأول</p>
-              </button>
+
               <button
                 type="button"
                 onClick={() => handleOpenView("FOLLOW_UP_NOW")}
@@ -830,7 +815,7 @@ export default function SuperAdminCompaniesV2() {
                   sort={sort} onSortChange={setSort}
                   rowsPerPage={rowsPerPage} onRowsPerPageChange={setRowsPerPage}
                   onClearAll={handleClearFilters}
-                  stats={quickStats} totalResults={sortedCompanies.length}
+                  stats={quickStats} totalResults={total}
                   filterCount={filterCount} activeFilterLabels={activeFilterLabels}
                   onOpenView={handleOpenView}
                   facebookLookup={{
@@ -853,12 +838,12 @@ export default function SuperAdminCompaniesV2() {
               </div>
 
               <CompaniesTable
-                companies={paginatedCompanies}
+                companies={sortedCompanies}
                 totalPages={totalPages}
-                currentPage={safeCurrentPage}
+                currentPage={currentPage}
                 onPageChange={setCurrentPage}
                 pageSize={pageSize}
-                totalItems={sortedCompanies.length}
+                totalItems={total}
                 selectedIds={selectedIds}
                 onToggleSelect={handleToggleSelect}
                 onToggleSelectAll={handleToggleSelectAll}

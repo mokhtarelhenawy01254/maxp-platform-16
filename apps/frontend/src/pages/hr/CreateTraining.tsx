@@ -176,7 +176,7 @@ const CreateTraining = () => {
     { value: "management", label: "إداري / قيادي" },
     { value: "safety", label: "صحة وسلامة مهنية" },
     { value: "language", label: "لغات" },
-    { value: "onboarding", label: "تأهيل موظف جديد" },
+
     { value: "compliance", label: "امتثال وقوانين" },
     { value: "other", label: "أخرى" },
   ];

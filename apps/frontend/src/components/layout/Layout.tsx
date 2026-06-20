@@ -327,7 +327,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   );
   const trialBannerText = translateWithFallback(
     "billing.trialBanner",
-    `أنت الآن في الفترة التجريبية المجانية (PRO) - باقي ${daysRemaining} أيام`,
+    `أنت الآن في الفترة التجريبية المجانية - باقي ${daysRemaining} أيام`,
     { days: daysRemaining },
   );
   const upgradeNowText = translateWithFallback(

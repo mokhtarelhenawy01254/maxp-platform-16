@@ -302,10 +302,116 @@ const mergeCompanyFollowUpSettings = (
   };
 };
 
+const getCompanyFollowUpFromDb = async (prisma, company) => {
+  const dbRecord = await prisma.followUp.findUnique({
+    where: { companyId: company.id },
+    include: { history: { orderBy: { occurredAt: "desc" } } },
+  });
+  if (!dbRecord) return getCompanyFollowUp(company);
+
+  return normalizeCompanyFollowUp({
+    status: dbRecord.status,
+    assignedOwner: {
+      id: dbRecord.assignedOwnerId,
+      name: dbRecord.assignedOwnerName,
+      email: dbRecord.assignedOwnerEmail,
+      role: dbRecord.assignedOwnerRole,
+    },
+    lastNote: dbRecord.lastNote,
+    updatedAt: dbRecord.updatedAt?.toISOString(),
+    contactedAt: dbRecord.contactedAt?.toISOString(),
+    resolvedAt: dbRecord.resolvedAt?.toISOString(),
+    nextActionAt: dbRecord.nextActionAt?.toISOString(),
+    lastReminderSentAt: dbRecord.lastReminderSentAt?.toISOString(),
+    lastEscalatedAt: dbRecord.lastEscalatedAt?.toISOString(),
+    history: (dbRecord.history || []).map((h) => ({
+      id: h.id,
+      occurredAt: h.occurredAt.toISOString(),
+      status: h.status,
+      note: h.note,
+      action: h.action,
+      nextActionAt: h.nextActionAt?.toISOString(),
+      actor: {
+        id: h.actorId,
+        name: h.actorName,
+        email: h.actorEmail,
+        role: h.actorRole,
+      },
+      assignedOwner: {
+        id: h.assignedOwnerId,
+        name: h.assignedOwnerName,
+        email: h.assignedOwnerEmail,
+        role: h.assignedOwnerRole,
+      },
+    })),
+  });
+};
+
+const saveFollowUpToDb = async (prisma, companyId, followUp) => {
+  if (!followUp) return;
+
+  const created = await prisma.followUp.upsert({
+    where: { companyId },
+    create: {
+      companyId,
+      status: followUp.status || "unassigned",
+      assignedOwnerId: followUp.assignedOwner?.id || null,
+      assignedOwnerName: followUp.assignedOwner?.name || null,
+      assignedOwnerEmail: followUp.assignedOwner?.email || null,
+      assignedOwnerRole: followUp.assignedOwner?.role || null,
+      lastNote: followUp.lastNote || null,
+      updatedAt: followUp.updatedAt ? new Date(followUp.updatedAt) : null,
+      contactedAt: followUp.contactedAt ? new Date(followUp.contactedAt) : null,
+      resolvedAt: followUp.resolvedAt ? new Date(followUp.resolvedAt) : null,
+      nextActionAt: followUp.nextActionAt ? new Date(followUp.nextActionAt) : null,
+      lastReminderSentAt: followUp.lastReminderSentAt ? new Date(followUp.lastReminderSentAt) : null,
+      lastEscalatedAt: followUp.lastEscalatedAt ? new Date(followUp.lastEscalatedAt) : null,
+    },
+    update: {
+      status: followUp.status || "unassigned",
+      assignedOwnerId: followUp.assignedOwner?.id || null,
+      assignedOwnerName: followUp.assignedOwner?.name || null,
+      assignedOwnerEmail: followUp.assignedOwner?.email || null,
+      assignedOwnerRole: followUp.assignedOwner?.role || null,
+      lastNote: followUp.lastNote || null,
+      updatedAt: followUp.updatedAt ? new Date(followUp.updatedAt) : null,
+      contactedAt: followUp.contactedAt ? new Date(followUp.contactedAt) : null,
+      resolvedAt: followUp.resolvedAt ? new Date(followUp.resolvedAt) : null,
+      nextActionAt: followUp.nextActionAt ? new Date(followUp.nextActionAt) : null,
+      lastReminderSentAt: followUp.lastReminderSentAt ? new Date(followUp.lastReminderSentAt) : null,
+      lastEscalatedAt: followUp.lastEscalatedAt ? new Date(followUp.lastEscalatedAt) : null,
+    },
+  });
+
+  if (followUp.history?.length) {
+    await prisma.followUpHistory.deleteMany({ where: { followUpId: created.id } });
+    await prisma.followUpHistory.createMany({
+      data: followUp.history.map((entry) => ({
+        followUpId: created.id,
+        occurredAt: new Date(entry.occurredAt),
+        status: entry.status || "updated",
+        note: entry.note || null,
+        action: entry.action || "updated",
+        nextActionAt: entry.nextActionAt ? new Date(entry.nextActionAt) : null,
+        actorId: entry.actor?.id || null,
+        actorName: entry.actor?.name || null,
+        actorEmail: entry.actor?.email || null,
+        actorRole: entry.actor?.role || null,
+        assignedOwnerId: entry.assignedOwner?.id || null,
+        assignedOwnerName: entry.assignedOwner?.name || null,
+        assignedOwnerEmail: entry.assignedOwner?.email || null,
+        assignedOwnerRole: entry.assignedOwner?.role || null,
+      })),
+    });
+  }
+};
+
 module.exports = {
   FOLLOW_UP_STATUSES,
   DEFAULT_FOLLOW_UP_STATUS,
   normalizeCompanyFollowUp,
   getCompanyFollowUp,
+  getCompanyFollowUpFromDb,
+  saveFollowUpToDb,
   mergeCompanyFollowUpSettings,
 };

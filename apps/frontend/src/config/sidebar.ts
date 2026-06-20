@@ -202,21 +202,16 @@ export const getSidebarConfig = (
 
     const currentCompany = user?.companies?.find((c) => c.isCurrent) || user?.company;
     const activeApps = currentCompany?.activeApps || [];
-    const plan = currentCompany?.plan?.toUpperCase();
-    const isSuperCompany = plan === 'ENTERPRISE';
+    // ponytail: plan-based superCompany check removed
 
     if (shouldDebugSidebar) {
         console.log('🔍 [SIDEBAR-DEBUG] Current Company:', currentCompany?.name);
-        console.log('🔍 [SIDEBAR-DEBUG] Raw Plan:', currentCompany?.plan);
-        console.log('🔍 [SIDEBAR-DEBUG] Normalized Plan:', plan);
         console.log('🔍 [SIDEBAR-DEBUG] Active Apps Count:', activeApps?.length);
         console.log('🔍 [SIDEBAR-DEBUG] Active Apps List:', activeApps);
     }
 
     const isAppActive = (slug: string) => {
-        // Super Admin can see everything if we want, but for testing, let's keep it filtered
-        // unless they are in a super company
-        if (isSuperCompany) return true;
+        // ponytail: isSuperCompany removed — app visibility now purely per activeApps
 
         // Ensure activeApps is an array and check for the slug
         return Array.isArray(activeApps) && activeApps.some(a =>

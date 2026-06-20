@@ -1876,7 +1876,6 @@ select {
 }
 
 [data-theme="business-os-enterprise"] .business-auth-kicker,
-[data-theme="business-os-enterprise"] .business-onboarding-eyebrow,
 [data-theme="business-os-enterprise"] .business-auth-eyebrow {
   display: inline-flex;
   align-items: center;
@@ -1894,8 +1893,6 @@ select {
 
 [data-theme="business-os-enterprise"] .business-auth-showcase-title,
 [data-theme="business-os-enterprise"] .business-auth-heading,
-[data-theme="business-os-enterprise"] .business-onboarding-hero h2,
-[data-theme="business-os-enterprise"] .business-onboarding-heading h3,
 [data-theme="business-os-enterprise"] .business-shell-title {
   color: var(--color-foreground);
   letter-spacing: 0;
@@ -1918,8 +1915,6 @@ select {
 
 [data-theme="business-os-enterprise"] .business-auth-showcase-copy,
 [data-theme="business-os-enterprise"] .business-auth-copy,
-[data-theme="business-os-enterprise"] .business-onboarding-hero p,
-[data-theme="business-os-enterprise"] .business-onboarding-heading p,
 [data-theme="business-os-enterprise"] .business-shell-subtitle {
   color: var(--color-muted-foreground);
   line-height: 1.8;
@@ -2029,16 +2024,6 @@ select {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-stage {
-  width: 100%;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: clamp(1rem, 3vw, 1.75rem);
-  margin-inline: auto;
 }
 
 [data-theme="business-os-enterprise"] .business-page-shell {
@@ -2218,8 +2203,7 @@ select {
   font-size: 0.76rem;
 }
 
-[data-theme="business-os-enterprise"] .business-auth-panel,
-[data-theme="business-os-enterprise"] .business-onboarding-card {
+[data-theme="business-os-enterprise"] .business-auth-panel {
   width: min(100%, 580px);
   margin-inline: auto;
   padding: 1.55rem;
@@ -2287,8 +2271,7 @@ select {
   margin: 0;
 }
 
-[data-theme="business-os-enterprise"] .business-auth-form,
-[data-theme="business-os-enterprise"] .business-onboarding-section {
+[data-theme="business-os-enterprise"] .business-auth-form {
   display: grid;
   gap: 1rem;
 }
@@ -2378,8 +2361,7 @@ select {
 }
 
 [data-theme="business-os-enterprise"] .business-auth-note,
-[data-theme="business-os-enterprise"] .business-auth-legal,
-[data-theme="business-os-enterprise"] .business-onboarding-meta {
+[data-theme="business-os-enterprise"] .business-auth-legal {
   color: var(--color-muted-foreground);
   font-size: 0.82rem;
 }
@@ -2410,8 +2392,7 @@ select {
 }
 
 [data-theme="business-os-enterprise"] .business-auth-inline-link,
-[data-theme="business-os-enterprise"] .business-auth-link-row a,
-[data-theme="business-os-enterprise"] .business-onboarding-skip button {
+[data-theme="business-os-enterprise"] .business-auth-link-row a {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -2439,8 +2420,7 @@ select {
 }
 
 [data-theme="business-os-enterprise"] .business-auth-password-toggle:hover,
-[data-theme="business-os-enterprise"] .business-auth-inline-link:hover,
-[data-theme="business-os-enterprise"] .business-onboarding-skip button:hover {
+[data-theme="business-os-enterprise"] .business-auth-inline-link:hover {
   color: var(--color-primary);
 }
 
@@ -2483,10 +2463,7 @@ select {
 }
 
 [data-theme="business-os-enterprise"]
-  :is(.business-primary-button, .business-secondary-button):disabled,
-[data-theme="business-os-enterprise"]
-  .business-onboarding-skip
-  button:disabled {
+  :is(.business-primary-button, .business-secondary-button):disabled {
   opacity: 0.58;
   cursor: not-allowed;
   transform: none;
@@ -2588,7 +2565,6 @@ select {
 }
 
 [data-theme="business-os-enterprise"] .business-auth-requirements,
-[data-theme="business-os-enterprise"] .business-onboarding-tip,
 [data-theme="business-os-enterprise"] .business-auth-summary {
   padding: 1rem 1.05rem;
   border-radius: 18px;
@@ -2596,8 +2572,7 @@ select {
   border: 1px solid var(--business-card-border);
 }
 
-[data-theme="business-os-enterprise"] .business-auth-requirements h4,
-[data-theme="business-os-enterprise"] .business-onboarding-tip strong {
+[data-theme="business-os-enterprise"] .business-auth-requirements h4 {
   color: var(--color-foreground);
   font-size: 0.9rem;
   font-weight: 800;
@@ -2662,132 +2637,6 @@ select {
   color: var(--color-primary);
 }
 
-[data-theme="business-os-enterprise"] .business-onboarding-card {
-  width: min(100%, 880px);
-  margin-inline: auto;
-  padding: 0;
-  overflow: hidden;
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-progress-track {
-  height: 4px;
-  background: color-mix(in srgb, var(--color-border) 54%, transparent);
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-progress-fill {
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    var(--color-primary) 0%,
-    var(--color-secondary) 100%
-  );
-  box-shadow: 0 0 24px color-mix(in srgb, var(--color-primary) 36%, transparent);
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-steps {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.75rem;
-  padding: 1.25rem 1.5rem 0;
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-step {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.95rem;
-  border-radius: 18px;
-  background: transparent;
-  border: 1px solid transparent;
-}
-
-[data-theme="business-os-enterprise"]
-  .business-onboarding-step[data-state="active"] {
-  background: color-mix(in srgb, var(--color-primary) 8%, white);
-  border-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
-}
-
-[data-theme="business-os-enterprise"]
-  .business-onboarding-step[data-state="done"] {
-  background: color-mix(in srgb, var(--business-success) 8%, white);
-  border-color: color-mix(in srgb, var(--business-success) 22%, transparent);
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-step-icon {
-  width: 2rem;
-  height: 2rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-border) 44%, white);
-  color: var(--color-muted-foreground);
-  font-size: 0.75rem;
-  font-weight: 800;
-  flex-shrink: 0;
-}
-
-[data-theme="business-os-enterprise"]
-  .business-onboarding-step[data-state="active"]
-  .business-onboarding-step-icon {
-  background: color-mix(in srgb, var(--color-primary) 12%, white);
-  color: var(--color-primary);
-}
-
-[data-theme="business-os-enterprise"]
-  .business-onboarding-step[data-state="done"]
-  .business-onboarding-step-icon {
-  background: color-mix(in srgb, var(--business-success) 12%, white);
-  color: var(--business-success);
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-step-copy {
-  display: grid;
-  gap: 0.2rem;
-  min-width: 0;
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-step-copy strong {
-  color: var(--color-foreground);
-  font-size: 0.83rem;
-  line-height: 1.35;
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-step-copy span {
-  color: var(--color-muted-foreground);
-  font-size: 0.75rem;
-  line-height: 1.5;
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-content {
-  padding: 1.5rem;
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-hero {
-  display: grid;
-  gap: 0.85rem;
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-hero h2 {
-  font-size: clamp(1.7rem, 3vw, 2.5rem);
-  margin: 0;
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-highlights {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.95rem;
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-highlight {
-  display: grid;
-  gap: 0.4rem;
-  padding: 1rem;
-  border-radius: 18px;
-  border: 1px solid var(--business-card-border);
-  background: color-mix(in srgb, var(--color-background) 80%, white);
-}
-
 [data-theme="business-os-enterprise"] .business-tone-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2844,7 +2693,6 @@ select {
 }
 
 [data-theme="business-os-enterprise"] .business-tone-copy strong,
-[data-theme="business-os-enterprise"] .business-onboarding-highlight strong,
 [data-theme="business-os-enterprise"] .business-auth-summary-item strong {
   color: var(--color-foreground);
   font-size: 0.95rem;
@@ -2852,52 +2700,10 @@ select {
 }
 
 [data-theme="business-os-enterprise"] .business-tone-copy span,
-[data-theme="business-os-enterprise"] .business-onboarding-highlight span,
 [data-theme="business-os-enterprise"] .business-auth-summary-item span {
   color: var(--color-muted-foreground);
   font-size: 0.88rem;
   line-height: 1.7;
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-tip {
-  display: grid;
-  gap: 0.35rem;
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-tip span {
-  color: var(--color-muted-foreground);
-  font-size: 0.88rem;
-  line-height: 1.75;
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-preview {
-  margin-top: 0.75rem;
-  display: grid;
-  gap: 0.38rem;
-  padding: 0.95rem 1rem;
-  border-radius: 18px;
-  border: 1px solid color-mix(in srgb, var(--color-border) 74%, white 26%);
-  background: color-mix(in srgb, var(--shell-control-bg) 88%, white 12%);
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-preview-title {
-  color: var(--color-foreground);
-  font-size: 0.9rem;
-  font-weight: 800;
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-preview-url {
-  overflow-wrap: anywhere;
-  font-family: "IBM Plex Sans Arabic", "IBM Plex Sans", ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.8rem;
-  line-height: 1.7;
-  color: color-mix(in srgb, var(--color-foreground) 82%, transparent);
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-preview-status {
-  margin-top: 0.1rem;
-  font-size: 0.8rem;
-  line-height: 1.65;
 }
 
 [data-theme="business-os-enterprise"] .business-control-bar {
@@ -3653,20 +3459,6 @@ select {
   background: rgba(255, 255, 255, 0.06);
   padding: 0.55rem 0.85rem;
   border-radius: 999px;
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.25rem 1.5rem 1.5rem;
-  border-top: 1px solid var(--business-muted-line);
-}
-
-[data-theme="business-os-enterprise"] .business-onboarding-skip {
-  padding: 0 1.5rem 1.5rem;
-  text-align: center;
 }
 
 [data-theme="business-os-enterprise"] .business-shell-root {
@@ -5164,57 +4956,6 @@ select {
 }
 
 @media (max-width: 767px) {
-  [data-theme="business-os-enterprise"] .business-onboarding-stage {
-    align-items: flex-start;
-    padding: 0.85rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-card {
-    width: 100%;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-steps {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.6rem;
-    padding: 1rem 1rem 0;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-step {
-    min-height: 100%;
-    padding: 0.8rem 0.75rem;
-    gap: 0.6rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-step-icon {
-    width: 1.85rem;
-    height: 1.85rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-step-copy strong {
-    font-size: 0.79rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-step-copy span {
-    font-size: 0.69rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-content {
-    padding: 1.2rem 1rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-hero h2,
-  [data-theme="business-os-enterprise"] .business-onboarding-heading h3 {
-    font-size: clamp(1.45rem, 5.2vw, 1.9rem);
-    line-height: 1.35;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-hero p,
-  [data-theme="business-os-enterprise"] .business-onboarding-heading p {
-    font-size: 0.93rem;
-    line-height: 1.85;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-highlights,
   [data-theme="business-os-enterprise"] .business-tone-grid,
   [data-theme="business-os-enterprise"] .business-auth-grid-2 {
     grid-template-columns: 1fr;
@@ -5233,27 +4974,6 @@ select {
 
   [data-theme="business-os-enterprise"] .business-auth-note {
     line-height: 1.75;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-footer {
-    flex-wrap: wrap;
-    padding: 1rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-footer > .business-primary-button,
-  [data-theme="business-os-enterprise"] .business-onboarding-footer > .business-secondary-button {
-    flex: 1 1 0;
-    min-width: 0;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-footer .business-onboarding-meta {
-    order: 3;
-    width: 100%;
-    text-align: center;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-skip {
-    padding: 0 1rem 1rem;
   }
 
   [data-theme="business-os-enterprise"]
@@ -5413,53 +5133,7 @@ select {
 }
 
 @media (max-width: 479px) {
-  [data-theme="business-os-enterprise"] .business-onboarding-stage {
-    padding: 0.55rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-card {
-    border-radius: calc(var(--theme-radius) + 4px);
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-steps {
-    gap: 0.5rem;
-    padding: 0.8rem 0.8rem 0;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-step {
-    padding: 0.72rem 0.65rem;
-    border-radius: 16px;
-    gap: 0.5rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-step-icon {
-    width: 1.72rem;
-    height: 1.72rem;
-    font-size: 0.7rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-step-copy strong {
-    font-size: 0.75rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-step-copy span {
-    font-size: 0.64rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-content {
-    padding: 1rem 0.88rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-hero h2,
-  [data-theme="business-os-enterprise"] .business-onboarding-heading h3 {
-    font-size: clamp(1.28rem, 6vw, 1.58rem);
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-hero p,
-  [data-theme="business-os-enterprise"] .business-onboarding-heading p,
-  [data-theme="business-os-enterprise"] .business-tone-copy span,
-  [data-theme="business-os-enterprise"] .business-onboarding-highlight span,
-  [data-theme="business-os-enterprise"] .business-onboarding-tip span {
+  [data-theme="business-os-enterprise"] .business-tone-copy span {
     font-size: 0.87rem;
   }
 
@@ -5471,35 +5145,6 @@ select {
     min-height: 2.95rem;
     padding: 0.76rem 0.85rem;
     font-size: 0.92rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-auth-note,
-  [data-theme="business-os-enterprise"] .business-onboarding-meta,
-  [data-theme="business-os-enterprise"] .business-onboarding-skip button {
-    font-size: 0.78rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-preview {
-    padding: 0.85rem 0.9rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-preview-title {
-    font-size: 0.86rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-preview-url,
-  [data-theme="business-os-enterprise"] .business-onboarding-preview-status {
-    font-size: 0.77rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-footer {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
-
-  [data-theme="business-os-enterprise"] .business-onboarding-footer .business-onboarding-meta {
-    order: 0;
   }
 
   [data-theme="business-os-enterprise"]

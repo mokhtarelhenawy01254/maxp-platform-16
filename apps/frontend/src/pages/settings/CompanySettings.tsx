@@ -165,7 +165,7 @@ const parseCompanySettings = (value: unknown): CompanySettingsMap => {
 const CompanySettings: React.FC = () => {
   const { user } = useAuth();
   const [company, setCompany] = useState<CompanyRecord | null>(null);
-  const [plans, setPlans] = useState<Record<string, SubscriptionPlan>>({});
+  const [plans, setPlans] = useState<Record<string, SubscriptionPlan>>({}); // ponytail: always empty — plan system deleted
   const [usage, setUsage] = useState<Record<string, UsageStat>>({});
   const [loading, setLoading] = useState(true);
 
@@ -285,22 +285,7 @@ const CompanySettings: React.FC = () => {
     }
   }, [user?.companyId]);
 
-  const fetchPlans = useCallback(async () => {
-    try {
-      const token = getAccessToken();
-      const response = await fetch(`${getApiUrl()}/companies/plans`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
-      if (data.success) {
-        setPlans(data.data);
-      }
-    } catch (error) {
-      console.error("Error fetching plans:", error);
-    }
-  }, []);
+  // ponytail: fetchPlans removed — plan system deleted
 
   const fetchUsage = useCallback(async () => {
     try {
@@ -353,12 +338,11 @@ const CompanySettings: React.FC = () => {
 
   useEffect(() => {
     fetchCompanyData();
-    fetchPlans();
     fetchUsage();
     if (user?.role === "OWNER") {
       fetchCompanyUsers();
     }
-  }, [fetchCompanyData, fetchCompanyUsers, fetchPlans, fetchUsage, user?.role]);
+  }, [fetchCompanyData, fetchUsage, user?.role]);
 
   const updateCompany = useCallback(
     (updater: (currentCompany: CompanyRecord) => CompanyRecord) => {
@@ -406,34 +390,7 @@ const CompanySettings: React.FC = () => {
     }
   };
 
-  const handleUpgrade = async (planName: string) => {
-    try {
-      const token = getAccessToken();
-      const response = await fetch(
-        `${getApiUrl()}/companies/${user?.companyId}/subscription`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ plan: planName }),
-        },
-      );
-
-      const data = await response.json();
-      if (data.success) {
-        alert("تم تحديث الاشتراك بنجاح!");
-        fetchCompanyData();
-        fetchUsage();
-      } else {
-        alert(data.error || "فشل في تحديث الاشتراك");
-      }
-    } catch (error) {
-      console.error("Error upgrading plan:", error);
-      alert("حدث خطأ أثناء تحديث الاشتراك");
-    }
-  };
+  // ponytail: handleUpgrade removed — plan system deleted
 
   const handleCompanyNameSave = async () => {
     if (!companyName.trim()) {
@@ -860,7 +817,7 @@ const CompanySettings: React.FC = () => {
   const tabs: TabConfig[] = [
     { id: "general", label: "عام", icon: BuildingOfficeIcon },
     { id: "appearance", label: "المظهر", icon: ChartBarIcon },
-    { id: "plan", label: "الاشتراك", icon: CreditCardIcon },
+    // ponytail: plan tab removed — plan system deleted
     { id: "usage", label: "الاستخدام", icon: ChartBarIcon },
   ];
 
@@ -1642,118 +1599,7 @@ const CompanySettings: React.FC = () => {
         </div>
       )}
 
-      {activeTab === "plan" && (
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-            <CreditCardIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400 mr-2" />
-            باقات الاشتراك
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {Object.entries(plans).map(([planKey, plan]) => {
-              const isCurrentPlan = company?.subscription?.plan === planKey;
-              const isUpgrade =
-                ["BASIC", "PREMIUM", "ENTERPRISE"].indexOf(planKey) >
-                ["FREE", "BASIC", "PREMIUM", "ENTERPRISE"].indexOf(
-                  company?.subscription?.plan,
-                );
-
-              return (
-                <div
-                  key={planKey}
-                  className={`border rounded-lg p-6 ${
-                    isCurrentPlan
-                      ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-400"
-                      : "border-gray-200 dark:border-gray-600"
-                  }`}
-                >
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {plan.name}
-                    </h3>
-                    <div className="mt-2">
-                      <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                        {plan.price}
-                      </span>
-                      <span className="text-gray-600 dark:text-gray-400 mr-1">
-                        {plan.currency}/شهر
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 mb-6">
-                    <h4 className="font-medium text-gray-900 dark:text-white">
-                      الحدود:
-                    </h4>
-                    {Object.entries(plan.limits)
-                      .slice(0, 4)
-                      .map(([resource, limit]) => (
-                        <div
-                          key={resource}
-                          className="flex justify-between text-sm"
-                        >
-                          <span className="text-gray-600 dark:text-gray-400">
-                            {resourceNames[resource]}
-                          </span>
-                          <span className="font-medium text-gray-900 dark:text-white">
-                            {formatLimit(limit)}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-
-                  <div className="space-y-2 mb-6">
-                    <h4 className="font-medium text-gray-900 dark:text-white">
-                      الميزات:
-                    </h4>
-                    {Object.entries(plan.features)
-                      .slice(0, 3)
-                      .map(([feature, enabled]) => (
-                        <div
-                          key={feature}
-                          className="flex items-center text-sm"
-                        >
-                          <CheckCircleIcon
-                            className={`h-4 w-4 mr-2 ${enabled ? "text-green-500" : "text-gray-300 dark:text-gray-600"}`}
-                          />
-                          <span
-                            className={
-                              enabled
-                                ? "text-gray-900 dark:text-white"
-                                : "text-gray-400 dark:text-gray-500"
-                            }
-                          >
-                            {feature}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-
-                  {isCurrentPlan ? (
-                    <div className="text-center">
-                      <span className="inline-flex items-center px-4 py-2 border border-indigo-300 dark:border-indigo-500 rounded-md text-sm font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/30">
-                        <CheckCircleIcon className="h-4 w-4 mr-2" />
-                        الباقة الحالية
-                      </span>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleUpgrade(planKey)}
-                      className={`w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md text-sm font-medium ${
-                        isUpgrade
-                          ? "text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
-                          : "text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30 hover:bg-indigo-200 dark:hover:bg-indigo-900/50"
-                      }`}
-                    >
-                      {isUpgrade && <ArrowUpIcon className="h-4 w-4 mr-2" />}
-                      {isUpgrade ? "ترقية" : "تغيير"}
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* ponytail: plan tab content removed — plan system deleted */}
 
       {activeTab === "ownership" && user?.role === "OWNER" && (
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 border-2 border-red-100 dark:border-red-900/30">

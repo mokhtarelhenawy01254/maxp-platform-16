@@ -1,5 +1,3 @@
-import type { CompanyOnboardingState } from "../../utils/companyOnboarding";
-
 export type DashboardCompany = {
   id: string;
   name: string;
@@ -8,7 +6,6 @@ export type DashboardCompany = {
   isActive?: boolean;
   slug?: string | null;
   phone?: string | null;
-  onboarding?: CompanyOnboardingState | null;
 };
 
 export type DashboardUsageItem = {
@@ -99,80 +96,9 @@ export type DashboardResponse = {
   data?: DashboardData;
 };
 
-export type QuickChecklistStep = {
-  id: string;
-  label: string;
-  description: string;
-  done: boolean;
-  actionLabel: string;
-  icon: string;
-  action: () => void;
-};
-
 export type FetchDashboardOptions = {
   force?: boolean;
   signal?: AbortSignal;
-};
-
-export type QuickStartChecklistProps = {
-  activation: import("../../utils/companyActivation").CompanyActivationState;
-  company: DashboardCompany | null;
-  counts: DashboardCounts;
-  isRtl: boolean;
-  onNavigate: (path: string) => void;
-};
-
-export type OnboardingResumeCardProps = {
-  company: DashboardCompany | null;
-  isRtl: boolean;
-  onNavigate: (path: string) => void;
-};
-
-export type ActivationLaunchCardProps = {
-  activation: import("../../utils/companyActivation").CompanyActivationState;
-  company: DashboardCompany | null;
-  isRtl: boolean;
-  onNavigate: (path: string) => void;
-};
-
-export type DateRangeToolbarProps = {
-  start: string;
-  end: string;
-  presets: { id: string; label: string }[];
-  selectedFilterId: string;
-  currentRangeLabel: string;
-  currentRangeMeta: string;
-  customPresetLabel: string;
-  showCustomRangeInputs: boolean;
-  isRefreshing: boolean;
-  fromLabel: string;
-  toLabel: string;
-  rangeLabel: string;
-  refreshLabel: string;
-  onStartChange: (value: string) => void;
-  onEndChange: (value: string) => void;
-  onSelectFilter: (value: string) => void;
-  onRefresh: () => void;
-};
-
-export type DashboardOperationsPanelProps = {
-  cancelledLabel: string;
-  conversationsLabel: string;
-  customersLabel: string;
-  formatCount: (value: number | null | undefined) => string;
-  isRtl: boolean;
-  onNavigate: (path: string) => void;
-  orderHealth: DashboardOrderHealth;
-  recentActivity: DashboardRecentActivity;
-  returnedLabel: string;
-};
-
-export type TopProductsPanelProps = {
-  items: DashboardTopProduct[];
-  title: string;
-  emptyLabel: string;
-  itemsUnitLabel: string;
-  formatCount: (value: number | null | undefined) => string;
 };
 
 export type DashboardMetricRailItem = {
@@ -182,16 +108,6 @@ export type DashboardMetricRailItem = {
   tone: import("../../components/business/BusinessMetrics").BusinessMetricTone;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   onClick?: () => void;
-};
-
-export type DashboardIntroBandProps = {
-  activation: import("../../utils/companyActivation").CompanyActivationState;
-  company: DashboardCompany;
-  currentRangeLabel: string;
-  currentRangeMeta: string;
-  productCountLabel: string;
-  isRtl: boolean;
-  onNavigate: (path: string) => void;
 };
 
 export type DashboardStatusStripTone = "primary" | "success" | "warning";

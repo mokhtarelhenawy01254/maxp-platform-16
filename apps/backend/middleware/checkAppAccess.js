@@ -34,19 +34,7 @@ const checkAppAccess = (appSlug) => {
         });
       }
 
-      // 🚀 Super Company Bypass (ENTERPRISE Plan)
-      // If the company is on the ENTERPRISE plan, they get access to EVERYTHING.
-      const company = await executeWithRetry(async () => {
-        return await getSharedPrismaClient().company.findUnique({
-          where: { id: companyId },
-          select: { plan: true }
-        });
-      });
-
-      if (company && company.plan === 'ENTERPRISE') {
-        // Bypass all checks for Enterprise plan
-        return next();
-      }
+      // ponytail: Enterprise plan bypass removed — access now purely per-app (companyApp)
 
       // Get the app
       const candidateSlugs = getCandidateAppSlugs(appSlug);

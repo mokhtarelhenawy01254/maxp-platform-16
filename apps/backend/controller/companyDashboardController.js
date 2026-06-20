@@ -11,18 +11,9 @@ const {
     invalidateCompanyDashboardCache
 } = require('../middleware/performanceOptimization');
 const {
-    getCompanyOnboardingState,
-    mergeCompanyOnboardingSettings,
-    completeCompanyOnboardingSettings,
     parseCompanySettings,
     serializeCompanySettings
 } = require('../utils/companyOnboarding');
-const {
-    FUNNEL_EVENT_TYPES,
-    getCompanyFunnelAnalytics,
-    getOnboardingStepIdByNumber,
-    recordCompanyFunnelEvent
-} = require('../utils/companyFunnelAnalytics');
 
 const safeJsonParse = (value) => {
     if (!value) return {};
@@ -41,7 +32,6 @@ const COMPANY_DASHBOARD_OVERVIEW_SELECT = {
     id: true,
     name: true,
     slug: true,
-    plan: true,
     currency: true,
     phone: true,
     isActive: true,
@@ -71,50 +61,7 @@ const sanitizeLinkForResponse = (link) => {
     };
 };
 
-const sanitizeOnboardingProfilePatch = (profile) => {
-    if (!profile || typeof profile !== 'object') {
-        return {};
-    }
 
-    const keys = ['workspaceName', 'industry', 'currency', 'tone', 'whatsappNumber', 'phone'];
-    return keys.reduce((acc, key) => {
-        if (typeof profile[key] === 'string') {
-            acc[key] = profile[key].trim();
-        }
-
-        return acc;
-    }, {});
-};
-
-const buildOnboardingResponseData = (company, onboarding) => ({
-    onboarding,
-    company: {
-        id: company.id,
-        name: company.name,
-        slug: company.slug || null,
-        phone: company.phone || null,
-        currency: company.currency || null
-    }
-});
-
-const sanitizeFunnelEventSource = (value) => {
-    const source = typeof value === 'string' ? value.trim() : '';
-    return source.slice(0, 120);
-};
-
-const pickFirstNonEmptyString = (...values) => {
-    for (const value of values) {
-        if (typeof value === 'string' && value.trim()) {
-            return value.trim();
-        }
-    }
-
-    return '';
-};
-
-const sanitizeFunnelEventMetadata = (value) => (
-    value && typeof value === 'object' && !Array.isArray(value) ? value : {}
-);
 
 const isDashboardCompatibilityError = (error) => {
     if (!error) {
@@ -384,11 +331,9 @@ const companyDashboardOverview = async (req, res) => {
                 id: company.id,
                 name: company.name,
                 slug: company.slug,
-                plan: company.plan,
                 currency: company.currency,
                 phone: company.phone,
                 isActive: company.isActive,
-                onboarding: getCompanyOnboardingState(company, req.user)
             },
             dateRange: {
                 start: start.toISOString(),
@@ -578,368 +523,7 @@ const updateCompanySettings = async (req, res) => {
     }
 };
 
-const getCompanyOnboarding = async (req, res) => {
-    try {
-        const companyId = getCompanyIdFromRequest(req);
 
-        const company = await getSharedPrismaClient().company.findUnique({
-            where: { id: companyId },
-            select: {
-                id: true,
-                name: true,
-                slug: true,
-                phone: true,
-                currency: true,
-                settings: true
-            }
-        });
-
-        if (!company) {
-            return res.status(404).json({
-                success: false,
-                message: 'الشركة غير موجودة'
-            });
-        }
-
-        const onboarding = getCompanyOnboardingState(company, req.user);
-
-        res.json({
-            success: true,
-            message: 'تم جلب حالة الإعداد بنجاح',
-            data: buildOnboardingResponseData(company, onboarding)
-        });
-    } catch (error) {
-        console.error('❌ Error fetching company onboarding:', error);
-        res.status(500).json({
-            success: false,
-            message: 'فشل في جلب حالة الإعداد',
-            error: error.message
-        });
-    }
-};
-
-const updateCompanyOnboarding = async (req, res) => {
-    try {
-        const companyId = getCompanyIdFromRequest(req);
-        const company = await getSharedPrismaClient().company.findUnique({
-            where: { id: companyId },
-            select: {
-                id: true,
-                name: true,
-                slug: true,
-                phone: true,
-                currency: true,
-                settings: true
-            }
-        });
-
-        if (!company) {
-            return res.status(404).json({
-                success: false,
-                message: 'الشركة غير موجودة'
-            });
-        }
-
-        const currentOnboarding = getCompanyOnboardingState(company, req.user);
-        const profilePatch = sanitizeOnboardingProfilePatch(req.body.profile);
-        const completedSteps = Array.isArray(req.body.completedSteps)
-            ? req.body.completedSteps
-            : undefined;
-        const saveMode = req.body.saveMode === 'pause' ? 'pause' : 'advance';
-        const patch = {
-            ...(req.body.currentStep !== undefined && { currentStep: req.body.currentStep }),
-            ...(req.body.markStepCompleted && { markStepCompleted: req.body.markStepCompleted }),
-            ...(completedSteps && { completedSteps }),
-            ...(req.body.channelsDeferred !== undefined && {
-                channelsDeferred: Boolean(req.body.channelsDeferred)
-            }),
-            ...(Object.keys(profilePatch).length > 0 && { profile: profilePatch })
-        };
-
-        const merged = mergeCompanyOnboardingSettings(
-            company.settings,
-            { company, user: req.user },
-            patch
-        );
-        let nextSettings = merged.settings;
-        const trackedStepId =
-            patch.markStepCompleted ||
-            getOnboardingStepIdByNumber(currentOnboarding.currentStep) ||
-            getOnboardingStepIdByNumber(req.body.currentStep);
-
-        if (saveMode === 'pause') {
-            nextSettings = recordCompanyFunnelEvent(nextSettings, {
-                type: 'onboarding_skipped',
-                stepId: trackedStepId,
-                source: 'company_dashboard_onboarding_pause',
-                metadata: {
-                    currentStep: currentOnboarding.currentStep,
-                    nextStepId: merged.onboarding.nextStepId,
-                    channelsDeferred: merged.onboarding.channelsDeferred
-                }
-            }).settings;
-        } else {
-            nextSettings = recordCompanyFunnelEvent(nextSettings, {
-                type: 'onboarding_step_saved',
-                stepId: trackedStepId,
-                source: 'company_dashboard_onboarding_save',
-                metadata: {
-                    currentStep: currentOnboarding.currentStep,
-                    nextStepNumber: merged.onboarding.currentStep,
-                    nextStepId: merged.onboarding.nextStepId
-                }
-            }).settings;
-
-            if (patch.markStepCompleted) {
-                nextSettings = recordCompanyFunnelEvent(nextSettings, {
-                    type: 'onboarding_step_completed',
-                    stepId: patch.markStepCompleted,
-                    source: 'company_dashboard_onboarding_save',
-                    metadata: {
-                        completedStepId: patch.markStepCompleted,
-                        completedCount: merged.onboarding.completedCount,
-                        totalSteps: merged.onboarding.totalSteps
-                    }
-                }).settings;
-            }
-        }
-
-        const updatedCompany = await getSharedPrismaClient().company.update({
-            where: { id: companyId },
-            data: {
-                settings: serializeCompanySettings(nextSettings),
-                ...(profilePatch.workspaceName && { name: profilePatch.workspaceName }),
-                ...(profilePatch.currency && { currency: profilePatch.currency }),
-                ...((profilePatch.phone || profilePatch.whatsappNumber) && {
-                    phone: profilePatch.phone || profilePatch.whatsappNumber
-                })
-            },
-            select: {
-                id: true,
-                name: true,
-                slug: true,
-                phone: true,
-                currency: true,
-                settings: true
-            }
-        });
-
-        invalidateCompanySettingsCache(companyId);
-        invalidateCompanyDashboardCache(companyId);
-
-        res.json({
-            success: true,
-            message: 'تم حفظ تقدم الإعداد بنجاح',
-            data: buildOnboardingResponseData(
-                updatedCompany,
-                getCompanyOnboardingState(updatedCompany, req.user)
-            )
-        });
-    } catch (error) {
-        console.error('❌ Error updating company onboarding:', error);
-        res.status(500).json({
-            success: false,
-            message: 'فشل في حفظ تقدم الإعداد',
-            error: error.message
-        });
-    }
-};
-
-const completeCompanyOnboarding = async (req, res) => {
-    try {
-        const companyId = getCompanyIdFromRequest(req);
-        const company = await getSharedPrismaClient().company.findUnique({
-            where: { id: companyId },
-            select: {
-                id: true,
-                name: true,
-                slug: true,
-                phone: true,
-                currency: true,
-                settings: true
-            }
-        });
-
-        if (!company) {
-            return res.status(404).json({
-                success: false,
-                message: 'الشركة غير موجودة'
-            });
-        }
-
-        const profilePatch = sanitizeOnboardingProfilePatch(req.body.profile);
-        const completed = completeCompanyOnboardingSettings(
-            company.settings,
-            { company, user: req.user },
-            {
-                ...(req.body.currentStep !== undefined && { currentStep: req.body.currentStep }),
-                ...(req.body.markStepCompleted && { markStepCompleted: req.body.markStepCompleted }),
-                ...(req.body.channelsDeferred !== undefined && {
-                    channelsDeferred: Boolean(req.body.channelsDeferred)
-                }),
-                ...(Object.keys(profilePatch).length > 0 && { profile: profilePatch })
-            }
-        );
-        let nextSettings = completed.settings;
-        const finalStepId = req.body.markStepCompleted || 'integrations';
-
-        nextSettings = recordCompanyFunnelEvent(nextSettings, {
-            type: 'onboarding_step_saved',
-            stepId: finalStepId,
-            source: 'company_dashboard_onboarding_complete',
-            metadata: {
-                currentStep: completed.onboarding.currentStep,
-                nextStepId: completed.onboarding.nextStepId
-            }
-        }).settings;
-        nextSettings = recordCompanyFunnelEvent(nextSettings, {
-            type: 'onboarding_step_completed',
-            stepId: finalStepId,
-            source: 'company_dashboard_onboarding_complete',
-            metadata: {
-                completedStepId: finalStepId,
-                completedCount: completed.onboarding.completedCount,
-                totalSteps: completed.onboarding.totalSteps
-            }
-        }).settings;
-        nextSettings = recordCompanyFunnelEvent(nextSettings, {
-            type: 'onboarding_completed',
-            stepId: finalStepId,
-            source: 'company_dashboard_onboarding_complete',
-            metadata: {
-                channelsDeferred: completed.onboarding.channelsDeferred,
-                completedStepIds: completed.onboarding.completedSteps
-            }
-        }).settings;
-
-        const finalPhone =
-            profilePatch.phone ||
-            profilePatch.whatsappNumber ||
-            completed.onboarding.profile.phone ||
-            completed.onboarding.profile.whatsappNumber;
-
-        const updatedCompany = await getSharedPrismaClient().company.update({
-            where: { id: companyId },
-            data: {
-                settings: serializeCompanySettings(nextSettings),
-                ...(completed.onboarding.profile.workspaceName && {
-                    name: completed.onboarding.profile.workspaceName
-                }),
-                ...(completed.onboarding.profile.currency && {
-                    currency: completed.onboarding.profile.currency
-                }),
-                ...(finalPhone && { phone: finalPhone })
-            },
-            select: {
-                id: true,
-                name: true,
-                slug: true,
-                phone: true,
-                currency: true,
-                settings: true
-            }
-        });
-
-        invalidateCompanySettingsCache(companyId);
-        invalidateCompanyDashboardCache(companyId);
-
-        res.json({
-            success: true,
-            message: 'تم إنهاء إعداد الشركة بنجاح',
-            data: buildOnboardingResponseData(
-                updatedCompany,
-                getCompanyOnboardingState(updatedCompany, req.user)
-            )
-        });
-    } catch (error) {
-        console.error('❌ Error completing company onboarding:', error);
-        res.status(500).json({
-            success: false,
-            message: 'فشل في إنهاء إعداد الشركة',
-            error: error.message
-        });
-    }
-};
-
-const trackCompanyFunnelEvent = async (req, res) => {
-    try {
-        const companyId = getCompanyIdFromRequest(req);
-        const eventType = pickFirstNonEmptyString(
-            req.body?.type,
-            req.body?.eventType,
-            req.headers['x-funnel-event-type'],
-            req.query?.type,
-            req.query?.eventType,
-        );
-
-        if (!FUNNEL_EVENT_TYPES.includes(eventType)) {
-            return res.status(400).json({
-                success: false,
-                message: 'نوع الحدث غير مدعوم',
-                ...(process.env.NODE_ENV === 'development'
-                    ? {
-                        debug: {
-                            eventType,
-                            bodyType: req.body?.type,
-                            headerType: req.headers['x-funnel-event-type'],
-                            supportedTypes: FUNNEL_EVENT_TYPES,
-                        }
-                    }
-                    : {})
-            });
-        }
-
-        const company = await getSharedPrismaClient().company.findUnique({
-            where: { id: companyId },
-            select: {
-                id: true,
-                name: true,
-                slug: true,
-                phone: true,
-                currency: true,
-                settings: true
-            }
-        });
-
-        if (!company) {
-            return res.status(404).json({
-                success: false,
-                message: 'الشركة غير موجودة'
-            });
-        }
-
-        const tracked = recordCompanyFunnelEvent(company.settings, {
-            type: eventType,
-            stepId: req.body.stepId,
-            source: sanitizeFunnelEventSource(req.body.source),
-            metadata: sanitizeFunnelEventMetadata(req.body.metadata)
-        });
-
-        await getSharedPrismaClient().company.update({
-            where: { id: companyId },
-            data: {
-                settings: serializeCompanySettings(tracked.settings)
-            }
-        });
-
-        res.json({
-            success: true,
-            message: 'تم تسجيل حدث الرحلة بنجاح',
-            data: {
-                analytics: getCompanyFunnelAnalytics({
-                    settings: tracked.settings
-                })
-            }
-        });
-    } catch (error) {
-        console.error('❌ Error tracking company funnel event:', error);
-        res.status(500).json({
-            success: false,
-            message: 'فشل في تسجيل حدث الرحلة',
-            error: error.message
-        });
-    }
-};
 
 // ==================== PLAN LIMITS ROUTES ====================
 
@@ -1369,10 +953,6 @@ module.exports = {
     companyDashboardOverview,
     companySettings,
     updateCompanySettings,
-    getCompanyOnboarding,
-    updateCompanyOnboarding,
-    completeCompanyOnboarding,
-    trackCompanyFunnelEvent,
     checkPlanLimits,
     checkMultipleLimits,
     checkSpecificLimit,

@@ -12,14 +12,6 @@ router.get('/settings', verifyToken.authenticateToken, verifyToken.requireCompan
 
 router.put('/settings', verifyToken.authenticateToken, verifyToken.requireRole(['COMPANY_ADMIN', 'OWNER']), companyDashboardController.updateCompanySettings)
 
-router.get('/onboarding', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, companyDashboardController.getCompanyOnboarding)
-
-router.put('/onboarding', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, verifyToken.requireRole(['COMPANY_ADMIN', 'OWNER']), companyDashboardController.updateCompanyOnboarding)
-
-router.post('/onboarding/complete', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, verifyToken.requireRole(['COMPANY_ADMIN', 'OWNER']), companyDashboardController.completeCompanyOnboarding)
-
-router.post('/funnel-events', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, verifyToken.requireRole(['COMPANY_ADMIN', 'OWNER']), companyDashboardController.trackCompanyFunnelEvent)
-
 // ==================== PLAN LIMITS ROUTES ====================
 
 router.get('/limits', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, companyDashboardController.checkPlanLimits)

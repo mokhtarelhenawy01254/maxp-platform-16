@@ -30,10 +30,6 @@ const ResetPassword = React.lazy(() => import("./pages/auth/ResetPassword"));
 const AcceptInvitation = React.lazy(
   () => import("./pages/auth/AcceptInvitation"),
 );
-const OnboardingWizard = React.lazy(
-  () => import("./pages/onboarding/OnboardingWizard"),
-);
-
 // Import HR pages
 const PayrollTesting = React.lazy(() => import("./pages/hr/PayrollTesting"));
 
@@ -699,9 +695,7 @@ const SuperAdminCompanyDetails = React.lazy(
 );
 
 const SuperAdminReports = React.lazy(() => import("./pages/SuperAdminReports"));
-const SuperAdminSubscriptions = React.lazy(
-  () => import("./pages/SuperAdminSubscriptions"),
-);
+// ponytail: SuperAdminSubscriptions removed — legacy plan system deleted
 const SuperAdminInvoices = React.lazy(
   () => import("./pages/SuperAdminInvoices"),
 );
@@ -818,10 +812,6 @@ const SuperAdminUsersManagement = React.lazy(
   () => import("./pages/SuperAdminUsersManagement"),
 ); // Super Admin Users Management
 
-// Super Admin Platform Management
-const PlatformSubscriptions = React.lazy(
-  () => import("./pages/super-admin/PlatformSubscriptions"),
-);
 const BillingOverview = React.lazy(
   () => import("./pages/super-admin/BillingOverview"),
 );
@@ -920,9 +910,7 @@ const PaymentPage = React.lazy(() => import("./pages/PaymentPage"));
 const MessagingCheckout = React.lazy(() => import("./pages/payment/MessagingCheckout"));
 const WalletManagement = React.lazy(() => import("./pages/WalletManagement"));
 const CustomerPayments = React.lazy(() => import("./pages/CustomerPayments"));
-const SubscriptionRenewalPayment = React.lazy(
-  () => import("./pages/SubscriptionRenewalPayment"),
-);
+// ponytail: SubscriptionRenewalPayment removed — plan system deleted
 const PrivacyPolicy = React.lazy(() => import("./pages/legal/PrivacyPolicy"));
 const TermsOfService = React.lazy(() => import("./pages/legal/TermsOfService"));
 const UnifiedCommentsManagement = React.lazy(
@@ -956,11 +944,7 @@ const BundleDetails = React.lazy(
   () => import("./pages/marketplace/BundleDetails"),
 );
 
-// Platform Subscription
-const PlatformPlans = React.lazy(
-  () => import("./pages/subscription/PlatformPlans"),
-);
-const UsageStats = React.lazy(() => import("./pages/subscription/UsageStats"));
+// ponytail: PlatformPlans removed — plan comparison replaced by app/bundle marketplace
 const AppPricingSheet = React.lazy(
   () => import("./pages/subscription/AppPricingSheet"),
 );
@@ -1441,14 +1425,6 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/onboarding"
-              element={
-                <AuthLayout>
-                  <OnboardingWizard />
-                </AuthLayout>
-              }
-            />
-            <Route
               path="/company-links/:token"
               element={<PublicCompanyLinks />}
             />
@@ -1701,14 +1677,7 @@ const AppContent = () => {
                 </Layout>
               }
             />
-            <Route
-              path="/super-admin/subscriptions"
-              element={
-                <Layout>
-                  <SuperAdminSubscriptions />
-                </Layout>
-              }
-            />
+            {/* ponytail: /super-admin/subscriptions removed — legacy plan management */}
             <Route
               path="/super-admin/invoices"
               element={
@@ -2109,15 +2078,8 @@ const AppContent = () => {
                 </Layout>
               }
             />
+            {/* ponytail: /super-admin/platform-subscriptions removed — plan management deleted */}
             {/* Super Admin Platform Management Routes */}
-            <Route
-              path="/super-admin/platform-subscriptions"
-              element={
-                <Layout>
-                  <PlatformSubscriptions />
-                </Layout>
-              }
-            />
             <Route
               path="/super-admin/billing-overview"
               element={
@@ -2187,10 +2149,7 @@ const AppContent = () => {
             )}
             {/* Public Payment Routes */}
             <Route path="/payment/:invoiceId" element={<PaymentPage />} />
-            <Route
-              path="/payment/subscription-renewal"
-              element={<SubscriptionRenewalPayment />}
-            />
+            {/* ponytail: /payment/subscription-renewal removed — plan system deleted */}
             <Route
               path="/checkout/messaging"
               element={
@@ -2309,14 +2268,7 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
-                <Route
-                  path="/my-apps/:slug/usage"
-                  element={
-                    <Layout>
-                      <UsageStats />
-                    </Layout>
-                  }
-                />
+                {/* ponytail: /my-apps/:slug/usage removed — usage stats deleted */}
                 <Route
                   path="/my-apps/:slug/settings"
                   element={
@@ -2329,23 +2281,7 @@ const AppContent = () => {
                   path="/marketplace/wallet"
                   element={<Navigate to="/payments" replace />}
                 />
-                {/* Platform Subscription Routes */}
-                <Route
-                  path="/subscription/plans"
-                  element={
-                    <Layout>
-                      <PlatformPlans />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/subscription/usage"
-                  element={
-                    <Layout>
-                      <UsageStats />
-                    </Layout>
-                  }
-                />
+                {/* ponytail: /subscription/plans, /subscription/usage removed — plan-based pages deleted */}
                 <Route
                   path="/subscription/pricing"
                   element={

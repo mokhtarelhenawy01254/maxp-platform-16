@@ -554,8 +554,7 @@ export default defineConfig(({ mode }) => {
               if (normalizedId.includes('/src/pages/pos/')) return 'route-pos';
               if (normalizedId.includes('/src/pages/wallet/')) return 'route-wallet';
               if (normalizedId.includes('/src/pages/categories/')) return 'route-categories';
-              if (normalizedId.includes('/src/pages/onboarding/')) return 'route-onboarding';
-              if (normalizedId.includes('/src/pages/tickets/')) return 'route-tickets';
+                            if (normalizedId.includes('/src/pages/tickets/')) return 'route-tickets';
               if (normalizedId.includes('/src/pages/legal/')) return 'route-legal';
               if (normalizedId.includes('/src/pages/owner/')) return 'route-owner';
               if (normalizedId.includes('/src/pages/my-custody/')) return 'route-my-custody';

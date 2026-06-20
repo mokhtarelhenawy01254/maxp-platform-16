@@ -10,8 +10,8 @@ describe("affiliate and merchant app routes", () => {
     path.resolve(__dirname, "../pages/profile/Profile.tsx"),
     "utf8",
   );
-  const onboardingSource = fs.readFileSync(
-    path.resolve(__dirname, "../utils/companyOnboarding.ts"),
+  const authRoutingSource = fs.readFileSync(
+    path.resolve(__dirname, "../utils/authRouting.ts"),
     "utf8",
   );
 
@@ -43,8 +43,8 @@ describe("affiliate and merchant app routes", () => {
   });
 
   test("routes affiliate login to the affiliate dashboard", () => {
-    expect(onboardingSource).toContain('if (user?.role === "AFFILIATE")');
-    expect(onboardingSource).toContain('return "/affiliates/dashboard";');
+    expect(authRoutingSource).toContain('if (user?.role === "AFFILIATE")');
+    expect(authRoutingSource).toContain('return "/affiliates/dashboard";');
   });
 
   test("keeps merchant and affiliate account profiles separate from employee HR profile tools", () => {

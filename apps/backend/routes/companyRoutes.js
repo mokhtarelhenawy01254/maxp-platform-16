@@ -26,7 +26,7 @@ router.get('/1', companiesController.REMOVEDDangerousFallbackEndpoint);
 router.get('/:id/usage', validateCompanyId, cacheMiddleware(60000), companiesController.companyUsageEndpoint); // 1 minute cache
 router.get('/1/usage-mock', companiesController.mockEndpoint);
 router.get('/usage-safe', cacheMiddleware(60000), companiesController.safeUsageEndpoint); // 1 minute cache
-router.get('/plans', cacheMiddleware(300000), companiesController.companyPlansEndpoint); // 5 minutes cache
+// ponytail: /plans route removed — plan system deleted
 router.get('/:id/info', validateCompanyId, verifyToken.authenticateToken, cacheMiddleware(120000), companiesController.getCompanyInfoEndpoint); // 2 minutes cache
 router.put('/:companyId/currency', validateCompanyId, verifyToken.authenticateToken, verifyToken.requireCompanyAccess, verifyToken.requireRole(['COMPANY_ADMIN', 'OWNER']), companiesController.updateCompanyCurrency);
 ////////////////////////////////////////////////////////////

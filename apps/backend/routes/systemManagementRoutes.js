@@ -59,7 +59,6 @@ router.get('/statistics', authenticateToken, requireSuperAdmin, cacheMiddleware(
       totalUsers,
       totalCustomers,
       totalConversations,
-      companiesByPlan,
       recentCompanies,
       recentUsers,
       recentCustomers
@@ -69,19 +68,10 @@ router.get('/statistics', authenticateToken, requireSuperAdmin, cacheMiddleware(
       prisma.user.count(),
       prisma.customer.count(),
       prisma.conversation.count(),
-      prisma.company.groupBy({
-        by: ['plan'],
-        _count: { plan: true }
-      }),
       prisma.company.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
       prisma.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
       prisma.customer.count({ where: { createdAt: { gte: thirtyDaysAgo } } })
     ]);
-
-    const planDistribution = {};
-    companiesByPlan.forEach(p => {
-      planDistribution[p.plan] = p._count.plan;
-    });
 
     res.json({
       success: true,
@@ -93,7 +83,6 @@ router.get('/statistics', authenticateToken, requireSuperAdmin, cacheMiddleware(
           totalCustomers,
           totalConversations
         },
-        planDistribution,
         recentActivity: {
           newCompaniesLast30Days: recentCompanies,
           newUsersLast30Days: recentUsers,

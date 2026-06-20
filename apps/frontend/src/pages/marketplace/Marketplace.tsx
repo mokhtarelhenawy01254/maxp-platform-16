@@ -143,7 +143,7 @@ interface MarketplaceApiError {
   };
 }
 
-const UNLIMITED_SUBSCRIPTION_PRICE = 999;
+// ponytail: UNLIMITED_SUBSCRIPTION_PRICE removed — unlimited plan system deleted
 
 type ToolCollectionId = "ALL" | "CORE" | "ADD_ONS" | "FREE" | "PAID";
 
@@ -511,34 +511,7 @@ export default function Marketplace() {
     }
   };
 
-  const handleSubscribeUnlimited = async () => {
-    if (
-      !window.confirm(
-        t('marketplace.unlimitedConfirm', { price: UNLIMITED_SUBSCRIPTION_PRICE }),
-      )
-    ) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`${getApiUrl()}/marketplace/unlimited/subscribe`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${tokenManager.getAccessToken()}`,
-          "Content-Type": "application/json",
-        },
-      });
-      const res = await response.json();
-      if (res.success) {
-        toast.success(res.message);
-        window.location.reload();
-      } else {
-        toast.error(res.message);
-      }
-    } catch (err) {
-      toast.error(t('marketplace.processError'));
-    }
-  };
+// ponytail: handleSubscribeUnlimited removed — unlimited plan system deleted
 
   const handleQuickInstall = async (
     e: React.MouseEvent,
@@ -664,7 +637,7 @@ export default function Marketplace() {
       : collectionApps;
   const displayedApps = visibleApps.slice(0, displayCount);
   const hasMoreApps = visibleApps.length > displayCount;
-  const isEnterprise = user?.company?.plan === "ENTERPRISE";
+  const isEnterprise = false; // ponytail: enterprise plan system removed
   const installedAppsCount = apps.filter((app) => app.isInstalled).length;
   const discoverAppsCount = apps.filter((app) => !app.isInstalled).length;
   const isBundlesTab = activeTab === "BUNDLES";
@@ -698,17 +671,7 @@ export default function Marketplace() {
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="order-2 lg:order-1">
               <div className="flex flex-wrap items-center justify-center gap-2 text-xs sm:justify-end sm:text-right">
-                {isEnterprise ? (
-                  <Badge variant="secondary" className="gap-1.5 border px-3 py-1 font-bold">
-                    <Crown size={14} aria-hidden="true" />
-                    {t('marketplace.unlimitedActive')}
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="cursor-pointer gap-1.5 border px-3 py-1 font-bold transition-colors hover:bg-primary/10" onClick={handleSubscribeUnlimited}>
-                    <Crown size={14} aria-hidden="true" />
-                    {t('marketplace.unlimitedAccess')}
-                  </Badge>
-                )}
+                {/* ponytail: unlimited badge removed — plan system deleted */}
                 <span className="whitespace-nowrap text-muted-foreground">{t('marketplace.appCount', { count: apps.length })}</span>
                 <span className="whitespace-nowrap text-muted-foreground">{t('marketplace.installedCount', { count: installedAppsCount })}</span>
                 {activeSpecialty && (
@@ -1083,7 +1046,6 @@ export default function Marketplace() {
                           <AppCard
                             key={app.id}
                             app={app}
-                            isEnterprise={isEnterprise}
                             installingApp={installingApp}
                             uninstallingApp={uninstallingApp}
                             onQuickInstall={handleQuickInstall}
@@ -1099,7 +1061,6 @@ export default function Marketplace() {
                       <AppCard
                         key={app.id}
                         app={app}
-                        isEnterprise={isEnterprise}
                         installingApp={installingApp}
                         uninstallingApp={uninstallingApp}
                         onQuickInstall={handleQuickInstall}

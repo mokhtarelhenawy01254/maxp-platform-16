@@ -8,10 +8,8 @@ const { isPermissionError, getPermissionErrorMessage } = require('../utils/dbPer
 const { generateUniqueCompanySlug, ensureCompanySlug } = require('../utils/companySlug');
 const {
   buildCompanyResponseWithOnboarding,
-  mergeCompanyOnboardingSettings,
   serializeCompanySettings,
 } = require('../utils/companyOnboarding');
-const { recordCompanyFunnelEvent } = require('../utils/companyFunnelAnalytics');
 const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 const { getJwtSecret, getJwtRefreshSecret } = require('../utils/jwtSecret');
 const businessSpecialtyService = require('../services/businessSpecialtyService');
@@ -93,7 +91,7 @@ const initializeRegisteredCompany = async (companyId, trialDays = 0, options = {
         trialDays,
         source: 'signup-specialty',
       });
-      await billingService.createSubscription(companyId, 'PRO', trialDays);
+      await billingService.createSubscription(companyId);
     });
 
     console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ [REGISTER] SaaS ecosystem initialized for company:', companyId);
@@ -167,44 +165,13 @@ const register = async (req, res) => {
     const selectedSpecialty = await businessSpecialtyService.resolveSpecialtyForRegistration(
       businessSpecialtyId || businessSpecialtySlug || specialtySlug,
     );
-    const onboardingSettings = await businessSpecialtyService.getOnboardingSettings();
+    const trialSettings = await businessSpecialtyService.getOnboardingSettings();
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const uniqueSlug = await generateUniqueCompanySlug(trimmedCompanyName, {
       prisma,
       email: normalizedEmail
     });
-    const onboardingPatch = selectedSpecialty
-      ? { currentStep: 3, completedSteps: ['welcome', 'operations'], profile: { workspaceName: trimmedCompanyName, phone: phone || '', industry: selectedSpecialty.slug, currency: 'EGP' } }
-      : { currentStep: 1, completedSteps: ['welcome'], profile: { workspaceName: trimmedCompanyName, phone: phone || '', industry: '' } };
-    const { settings: initialCompanySettings } = mergeCompanyOnboardingSettings(
-      null,
-      {
-        company: {
-          name: trimmedCompanyName,
-          phone: phone || null,
-          currency: 'EGP'
-        },
-        user: {
-          phone: phone || null
-        }
-      },
-      onboardingPatch
-    );
-
-    const seededFunnelSettings = recordCompanyFunnelEvent(
-      initialCompanySettings,
-      {
-        type: 'register_completed',
-        source: 'auth_register',
-        metadata: {
-          eventSource: 'auth_register',
-          partnerCode: partnerCode || '',
-          promoCode: validatedSignupCoupon?.normalizedCode || promoCode || '',
-          businessSpecialtySlug: selectedSpecialty?.slug || '',
-        },
-      },
-    ).settings;
 
     const company = await prisma.company.create({
       data: {
@@ -212,13 +179,11 @@ const register = async (req, res) => {
         slug: uniqueSlug,
         email: normalizedEmail,
         phone: phone || null,
-        plan: 'PRO',
+        plan: 'PRO', // ponytail: plan tier kept as reference, pricing is per-app/bundle
         isActive: true,
-        // useCentralKeys field removed
         sidebarLayout: 'three-tier',
         timezone: userTimezone,
         businessSpecialtyId: selectedSpecialty?.id || null,
-        settings: serializeCompanySettings(seededFunnelSettings)
       }
     });
 
@@ -252,7 +217,7 @@ const register = async (req, res) => {
     }
 
     let appliedSignupCoupon = null;
-    let totalTrialDays = onboardingSettings.defaultTrialDays;
+    let totalTrialDays = trialSettings.defaultTrialDays;
     if (validatedSignupCoupon) {
       const couponRedemption =
         await platformSignupCouponService.applySignupCouponRedemption({

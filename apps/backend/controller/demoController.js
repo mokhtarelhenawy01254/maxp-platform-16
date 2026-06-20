@@ -20,7 +20,6 @@ const createDemoUsers = async(req , res)=>{
         email: 'demo@smartchat.com',
         phone: '+20123456789',
         address: 'القاهرة، مصر',
-        plan: 'PRO',
         currency: 'EGP',
         isActive: true,
         settings: JSON.stringify({
