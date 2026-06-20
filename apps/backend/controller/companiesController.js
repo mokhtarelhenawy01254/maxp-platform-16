@@ -3252,20 +3252,6 @@ const FrontendSpecificSafeEndpoint = async (req, res) => {
       success: true,
       data: {
         products: 0,
-            unit: "جيجا",
-            color: "#F59E0B",
-            icon: "💾",
-          },
-          {
-            name: "استدعاءات API",
-            current: 0,
-            limit: 10000,
-            percentage: 0,
-            unit: "استدعاء",
-            color: "#8B5CF6",
-            icon: "🔗",
-          },
-        ],
       },
     });
   }
