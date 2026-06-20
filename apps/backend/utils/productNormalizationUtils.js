@@ -375,7 +375,7 @@ function formatProductResponse(product) {
     };
   });
 
-  const finalMainImage = normalizedImages.length > 0 ? normalizedImages[0] : (normalizedMainImage || null);
+  const finalMainImage = normalizedMainImage || normalizedImages[0] || null;
 
   return {
     ...product,

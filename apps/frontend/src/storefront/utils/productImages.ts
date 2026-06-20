@@ -323,10 +323,7 @@ export const buildStorefrontImageCandidates = (...sources: unknown[]): string[] 
 };
 
 export const getProductImageCandidates = (product?: ProductLike | null): string[] => {
-  const candidates = buildStorefrontImageCandidates(product?.images);
-  return candidates.length > 0
-    ? candidates
-    : buildStorefrontImageCandidates(product?.mainImage, product?.image);
+  return buildStorefrontImageCandidates(product?.images, product?.mainImage, product?.image);
 };
 
 export const getPrimaryProductImage = (product?: ProductLike | null): string =>
