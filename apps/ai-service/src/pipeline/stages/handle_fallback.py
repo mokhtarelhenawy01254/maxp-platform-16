@@ -101,10 +101,12 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
     if not ctx.llm_response:
         client = getattr(ctx, "llm_client", None) or (getattr(ctx.agent, "client", None) if ctx.agent else None)
         if client:
-            messages = ctx.messages or [
-                {"role": "system", "content": ctx.system_prompt or ""},
-                {"role": "user", "content": ctx.message},
-            ]
+            messages = ctx.messages or []
+            if not messages or messages[0].get("role") != "system":
+                messages = [
+                    {"role": "system", "content": ctx.system_prompt or ""},
+                ] + messages
+            messages = messages + [{"role": "user", "content": ctx.message}]
             requires_tool = bool(getattr(ctx.relevance_plan, "requiresTool", False))
             classifier_unavailable = _is_classifier_unavailable(ctx)
             primary_tool = getattr(ctx.relevance_plan, "primaryTool", None)
@@ -117,7 +119,7 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
                     if classifier_unavailable
                     else "The model-classified plan requires a tool, but no tool result is available for this turn."
                 )
-                messages = [
+                classifier_messages = [
                     {
                         "role": "system",
                         "content": (
@@ -129,19 +131,21 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
                             f"\n\nAgent voice profile:\n{_strip_tool_sections(voice_profile)}"
                         ).strip(),
                     },
+                ] + [m for m in messages if m.get("role") != "system"] + [
                     {"role": "user", "content": ctx.message},
+                    {
+                        "role": "user",
+                        "content": (
+                            "[Tool Evidence Missing]\n"
+                            f"{evidence_status} "
+                            "Generate a natural customer-facing reply that does not invent product, order, shipping, "
+                            "customer, price, stock, or action-completion facts. Ask for the missing detail or say you "
+                            "need to check it through the system.\n"
+                            "[/Tool Evidence Missing]"
+                        ),
+                    },
                 ]
-                messages.append({
-                    "role": "user",
-                    "content": (
-                        "[Tool Evidence Missing]\n"
-                        f"{evidence_status} "
-                        "Generate a natural customer-facing reply that does not invent product, order, shipping, "
-                        "customer, price, stock, or action-completion facts. Ask for the missing detail or say you "
-                        "need to check it through the system.\n"
-                        "[/Tool Evidence Missing]"
-                    ),
-                })
+                messages = classifier_messages
             if ctx.early_return:
                 messages.append({
                     "role": "user",
@@ -205,10 +209,10 @@ async def handle_fallback(ctx: PipelineContext) -> PipelineContext:
     if (not ctx.llm_response or not ctx.llm_response.strip()) and not ctx.early_return:
         client = getattr(ctx, "llm_client", None) or (getattr(ctx.agent, "client", None) if ctx.agent else None)
         if client:
-            fallback_messages = ctx.messages or [
+            fallback_messages = [m for m in (ctx.messages or []) if m.get("role") != "system"]
+            fallback_messages = [
                 {"role": "system", "content": ctx.system_prompt or "You are a helpful customer support assistant."},
-                {"role": "user", "content": ctx.message},
-            ]
+            ] + fallback_messages + [{"role": "user", "content": ctx.message}]
             try:
                 response = await client.get_response(
                     to_client_messages(fallback_messages),

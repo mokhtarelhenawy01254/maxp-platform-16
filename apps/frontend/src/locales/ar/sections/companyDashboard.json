@@ -263,5 +263,12 @@
   "loading": {
     "title": "جاري تحميل لوحة التحكم",
     "summary": "جلب أحدث بيانات الشركة..."
+  },
+  "orderStats": {
+    "title": "[AR] Order Status",
+    "newOrders": "[AR] New Orders",
+    "viewedOrders": "[AR] Reviewed Orders",
+    "totalOrders": "[AR] Total Orders",
+    "requiresAttention": "[AR] Needs attention"
   }
 }

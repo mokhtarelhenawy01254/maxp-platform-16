@@ -345,7 +345,7 @@ class ContextAssembler:
         retained_history, summary_text = await compress_history(
             messages=history,
             max_tokens=1000,
-            keep_recent=4,
+            keep_recent=15,
             llm_client=llm_client
         )
 

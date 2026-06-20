@@ -197,7 +197,6 @@ async def resume_sdk_approval_workflow(
         context,
         [
             resolve_intent,
-            retrieve_knowledge,
             route_to_tools,
             execute_tools,
             handle_fallback,

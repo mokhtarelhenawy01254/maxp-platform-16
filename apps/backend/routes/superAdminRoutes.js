@@ -5,6 +5,7 @@ const superAdminAiController = require("../controller/superAdminAiController");
 const devTaskIntegrationController = require("../controller/devTaskIntegrationController");
 const storePagesController = require("../controller/storePagesController");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
+const aiServiceAdminClient = require("../services/aiServiceAdminClient");
 const { TOOLS } = { TOOLS: {} };
 const { t } = require("../services/i18n");
 const { clearCache, clearAgentCache } = { clearCache: async () => {}, clearAgentCache: async () => {} };
@@ -539,6 +540,22 @@ router.get(
   storePagesController.getAllPagesSuperAdmin,
 );
 
+// GET /companies/quick-list — lightweight listing for dropdowns
+router.get("/companies/quick-list", async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const companies = await prisma.company.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+      take: 500,
+    });
+    return res.json({ success: true, companies });
+  } catch (error) {
+    console.error('[SA] companies quick-list error:', error.message);
+    return res.status(500).json({ success: false, error: 'فشل تحميل قائمة الشركات' });
+  }
+});
+
 // 🤖 AI Agent Templates — now managed by ai-service (AgentTemplate table)
 // 2026 refactor: agent_definitions table is deprecated; templates live in ai.agent_templates
 // These routes proxy to the ai-service admin API.
@@ -558,6 +575,71 @@ router.get("/agents", async (req, res) => {
   } catch (error) {
     console.error('[SA-AGENTS] GET list error:', error.message);
     return res.status(500).json({ success: false, error: 'فشل تحميل قائمة الوكلاء' });
+  }
+});
+
+const AGENT_ICONS = {
+  CEO: '👔', SUPPORT: '🎧', SALES: '🤝', SMART_SELLER: '🛒',
+  MARKETING: '📢', ORDER: '📦', INVENTORY: '📊', COMPETITOR: '🔍',
+  FACEBOOK_SALES_SUPPORT: '💬', SAS_SALES: '🛍️',
+};
+
+const AGENT_INDUSTRIES = {
+  'support-agent': ['خدمة عملاء', 'تجارة إلكترونية', 'خدمات'],
+  'sales-agent': ['مبيعات', 'تجارة إلكترونية', 'عقارات'],
+  'smart-seller-agent': ['تجارة إلكترونية', 'تجزئة'],
+  'marketing-agent': ['تسويق', 'إعلانات', 'علامات تجارية'],
+  'order-agent': ['طلبات', 'تجارة إلكترونية', 'مطاعم'],
+  'inventory-pricing-agent': ['مخزون', 'تجارة إلكترونية', 'تجزئة'],
+  'manager-ceo': ['إدارة', 'ريادة أعمال'],
+  'competitor-analysis': ['أبحاث سوق', 'تحليل تنافسي'],
+  'facebook-sales-support-agent': ['مبيعات فيسبوك', 'تجارة إلكترونية'],
+  'customer-ceo': ['خدمة عملاء', 'تجارة إلكترونية'],
+  'sas-sales-agent': ['مبيعات', 'تجارة إلكترونية', 'فيس بوك'],
+};
+
+// GET /agents/marketplace — enriched listing for the template marketplace
+router.get("/agents/marketplace", async (req, res) => {
+  try {
+    const result = await aiServiceAdminClient.listAgentTemplates();
+    return res.json({
+      success: true,
+      templates: Array.isArray(result) ? result.map(a => ({
+        slug: a.slug, name: a.name, role: a.role, version: a.version,
+        icon: AGENT_ICONS[a.role] || '🤖',
+        description: a.role || '',
+        personaMeta: a.persona_meta || {},
+        soulPreview: a.instructions_soul?.split('\n').slice(0, 3).join('\n').substring(0, 200) || '',
+        toolsCount: a.allowed_tools?.length || 0,
+        skillsCount: a.allowed_skills?.length || 0,
+        channels: a.channels || [],
+        budget: a.budget || {},
+        industries: AGENT_INDUSTRIES[a.slug] || [],
+      })) : [],
+    });
+  } catch (error) {
+    console.error('[SA-AGENTS] GET marketplace error:', error.message);
+    return res.status(500).json({ success: false, error: 'فشل تحميل سوق القوالب' });
+  }
+});
+
+// POST /agents/apply-template — apply a template to a company
+router.post("/agents/apply-template", async (req, res) => {
+  try {
+    const { templateSlug, companyId } = req.body || {};
+    if (!templateSlug || !companyId)
+      return res.status(400).json({ success: false, error: 'templateSlug و companyId مطلوبان' });
+    const template = await aiServiceAdminClient.getAgentTemplate(templateSlug);
+    if (!template)
+      return res.status(404).json({ success: false, error: 'القالب غير موجود' });
+    const result = await aiServiceAdminClient.spawnAgent({
+      companyId, template_slug: templateSlug, role: template.role || 'CEO',
+      name: template.name,
+    });
+    return res.json({ success: true, agent: result, message: 'تم تطبيق القالب بنجاح' });
+  } catch (error) {
+    console.error('[SA-AGENTS] apply-template error:', error.message);
+    return res.status(500).json({ success: false, error: 'فشل تطبيق القالب' });
   }
 });
 

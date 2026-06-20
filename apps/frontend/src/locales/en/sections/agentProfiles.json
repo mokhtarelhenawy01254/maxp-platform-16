@@ -122,6 +122,7 @@
   },
   "settings": {
     "basicInfo": "Basic Info",
+    "behavior": "Behavior",
     "agentName": "Assistant Name",
     "agentNamePlaceholder": "Enter assistant name",
     "description": "Description",
@@ -169,7 +170,10 @@
     "welcomeHint": "Optional greeting shown to the customer at the start of a chat",
     "welcomePlaceholder": "e.g. Hello! I am your personal assistant, how can I help?",
     "escalation": "When Unsure",
-    "escalationHint": "What should the assistant do when it does not know the answer?"
+    "escalationHint": "What should the assistant do when it does not know the answer?",
+    "customPrompt": "Custom Instructions",
+    "customPromptPlaceholder": "e.g. Avoid English terms, address the customer by first name...",
+    "customPromptHint": "Free-form field for any additions beyond the templates"
   },
   "autonomy": {
     "auto": "Auto",

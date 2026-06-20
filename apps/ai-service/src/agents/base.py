@@ -833,6 +833,13 @@ class BaseAgent:
             attachments=attachments,
             external_memory_context=self._build_external_memory_context(task),
         )
+        # Pre-populate native_tools from _resolve_tools so the pipeline
+        # always sees the effective tool set (resolves CORE_TOOLS fallback).
+        try:
+            resolved = self._resolve_tools()
+            ctx.native_tools = [{"name": t.name} for t in resolved]
+        except Exception:
+            pass
         if vision_client_required and task_llm_client is None:
             ctx.early_return = {
                 "status": "PROVIDER_ERROR",
@@ -847,7 +854,6 @@ class BaseAgent:
             ctx,
             [
                 resolve_intent,
-                retrieve_knowledge,
                 retrieve_episodic_memory,
                 route_to_tools,
                 execute_tools,
