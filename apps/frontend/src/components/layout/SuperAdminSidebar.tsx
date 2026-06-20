@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Building2, BarChart3, Settings, Shield, DollarSign, Wallet, Brain,
   History, Globe, Headphones, Ticket, ChevronUp, ChevronDown, Briefcase, Tag, TrendingUp,
   Wrench, Activity, Sliders, Facebook, Trophy, GitBranch, Users, Clock, HardDrive,
-  MessageSquare, Key, Play, Download, Code2, Rocket, Palette, LogOut, Database, Bot,
+  MessageSquare, Key, Play, Download, Code2, Rocket, Palette, LogOut, Database,
 } from "lucide-react";
 import i18n from "../../i18n";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -61,8 +61,6 @@ export const menuGroups = [
     { text: i18n.t("superAdmin.evaluation.ceoAgentSettings"), icon: <Sliders className="size-5" />, path: "/super-admin/agent-config" },
     { text: i18n.t("superAdmin.evaluation.providerLogs"), icon: <History className="size-5" />, path: "/super-admin/ai-providers/logs" },
     { text: "تضمينات المنتجات", icon: <Database className="size-4" />, path: "/super-admin/product-embeddings" },
-  ]},
-  { title: "مركز الذكاء الاصطناعي", icon: <Bot className="size-5" />, items: [
     { text: "مهارات الوكيل", icon: <Sliders className="size-4" />, path: "/super-admin/ai-hub?tab=skills" },
     { text: "أدوات الوكيل", icon: <Wrench className="size-4" />, path: "/super-admin/ai-hub?tab=tools" },
     { text: "قاعدة المعرفة (RAG)", icon: <Database className="size-4" />, path: "/super-admin/ai-hub?tab=rag" },

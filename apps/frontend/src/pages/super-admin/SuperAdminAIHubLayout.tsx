@@ -13,8 +13,8 @@ interface Company {
 }
 
 const TABS = [
-  { key: "skills", label: "مهارات الوكيل", needsCompany: false },
-  { key: "tools", label: "أدوات الوكيل", needsCompany: false },
+  { key: "skills", label: "مهارات الوكيل", needsCompany: true },
+  { key: "tools", label: "أدوات الوكيل", needsCompany: true },
   { key: "rag", label: "قاعدة المعرفة (RAG)", needsCompany: true },
 ] as const;
 
@@ -39,10 +39,6 @@ export default function SuperAdminAIHubLayout() {
     })();
   }, [currentTabMeta.needsCompany, companies.length]);
 
-  // Reset company selection when switching away from company-aware tabs
-  useEffect(() => {
-    if (!currentTabMeta.needsCompany) setSelectedCompanyId("");
-  }, [currentTabMeta.needsCompany]);
 
   useLayoutEffect(() => {
     const appShellContent = document.querySelector<HTMLElement>(".app-shell-content");
@@ -122,16 +118,20 @@ export default function SuperAdminAIHubLayout() {
             </div>
           }
         >
-          {activeTab === "skills" && <AgentSkillsPage />}
-          {activeTab === "tools" && <AgentToolsPage />}
+          {activeTab === "skills" && (
+            selectedCompanyId
+              ? <AgentSkillsPage key={selectedCompanyId} companyId={selectedCompanyId} />
+              : <div className="flex h-64 items-center justify-center text-muted-foreground">اختر شركة لعرض مهارات الوكيل</div>
+          )}
+          {activeTab === "tools" && (
+            selectedCompanyId
+              ? <AgentToolsPage key={selectedCompanyId} companyId={selectedCompanyId} />
+              : <div className="flex h-64 items-center justify-center text-muted-foreground">اختر شركة لعرض أدوات الوكيل</div>
+          )}
           {activeTab === "rag" && (
-            selectedCompanyId ? (
-              <AgenticRAGLab key={selectedCompanyId} companyId={selectedCompanyId} />
-            ) : (
-              <div className="flex h-64 items-center justify-center text-muted-foreground">
-                اختر شركة لعرض قاعدة المعرفة
-              </div>
-            )
+            selectedCompanyId
+              ? <AgenticRAGLab key={selectedCompanyId} companyId={selectedCompanyId} />
+              : <div className="flex h-64 items-center justify-center text-muted-foreground">اختر شركة لعرض قاعدة المعرفة</div>
           )}
         </React.Suspense>
       </div>

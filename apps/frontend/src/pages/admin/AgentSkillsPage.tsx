@@ -43,20 +43,22 @@ interface ToolDefinition { name: string; description: string; sideEffects: "read
 interface SkillDefinition { id: string; displayName: string; version?: string; description?: string; allowedTools: string[]; requiresHumanApproval?: boolean; maxToolCount?: number; skillMd?: string; }
 interface AgentDefinition { id: string; name: string; role: string; icon: string; status: string; allowedSkills?: string[]; allowedTools?: string[]; }
 
-const apiRequest = async <T,>(path: string): Promise<T> => {
-  const response = await fetch(buildApiUrl(path), { headers: tokenManager.createAuthHeaders() });
+const cq = (path: string, companyId?: string) =>
+  companyId ? `${path}${path.includes("?") ? "&" : "?"}companyId=${encodeURIComponent(companyId)}` : path;
+const apiRequest = async <T,>(path: string, companyId?: string): Promise<T> => {
+  const response = await fetch(buildApiUrl(cq(path, companyId)), { headers: tokenManager.createAuthHeaders() });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.success === false) throw new Error(data.error || data.message || `Request failed: ${response.status}`);
   return data as T;
 };
-const apiPut = async <T,>(path: string, body: unknown): Promise<T> => {
-  const response = await fetch(buildApiUrl(path), { method: "PUT", headers: { ...tokenManager.createAuthHeaders(), "Content-Type": "application/json" }, body: JSON.stringify(body) });
+const apiPut = async <T,>(path: string, body: unknown, companyId?: string): Promise<T> => {
+  const response = await fetch(buildApiUrl(cq(path, companyId)), { method: "PUT", headers: { ...tokenManager.createAuthHeaders(), "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.success === false) throw new Error(data.error || data.message || `Request failed: ${response.status}`);
   return data as T;
 };
 
-function AssignSkillDialog({ open, skillId, agents, onClose, onSaved }: { open: boolean; skillId: string; agents: AgentDefinition[]; onClose: () => void; onSaved: () => void }) {
+function AssignSkillDialog({ open, skillId, agents, onClose, onSaved, companyId }: { open: boolean; skillId: string; agents: AgentDefinition[]; onClose: () => void; onSaved: () => void; companyId?: string }) {
   const { t } = useTranslation();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState(""); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null);
@@ -65,7 +67,7 @@ function AssignSkillDialog({ open, skillId, agents, onClose, onSaved }: { open: 
   const filtered = useMemo(() => { if (!search.trim()) return agents; const q = search.toLowerCase(); return agents.filter((a) => [a.name, a.role, a.id].some((v) => String(v).toLowerCase().includes(q))); }, [agents, search]);
   const toggle = (id: string) => setSelected((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const toggleAll = () => { if (selected.size === filtered.length) setSelected(new Set()); else setSelected(new Set(filtered.map((a) => a.id))); };
-  const handleSave = async () => { setSaving(true); setError(null); try { await Promise.all(agents.map(async (agent) => { const has = agent.allowedSkills?.includes(skillId); const add = selected.has(agent.id); if (has === add) return; const ns = add ? [...(agent.allowedSkills || []), skillId] : (agent.allowedSkills || []).filter((s) => s !== skillId); return apiPut(`/agent/agents/${agent.id}/files`, { name: agent.name, role: agent.role, allowedTools: agent.allowedTools || [], allowedSkills: ns }); })); onSaved(); onClose(); } catch (err: any) { setError(err.message || t("common.saveError")); } finally { setSaving(false); } };
+  const handleSave = async () => { setSaving(true); setError(null); try { await Promise.all(agents.map(async (agent) => { const has = agent.allowedSkills?.includes(skillId); const add = selected.has(agent.id); if (has === add) return; const ns = add ? [...(agent.allowedSkills || []), skillId] : (agent.allowedSkills || []).filter((s) => s !== skillId); return apiPut(`/agent/agents/${agent.id}/files`, { name: agent.name, role: agent.role, allowedTools: agent.allowedTools || [], allowedSkills: ns }, companyId); })); onSaved(); onClose(); } catch (err: any) { setError(err.message || t("common.saveError")); } finally { setSaving(false); } };
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -94,7 +96,7 @@ function AssignSkillDialog({ open, skillId, agents, onClose, onSaved }: { open: 
   );
 }
 
-function CreateSkillDialog({ open, tools, onClose, onSaved }: { open: boolean; tools: ToolDefinition[]; onClose: () => void; onSaved: () => void }) {
+function CreateSkillDialog({ open, tools, onClose, onSaved, companyId }: { open: boolean; tools: ToolDefinition[]; onClose: () => void; onSaved: () => void; companyId?: string }) {
   const { t } = useTranslation();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -120,7 +122,7 @@ function CreateSkillDialog({ open, tools, onClose, onSaved }: { open: boolean; t
     if (!instructions.trim()) { setError(t("agentSkills.errorInstructionsRequired")); return; }
     setSaving(true); setError(null);
     try {
-      const response = await fetch(buildApiUrl("agent/skills"), {
+      const response = await fetch(buildApiUrl(cq("agent/skills", companyId)), {
         method: "POST",
         headers: { ...tokenManager.createAuthHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -198,7 +200,7 @@ function CreateSkillDialog({ open, tools, onClose, onSaved }: { open: boolean; t
   );
 }
 
-export default function AgentSkillsPage() {
+export default function AgentSkillsPage({ companyId }: { companyId?: string } = {}) {
   const { t } = useTranslation();
   const [skills, setSkills] = useState<SkillDefinition[]>([]);
   const [tools, setTools] = useState<ToolDefinition[]>([]);
@@ -210,7 +212,7 @@ export default function AgentSkillsPage() {
 
   const toolMap = useMemo(() => new Map(tools.map((t) => [t.name, t])), [tools]);
   const filteredSkills = useMemo(() => { const n = query.trim().toLowerCase(); if (!n) return skills; return skills.filter((s) => [s.id, s.displayName, s.description, ...(s.allowedTools || [])].filter(Boolean).some((v) => String(v).toLowerCase().includes(n))); }, [skills, query]);
-  const loadAll = useCallback(async () => { setLoading(true); setError(null); try { const [sd, td, ad] = await Promise.all([apiRequest<{ success: true; skills: SkillDefinition[] }>("agent/skills"), apiRequest<{ success: true; tools: ToolDefinition[] }>("agent/tools"), apiRequest<{ success: true; agents: AgentDefinition[] }>("agent-manager/agents")]); setSkills(sd.skills || []); setTools(td.tools || []); setAgents(ad.agents || []); } catch (err: any) { setError(err.message || t("common.loadError")); } finally { setLoading(false); } }, []);
+  const loadAll = useCallback(async () => { setLoading(true); setError(null); try { const [sd, td, ad] = await Promise.all([apiRequest<{ success: true; skills: SkillDefinition[] }>("agent/skills", companyId), apiRequest<{ success: true; tools: ToolDefinition[] }>("agent/tools", companyId), apiRequest<{ success: true; agents: AgentDefinition[] }>("agent-manager/agents", companyId)]); setSkills(sd.skills || []); setTools(td.tools || []); setAgents(ad.agents || []); } catch (err: any) { setError(err.message || t("common.loadError")); } finally { setLoading(false); } }, [companyId]);
   useEffect(() => { loadAll(); }, [loadAll]);
   const skillAgentCount = useMemo(() => { const m = new Map<string, number>(); for (const a of agents) { for (const sid of a.allowedSkills || []) m.set(sid, (m.get(sid) || 0) + 1); } return m; }, [agents]);
 
@@ -272,8 +274,8 @@ export default function AgentSkillsPage() {
         </DialogContent>
       </Dialog>
 
-      <AssignSkillDialog open={!!assignSkill} skillId={assignSkill || ""} agents={agents} onClose={() => setAssignSkill(null)} onSaved={loadAll} />
-      <CreateSkillDialog open={createOpen} tools={tools} onClose={() => setCreateOpen(false)} onSaved={loadAll} />
+      <AssignSkillDialog open={!!assignSkill} skillId={assignSkill || ""} agents={agents} onClose={() => setAssignSkill(null)} onSaved={loadAll} companyId={companyId} />
+      <CreateSkillDialog open={createOpen} tools={tools} onClose={() => setCreateOpen(false)} onSaved={loadAll} companyId={companyId} />
     </div>
   );
 }

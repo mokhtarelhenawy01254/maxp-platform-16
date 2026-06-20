@@ -48,20 +48,22 @@ interface ToolDefinition { name: string; description: string; sideEffects: "read
 interface AgentToolInfo { id: string; name: string; role: string; icon: string; status: string; autonomy?: string; }
 interface AgentDefinition { id: string; name: string; role: string; icon: string; status: string; allowedTools: string[]; toolAutonomy?: Record<string, string>; }
 
-const apiRequest = async <T,>(path: string): Promise<T> => {
-  const response = await fetch(buildApiUrl(path), { headers: tokenManager.createAuthHeaders() });
+const cq = (path: string, companyId?: string) =>
+  companyId ? `${path}${path.includes("?") ? "&" : "?"}companyId=${encodeURIComponent(companyId)}` : path;
+const apiRequest = async <T,>(path: string, companyId?: string): Promise<T> => {
+  const response = await fetch(buildApiUrl(cq(path, companyId)), { headers: tokenManager.createAuthHeaders() });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.success === false) throw new Error(data.error || data.message || `Request failed: ${response.status}`);
   return data as T;
 };
-const apiPut = async <T,>(path: string, body: unknown): Promise<T> => {
-  const response = await fetch(buildApiUrl(path), { method: "PUT", headers: { ...tokenManager.createAuthHeaders(), "Content-Type": "application/json" }, body: JSON.stringify(body) });
+const apiPut = async <T,>(path: string, body: unknown, companyId?: string): Promise<T> => {
+  const response = await fetch(buildApiUrl(cq(path, companyId)), { method: "PUT", headers: { ...tokenManager.createAuthHeaders(), "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.success === false) throw new Error(data.error || data.message || `Request failed: ${response.status}`);
   return data as T;
 };
 
-function AssignToolDialog({ open, toolName, agents, onClose, onSaved }: { open: boolean; toolName: string; agents: AgentDefinition[]; onClose: () => void; onSaved: () => void }) {
+function AssignToolDialog({ open, toolName, agents, onClose, onSaved, companyId }: { open: boolean; toolName: string; agents: AgentDefinition[]; onClose: () => void; onSaved: () => void; companyId?: string }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState(""); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null);
 
@@ -69,7 +71,7 @@ function AssignToolDialog({ open, toolName, agents, onClose, onSaved }: { open: 
   const filtered = useMemo(() => { if (!search.trim()) return agents; const q = search.toLowerCase(); return agents.filter((a) => [a.name, a.role, a.id].some((v) => String(v).toLowerCase().includes(q))); }, [agents, search]);
   const toggle = (id: string) => setSelected((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const toggleAll = () => { if (selected.size === filtered.length) setSelected(new Set()); else setSelected(new Set(filtered.map((a) => a.id))); };
-  const handleSave = async () => { setSaving(true); setError(null); try { await Promise.all(agents.map(async (agent) => { const has = agent.allowedTools?.includes(toolName); const add = selected.has(agent.id); if (has === add) return; const nt = add ? [...(agent.allowedTools || []), toolName] : (agent.allowedTools || []).filter((t) => t !== toolName); return apiPut(`/agent/agents/${agent.id}/files`, { name: agent.name, role: agent.role, allowedTools: nt, allowedSkills: [], toolAutonomy: { ...(agent.toolAutonomy || {}), ...(add ? { [toolName]: "auto" } : {}) } }); })); onSaved(); onClose(); } catch (err: any) { setError(err.message || i18n.t("common.saveError")); } finally { setSaving(false); } };
+  const handleSave = async () => { setSaving(true); setError(null); try { await Promise.all(agents.map(async (agent) => { const has = agent.allowedTools?.includes(toolName); const add = selected.has(agent.id); if (has === add) return; const nt = add ? [...(agent.allowedTools || []), toolName] : (agent.allowedTools || []).filter((t) => t !== toolName); return apiPut(`/agent/agents/${agent.id}/files`, { name: agent.name, role: agent.role, allowedTools: nt, allowedSkills: [], toolAutonomy: { ...(agent.toolAutonomy || {}), ...(add ? { [toolName]: "auto" } : {}) } }, companyId); })); onSaved(); onClose(); } catch (err: any) { setError(err.message || i18n.t("common.saveError")); } finally { setSaving(false); } };
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -89,7 +91,7 @@ function AssignToolDialog({ open, toolName, agents, onClose, onSaved }: { open: 
   );
 }
 
-export default function AgentToolsPage() {
+export default function AgentToolsPage({ companyId }: { companyId?: string } = {}) {
   const navigate = useNavigate();
   const [tools, setTools] = useState<ToolDefinition[]>([]);
   const [agents, setAgents] = useState<AgentDefinition[]>([]);
@@ -103,7 +105,7 @@ export default function AgentToolsPage() {
     return m;
   }, [agents, tools]);
   const filteredTools = useMemo(() => { const n = query.trim().toLowerCase(); if (!n) return tools; return tools.filter((t) => { const an = (toolToAgents.get(t.name) || []).map((a) => a.name).join(" "); return [t.name, t.description, t.sideEffects, an].filter(Boolean).some((v) => String(v).toLowerCase().includes(n)); }); }, [tools, query, toolToAgents]);
-  const loadAll = useCallback(async () => { setLoading(true); setError(null); try { const [td, ad] = await Promise.all([apiRequest<{ success: true; tools: ToolDefinition[] }>("agent/tools"), apiRequest<{ success: true; agents: AgentDefinition[] }>("agent-manager/agents")]); setTools(td.tools || []); setAgents(ad.agents || []); } catch (err: any) { setError(err.message || i18n.t("common.loadError")); } finally { setLoading(false); } }, []);
+  const loadAll = useCallback(async () => { setLoading(true); setError(null); try { const [td, ad] = await Promise.all([apiRequest<{ success: true; tools: ToolDefinition[] }>("agent/tools", companyId), apiRequest<{ success: true; agents: AgentDefinition[] }>("agent-manager/agents", companyId)]); setTools(td.tools || []); setAgents(ad.agents || []); } catch (err: any) { setError(err.message || i18n.t("common.loadError")); } finally { setLoading(false); } }, [companyId]);
   useEffect(() => { loadAll(); }, [loadAll]);
   const readT = filteredTools.filter((t) => !t.sideEffects || t.sideEffects === "read");
   const writeT = filteredTools.filter((t) => t.sideEffects === "write");
@@ -120,7 +122,7 @@ export default function AgentToolsPage() {
     const handleSaveDesc = async () => {
       setSaving(true);
       try {
-        const res = await fetch(buildApiUrl(`agent/tools/${encodeURIComponent(tool.name)}`), {
+        const res = await fetch(buildApiUrl(cq(`agent/tools/${encodeURIComponent(tool.name)}`, companyId)), {
           method: "PUT",
           headers: { ...tokenManager.createAuthHeaders(), "Content-Type": "application/json" },
           body: JSON.stringify({ description: editDesc.trim() }),
@@ -211,7 +213,7 @@ export default function AgentToolsPage() {
           {writeT.length > 0 && <div><div className="mb-3 flex items-center gap-2"><Lock className="size-5 text-amber-600" /><h2 className="text-base font-black">{i18n.t("agentTools.writeSection")}</h2><Badge variant="outline" className="border-amber-600 text-amber-600">{writeT.length}</Badge></div><div className="grid grid-cols-1 gap-3 md:grid-cols-2">{writeT.map((t) => (<ToolCard key={t.name} tool={t} />))}</div></div>}
         </div>}
 
-      <AssignToolDialog open={!!assignTool} toolName={assignTool || ""} agents={agents} onClose={() => setAssignTool(null)} onSaved={loadAll} />
+      <AssignToolDialog open={!!assignTool} toolName={assignTool || ""} agents={agents} onClose={() => setAssignTool(null)} onSaved={loadAll} companyId={companyId} />
     </div>
   );
 }
