@@ -47,7 +47,13 @@ type RagPolicyItem = {
   hasEmbedding: boolean;
 };
 
-const AgenticRAGLab: React.FC = () => {
+interface AgenticRAGLabProps {
+  companyId?: string;
+}
+
+const AgenticRAGLab: React.FC<AgenticRAGLabProps> = ({ companyId }) => {
+  const cq = (url: string) =>
+    companyId ? `${url}${url.includes("?") ? "&" : "?"}companyId=${encodeURIComponent(companyId)}` : url;
   const { t, i18n } = useTranslation();
   const tr = (key: string, options?: any) => String(t(key, options));
 
@@ -85,7 +91,7 @@ const AgenticRAGLab: React.FC = () => {
   const loadProducts = async (offset = 0) => {
     setProductsLoading(true);
     try {
-      const response = await fetch(buildApiUrl(`/ai/chat/rag-knowledge-products?limit=50&offset=${offset}`), {
+      const response = await fetch(buildApiUrl(cq(`/ai/chat/rag-knowledge-products?limit=50&offset=${offset}`)), {
         headers: getHeaders(),
       });
       const data = await response.json();
@@ -103,7 +109,7 @@ const AgenticRAGLab: React.FC = () => {
   const loadFaqItems = async () => {
     setFaqLoading(true);
     try {
-      const response = await fetch(buildApiUrl("/ai/chat/rag-knowledge-faqs?limit=200"), {
+      const response = await fetch(buildApiUrl(cq("/ai/chat/rag-knowledge-faqs?limit=200")), {
         headers: getHeaders(),
       });
       const data = await response.json();
@@ -116,7 +122,7 @@ const AgenticRAGLab: React.FC = () => {
   const loadPolicyItems = async () => {
     setPolicyLoading(true);
     try {
-      const response = await fetch(buildApiUrl("/ai/chat/rag-knowledge-policies?limit=200"), {
+      const response = await fetch(buildApiUrl(cq("/ai/chat/rag-knowledge-policies?limit=200")), {
         headers: getHeaders(),
       });
       const data = await response.json();
@@ -136,7 +142,7 @@ const AgenticRAGLab: React.FC = () => {
       const response = await fetch(buildApiUrl("/ai/chat/rag-knowledge-products-backfill"), {
         method: "POST",
         headers: getHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify(body),
+        body: JSON.stringify(companyId ? { ...body, companyId } : body),
       });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || "Backfill failed");
@@ -158,7 +164,7 @@ const AgenticRAGLab: React.FC = () => {
       const response = await fetch(buildApiUrl("/ai/chat/rag-knowledge-backfill"), {
         method: "POST",
         headers: getHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify({ target: "faq", limit: 200 }),
+        body: JSON.stringify({ target: "faq", limit: 200, ...(companyId ? { companyId } : {}) }),
       });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || "FAQ backfill failed");
@@ -180,7 +186,7 @@ const AgenticRAGLab: React.FC = () => {
       const response = await fetch(buildApiUrl("/ai/chat/rag-knowledge-backfill"), {
         method: "POST",
         headers: getHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify({ target: "policy", limit: 200 }),
+        body: JSON.stringify({ target: "policy", limit: 200, ...(companyId ? { companyId } : {}) }),
       });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || "Policy backfill failed");

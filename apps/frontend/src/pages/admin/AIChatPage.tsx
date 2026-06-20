@@ -202,7 +202,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   );
 };
 
-const AIChatPage: React.FC = () => {
+interface AIChatPageProps {
+  companyId?: string;
+  fullHeight?: boolean;
+}
+
+const AIChatPage: React.FC<AIChatPageProps> = ({ companyId, fullHeight }) => {
+  const cq = (url: string) =>
+    companyId ? `${url}${url.includes("?") ? "&" : "?"}companyId=${encodeURIComponent(companyId)}` : url;
   const { derivedTheme } = useTheme();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -228,7 +235,7 @@ const AIChatPage: React.FC = () => {
   const loadSessions = async () => {
     setSessionsLoading(true);
     try {
-      const res = await fetch(buildApiUrl("/ai/chat/sessions"), {
+      const res = await fetch(buildApiUrl(cq("/ai/chat/sessions")), {
         headers: tokenManager.createAuthHeaders(),
       });
       if (!res.ok) throw new Error();
@@ -253,8 +260,8 @@ const AIChatPage: React.FC = () => {
     setHistoryLoading(true);
     try {
       const url = sessionId
-        ? buildApiUrl(`/ai/chat/history?sessionId=${encodeURIComponent(sessionId)}`)
-        : buildApiUrl("/ai/chat/history");
+        ? buildApiUrl(cq(`/ai/chat/history?sessionId=${encodeURIComponent(sessionId)}`))
+        : buildApiUrl(cq("/ai/chat/history"));
       const res = await fetch(url, {
         headers: tokenManager.createAuthHeaders(),
       });
@@ -273,7 +280,7 @@ const AIChatPage: React.FC = () => {
 
   const loadStatus = async () => {
     try {
-      const res = await fetch(buildApiUrl("/ai/chat/status"), {
+      const res = await fetch(buildApiUrl(cq("/ai/chat/status")), {
         headers: tokenManager.createAuthHeaders(),
       });
       if (!res.ok) return;
@@ -300,7 +307,7 @@ const AIChatPage: React.FC = () => {
     setError(null);
 
     try {
-      const res = await fetch(buildApiUrl("/ai/chat/message"), {
+      const res = await fetch(buildApiUrl(cq("/ai/chat/message")), {
         method: "POST",
         headers: tokenManager.createAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ message: text, sessionId: activeSessionId }),
@@ -358,8 +365,8 @@ const AIChatPage: React.FC = () => {
     try {
       const targetSessionId = activeSessionId;
       const url = targetSessionId
-        ? buildApiUrl(`/ai/chat/sessions/${encodeURIComponent(targetSessionId)}`)
-        : buildApiUrl("/ai/chat/history");
+        ? buildApiUrl(cq(`/ai/chat/sessions/${encodeURIComponent(targetSessionId)}`))
+        : buildApiUrl(cq("/ai/chat/history"));
       const res = await fetch(url, {
         method: "DELETE",
         headers: tokenManager.createAuthHeaders(),
@@ -381,7 +388,7 @@ const AIChatPage: React.FC = () => {
   const createSession = async () => {
     setHistoryLoading(true);
     try {
-      const res = await fetch(buildApiUrl("/ai/chat/sessions"), {
+      const res = await fetch(buildApiUrl(cq("/ai/chat/sessions")), {
         method: "POST",
         headers: tokenManager.createAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({}),
@@ -421,7 +428,7 @@ const AIChatPage: React.FC = () => {
   const agentRole = agentInfo?.role || "CEO";
 
   return (
-    <div className="flex h-[calc(100vh-64px)] flex-col bg-background">
+    <div className={`flex ${fullHeight ? "h-full" : "h-[calc(100vh-64px)]"} flex-col bg-background`}>
       {/* Header */}
       <div className="flex shrink-0 items-center gap-4 border-b bg-card px-6 py-3">
         <Avatar

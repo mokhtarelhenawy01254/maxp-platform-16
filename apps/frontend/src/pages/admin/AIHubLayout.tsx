@@ -8,7 +8,6 @@ const AIAgentSandboxPage = React.lazy(() => import("./ai-agent-sandbox/AIAgentSa
 const AgenticRAGLab = React.lazy(() => import("./AgenticRAGLab"));
 const AgentToolsPage = React.lazy(() => import("./AgentToolsPage"));
 const AgentSkillsPage = React.lazy(() => import("./AgentSkillsPage"));
-const CompanyAIScheduler = React.lazy(() => import("./CompanyAIScheduler"));
 import ChannelRoutingPage from "./ChannelRoutingPage";
 
 export default function AIHubLayout() {
@@ -69,7 +68,6 @@ export default function AIHubLayout() {
            {activeTab === "rag" && <AgenticRAGLab />}
            {activeTab === "tools" && <AgentToolsPage />}
            {activeTab === "skills" && <AgentSkillsPage />}
-           {activeTab === "scheduler" && <CompanyAIScheduler />}
            {activeTab === "routing" && <ChannelRoutingPage />}
         </React.Suspense>
       </div>

@@ -12,6 +12,7 @@ export const shouldUseSuperAdminShell = (
 export const matchesSuperAdminNavigationPath = (
   pathname: string,
   itemPath: string,
+  search?: string,
 ): boolean => {
   if (
     itemPath === "/super-admin/companies" &&
@@ -19,6 +20,17 @@ export const matchesSuperAdminNavigationPath = (
       pathname.startsWith("/super-admin/companies-v2/"))
   ) {
     return true;
+  }
+
+  const [itemPathname, itemSearch] = itemPath.split("?");
+  if (itemSearch) {
+    const itemParams = new URLSearchParams(itemSearch);
+    const currentParams = new URLSearchParams(search ?? "");
+    const pathnameMatch = pathname === itemPathname;
+    const searchMatch = [...itemParams.entries()].every(
+      ([k, v]) => currentParams.get(k) === v,
+    );
+    return pathnameMatch && searchMatch;
   }
 
   return pathname === itemPath || pathname.startsWith(`${itemPath}/`);

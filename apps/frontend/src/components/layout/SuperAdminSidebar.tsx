@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Building2, BarChart3, Settings, Shield, DollarSign, Wallet, Brain,
   History, Globe, Headphones, Ticket, ChevronUp, ChevronDown, Briefcase, Tag, TrendingUp,
   Wrench, Activity, Sliders, Facebook, Trophy, GitBranch, Users, Clock, HardDrive,
-  MessageSquare, Key, Play, Download, Code2, Rocket, Palette, LogOut, Database,
+  MessageSquare, Key, Play, Download, Code2, Rocket, Palette, LogOut, Database, Bot,
 } from "lucide-react";
 import i18n from "../../i18n";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -61,6 +61,12 @@ export const menuGroups = [
     { text: i18n.t("superAdmin.evaluation.ceoAgentSettings"), icon: <Sliders className="size-5" />, path: "/super-admin/agent-config" },
     { text: i18n.t("superAdmin.evaluation.providerLogs"), icon: <History className="size-5" />, path: "/super-admin/ai-providers/logs" },
     { text: "تضمينات المنتجات", icon: <Database className="size-4" />, path: "/super-admin/product-embeddings" },
+  ]},
+  { title: "مركز الذكاء الاصطناعي", icon: <Bot className="size-5" />, items: [
+    { text: "مهارات الوكيل", icon: <Sliders className="size-4" />, path: "/super-admin/ai-hub?tab=skills" },
+    { text: "أدوات الوكيل", icon: <Wrench className="size-4" />, path: "/super-admin/ai-hub?tab=tools" },
+    { text: "قاعدة المعرفة (RAG)", icon: <Database className="size-4" />, path: "/super-admin/ai-hub?tab=rag" },
+    { text: "محادثات AI", icon: <MessageSquare className="size-4" />, path: "/super-admin/ai-chat" },
   ]},
   { title: i18n.t("superAdmin.sidebar.monitoring"), icon: <Activity className="size-5" />, items: [
     { text: i18n.t("superAdmin.sidebar.queueMonitor"), icon: <Activity className="size-5" />, path: "/super-admin/queue-monitor" },
@@ -123,7 +129,7 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ mobileOpen, setMo
         {!isCollapsed && <div><p className="text-sm font-black leading-tight tracking-tight">{i18n.t("superAdmin.sidebar.brandName")}</p><span className="text-xs font-medium" style={{ color: isDark ? "#64748b" : "#94a3b8" }}>{i18n.t("superAdmin.sidebar.brandSubtitle")}</span></div>}
       </div>
       <div className="flex-1 space-y-1 overflow-y-auto px-3 py-1">
-        {menuGroups.map((g) => { const isOpen = openGroups[g.title]; const active = g.items.some((i) => matchesSuperAdminNavigationPath(location.pathname, i.path)); return (
+        {menuGroups.map((g) => { const isOpen = openGroups[g.title]; const active = g.items.some((i) => matchesSuperAdminNavigationPath(location.pathname, i.path, location.search)); return (
           <div key={g.title}>
             <button onClick={() => handleGroupToggle(g.title)} className={cn("flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-all", isCollapsed && "justify-center px-2", active && !isOpen ? "font-bold" : "font-medium")}
               style={{ backgroundColor: active && !isOpen ? s.groupActive : "transparent", color: active ? s.groupText : s.itemText }}
@@ -132,7 +138,7 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({ mobileOpen, setMo
               <span className={cn("shrink-0", isCollapsed && "mx-auto")}>{g.icon}</span>
               {!isCollapsed && <><span className="flex-1 text-right">{g.title}</span>{isOpen ? <ChevronUp className="size-4 shrink-0" /> : <ChevronDown className="size-4 shrink-0" />}</>}
             </button>
-            {isOpen && !isCollapsed && <div className="mr-3 mt-1 space-y-0.5">{g.items.map((item) => { const sel = matchesSuperAdminNavigationPath(location.pathname, item.path); return (
+            {isOpen && !isCollapsed && <div className="mr-3 mt-1 space-y-0.5">{g.items.map((item) => { const sel = matchesSuperAdminNavigationPath(location.pathname, item.path, location.search); return (
               <Link key={item.text} to={item.path} onClick={() => mobileOpen && setMobileOpen(false)}
                 className={cn("flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm transition-all", sel ? "font-semibold text-white shadow-lg" : "hover:-translate-x-0.5")}
                 style={{ color: sel ? "#fff" : s.itemText, backgroundColor: sel ? "#3b82f6 !important" : "transparent", boxShadow: sel ? "0 4px 12px rgba(59,130,246,0.4)" : "none" }}

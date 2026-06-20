@@ -45,7 +45,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ children, fullWidth
   );
 
   const cw = isCollapsed ? collapsedDrawerWidth : drawerWidth;
-  const title = menuGroups.find((g) => g.items.some((i) => matchesSuperAdminNavigationPath(location.pathname, i.path)))?.title || t("superAdmin.controlPanel");
+  const title = menuGroups.find((g) => g.items.some((i) => matchesSuperAdminNavigationPath(location.pathname, i.path, location.search)))?.title || t("superAdmin.controlPanel");
 
   return (
     <div className="flex h-screen overflow-hidden" dir="rtl" style={{ backgroundColor: isDark ? "#0f172a" : "#f8fafc" }}>

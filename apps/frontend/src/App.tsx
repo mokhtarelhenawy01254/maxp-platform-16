@@ -763,6 +763,12 @@ const SuperAdminAIPlayground = React.lazy(
 const SuperAdminAgentConfig = React.lazy(
   () => import("./pages/super-admin/SuperAdminAgentConfig"),
 );
+const SuperAdminAIChatPage = React.lazy(
+  () => import("./pages/super-admin/SuperAdminAIChatPage"),
+);
+const SuperAdminAIHubLayout = React.lazy(
+  () => import("./pages/super-admin/SuperAdminAIHubLayout"),
+);
 // Super Admin Product Embeddings
 const SuperAdminProductEmbeddings = React.lazy(
   () => import("./pages/super-admin/SuperAdminProductEmbeddings"),
@@ -780,9 +786,6 @@ const AgenticRAGLab = React.lazy(
 const AgentCatalogPage = React.lazy(
   () => import("./pages/admin/AgentCatalogPage"),
 );
-const AgentTeamMapPage = React.lazy(
-  () => import("./pages/admin/AgentTeamMapPage"),
-);
 const AgentSkillsPage = React.lazy(
   () => import("./pages/admin/AgentSkillsPage"),
 );
@@ -797,9 +800,6 @@ const AIKnowledgeQuestionsPage = React.lazy(
 );
 const AgentProfilesPage = React.lazy(
   () => import("./pages/admin/agent-profiles/AgentProfilesPage"),
-);
-const CompanyAIScheduler = React.lazy(
-  () => import("./pages/admin/CompanyAIScheduler"),
 );
 const SuperAdminFacebookOAuth = React.lazy(
   () => import("./pages/SuperAdminFacebookOAuth"),
@@ -1858,6 +1858,22 @@ const AppContent = () => {
               element={
                 <Layout>
                   <SuperAdminServerUsage />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/ai-hub"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminAIHubLayout />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/ai-chat"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminAIChatPage />
                 </Layout>
               }
             />
@@ -6057,24 +6073,12 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/admin/ai-agent-map"
-                  element={
-                    <Layout fullWidth>
-                      <AgentTeamMapPage />
-                    </Layout>
-                  }
-                />
-                <Route
                   path="/admin/ai-skills"
                   element={<Navigate to="/admin/ai-hub?tab=skills" replace />}
                 />
                 <Route
                   path="/admin/ai-tools"
                   element={<Navigate to="/admin/ai-hub?tab=tools" replace />}
-                />
-                <Route
-                  path="/admin/ai-scheduler"
-                  element={<Navigate to="/admin/ai-hub?tab=scheduler" replace />}
                 />
                 <Route
                   path="/admin/ai-knowledge-questions"
