@@ -600,6 +600,7 @@ async function resolveBundleForWrite(slug) {
             ? null
             : toSafeNumber(catalogBundle.yearlyPrice, 0),
           discount: toSafeNumber(catalogBundle.discount, 0),
+          trialDays: toSafeNumber(catalogBundle.trialDays, 0),
           isActive: catalogBundle.isActive !== false,
           isFeatured: catalogBundle.isFeatured === true,
           appIds: apps.map((app) => app.id),
@@ -1869,13 +1870,17 @@ exports.subscribeToBundle = async (req, res) => {
     if (slug === 'ai-inbox-bundle') {
       const prisma = getSharedPrismaClient();
       const amount = 999;
+      const TRIAL_DAYS = bundle.trialDays > 0 ? bundle.trialDays : 7;
+      const hasTrial = TRIAL_DAYS > 0;
+      const subscriptionStatus = hasTrial ? "TRIAL" : "ACTIVE";
+      const trialEndDate = hasTrial ? new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000) : null;
       const nextBillingDate = new Date();
       nextBillingDate.setDate(nextBillingDate.getDate() + 30);
       await prisma.$transaction(async (tx) => {
         await tx.platformSubscription.upsert({
           where: { companyId },
-          update: { plan: "PRO", status: "ACTIVE", monthlyFee: amount, nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
-          create: { companyId, plan: "PRO", status: "ACTIVE", monthlyFee: amount, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date() }
+          update: { plan: "PRO", status: subscriptionStatus, monthlyFee: amount, trialEndDate, nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
+          create: { companyId, plan: "PRO", status: subscriptionStatus, monthlyFee: amount, trialEndDate, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date() }
         });
         await tx.company.update({ where: { id: companyId }, data: { plan: "MESSAGING" } });
         const appSlugs = ["ai-chat-basic", "unified-inbox"];
@@ -1884,13 +1889,14 @@ exports.subscribeToBundle = async (req, res) => {
           if (app) {
             await tx.companyApp.upsert({
               where: { companyId_appId: { companyId, appId: app.id } },
-              update: { status: "ACTIVE" },
-              create: { companyId, appId: app.id, status: "ACTIVE" }
+              update: { status: subscriptionStatus, trialEndsAt: trialEndDate },
+              create: { companyId, appId: app.id, status: subscriptionStatus, trialEndsAt: trialEndDate }
             });
           }
         }
       });
-      return res.json({ success: true, message: "تم تفعيل باقة AI + Inbox بنجاح", data: { bundle: "ai-inbox-bundle", skipPayment: true } });
+      const msg = hasTrial ? `تم تفعيل باقة AI + Inbox تجريبياً لمدة ${TRIAL_DAYS} أيام` : "تم تفعيل باقة AI + Inbox بنجاح";
+      return res.json({ success: true, message: msg, data: { bundle: "ai-inbox-bundle", skipPayment: true, trialDays: TRIAL_DAYS, trialEndDate: trialEndDate?.toISOString() } });
     }
 
     const bundleAppIds = normalizeStringArray(bundle.appIds);
@@ -1901,44 +1907,51 @@ exports.subscribeToBundle = async (req, res) => {
       });
     }
 
+    const trialDays = Number(bundle.trialDays) || 0;
+    const hasTrial = trialDays > 0;
+    const trialEndDate = hasTrial ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000) : null;
+
     await executeWithRetry(async () => {
       return await getSharedPrismaClient().$transaction(async (tx) => {
-        let wallet = await tx.companyWallet.findUnique({
-          where: { companyId }
-        });
+        // فقط ادفع من المحفظة لو مفيش فترة تجربة
+        if (!hasTrial) {
+          let wallet = await tx.companyWallet.findUnique({
+            where: { companyId }
+          });
 
-        if (!wallet) {
-          wallet = await tx.companyWallet.create({
+          if (!wallet) {
+            wallet = await tx.companyWallet.create({
+              data: {
+                id: uuidv4(),
+                companyId,
+                balance: 0,
+                currency: 'EGP'
+              }
+            });
+          }
+
+          if (Number(wallet.balance) < Number(bundle.monthlyPrice)) {
+            throw new Error(`رصيد المحفظة غير كافٍ. المطلوب: ${bundle.monthlyPrice} ${wallet.currency}، المتوفر: ${wallet.balance} ${wallet.currency}`);
+          }
+
+          await tx.companyWallet.update({
+            where: { companyId },
+            data: {
+              balance: { decrement: Number(bundle.monthlyPrice) }
+            }
+          });
+
+          await tx.transaction.create({
             data: {
               id: uuidv4(),
-              companyId,
-              balance: 0,
-              currency: 'EGP'
+              walletId: wallet.id,
+              type: 'PAYMENT',
+              amount: bundle.monthlyPrice,
+              description: `الاشتراك في باقة: ${bundle.name}`,
+              referenceId: `BUNDLE_SUB_${bundle.slug}_${Date.now()}`
             }
           });
         }
-
-        if (Number(wallet.balance) < Number(bundle.monthlyPrice)) {
-          throw new Error(`رصيد المحفظة غير كافٍ. المطلوب: ${bundle.monthlyPrice} ${wallet.currency}، المتوفر: ${wallet.balance} ${wallet.currency}`);
-        }
-
-        await tx.companyWallet.update({
-          where: { companyId },
-          data: {
-            balance: { decrement: Number(bundle.monthlyPrice) }
-          }
-        });
-
-        await tx.transaction.create({
-          data: {
-            id: uuidv4(),
-            walletId: wallet.id,
-            type: 'PAYMENT',
-            amount: bundle.monthlyPrice,
-            description: `الاشتراك في باقة: ${bundle.name}`,
-            referenceId: `BUNDLE_SUB_${bundle.slug}_${Date.now()}`
-          }
-        });
 
         const nextBillingAt = new Date();
         nextBillingAt.setDate(nextBillingAt.getDate() + 30);
@@ -1983,12 +1996,14 @@ exports.subscribeToBundle = async (req, res) => {
             },
           );
 
+          const appStatus = hasTrial ? 'TRIAL' : 'ACTIVE';
           if (existingInstallation) {
             await tx.companyApp.update({
               where: { id: existingInstallation.id },
               data: {
-                status: 'ACTIVE',
-                validUntil: nextBillingAt,
+                status: appStatus,
+                validUntil: hasTrial ? null : nextBillingAt,
+                trialEndsAt: trialEndDate,
                 settings: mergedSettings,
               }
             });
@@ -1998,8 +2013,9 @@ exports.subscribeToBundle = async (req, res) => {
                 id: uuidv4(),
                 companyId,
                 appId,
-                status: 'ACTIVE',
-                validUntil: nextBillingAt,
+                status: appStatus,
+                validUntil: hasTrial ? null : nextBillingAt,
+                trialEndsAt: trialEndDate,
                 settings: mergedSettings,
               }
             });
@@ -2015,10 +2031,11 @@ exports.subscribeToBundle = async (req, res) => {
       });
     });
 
-    res.json({
-      success: true,
-      message: `تم الاشتراك في ${bundle.name} وتفعيل ${bundleAppIds.length} أداة بنجاح! 🎉`
-    });
+    if (hasTrial) {
+      res.json({ success: true, message: `تم تفعيل ${bundle.name} تجريبياً لمدة ${trialDays} يوم مع ${bundleAppIds.length} أداة! 🎉`, data: { trialDays, trialEndDate: trialEndDate.toISOString() } });
+    } else {
+      res.json({ success: true, message: `تم الاشتراك في ${bundle.name} وتفعيل ${bundleAppIds.length} أداة بنجاح! 🎉` });
+    }
 
   } catch (error) {
     console.error('Error subscribing to bundle:', error);

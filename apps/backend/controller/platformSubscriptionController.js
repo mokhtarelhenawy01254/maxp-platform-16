@@ -718,6 +718,8 @@ exports.messagingCheckout = async (req, res) => {
     const inboxBundle = await prisma.appBundle.findUnique({ where: { slug: "ai-inbox-bundle" } });
     const TRIAL_DAYS = inboxBundle?.trialDays ?? 7;
 
+    const hasTrial = TRIAL_DAYS > 0;
+    const subscriptionStatus = hasTrial ? "TRIAL" : "ACTIVE";
     const trialEndDate = new Date();
     trialEndDate.setDate(trialEndDate.getDate() + TRIAL_DAYS);
     const nextBillingDate = new Date();
@@ -726,8 +728,8 @@ exports.messagingCheckout = async (req, res) => {
     await prisma.$transaction(async (tx) => {
       await tx.platformSubscription.upsert({
         where: { companyId },
-        update: { plan: "PRO", status: "ACTIVE", monthlyFee: amount, trialEndDate, nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
-        create: { companyId, plan: "PRO", status: "ACTIVE", monthlyFee: amount, trialEndDate, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date() }
+        update: { plan: "PRO", status: subscriptionStatus, monthlyFee: amount, trialEndDate, nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
+        create: { companyId, plan: "PRO", status: subscriptionStatus, monthlyFee: amount, trialEndDate, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date() }
       });
       await tx.company.update({ where: { id: companyId }, data: { plan: "PRO" } });
       // Activate AI Chat + Unified Inbox for the company
@@ -736,8 +738,8 @@ exports.messagingCheckout = async (req, res) => {
         if (app) {
           await tx.companyApp.upsert({
             where: { companyId_appId: { companyId, appId: app.id } },
-            update: { status: "ACTIVE" },
-            create: { companyId, appId: app.id, status: "ACTIVE" }
+            update: { status: subscriptionStatus, trialEndsAt: hasTrial ? trialEndDate : null },
+            create: { companyId, appId: app.id, status: subscriptionStatus, trialEndsAt: hasTrial ? trialEndDate : null }
           });
         }
       }
