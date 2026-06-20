@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Search, Pencil, Trash2, X, AlertTriangle, Filter } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
+import i18n from '../../i18n';
 
 interface Feature {
   id: string;
@@ -139,7 +140,7 @@ const CompetitorFeatures: React.FC<Props> = ({ competitorId }) => {
   });
 
   return (
-    <div>
+    <div dir={i18n.dir()}>
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
         {[
           { label: t('competitors.features.stats.total'), value: statCounts.total, color: 'bg-gray-50 dark:bg-gray-800/50' },
@@ -157,13 +158,13 @@ const CompetitorFeatures: React.FC<Props> = ({ competitorId }) => {
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={16} className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={t('competitors.features.searchFeatures')}
-            className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm dark:bg-gray-800 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full ltr:pl-9 ltr:pr-3 rtl:pr-9 rtl:pl-3 py-2 border rounded-lg text-sm dark:bg-gray-800 dark:border-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"
           />
         </div>
         <select

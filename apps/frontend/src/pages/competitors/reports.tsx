@@ -114,7 +114,7 @@ const Reports: React.FC = () => {
                 <h3 className="font-semibold text-sm line-clamp-2">{report.title}</h3>
                 <p className="text-xs text-gray-500 mt-1">{report.competitor?.name || 'N/A'}</p>
                 <p className="text-xs text-gray-400 mt-1">
-                  {new Date(report.generatedAt).toLocaleDateString('ar-EG', {
+                  {new Date(report.generatedAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
                     year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit'
                   })}
                 </p>
@@ -134,7 +134,7 @@ const Reports: React.FC = () => {
                       <span>•</span>
                       <span>{selectedReport.competitor?.name}</span>
                       <span>•</span>
-                      <span>{new Date(selectedReport.generatedAt).toLocaleDateString('ar-EG')}</span>
+                      <span>{new Date(selectedReport.generatedAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}</span>
                     </div>
                   </div>
                   <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">

@@ -40,7 +40,7 @@ const Settings: React.FC = () => {
       onClick={() => onChange(!enabled)}
       className={`relative w-12 h-6 rounded-full transition-colors ${enabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
     >
-      <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${enabled ? 'translate-x-6' : ''}`} />
+      <span className={`absolute top-1 ltr:left-1 rtl:right-1 w-4 h-4 bg-white rounded-full transition-transform ${enabled ? 'ltr:translate-x-6 rtl:-translate-x-6' : ''}`} />
     </button>
   );
 

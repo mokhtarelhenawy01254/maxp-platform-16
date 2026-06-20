@@ -373,7 +373,7 @@ export default function SocialOverview() {
                                   style={{ width: `${pct}%`, backgroundColor: color }}
                                 />
                               </div>
-                              <span className="text-[10px] text-muted-foreground w-14 text-right">
+                              <span className="text-[10px] text-muted-foreground w-14 text-end">
                                 {(dp.followersCount || 0).toLocaleString()}
                               </span>
                             </div>

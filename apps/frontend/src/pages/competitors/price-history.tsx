@@ -71,7 +71,7 @@ const PriceHistory: React.FC = () => {
   };
 
   const chartData = priceHistory.map(p => ({
-    date: new Date(p.recordedAt).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }),
+    date: new Date(p.recordedAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', { month: 'short', day: 'numeric' }),
     price: Number(p.price),
     fullDate: p.recordedAt,
   }));
@@ -144,7 +144,7 @@ const PriceHistory: React.FC = () => {
                   <YAxis stroke="#9CA3AF" fontSize={12} tickFormatter={v => `${v}`} />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px', color: '#fff' }}
-                    labelFormatter={(label, payload) => payload?.[0]?.payload?.fullDate ? new Date(payload[0].payload.fullDate).toLocaleString('ar-EG') : label}
+                    labelFormatter={(label, payload) => payload?.[0]?.payload?.fullDate ? new Date(payload[0].payload.fullDate).toLocaleString(i18n.language === 'ar' ? 'ar-SA' : 'en-US') : label}
                   />
                   <Line
                     type="monotone"
@@ -167,7 +167,7 @@ const PriceHistory: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <span className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-green-500' : 'bg-gray-400'}`} />
                     <span className="text-sm">
-                      {new Date(point.recordedAt).toLocaleString('ar-EG', {
+                      {new Date(point.recordedAt).toLocaleString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
                         year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                       })}
                     </span>

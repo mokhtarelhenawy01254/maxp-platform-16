@@ -49,20 +49,20 @@ const DiffBadge = ({ value }: { value: string | null }) => {
   if (num > 0)
     return (
       <Badge variant="destructive">
-        <TrendingUp className="inline w-3 h-3 mr-1" />
+        <TrendingUp className="inline w-3 h-3 ltr:mr-1 rtl:ml-1" />
         {value}%
       </Badge>
     );
   if (num < 0)
     return (
       <Badge variant="default" className="bg-green-600 hover:bg-green-700">
-        <TrendingDown className="inline w-3 h-3 mr-1" />
+        <TrendingDown className="inline w-3 h-3 ltr:mr-1 rtl:ml-1" />
         {value}%
       </Badge>
     );
   return (
     <Badge variant="secondary">
-      <Minus className="inline w-3 h-3 mr-1" />0%
+      <Minus className="inline w-3 h-3 ltr:mr-1 rtl:ml-1" />0%
     </Badge>
   );
 };

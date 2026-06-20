@@ -165,7 +165,7 @@ const Comparison: React.FC = () => {
             <div className="col-span-4">{t('competitors.competitorProduct')}</div>
             <div className="col-span-1 text-center">{t('competitors.status')}</div>
             <div className="col-span-4">{t('competitors.yourProduct')}</div>
-            <div className="col-span-3 text-right">{t('competitors.diff')}</div>
+            <div className="col-span-3 text-end">{t('competitors.diff')}</div>
           </div>
           <div className="divide-y dark:divide-gray-700">
             {comparisons.map((item, idx) => (
@@ -200,7 +200,7 @@ const Comparison: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <div className="col-span-3 text-right">
+                <div className="col-span-3 text-end">
                   {item.priceDiff !== null && item.status !== 'missing' && (
                     <div className={`text-sm font-medium ${item.status === 'cheaper' ? 'text-green-600' : item.status === 'expensive' ? 'text-red-600' : 'text-gray-500'}`}>
                       {item.status === 'cheaper' ? '+' : item.status === 'expensive' ? '-' : ''}{item.priceDiff.toFixed(2)} EGP

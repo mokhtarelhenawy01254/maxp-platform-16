@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ExternalLink, RefreshCw, BarChart2, TrendingUp, Scale, History, Settings, Instagram, Share2, Crosshair, Lightbulb, Plus, Pencil, X, AlertTriangle, CheckCircle2, Circle, Calendar } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ExternalLink, RefreshCw, BarChart2, TrendingUp, Scale, History, Settings, Instagram, Share2, Crosshair, Lightbulb, Plus, Pencil, X, AlertTriangle, CheckCircle2, Circle, Calendar, Clock } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import CompetitorFeatures from './CompetitorFeatures';
 import i18n from '../../i18n';
@@ -207,18 +207,42 @@ const CompetitorDetail: React.FC = () => {
 
   return (
     <div className="p-6" dir={i18n.dir()}>
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/competitors')} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+      <div className="flex items-start gap-3 mb-6">
+        <button onClick={() => navigate('/competitors')} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 mt-1">
           {i18n.dir() === 'rtl' ? <ArrowRight size={20} /> : <ArrowLeft size={20} />}
         </button>
-        <h1 className="text-2xl font-bold">{competitor.name}</h1>
-        {competitor.url && (
-          <a href={competitor.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex items-center gap-1 text-sm">
-            <ExternalLink size={14} />
-            {competitor.url.replace(/^https?:\/\//, '').slice(0, 40)}
-          </a>
-        )}
-        <button onClick={() => { fetchData(); fetchDevRecommendations(); }} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 ltr:ml-auto rtl:mr-auto">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl font-bold">{competitor.name}</h1>
+            {competitor.url && (
+              <a href={competitor.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex items-center gap-1 text-sm">
+                <ExternalLink size={14} />
+                {competitor.url.replace(/^https?:\/\//, '').slice(0, 40)}
+              </a>
+            )}
+          </div>
+          {competitor.createdAt && (
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 flex items-center gap-1.5">
+              <Calendar size={12} className="shrink-0" />
+              <span>{t('competitors.createdAtLabel')}: </span>
+              <span>
+                {new Date(competitor.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </span>
+              <Clock size={12} className="shrink-0 ltr:ml-1 rtl:mr-1" />
+              <span>
+                {new Date(competitor.createdAt).toLocaleTimeString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+            </p>
+          )}
+        </div>
+        <button onClick={() => { fetchData(); fetchDevRecommendations(); }} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 ltr:ml-auto rtl:mr-auto mt-1 shrink-0">
           <RefreshCw size={18} />
         </button>
       </div>
@@ -289,25 +313,30 @@ const CompetitorDetail: React.FC = () => {
         <div className="space-y-4">
           {/* Creation Date & Time Card */}
           {competitor.createdAt && (
-            <div className="border rounded-lg p-4 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-900/50">
+            <div className="border border-blue-200 dark:border-blue-800 rounded-lg p-4 bg-gradient-to-r from-blue-50 to-white dark:from-blue-900/20 dark:to-gray-900/50 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
+                <div className="p-2.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 shrink-0">
                   <Calendar size={20} />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('competitors.createdAtLabel')}</p>
-                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200" dir="ltr">
-                    {new Date(competitor.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500" dir="ltr">
-                    {new Date(competitor.createdAt).toLocaleTimeString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('competitors.createdAtLabel')}</p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 flex-wrap">
+                    <span className="flex items-center gap-1">
+                      <Calendar size={14} className="text-blue-500 shrink-0" />
+                      {new Date(competitor.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </span>
+                    <span className="text-gray-300 dark:text-gray-600">|</span>
+                    <span className="flex items-center gap-1">
+                      <Clock size={14} className="text-blue-500 shrink-0" />
+                      {new Date(competitor.createdAt).toLocaleTimeString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
                   </p>
                 </div>
               </div>
