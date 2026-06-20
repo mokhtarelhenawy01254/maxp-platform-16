@@ -365,10 +365,10 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
             logger.info("resolved_template_from_role", role=cfg["role"], slug=template_slug)
 
     if not template_slug:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Agent {cfg['id']} has no template_slug and no template found for role '{cfg.get('role')}'",
-        )
+        template_slug = "default"
+        logger.warning("no_template_using_default", agent_id=cfg["id"], role=cfg.get("role"))
+
+
 
     return await BaseAgent.from_template(
         str(template_slug),
