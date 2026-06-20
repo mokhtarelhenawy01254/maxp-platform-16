@@ -25,7 +25,7 @@ const STATUS_TONE_CLASSES: Record<ProductPageConversionSummaryCardProps["statusT
 };
 
 export default function ProductPageConversionSummaryCard({
-  items,
+  items = [],
   statusLabel,
   statusTone,
   ctaLabel,

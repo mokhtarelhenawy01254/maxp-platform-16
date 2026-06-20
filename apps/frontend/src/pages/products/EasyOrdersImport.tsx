@@ -155,11 +155,12 @@ const EasyOrdersImport: React.FC = () => {
       const data = await response.json();
 
       if (data.success) {
-        setProducts(data.data.products);
+        const fetchedProducts: Product[] = data.data?.products ?? [];
+        setProducts(fetchedProducts);
         toast.success(data.message);
 
         const allIndexes = new Set<number>(
-          data.data.products.map((_: any, i: number) => i),
+          fetchedProducts.map((_: any, i: number) => i),
         );
         setSelectedProducts(allIndexes);
       } else {

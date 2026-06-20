@@ -70,12 +70,12 @@ const WooCommerceImport: React.FC = () => {
       const data = await response.json();
 
       if (data.success) {
-        setProducts(data.data.products);
+        const fetchedProducts: Product[] = data.data?.products ?? [];
+        setProducts(fetchedProducts);
         toast.success(data.message);
 
-        // تحديد كل المنتجات افتراضياً
         const allIndexes = new Set(
-          data.data.products.map((_product: Product, i: number) => i),
+          fetchedProducts.map((_product: Product, i: number) => i),
         );
         setSelectedProducts(allIndexes);
       } else {
