@@ -753,7 +753,11 @@ export default function SuperAdminCompaniesV2() {
 
             {/* Stats cards */}
             <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-              <div className="rounded-lg border border-border/40 bg-white p-3 shadow-sm dark:bg-slate-950">
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-primary/40 hover:bg-primary/[0.02] hover:shadow-md dark:bg-slate-950"
+              >
                 <div className="flex items-center gap-2.5">
                   <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <Building2 className="size-4" />
@@ -764,8 +768,12 @@ export default function SuperAdminCompaniesV2() {
                   </div>
                 </div>
                 <p className="mt-1 text-xs font-semibold text-emerald-600">{quickStats.activeCompanies} نشطة</p>
-              </div>
-              <div className="rounded-lg border border-border/40 bg-white p-3 shadow-sm dark:bg-slate-950">
+              </button>
+              <button
+                type="button"
+                onClick={() => { handleClearFilters(); setFunnelStage("activated"); }}
+                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-emerald-400/60 hover:bg-emerald-50/30 hover:shadow-md dark:bg-slate-950"
+              >
                 <div className="flex items-center gap-2.5">
                   <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
                     <CheckCircle2 className="size-4" />
@@ -776,8 +784,12 @@ export default function SuperAdminCompaniesV2() {
                   </div>
                 </div>
                 <p className="mt-1 text-xs font-semibold text-emerald-600">وصلت للإطلاق الأول</p>
-              </div>
-              <div className="rounded-lg border border-border/40 bg-white p-3 shadow-sm dark:bg-slate-950">
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenView("FOLLOW_UP_NOW")}
+                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-amber-400/60 hover:bg-amber-50/30 hover:shadow-md dark:bg-slate-950"
+              >
                 <div className="flex items-center gap-2.5">
                   <div className="flex size-9 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
                     <AlertTriangle className="size-4" />
@@ -788,8 +800,12 @@ export default function SuperAdminCompaniesV2() {
                   </div>
                 </div>
                 <p className="mt-1 text-xs font-semibold text-amber-600">تحتاج تدخل أو تصعيد</p>
-              </div>
-              <div className="rounded-lg border border-border/40 bg-white p-3 shadow-sm dark:bg-slate-950">
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenView("STALE_72H")}
+                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-rose-400/60 hover:bg-rose-50/30 hover:shadow-md dark:bg-slate-950"
+              >
                 <div className="flex items-center gap-2.5">
                   <div className="flex size-9 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
                     <Clock className="size-4" />
@@ -800,7 +816,7 @@ export default function SuperAdminCompaniesV2() {
                   </div>
                 </div>
                 <p className="mt-1 text-xs font-semibold text-rose-600">حرجة: تحتاج تدخلًا فوريًا</p>
-              </div>
+              </button>
             </div>
 
                 <div className="rounded-lg border border-border/40 bg-muted/10 dark:bg-slate-900/30 p-1 md:p-1.5">

@@ -355,8 +355,14 @@ export function CompaniesTable({
             const funnelSummary = company.funnelSummary;
             const followUp = company.followUp;
             const isExpanded = expandedId === company.id;
+            const attention = company.funnelStaleStatus?.needsFollowUpNow || company.followUpAutomation?.needsEscalation || company.followUpAutomation?.needsUrgentEscalation;
+            const critical = company.funnelStaleStatus?.isStale72h || company.followUpAutomation?.needsUrgentEscalation;
             return (
-              <div key={company.id} className="rounded-lg border border-border/60 bg-white shadow-sm dark:bg-slate-950">
+              <div key={company.id} className={cn(
+                "rounded-lg border bg-white shadow-sm dark:bg-slate-950",
+                attention ? "border-l-2 border-l-amber-400 border-amber-200 bg-amber-50/25" : "border-border/60",
+                critical && "border-l-rose-500 bg-rose-50/35",
+              )}>
                 <div className="flex items-start gap-3 p-3">
                   <div className="flex flex-col items-center gap-1 pt-1">
                     <Checkbox 
@@ -475,7 +481,7 @@ export function CompaniesTable({
         <div className="rounded-lg border border-border/60 bg-white shadow-sm dark:bg-slate-950">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="bg-muted/30 dark:bg-slate-900/40">
+              <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur supports-[backdrop-filter]:bg-muted/80 dark:bg-slate-900/95">
                 {table.getHeaderGroups().map((hg) => (
                   <TableRow key={hg.id} className="border-border/40 hover:bg-transparent">
                     {hg.headers.map((header) => (
@@ -487,10 +493,19 @@ export function CompaniesTable({
                 ))}
               </TableHeader>
               <TableBody>
-                {table.getRowModel().rows.map((row) => (
+                {table.getRowModel().rows.map((row, idx) => {
+                  const company = row.original;
+                  const attention = company.funnelStaleStatus?.needsFollowUpNow || company.followUpAutomation?.needsEscalation || company.followUpAutomation?.needsUrgentEscalation;
+                  const critical = company.funnelStaleStatus?.isStale72h || company.followUpAutomation?.needsUrgentEscalation;
+                  return (
                   <React.Fragment key={row.id}>
                     <TableRow
-                      className="group/row border-border/40 transition-colors hover:bg-primary/5 cursor-pointer"
+                      className={cn(
+                        "group/row border-border/40 transition-colors hover:bg-primary/5 cursor-pointer",
+                        idx % 2 === 1 && "bg-muted/[0.03]",
+                        attention && "border-l-2 border-l-amber-400 bg-amber-50/[0.25] hover:bg-amber-50/40",
+                        critical && "border-l-2 border-l-rose-500 bg-rose-50/[0.35] hover:bg-rose-50/50",
+                      )}
                       onClick={() => setExpandedId(expandedId === row.original.id ? null : row.original.id)}
                     >
                       {row.getVisibleCells().map((cell) => (
@@ -519,7 +534,7 @@ export function CompaniesTable({
                       </TableRow>
                     ) : null}
                   </React.Fragment>
-                ))}
+                )})}
               </TableBody>
             </Table>
           </div>

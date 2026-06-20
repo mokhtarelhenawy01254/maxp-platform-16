@@ -127,7 +127,7 @@ export function CompanyFilters({
             <SelectTrigger aria-label="ترتيب الشركات" className="h-8 min-w-0 rounded-lg border-border/60 bg-white text-xs shadow-sm lg:min-w-[12rem]">
               <div className="flex items-center gap-2">
                 <ArrowDownUp className="size-4 text-primary" aria-hidden="true" />
-                <SelectValue />
+                <span className="truncate">{SORT_OPTIONS.find((o) => o.value === sort)?.label || sort}</span>
               </div>
             </SelectTrigger>
             <SelectContent className="rounded-2xl">
