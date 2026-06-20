@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Search, Loader2, Building2, Users, Code2, BarChart3, DollarSign, Key, Ticket, Package, ShoppingCart, UserRound, MessageSquare, Facebook, Briefcase, TrendingUp, Tag, FolderTree, Store, Megaphone, UserCheck, FileText, HelpCircle, BookOpen, Target, Zap, ClipboardList, Star, Brain, Layout, Command, ArrowLeft, X, Settings, Bell, History, Rocket } from "lucide-react";
+import { Search, Loader2, Building2, Users, Code2, BarChart3, DollarSign, Key, Ticket, Package, ShoppingCart, UserRound, MessageSquare, Facebook, Briefcase, TrendingUp, Tag, FolderTree, Store, Megaphone, UserCheck, FileText, HelpCircle, BookOpen, Target, Zap, ClipboardList, Star, Brain, Layout, ArrowLeft, X, Settings, Bell, History, Rocket } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { apiClient } from "../../services/apiClient";
 import { cn } from "@/lib/utils";
@@ -399,15 +399,6 @@ const GlobalSearch: React.FC = () => {
             <X className="size-3.5" />
           </button>
         )}
-        <div className="hidden sm:flex items-center px-2 order-3">
-          <kbd className={cn(
-            "inline-flex items-center gap-0.5 rounded-md border px-1.5 py-0.5 text-[10px] font-medium",
-            isDark ? "border-white/10 bg-white/5 text-gray-400" : "border-gray-200 bg-gray-50 text-gray-400"
-          )}>
-            <Command className="size-2.5" />
-            K
-          </kbd>
-        </div>
       </div>
 
       {isOpen && (
