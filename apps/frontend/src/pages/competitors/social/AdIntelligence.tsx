@@ -27,6 +27,7 @@ import {
   Inbox,
 } from 'lucide-react';
 import axios from 'axios';
+import i18n from '../../../i18n';
 
 const platformColors = {
   facebook: '#1877F2',
@@ -81,7 +82,7 @@ export default function AdIntelligence() {
       key: 'campaignName',
       render: (text, record) => (
         <div>
-          <div className="font-medium">{text || 'N/A'}</div>
+          <div className="font-medium">{text || t('competitors.notAvailable')}</div>
           <div className="text-xs text-gray-400">{record.objective || ''}</div>
         </div>
       ),
@@ -92,7 +93,7 @@ export default function AdIntelligence() {
       key: 'platform',
       render: (platform) => (
         <Badge variant="outline" style={{ borderColor: platformColors[platform] || '#999', color: platformColors[platform] || '#999' }}>
-          {platform?.toUpperCase()}
+          {t(`competitors.platforms.${platform}`) || platform?.toUpperCase()}
         </Badge>
       ),
     },
@@ -103,7 +104,7 @@ export default function AdIntelligence() {
       render: (status) => (
         <span className="flex items-center gap-1 text-xs">
           <span className={`h-2 w-2 rounded-full ${status === 'active' ? 'bg-green-500' : 'bg-gray-400'}`} />
-          {status}
+          {status === 'active' ? t('competitors.active') : t('competitors.inactive')}
         </span>
       ),
     },
@@ -113,9 +114,9 @@ export default function AdIntelligence() {
       key: 'budget',
       render: (budget) =>
         budget ? (
-          <span className="font-medium">${Number(budget).toLocaleString()}</span>
+          <span className="font-medium">{i18n.language === 'ar' ? 'ر.س' : '$'}{Number(budget).toLocaleString()}</span>
         ) : (
-          'N/A'
+          t('competitors.notAvailable')
         ),
     },
     {
@@ -123,26 +124,26 @@ export default function AdIntelligence() {
       dataIndex: 'spend',
       key: 'spend',
       render: (spend) =>
-        spend ? <span>${Number(spend).toLocaleString()}</span> : 'N/A',
+        spend ? <span>{i18n.language === 'ar' ? 'ر.س' : '$'}{Number(spend).toLocaleString()}</span> : t('competitors.notAvailable'),
     },
     {
       title: t('competitors.impressions'),
       dataIndex: 'impressions',
       key: 'impressions',
       render: (impressions) =>
-        impressions ? impressions.toLocaleString() : 'N/A',
+        impressions ? impressions.toLocaleString() : t('competitors.notAvailable'),
     },
     {
-      title: 'CTR',
+      title: t('competitors.ctr'),
       dataIndex: 'ctr',
       key: 'ctr',
-      render: (ctr) => (ctr ? `${Number(ctr).toFixed(2)}%` : 'N/A'),
+      render: (ctr) => (ctr ? `${Number(ctr).toFixed(2)}%` : t('competitors.notAvailable')),
     },
     {
-      title: 'ROAS',
+      title: t('competitors.roas'),
       dataIndex: 'roas',
       key: 'roas',
-      render: (roas) => (roas ? `${Number(roas).toFixed(2)}x` : 'N/A'),
+      render: (roas) => (roas ? `${Number(roas).toFixed(2)}x` : t('competitors.notAvailable')),
     },
   ];
 
@@ -195,9 +196,9 @@ export default function AdIntelligence() {
             <SelectValue placeholder={t('competitors.filterPlatform')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="facebook">Facebook</SelectItem>
-            <SelectItem value="google">Google</SelectItem>
-            <SelectItem value="tiktok">TikTok</SelectItem>
+            <SelectItem value="facebook">{t('competitors.platforms.facebook')}</SelectItem>
+            <SelectItem value="google">{t('competitors.platforms.google')}</SelectItem>
+            <SelectItem value="tiktok">{t('competitors.platforms.tiktok')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -224,7 +225,7 @@ export default function AdIntelligence() {
               <DollarSign className="size-4" />
               {t('competitors.totalSpend')}
             </div>
-            <div className="text-2xl font-bold mt-1">${Number(summary.totalSpend).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <div className="text-2xl font-bold mt-1">{i18n.language === 'ar' ? 'ر.س' : '$'}{Number(summary.totalSpend).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
           </CardContent>
         </Card>
         <Card size="sm">
@@ -271,14 +272,14 @@ export default function AdIntelligence() {
             {summary.platformStats?.map((stat) => (
               <div key={stat.platform} className="text-center p-4 border rounded">
                 <Badge variant="outline" style={{ fontSize: 16, borderColor: platformColors[stat.platform], color: platformColors[stat.platform] }}>
-                  {stat.platform?.toUpperCase()}
+                  {t(`competitors.platforms.${stat.platform}`) || stat.platform?.toUpperCase()}
                 </Badge>
                 <div className="mt-2">
                   <div className="text-2xl font-bold">
                     {stat.campaignCount} {t('competitors.campaigns')}
                   </div>
                   <div className="text-muted-foreground">
-                    ${stat.totalSpend?.toLocaleString()} {t('competitors.spend')}
+                    {i18n.language === 'ar' ? 'ر.س' : '$'}{stat.totalSpend?.toLocaleString()} {t('competitors.spend')}
                   </div>
                 </div>
               </div>
@@ -308,12 +309,12 @@ export default function AdIntelligence() {
                   {creative.imageUrl && (
                     <img
                       src={creative.imageUrl}
-                      alt="ad"
+                      alt={t('competitors.adOverview')}
                       className="w-full h-[150px] object-cover rounded-t-xl"
                     />
                   )}
                   <CardContent className="space-y-2">
-                    <div className="font-medium">{creative.headline || 'N/A'}</div>
+                    <div className="font-medium">{creative.headline || t('competitors.notAvailable')}</div>
                     <div className="text-sm text-muted-foreground line-clamp-2">
                       {creative.primaryText?.slice(0, 100)}...
                     </div>

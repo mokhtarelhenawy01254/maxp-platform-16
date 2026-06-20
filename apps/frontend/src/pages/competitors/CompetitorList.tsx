@@ -46,15 +46,15 @@ interface DevTask {
 }
 
 const SOCIAL_PLATFORMS = [
-  { key: 'instagram', label: 'Instagram', icon: '📸' },
-  { key: 'facebook', label: 'Facebook', icon: '📘' },
-  { key: 'twitter', label: 'Twitter / X', icon: '🐦' },
-  { key: 'tiktok', label: 'TikTok', icon: '🎵' },
-  { key: 'linkedin', label: 'LinkedIn', icon: '💼' },
-  { key: 'youtube', label: 'YouTube', icon: '▶️' },
-  { key: 'snapchat', label: 'Snapchat', icon: '👻' },
-  { key: 'telegram', label: 'Telegram', icon: '✈️' },
-  { key: 'whatsapp', label: 'WhatsApp', icon: '💬' },
+  { key: 'instagram', labelKey: 'social.instagram', icon: '📸' },
+  { key: 'facebook', labelKey: 'social.facebook', icon: '📘' },
+  { key: 'twitter', labelKey: 'social.twitter', icon: '🐦' },
+  { key: 'tiktok', labelKey: 'social.tiktok', icon: '🎵' },
+  { key: 'linkedin', labelKey: 'social.linkedin', icon: '💼' },
+  { key: 'youtube', labelKey: 'social.youtube', icon: '▶️' },
+  { key: 'snapchat', labelKey: 'social.snapchat', icon: '👻' },
+  { key: 'telegram', labelKey: 'social.telegram', icon: '✈️' },
+  { key: 'whatsapp', labelKey: 'social.whatsapp', icon: '💬' },
 ];
 
 const CompetitorList: React.FC = () => {
@@ -382,7 +382,7 @@ const CompetitorList: React.FC = () => {
                         href={sp.profileUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        title={platform.label}
+                        title={t(`competitors.${platform.labelKey}`)}
                         className="text-sm hover:opacity-70 transition-opacity"
                       >
                         {platform.icon}
@@ -429,7 +429,7 @@ const CompetitorList: React.FC = () => {
                   value={formData.url}
                   onChange={e => setFormData(p => ({ ...p, url: e.target.value }))}
                   className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
-                  placeholder="https://example.com"
+                  placeholder={t('competitors.competitorUrlPlaceholder')}
                 />
               </div>
               <div>
@@ -530,13 +530,13 @@ const CompetitorList: React.FC = () => {
                       {SOCIAL_PLATFORMS.map(sp => (
                         <div key={sp.key} className="flex items-center gap-2">
                           <span className="text-base w-6 text-center">{sp.icon}</span>
-                          <span className="text-xs font-medium w-20 text-gray-500">{sp.label}</span>
+                          <span className="text-xs font-medium w-20 text-gray-500">{t(`competitors.${sp.labelKey}`)}</span>
                           <input
                             type="url"
                             value={socialLinks[sp.key] || ''}
                             onChange={e => setSocialLinks(prev => ({ ...prev, [sp.key]: e.target.value }))}
                             className="flex-1 px-3 py-1.5 text-sm border rounded-lg dark:bg-gray-800 dark:border-gray-700"
-                            placeholder={`https://${sp.key}.com/...`}
+                            placeholder={`${t('competitors.socialLinksDesc')}`}
                           />
                         </div>
                       ))}
@@ -558,7 +558,7 @@ const CompetitorList: React.FC = () => {
                       rows={5}
                       placeholder={t('competitors.strengthsPlaceholder')}
                     />
-                    <p className="text-xs text-gray-400 mt-1">اكتب كل نقطة في سطر منفصل</p>
+                    <p className="text-xs text-gray-400 mt-1">{t('competitors.eachLineHint')}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">{t('competitors.weaknesses')}</label>
@@ -569,7 +569,7 @@ const CompetitorList: React.FC = () => {
                       rows={5}
                       placeholder={t('competitors.weaknessesPlaceholder')}
                     />
-                    <p className="text-xs text-gray-400 mt-1">اكتب كل نقطة في سطر منفصل</p>
+                    <p className="text-xs text-gray-400 mt-1">{t('competitors.eachLineHint')}</p>
                   </div>
                 </div>
               </div>
@@ -690,7 +690,7 @@ const CompetitorList: React.FC = () => {
                             </button>
                             <span className={`flex-1 ${task.status === 'completed' ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}>{task.title}</span>
                             <span className="text-[10px] text-gray-400 hidden sm:inline">
-                              {new Date(task.createdAt).toLocaleDateString()}
+                              {new Date(task.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}
                             </span>
                             <button
                               type="button"

@@ -145,7 +145,7 @@ const GapAnalysis: React.FC = () => {
                     )}
                     <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
                       <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">{product.competitorName}</span>
-                      {product.sku && <span>SKU: {product.sku}</span>}
+                      {product.sku && <span>{t('competitors.skuLabel')} {product.sku}</span>}
                     </div>
                   </div>
                 </div>
@@ -172,8 +172,8 @@ const GapAnalysis: React.FC = () => {
             {yourProducts.slice(0, 12).map(p => (
               <div key={p.id} className="border rounded-lg p-3 dark:border-gray-700">
                 <h4 className="font-medium text-sm truncate">{p.name}</h4>
-                {p.price && <p className="text-sm text-gray-500">{Number(p.price).toFixed(2)} EGP</p>}
-                {p.sku && <p className="text-xs text-gray-400">SKU: {p.sku}</p>}
+                {p.price && <p className="text-sm text-gray-500">{Number(p.price).toFixed(2)} {t('competitors.currency')}</p>}
+                {p.sku && <p className="text-xs text-gray-400">{t('competitors.skuLabel')} {p.sku}</p>}
               </div>
             ))}
           </div>

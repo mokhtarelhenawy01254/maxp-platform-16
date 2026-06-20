@@ -45,10 +45,10 @@ const AutoDiscoverModal: React.FC<Props> = ({ visible, onClose, onAddCompetitor 
       if (res.data?.success) {
         setData(res.data.data);
       } else {
-        setError(res.data?.error || 'Discovery failed');
+        setError(res.data?.error || t('competitors.errors.discoveryFailed'));
       }
     } catch {
-      setError('Failed to discover competitors');
+      setError(t('competitors.errors.discoveryFailed'));
     } finally {
       setLoading(false);
     }
@@ -94,7 +94,7 @@ const AutoDiscoverModal: React.FC<Props> = ({ visible, onClose, onAddCompetitor 
 
           {error && (
             <Alert variant="destructive">
-              <AlertTitle>Error</AlertTitle>
+              <AlertTitle>{t('common.error')}</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}

@@ -4,6 +4,7 @@
   "editCompetitor": "Edit Competitor",
   "competitorName": "Competitor Name",
   "competitorUrl": "Store URL",
+  "competitorUrlPlaceholder": "https://example.com",
   "platform": "Platform",
   "logo": "Logo",
   "description": "Description",
@@ -46,6 +47,7 @@
   },
   "strengths": "Strengths",
   "strengthsPlaceholder": "Key strengths and advantages of the competitor",
+  "eachLineHint": "Write each point on a separate line",
   "weaknesses": "Weaknesses",
   "weaknessesPlaceholder": "Key weaknesses and drawbacks",
   "socialLinks": "Social Media Links",
@@ -182,13 +184,6 @@
   "allReports": "All Reports",
   "weekly": "Weekly",
   "comprehensive": "Comprehensive",
-  "errors": {
-    "fetchFailed": "Failed to fetch competitors",
-    "createFailed": "Failed to create competitor",
-    "updateFailed": "Failed to update competitor",
-    "deleteFailed": "Failed to delete competitor",
-    "nameRequired": "Competitor name is required"
-  },
   "metrics": {
     "productCount": "Product Count",
     "adCount": "Ad Count",
@@ -220,7 +215,16 @@
     "engagementComparison": "Engagement Comparison",
     "avgEngagement": "Avg Engagement",
     "noSocialProfiles": "No social profiles",
-    "addSocialProfile": "Add social profile"
+    "addSocialProfile": "Add social profile",
+    "instagram": "Instagram",
+    "facebook": "Facebook",
+    "twitter": "Twitter / X",
+    "tiktok": "TikTok",
+    "linkedin": "LinkedIn",
+    "youtube": "YouTube",
+    "snapchat": "Snapchat",
+    "telegram": "Telegram",
+    "whatsapp": "WhatsApp"
   },
   "autoDiscover": {
     "title": "Auto Discover Competitors",
@@ -266,7 +270,15 @@
     "technology": "Technology",
     "version": "Version",
     "confidence": "Confidence",
-    "category": "Category"
+    "category": "Category",
+    "facebook": "Facebook",
+    "google": "Google",
+    "tiktok": "TikTok",
+    "amazonTab": "Amazon",
+    "googleTab": "Google Business",
+    "techStackTab": "Tech Stack",
+    "primeLabel": "Prime",
+    "standardLabel": "Standard"
   },
   "devRecommendations": {
     "title": "Development Recommendations",
@@ -346,5 +358,55 @@
       "completed": "Completed",
       "deferred": "Deferred"
     }
+  },
+  "competitor": "Competitor",
+  "yourProduct": "Your Product",
+  "yourProducts": "Your Products",
+  "competitorProduct": "Competitor Product",
+  "diff": "Difference",
+  "skuLabel": "SKU:",
+  "inStock": "In Stock",
+  "outOfStock": "Out of Stock",
+  "prime": "Prime",
+  "standard": "Standard",
+  "bsr": "BSR",
+  "score": "Score",
+  "positive": "Positive",
+  "negative": "Negative",
+  "neutral": "Neutral",
+  "adOverview": "Ad Overview",
+  "totalSpend": "Total Spend",
+  "avgPrice": "Avg Price",
+  "avgRating": "Avg Rating",
+  "primePercentage": "Prime %",
+  "ctr": "CTR",
+  "roas": "ROAS",
+  "great": "Great",
+  "good": "Good",
+  "poor": "Poor",
+  "refresh": "Refresh",
+  "sentiment": {
+    "title": "Sentiment Analysis",
+    "noData": "No sentiment data yet",
+    "positive": "Positive",
+    "negative": "Negative",
+    "neutral": "Neutral"
+  },
+  "metrics": {
+    "followersGrowth": "Followers Growth",
+    "engagementTrend": "Engagement Trend",
+    "noData": "No metrics data yet"
+  },
+  "notAvailable": "N/A",
+  "errors": {
+    "fetchFailed": "Failed to fetch competitors",
+    "createFailed": "Failed to create competitor",
+    "updateFailed": "Failed to update competitor",
+    "deleteFailed": "Failed to delete competitor",
+    "nameRequired": "Competitor name is required",
+    "updateTaskFailed": "Failed to update task",
+    "createTaskFailed": "Failed to create task",
+    "discoveryFailed": "Competitor discovery failed",
+    "discoveryError": "Discovery error"
   }
 }

@@ -160,7 +160,7 @@ const CompetitorDetail: React.FC = () => {
       setShowTaskModal(false);
       fetchDevRecommendations();
     } catch {
-      setTaskError(editingTask ? 'Failed to update task' : 'Failed to create task');
+      setTaskError(editingTask ? t('competitors.errors.updateTaskFailed') : t('competitors.errors.createTaskFailed'));
     }
   };
 
@@ -457,7 +457,7 @@ const CompetitorDetail: React.FC = () => {
                         {task.title}
                       </span>
                       <span className="text-[10px] text-gray-400">
-                        {new Date(task.createdAt).toLocaleDateString()}
+                        {new Date(task.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}
                       </span>
                     </div>
 
@@ -536,7 +536,7 @@ const CompetitorDetail: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {ads.map(a => (
                 <div key={a.id} className="border rounded-lg p-3 dark:border-gray-700">
-                  {a.creativeUrl && <img src={a.creativeUrl} alt="Ad" className="w-full h-40 object-cover rounded mb-2" />}
+                  {a.creativeUrl && <img src={a.creativeUrl} alt={t('competitors.ads.overview')} className="w-full h-40 object-cover rounded mb-2" />}
                   {a.headline && <h4 className="font-semibold text-sm">{a.headline}</h4>}
                   {a.copy && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-3">{a.copy}</p>}
                   <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
@@ -598,7 +598,7 @@ const CompetitorDetail: React.FC = () => {
                     <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">
                       {r.type === 'weekly' ? t('competitors.weeklyReport') : t('competitors.comprehensiveReport')}
                     </span>
-                    <span>{new Date(r.generatedAt).toLocaleDateString()}</span>
+                    <span>{new Date(r.generatedAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}</span>
                   </div>
                 </div>
               ))}

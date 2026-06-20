@@ -172,7 +172,7 @@ const Comparison: React.FC = () => {
               <div key={idx} className="grid grid-cols-12 gap-4 px-4 py-3 items-center">
                 <div className="col-span-4">
                   <div className="font-medium text-sm">{item.competitorProduct.name}</div>
-                  {item.competitorProduct.sku && <div className="text-xs text-gray-500">SKU: {item.competitorProduct.sku}</div>}
+                  {item.competitorProduct.sku && <div className="text-xs text-gray-500">{t('competitors.skuLabel')} {item.competitorProduct.sku}</div>}
                   {item.competitorProduct.price && (
                     <div className="text-lg font-bold text-red-600">
                       {Number(item.competitorProduct.price).toFixed(2)} {item.competitorProduct.currency}
@@ -186,10 +186,10 @@ const Comparison: React.FC = () => {
                   {item.yourProduct ? (
                     <>
                       <div className="font-medium text-sm">{item.yourProduct.name}</div>
-                      {item.yourProduct.sku && <div className="text-xs text-gray-500">SKU: {item.yourProduct.sku}</div>}
+                      {item.yourProduct.sku && <div className="text-xs text-gray-500">{t('competitors.skuLabel')} {item.yourProduct.sku}</div>}
                       {item.yourProduct.price && (
                         <div className="text-lg font-bold text-green-600">
-                          {Number(item.yourProduct.price).toFixed(2)} EGP
+                          {Number(item.yourProduct.price).toFixed(2)} {item.competitorProduct.currency}
                         </div>
                       )}
                     </>
@@ -203,7 +203,7 @@ const Comparison: React.FC = () => {
                 <div className="col-span-3 text-end">
                   {item.priceDiff !== null && item.status !== 'missing' && (
                     <div className={`text-sm font-medium ${item.status === 'cheaper' ? 'text-green-600' : item.status === 'expensive' ? 'text-red-600' : 'text-gray-500'}`}>
-                      {item.status === 'cheaper' ? '+' : item.status === 'expensive' ? '-' : ''}{item.priceDiff.toFixed(2)} EGP
+                      {item.status === 'cheaper' ? '+' : item.status === 'expensive' ? '-' : ''}{item.priceDiff.toFixed(2)} {item.competitorProduct.currency}
                       {item.priceDiffPercent !== null && ` (${item.priceDiffPercent}%)`}
                     </div>
                   )}

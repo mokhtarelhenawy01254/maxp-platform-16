@@ -79,15 +79,15 @@ export default function PlatformOverview() {
       key: 'price',
       render: (price, record) => (
         <span className="font-medium">
-          {record.currency} {price ? Number(price).toFixed(2) : 'N/A'}
+          {record.currency} {price ? Number(price).toFixed(2) : t('competitors.notAvailable')}
         </span>
       ),
     },
     {
-      title: 'BSR',
+      title: t('competitors.bsr'),
       dataIndex: 'bsrRank',
       key: 'bsrRank',
-      render: (rank) => (rank ? `#${rank.toLocaleString()}` : 'N/A'),
+      render: (rank) => (rank ? `#${rank.toLocaleString()}` : t('competitors.notAvailable')),
     },
     {
       title: t('competitors.reviews'),
@@ -102,19 +102,19 @@ export default function PlatformOverview() {
       render: (rating) => (
         <span className="flex items-center gap-1">
           <Star className="size-4 text-yellow-500" />
-          {rating ? Number(rating).toFixed(1) : 'N/A'}
+          {rating ? Number(rating).toFixed(1) : t('competitors.notAvailable')}
         </span>
       ),
     },
     {
-      title: 'Prime',
+      title: t('competitors.prime'),
       dataIndex: 'isPrime',
       key: 'isPrime',
       render: (isPrime) =>
         isPrime ? (
-          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">Prime</Badge>
+          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">{t('competitors.primeLabel')}</Badge>
         ) : (
-          <Badge variant="outline">Standard</Badge>
+          <Badge variant="outline">{t('competitors.standardLabel')}</Badge>
         ),
     },
     {
@@ -124,7 +124,7 @@ export default function PlatformOverview() {
       render: (isAvailable) => (
         <span className="flex items-center gap-1 text-xs">
           <span className={`h-2 w-2 rounded-full ${isAvailable ? 'bg-green-500' : 'bg-red-500'}`} />
-          {isAvailable ? 'In Stock' : 'Out of Stock'}
+          {isAvailable ? t('competitors.inStock') : t('competitors.outOfStock')}
         </span>
       ),
     },
@@ -153,9 +153,9 @@ export default function PlatformOverview() {
       dataIndex: 'confidence',
       key: 'confidence',
       render: (conf) => {
-        if (conf === 'high') return <Badge variant="secondary" className="bg-green-500/10 text-green-600">{conf}</Badge>;
-        if (conf === 'medium') return <Badge variant="secondary" className="bg-orange-500/10 text-orange-600">{conf}</Badge>;
-        return <Badge variant="destructive">{conf}</Badge>;
+        if (conf === 'high') return <Badge variant="secondary" className="bg-green-500/10 text-green-600">{t('competitors.high')}</Badge>;
+        if (conf === 'medium') return <Badge variant="secondary" className="bg-orange-500/10 text-orange-600">{t('competitors.medium')}</Badge>;
+        return <Badge variant="destructive">{t('competitors.low')}</Badge>;
       },
     },
   ];
@@ -242,7 +242,7 @@ export default function PlatformOverview() {
           <CardContent className="text-center py-4">
             {platformIcons.google}
             <div className="text-xl font-bold mt-2">
-              {summary.googleBusiness?.rating || 'N/A'}
+              {summary.googleBusiness?.rating || t('competitors.notAvailable')}
             </div>
             <div className="text-muted-foreground text-sm">{t('competitors.googleRating')}</div>
           </CardContent>
@@ -268,13 +268,13 @@ export default function PlatformOverview() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="amazon" className="flex items-center gap-1">
-            {platformIcons.amazon} Amazon
+            {platformIcons.amazon} {t('competitors.platforms.amazonTab')}
           </TabsTrigger>
           <TabsTrigger value="google" className="flex items-center gap-1">
-            {platformIcons.google} Google Business
+            {platformIcons.google} {t('competitors.platforms.googleTab')}
           </TabsTrigger>
           <TabsTrigger value="tech" className="flex items-center gap-1">
-            {platformIcons.tech} Tech Stack
+            {platformIcons.tech} {t('competitors.platforms.techStackTab')}
           </TabsTrigger>
         </TabsList>
 
@@ -291,7 +291,7 @@ export default function PlatformOverview() {
                 <Card size="sm">
                   <CardContent>
                     <div className="text-sm text-muted-foreground">{t('competitors.avgPrice')}</div>
-                    <div className="text-2xl font-bold">${Number(summary.amazon.avgPrice).toFixed(2)}</div>
+                    <div className="text-2xl font-bold">{t('competitors.currency')}{Number(summary.amazon.avgPrice).toFixed(2)}</div>
                   </CardContent>
                 </Card>
                 <Card size="sm">
@@ -302,7 +302,7 @@ export default function PlatformOverview() {
                 </Card>
                 <Card size="sm">
                   <CardContent>
-                    <div className="text-sm text-muted-foreground">Prime %</div>
+                    <div className="text-sm text-muted-foreground">{t('competitors.primePercentage')}</div>
                     <div className="text-2xl font-bold">{Number(summary.amazon.primePercentage).toFixed(1)}%</div>
                   </CardContent>
                 </Card>
@@ -329,16 +329,16 @@ export default function PlatformOverview() {
                 <CardContent className="space-y-3">
                   <div className="flex">
                     <span className="text-muted-foreground w-24 shrink-0">{t('competitors.address')}:</span>
-                    <span>{summary.googleBusiness.address || 'N/A'}</span>
+                    <span>{summary.googleBusiness.address || t('competitors.notAvailable')}</span>
                   </div>
                   <div className="flex">
                     <span className="text-muted-foreground w-24 shrink-0">{t('competitors.phone')}:</span>
-                    <span>{summary.googleBusiness.phone || 'N/A'}</span>
+                    <span>{summary.googleBusiness.phone || t('competitors.notAvailable')}</span>
                   </div>
                   <div className="flex">
                     <span className="text-muted-foreground w-24 shrink-0">{t('competitors.website')}:</span>
                     <a href={summary.googleBusiness.website} target="_blank" rel="noopener">
-                      {summary.googleBusiness.website || 'N/A'}
+                      {summary.googleBusiness.website || t('competitors.notAvailable')}
                     </a>
                   </div>
                 </CardContent>
@@ -379,10 +379,10 @@ export default function PlatformOverview() {
                         }}
                       >
                         {summary.googleBusiness.rating >= 4
-                          ? 'Great'
+                          ? t('competitors.great')
                           : summary.googleBusiness.rating >= 3
-                          ? 'Good'
-                          : 'Poor'}
+                          ? t('competitors.good')
+                          : t('competitors.poor')}
                       </div>
                     </div>
                   </div>

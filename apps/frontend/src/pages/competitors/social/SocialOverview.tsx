@@ -18,7 +18,7 @@ import {
   Inbox,
 } from 'lucide-react';
 import axios from 'axios';
-import Chart from 'react-chartjs-2';
+import i18n from '../../../i18n';
 
 const platformIcons = {
   instagram: <Instagram className="size-6 text-[#E4405F]" />,
@@ -126,9 +126,9 @@ export default function SocialOverview() {
   };
 
   const getSentimentTag = (sentiment) => {
-    if (sentiment === 'positive') return <Badge variant="secondary" className="bg-green-500/10 text-green-600 hover:bg-green-500/20">{t('competitors.sentiment.positive') || 'Positive'}</Badge>;
-    if (sentiment === 'negative') return <Badge variant="destructive">{t('competitors.sentiment.negative') || 'Negative'}</Badge>;
-    return <Badge variant="outline">{t('competitors.sentiment.neutral') || 'Neutral'}</Badge>;
+    if (sentiment === 'positive') return <Badge variant="secondary" className="bg-green-500/10 text-green-600 hover:bg-green-500/20">{t('competitors.sentiment.positive')}</Badge>;
+    if (sentiment === 'negative') return <Badge variant="destructive">{t('competitors.sentiment.negative')}</Badge>;
+    return <Badge variant="outline">{t('competitors.sentiment.neutral')}</Badge>;
   };
 
   if (loading) return <Loader2 className="animate-spin mx-auto mt-10 size-8" />;
@@ -164,7 +164,7 @@ export default function SocialOverview() {
       <div className="flex justify-end">
         <Button onClick={handleRefresh} disabled={refreshing}>
           <RefreshCw className={`size-4 ${refreshing ? 'animate-spin' : ''}`} />
-          {t('competitors.refresh') || 'Refresh'}
+          {t('competitors.refresh')}
         </Button>
       </div>
 
@@ -271,12 +271,12 @@ export default function SocialOverview() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('competitors.sentiment.title') || 'Sentiment Analysis'}</CardTitle>
+          <CardTitle>{t('competitors.sentiment.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           {Object.keys(sentimentData).length === 0 ? (
             <div className="text-center text-muted-foreground py-4">
-              {t('competitors.sentiment.noData') || 'No sentiment data yet'}
+              {t('competitors.sentiment.noData')}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -294,7 +294,7 @@ export default function SocialOverview() {
                       <span className="capitalize font-medium">{platform}</span>
                     </div>
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm text-muted-foreground">Score:</span>
+                      <span className="text-sm text-muted-foreground">{t('competitors.score')}:</span>
                       <span className="font-bold text-lg">{latest.score?.toFixed(2) || '—'}</span>
                       {getSentimentTag(latest.sentiment)}
                     </div>
@@ -302,23 +302,23 @@ export default function SocialOverview() {
                       <div
                         className="bg-green-500 transition-all"
                         style={{ width: `${posPct}%` }}
-                        title={`Positive: ${latest.positiveCount || 0}`}
+                        title={`${t('competitors.positive')}: ${latest.positiveCount || 0}`}
                       />
                       <div
                         className="bg-gray-400 transition-all"
                         style={{ width: `${neuPct}%` }}
-                        title={`Neutral: ${latest.neutralCount || 0}`}
+                        title={`${t('competitors.neutral')}: ${latest.neutralCount || 0}`}
                       />
                       <div
                         className="bg-red-500 transition-all"
                         style={{ width: `${negPct}%` }}
-                        title={`Negative: ${latest.negativeCount || 0}`}
+                        title={`${t('competitors.negative')}: ${latest.negativeCount || 0}`}
                       />
                     </div>
                     <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>{latest.positiveCount || 0} pos</span>
-                      <span>{latest.neutralCount || 0} neu</span>
-                      <span>{latest.negativeCount || 0} neg</span>
+                      <span>{latest.positiveCount || 0} {t('competitors.positive')}</span>
+                      <span>{latest.neutralCount || 0} {t('competitors.neutral')}</span>
+                      <span>{latest.negativeCount || 0} {t('competitors.negative')}</span>
                     </div>
                   </div>
                 );
@@ -330,12 +330,12 @@ export default function SocialOverview() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('competitors.metrics.followersGrowth') || 'Followers Growth'}</CardTitle>
+          <CardTitle>{t('competitors.metrics.followersGrowth')}</CardTitle>
         </CardHeader>
         <CardContent>
           {Object.keys(metricsTimeline).length === 0 ? (
             <div className="text-center text-muted-foreground py-4">
-              {t('competitors.metrics.noData') || 'No metrics data yet'}
+              {t('competitors.metrics.noData')}
             </div>
           ) : (
             <div className="space-y-6">
@@ -351,13 +351,13 @@ export default function SocialOverview() {
                       {platformIcons[platform]}
                       <span className="font-medium capitalize">{platform}</span>
                       <span className="text-xs text-muted-foreground">
-                        {t('competitors.metrics.followersGrowth') || 'Followers'} — {t('competitors.metrics.engagementTrend') || 'Engagement'}
+                        {t('competitors.metrics.followersGrowth')} — {t('competitors.metrics.engagementTrend')}
                       </span>
                     </div>
 
                     <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mb-2">
                       <div className="text-xs text-muted-foreground mb-1">
-                        {t('competitors.metrics.followersGrowth') || 'Followers Growth'}
+                        {t('competitors.metrics.followersGrowth')}
                       </div>
                       <div className="space-y-0.5">
                         {recent.map((dp, i) => {
@@ -384,7 +384,7 @@ export default function SocialOverview() {
 
                     <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
                       <div className="text-xs text-muted-foreground mb-1">
-                        {t('competitors.metrics.engagementTrend') || 'Engagement Trend'}
+                        {t('competitors.metrics.engagementTrend')}
                       </div>
                       <div className="flex items-end h-16 gap-px">
                         {recent.slice(-30).map((dp, i) => {
