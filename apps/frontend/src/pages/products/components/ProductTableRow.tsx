@@ -99,6 +99,7 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
   const stockLocationLabel =
     product.inventorySnapshot?.stockLocationLabel ||
     product.merchantContext?.stockLocationLabel;
+  const hasImage = !!(product.mainImage || (product.images && product.images.length > 0));
 
   const navigate = useNavigate();
 
@@ -194,8 +195,8 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
           onClick={prepareStorefrontContext}
           className="flex items-center hover:opacity-80 transition-opacity"
         >
-          <div className="flex-shrink-0 h-20 w-20">
-            {product.mainImage || (product.images && product.images.length > 0) ? (
+          <div className="flex-shrink-0 h-20 w-20 relative">
+            {hasImage ? (
               <img
                 src={getImageUrl(product.mainImage || product.images[0]) || ""}
                 alt={product.name}
@@ -206,7 +207,7 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
                 }}
               />
             ) : null}
-            <div className={`h-20 w-20 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center ${product.images && product.images.length > 0 ? "hidden" : ""}`}>
+            <div className={`h-20 w-20 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center ${hasImage ? "hidden" : ""}`}>
               <PhotoIcon className="h-8 w-8 text-gray-400" />
             </div>
           </div>

@@ -7,6 +7,11 @@ jest.mock("../../../utils/imageUrl", () => ({
   getImageUrl: (value: string) => value,
 }));
 
+jest.mock("react-router-dom", () => ({
+  useNavigate: () => jest.fn(),
+}));
+
+
 const baseProduct: Product = {
   id: "product-1",
   slug: "swan-speaker",
