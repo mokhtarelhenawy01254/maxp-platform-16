@@ -1,3 +1,5 @@
+import { tokenManager } from "../utils/tokenManager";
+
 export type LpPage = {
   id: string;
   slug: string;
@@ -13,9 +15,13 @@ export type LpPage = {
 const BASE = "/api/v1/admin/lp-pages";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const token = tokenManager.getAccessToken();
   const res = await fetch(url, {
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     ...init,
   });
   if (!res.ok) {

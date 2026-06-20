@@ -395,7 +395,7 @@ router.post('/recommendation-settings', verifyToken.authenticateToken, async (re
 // Get sidebar settings for current company
 router.get('/sidebar', verifyToken.authenticateToken, async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.userCompanies?.[0]?.companyId;
     if (!companyId) {
       return res.status(403).json({
         success: false,
@@ -442,7 +442,7 @@ router.get('/sidebar', verifyToken.authenticateToken, async (req, res) => {
 // Update sidebar settings
 router.put('/sidebar', verifyToken.authenticateToken, async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.user?.userCompanies?.[0]?.companyId;
     if (!companyId) {
       return res.status(403).json({
         success: false,
