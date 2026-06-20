@@ -1,0 +1,3 @@
+-- This migration is a no-op because the tables already exist in the database.
+-- The Prisma schema was updated to include the FollowUp and FollowUpHistory models
+-- which correspond to the existing "company_follow_ups" and "follow_up_history" tables.

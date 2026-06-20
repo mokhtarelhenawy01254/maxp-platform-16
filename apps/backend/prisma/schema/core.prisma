@@ -268,9 +268,10 @@ model Company {
   moderatorActivityLogs            ModeratorActivityLog[]
   moderatorNotifications           ModeratorNotification[]
   moderatorDashboardCaches         ModeratorDashboardCache[]
-  inboxSettings                    InboxSettings?
+   inboxSettings                    InboxSettings?
+   followUp                         FollowUp?
 
-  @@index([businessSpecialtyId])
+   @@index([businessSpecialtyId])
   @@index([planConfigurationId])
   @@map("companies")
 }

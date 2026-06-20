@@ -455,9 +455,9 @@ const getAllCompanies = async (req, res) => {
         const ACTIONABLE = ['pending', 'contacted', 'waiting'];
 
         const buildSavedViewWhere = (view) => {
-            if (view === 'FOLLOW_UP_NOW') return { followUp: { status: { in: ACTIONABLE }, OR: [{ nextActionAt: { lte: now } }, { nextActionAt: null }] } };
-            if (view === 'MY_TODAY') return { followUp: { status: { in: ACTIONABLE }, assignedOwnerId: req.user.id, OR: [{ nextActionAt: { lte: now } }, { nextActionAt: null }] } };
-            if (view === 'ESCALATION_DUE') return { followUp: { status: { in: ACTIONABLE }, nextActionAt: { lte: new Date(now.getTime() - 24 * 60 * 60 * 1000) } } };
+            if (view === 'FOLLOW_UP_NOW') return { followUp: { status: { in: ACTIONABLE }, OR: [{ next_action_at: { lte: now } }, { next_action_at: null }] } };
+            if (view === 'MY_TODAY') return { followUp: { status: { in: ACTIONABLE }, assigned_owner_id: req.user.id, OR: [{ next_action_at: { lte: now } }, { next_action_at: null }] } };
+            if (view === 'ESCALATION_DUE') return { followUp: { status: { in: ACTIONABLE }, next_action_at: { lte: new Date(now.getTime() - 24 * 60 * 60 * 1000) } } };
             if (view === 'STALE_72H') return { followUp: null, createdAt: { lte: new Date(now.getTime() - 72 * 60 * 60 * 1000) } };
             return {};
         };
