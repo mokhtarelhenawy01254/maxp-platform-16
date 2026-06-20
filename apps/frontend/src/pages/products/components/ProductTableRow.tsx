@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Product,
@@ -100,6 +100,7 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
     product.inventorySnapshot?.stockLocationLabel ||
     product.merchantContext?.stockLocationLabel;
   const hasImage = !!(product.mainImage || (product.images && product.images.length > 0));
+  const [imageError, setImageError] = useState(false);
 
   const navigate = useNavigate();
 
@@ -196,20 +197,18 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
           className="flex items-center hover:opacity-80 transition-opacity"
         >
           <div className="flex-shrink-0 h-20 w-20 relative">
-            {hasImage ? (
+            {hasImage && !imageError ? (
               <img
                 src={getImageUrl(product.mainImage || product.images[0]) || ""}
                 alt={product.name}
                 className="h-20 w-20 rounded-lg object-cover shadow-sm border border-gray-100 dark:border-gray-600"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                  e.currentTarget.nextElementSibling?.classList.remove("hidden");
-                }}
+                onError={() => setImageError(true)}
               />
-            ) : null}
-            <div className={`h-20 w-20 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center ${hasImage ? "hidden" : ""}`}>
-              <PhotoIcon className="h-8 w-8 text-gray-400" />
-            </div>
+            ) : (
+              <div className="h-20 w-20 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                <PhotoIcon className="h-8 w-8 text-gray-400" />
+              </div>
+            )}
           </div>
           <div className="mr-4">
             <div className="text-sm font-semibold text-gray-900 dark:text-white">{product.name}</div>
