@@ -229,12 +229,17 @@ const Payroll: React.FC = () => {
 
   const fetchSummary = React.useCallback(async () => {
     try {
-      const response = await api.get(`/hr/payroll/summary?month=${selectedMonth}&year=${selectedYear}`);
+      const params = new URLSearchParams({
+        month: selectedMonth.toString(),
+        year: selectedYear.toString(),
+      });
+      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
+      const response = await api.get(`/hr/payroll/summary?${params}`);
       setSummary(response.data.summary);
     } catch (error) {
       console.error('Error fetching summary:', error);
     }
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, statusFilter]);
 
   useEffect(() => {
     fetchPayrolls();
@@ -398,24 +403,29 @@ const Payroll: React.FC = () => {
     try {
       const parsedAllowances = payroll.allowances ? JSON.parse(payroll.allowances) : {};
       setEditingAllowances(
-        Object.entries(parsedAllowances).map(([name, amount]) => ({
-          id: Math.random().toString(36).substr(2, 9),
-          name,
-          amount: Number(amount)
-        }))
+        Object.entries(parsedAllowances)
+          .filter(([_, amount]) => typeof amount === 'number')
+          .map(([name, amount]) => ({
+            id: Math.random().toString(36).substr(2, 9),
+            name,
+            amount: Number(amount)
+          }))
       );
     } catch {
       setEditingAllowances([]);
     }
 
+    const metaKeys = ['details', 'manualDetails', 'capNotes', 'advanceDetails'];
     try {
       const parsedDeductions = payroll.deductions ? JSON.parse(payroll.deductions) : {};
       setEditingDeductions(
-        Object.entries(parsedDeductions).map(([name, amount]) => ({
-          id: Math.random().toString(36).substr(2, 9),
-          name,
-          amount: Number(amount)
-        }))
+        Object.entries(parsedDeductions)
+          .filter(([name, amount]) => !metaKeys.includes(name) && typeof amount === 'number')
+          .map(([name, amount]) => ({
+            id: Math.random().toString(36).substr(2, 9),
+            name,
+            amount: Number(amount)
+          }))
       );
     } catch {
       setEditingDeductions([]);
@@ -820,12 +830,6 @@ const Payroll: React.FC = () => {
                   <tr>
                     <td>خصم الغياب (${payroll.absentDays} يوم)</td>
                     <td class="amount">${formatCurrency(payroll.attendanceDeduction)}</td>
-                  </tr>
-                  ` : ''}
-                  ${payroll.latePenalty > 0 ? `
-                  <tr>
-                    <td>جزاء التأخير</td>
-                    <td class="amount">${formatCurrency(payroll.latePenalty)}</td>
                   </tr>
                   ` : ''}
                   ${payroll.socialInsurance > 0 ? `

@@ -40,7 +40,12 @@ const initialFilters: FiltersState = {
 
 const parseArray = <T>(value: any, fallback: T[] = []): T[] => {
   if (!value) return fallback;
-  if (typeof value === "string") return safeJsonParse(value, fallback);
+  if (typeof value === "string") {
+    if (value.startsWith("[") || value.startsWith("{")) {
+      return safeJsonParse(value, fallback);
+    }
+    return value.split(",").map((t) => t.trim()).filter((t) => t.length > 0) as T[];
+  }
   return Array.isArray(value) ? value : fallback;
 };
 

@@ -194,20 +194,20 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
           onClick={prepareStorefrontContext}
           className="flex items-center hover:opacity-80 transition-opacity"
         >
-          <div className="flex-shrink-0 h-12 w-12">
+          <div className="flex-shrink-0 h-20 w-20">
             {product.mainImage || (product.images && product.images.length > 0) ? (
               <img
                 src={getImageUrl(product.mainImage || product.images[0]) || ""}
                 alt={product.name}
-                className="h-12 w-12 rounded-lg object-cover shadow-sm"
+                className="h-20 w-20 rounded-lg object-cover shadow-sm border border-gray-100 dark:border-gray-600"
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
                   e.currentTarget.nextElementSibling?.classList.remove("hidden");
                 }}
               />
             ) : null}
-            <div className={`h-12 w-12 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center ${product.images && product.images.length > 0 ? "hidden" : ""}`}>
-              <PhotoIcon className="h-6 w-6 text-gray-400" />
+            <div className={`h-20 w-20 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center ${product.images && product.images.length > 0 ? "hidden" : ""}`}>
+              <PhotoIcon className="h-8 w-8 text-gray-400" />
             </div>
           </div>
           <div className="mr-4">

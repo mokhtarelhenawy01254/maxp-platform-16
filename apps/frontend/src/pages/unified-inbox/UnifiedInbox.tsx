@@ -35,7 +35,7 @@ import { socketService } from "../../services/socketService";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import EmojiPicker from "emoji-picker-react";
-import StatsDashboard from "../../components/facebook-inbox/StatsDashboard/StatsDashboard";
+
 import QuickOrderModal from "../../components/facebook-inbox/Modals/QuickOrderModal";
 import TextGalleryModal from "../../components/facebook-inbox/TextGallery/TextGalleryModal";
 import ImageGalleryModal from "../../components/facebook-inbox/ImageGallery/ImageGalleryModal";
@@ -230,7 +230,7 @@ const UnifiedInbox: React.FC = () => {
   const [showSnoozePicker, setShowSnoozePicker] = useState(false);
   const [editNote, setEditNote] = useState(false);
   const [noteText, setNoteText] = useState("");
-  const [showStats, setShowStats] = useState(false);
+
   const [showQuickOrder, setShowQuickOrder] = useState(false);
   const [showTextGallery, setShowTextGallery] = useState(false);
   const [showImageGallery, setShowImageGallery] = useState(false);
@@ -881,7 +881,7 @@ const UnifiedInbox: React.FC = () => {
     <>
       <div className="flex flex-col h-full w-full bg-white" dir={isRtl ? "rtl" : "ltr"}>
         {/* 1. Global Header */}
-      <div className="px-5 pt-4 pb-3 border-b shrink-0" style={{ borderColor: 'var(--business-muted-line)', background: 'var(--business-surface-panel)' }}>
+      <div className="unified-inbox-header px-5 pt-4 pb-3 border-b shrink-0" style={{ borderColor: 'var(--business-muted-line)', background: 'var(--business-surface-panel)' }}>
         <h1 className="text-[22px] font-bold mb-1" style={{ color: 'var(--color-foreground)' }}>{t("unifiedInbox.pageTitle", "البريد الوارد")}</h1>
         <p className="text-[14px] font-medium mb-3" style={{ color: 'var(--color-muted-foreground)' }}>
           {t("unifiedInbox.pageDescription", "يمكنك الرد على الرسائل وإعداد عمليات الأتمتة وغير ذلك الكثير.")}
@@ -965,14 +965,7 @@ const UnifiedInbox: React.FC = () => {
             >
               <CheckIcon className="w-3.5 h-3.5" />
             </button>
-            <button
-              type="button"
-              onClick={() => setShowStats(true)}
-              className="inbox-filter-chip"
-              aria-label={t("unifiedInbox.stats")}
-            >
-              {t("unifiedInbox.stats")}
-            </button>
+
           </div>
         </div>
       </div>
@@ -984,7 +977,7 @@ const UnifiedInbox: React.FC = () => {
             <PostsManagement embedded defaultPlatform={activeTab === 'fb-comments' ? 'facebook' : 'instagram'} />
           </div>
         ) : (
-          <div className="business-inbox-shell w-full">
+          <div className={`business-inbox-shell w-full ${selectedConversation ? 'business-inbox-shell--conversation-active' : ''}`}>
             <div className="business-inbox-stage">
               {/* ═══════════════════════════════════════════════════════════════════ */}
               {/* COLUMN 1 — Conversation List */}
@@ -1220,7 +1213,17 @@ const UnifiedInbox: React.FC = () => {
               {/* Chat Header */}
               <div className="business-inbox-header">
                 <div className="business-inbox-header-row">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1 sm:gap-3">
+                    {/* Mobile back button */}
+                    <button
+                      onClick={() => setSelectedConversation(null)}
+                      className="lg:hidden business-chip-button shrink-0"
+                      aria-label={t("unifiedInbox.backToList", "رجوع")}
+                    >
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isRtl ? 'scaleX(-1)' : 'none' }}>
+                        <path d="M15 18l-6-6 6-6" />
+                      </svg>
+                    </button>
                     <div className="relative">
                       {selectedConversation.contactAvatar ? (
                         <img
@@ -2402,11 +2405,7 @@ const UnifiedInbox: React.FC = () => {
     </div>
 
     {/* Modals */}
-    <StatsDashboard
-      isOpen={showStats}
-      onClose={() => setShowStats(false)}
-      conversations={[]}
-    />
+
     {showQuickOrder && selectedConversation && (
       <QuickOrderModal
         isOpen={showQuickOrder}

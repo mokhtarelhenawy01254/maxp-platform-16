@@ -796,6 +796,50 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     }
   };
 
+  // Duplicate Task
+  const duplicateTask = async (task: Task) => {
+    try {
+      const token = getAccessToken();
+      if (!token) { toast.error("يجب تسجيل الدخول أولاً"); return; }
+
+      const response = await fetch(buildApiUrl("tasks"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          projectId: task.projectId,
+          categoryId: task.categoryId,
+          goalId: task.goalId,
+          title: `${task.title} (نسخة)`,
+          description: task.description,
+          priority: task.priority,
+          type: task.type,
+          assignedTo: task.assignedTo,
+          dueDate: task.dueDate,
+          startDate: task.startDate,
+          estimatedHours: task.estimatedHours,
+          tags: task.tags,
+          measurementType: task.measurementType,
+          metricUnit: task.metricUnit,
+          metricTargetValue: task.metricTargetValue,
+          metricCurrentValue: task.metricCurrentValue,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        fetchTasks();
+        toast.success("تم تكرار المهمة بنجاح");
+      } else {
+        toast.error(data.error || "فشل في تكرار المهمة");
+      }
+    } catch (error) {
+      toast.error("فشل في تكرار المهمة");
+    }
+  };
+
   // Delete Task
   const deleteTask = async (taskId: string) => {
     if (!confirm("هل أنت متأكد من حذف هذه المهمة؟")) return;
@@ -1277,6 +1321,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
             formatDate={formatDate}
             updateTaskStatus={updateTaskStatus}
             deleteTask={deleteTask}
+            duplicateTask={duplicateTask}
             setSelectedTask={setSelectedTask}
             setShowTaskModal={setShowTaskModal}
             setEditingTask={setEditingTask}

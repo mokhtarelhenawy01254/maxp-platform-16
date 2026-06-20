@@ -5340,6 +5340,78 @@ select {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   📱 MOBILE OVERRIDES — Unified Inbox
+   Fixes header, column toggling, and overflow on small screens.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Hide the description paragraph on mobile – saves vertical space */
+@media (max-width: 767px) {
+  [data-theme="business-os-enterprise"] .unified-inbox-header p {
+    display: none;
+  }
+
+  [data-theme="business-os-enterprise"] .unified-inbox-header h1 {
+    font-size: 1.15rem;
+    margin-bottom: 0.35rem;
+  }
+
+  /* Reduce header padding */
+  [data-theme="business-os-enterprise"] .unified-inbox-header {
+    padding: 0.6rem 0.75rem !important;
+  }
+
+    /* Compact filter chips on mobile */
+  [data-theme="business-os-enterprise"] .inbox-filter-chip {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+    border-radius: 8px;
+  }
+
+  /* Hide comments buttons on mobile – they are separate pages */
+  [data-theme="business-os-enterprise"] .unified-inbox-header .flex.gap-1 {
+    display: none;
+  }
+
+  /* Prevent horizontal overflow – three 100%-wide columns in a row
+     would push the stage to 300 % width otherwise */
+  [data-theme="business-os-enterprise"] .business-inbox-stage {
+    overflow-x: hidden;
+  }
+
+  /* No conversation selected → hide chat + profile, show only list */
+  [data-theme="business-os-enterprise"]
+    .business-inbox-shell:not(.business-inbox-shell--conversation-active)
+    .business-inbox-column.flex-1,
+  [data-theme="business-os-enterprise"]
+    .business-inbox-shell:not(.business-inbox-shell--conversation-active)
+    .business-inbox-column--profile {
+    display: none;
+  }
+
+  /* Conversation selected → hide list, keep chat + profile visible */
+  [data-theme="business-os-enterprise"]
+    .business-inbox-shell--conversation-active
+    .business-inbox-column--list {
+    display: none;
+  }
+}
+
+/* Extra-compact header on very small phones */
+@media (max-width: 479px) {
+  [data-theme="business-os-enterprise"] .unified-inbox-header h1 {
+    font-size: 1rem;
+  }
+
+  [data-theme="business-os-enterprise"] .unified-inbox-header {
+    padding: 0.45rem 0.6rem !important;
+  }
+
+  [data-theme="business-os-enterprise"] .unified-inbox-header h1 {
+    margin-bottom: 0.2rem;
+  }
+}
+
 @media (max-width: 479px) {
   [data-theme="business-os-enterprise"] .business-onboarding-stage {
     padding: 0.55rem;

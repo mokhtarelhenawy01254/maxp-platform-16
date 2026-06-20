@@ -10,17 +10,12 @@
   "plugin": [
     "H:\\ponytail\\.opencode\\plugins\\ponytail.mjs",
     "opencode-notify",
-    "opencode-goal-plugin",
     "opencode-supermemory",
-    "opencode-dynamic-context-pruning",
-    "opencode-shell-strategy",
+    "@tarquinen/opencode-dcp",
     "opencode-websearch-cited",
-    "opencode-worktree",
-    "opencode-background-agents",
-    "opencode-type-inject",
-    "opencode-md-table-formatter",
-    "opencode-vibeguard",
-    "opencode-skillful",
     "opencode-pty"
+  ],
+  "instructions": [
+    ".opencode/shell_strategy.md"
   ]
 }

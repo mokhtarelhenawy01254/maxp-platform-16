@@ -17,13 +17,10 @@ const getAllOrders = async (req, res) => {
     const where = { companyId };
     
     // Default: exclude TRASH orders unless specifically requested
-    if (status === 'TRASH' || status === 'trash') {
-      where.status = { in: ['TRASH', 'trash'] };
-    } else if (status) {
+    if (status) {
       where.status = status;
     } else {
-      // Exclude TRASH by default
-      where.status = { notIn: ['TRASH', 'trash', 'deleted'] };
+      where.status = { not: 'TRASH' };
     }
 
     const [orders, total] = await Promise.all([

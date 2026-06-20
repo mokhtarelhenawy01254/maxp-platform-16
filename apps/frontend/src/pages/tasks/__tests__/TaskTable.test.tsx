@@ -42,10 +42,20 @@ const buildTask = (status: Task["status"]): Task => ({
   updatedAt: "2026-04-28T08:00:00.000Z",
 });
 
+interface TaskTableRenderOptions {
+  updateTaskStatus?: jest.Mock;
+  duplicateTask?: jest.Mock;
+}
+
 const renderTaskTable = (
   task: Task,
-  updateTaskStatus: jest.Mock = jest.fn(),
+  options: TaskTableRenderOptions = {},
 ) => {
+  const {
+    updateTaskStatus = jest.fn(),
+    duplicateTask = jest.fn(),
+  } = options;
+
   render(
     <MemoryRouter
       future={{
@@ -69,6 +79,7 @@ const renderTaskTable = (
         formatDate={jest.fn((value: string) => value)}
         updateTaskStatus={updateTaskStatus}
         deleteTask={jest.fn()}
+        duplicateTask={duplicateTask}
         setSelectedTask={jest.fn()}
         setShowTaskModal={jest.fn()}
         setEditingTask={jest.fn()}
@@ -81,12 +92,12 @@ const renderTaskTable = (
     </MemoryRouter>,
   );
 
-  return updateTaskStatus;
+  return { updateTaskStatus, duplicateTask };
 };
 
 describe("TaskTable employee status actions", () => {
   it("starts a pending task from the employee surface", () => {
-    const updateTaskStatus = renderTaskTable(buildTask("pending"));
+    const { updateTaskStatus } = renderTaskTable(buildTask("pending"));
 
     fireEvent.click(screen.getByRole("button", { name: /بدء التنفيذ/i }));
 
@@ -94,7 +105,7 @@ describe("TaskTable employee status actions", () => {
   });
 
   it("completes an in-progress task from the employee surface", () => {
-    const updateTaskStatus = renderTaskTable(buildTask("in_progress"));
+    const { updateTaskStatus } = renderTaskTable(buildTask("in_progress"));
 
     fireEvent.click(screen.getAllByRole("button", { name: /^إكمال$/i })[0]);
 
@@ -102,7 +113,7 @@ describe("TaskTable employee status actions", () => {
   });
 
   it("supports uppercase API task statuses in status action buttons", () => {
-    const pendingUpdateTaskStatus = renderTaskTable({
+    const { updateTaskStatus: pendingUpdateTaskStatus } = renderTaskTable({
       ...buildTask("pending"),
       status: "PENDING" as Task["status"],
     });
@@ -119,7 +130,7 @@ describe("TaskTable employee status actions", () => {
 
     cleanup();
 
-    const inProgressUpdateTaskStatus = renderTaskTable({
+    const { updateTaskStatus: inProgressUpdateTaskStatus } = renderTaskTable({
       ...buildTask("in_progress"),
       status: "IN_PROGRESS" as Task["status"],
     });
@@ -138,64 +149,19 @@ describe("TaskTable employee status actions", () => {
   });
 });
 
-describe("TaskTable copy to clipboard", () => {
-  beforeEach(() => {
-    Object.defineProperty(global.navigator, "clipboard", {
-      value: { writeText: jest.fn().mockResolvedValue(undefined) },
-      writable: true,
-      configurable: true,
+describe("TaskTable duplicate task", () => {
+  it("calls duplicateTask with the task when button is clicked", () => {
+    const task = buildTask("pending");
+    const { duplicateTask } = renderTaskTable(task, {
+      duplicateTask: jest.fn(),
     });
+
+    fireEvent.click(screen.getAllByRole("button", { name: /تكرار/i })[0]);
+
+    expect(duplicateTask).toHaveBeenCalledWith(task);
   });
 
-  it("copies task details to clipboard", async () => {
-    renderTaskTable(buildTask("pending"));
-
-    fireEvent.click(screen.getAllByRole("button", { name: /نسخ/i })[0]);
-
-    await waitFor(() => {
-      expect(global.navigator.clipboard.writeText).toHaveBeenCalled();
-    });
-    const text = (global.navigator.clipboard.writeText as jest.Mock).mock
-      .calls[0][0];
-
-    expect(text).toContain("متابعة العميل");
-    expect(text).toContain("تحديث الحالة من شاشة الموظف");
-    expect(text).toContain("pending");
-    expect(text).toContain("medium");
-    expect(text).toContain("إطلاق المنصة");
-    expect(text).toContain("موظف التجربة");
-    expect(text).toContain("2026-05-01");
-    expect(text).toContain(window.location.origin + "/tasks/task-1");
-  });
-
-  it("shows success toast when clipboard succeeds", async () => {
-    const toastSuccess = require("sonner").toast.success;
-
-    renderTaskTable(buildTask("in_progress"));
-
-    fireEvent.click(screen.getAllByRole("button", { name: /نسخ/i })[0]);
-
-    await waitFor(() => {
-      expect(toastSuccess).toHaveBeenCalledWith("تم نسخ المهمة إلى الحافظة");
-    });
-  });
-
-  it("shows error toast when clipboard fails", async () => {
-    (global.navigator.clipboard.writeText as jest.Mock).mockRejectedValue(
-      new Error("denied"),
-    );
-    const toastError = require("sonner").toast.error;
-
-    renderTaskTable(buildTask("completed"));
-
-    fireEvent.click(screen.getAllByRole("button", { name: /نسخ/i })[0]);
-
-    await waitFor(() => {
-      expect(toastError).toHaveBeenCalledWith("فشل نسخ المهمة");
-    });
-  });
-
-  it("renders copy button for each task in both views", () => {
+  it("renders duplicate button for each task in both views", () => {
     render(
       <MemoryRouter
         future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
@@ -223,6 +189,7 @@ describe("TaskTable copy to clipboard", () => {
           formatDate={jest.fn((value: string) => value)}
           updateTaskStatus={jest.fn()}
           deleteTask={jest.fn()}
+          duplicateTask={jest.fn()}
           setSelectedTask={jest.fn()}
           setShowTaskModal={jest.fn()}
           setEditingTask={jest.fn()}
@@ -235,6 +202,6 @@ describe("TaskTable copy to clipboard", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getAllByRole("button", { name: /نسخ/i }).length).toBe(4);
+    expect(screen.getAllByRole("button", { name: /تكرار/i }).length).toBe(4);
   });
 });

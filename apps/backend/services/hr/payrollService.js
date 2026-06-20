@@ -528,7 +528,6 @@ class PayrollService {
       }
 
       if (data.deductions) {
-        // ✅ CRITICAL FIX: Merge with existing deductions to avoid losing metadata/advance details
         let existingDeductions = {};
         try {
           existingDeductions = existing.deductions ? JSON.parse(existing.deductions) : {};
@@ -536,22 +535,28 @@ class PayrollService {
           console.warn('⚠️ [updatePayroll] Failed to parse existing deductions');
         }
 
-        // New deductions from frontend (ensure it's an object)
         const newDeductions = typeof data.deductions === 'string' ? JSON.parse(data.deductions) : data.deductions;
 
-        // Preservation list: keys that should NOT be overwritten if not provided in newDeductions
-        const preserveKeys = ['details', 'manualDetails', 'capNotes', 'advanceDetails', 'غياب وتأخير', 'سلف'];
-
         const mergedDeductions = { ...newDeductions };
+
+        // Preserve auto-calculated keys that should never be lost on manual edit
+        const preserveKeys = ['details', 'manualDetails', 'capNotes', 'advanceDetails', 'غياب وتأخير', 'سلف'];
         preserveKeys.forEach(key => {
-          if (mergedDeductions[key] === undefined && existingDeductions[key] !== undefined) {
+          const isMissingFromNew = mergedDeductions[key] === undefined || mergedDeductions[key] === null || (typeof mergedDeductions[key] === 'number' && isNaN(mergedDeductions[key]));
+          if (isMissingFromNew && existingDeductions[key] !== undefined) {
             mergedDeductions[key] = existingDeductions[key];
+          }
+        });
+
+        // Clean up any NaN values that may come from the frontend
+        Object.keys(mergedDeductions).forEach(key => {
+          if (typeof mergedDeductions[key] === 'number' && isNaN(mergedDeductions[key])) {
+            delete mergedDeductions[key];
           }
         });
 
         updateData.deductions = JSON.stringify(mergedDeductions);
         updateData.totalDeductions = Object.values(mergedDeductions).reduce((sum, val) => {
-          // Correctly handle types to avoid NaN
           if (Array.isArray(val) || typeof val === 'string') return sum;
           return sum + (parseFloat(val) || 0);
         }, 0);
@@ -763,7 +768,7 @@ class PayrollService {
   /**
    * ملخص الرواتب الشهري
    */
-  async getPayrollSummary(companyId, month, year) {
+  async getPayrollSummary(companyId, month, year, status) {
     try {
       // Filter out orphaned records by ensuring userId exists in User table
       const userWhere = { companyId };
@@ -778,6 +783,10 @@ class PayrollService {
         month,
         year
       };
+
+      if (status && status !== 'all') {
+        where.status = status;
+      }
 
       // Only include payrolls with valid user IDs
       if (validUserIdList.length > 0) {
@@ -1162,7 +1171,7 @@ class PayrollService {
       isAutoDeductionEnabled
     });
 
-    const dailyPenaltyMap = new Map(); // Date string -> { total: number, details: string[] }
+    const dailyPenaltyMap = new Map();
     const deductions = {};
     let attendanceDeduction = 0;
     let latePenalty = 0;
@@ -1182,7 +1191,7 @@ class PayrollService {
       dayData.types.push(type);
     };
 
-    // 1. Manual Deductions (مع إمكانية المحاكاة)
+    // 1. Manual Deductions
     let manualDeductions = [];
     if (data.overrides?.manualDeductions) {
       manualDeductions = data.overrides.manualDeductions.map(d => ({
@@ -1191,15 +1200,21 @@ class PayrollService {
       }));
       console.log(`🧪 [PAYROLL-SIM] Using simulation manual deductions: ${manualDeductions.length} records`);
     } else {
+      // عند تعطيل الخصم التلقائي، نستبعد سجلات AUTO_DEDUCTION
+      // لأن الخصم التلقائي ينشئ سجلاتها مع مراعاة المدة المسموحة،
+      // وفي المسار اليدوي سنعيد حساب غرامات التأخير من الحضور مباشرة
+      const manualDeductionCategoryFilter = isAutoDeductionEnabled
+        ? { not: 'UNPAID_LEAVE' }
+        : { notIn: ['UNPAID_LEAVE', 'AUTO_DEDUCTION'] };
+
       manualDeductions = await this.prisma.manualDeduction.findMany({
         where: {
           employeeId,
           companyId,
           effectiveMonth: parseInt(month),
           effectiveYear: parseInt(year),
-          status: { in: ['APPROVED', 'PENDING'] },
-          // استبعاد سجلات الإجازات غير المدفوعة لأنها محسوبة بالفعل في بند الغياب/التأخير
-          category: { not: 'UNPAID_LEAVE' }
+          status: { in: ['APPROVED'] },
+          category: manualDeductionCategoryFilter
         }
       });
     }

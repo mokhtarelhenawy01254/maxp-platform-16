@@ -2796,11 +2796,12 @@ async function deletePayroll(req, res) {
 async function getPayrollSummary(req, res) {
   try {
     const { companyId } = req.user;
-    const { month, year } = req.query;
+    const { month, year, status } = req.query;
     const summary = await payrollService.getPayrollSummary(
       companyId,
       parseInt(month),
       parseInt(year),
+      status
     );
     res.json({ success: true, summary });
   } catch (error) {
