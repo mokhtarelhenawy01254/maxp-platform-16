@@ -235,7 +235,7 @@ exports.messagingCheckout = async (req, res) => {
       await tx.platformSubscription.upsert({
         where: { companyId },
         update: { status: subscriptionStatus, trialEndDate, nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
-        create: { companyId, status: subscriptionStatus, trialEndDate, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date() }
+        create: { companyId, status: subscriptionStatus, trialEndDate, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date(), monthlyFee: 0 }
       });
       // Activate AI Chat + Unified Inbox + WhatsApp Business for the company
       for (const slug of ["ai-chat-basic", "unified-inbox", "whatsapp-business"]) {
@@ -397,7 +397,8 @@ exports.handleWebhook = async (req, res) => {
             nextBillingDate,
             billingDay: new Date().getDate(),
             failedAttempts: 0,
-            lastBillingDate: new Date()
+            lastBillingDate: new Date(),
+            monthlyFee: billingRecord.amount
           }
         });
 

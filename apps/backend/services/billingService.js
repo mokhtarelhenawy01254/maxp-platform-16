@@ -27,6 +27,7 @@ class BillingService {
                         status: 'ACTIVE',
                         billingDay: new Date().getDate(),
                         nextBillingDate,
+                        monthlyFee: 0,
                     }
                 });
             });

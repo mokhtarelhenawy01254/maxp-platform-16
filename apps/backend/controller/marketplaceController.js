@@ -1881,7 +1881,7 @@ exports.subscribeToBundle = async (req, res) => {
         await tx.platformSubscription.upsert({
           where: { companyId },
           update: { status: subscriptionStatus, trialEndDate, nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
-          create: { companyId, status: subscriptionStatus, trialEndDate, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date() }
+          create: { companyId, status: subscriptionStatus, trialEndDate, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date(), monthlyFee: 0 }
         });
         const appSlugs = ["ai-chat-basic", "unified-inbox", "whatsapp-business"];
         for (const slug of appSlugs) {
