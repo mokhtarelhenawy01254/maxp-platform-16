@@ -1761,6 +1761,7 @@
     "editCompetitor": "تعديل المنافس",
     "competitorName": "اسم المنافس",
     "competitorUrl": "رابط المتجر",
+    "competitorUrlPlaceholder": "https://example.com",
     "platform": "المنصة",
     "logo": "الشعار",
     "description": "وصف",
@@ -1802,7 +1803,8 @@
       "500_plus": "500+"
     },
     "strengths": "نقاط القوة",
-    "strengthsPlaceholder": "أهم المميزات وال نقاط القوة عند المنافس",
+    "strengthsPlaceholder": "أهم المميزات ونقاط القوة عند المنافس",
+    "eachLineHint": "اكتب كل نقطة في سطر منفصل",
     "weaknesses": "نقاط الضعف",
     "weaknessesPlaceholder": "أبرز نقاط الضعف والعيوب",
     "socialLinks": "روابط السوشيال ميديا",
@@ -1939,17 +1941,10 @@
     "allReports": "كل التقارير",
     "weekly": "أسبوعي",
     "comprehensive": "شامل",
-    "errors": {
-      "fetchFailed": "فشل في جلب المنافسين",
-      "createFailed": "فشل في إنشاء المنافس",
-      "updateFailed": "فشل في تحديث المنافس",
-      "deleteFailed": "فشل في حذف المنافس",
-      "nameRequired": "اسم المنافس مطلوب"
-    },
     "metrics": {
-      "productCount": "عدد المنتجات",
-      "adCount": "عدد الإعلانات",
-      "reportCount": "عدد التقارير"
+      "followersGrowth": "نمو المتابعين",
+      "engagementTrend": "اتجاه التفاعل",
+      "noData": "لا توجد بيانات إحصائيات بعد"
     },
     "battlecard": {
       "title": "بطاقة المنافسة",
@@ -1977,7 +1972,16 @@
       "engagementComparison": "مقارنة التفاعل",
       "avgEngagement": "متوسط التفاعل",
       "noSocialProfiles": "لا توجد ملفات سوشيال",
-      "addSocialProfile": "أضف ملف سوشيال"
+      "addSocialProfile": "أضف ملف سوشيال",
+      "instagram": "انستجرام",
+      "facebook": "فيسبوك",
+      "twitter": "تويتر / إكس",
+      "tiktok": "تيك توك",
+      "linkedin": "لينكد إن",
+      "youtube": "يوتيوب",
+      "snapchat": "سناب شات",
+      "telegram": "تيليجرام",
+      "whatsapp": "واتساب"
     },
     "autoDiscover": {
       "title": "اكتشاف المنافسين",
@@ -2023,7 +2027,15 @@
       "technology": "التقنية",
       "version": "الإصدار",
       "confidence": "الثقة",
-      "category": "التصنيف"
+      "category": "التصنيف",
+      "facebook": "فيسبوك",
+      "google": "جوجل",
+      "tiktok": "تيك توك",
+      "amazonTab": "أمازون",
+      "googleTab": "جوجل بيزنس",
+      "techStackTab": "التقنيات",
+      "primeLabel": "بريميم",
+      "standardLabel": "قياسي"
     },
     "devRecommendations": {
       "title": "التوصيات التطويرية",
@@ -2103,6 +2115,51 @@
         "completed": "مكتمل",
         "deferred": "مؤجل"
       }
+    },
+    "competitor": "المنافس",
+    "yourProduct": "منتجك",
+    "yourProducts": "منتجاتك",
+    "competitorProduct": "منتج المنافس",
+    "diff": "الفرق",
+    "skuLabel": "رمز المنتج:",
+    "inStock": "متوفر في المخزون",
+    "outOfStock": "غير متوفر في المخزون",
+    "prime": "بريميوم",
+    "standard": "قياسي",
+    "bsr": "ترتيب المبيعات",
+    "score": "النتيجة",
+    "positive": "إيجابي",
+    "negative": "سلبي",
+    "neutral": "محايد",
+    "adOverview": "نظرة عامة على الإعلانات",
+    "totalSpend": "إجمالي الإنفاق",
+    "avgPrice": "متوسط السعر",
+    "avgRating": "متوسط التقييم",
+    "primePercentage": "% بريميم",
+    "ctr": "نسبة النقر",
+    "roas": "العائد على الإنفاق",
+    "great": "ممتاز",
+    "good": "جيد",
+    "poor": "ضعيف",
+    "refresh": "تحديث",
+    "sentiment": {
+      "title": "تحليل المشاعر",
+      "noData": "لا توجد بيانات مشاعر بعد",
+      "positive": "إيجابي",
+      "negative": "سلبي",
+      "neutral": "محايد"
+    },
+    "notAvailable": "غير متاح",
+    "errors": {
+      "fetchFailed": "فشل في جلب المنافسين",
+      "createFailed": "فشل في إنشاء المنافس",
+      "updateFailed": "فشل في تحديث المنافس",
+      "deleteFailed": "فشل في حذف المنافس",
+      "nameRequired": "اسم المنافس مطلوب",
+      "updateTaskFailed": "فشل في تحديث المهمة",
+      "createTaskFailed": "فشل في إنشاء المهمة",
+      "discoveryFailed": "فشل في اكتشاف المنافسين",
+      "discoveryError": "خطأ في الاكتشاف"
     }
   },
   "conversations": {
