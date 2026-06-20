@@ -1931,6 +1931,8 @@
     "totalAds": "Total Ads",
     "insights": "Insights",
     "details": "Details",
+    "createdAt": "Created At",
+    "createdAtLabel": "Added on",
     "selectReportToView": "Select a report to view",
     "allReports": "All Reports",
     "weekly": "Weekly",

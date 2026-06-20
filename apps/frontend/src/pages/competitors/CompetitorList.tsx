@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Search, RefreshCw, Plus, Pencil, Trash2, X, AlertTriangle, ExternalLink, Eye, CheckCircle2, Circle, ChevronDown } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
+import i18n from '../../i18n';
 
 interface SocialProfile {
   id: string;
@@ -273,7 +274,7 @@ const CompetitorList: React.FC = () => {
   };
 
   return (
-    <div className="p-6" dir="auto">
+    <div className="p-6" dir={i18n.dir()}>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">{t('competitors.title')}</h1>
         <div className="flex gap-2">
@@ -288,13 +289,13 @@ const CompetitorList: React.FC = () => {
       </div>
 
       <div className="relative mb-4">
-        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search size={18} className="absolute ltr:left-3 rtl:right-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
           type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder={t('competitors.searchCompetitors')}
-          className="w-full pl-10 pr-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
+          className="w-full ltr:pl-10 ltr:pr-4 rtl:pr-10 rtl:pl-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
         />
       </div>
 
@@ -327,12 +328,12 @@ const CompetitorList: React.FC = () => {
                           <ChevronDown size={10} />
                         </button>
                         {openStatusDropdown === c.id && (
-                          <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-lg z-20 min-w-[120px] py-1" onClick={e => e.stopPropagation()}>
+                          <div className="absolute top-full ltr:right-0 rtl:left-0 mt-1 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-lg z-20 min-w-[120px] py-1" onClick={e => e.stopPropagation()}>
                             {STATUS_OPTIONS.map(s => (
                               <button
                                 key={s}
                                 onClick={() => handleStatusChange(c.id, s)}
-                                className={`w-full text-right px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 ${c.status === s ? 'font-bold' : ''}`}
+                                className={`w-full ltr:text-right rtl:text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 ${c.status === s ? 'font-bold' : ''}`}
                               >
                                 <span className={`w-2 h-2 rounded-full ${s === 'NEW' ? 'bg-blue-500' : s === 'FOLLOWING' ? 'bg-amber-500' : 'bg-gray-400'}`} />
                                 {t(`competitors.statuses.${s}`)}

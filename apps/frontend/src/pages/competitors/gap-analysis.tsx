@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, AlertTriangle, CheckCircle, ArrowLeft, ExternalLink, RefreshCw } from 'lucide-react';
+import { TrendingUp, AlertTriangle, CheckCircle, ArrowLeft, ArrowRight, ExternalLink, RefreshCw } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
+import i18n from '../../i18n';
 
 interface GapProduct {
   id: string;
@@ -61,10 +62,10 @@ const GapAnalysis: React.FC = () => {
   const opportunityScore = gaps.length === 0 ? 0 : Math.max(0, 100 - (gaps.length * 5));
 
   return (
-    <div className="p-6" dir="auto">
+    <div className="p-6" dir={i18n.dir()}>
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => navigate('/competitors')} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-          <ArrowLeft size={20} />
+          {i18n.dir() === 'rtl' ? <ArrowRight size={20} /> : <ArrowLeft size={20} />}
         </button>
         <h1 className="text-2xl font-bold">{t('competitors.gapAnalysis')}</h1>
       </div>

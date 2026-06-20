@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, RefreshCw, BarChart2, TrendingUp, Scale, History, Settings, Instagram, Share2, Crosshair, Lightbulb, Plus, Pencil, X, AlertTriangle, CheckCircle2, Circle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ExternalLink, RefreshCw, BarChart2, TrendingUp, Scale, History, Settings, Instagram, Share2, Crosshair, Lightbulb, Plus, Pencil, X, AlertTriangle, CheckCircle2, Circle, Calendar } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import CompetitorFeatures from './CompetitorFeatures';
+import i18n from '../../i18n';
 
 interface CompetitorProduct {
   id: string;
@@ -205,10 +206,10 @@ const CompetitorDetail: React.FC = () => {
   const taskStats = getTaskStats();
 
   return (
-    <div className="p-6" dir="auto">
+    <div className="p-6" dir={i18n.dir()}>
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => navigate('/competitors')} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-          <ArrowLeft size={20} />
+          {i18n.dir() === 'rtl' ? <ArrowRight size={20} /> : <ArrowLeft size={20} />}
         </button>
         <h1 className="text-2xl font-bold">{competitor.name}</h1>
         {competitor.url && (
@@ -217,7 +218,7 @@ const CompetitorDetail: React.FC = () => {
             {competitor.url.replace(/^https?:\/\//, '').slice(0, 40)}
           </a>
         )}
-        <button onClick={() => { fetchData(); fetchDevRecommendations(); }} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 ml-auto">
+        <button onClick={() => { fetchData(); fetchDevRecommendations(); }} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 ltr:ml-auto rtl:mr-auto">
           <RefreshCw size={18} />
         </button>
       </div>
@@ -236,7 +237,7 @@ const CompetitorDetail: React.FC = () => {
             </span>
           </div>
         )}
-        <div className="flex gap-2 mr-auto">
+        <div className="flex gap-2 ltr:mr-auto rtl:ml-auto">
           <button onClick={() => navigate(`/competitors/${id}/price-compare`)} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800" title={t('competitors.comparison')}>
             <Scale size={14} /> {t('competitors.comparison')}
           </button>
@@ -286,6 +287,32 @@ const CompetitorDetail: React.FC = () => {
 
       {tab === 'overview' && (
         <div className="space-y-4">
+          {/* Creation Date & Time Card */}
+          {competitor.createdAt && (
+            <div className="border rounded-lg p-4 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-900/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
+                  <Calendar size={20} />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('competitors.createdAtLabel')}</p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200" dir="ltr">
+                    {new Date(competitor.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500" dir="ltr">
+                    {new Date(competitor.createdAt).toLocaleTimeString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           {competitor.description && (
             <div className="border rounded-lg p-4 dark:border-gray-700">
               <h3 className="font-semibold mb-2">{t('competitors.description')}</h3>
@@ -303,7 +330,7 @@ const CompetitorDetail: React.FC = () => {
               <h3 className="font-semibold mb-2">{t('competitors.strengths')}</h3>
               <div className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
                 {competitor.strengths.split('\n').map((line: string, i: number) => (
-                  <p key={i} className={line.startsWith('-') || line.startsWith('•') ? 'mr-2' : ''}>{line}</p>
+                  <p key={i} className={line.startsWith('-') || line.startsWith('•') ? 'ltr:mr-2 rtl:mr-0 rtl:ml-2' : ''}>{line}</p>
                 ))}
               </div>
             </div>
@@ -313,7 +340,7 @@ const CompetitorDetail: React.FC = () => {
               <h3 className="font-semibold mb-2">{t('competitors.weaknesses')}</h3>
               <div className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
                 {competitor.weaknesses.split('\n').map((line: string, i: number) => (
-                  <p key={i} className={line.startsWith('-') || line.startsWith('•') ? 'mr-2' : ''}>{line}</p>
+                  <p key={i} className={line.startsWith('-') || line.startsWith('•') ? 'ltr:mr-2 rtl:mr-0 rtl:ml-2' : ''}>{line}</p>
                 ))}
               </div>
             </div>
