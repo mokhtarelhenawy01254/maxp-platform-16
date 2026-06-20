@@ -1144,6 +1144,39 @@ async function seedMarketplace() {
     }
 
     console.log('\n✅ Marketplace Sync completed successfully!');
+    // تنظيف التطبيقات القديمة والمكررة
+    console.log('\n🧹 Cleaning up old/duplicate apps...');
+    const slugsToHide = [
+      'whatsapp-integration',
+      'whatsapp-routing',
+      'whatsapp-inbox',
+      'whatsapp-notifications',
+      'whatsapp-settings',
+      'whatsapp-templates',
+      'whatsapp-analytics',
+    ];
+    const { count } = await prisma.marketplaceApp.updateMany({
+      where: { slug: { in: slugsToHide } },
+      data: { isActive: false, isPublic: false }
+    });
+    if (count > 0) {
+      // ترحيل اشتراكات whatsapp-integration → whatsapp-business
+      const oldApp = await prisma.marketplaceApp.findUnique({ where: { slug: 'whatsapp-integration' } });
+      const newApp = await prisma.marketplaceApp.findUnique({ where: { slug: 'whatsapp-business' } });
+      if (oldApp && newApp) {
+        const oldCompanyApps = await prisma.companyApp.findMany({ where: { appId: oldApp.id } });
+        for (const ca of oldCompanyApps) {
+          await prisma.companyApp.upsert({
+            where: { companyId_appId: { companyId: ca.companyId, appId: newApp.id } },
+            update: { status: ca.status, trialEndsAt: ca.trialEndsAt },
+            create: { companyId: ca.companyId, appId: newApp.id, status: ca.status, trialEndsAt: ca.trialEndsAt }
+          });
+        }
+        console.log(`  ✅ Migrated ${oldCompanyApps.length} subscriptions from whatsapp-integration → whatsapp-business`);
+      }
+    }
+    console.log(`  ✅ Hidden ${count} old/duplicate apps`);
+
     console.log('\n📊 Summary:');
     console.log('  - ' + apps.length + ' Marketplace Apps');
     console.log('  - ' + bundles.length + ' App Bundles');
