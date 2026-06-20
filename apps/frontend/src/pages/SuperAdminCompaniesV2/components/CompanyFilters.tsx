@@ -150,22 +150,22 @@ export function CompanyFilters({
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        {FOLLOW_UP_SAVED_VIEWS.map((opt) => (
+          <FilterChip key={opt.value} active={savedView === opt.value} onClick={() => onOpenView(opt.value)}>
+            {opt.label}
+            <span className={cn(
+              "mr-1.5 rounded-full px-1.5 py-0.5 text-xs font-black",
+              savedView === opt.value ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
+            )}>
+              {savedViewCounts[opt.value] ?? 0}
+            </span>
+          </FilterChip>
+        ))}
+      </div>
+
       <div className={cn("overflow-hidden transition-all duration-200", collapsed ? "max-h-0 opacity-0 pointer-events-none" : "max-h-[900px] opacity-100")}>
         <div className="flex flex-col gap-2 pt-2">
-          <div className="flex flex-wrap items-center gap-2">
-            {FOLLOW_UP_SAVED_VIEWS.map((opt) => (
-              <FilterChip key={opt.value} active={savedView === opt.value} onClick={() => onOpenView(opt.value)}>
-                {opt.label}
-                <span className={cn(
-                  "mr-1.5 rounded-full px-1.5 py-0.5 text-xs font-black",
-                  savedView === opt.value ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
-                )}>
-                  {savedViewCounts[opt.value] ?? 0}
-                </span>
-              </FilterChip>
-            ))}
-          </div>
-
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1 rounded-lg border border-border/40 bg-muted/20 p-0.5">
               {STATUS_FILTERS.map((opt) => (

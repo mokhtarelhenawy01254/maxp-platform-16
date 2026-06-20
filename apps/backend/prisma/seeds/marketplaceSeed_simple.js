@@ -130,7 +130,7 @@ async function seedMarketplace() {
         slug: 'messaging-bundle',
         name: 'باقة المراسلة',
         description: 'كل أدوات المحادثات: واتساب + تلجرام + انستجرام + ماسنجر في صندوق واحد مع AI Agent',
-        appIds: JSON.stringify(['crm-basic', 'whatsapp-business', 'telegram-business']),
+        appIds: JSON.stringify(['crm-basic', 'whatsapp-integration', 'telegram-business']),
         monthlyPrice: 999,
         yearlyPrice: 9990,
         discount: 69,

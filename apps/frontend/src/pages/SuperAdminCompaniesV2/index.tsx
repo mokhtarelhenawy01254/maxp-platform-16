@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import {
   Building2, Sparkles, Download, RefreshCw, Plus, Loader2,
   Search, ChevronDown, ChevronUp, AlertTriangle, CheckCircle2, UserPlus, ArrowLeftRight,
-  Pencil, Eye, LogIn, Trash2, Facebook, Users, X, Filter,
+  Pencil, Eye, LogIn, Trash2, Facebook, Users, X, Filter, Clock,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Badge } from "../../components/ui/badge";
@@ -22,7 +22,7 @@ import { CompanyFilters } from "./components/CompanyFilters";
 import { CompaniesTable } from "./components/CompaniesTable";
 import { BulkActionsBar } from "./components/BulkActionsBar";
 import { extractErrorMessage, formatDate, formatDateTime, sortCompanies, enrichCompanies, computeQuickStats, getCount, getPlanMeta, getDefaultFollowUpScheduleValue, toDateTimeLocalValue, fromDateTimeLocalValue, addHoursToDateTimeLocal } from "./utils";
-import { PLAN_OPTIONS, CURRENCY_OPTIONS, DEFAULT_SORT, FOLLOW_UP_STATUS_OPTIONS, FOLLOW_UP_SAVED_VIEWS, PAGE_SIZE_OPTIONS } from "./constants";
+import { PLAN_OPTIONS, CURRENCY_OPTIONS, DEFAULT_SORT, FOLLOW_UP_STATUS_OPTIONS, PAGE_SIZE_OPTIONS } from "./constants";
 import type { Company, CompanyFormData, EmployeeFormData, FollowUpFormData, FollowUpState, FollowUpReminder, FollowUpAutomation } from "./types";
 
 // ---- Reusable components ----
@@ -414,9 +414,8 @@ export default function SuperAdminCompaniesV2() {
   const visibleIds = paginatedCompanies.map((c) => c.id);
   const isAllVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
   const isSomeVisibleSelected = visibleIds.some((id) => selectedIds.includes(id)) && !isAllVisibleSelected;
-  const filterCount = [savedView !== "ALL", status !== "ALL", plan !== "ALL", funnelStage !== "ALL"].filter(Boolean).length;
+  const filterCount = [status !== "ALL", plan !== "ALL", funnelStage !== "ALL"].filter(Boolean).length;
   const activeFilterLabels = [
-    savedView !== "ALL" ? FOLLOW_UP_SAVED_VIEWS.find((o) => o.value === savedView)?.label : null,
     status !== "ALL" ? (status === "ACTIVE" ? "نشطة" : "متوقفة") : null,
     plan !== "ALL" ? PLAN_OPTIONS.find((o) => o.value === plan)?.label : null,
     funnelStage !== "ALL" ? funnelStage : null,
@@ -751,6 +750,59 @@ export default function SuperAdminCompaniesV2() {
                 <AlertBanner urgentEscalationDue={quickStats.urgentEscalationDue} myDueToday={quickStats.myDueToday} onOpenView={handleOpenView} />
               </div>
             )}
+
+            {/* Stats cards */}
+            <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+              <div className="rounded-lg border border-border/40 bg-white p-3 shadow-sm dark:bg-slate-950">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Building2 className="size-4" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black text-foreground">{quickStats.totalCompanies}</p>
+                    <p className="text-xs font-bold text-muted-foreground">إجمالي الشركات</p>
+                  </div>
+                </div>
+                <p className="mt-1 text-xs font-semibold text-emerald-600">{quickStats.activeCompanies} نشطة</p>
+              </div>
+              <div className="rounded-lg border border-border/40 bg-white p-3 shadow-sm dark:bg-slate-950">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+                    <CheckCircle2 className="size-4" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black text-foreground">{quickStats.activated}</p>
+                    <p className="text-xs font-bold text-muted-foreground">مفعلة بالكامل</p>
+                  </div>
+                </div>
+                <p className="mt-1 text-xs font-semibold text-emerald-600">وصلت للإطلاق الأول</p>
+              </div>
+              <div className="rounded-lg border border-border/40 bg-white p-3 shadow-sm dark:bg-slate-950">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+                    <AlertTriangle className="size-4" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black text-foreground">{quickStats.followUpNow + quickStats.escalationDue + quickStats.urgentEscalationDue}</p>
+                    <p className="text-xs font-bold text-muted-foreground">محتاجة متابعة</p>
+                  </div>
+                </div>
+                <p className="mt-1 text-xs font-semibold text-amber-600">تحتاج تدخل أو تصعيد</p>
+              </div>
+              <div className="rounded-lg border border-border/40 bg-white p-3 shadow-sm dark:bg-slate-950">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
+                    <Clock className="size-4" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black text-foreground">{quickStats.stale72h}</p>
+                    <p className="text-xs font-bold text-muted-foreground">متوقفة 72 ساعة+</p>
+                  </div>
+                </div>
+                <p className="mt-1 text-xs font-semibold text-rose-600">حرجة: تحتاج تدخلًا فوريًا</p>
+              </div>
+            </div>
+
                 <div className="rounded-lg border border-border/40 bg-muted/10 dark:bg-slate-900/30 p-1 md:p-1.5">
                   <CompanyFilters
                   collapsed={!filterOpen}

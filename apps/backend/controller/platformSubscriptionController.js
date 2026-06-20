@@ -733,7 +733,7 @@ exports.messagingCheckout = async (req, res) => {
       });
       await tx.company.update({ where: { id: companyId }, data: { plan: "PRO" } });
       // Activate AI Chat + Unified Inbox for the company
-      for (const slug of ["ai-chat-basic", "unified-inbox"]) {
+      for (const slug of ["ai-chat-basic", "unified-inbox", "whatsapp-integration"]) {
         const app = await tx.marketplaceApp.findUnique({ where: { slug } });
         if (app) {
           await tx.companyApp.upsert({
@@ -923,7 +923,7 @@ exports.handleWebhook = async (req, res) => {
         // Install messaging apps for messaging package subscribers
         if (isMessaging) {
           const messagingApps = await tx.marketplaceApp.findMany({
-            where: { slug: { in: ['crm-basic', 'whatsapp-business', 'telegram-business'] } },
+            where: { slug: { in: ['crm-basic', 'whatsapp-integration', 'telegram-business'] } },
             select: { id: true, slug: true }
           });
           for (const app of messagingApps) {

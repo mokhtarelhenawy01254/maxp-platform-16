@@ -61,8 +61,6 @@ export function CompaniesTable({
 }: CompaniesTableProps) {
   const navigate = useNavigate();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-
   const columns = useMemo(() => [
     columnHelper.display({
       id: "expand",
@@ -122,7 +120,7 @@ export function CompaniesTable({
         const meta = getPlanMeta(getValue());
         return <Badge variant="outline" className={cn("rounded-full border-primary/20 bg-primary/5 px-2.5 py-1 text-[13px] font-black text-primary", meta.className)}>{meta.label}</Badge>;
       },
-      meta: { className: "hidden lg:table-cell" },
+      meta: { className: "hidden md:table-cell" },
     }),
     columnHelper.accessor("isActive", {
       header: "الحالة",
@@ -142,7 +140,7 @@ export function CompaniesTable({
           </Badge>
         );
       },
-      meta: { className: "hidden lg:table-cell" },
+      meta: { className: "hidden md:table-cell" },
     }),
     columnHelper.display({
       id: "funnel",
@@ -171,7 +169,7 @@ export function CompaniesTable({
           </div>
         );
       },
-      meta: { className: "hidden xl:table-cell" },
+      meta: { className: "hidden lg:table-cell" },
     }),
     columnHelper.display({
       id: "lastActivity",
@@ -192,7 +190,7 @@ export function CompaniesTable({
           </div>
         );
       },
-      meta: { className: "hidden xl:table-cell" },
+      meta: { className: "hidden lg:table-cell" },
     }),
     columnHelper.display({
       id: "stats",
@@ -204,12 +202,12 @@ export function CompaniesTable({
           <Tooltip><TooltipTrigger asChild><span className="inline-flex cursor-help items-center gap-1 text-[13px] font-black text-muted-foreground transition-colors hover:text-foreground"><Facebook className="size-3 text-blue-500/60" />{getCount(row.original, "facebookPages")}</span></TooltipTrigger><TooltipContent>صفحات فيسبوك</TooltipContent></Tooltip>
         </div>
       ),
-      meta: { className: "hidden xl:table-cell" },
+      meta: { className: "hidden lg:table-cell" },
     }),
     columnHelper.accessor("createdAt", {
       header: "الإنشاء",
       cell: ({ getValue }) => <span className="text-xs font-bold text-muted-foreground/70">{formatDate(getValue())}</span>,
-      meta: { className: "hidden 2xl:table-cell" },
+      meta: { className: "hidden lg:table-cell" },
     }),
     columnHelper.display({
       id: "actions",
@@ -217,7 +215,6 @@ export function CompaniesTable({
       cell: ({ row }) => {
         const company = row.original;
         const followUpAuto = company.followUpAutomation;
-        const isHovered = hoveredId === company.id;
 
         const dropdownActions = [
           { key: "edit", icon: Pencil, label: "تعديل", action: () => onEdit(company) },
@@ -229,12 +226,8 @@ export function CompaniesTable({
         ];
 
         return (
-          <div
-            className="flex items-center gap-1"
-            onMouseEnter={() => setHoveredId(company.id)}
-            onMouseLeave={() => setHoveredId(null)}
-          >
-            <div className={cn("flex items-center gap-1 transition-opacity duration-150", isHovered ? "opacity-100" : "opacity-0 pointer-events-none")}>
+          <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button type="button" variant="ghost" size="icon-sm" className="h-7 w-7 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10" onClick={() => onOpenFollowUp(company)}>
@@ -283,7 +276,7 @@ export function CompaniesTable({
         );
       },
     }),
-  ], [selectedIds, isAllVisibleSelected, isSomeVisibleSelected, expandedId, hoveredId, onAddEmployee, onDelete, onEdit, onLoginAsAdmin, onOpenDetails, onOpenFacebookPages, onOpenFollowUp, onOpenUsers, onRunFollowUpAction, onToggleSelect, onToggleSelectAll, onTransferOwnership]);
+  ], [selectedIds, isAllVisibleSelected, isSomeVisibleSelected, expandedId, onAddEmployee, onDelete, onEdit, onLoginAsAdmin, onOpenDetails, onOpenFacebookPages, onOpenFollowUp, onOpenUsers, onRunFollowUpAction, onToggleSelect, onToggleSelectAll, onTransferOwnership]);
 
   const table = useReactTable({
     data: companies,
@@ -381,7 +374,7 @@ export function CompaniesTable({
                       {isExpanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
                     </button>
                   </div>
-                  <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <button type="button" className="text-right text-base font-black text-foreground hover:text-primary" onClick={() => onOpenDetails(company)}>
@@ -392,6 +385,11 @@ export function CompaniesTable({
                           <Badge variant="outline" className={cn("rounded-full px-2 py-0.5 text-xs font-black", company.isActive ? "border-emerald-200/60 bg-emerald-50 text-emerald-700" : "border-rose-200/60 bg-rose-50 text-rose-700")}>
                             {company.isActive ? "نشطة" : "متوقفة"}
                           </Badge>
+                          {funnelSummary ? (
+                            <Badge variant="outline" className={cn("rounded-full px-2 py-0.5 text-xs font-black", funnelSummary.badgeClassName)}>
+                              {funnelSummary.label}
+                            </Badge>
+                          ) : null}
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
@@ -446,24 +444,22 @@ export function CompaniesTable({
 
                     {isExpanded && (
                       <div className="mt-3 space-y-2 border-t border-border/40 pt-3">
-                        {funnelSummary ? (
-                          <div className="flex items-center justify-between rounded-lg bg-muted/20 px-3 py-2">
-                            <Badge variant="outline" className={cn("rounded-full px-2.5 py-0.5 text-xs font-black", funnelSummary.badgeClassName)}>
-                              {funnelSummary.label}
-                            </Badge>
-                            <span className="text-xs font-bold text-muted-foreground">{funnelSummary.progressLabel}</span>
-                          </div>
-                        ) : null}
                         {company.phone && (
                           <p className="flex items-center gap-2 text-[13px] text-muted-foreground">
                             <Phone className="size-3.5 text-primary/60" /> {company.phone}
                           </p>
                         )}
-                        <div className="flex gap-2">
-                          <Button type="button" size="sm" variant="outline" className="h-8 flex-1 rounded-lg text-xs font-black" onClick={() => onOpenUsers(company)}>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button type="button" size="sm" variant="default" className="h-9 rounded-lg text-xs font-black shadow-sm" onClick={() => onOpenFollowUp(company)}>
+                            <CheckCircle2 className="ml-1.5 size-3.5" /> متابعة
+                          </Button>
+                          <Button type="button" size="sm" variant="outline" className="h-9 rounded-lg text-xs font-black" onClick={() => onLoginAsAdmin(company)}>
+                            <LogIn className="ml-1.5 size-3.5" /> دخول كأدمن
+                          </Button>
+                          <Button type="button" size="sm" variant="outline" className="h-9 rounded-lg text-xs font-black" onClick={() => onOpenUsers(company)}>
                             <Users className="ml-1.5 size-3.5" /> الأعضاء
                           </Button>
-                          <Button type="button" size="sm" variant="outline" className="h-8 flex-1 rounded-lg text-xs font-black" onClick={() => onOpenFacebookPages(company)}>
+                          <Button type="button" size="sm" variant="outline" className="h-9 rounded-lg text-xs font-black" onClick={() => onOpenFacebookPages(company)}>
                             <Facebook className="ml-1.5 size-3.5" /> الصفحات
                           </Button>
                         </div>
