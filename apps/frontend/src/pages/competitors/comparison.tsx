@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Scale, CheckCircle, XCircle, Minus, RefreshCw, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Scale, CheckCircle, XCircle, Minus, RefreshCw } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
+import i18n from '../../i18n';
 
 interface ComparisonItem {
   competitorProduct: {
@@ -98,10 +99,10 @@ const Comparison: React.FC = () => {
   };
 
   return (
-    <div className="p-6" dir="auto">
+    <div className="p-6" dir={i18n.dir()}>
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => navigate('/competitors')} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-          <ArrowLeft size={20} />
+          {i18n.dir() === 'rtl' ? <ArrowRight size={20} /> : <ArrowLeft size={20} />}
         </button>
         <h1 className="text-2xl font-bold">{t('competitors.comparison')}</h1>
       </div>

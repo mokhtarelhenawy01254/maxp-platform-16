@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, TrendingDown, TrendingUp, Minus, RefreshCw, Calendar } from 'lucide-react';
+import { ArrowLeft, ArrowRight, TrendingDown, TrendingUp, Minus, RefreshCw, Calendar } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import i18n from '../../i18n';
 
 interface PricePoint {
   id: string;
@@ -83,10 +84,10 @@ const PriceHistory: React.FC = () => {
   const trend = priceDiff > 0 ? 'up' : priceDiff < 0 ? 'down' : 'stable';
 
   return (
-    <div className="p-6" dir="auto">
+    <div className="p-6" dir={i18n.dir()}>
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => navigate(`/competitors/${competitorId}`)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-          <ArrowLeft size={20} />
+          {i18n.dir() === 'rtl' ? <ArrowRight size={20} /> : <ArrowLeft size={20} />}
         </button>
         <h1 className="text-2xl font-bold">{t('competitors.priceHistory')}</h1>
         {competitor && <span className="text-gray-500">— {competitor.name}</span>}

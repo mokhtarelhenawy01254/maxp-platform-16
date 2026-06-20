@@ -160,7 +160,7 @@ export default function SocialOverview() {
   );
 
   return (
-    <div className="space-y-6" dir="auto">
+    <div className="space-y-6" dir={i18n.dir()}>
       <div className="flex justify-end">
         <Button onClick={handleRefresh} disabled={refreshing}>
           <RefreshCw className={`size-4 ${refreshing ? 'animate-spin' : ''}`} />

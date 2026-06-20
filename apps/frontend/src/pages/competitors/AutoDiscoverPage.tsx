@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Wifi } from 'lucide-react';
 import { toast } from 'sonner';
 import AutoDiscoverModal from './AutoDiscoverModal';
+import i18n from '../../i18n';
 
 const AutoDiscoverPage: React.FC = () => {
   const { t } = useTranslation();
@@ -20,7 +21,7 @@ const AutoDiscoverPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6" dir="auto">
+    <div className="p-6" dir={i18n.dir()}>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

@@ -176,6 +176,8 @@
   "totalAds": "إجمالي الإعلانات",
   "insights": "الرؤى",
   "details": "التفاصيل",
+  "createdAt": "تاريخ الإنشاء",
+  "createdAtLabel": "تمت الإضافة في",
   "selectReportToView": "اختر تقرير لعرضه",
   "allReports": "كل التقارير",
   "weekly": "أسبوعي",
