@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import {
-  ResponsiveContainer,
   AreaChart,
   Area,
   XAxis,
@@ -8,6 +7,7 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
+import DeferredResponsiveContainer from "../../components/ui/DeferredResponsiveContainer";
 import type { RevenueHistoryPoint } from "./types";
 
 type RevenueTrendChartProps = {
@@ -47,7 +47,7 @@ export default function RevenueTrendChart({
     <>
       <h3 className="text-base font-semibold text-foreground mb-4">{title}</h3>
       <div className="h-[280px]">
-        <ResponsiveContainer width="100%" height="100%">
+        <DeferredResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
             <XAxis dataKey="date" className="text-xs text-gray-500 dark:text-gray-400" tickMargin={8} />
@@ -69,7 +69,7 @@ export default function RevenueTrendChart({
               <Area type="monotone" dataKey="orders" stroke="var(--color-primary)" fill="var(--color-primary)" fillOpacity={0.1} name={ordersLabel} strokeWidth={2} />
             )}
           </AreaChart>
-        </ResponsiveContainer>
+        </DeferredResponsiveContainer>
       </div>
     </>
   );
