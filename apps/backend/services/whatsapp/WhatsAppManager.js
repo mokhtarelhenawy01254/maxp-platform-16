@@ -915,14 +915,37 @@ async function mergeLinkedDeviceConversation(sessionId, lidJid, phoneJid, option
     }
 }
 
-function shouldProcessMessageUpsertType(type, fromMe, options = {}) {
+async function shouldProcessMessageUpsertType(type, fromMe, messageId, options = {}) {
     if (type === 'notify') return true;
 
     if (options.importHistory && type === 'append') return true;
 
-    // Baileys sends messages created from another linked device as append.
-    // Process only our own append messages to avoid importing old chat history.
-    return type === 'append' && Boolean(fromMe);
+    // Own outgoing messages delivered as append (e.g. from another linked device).
+    if (type === 'append' && Boolean(fromMe)) return true;
+
+    // For incoming 'append' messages, check if we've already processed this messageId.
+    // A genuinely new first message from a fresh contact can arrive as 'append' during
+    // Baileys store warm-up or multi-device sync — skip only if already in the DB.
+    if (type === 'append' && messageId) {
+        try {
+            const existing = await getSharedPrismaClient().whatsAppMessage.findUnique({
+                where: { messageId },
+                select: { id: true }
+            });
+            if (existing) {
+                console.warn(
+                    `⚠️ Skipping already-processed WhatsApp message ${messageId} (type=append)`
+                );
+                return false;
+            }
+            return true;
+        } catch (e) {
+            console.error('❌ Error checking duplicate WhatsApp messageId:', e.message);
+            return true; // on DB error, process the message to be safe
+        }
+    }
+
+    return false;
 }
 
 const MESSAGE_STATUS_RANK = {
@@ -1671,12 +1694,13 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
             const fromMe = Boolean(msg.key.fromMe);
             const messageId = msg.key.id;
 
-            if (!shouldProcessMessageUpsertType(type, fromMe, { importHistory })) {
+            // Move messageId check BEFORE the upsert-type gate so we can feed it to the filter.
+            if (!messageId) {
+                console.warn(`⚠️ Skipping WhatsApp message without id in session ${sessionId}`);
                 continue;
             }
 
-            if (!messageId) {
-                console.warn(`⚠️ Skipping WhatsApp message without id in session ${sessionId}`);
+            if (!(await shouldProcessMessageUpsertType(type, fromMe, messageId, { importHistory }))) {
                 continue;
             }
 

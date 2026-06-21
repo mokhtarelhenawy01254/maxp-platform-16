@@ -373,6 +373,89 @@ const getUnifiedConversations = async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
+ * Shared helper: query standard Conversation+Message model
+ */
+async function getStandardConversationMessages(req, res, companyId, id, skip, take) {
+    try {
+        const prisma = getSharedPrismaClient();
+        const { page = 1, limit = 50 } = req.query;
+
+        const conversation = await prisma.conversation.findFirst({
+            where: { id, companyId },
+            select: { id: true, channel: true, customerId: true }
+        });
+
+        if (!conversation) {
+            return res.status(404).json({ success: false, message: 'Conversation not found' });
+        }
+
+        const [messages, total] = await Promise.all([
+            prisma.message.findMany({
+                where: { conversationId: id },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take,
+                select: {
+                    id: true,
+                    content: true,
+                    type: true,
+                    isFromCustomer: true,
+                    isRead: true,
+                    readAt: true,
+                    attachments: true,
+                    metadata: true,
+                    createdAt: true,
+                    senderId: true,
+                    user: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                            avatar: true
+                        }
+                    }
+                }
+            }),
+            prisma.message.count({ where: { conversationId: id } })
+        ]);
+
+        const normalizedMessages = messages.map(msg => {
+            let attachments = [];
+            try { attachments = msg.attachments ? JSON.parse(msg.attachments) : []; } catch (e) { }
+            let metadata = {};
+            try { metadata = msg.metadata ? JSON.parse(msg.metadata) : {}; } catch (e) { }
+
+            return {
+                id: msg.id,
+                platform: conversation.channel?.toLowerCase() || 'facebook',
+                content: msg.content || '',
+                type: msg.type?.toLowerCase() || 'text',
+                isFromCustomer: msg.isFromCustomer,
+                timestamp: msg.createdAt,
+                status: msg.isRead ? 'read' : 'delivered',
+                mediaUrl: attachments[0]?.url || metadata.attachmentUrl || null,
+                mediaType: attachments[0]?.type || metadata.attachmentType || null,
+                mediaFileName: attachments[0]?.name || null,
+                quotedMessage: null,
+                isAIResponse: metadata.isAIResponse || false,
+                sender: msg.isFromCustomer ? 'customer' : (msg.user ? `${msg.user.firstName} ${msg.user.lastName}`.trim() : 'agent'),
+                senderAvatar: msg.user?.avatar || null,
+                interactiveData: null
+            };
+        }).reverse();
+
+        return res.json({
+            success: true,
+            data: normalizedMessages,
+            pagination: { total, page: parseInt(page), limit: parseInt(limit) }
+        });
+    } catch (error) {
+        console.error('❌ [UNIFIED] Error getting standard messages:', error);
+        return res.status(500).json({ success: false, error: error.message });
+    }
+}
+
+/**
  * Get messages for a unified conversation
  * GET /api/v1/unified-inbox/conversations/:id/messages
  */
@@ -398,10 +481,9 @@ const getConversationMessages = async (req, res) => {
             const { sessionId, jid } = req.query;
 
             if (!sessionId || !jid) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'sessionId and jid are required for WhatsApp conversations'
-                });
+                // Fall through to standard Conversation+Message model
+                // instead of returning 400
+                return getStandardConversationMessages(req, res, companyId, id, skip, take);
             }
 
             // Verify session ownership
@@ -470,75 +552,7 @@ const getConversationMessages = async (req, res) => {
         }
 
         // Facebook/Telegram - use Conversation + Message models
-        const conversation = await prisma.conversation.findFirst({
-            where: { id, companyId },
-            select: { id: true, channel: true, customerId: true }
-        });
-
-        if (!conversation) {
-            return res.status(404).json({ success: false, message: 'Conversation not found' });
-        }
-
-        const [messages, total] = await Promise.all([
-            prisma.message.findMany({
-                where: { conversationId: id },
-                orderBy: { createdAt: 'desc' },
-                skip,
-                take,
-                select: {
-                    id: true,
-                    content: true,
-                    type: true,
-                    isFromCustomer: true,
-                    isRead: true,
-                    readAt: true,
-                    attachments: true,
-                    metadata: true,
-                    createdAt: true,
-                    senderId: true,
-                    user: {
-                        select: {
-                            id: true,
-                            firstName: true,
-                            lastName: true,
-                            avatar: true
-                        }
-                    }
-                }
-            }),
-            prisma.message.count({ where: { conversationId: id } })
-        ]);
-
-        const normalizedMessages = messages.map(msg => {
-            let attachments = [];
-            try { attachments = msg.attachments ? JSON.parse(msg.attachments) : []; } catch (e) { }
-            let metadata = {};
-            try { metadata = msg.metadata ? JSON.parse(msg.metadata) : {}; } catch (e) { }
-
-            return {
-                id: msg.id,
-                platform: conversation.channel?.toLowerCase() || 'facebook',
-                content: msg.content || '',
-                type: msg.type?.toLowerCase() || 'text',
-                isFromCustomer: msg.isFromCustomer,
-                timestamp: msg.createdAt,
-                status: msg.isRead ? 'read' : 'delivered',
-                mediaUrl: attachments[0]?.url || metadata.attachmentUrl || null,
-                mediaType: attachments[0]?.type || metadata.attachmentType || null,
-                mediaFileName: attachments[0]?.name || null,
-                quotedMessage: null,
-                isAIResponse: metadata.isAIResponse || false,
-                sender: msg.isFromCustomer ? 'customer' : (msg.user ? `${msg.user.firstName} ${msg.user.lastName}`.trim() : 'agent'),
-                senderAvatar: msg.user?.avatar || null,
-                interactiveData: null
-            };
-        }).reverse();
-
-        res.json({
-            success: true,
-            data: normalizedMessages,
-            pagination: { total, page: parseInt(page), limit: parseInt(limit) }
-        });
+        return getStandardConversationMessages(req, res, companyId, id, skip, take);
 
     } catch (error) {
         console.error('❌ [UNIFIED] Error getting messages:', error);

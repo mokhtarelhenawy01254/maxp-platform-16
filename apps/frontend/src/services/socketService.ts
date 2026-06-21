@@ -202,6 +202,9 @@ class SocketService {
   }
 
   connect() {
+    if (this.socket?.connected) {
+      return this.socket;
+    }
     if (this.socket) {
       this.disconnect();
     }
