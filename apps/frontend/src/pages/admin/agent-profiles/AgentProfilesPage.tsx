@@ -207,6 +207,7 @@ export default function AgentProfilesPage() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [templates, setTemplates] = useState<Array<{ slug: string; name: string; role: string; allowedTools: string[]; allowedSkills: string[] }>>([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [newConfig, setNewConfig] = useState<Record<string, string>>({});
 
   const hasUnsavedChanges = useMemo(() => {
     if (!profile) return false;
@@ -419,7 +420,9 @@ export default function AgentProfilesPage() {
     if (!newAgentName.trim()) return;
     setCreating(true);
     setCreateError(null);
-    const data = await tryApiFetch<{ success: boolean; agent: { id: string; name: string } }>(
+    const hasConfig = Object.keys(newConfig).length > 0;
+    const soulContent = hasConfig ? buildSoulContent(newConfig) : "";
+    const data = await tryApiFetch<Record<string, unknown>>(
       "/agent/agents",
       { method: "POST", body: JSON.stringify({
         name: newAgentName.trim(),
@@ -430,17 +433,26 @@ export default function AgentProfilesPage() {
       })},
     );
     if (data?.id) {
+      if (hasConfig) {
+        await tryApiFetch(`/agent/agents/${data.id}/files`, {
+          method: "PUT", body: JSON.stringify({
+            config: newConfig,
+            files: soulContent ? { "SOUL.md": soulContent } : {},
+          }),
+        });
+      }
       setCreateOpen(false);
       setNewAgentName("");
       setNewAgentIcon("🤖");
       setNewAgentDesc("");
       setNewAgentTemplate(null);
-      toast.success(t("agentProfiles.toast.createSuccess", { name: data.name }));
+      setNewConfig({});
+      toast.success(t("agentProfiles.toast.createSuccess", { name: data.name as string }));
       sandboxApi.getAgents().then((res) => {
         setAgents(res.agents as AgentItem[]);
-        setSelectedId(data.id);
+        setSelectedId(data.id as string);
         const params = new URLSearchParams(searchParams);
-        params.set("agent", data.id);
+        params.set("agent", data.id as string);
         setSearchParams(params, { replace: true });
       }).catch(() => {});
     } else {
@@ -497,39 +509,20 @@ export default function AgentProfilesPage() {
     return collectAgentText(a).includes(q) || a.name.toLowerCase().includes(q);
   });
 
-  const generateSoulFromConfig = (config: Record<string, string>) => {
+  const buildSoulContent = (config: Record<string, string>): string => {
     const persona = config.soul_persona || "";
     const goal = config.soul_goal || "";
-    const toneMap: Record<string, string> = {
-      friendly: "ودود ومتعاون",
-      formal: "رسمي ومهني",
-      concise: "مختصر ومباشر",
-      detailed: "مفصل وشامل",
-    };
+    const toneMap: Record<string, string> = { friendly: "ودود ومتعاون", formal: "رسمي ومهني", concise: "مختصر ومباشر", detailed: "مفصل وشامل" };
     const tone = toneMap[config.soul_tone || ""] || "";
     const tasks = config.soul_tasks || "";
     const boundaries = config.soul_boundaries || "";
-    const langMap: Record<string, string> = {
-      auto: "حسب لغة العميل (عربي أو إنجليزي)",
-      ar: "العربية",
-      en: "English",
-    };
+    const langMap: Record<string, string> = { auto: "حسب لغة العميل (عربي أو إنجليزي)", ar: "العربية", en: "English" };
     const language = langMap[config.soul_language || ""] || "";
     const welcome = config.soul_welcome || "";
-    const escalationMap: Record<string, string> = {
-      knowledge_ask: "إذا كنت لا تعرف الإجابة، اسأل التاجر عبر لوحة التحكم.",
-      escalate_human: "إذا كنت لا تعرف الإجابة، حول المحادثة إلى فريق الدعم البشري.",
-      apologize: "إذا كنت لا تعرف الإجابة، اعتذر للعميل واطلب منه التواصل مع الدعم.",
-    };
+    const escalationMap: Record<string, string> = { knowledge_ask: "إذا كنت لا تعرف الإجابة، اسأل التاجر عبر لوحة التحكم.", escalate_human: "إذا كنت لا تعرف الإجابة، حول المحادثة إلى فريق الدعم البشري.", apologize: "إذا كنت لا تعرف الإجابة، اعتذر للعميل واطلب منه التواصل مع الدعم." };
     const escalation = escalationMap[config.soul_escalation || ""] || escalationMap.knowledge_ask;
-
     const parts: string[] = [];
-    if (persona || goal) {
-      const line = goal
-        ? `أنت ${persona}، ${goal}.`
-        : `أنت ${persona}.`;
-      parts.push(line);
-    }
+    if (persona || goal) parts.push(goal ? `أنت ${persona}، ${goal}.` : `أنت ${persona}.`);
     if (tone) parts.push(`\n## أسلوب الرد\n${tone}`);
     if (tasks) parts.push(`\n## المهام الأساسية\n${tasks}`);
     if (boundaries) parts.push(`\n## الحدود\n${boundaries}`);
@@ -537,9 +530,11 @@ export default function AgentProfilesPage() {
     if (escalation) parts.push(`\n## عندما لا تعرف الإجابة\n${escalation}`);
     if (language) parts.push(`\n## لغة الرد\n${language}`);
     if (config.soul_custom) parts.push(`\n## تعليمات إضافية\n${config.soul_custom}`);
+    return parts.join("\n\n");
+  };
 
-    const soulContent = parts.join("\n\n");
-    setDraftFiles((prev) => ({ ...prev, "SOUL.md": soulContent }));
+  const generateSoulFromConfig = (config: Record<string, string>) => {
+    setDraftFiles((prev) => ({ ...prev, "SOUL.md": buildSoulContent(config) }));
   };
 
   const soulTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -1178,6 +1173,74 @@ export default function AgentProfilesPage() {
                       <label htmlFor="new-agent-desc" className="text-[9px] font-medium text-slate-400 block mb-0.5">{t("agentProfiles.create.description")}</label>
                       <Input id="new-agent-desc" placeholder={t("agentProfiles.create.descPlaceholder")} value={newAgentDesc} onChange={(e) => setNewAgentDesc(e.target.value)} disabled={creating} className="h-7 text-sm" />
                     </div>
+                  </div>
+                </div>
+              </section>
+
+              <section>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <span className="size-1.5 rounded-full bg-indigo-500" />
+                  <h4 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("agentProfiles.tabs.settings")}</h4>
+                </div>
+                <div className="space-y-2.5">
+                  <div>
+                    <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.persona")}</label>
+                    <Input value={newConfig.soul_persona || ""} onChange={(e) => setNewConfig((p) => ({...p, soul_persona: e.target.value}))} placeholder={t("agentProfiles.settings.personaPlaceholder")} className="h-7 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.goal")}</label>
+                    <Textarea value={newConfig.soul_goal || ""} onChange={(e) => setNewConfig((p) => ({...p, soul_goal: e.target.value}))} placeholder={t("agentProfiles.settings.goalPlaceholder")} className="text-sm min-h-[40px] resize-y" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.tone")}</label>
+                    <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg w-fit">
+                      {[{k:"friendly",l:t("agentProfiles.settings.toneFriendly")},{k:"formal",l:t("agentProfiles.settings.toneFormal")},{k:"concise",l:t("agentProfiles.settings.toneConcise")},{k:"detailed",l:t("agentProfiles.settings.toneDetailed")}].map((opt) => (
+                        <button key={opt.k} type="button"
+                          className={`px-2 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer ${(newConfig.soul_tone||"friendly")===opt.k?"bg-white dark:bg-slate-700 text-foreground shadow-sm":"text-muted-foreground hover:text-foreground"}`}
+                          onClick={() => setNewConfig((p) => ({...p, soul_tone: opt.k}))}
+                        >{opt.l}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.language")}</label>
+                    <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg w-fit">
+                      {[{k:"auto",l:t("agentProfiles.settings.languageAuto")},{k:"ar",l:t("agentProfiles.settings.languageAr")},{k:"en",l:t("agentProfiles.settings.languageEn")}].map((opt) => (
+                        <button key={opt.k} type="button"
+                          className={`px-2 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer ${(newConfig.soul_language||"auto")===opt.k?"bg-white dark:bg-slate-700 text-foreground shadow-sm":"text-muted-foreground hover:text-foreground"}`}
+                          onClick={() => setNewConfig((p) => ({...p, soul_language: opt.k}))}
+                        >{opt.l}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.tasks")}</label>
+                    <Textarea value={newConfig.soul_tasks || ""} onChange={(e) => setNewConfig((p) => ({...p, soul_tasks: e.target.value}))} placeholder={t("agentProfiles.settings.tasksPlaceholder")} className="text-sm min-h-[40px] resize-y" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.boundaries")}</label>
+                    <Textarea value={newConfig.soul_boundaries || ""} onChange={(e) => setNewConfig((p) => ({...p, soul_boundaries: e.target.value}))} placeholder={t("agentProfiles.settings.boundariesPlaceholder")} className="text-sm min-h-[40px] resize-y" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.welcome")}</label>
+                    <Input value={newConfig.soul_welcome || ""} onChange={(e) => setNewConfig((p) => ({...p, soul_welcome: e.target.value}))} placeholder={t("agentProfiles.settings.welcomePlaceholder")} className="h-7 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.escalation")}</label>
+                    <Select value={newConfig.soul_escalation || "knowledge_ask"} onValueChange={(v) => setNewConfig((p) => ({...p, soul_escalation: v}))}>
+                      <SelectTrigger className="h-7 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="knowledge_ask">يسألني عبر لوحة التحكم</SelectItem>
+                        <SelectItem value="escalate_human">يحول المحادثة لبشر</SelectItem>
+                        <SelectItem value="apologize">يعتذر ويقول مايعرفش</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.settings.customPrompt")}</label>
+                    <Textarea value={newConfig.soul_custom || ""} onChange={(e) => setNewConfig((p) => ({...p, soul_custom: e.target.value}))} placeholder={t("agentProfiles.settings.customPromptPlaceholder")} className="text-sm min-h-[40px] resize-y font-mono text-xs" />
                   </div>
                 </div>
               </section>
