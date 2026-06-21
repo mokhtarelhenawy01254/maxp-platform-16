@@ -119,9 +119,15 @@ export default function AIHubLayout() {
     if (el) { el.style.overflow = "hidden"; el.style.padding = "0"; el.style.display = "flex"; el.style.flexDirection = "column"; }
     const w = document.querySelector<HTMLElement>(".motion-safe\\:animate-fade-in");
     if (w) { w.style.display = "flex"; w.style.flex = "1"; w.style.minHeight = "0"; }
+    const saMain = document.querySelector<HTMLElement>("main.flex-1");
+    if (saMain && !el) { saMain.style.overflow = "hidden"; }
+    const saWrap = saMain?.querySelector<HTMLElement>("div.w-full");
+    if (saWrap && !el) { saWrap.style.padding = "0"; saWrap.style.display = "flex"; saWrap.style.flex = "1"; saWrap.style.minHeight = "0"; }
     return () => {
       if (el) { el.style.overflow = ""; el.style.padding = ""; }
       if (w) { w.style.display = ""; w.style.flex = ""; w.style.minHeight = ""; }
+      if (saMain && !el) { saMain.style.overflow = ""; }
+      if (saWrap && !el) { saWrap.style.padding = ""; saWrap.style.display = ""; saWrap.style.flex = ""; saWrap.style.minHeight = ""; }
     };
   }, []);
 
