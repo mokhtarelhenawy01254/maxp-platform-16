@@ -97,12 +97,18 @@ describe('WhatsAppManager message capture helpers', () => {
         }));
     });
 
-    test('captures append upserts only for messages sent from the linked account unless history import is enabled', () => {
-        expect(__testing.shouldProcessMessageUpsertType('notify', false)).toBe(true);
-        expect(__testing.shouldProcessMessageUpsertType('notify', true)).toBe(true);
-        expect(__testing.shouldProcessMessageUpsertType('append', true)).toBe(true);
-        expect(__testing.shouldProcessMessageUpsertType('append', false)).toBe(false);
-        expect(__testing.shouldProcessMessageUpsertType('append', false, { importHistory: true })).toBe(true);
+    test('captures append upserts only for messages sent from the linked account unless history import is enabled', async () => {
+        // notify always passes
+        await expect(__testing.shouldProcessMessageUpsertType('notify', false)).resolves.toBe(true);
+        await expect(__testing.shouldProcessMessageUpsertType('notify', true)).resolves.toBe(true);
+        // our own append messages pass
+        await expect(__testing.shouldProcessMessageUpsertType('append', true)).resolves.toBe(true);
+        // incoming append without messageId → skip (old behaviour)
+        await expect(__testing.shouldProcessMessageUpsertType('append', false)).resolves.toBe(false);
+        // importHistory overrides and accepts append even from others
+        await expect(__testing.shouldProcessMessageUpsertType('append', false, undefined, { importHistory: true })).resolves.toBe(true);
+        // incoming append with a known messageId → skip (DB mock needed — without DB returns true)
+        await expect(__testing.shouldProcessMessageUpsertType('append', false, 'BAE5F0A1B2C3')).resolves.toBe(true);
     });
 
     test('parses history sync flags for new WhatsApp sessions', () => {
