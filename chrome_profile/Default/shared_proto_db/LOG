@@ -1,4 +1,3 @@
-2026/06/17-13:11:08.451 19cc Creating DB e:\max_p_new\max_p_new\chrome_profile\Default\shared_proto_db since it was missing.
-2026/06/17-13:11:08.455 19cc Reusing MANIFEST e:\max_p_new\max_p_new\chrome_profile\Default\shared_proto_db/MANIFEST-000001
-2026/06/17-13:11:08.456 19cc Recovering log #3
-2026/06/17-13:11:08.457 19cc Reusing old log e:\max_p_new\max_p_new\chrome_profile\Default\shared_proto_db/000003.log 
+2026/06/21-10:46:21.069 4fa8 Reusing MANIFEST e:\max_p_new\max_p_new\chrome_profile\Default\shared_proto_db/MANIFEST-000001
+2026/06/21-10:46:21.069 4fa8 Recovering log #3
+2026/06/21-10:46:21.070 4fa8 Reusing old log e:\max_p_new\max_p_new\chrome_profile\Default\shared_proto_db/000003.log 

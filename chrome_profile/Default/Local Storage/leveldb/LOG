@@ -1,4 +1,3 @@
-2026/06/17-13:11:08.422 5fc Creating DB e:\max_p_new\max_p_new\chrome_profile\Default\Local Storage\leveldb since it was missing.
-2026/06/17-13:11:08.438 5fc Reusing MANIFEST e:\max_p_new\max_p_new\chrome_profile\Default\Local Storage\leveldb/MANIFEST-000001
-2026/06/17-13:11:08.439 5fc Recovering log #3
-2026/06/17-13:11:08.441 5fc Reusing old log e:\max_p_new\max_p_new\chrome_profile\Default\Local Storage\leveldb/000003.log 
+2026/06/21-10:46:20.996 55c8 Reusing MANIFEST e:\max_p_new\max_p_new\chrome_profile\Default\Local Storage\leveldb/MANIFEST-000001
+2026/06/21-10:46:21.001 55c8 Recovering log #3
+2026/06/21-10:46:21.003 55c8 Reusing old log e:\max_p_new\max_p_new\chrome_profile\Default\Local Storage\leveldb/000003.log 

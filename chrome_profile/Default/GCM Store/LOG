@@ -1,2 +1,3 @@
-2026/06/17-13:11:11.463 64d8 Creating DB e:\max_p_new\max_p_new\chrome_profile\Default\GCM Store since it was missing.
-2026/06/17-13:11:11.470 64d8 Reusing MANIFEST e:\max_p_new\max_p_new\chrome_profile\Default\GCM Store/MANIFEST-000001
+2026/06/21-10:46:23.205 3340 Reusing MANIFEST e:\max_p_new\max_p_new\chrome_profile\Default\GCM Store/MANIFEST-000001
+2026/06/21-10:46:23.206 3340 Recovering log #3
+2026/06/21-10:46:23.209 3340 Reusing old log e:\max_p_new\max_p_new\chrome_profile\Default\GCM Store/000003.log 
