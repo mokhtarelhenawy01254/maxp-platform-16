@@ -954,44 +954,58 @@ const UnifiedInbox: React.FC = () => {
       <div className="unified-inbox-header px-5 pt-4 pb-3 border-b shrink-0" style={{ borderColor: 'var(--business-muted-line)', background: 'var(--business-surface-panel)' }}>
         <h1 className="text-[22px] font-bold mb-1" style={{ color: 'var(--color-foreground)' }}>{t("unifiedInbox.pageTitle", "البريد الوارد")}</h1>
 
-{/* Platform Dropdown + Filters */}
+        {/* Platform Dropdown + Filters */}
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Platform Dropdown */}
-          <div className="relative">
-            <select
-              value={selectedPlatforms.length === 0 ? "all" : selectedPlatforms[0]}
-              onChange={(e) => {
-                if (e.target.value === "all") {
-                  setSelectedPlatforms([]);
-                } else {
-                  setSelectedPlatforms([e.target.value]);
-                }
-                setActiveTab("all");
-              }}
-              className="inbox-filter-chip text-sm appearance-none cursor-pointer pr-6 pl-3"
-              style={{ borderRadius: "6px", padding: "0.4rem 0.8rem" }}
-            >
-              <option value="all">{t("unifiedInbox.filters.allPlatforms", "كل المنصات")}</option>
-              <option value="facebook">Messenger</option>
-              <option value="instagram">Instagram</option>
-              <option value="whatsapp">{t("unifiedInbox.tabs.whatsapp", "واتساب")}</option>
-            </select>
-            <ChevronDownIcon className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--color-muted-foreground)" }} />
-          </div>
-
-          {/* Comments links */}
-          <div className="flex gap-1">
+          {/* Platform pills — integrated + comments */}
+          <div className="flex items-center gap-1.5 flex-wrap">
             <button
-              onClick={() => navigate("/unified-comments?platform=facebook")}
+              onClick={() => { setSelectedPlatforms([]); setActiveTab("all"); }}
               className="inbox-filter-chip text-xs whitespace-nowrap"
-              style={{ padding: "0.3rem 0.6rem" }}
+              style={{ borderRadius: "999px", padding: "0.3rem 0.85rem" }}
+              data-active={selectedPlatforms.length === 0 && activeTab === "all"}
+            >
+              {t("unifiedInbox.filters.allPlatforms", "كل المنصات")}
+            </button>
+            <button
+              onClick={() => { setSelectedPlatforms(["facebook"]); setActiveTab("all"); }}
+              className="inbox-filter-chip text-xs whitespace-nowrap"
+              style={{ borderRadius: "999px", padding: "0.3rem 0.85rem" }}
+              data-active={selectedPlatforms.length === 1 && selectedPlatforms[0] === "facebook" && activeTab === "all"}
+            >
+              Messenger
+            </button>
+            <button
+              onClick={() => { setSelectedPlatforms(["instagram"]); setActiveTab("all"); }}
+              className="inbox-filter-chip text-xs whitespace-nowrap"
+              style={{ borderRadius: "999px", padding: "0.3rem 0.85rem" }}
+              data-active={selectedPlatforms.length === 1 && selectedPlatforms[0] === "instagram" && activeTab === "all"}
+            >
+              Instagram
+            </button>
+            <button
+              onClick={() => { setSelectedPlatforms(["whatsapp"]); setActiveTab("all"); }}
+              className="inbox-filter-chip text-xs whitespace-nowrap"
+              style={{ borderRadius: "999px", padding: "0.3rem 0.85rem" }}
+              data-active={selectedPlatforms.length === 1 && selectedPlatforms[0] === "whatsapp" && activeTab === "all"}
+            >
+              {t("unifiedInbox.tabs.whatsapp", "واتساب")}
+            </button>
+
+            <div className="w-px h-5" style={{ background: 'var(--business-card-border)' }} />
+
+            <button
+              onClick={() => { setActiveTab("fb-comments"); setSelectedPlatforms([]); }}
+              className="inbox-filter-chip text-xs whitespace-nowrap"
+              style={{ borderRadius: "999px", padding: "0.3rem 0.85rem" }}
+              data-active={activeTab === "fb-comments"}
             >
               {t("unifiedInbox.tabs.fbComments", "تعليقات فيسبوك")}
             </button>
             <button
-              onClick={() => navigate("/unified-comments?platform=instagram")}
+              onClick={() => { setActiveTab("ig-comments"); setSelectedPlatforms([]); }}
               className="inbox-filter-chip text-xs whitespace-nowrap"
-              style={{ padding: "0.3rem 0.6rem" }}
+              style={{ borderRadius: "999px", padding: "0.3rem 0.85rem" }}
+              data-active={activeTab === "ig-comments"}
             >
               {t("unifiedInbox.tabs.igComments", "تعليقات Instagram")}
             </button>
