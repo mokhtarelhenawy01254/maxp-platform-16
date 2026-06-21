@@ -1,18 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
-  Brain, Users, Zap, ChevronDown, ChevronRight, ChevronUp,
+  Brain, Users, ChevronDown, ChevronRight, ChevronUp,
   Loader2, AlertCircle, Bot, Search, Clock, PenLine, Save, X, Plus, Trash2,
-  BookOpen, Shield, RefreshCw, Eye, EyeOff, HelpCircle, Menu, MessageSquare, Archive,
+  BookOpen, Shield, RefreshCw, HelpCircle, Menu, MessageSquare, Archive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { sandboxApi, type AgentProfileResponse, type AgentSkillDetail } from "../ai-agent-sandbox/services/sandboxApi";
+import { sandboxApi, type AgentProfileResponse } from "../ai-agent-sandbox/services/sandboxApi";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -22,9 +21,6 @@ import {
 import {
   Sheet, SheetContent,
 } from "@/components/ui/sheet";
-import {
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import tokenManager from "../../../utils/tokenManager";
