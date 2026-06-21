@@ -1861,6 +1861,14 @@ const AppContent = () => {
               }
             />
             <Route
+              path="/super-admin/ai-hub-test"
+              element={
+                <Layout fullWidth>
+                  <AIHubLayout />
+                </Layout>
+              }
+            />
+            <Route
               path="/super-admin/ai-chat"
               element={
                 <Layout fullWidth>
