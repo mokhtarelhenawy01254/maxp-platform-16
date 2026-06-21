@@ -234,7 +234,7 @@ export function CompaniesTable({
                     <CheckCircle2 className="size-3.5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="rounded-lg bg-white text-xs font-bold shadow-md dark:bg-slate-900">إدارة المتابعة</TooltipContent>
+                <TooltipContent className="rounded-lg bg-white text-xs font-bold shadow-md dark:bg-card">إدارة المتابعة</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -242,7 +242,7 @@ export function CompaniesTable({
                     <Eye className="size-3.5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="rounded-lg bg-white text-xs font-bold shadow-md dark:bg-slate-900">عرض التفاصيل</TooltipContent>
+                <TooltipContent className="rounded-lg bg-white text-xs font-bold shadow-md dark:bg-card">عرض التفاصيل</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -250,7 +250,7 @@ export function CompaniesTable({
                     <LogIn className="size-3.5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="rounded-lg bg-white text-xs font-bold shadow-md dark:bg-slate-900">دخول كأدمن</TooltipContent>
+                <TooltipContent className="rounded-lg bg-white text-xs font-bold shadow-md dark:bg-card">دخول كأدمن</TooltipContent>
               </Tooltip>
             </div>
 
@@ -291,7 +291,7 @@ export function CompaniesTable({
       <div className="space-y-2">
         {[...Array(isMobile ? 4 : 8)].map((_, i) => (
           isMobile ? (
-            <div key={i} className="rounded-lg border border-border/60 bg-white p-3 dark:bg-slate-950">
+            <div key={i} className="rounded-lg border border-border/60 bg-white p-3 dark:bg-card">
               <div className="flex items-start gap-3">
                 <Skeleton className="mt-1 size-4 rounded" />
                 <div className="flex-1 space-y-2">
@@ -310,7 +310,7 @@ export function CompaniesTable({
               </div>
             </div>
           ) : (
-            <div key={i} className="flex items-center gap-3 rounded-lg border border-border/40 bg-white px-3 py-2.5 dark:bg-slate-950">
+            <div key={i} className="flex items-center gap-3 rounded-lg border border-border/40 bg-white px-3 py-2.5 dark:bg-card">
               <Skeleton className="size-4 rounded" />
               <Skeleton className="size-5 rounded-md" />
               <div className="flex-1 space-y-1.5">
@@ -359,7 +359,7 @@ export function CompaniesTable({
             const critical = company.funnelStaleStatus?.isStale72h || company.followUpAutomation?.needsUrgentEscalation;
             return (
               <div key={company.id} className={cn(
-                "rounded-lg border bg-white shadow-sm dark:bg-slate-950",
+                "rounded-lg border bg-white shadow-sm dark:bg-card",
                 attention ? "border-l-2 border-l-amber-400 border-amber-200 bg-amber-50/25" : "border-border/60",
                 critical && "border-l-rose-500 bg-rose-50/35",
               )}>
@@ -441,7 +441,7 @@ export function CompaniesTable({
 
                     <div className="mt-2 grid grid-cols-3 gap-2">
                       {(["users", "customers", "facebookPages"] as const).map((key) => (
-                        <div key={key} className="rounded-lg border border-border/40 bg-white px-2 py-2 text-center dark:bg-slate-900">
+                        <div key={key} className="rounded-lg border border-border/40 bg-white px-2 py-2 text-center dark:bg-card">
                           <p className="text-base font-black text-foreground">{getCount(company, key)}</p>
                           <p className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground/60">{key === "users" ? "أعضاء" : key === "customers" ? "عملاء" : "صفحات"}</p>
                         </div>
@@ -478,10 +478,10 @@ export function CompaniesTable({
           })}
         </div>
       ) : (
-        <div className="rounded-lg border border-border/60 bg-white shadow-sm dark:bg-slate-950">
+        <div className="rounded-lg border border-border/60 bg-white shadow-sm dark:bg-card">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur supports-[backdrop-filter]:bg-muted/80 dark:bg-slate-900/95">
+              <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur supports-[backdrop-filter]:bg-muted/80 dark:bg-card/95">
                 {table.getHeaderGroups().map((hg) => (
                   <TableRow key={hg.id} className="border-border/40 hover:bg-transparent">
                     {hg.headers.map((header) => (
@@ -542,7 +542,7 @@ export function CompaniesTable({
       )}
 
       {/* Pagination */}
-      <div className="flex flex-col gap-2 rounded-lg border border-border/60 bg-white p-2 shadow-sm dark:bg-slate-950 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-2 rounded-lg border border-border/60 bg-white p-2 shadow-sm dark:bg-card md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-2 px-2 text-xs font-bold text-muted-foreground/70">
           <span className="rounded-md bg-muted/30 px-2.5 py-1">صفحة {currentPage} من {totalPages}</span>
           <span className="hidden md:inline">— عرض {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, totalItems)} من {totalItems}</span>

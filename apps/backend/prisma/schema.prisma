@@ -1316,20 +1316,6 @@ model PlatformEnterprisePlan {
   @@map("platform_enterprise_plans")
 }
 
-model PlanLimit {
-  id                 String                @id @default(cuid())
-  plan               SubscriptionsPlanType @unique
-  maxEmployees       Int                   @default(-1)
-  maxProducts        Int                   @default(-1)
-  maxOrdersPerMonth  Int                   @default(-1)
-  hasAdvancedReports Boolean               @default(false)
-  hasAPIAccess       Boolean               @default(false)
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
-
-  @@map("plan_limits")
-}
-
 model BillingHistory {
   id                String             @id @default(cuid())
   companyId         String
@@ -1920,7 +1906,6 @@ model Company {
   address                         String?
   currency                        String                           @default("EGP")
   plan                            CompaniesPlan                    @default(BASIC)
-  planConfigurationId             String?
   isActive                        Boolean                          @default(true)
   settings                        String?
   createdAt                       DateTime                         @default(now())
@@ -1982,7 +1967,6 @@ model Company {
   categories                      Category[]
   checkoutFormSettings            CheckoutFormSettings?
   commissions                     Commission[]
-  planConfiguration               PlanConfiguration?               @relation(fields: [planConfigurationId], references: [id])
   installedApps                   CompanyApp[]
   wallet                          CompanyWallet?
   conversationMemories            ConversationMemory[]
@@ -2182,7 +2166,6 @@ model Company {
   followUp                        FollowUp?
 
   @@index([businessSpecialtyId])
-  @@index([planConfigurationId])
   @@map("companies")
 }
 
@@ -2904,6 +2887,7 @@ enum CompaniesPlan {
   BASIC
   PRO
   ENTERPRISE
+  MESSAGING
 
   @@map("companies_plan")
 }
@@ -10417,24 +10401,6 @@ model PageResponseSettings {
   @@index([companyId])
   @@index([pageId])
   @@map("page_response_settings")
-}
-
-/// UNUSED - Legacy feature
-model PlanConfiguration {
-  id            String    @id @default(cuid())
-  planType      String    @unique
-  price         Float
-  currency      String    @default("EGP")
-  billingCycle  String    @default("monthly")
-  features      String
-  description   String?
-  descriptionEn String?
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  companies     Company[]
-
-  @@map("plan_configurations")
 }
 
 /// UNUSED - Legacy feature

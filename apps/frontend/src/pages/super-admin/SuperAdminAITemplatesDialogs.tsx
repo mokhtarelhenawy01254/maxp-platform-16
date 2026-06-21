@@ -62,8 +62,11 @@ export const CreateDialog: React.FC<{ onClose: () => void; onCreated: () => void
   const [creating, setCreating] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  const slugPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+  const slugValid = !form.slug.trim() || slugPattern.test(form.slug);
+
   const create = async () => {
-    if (!form.name.trim() || !form.slug.trim()) return;
+    if (!form.name.trim() || !form.slug.trim() || !slugValid) return;
     setCreating(true); setErr(null);
     try { await apiClient.post("/super-admin/agents", form); onCreated(); onClose(); }
     catch (e: any) { setErr(e?.response?.data?.error || e.message || "حدث خطأ"); }
@@ -75,11 +78,12 @@ export const CreateDialog: React.FC<{ onClose: () => void; onCreated: () => void
       <DialogContent>
         <DialogHeader><DialogTitle>قالب وكيل جديد</DialogTitle></DialogHeader>
         {err && <Alert variant="destructive"><AlertDescription>{err}</AlertDescription></Alert>}
-        <div className="space-y-3">
+        <div className="space-y-3" onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); create(); } }}>
           <Input label="اسم القالب *" value={form.name}
             onChange={e => setForm(p => ({ ...p, name: e.target.value, slug: e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") }))} autoFocus />
           <Input label="المعرّف (slug) *" value={form.slug}
             onChange={e => setForm(p => ({ ...p, slug: e.target.value }))} helperText="أحرف إنجليزية وشرطات فقط" />
+          {form.slug.trim() && !slugValid && <p className="text-[0.65rem] text-destructive">slug غير صالح: أحرف صغيرة وأرقام وشرطات فقط</p>}
           <div>
             <label className="text-xs font-medium text-muted-foreground">الدور</label>
             <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
@@ -91,7 +95,7 @@ export const CreateDialog: React.FC<{ onClose: () => void; onCreated: () => void
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={creating}>إلغاء</Button>
-          <Button onClick={create} disabled={!form.name.trim() || !form.slug.trim() || creating}>
+          <Button onClick={create} disabled={!form.name.trim() || !form.slug.trim() || !slugValid || creating}>
             {creating ? <LoadingSpinner size="sm" /> : <Plus className="size-4 ml-1" />} إنشاء
           </Button>
         </DialogFooter>
@@ -178,9 +182,14 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
           </div>
         </DialogHeader>
         {err && <Alert variant="destructive" className="mx-1"><AlertDescription>{err}</AlertDescription></Alert>}
-        <div className="flex gap-1 bg-muted/50 p-0.5 rounded-lg mx-1 mt-1 shrink-0">
-          {EDIT_TABS.map(tabItem => (
-            <button key={tabItem.id} onClick={() => setTab(tabItem.id)}
+        <div className="flex gap-1 bg-muted/50 p-0.5 rounded-lg mx-1 mt-1 shrink-0" role="tablist">
+          {EDIT_TABS.map((tabItem, i) => (
+            <button key={tabItem.id} role="tab" aria-selected={tab === tabItem.id} tabIndex={tab === tabItem.id ? 0 : -1}
+              onClick={() => setTab(tabItem.id)}
+              onKeyDown={e => {
+                if (e.key === "ArrowRight") { e.preventDefault(); setTab(EDIT_TABS[(i + 1) % EDIT_TABS.length].id); }
+                if (e.key === "ArrowLeft") { e.preventDefault(); setTab(EDIT_TABS[(i - 1 + EDIT_TABS.length) % EDIT_TABS.length].id); }
+              }}
               className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${tab === tabItem.id ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{tabItem.label}</button>
           ))}
         </div>
@@ -284,13 +293,13 @@ export const PreviewDialog: React.FC<{ template: TemplateItem; onClose: () => vo
           <div className="flex flex-wrap gap-2">{t.industries.map(ind => <Badge key={ind} variant="secondary" className="text-xs">{ind}</Badge>)}</div>
           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
             {t.personaMeta?.language && <span>اللغة: <strong>{t.personaMeta.language === "arabic" ? "العربية" : t.personaMeta.language}</strong></span>}
-            {t.personaMeta?.tone && <span className={`text-[0.6rem] px-1.5 py-0.5 rounded-full font-medium ${toneColor(t.personaMeta.tone)}`}>{t.personaMeta.tone}</span>}
+            {t.personaMeta?.tone && <span className={`text-[0.7rem] px-1.5 py-0.5 rounded-full font-medium ${toneColor(t.personaMeta.tone)}`}>{t.personaMeta.tone}</span>}
             {t.personaMeta?.formality && <span>الرسمية: <strong>{t.personaMeta.formality}</strong></span>}
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-muted/50 rounded-lg p-3 text-center"><p className="text-lg font-bold">{t.toolsCount}</p><p className="text-[0.6rem] text-muted-foreground">أدوات</p></div>
-            <div className="bg-muted/50 rounded-lg p-3 text-center"><p className="text-lg font-bold">{t.skillsCount}</p><p className="text-[0.6rem] text-muted-foreground">مهارات</p></div>
-            <div className="bg-muted/50 rounded-lg p-3 text-center"><p className="text-lg font-bold">{t.budget?.dailyUsd ? `$${t.budget.dailyUsd}` : "-"}</p><p className="text-[0.6rem] text-muted-foreground">الميزانية/يوم</p></div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center"><p className="text-lg font-bold">{t.toolsCount}</p><p className="text-[0.7rem] text-muted-foreground">أدوات</p></div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center"><p className="text-lg font-bold">{t.skillsCount}</p><p className="text-[0.7rem] text-muted-foreground">مهارات</p></div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center"><p className="text-lg font-bold">{t.budget?.dailyUsd ? `$${t.budget.dailyUsd}` : "-"}</p><p className="text-[0.7rem] text-muted-foreground">الميزانية/يوم</p></div>
           </div>
           <div><p className="text-xs font-bold mb-1">القنوات المتاحة</p><div className="flex gap-2">{t.channels.map(ch => <Badge key={ch} variant="outline" className="text-xs">{ch}</Badge>)}</div></div>
           <div><p className="text-xs font-bold mb-1">الشخصية (Soul)</p>
@@ -427,7 +436,7 @@ export const DuplicateDialog: React.FC<{ template: TemplateItem; onClose: () => 
         <DialogHeader><DialogTitle>نسخ القالب</DialogTitle></DialogHeader>
         {err && <Alert variant="destructive"><AlertDescription>{err}</AlertDescription></Alert>}
         <p className="text-sm">سيتم إنشاء نسخة من قالب <strong>{t.icon} {t.name}</strong></p>
-        <div className="space-y-3 mt-2">
+        <div className="space-y-3 mt-2" onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); doDuplicate(); } }}>
           <Input label="الاسم الجديد *" value={newName}
             onChange={e => { setNewName(e.target.value); setNewSlug(e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")); }} autoFocus />
           <Input label="المعرّف الجديد (slug) *" value={newSlug} onChange={e => setNewSlug(e.target.value)} />

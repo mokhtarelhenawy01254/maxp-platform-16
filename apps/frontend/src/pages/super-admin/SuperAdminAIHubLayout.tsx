@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useLayoutEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Bot, Building2 } from "lucide-react";
+import { Bot, Building2, AlertCircle } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
+import { Alert, AlertDescription } from "../../components/ui/alert";
 
 const AgentSkillsPage = React.lazy(() => import("../admin/AgentSkillsPage"));
 const AgentToolsPage = React.lazy(() => import("../admin/AgentToolsPage"));
@@ -13,7 +14,7 @@ interface Company {
 }
 
 const TABS = [
-  { key: "skills", label: "مهارات الوكيل", needsCompany: false },
+  { key: "skills", label: "مهارات الوكيل", needsCompany: true },
   { key: "tools", label: "أدوات الوكيل", needsCompany: false },
   { key: "rag", label: "قاعدة المعرفة (RAG)", needsCompany: true },
 ] as const;
@@ -26,15 +27,20 @@ export default function SuperAdminAIHubLayout() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
   const [loadingCompanies, setLoadingCompanies] = useState(false);
+  const [companiesError, setCompaniesError] = useState("");
 
   useEffect(() => {
     if (!currentTabMeta.needsCompany || companies.length > 0) return;
     (async () => {
       setLoadingCompanies(true);
+      setCompaniesError("");
       try {
         const { data } = await apiClient.get("/super-admin/companies/quick-list");
         if (data.success) setCompanies(data.companies);
-      } catch {}
+        else setCompaniesError(data.message || "فشل تحميل قائمة الشركات");
+      } catch {
+        setCompaniesError("حدث خطأ أثناء تحميل قائمة الشركات");
+      }
       finally { setLoadingCompanies(false); }
     })();
   }, [currentTabMeta.needsCompany, companies.length]);
@@ -62,8 +68,8 @@ export default function SuperAdminAIHubLayout() {
       <div className="border-b bg-background/95 backdrop-blur sticky top-0 z-40 px-6 py-3">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-2">
-            <Bot className="size-5 text-indigo-600 animate-pulse" />
-            <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+            <Bot className="size-5 text-primary animate-pulse" />
+            <h1 className="text-lg font-bold tracking-tight text-foreground">
               AI Hub — Super Admin
             </h1>
           </div>
@@ -76,7 +82,7 @@ export default function SuperAdminAIHubLayout() {
                 onClick={() => setSearchParams({ tab: tab.key })}
                 className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   activeTab === tab.key
-                    ? "bg-indigo-600 text-white shadow-sm"
+                    ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:bg-muted"
                 }`}
               >
@@ -86,18 +92,20 @@ export default function SuperAdminAIHubLayout() {
           </div>
         </div>
 
-        {/* Company selector — shown only for RAG tab */}
+        {/* Company selector — shown only for tabs needing it */}
         {currentTabMeta.needsCompany && (
-          <div className="flex items-center gap-3 mt-3 pt-3 border-t">
+          <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border">
             <Building2 className="size-4 text-muted-foreground shrink-0" />
             <span className="text-sm font-medium">الشركة:</span>
             {loadingCompanies ? (
               <span className="text-sm text-muted-foreground">جاري التحميل...</span>
+            ) : companiesError ? (
+              <span className="text-sm text-destructive">{companiesError}</span>
             ) : (
               <select
                 value={selectedCompanyId}
                 onChange={(e) => setSelectedCompanyId(e.target.value)}
-                className="h-9 rounded-lg border border-input bg-background px-3 text-sm min-w-[220px]"
+                className="h-9 rounded-lg border border-input bg-background px-3 text-sm min-w-[220px] text-foreground"
               >
                 <option value="">اختر شركة...</option>
                 {companies.map((c) => (
@@ -110,16 +118,18 @@ export default function SuperAdminAIHubLayout() {
       </div>
 
       {/* Content area */}
-      <div className="flex-1 bg-slate-50/20 overflow-y-auto">
+      <div className="flex-1 bg-muted/20 overflow-y-auto">
         <React.Suspense
           fallback={
             <div className="flex h-[400px] items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+              <div className="animate-spin rounded-full size-8 border-b-2 border-primary" />
             </div>
           }
         >
           {activeTab === "skills" && (
-            <AgentSkillsPage key={selectedCompanyId || "no-company"} companyId={selectedCompanyId || undefined} />
+            selectedCompanyId
+              ? <AgentSkillsPage key={selectedCompanyId} companyId={selectedCompanyId} />
+              : <div className="flex h-64 items-center justify-center text-muted-foreground">اختر شركة لعرض مهارات الوكيل</div>
           )}
           {activeTab === "tools" && (
             <AgentToolsPage key={selectedCompanyId || "no-company"} companyId={selectedCompanyId || undefined} />

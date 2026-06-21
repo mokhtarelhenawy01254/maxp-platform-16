@@ -1,5 +1,3 @@
-// ponytail: plan-based limits removed — all operations allowed.
-// Replace per-app/bundle limits when needed.
 class PlanLimitsService {
   async checkLimits() { return { allowed: true, plan: 'BASIC' }; }
   async getEffectiveLimits() { return { users: -1, customers: -1, products: -1, orders: -1, conversations: -1, storage: -1, features: [] }; }

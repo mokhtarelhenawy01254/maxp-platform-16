@@ -8,7 +8,6 @@ model Company {
   address                         String?
   currency                        String                           @default("EGP")
   plan                            CompaniesPlan                    @default(BASIC)
-  planConfigurationId             String?
   isActive                        Boolean                          @default(true)
   settings                        String?
   createdAt                       DateTime                         @default(now())
@@ -71,7 +70,6 @@ model Company {
   categories                      Category[]
   checkoutFormSettings            CheckoutFormSettings?
   commissions                     Commission[]
-  planConfiguration               PlanConfiguration?               @relation(fields: [planConfigurationId], references: [id])
   installedApps                   CompanyApp[]
   wallet                          CompanyWallet?
   conversationMemories            ConversationMemory[]
@@ -273,7 +271,6 @@ model Company {
    followUp                         FollowUp?
 
    @@index([businessSpecialtyId])
-  @@index([planConfigurationId])
   @@map("companies")
 }
 

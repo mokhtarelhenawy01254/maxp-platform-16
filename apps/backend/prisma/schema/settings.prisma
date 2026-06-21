@@ -227,24 +227,6 @@ model PageResponseSettings {
 }
 
 /// UNUSED - Legacy feature
-model PlanConfiguration {
-  id            String    @id @default(cuid())
-  planType      String    @unique
-  price         Float
-  currency      String    @default("EGP")
-  billingCycle  String    @default("monthly")
-  features      String
-  description   String?
-  descriptionEn String?
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  companies     Company[]
-
-  @@map("plan_configurations")
-}
-
-/// UNUSED - Legacy feature
 model PostResponseSettings {
   id                    String   @id @default(cuid())
   postId                String

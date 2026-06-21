@@ -132,26 +132,6 @@ const DevReleases: React.FC = () => {
     }
   };
 
-  const handleGenerateChangelog = async (id: string) => {
-    try {
-      const response = await fetch(
-        buildApiUrl(`super-admin/dev/releases/${id}/changelog`),
-        {
-          method: "POST",
-          headers: getAuthHeaders({ "Content-Type": "application/json" }),
-        },
-      );
-
-      const data = await response.json();
-      if (data.success) {
-        fetchReleases();
-        alert("تم توليد Changelog بنجاح");
-      }
-    } catch (err) {
-      console.error("Error generating changelog:", err);
-    }
-  };
-
   const handleDelete = async (id: string) => {
     if (!confirm("هل أنت متأكد من حذف هذا الإصدار؟")) return;
 
@@ -279,12 +259,6 @@ const DevReleases: React.FC = () => {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleGenerateChangelog(release.id)}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
-                    >
-                      توليد Changelog
-                    </button>
                     <button
                       onClick={() => handleDelete(release.id)}
                       className="p-2 hover:bg-red-50 rounded-lg text-gray-500 hover:text-red-600"

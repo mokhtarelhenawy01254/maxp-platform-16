@@ -3,6 +3,17 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import tokenManager from "../../utils/tokenManager";
 import i18n from "../../i18n";
 import { buildApiUrl } from "../../utils/urlHelper";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { Progress } from "../../components/ui/progress";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "../../components/ui/table";
 import {
   PlusIcon,
   FunnelIcon,
@@ -569,107 +580,114 @@ const DevTasksList: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            📋 قائمة المهام
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-            {pagination.total} مهمة
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => handleExport("csv")}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-          >
-            <ArrowDownTrayIcon className="h-5 w-5" />
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <ClipboardDocumentListIcon className="size-5" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black text-foreground">
+                قائمة المهام
+              </h1>
+              <p className="text-muted-foreground text-sm mt-1">
+                {pagination.total} مهمة
+              </p>
+            </div>
+          </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => handleExport("csv")}>
+            <ArrowDownTrayIcon className="size-4" />
             تصدير CSV
-          </button>
-          <button
-            onClick={() => navigate("/super-admin/dev-kanban")}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-          >
-            <ViewColumnsIcon className="h-5 w-5" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate("/super-admin/dev-kanban")}>
+            <ViewColumnsIcon className="size-4" />
             Kanban
-          </button>
-          <button
-            onClick={() => navigate("/super-admin/dev-tasks/new")}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600"
-          >
-            <PlusIcon className="h-5 w-5" />
+          </Button>
+          <Button size="sm" onClick={() => navigate("/super-admin/dev-tasks/new")}>
+            <PlusIcon className="size-4" />
             مهمة جديدة
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Quick Stats */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
+          <div className="rounded-xl border border-border/40 bg-card p-4 ring-1 ring-foreground/5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-100 text-xs">المهام النشطة</p>
-                <p className="text-2xl font-bold mt-1">
+                <p className="text-xs font-medium text-muted-foreground">المهام النشطة</p>
+                <p className="text-2xl font-black text-foreground mt-1">
                   {stats.overview?.totalTasks || 0}
                 </p>
-                <p className="text-blue-200 text-[10px] mt-0.5">غير المكتملة</p>
+                <p className="text-[10px] text-muted-foreground/70 mt-0.5">غير المكتملة</p>
               </div>
-              <ClipboardDocumentListIcon className="h-10 w-10 text-blue-200" />
+              <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <ClipboardDocumentListIcon className="size-5" />
+              </div>
             </div>
           </div>
-          <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-4 text-white">
+          <div className="rounded-xl border border-border/40 bg-card p-4 ring-1 ring-foreground/5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-yellow-100 text-xs">قيد العمل</p>
-                <p className="text-2xl font-bold mt-1">
+                <p className="text-xs font-medium text-muted-foreground">قيد العمل</p>
+                <p className="text-2xl font-black text-foreground mt-1">
                   {stats.tasksByStatus?.IN_PROGRESS || 0}
                 </p>
               </div>
-              <ClockIcon className="h-10 w-10 text-yellow-200" />
+              <div className="flex size-10 items-center justify-center rounded-xl bg-warning/10 text-warning">
+                <ClockIcon className="size-5" />
+              </div>
             </div>
           </div>
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white">
+          <div className="rounded-xl border border-border/40 bg-card p-4 ring-1 ring-foreground/5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-xs">مكتملة</p>
-                <p className="text-2xl font-bold mt-1">
+                <p className="text-xs font-medium text-muted-foreground">مكتملة</p>
+                <p className="text-2xl font-black text-foreground mt-1">
                   {stats.tasksByStatus?.DONE || 0}
                 </p>
               </div>
-              <CheckCircleIcon className="h-10 w-10 text-green-200" />
+              <div className="flex size-10 items-center justify-center rounded-xl bg-success/10 text-success">
+                <CheckCircleIcon className="size-5" />
+              </div>
             </div>
           </div>
-          <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 text-white">
+          <div className="rounded-xl border border-border/40 bg-card p-4 ring-1 ring-foreground/5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-red-100 text-xs">متأخرة</p>
-                <p className="text-2xl font-bold mt-1">
+                <p className="text-xs font-medium text-muted-foreground">متأخرة</p>
+                <p className="text-2xl font-black text-foreground mt-1">
                   {stats.overview?.overdueTasks || 0}
                 </p>
               </div>
-              <ExclamationTriangleIcon className="h-10 w-10 text-red-200" />
+              <div className="flex size-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+                <ExclamationTriangleIcon className="size-5" />
+              </div>
             </div>
           </div>
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white">
+          <div className="rounded-xl border border-border/40 bg-card p-4 ring-1 ring-foreground/5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-purple-100 text-xs">مشاريع نشطة</p>
-                <p className="text-2xl font-bold mt-1">
+                <p className="text-xs font-medium text-muted-foreground">مشاريع نشطة</p>
+                <p className="text-2xl font-black text-foreground mt-1">
                   {stats.overview?.activeProjects || 0}
                 </p>
               </div>
-              <TagIcon className="h-10 w-10 text-purple-200" />
+              <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <TagIcon className="size-5" />
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {/* Search & Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+      <div className="rounded-xl border border-border/40 bg-card ring-1 ring-foreground/5 p-4">
         <div className="flex items-center gap-4">
           {/* Search */}
           <form onSubmit={handleSearch} className="flex-1">
             <div className="relative">
-              <MagnifyingGlassIcon className="h-5 w-5 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <MagnifyingGlassIcon className="size-5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="بحث في المهام..."
@@ -677,7 +695,7 @@ const DevTasksList: React.FC = () => {
                 onChange={(e) =>
                   setFilters((prev) => ({ ...prev, search: e.target.value }))
                 }
-                className="w-full pl-4 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                className="w-full rounded-lg border border-input bg-background py-2 pr-10 pl-4 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/10"
               />
             </div>
           </form>
@@ -826,141 +844,136 @@ const DevTasksList: React.FC = () => {
       )}
 
       {/* Tasks Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
-              <tr>
-                <th className="px-4 py-3 text-right">
-                  <input
-                    type="checkbox"
-                    checked={
-                      selectedTasks.length === tasks.length && tasks.length > 0
-                    }
-                    onChange={toggleSelectAll}
-                    className="rounded border-gray-300 dark:border-gray-600"
-                  />
-                </th>
-                <th className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => handleSort("title")}
-                    className="flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-                  >
-                    المهمة
-                    {sortBy === "title" &&
-                      (sortOrder === "asc" ? (
-                        <ChevronUpIcon className="h-4 w-4" />
-                      ) : (
-                        <ChevronDownIcon className="h-4 w-4" />
-                      ))}
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-right text-sm font-medium text-gray-600 dark:text-gray-400">
-                  النوع
-                </th>
-                <th className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => handleSort("status")}
-                    className="flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-                  >
-                    الحالة
-                    {sortBy === "status" &&
-                      (sortOrder === "asc" ? (
-                        <ChevronUpIcon className="h-4 w-4" />
-                      ) : (
-                        <ChevronDownIcon className="h-4 w-4" />
-                      ))}
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => handleSort("priority")}
-                    className="flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-                  >
-                    الأولوية
-                    {sortBy === "priority" &&
-                      (sortOrder === "asc" ? (
-                        <ChevronUpIcon className="h-4 w-4" />
-                      ) : (
-                        <ChevronDownIcon className="h-4 w-4" />
-                      ))}
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-right text-sm font-medium text-gray-600 dark:text-gray-400">
-                  التقدم
-                </th>
-                <th className="px-4 py-3 text-right text-sm font-medium text-gray-600 dark:text-gray-400">
-                  المسؤول
-                </th>
-                <th className="px-4 py-3 text-right text-sm font-medium text-gray-600 dark:text-gray-400">
-                  المشروع
-                </th>
-                <th className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => handleSort("dueDate")}
-                    className="flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-                  >
-                    الاستحقاق
-                    {sortBy === "dueDate" &&
-                      (sortOrder === "asc" ? (
-                        <ChevronUpIcon className="h-4 w-4" />
-                      ) : (
-                        <ChevronDownIcon className="h-4 w-4" />
-                      ))}
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-right text-sm font-medium text-gray-600 dark:text-gray-400">
-                  إجراءات
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {loading ? (
-                <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 dark:border-indigo-400 mx-auto"></div>
-                  </td>
-                </tr>
-              ) : error ? (
-                <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center">
-                    <div className="flex flex-col items-center justify-center">
-                      <ExclamationTriangleIcon className="h-12 w-12 text-red-400 mb-3" />
-                      <p className="text-red-600 dark:text-red-400 font-medium mb-2">
-                        {error}
-                      </p>
-                      <button
-                        onClick={() => fetchTasks()}
-                        className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                      >
-                        إعادة المحاولة
-                      </button>
+      <div className="rounded-xl border border-border/40 bg-card ring-1 ring-foreground/5 overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">
+                <input
+                  type="checkbox"
+                  checked={
+                    selectedTasks.length === tasks.length && tasks.length > 0
+                  }
+                  onChange={toggleSelectAll}
+                  className="rounded border-border"
+                />
+              </TableHead>
+              <TableHead>
+                <button
+                  onClick={() => handleSort("title")}
+                  className="flex items-center gap-1 text-xs font-black uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                >
+                  المهمة
+                  {sortBy === "title" &&
+                    (sortOrder === "asc" ? (
+                      <ChevronUpIcon className="size-3" />
+                    ) : (
+                      <ChevronDownIcon className="size-3" />
+                    ))}
+                </button>
+              </TableHead>
+              <TableHead className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                النوع
+              </TableHead>
+              <TableHead>
+                <button
+                  onClick={() => handleSort("status")}
+                  className="flex items-center gap-1 text-xs font-black uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                >
+                  الحالة
+                  {sortBy === "status" &&
+                    (sortOrder === "asc" ? (
+                      <ChevronUpIcon className="size-3" />
+                    ) : (
+                      <ChevronDownIcon className="size-3" />
+                    ))}
+                </button>
+              </TableHead>
+              <TableHead>
+                <button
+                  onClick={() => handleSort("priority")}
+                  className="flex items-center gap-1 text-xs font-black uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                >
+                  الأولوية
+                  {sortBy === "priority" &&
+                    (sortOrder === "asc" ? (
+                      <ChevronUpIcon className="size-3" />
+                    ) : (
+                      <ChevronDownIcon className="size-3" />
+                    ))}
+                </button>
+              </TableHead>
+              <TableHead className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                التقدم
+              </TableHead>
+              <TableHead className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                المسؤول
+              </TableHead>
+              <TableHead className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                المشروع
+              </TableHead>
+              <TableHead>
+                <button
+                  onClick={() => handleSort("dueDate")}
+                  className="flex items-center gap-1 text-xs font-black uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                >
+                  الاستحقاق
+                  {sortBy === "dueDate" &&
+                    (sortOrder === "asc" ? (
+                      <ChevronUpIcon className="size-3" />
+                    ) : (
+                      <ChevronDownIcon className="size-3" />
+                    ))}
+                </button>
+              </TableHead>
+              <TableHead className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                إجراءات
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={10} className="h-48 text-center">
+                  <div className="animate-spin rounded-full size-8 border-b-2 border-primary mx-auto" />
+                </TableCell>
+              </TableRow>
+            ) : error ? (
+              <TableRow>
+                <TableCell colSpan={10} className="h-48 text-center">
+                  <div className="flex flex-col items-center justify-center">
+                    <ExclamationTriangleIcon className="size-12 text-destructive/60 mb-3" />
+                    <p className="text-destructive font-medium mb-2">
+                      {error}
+                    </p>
+                    <Button size="sm" onClick={() => fetchTasks()}>
+                      إعادة المحاولة
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : tasks.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={10} className="h-64 text-center">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="flex size-16 items-center justify-center rounded-2xl bg-muted/30">
+                      <ClipboardDocumentListIcon className="size-8 text-muted-foreground/40" />
                     </div>
-                  </td>
-                </tr>
-              ) : tasks.length === 0 ? (
-                <tr>
-                  <td colSpan={10} className="px-4 py-16 text-center">
-                    <div className="flex flex-col items-center justify-center">
-                      <ClipboardDocumentListIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                        لا توجد مهام
-                      </h3>
-                      <p className="text-gray-500 dark:text-gray-400 mb-4">
-                        ابدأ بإنشاء مهمة جديدة لتتبع عمل فريقك
-                      </p>
-                      <button
-                        onClick={() => navigate("/super-admin/dev-tasks/new")}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600"
-                      >
-                        <PlusIcon className="h-5 w-5" />
-                        إنشاء مهمة جديدة
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                tasks.map((task) => {
+                    <h3 className="text-lg font-black text-foreground mt-4 mb-1">
+                      لا توجد مهام
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4 max-w-[240px]">
+                      ابدأ بإنشاء مهمة جديدة لتتبع عمل فريقك
+                    </p>
+                    <Button size="sm" onClick={() => navigate("/super-admin/dev-tasks/new")}>
+                      <PlusIcon className="size-4" />
+                      إنشاء مهمة جديدة
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              tasks.map((task) => {
                   const typeInfo =
                     TASK_TYPES[task.type] || TASK_TYPES["FEATURE"];
 
@@ -986,222 +999,205 @@ const DevTasksList: React.FC = () => {
                     task.status !== "DONE";
 
                   return (
-                    <tr
+                    <TableRow
                       key={task.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+                      className="cursor-pointer"
                       onClick={() =>
                         navigate(`/super-admin/dev-tasks/${task.id}`)
                       }
                     >
-                      <td
-                        className="px-4 py-3"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={selectedTasks.includes(task.id)}
                           onChange={() => toggleSelectTask(task.id)}
-                          className="rounded border-gray-300 dark:border-gray-600"
+                          className="rounded border-border"
                         />
-                      </td>
-                      <td className="px-4 py-3">
+                      </TableCell>
+                      <TableCell>
                         <div className="max-w-md">
                           <Link
                             to={`/super-admin/dev-tasks/${task.id}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="font-medium text-gray-900 dark:text-gray-100 truncate hover:text-indigo-600 dark:hover:text-indigo-400 block"
+                            className="font-medium text-foreground truncate hover:text-primary block"
                           >
                             {task.title}
                           </Link>
-                          <div className="flex items-center gap-2 mt-1 text-gray-400 dark:text-gray-500 text-xs">
+                          <div className="flex items-center gap-2 mt-1 text-muted-foreground text-xs">
                             {task.commentsCount > 0 && (
                               <span className="flex items-center gap-0.5">
-                                <ChatBubbleLeftIcon className="h-3 w-3" />
+                                <ChatBubbleLeftIcon className="size-3" />
                                 {task.commentsCount}
                               </span>
                             )}
                             {task.attachmentsCount > 0 && (
                               <span className="flex items-center gap-0.5">
-                                <PaperClipIcon className="h-3 w-3" />
+                                <PaperClipIcon className="size-3" />
                                 {task.attachmentsCount}
                               </span>
                             )}
                             {task.subtasksCount > 0 && (
                               <span className="flex items-center gap-0.5">
-                                <ClipboardDocumentListIcon className="h-3 w-3" />
+                                <ClipboardDocumentListIcon className="size-3" />
                                 {task.subtasksCount}
                               </span>
                             )}
                           </div>
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${typeInfo?.bg || ""} ${typeInfo?.text || ""}`}
-                        >
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="gap-1">
                           {typeInfo?.icon}
                           {typeInfo?.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo?.bg || ""} ${statusInfo?.text || ""}`}
-                        >
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
                           {statusInfo?.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-2">
                           <span
-                            className={`w-2 h-2 rounded-full ${priorityInfo?.color || ""}`}
-                          ></span>
-                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            className={`size-2 rounded-full ${priorityInfo?.color || ""}`}
+                          />
+                          <span className="text-sm text-muted-foreground">
                             {priorityInfo?.label}
                           </span>
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="space-y-1">
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1 min-w-[100px]">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-600 dark:text-gray-400">
+                            <span className="text-muted-foreground">
                               {task.progress}%
                             </span>
                             {task.estimatedHours > 0 && (
-                              <span className="text-gray-500 dark:text-gray-500">
+                              <span className="text-muted-foreground/70">
                                 {task.actualHours}/{task.estimatedHours}h
                               </span>
                             )}
                           </div>
-                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                            <div
-                              className="bg-indigo-600 dark:bg-indigo-500 h-1.5 rounded-full transition-all"
-                              style={{ width: `${task.progress}%` }}
-                            ></div>
-                          </div>
+                          <Progress value={task.progress} className="h-1.5" />
                           {task.tags && task.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {task.tags.slice(0, 2).map((tag, idx) => (
                                 <span
                                   key={idx}
-                                  className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground"
                                 >
                                   {tag}
                                 </span>
                               ))}
                               {task.tags.length > 2 && (
-                                <span className="text-xs text-gray-400">
+                                <span className="text-[10px] text-muted-foreground/50">
                                   +{task.tags.length - 2}
                                 </span>
                               )}
                             </div>
                           )}
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
+                      </TableCell>
+                      <TableCell>
                         {task.assigneeName ? (
                           <div className="flex items-center gap-2">
                             {task.assigneeAvatar ? (
                               <img
                                 src={task.assigneeAvatar}
                                 alt=""
-                                className="w-6 h-6 rounded-full"
+                                className="size-6 rounded-full"
                               />
                             ) : (
-                              <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-medium">
+                              <div className="size-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium">
                                 {task.assigneeName.charAt(0)}
                               </div>
                             )}
-                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                            <span className="text-sm text-foreground">
                               {task.assigneeName}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-sm text-gray-400 dark:text-gray-500">
+                          <span className="text-sm text-muted-foreground/50">
                             غير محدد
                           </span>
                         )}
-                      </td>
-                      <td className="px-4 py-3">
+                      </TableCell>
+                      <TableCell>
                         {task.projectName ? (
                           <div className="flex items-center gap-2">
                             <span
-                              className="w-2 h-2 rounded-full"
+                              className="size-2 rounded-full"
                               style={{
                                 backgroundColor: task.projectColor || "#6366f1",
                               }}
-                            ></span>
-                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                            />
+                            <span className="text-sm text-foreground">
                               {task.projectName}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-sm text-gray-400 dark:text-gray-500">
+                          <span className="text-sm text-muted-foreground/50">
                             -
                           </span>
                         )}
-                      </td>
-                      <td className="px-4 py-3">
+                      </TableCell>
+                      <TableCell>
                         {task.dueDate ? (
                           <span
-                            className={`flex items-center gap-1 text-sm ${isOverdue ? "text-red-600 dark:text-red-400" : "text-gray-600 dark:text-gray-400"}`}
+                            className={`flex items-center gap-1 text-sm ${isOverdue ? "text-destructive" : "text-muted-foreground"}`}
                           >
-                            <CalendarDaysIcon className="h-4 w-4" />
+                            <CalendarDaysIcon className="size-4" />
                             {new Date(task.dueDate).toLocaleDateString("ar-EG")}
                           </span>
                         ) : (
-                          <span className="text-sm text-gray-400 dark:text-gray-500">
+                          <span className="text-sm text-muted-foreground/50">
                             -
                           </span>
                         )}
-                      </td>
-                      <td
-                        className="px-4 py-3"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1">
                           <Link
                             to={`/super-admin/dev-tasks/${task.id}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 block"
+                            className="flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                             title="عرض"
                           >
-                            <EyeIcon className="h-4 w-4" />
+                            <EyeIcon className="size-4" />
                           </Link>
-                          {/* 🔐 Show edit button only if user has canEdit permission */}
                           {userPermissions?.canEdit && (
                             <Link
                               to={`/super-admin/dev-tasks/${task.id}/edit`}
                               onClick={(e) => e.stopPropagation()}
-                              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 block"
+                              className="flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
                               title="تعديل"
                             >
-                              <PencilIcon className="h-4 w-4" />
+                              <PencilIcon className="size-4" />
                             </Link>
                           )}
-                          {/* 🔐 Show delete button only if user has canDelete permission */}
                           {userPermissions?.canDelete && (
                             <button
-                              onClick={() => handleDeleteTask(task.id)}
-                              className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                              onClick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
+                              className="flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                               title="حذف"
                             >
-                              <TrashIcon className="h-4 w-4" />
+                              <TrashIcon className="size-4" />
                             </button>
                           )}
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Pagination */}
-        <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <div className="flex items-center justify-between border-t border-border/40 px-4 py-3">
           <div className="flex items-center gap-4">
-            <div className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="text-sm text-muted-foreground">
               عرض {(pagination.page - 1) * pagination.limit + 1} -{" "}
               {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
               من {pagination.total}
@@ -1215,7 +1211,7 @@ const DevTasksList: React.FC = () => {
                   page: 1,
                 }))
               }
-              className="border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+              className="h-8 rounded-lg border border-input bg-background px-2 text-sm text-foreground"
             >
               <option value="10">10 / صفحة</option>
               <option value="20">20 / صفحة</option>
@@ -1225,27 +1221,29 @@ const DevTasksList: React.FC = () => {
           </div>
           {pagination.totalPages > 1 && (
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                variant="outline"
+                size="icon-xs"
                 onClick={() =>
                   setPagination((prev) => ({ ...prev, page: prev.page - 1 }))
                 }
                 disabled={pagination.page === 1}
-                className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
               >
-                <ChevronRightIcon className="h-5 w-5" />
-              </button>
-              <span className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
+                <ChevronRightIcon className="size-4" />
+              </Button>
+              <span className="px-2 text-sm text-muted-foreground">
                 صفحة {pagination.page} من {pagination.totalPages}
               </span>
-              <button
+              <Button
+                variant="outline"
+                size="icon-xs"
                 onClick={() =>
                   setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
                 }
                 disabled={pagination.page === pagination.totalPages}
-                className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
               >
-                <ChevronLeftIcon className="h-5 w-5" />
-              </button>
+                <ChevronLeftIcon className="size-4" />
+              </Button>
             </div>
           )}
         </div>
@@ -1258,23 +1256,23 @@ const DevTasksList: React.FC = () => {
             className="absolute inset-0 bg-black bg-opacity-50"
             onClick={() => setShowFiltersSidebar(false)}
           ></div>
-          <div className="absolute left-0 top-0 bottom-0 w-96 bg-white dark:bg-gray-800 shadow-xl overflow-y-auto">
-            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <div className="absolute left-0 top-0 bottom-0 w-96 bg-card border-l border-border shadow-xl overflow-y-auto">
+            <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-foreground">
                 فلاتر متقدمة
               </h2>
               <button
                 onClick={() => setShowFiltersSidebar(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                className="p-2 hover:bg-muted rounded-lg"
               >
-                <XMarkIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                <XMarkIcon className="size-5 text-muted-foreground" />
               </button>
             </div>
 
             <div className="p-6 space-y-6">
               {/* Status Filter */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   الحالة
                 </label>
                 <select
@@ -1282,7 +1280,7 @@ const DevTasksList: React.FC = () => {
                   onChange={(e) =>
                     handlePendingFilterChange("status", e.target.value)
                   }
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground"
                 >
                   <option value="">كل الحالات</option>
                   {(

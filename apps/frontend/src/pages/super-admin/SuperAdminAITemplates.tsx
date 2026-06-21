@@ -6,7 +6,7 @@ import { Input } from "../../components/ui/input";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
-import { Store, Search, Eye, Pencil, Copy, Send, Trash2, ChevronDown, ChevronUp, Plus, Layers, ExternalLink } from "lucide-react";
+import { Bot, Search, Eye, Pencil, Copy, Send, Trash2, ChevronDown, ChevronUp, Plus, Layers, ExternalLink } from "lucide-react";
 import {
   CreateDialog, EditDialog, PreviewDialog, ApplyDialog, DeleteDialog, DuplicateDialog,
   ROLE_ICONS, ROLE_COLORS, toneColors, TemplateItem,
@@ -73,7 +73,7 @@ const SuperAdminAITemplates: React.FC = () => {
       </div>
 
       {/* Stats bar */}
-      <div className="grid grid-cols-5 gap-2 px-4 py-2 bg-white/50 border-b shrink-0">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 px-4 py-2 bg-white/50 border-b shrink-0">
         <StatBox label="إجمالي القوالب" value={stats.total} />
         <StatBox label="أدوات" value={stats.totalTools} />
         <StatBox label="مهارات" value={stats.totalSkills} />
@@ -100,13 +100,13 @@ const SuperAdminAITemplates: React.FC = () => {
         <span className="text-xs text-muted-foreground">{filtered.length} من {templates.length}</span>
       </div>
 
-      {error && <Alert variant="destructive" className="mx-4 mt-2 shrink-0"><AlertDescription>{error}</AlertDescription></Alert>}
+      {error && <Alert variant="destructive" className="mx-4 mt-2 shrink-0"><AlertDescription>{error}</AlertDescription><div className="mt-1"><Button variant="outline" size="sm" onClick={fetchTemplates}>إعادة المحاولة</Button></div></Alert>}
 
       {/* Table */}
       <div className="flex-1 overflow-auto p-4">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-2">
-            <Store className="size-16 opacity-15" />
+            <Bot className="size-16 opacity-15" />
             <p className="text-sm text-muted-foreground">لا توجد قوالب تطابق بحثك</p>
             <Button variant="outline" size="sm" onClick={() => { setSearch(""); setRoleFilter(""); setIndustryFilter(""); }}>مسح الفلتر</Button>
           </div>
@@ -139,7 +139,7 @@ const SuperAdminAITemplates: React.FC = () => {
                             <button onClick={e => { e.stopPropagation(); navigate(`/super-admin/ai-templates/${t.slug}`); }} className="text-sm font-semibold hover:text-primary transition-colors flex items-center gap-1">
                               {t.name} <ExternalLink className="size-3 opacity-50" />
                             </button>
-                            <p className="text-[0.6rem] text-muted-foreground font-mono">{t.slug}</p>
+                            <p className="text-[0.7rem] text-muted-foreground font-mono">{t.slug}</p>
                           </div>
                         </div>
                       </td>
@@ -147,15 +147,15 @@ const SuperAdminAITemplates: React.FC = () => {
                         <span className={`text-[0.65rem] px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[t.role] || "bg-gray-100 text-gray-700"}`}>{t.role}</span>
                       </td>
                       <td className="p-3">
-                        <span className={`text-[0.55rem] px-1.5 py-0.5 rounded-full font-medium ${t.isActive !== false ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                        <span className={`text-[0.65rem] px-1.5 py-0.5 rounded-full font-medium ${t.isActive !== false ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
                           {t.isActive !== false ? "نشط" : "مخفي"}
                         </span>
                       </td>
                       <td className="p-3 text-xs text-muted-foreground">{t.version}</td>
                       <td className="p-3">
                         <div className="flex flex-wrap gap-1">
-                          {t.industries.slice(0, 2).map(ind => (<span key={ind} className="text-[0.55rem] px-1.5 py-0.5 rounded-full bg-primary/5 text-primary">{ind}</span>))}
-                          {t.industries.length > 2 && <span className="text-[0.55rem] text-muted-foreground">+{t.industries.length - 2}</span>}
+                          {t.industries.slice(0, 2).map(ind => (<span key={ind} className="text-[0.65rem] px-1.5 py-0.5 rounded-full bg-primary/5 text-primary">{ind}</span>))}
+                          {t.industries.length > 2 && <span className="text-[0.65rem] text-muted-foreground">+{t.industries.length - 2}</span>}
                         </div>
                       </td>
                       <td className="p-3">
@@ -165,7 +165,7 @@ const SuperAdminAITemplates: React.FC = () => {
                         </div>
                       </td>
                       <td className="p-3">
-                        <div className="flex gap-1">{t.channels.slice(0, 2).map(ch => (<Badge key={ch} variant="outline" className="text-[0.55rem] h-4">{ch}</Badge>))}</div>
+                        <div className="flex gap-1">{t.channels.slice(0, 2).map(ch => (<Badge key={ch} variant="outline" className="text-[0.65rem] h-4">{ch}</Badge>))}</div>
                       </td>
                       <td className="p-3">
                         <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
@@ -183,13 +183,13 @@ const SuperAdminAITemplates: React.FC = () => {
                       <tr className="bg-muted/20">
                         <td colSpan={8} className="p-3">
                           <div className="flex gap-4">
-                            {t.soulPreview && <div className="flex-1"><p className="text-[0.6rem] font-bold text-muted-foreground mb-1">لمحة عن الشخصية</p><p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap line-clamp-4 dir-rtl">{t.soulPreview}</p></div>}
+                            {t.soulPreview && <div className="flex-1"><p className="text-[0.7rem] font-bold text-muted-foreground mb-1">لمحة عن الشخصية</p><p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap line-clamp-4 dir-rtl">{t.soulPreview}</p></div>}
                             {t.personaMeta?.tone && (
                               <div className="shrink-0">
-                                <p className="text-[0.6rem] font-bold text-muted-foreground mb-1">الشخصية</p>
+                                <p className="text-[0.7rem] font-bold text-muted-foreground mb-1">الشخصية</p>
                                 <div className="flex flex-wrap gap-1">
-                                  <span className={`text-[0.6rem] px-1.5 py-0.5 rounded-full font-medium ${toneColors[t.personaMeta.tone] || "bg-gray-100 text-gray-700"}`}>{t.personaMeta.tone}</span>
-                                  {t.personaMeta.language && <Badge variant="outline" className="text-[0.55rem]">{t.personaMeta.language === "arabic" ? "عربي" : t.personaMeta.language}</Badge>}
+                                  <span className={`text-[0.7rem] px-1.5 py-0.5 rounded-full font-medium ${toneColors[t.personaMeta.tone] || "bg-gray-100 text-gray-700"}`}>{t.personaMeta.tone}</span>
+                                  {t.personaMeta.language && <Badge variant="outline" className="text-[0.65rem]">{t.personaMeta.language === "arabic" ? "عربي" : t.personaMeta.language}</Badge>}
                                 </div>
                               </div>
                             )}
@@ -219,7 +219,7 @@ const SuperAdminAITemplates: React.FC = () => {
 const StatBox: React.FC<{ label: string; value: number | string }> = ({ label, value }) => (
   <div className="rounded-lg bg-white border p-2 text-center">
     <p className="text-lg font-bold text-primary">{value}</p>
-    <p className="text-[0.6rem] text-muted-foreground">{label}</p>
+    <p className="text-[0.7rem] text-muted-foreground">{label}</p>
   </div>
 );
 

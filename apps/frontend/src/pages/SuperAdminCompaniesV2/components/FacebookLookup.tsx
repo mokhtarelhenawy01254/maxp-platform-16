@@ -70,7 +70,7 @@ export function FacebookLookup({
                 onChange={(e) => onQueryChange(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onSearch(); } }}
                 placeholder="اسم الصفحة أو الـ ID..."
-                className="h-11 rounded-lg border-border/70 bg-white pr-11 dark:bg-slate-950"
+                className="h-11 rounded-lg border-border/70 bg-white pr-11 dark:bg-card"
               />
             </div>
             <Button type="button" className="h-11 rounded-lg px-4 sm:min-w-[7.75rem]" onClick={onSearch} disabled={loading}>
@@ -95,7 +95,7 @@ export function FacebookLookup({
               {loading ? (
                 <div className="grid gap-3 lg:grid-cols-2">
                   {[...Array(2)].map((_, i) => (
-                    <div key={i} className="rounded-lg border border-border/70 bg-white p-4 dark:bg-slate-950">
+                    <div key={i} className="rounded-lg border border-border/70 bg-white p-4 dark:bg-card">
                       <Skeleton className="h-4 w-28" />
                       <Skeleton className="mt-3 h-3 w-40" />
                       <Skeleton className="mt-2 h-3 w-32" />
@@ -113,7 +113,7 @@ export function FacebookLookup({
               ) : results.length ? (
                 <div className="max-h-[22rem] space-y-3 overflow-y-auto pl-1">
                   {results.map((page) => (
-                    <div key={page.id} className="rounded-lg border border-border/70 bg-white p-4 dark:bg-slate-950">
+                    <div key={page.id} className="rounded-lg border border-border/70 bg-white p-4 dark:bg-card">
                       <div className="flex items-start justify-between gap-3">
                         <div className="space-y-2">
                           <div className="flex flex-wrap items-center gap-2">

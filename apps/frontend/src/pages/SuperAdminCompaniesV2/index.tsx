@@ -53,7 +53,7 @@ function ResponsiveOverlay({
   if (mobile) {
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-          <SheetContent side="bottom" className="max-h-[96vh] rounded-t-2xl border-t border-border/40 bg-white px-0 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] pt-0 shadow-lg dark:bg-slate-950" dir="rtl">
+          <SheetContent side="bottom" className="max-h-[96vh] rounded-t-2xl border-t border-border/40 bg-white px-0 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] pt-0 shadow-lg dark:bg-card" dir="rtl">
           <div className="mx-auto mt-4 h-1.5 w-16 rounded-full bg-muted/60" />
           <SheetHeader className="px-6 pb-4 pt-6 text-right">
             <SheetTitle className="text-right text-2xl font-black tracking-tight">{title}</SheetTitle>
@@ -68,7 +68,7 @@ function ResponsiveOverlay({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => onOpenChange(false)} role="presentation">
       <div
-        className={cn("max-w-4xl w-full rounded-xl border border-border/40 bg-white shadow-lg dark:bg-slate-950 max-h-[90vh] flex flex-col overflow-hidden", bodyClassName)}
+        className={cn("max-w-4xl w-full rounded-xl border border-border/40 bg-white shadow-lg dark:bg-card max-h-[90vh] flex flex-col overflow-hidden", bodyClassName)}
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
         role="dialog"
@@ -259,11 +259,11 @@ function FollowUpFormContent({
               </Button>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-lg border-border/40 bg-white p-3 shadow-sm dark:bg-slate-900">
+              <div className="rounded-lg border-border/40 bg-white p-3 shadow-sm dark:bg-card">
                 <p className="text-xs font-black uppercase tracking-widest text-muted-foreground/60">آخر تذكير مسجل</p>
                 <p className="mt-1 text-xs font-bold text-foreground/80">{formatDateTime(followUp.lastReminderSentAt)}</p>
               </div>
-              <div className="rounded-lg border-border/40 bg-white p-3 shadow-sm dark:bg-slate-900">
+              <div className="rounded-lg border-border/40 bg-white p-3 shadow-sm dark:bg-card">
                 <p className="text-xs font-black uppercase tracking-widest text-muted-foreground/60">آخر تصعيد مسجل</p>
                 <p className="mt-1 text-xs font-bold text-foreground/80">{formatDateTime(followUp.lastEscalatedAt)}</p>
               </div>
@@ -279,7 +279,7 @@ function FollowUpFormContent({
           </div>
           <div className="space-y-3">
             {followUp.history.slice(0, 4).map((entry) => (
-              <div key={entry.id} className="rounded-lg border border-border/60 bg-white p-4 shadow-sm dark:bg-slate-950">
+              <div key={entry.id} className="rounded-lg border border-border/60 bg-white p-4 shadow-sm dark:bg-card">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <Badge variant="outline" className="rounded-full border-border/60 px-2.5 py-0.5 text-xs font-black">{entry.status}</Badge>
                   <p className="text-xs font-bold text-muted-foreground/70">{formatDateTime(entry.occurredAt)}</p>
@@ -679,7 +679,7 @@ export default function SuperAdminCompaniesV2() {
       <div className="flex w-full flex-col gap-1.5 p-1 md:p-1.5">
         {/* Error banner */}
         {pageError ? (
-          <Alert variant="destructive" className="rounded-xl border-destructive/30 bg-white dark:bg-slate-950/90">
+          <Alert variant="destructive" className="rounded-xl border-destructive/30 bg-white dark:bg-card/90">
             <AlertTriangle className="size-4" />
             <AlertTitle>تعذر تحميل الصفحة</AlertTitle>
             <AlertDescription>{(pageError as Error).message}</AlertDescription>
@@ -687,7 +687,7 @@ export default function SuperAdminCompaniesV2() {
         ) : null}
 
         {/* Main panel */}
-        <Card className="rounded-lg bg-white shadow-sm ring-0 dark:bg-slate-950">
+        <Card className="rounded-lg bg-white shadow-sm ring-0 dark:bg-card">
           <CardHeader className="p-2 pb-0 md:p-3 md:pb-0">
             <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
               <div className="space-y-0.5">
@@ -756,7 +756,7 @@ export default function SuperAdminCompaniesV2() {
               <button
                 type="button"
                 onClick={handleClearFilters}
-                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-primary/40 hover:bg-primary/[0.02] hover:shadow-md dark:bg-slate-950"
+                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-primary/40 hover:bg-primary/[0.02] hover:shadow-md dark:bg-card"
               >
                 <div className="flex items-center gap-2.5">
                   <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -772,7 +772,7 @@ export default function SuperAdminCompaniesV2() {
               <button
                 type="button"
                 onClick={() => { handleClearFilters(); setFunnelStage("activated"); }}
-                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-emerald-400/60 hover:bg-emerald-50/30 hover:shadow-md dark:bg-slate-950"
+                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-emerald-400/60 hover:bg-emerald-50/30 hover:shadow-md dark:bg-card"
               >
                 <div className="flex items-center gap-2.5">
                   <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
@@ -788,7 +788,7 @@ export default function SuperAdminCompaniesV2() {
               <button
                 type="button"
                 onClick={() => handleOpenView("FOLLOW_UP_NOW")}
-                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-amber-400/60 hover:bg-amber-50/30 hover:shadow-md dark:bg-slate-950"
+                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-amber-400/60 hover:bg-amber-50/30 hover:shadow-md dark:bg-card"
               >
                 <div className="flex items-center gap-2.5">
                   <div className="flex size-9 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
@@ -804,7 +804,7 @@ export default function SuperAdminCompaniesV2() {
               <button
                 type="button"
                 onClick={() => handleOpenView("STALE_72H")}
-                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-rose-400/60 hover:bg-rose-50/30 hover:shadow-md dark:bg-slate-950"
+                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-rose-400/60 hover:bg-rose-50/30 hover:shadow-md dark:bg-card"
               >
                 <div className="flex items-center gap-2.5">
                   <div className="flex size-9 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
@@ -819,7 +819,7 @@ export default function SuperAdminCompaniesV2() {
               </button>
             </div>
 
-                <div className="rounded-lg border border-border/40 bg-muted/10 dark:bg-slate-900/30 p-1 md:p-1.5">
+                <div className="rounded-lg border border-border/40 bg-muted/10 dark:bg-card/30 p-1 md:p-1.5">
                   <CompanyFilters
                   collapsed={!filterOpen}
                   search={search} onSearchChange={setSearch}
@@ -890,7 +890,7 @@ export default function SuperAdminCompaniesV2() {
 
       {/* Actions Sheet (mobile) */}
       <Sheet open={actionsSheetOpen} onOpenChange={setActionsSheetOpen}>
-        <SheetContent side="bottom" className="rounded-t-lg border-t border-border/60 bg-white px-0 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] pt-0 dark:bg-slate-950" dir="rtl">
+        <SheetContent side="bottom" className="rounded-t-lg border-t border-border/60 bg-white px-0 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] pt-0 dark:bg-card" dir="rtl">
           <div className="mx-auto mt-3 h-1.5 w-14 rounded-full bg-muted" />
           <SheetHeader className="px-4 pb-3 pt-4 text-right">
             <SheetTitle className="text-right text-lg font-black">{actionsCompany?.name || "إجراءات"}</SheetTitle>
@@ -909,7 +909,7 @@ export default function SuperAdminCompaniesV2() {
                   { key: "login", icon: LogIn, label: "دخول كأدمن", action: () => { setActionsSheetOpen(false); handleLoginAsAdmin(actionsCompany); }, tone: "text-primary font-black" },
                   { key: "delete", icon: Trash2, label: "حذف", action: () => { setActionsSheetOpen(false); handleDeleteCompany(actionsCompany); }, tone: "text-rose-600 font-black" },
                 ].map((item) => (
-                  <button key={item.key} type="button" className={cn("flex h-13 w-full items-center gap-3 rounded-lg border border-border/60 bg-white px-5 text-[13px] font-bold shadow-sm dark:bg-slate-950", item.tone)} onClick={item.action}>
+                  <button key={item.key} type="button" className={cn("flex h-13 w-full items-center gap-3 rounded-lg border border-border/60 bg-white px-5 text-[13px] font-bold shadow-sm dark:bg-card", item.tone)} onClick={item.action}>
                     <item.icon className="size-4.5 opacity-70" /> {item.label}
                   </button>
                 ))}
@@ -1035,7 +1035,7 @@ export default function SuperAdminCompaniesV2() {
         {loadingPages ? (
           <div className="space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-28 rounded-lg bg-muted/30 animate-pulse" />)}</div>
         ) : pages.length ? pages.map((page) => (
-          <div key={page.id} className="rounded-lg border border-border/60 bg-white p-5 shadow-sm dark:bg-slate-950">
+          <div key={page.id} className="rounded-lg border border-border/60 bg-white p-5 shadow-sm dark:bg-card">
             <div className="relative flex items-start justify-between gap-4">
               <div className="space-y-2">
                 <h4 className="text-base font-black text-foreground">{page.pageName}</h4>
@@ -1162,7 +1162,7 @@ function CompanyUsersList({ companyId }: { companyId: string }) {
   return (
     <div className="space-y-3">
       {users.map((user) => (
-        <div key={user.id} className="rounded-lg border border-border/60 bg-white p-5 shadow-sm dark:bg-slate-950">
+        <div key={user.id} className="rounded-lg border border-border/60 bg-white p-5 shadow-sm dark:bg-card">
           <div className="relative flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="flex size-11 items-center justify-center rounded-lg bg-primary/8 text-primary shadow-inner">

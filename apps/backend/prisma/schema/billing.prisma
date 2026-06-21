@@ -77,20 +77,6 @@ model PlatformEnterprisePlan {
   @@map("platform_enterprise_plans")
 }
 
-model PlanLimit {
-  id                 String                @id @default(cuid())
-  plan               SubscriptionsPlanType @unique
-  maxEmployees       Int                   @default(-1)
-  maxProducts        Int                   @default(-1)
-  maxOrdersPerMonth  Int                   @default(-1)
-  hasAdvancedReports Boolean               @default(false)
-  hasAPIAccess       Boolean               @default(false)
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
-
-  @@map("plan_limits")
-}
-
 model BillingHistory {
   id          String             @id @default(cuid())
   companyId   String

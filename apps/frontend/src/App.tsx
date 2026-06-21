@@ -693,7 +693,6 @@ const SuperAdminCompanyDetails = React.lazy(
 );
 
 const SuperAdminReports = React.lazy(() => import("./pages/SuperAdminReports"));
-// ponytail: SuperAdminSubscriptions removed — legacy plan system deleted
 const SuperAdminInvoices = React.lazy(
   () => import("./pages/SuperAdminInvoices"),
 );
@@ -706,7 +705,6 @@ const SuperAdminSystemManagement = React.lazy(
 const SuperAdminStaffCompanyAccess = React.lazy(
   () => import("./pages/super-admin/StaffCompanyAccess"),
 );
-const Changelog = React.lazy(() => import("./pages/super-admin/Changelog"));
 const SuperAdminWhatsAppOverview = React.lazy(
   () => import("./pages/super-admin/SuperAdminWhatsAppOverview"),
 );
@@ -920,7 +918,6 @@ const PaymentPage = React.lazy(() => import("./pages/PaymentPage"));
 const MessagingCheckout = React.lazy(() => import("./pages/payment/MessagingCheckout"));
 const WalletManagement = React.lazy(() => import("./pages/WalletManagement"));
 const CustomerPayments = React.lazy(() => import("./pages/CustomerPayments"));
-// ponytail: SubscriptionRenewalPayment removed — plan system deleted
 const PrivacyPolicy = React.lazy(() => import("./pages/legal/PrivacyPolicy"));
 const TermsOfService = React.lazy(() => import("./pages/legal/TermsOfService"));
 const UnifiedCommentsManagement = React.lazy(
@@ -954,7 +951,6 @@ const BundleDetails = React.lazy(
   () => import("./pages/marketplace/BundleDetails"),
 );
 
-// ponytail: PlatformPlans removed — plan comparison replaced by app/bundle marketplace
 const AppPricingSheet = React.lazy(
   () => import("./pages/subscription/AppPricingSheet"),
 );
@@ -1707,7 +1703,6 @@ const AppContent = () => {
                 </Layout>
               }
             />
-            {/* ponytail: /super-admin/subscriptions removed — legacy plan management */}
             <Route
               path="/super-admin/invoices"
               element={
@@ -2124,7 +2119,6 @@ const AppContent = () => {
                 </Layout>
               }
             />
-            {/* ponytail: /super-admin/platform-subscriptions removed — plan management deleted */}
             {/* Super Admin Platform Management Routes */}
             <Route
               path="/super-admin/billing-overview"
@@ -2195,7 +2189,6 @@ const AppContent = () => {
             )}
             {/* Public Payment Routes */}
             <Route path="/payment/:invoiceId" element={<PaymentPage />} />
-            {/* ponytail: /payment/subscription-renewal removed — plan system deleted */}
             <Route
               path="/checkout/messaging"
               element={
@@ -2314,7 +2307,6 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
-                {/* ponytail: /my-apps/:slug/usage removed — usage stats deleted */}
                 <Route
                   path="/my-apps/:slug/settings"
                   element={
@@ -2327,7 +2319,6 @@ const AppContent = () => {
                   path="/marketplace/wallet"
                   element={<Navigate to="/payments" replace />}
                 />
-                {/* ponytail: /subscription/plans, /subscription/usage removed — plan-based pages deleted */}
                 <Route
                   path="/subscription/pricing"
                   element={
@@ -3051,14 +3042,6 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <CompaniesManagement />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/super-admin/changelog"
-                  element={
-                    <Layout>
-                      <Changelog />
                     </Layout>
                   }
                 />

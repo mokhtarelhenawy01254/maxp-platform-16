@@ -957,7 +957,6 @@ export const getSidebarConfig = (
                 { to: '/settings/store', icon: SwatchIcon, label: t('sidebar.shopStudio') },
                 { to: '/settings/store', icon: SwatchIcon, label: t('sidebar.shopTemplates') },
                 { to: '/super-admin/premium-product-demo', icon: SparklesIcon, label: t('sidebar.premiumDemo') },
-                { to: '/super-admin/changelog', icon: ClipboardDocumentListIcon, label: t('sidebar.changelog') },
                 { to: '/super-admin/partner-management', icon: UserGroupIcon, label: t('sidebar.partnerManagement') },
                 { to: '/super-admin/dev-leaderboard', icon: ChartBarIcon, label: t('sidebar.devLeaderboard') },
             ]

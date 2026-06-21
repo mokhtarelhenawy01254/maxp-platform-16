@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
-  Brain, Users, Wrench, Zap, ChevronDown, ChevronRight, ChevronUp,
+  Brain, Users, Zap, ChevronDown, ChevronRight, ChevronUp,
   Loader2, AlertCircle, Bot, Search, Clock, PenLine, Save, X, Plus, Trash2,
-  BookOpen, Shield, FileCode, RefreshCw, Eye, EyeOff, HelpCircle, Menu, MessageSquare, Archive,
+  BookOpen, Shield, RefreshCw, Eye, EyeOff, HelpCircle, Menu, MessageSquare, Archive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sandboxApi, type AgentProfileResponse, type AgentSkillDetail } from "../ai-agent-sandbox/services/sandboxApi";
@@ -45,15 +45,7 @@ function useIsMobile(breakpoint = 1024) {
   return isMobile;
 }
 
-type Tab = "settings" | "advanced";
-type AdvancedTab = "soul" | "agents" | "tools-md" | "skills-json";
-
-const FILE_LABELS: Record<AdvancedTab, string> = {
-  soul: "SOUL.md",
-  agents: "AGENTS.md",
-  "tools-md": "TOOLS.md",
-  "skills-json": "SKILLS.json",
-};
+type Tab = "settings";
 
 const isActive = (s?: string | null) => String(s || "").toUpperCase() === "ACTIVE";
 
@@ -91,16 +83,6 @@ const collectAgentText = (agent?: { name?: string; role?: string; templateSlug?:
   agent?.role, agent?.templateSlug, agent?.description, agent?.createdBy,
 ].filter(Boolean).join(" ").toLowerCase();
 
-const renderMarkdownPreview = (md: string, t: (key: string) => string): string => {
-  if (!md) return `<p style="color: var(--color-muted-foreground)">${t("agentProfiles.editor.emptyContent")}</p>`;
-  return md
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/^### (.+)$/gm, "<h3>$1</h3>").replace(/^## (.+)$/gm, "<h2>$1</h2>").replace(/^# (.+)$/gm, "<h1>$1</h1>")
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/`([^`]+)`/g, "<code>$1</code>").replace(/^- (.+)$/gm, "<li>$1</li>")
-    .replace(/(<li>.*<\/li>)/gs, "<ul>$1</ul>").replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br/>")
-    .replace(/^/, "<p>").replace(/$/, "</p>");
-};
 
 async function tryApiFetch<T>(path: string, init?: RequestInit): Promise<T | null> {
   try {
@@ -114,105 +96,7 @@ async function tryApiFetch<T>(path: string, init?: RequestInit): Promise<T | nul
   } catch { return null; }
 }
 
-function ToolBadge({ name }: { name: string }) {
-  const isWrite =
-    name.includes("create") || name.includes("update") ||
-    name.includes("delete") || name.includes("send") || name.includes("write");
-  return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-      isWrite
-        ? "bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-950/30 dark:border-orange-800 dark:text-orange-400"
-        : "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/30 dark:border-blue-800 dark:text-blue-400"
-    }`}>
-      {name}
-    </span>
-  );
-}
 
-function SkillCard({ skill }: { skill: AgentSkillDetail }) {
-  const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-      <button onClick={() => setOpen((p) => !p)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors text-left"
-      >
-        <div className="flex items-center gap-2.5 min-w-0">
-          <Zap className="size-4 text-indigo-500 flex-shrink-0" />
-          <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{skill.displayName || skill.id}</span>
-          <span className="text-xs text-slate-400 font-mono flex-shrink-0">{skill.id}</span>
-        </div>
-        {open ? <ChevronDown className="size-4 text-slate-400" /> : <ChevronRight className="size-4 text-slate-400" />}
-      </button>
-      {open && (
-        <div className="px-4 py-3 space-y-3 bg-white dark:bg-slate-900">
-          {skill.description && <p className="text-sm text-slate-600 dark:text-slate-400">{skill.description}</p>}
-          {skill.instructions && (
-            <p className="text-xs text-slate-500 dark:text-slate-500 italic border-l-2 border-slate-200 pl-3">{skill.instructions}</p>
-          )}
-          {skill.allowedTools?.length > 0 ? (
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{t("agentProfiles.skillCard.tools", { count: skill.allowedTools?.length ?? 0 })}</p>
-              <div className="flex flex-wrap gap-1.5">{skill.allowedTools?.map((t) => <ToolBadge key={t} name={t} />)}</div>
-            </div>
-          ) : <p className="text-xs text-slate-400 italic">{t("agentProfiles.skillCard.noTools")}</p>}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function FieldEditor({ label, value, onChange, minRows = 8, disablePreview = false }: {
-  label: string; value: string; onChange: (v: string) => void; minRows?: number; disablePreview?: boolean;
-}) {
-  const { t } = useTranslation();
-  const [expanded, setExpanded] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const lineCount = value.split("\n").length;
-  const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
-  const shouldCollapse = !expanded && lineCount > 6;
-  const isMarkdown = label.endsWith(".md");
-
-  return (
-    <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
-      <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
-        <div className="flex items-center gap-2 min-w-0">
-          <FileCode className="size-4 text-indigo-500 flex-shrink-0" />
-          <span className="text-sm font-bold text-slate-700 dark:text-slate-300 font-mono tracking-wide truncate">{label}</span>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <span className="text-[0.65rem] text-slate-400">{t("agentProfiles.editor.linesWords", { lineCount, wordCount })}</span>
-          {isMarkdown && !disablePreview && (
-            <button type="button" onClick={() => setShowPreview(!showPreview)}
-              className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 transition-colors px-2 py-1 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
-            >
-              {showPreview ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-              {showPreview ? t("agentProfiles.editor.edit") : t("agentProfiles.editor.preview")}
-            </button>
-          )}
-          {lineCount > 6 && (
-            <button type="button" onClick={() => setExpanded(!expanded)}
-              className="flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 transition-colors px-2 py-1 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
-            >
-              {expanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
-              {expanded ? t("agentProfiles.editor.collapse") : t("agentProfiles.editor.expand")}
-            </button>
-          )}
-        </div>
-      </div>
-      {showPreview && isMarkdown && !disablePreview ? (
-        <div className="p-5" dangerouslySetInnerHTML={{ __html: renderMarkdownPreview(value, t) }} />
-      ) : (
-        <Textarea value={value} onChange={(e) => onChange(e.target.value)}
-          rows={shouldCollapse ? 10 : minRows}
-          className="resize-y border-0 rounded-none bg-transparent font-mono text-sm leading-[1.8] text-slate-800 dark:text-slate-200 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-slate-400/40 px-5 py-4 min-h-[200px]"
-          dir="ltr" spellCheck={false}
-          placeholder={t("agentProfiles.editor.placeholder", { label })}
-        />
-      )}
-    </div>
-  );
-}
 
 function MetadataGrid({ agent, resolvedParentName }: { agent: { departmentIcon?: string | null; departmentName?: string | null; managerType?: string | null; createdBy?: string | null; parentId?: string | null }; resolvedParentName: string | null }) {
   const { t } = useTranslation();
@@ -302,34 +186,24 @@ export default function AgentProfilesPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const [tab, setTab] = useState<Tab>("settings");
-  const [advancedFile, setAdvancedFile] = useState<AdvancedTab>("soul");
   const [profile, setProfile] = useState<AgentProfileResponse | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
 
-  const [models, setModels] = useState<Array<{ id: string; modelName: string; provider: string }>>([]);
   const [statusSaving, setStatusSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const [editing, setEditing] = useState(false);
-  const [draftModel, setDraftModel] = useState("");
   const [draftName, setDraftName] = useState("");
   const [draftIcon, setDraftIcon] = useState("🤖");
   const [draftDescription, setDraftDescription] = useState("");
   const [draftFiles, setDraftFiles] = useState<Record<string, string>>({});
-  const [draftAllowedTools, setDraftAllowedTools] = useState<string[]>([]);
-  const [draftAllowedSkills, setDraftAllowedSkills] = useState<string[]>([]);
-  const [draftToolAutonomy, setDraftToolAutonomy] = useState<Record<string, string>>({});
   const [draftConfig, setDraftConfig] = useState<Record<string, string>>({});
   const [profileSaving, setProfileSaving] = useState(false);
 
-  const [allTools, setAllTools] = useState<Array<{ name: string; description?: string; sideEffects?: string }>>([]);
-  const [allSkills, setAllSkills] = useState<Array<{ id: string; displayName?: string }>>([]);
-
   const [createOpen, setCreateOpen] = useState(false);
   const [newAgentName, setNewAgentName] = useState("");
-  const [newAgentModel, setNewAgentModel] = useState("");
   const [newAgentIcon, setNewAgentIcon] = useState("🤖");
   const [newAgentDesc, setNewAgentDesc] = useState("");
   const [newAgentTemplate, setNewAgentTemplate] = useState<string | null>(null);
@@ -341,32 +215,18 @@ export default function AgentProfilesPage() {
   const hasUnsavedChanges = useMemo(() => {
     if (!profile) return false;
     return (
-      draftModel !== (profile.agent.model || "")
-      || draftName !== (profile.agent.name || "")
+      draftName !== (profile.agent.name || "")
       || draftIcon !== (profile.agent.icon || "🤖")
       || draftDescription !== (profile.agent.description || "")
-      || JSON.stringify(draftAllowedTools) !== JSON.stringify(profile.allowedTools || [])
-      || JSON.stringify(draftAllowedSkills) !== JSON.stringify(profile.skillIds || [])
-      || JSON.stringify(draftToolAutonomy) !== JSON.stringify(
-          (profile.agent as { toolAutonomy?: Record<string, string> }).toolAutonomy || {}
-        )
       || JSON.stringify(draftConfig) !== JSON.stringify(
           (profile.agent as { config?: Record<string, string> }).config || {}
         )
       || !FILES_EQUAL(draftFiles, profile.files)
     );
-  }, [profile, draftModel, draftName, draftIcon, draftDescription, draftAllowedTools, draftAllowedSkills, draftToolAutonomy, draftConfig, draftFiles]);
-
-  const advancedFileOptions: { key: AdvancedTab; label: string }[] = [
-    { key: "soul", label: t("agentProfiles.tabs.soul") },
-    { key: "agents", label: t("agentProfiles.tabs.agents") },
-    { key: "tools-md", label: t("agentProfiles.tabs.toolsMd") },
-    { key: "skills-json", label: t("agentProfiles.tabs.skillsJson") },
-  ];
+  }, [profile, draftName, draftIcon, draftDescription, draftConfig, draftFiles]);
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: "settings", label: t("agentProfiles.tabs.settings"), icon: <Shield className="size-4" aria-hidden="true" /> },
-    { key: "advanced", label: t("agentProfiles.tabs.advanced"), icon: <FileCode className="size-4" aria-hidden="true" /> },
   ];
 
   const loadAgents = useCallback(async () => {
@@ -391,23 +251,6 @@ export default function AgentProfilesPage() {
     if (!ceo) return agents;
     return [ceo, ...agents.filter((a) => a.id !== ceo.id)];
   }, [agents]);
-
-  /* ── Load models ── */
-  useEffect(() => {
-    tryApiFetch<{ models: Array<{ id: string; modelName: string; provider: string }> }>("/agent/available-models")
-      .then((data) => { if (data) setModels(data.models || []); });
-  }, []);
-
-  /* ── Load available tools & skills ── */
-  useEffect(() => {
-    Promise.all([
-      tryApiFetch<{ tools: Array<{ name: string; description?: string; sideEffects?: string }> }>("/agent/tools"),
-      tryApiFetch<{ skills: Array<{ id: string; displayName?: string }> }>("/agent/skills"),
-    ]).then(([t, s]) => {
-      if (t?.tools) setAllTools(t.tools);
-      if (s?.skills) setAllSkills(s.skills);
-    });
-  }, []);
 
   /* ── Load templates ── */
   useEffect(() => {
@@ -438,14 +281,10 @@ export default function AgentProfilesPage() {
       .then((data) => {
         if (!cancelled) {
           setProfile(data);
-          setDraftModel(data.agent.model || "");
           setDraftName(data.agent.name);
           setDraftIcon(data.agent.icon || "🤖");
           setDraftDescription(data.agent.description || "");
           setDraftFiles({ ...data.files });
-          setDraftAllowedTools(data.allowedTools || []);
-          setDraftAllowedSkills(data.skillIds || []);
-          setDraftToolAutonomy((data.agent as { toolAutonomy?: Record<string, string> }).toolAutonomy || {});
           const loadedConfig = (data.agent as { config?: Record<string, string> }).config || {};
           let parsedConfig = loadedConfig;
           if (!loadedConfig.soul_persona && data.files?.["SOUL.md"]) {
@@ -533,22 +372,13 @@ export default function AgentProfilesPage() {
   /* ── Save profile ── */
   const saveProfile = async () => {
     if (!selectedId || !profile) return;
-    const skillsJson = draftFiles["SKILLS.json"];
-    if (skillsJson?.trim()) {
-      try { JSON.parse(skillsJson); }
-      catch { setTab("skills-json"); setProfileError(t("agentProfiles.toast.invalidSkillsJson")); return; }
-    }
     setProfileSaving(true);
     setProfileError(null);
     const body: Record<string, unknown> = {
       name: draftName || profile.agent.name,
       description: draftDescription || profile.agent.description,
       role: profile.agent.role,
-      model: draftModel || profile.agent.model,
       icon: draftIcon,
-      allowedTools: draftAllowedTools,
-      allowedSkills: draftAllowedSkills,
-      toolAutonomy: draftToolAutonomy,
       config: draftConfig,
       files: draftFiles,
     };
@@ -559,9 +389,7 @@ export default function AgentProfilesPage() {
     if (data) {
       setProfile((prev) => prev ? {
         ...prev,
-        agent: { ...prev.agent, model: draftModel || prev.agent.model, name: draftName || prev.agent.name, description: draftDescription || prev.agent.description, icon: draftIcon, toolAutonomy: draftToolAutonomy, config: draftConfig } as typeof prev.agent,
-        allowedTools: draftAllowedTools,
-        skillIds: draftAllowedSkills,
+        agent: { ...prev.agent, name: draftName || prev.agent.name, description: draftDescription || prev.agent.description, icon: draftIcon, config: draftConfig } as typeof prev.agent,
         files: { ...draftFiles },
       } : prev);
       setAgents((prev) => prev.map((a) => a.id === selectedId ? { ...a, name: draftName || a.name, icon: draftIcon } : a));
@@ -586,17 +414,13 @@ export default function AgentProfilesPage() {
         name: newAgentName.trim(),
         role: selectedTemplate?.role || "CUSTOM",
         templateSlug: newAgentTemplate || null,
-        model: newAgentModel && newAgentModel !== "none" ? newAgentModel : null,
         icon: newAgentIcon,
         description: newAgentDesc || null,
-        allowedTools: selectedTemplate?.allowedTools || null,
-        allowedSkills: selectedTemplate?.allowedSkills || null,
       })},
     );
     if (data?.id) {
       setCreateOpen(false);
       setNewAgentName("");
-      setNewAgentModel("");
       setNewAgentIcon("🤖");
       setNewAgentDesc("");
       setNewAgentTemplate(null);
@@ -662,17 +486,6 @@ export default function AgentProfilesPage() {
     return collectAgentText(a).includes(q) || a.name.toLowerCase().includes(q);
   });
 
-  const updateFile = (fileKey: string, value: string) => {
-    if (!editing) setEditing(true);
-    setDraftFiles((prev) => ({ ...prev, [fileKey]: value }));
-  };
-
-  const renderFileContent = (fileKey: string) => {
-    if (!profile) return null;
-    const content = (editing ? draftFiles[fileKey] : profile.files[fileKey]) || "";
-    return <FieldEditor label={fileKey} value={content} onChange={(v) => updateFile(fileKey, v)} minRows={12} disablePreview={fileKey === "SKILLS.json"} />;
-  };
-
   const generateSoulFromConfig = (config: Record<string, string>) => {
     const persona = config.soul_persona || "";
     const goal = config.soul_goal || "";
@@ -729,14 +542,10 @@ export default function AgentProfilesPage() {
   const discardChanges = () => {
     if (!profile) return;
     setEditing(false);
-    setDraftModel(profile.agent.model || "");
     setDraftName(profile.agent.name);
     setDraftIcon(profile.agent.icon || "🤖");
     setDraftDescription(profile.agent.description || "");
     setDraftFiles({ ...profile.files });
-    setDraftAllowedTools(profile.allowedTools || []);
-    setDraftAllowedSkills(profile.skillIds || []);
-    setDraftToolAutonomy((profile.agent as { toolAutonomy?: Record<string, string> }).toolAutonomy || {});
     const discardedConfig = (profile.agent as { config?: Record<string, string> }).config || {};
     let parsedDiscard = discardedConfig;
     if (!discardedConfig.soul_persona && profile.files?.["SOUL.md"]) {
@@ -948,39 +757,7 @@ export default function AgentProfilesPage() {
               {/* Toolbar row */}
               {profile && (
                 <div className="flex items-center gap-2 pt-3 border-t border-border/50">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="text-xs font-medium text-muted-foreground whitespace-nowrap border-b border-dashed border-border cursor-help">{t("agentProfiles.header.model")}</span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[220px] text-xs">
-                        {t("agentProfiles.help.model")}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <Select value={draftModel} onValueChange={(v) => { setDraftModel(v ?? ""); if (!editing) setEditing(true); }}>
-                    <SelectTrigger className="h-8 text-sm min-w-[140px]">
-                      <SelectValue placeholder={models.length > 0 ? t("agentProfiles.header.modelPlaceholder") : t("agentProfiles.header.noModels")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {draftModel && !models.some((m) => m.modelName === draftModel) && (
-                        <SelectItem value={draftModel} className="text-sm">
-                          <span className="font-medium">{draftModel}</span>
-                          <span className="text-xs text-muted-foreground/70 mr-2">{t("agentProfiles.header.current")}</span>
-                        </SelectItem>
-                      )}
-                      {models.map((m) => (
-                        <SelectItem key={m.id} value={m.modelName} className="text-sm">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{m.modelName}</span>
-                            <span className="text-xs text-muted-foreground/70 bg-muted px-1.5 py-0.5 rounded">{m.provider}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                   <div className="mr-auto" />
-                  {draftModel && <span className="text-xs font-mono text-muted-foreground/50 truncate max-w-[120px]">{draftModel.split("/").pop()}</span>}
                   <Button variant="ghost" size="icon" className="size-8" onClick={loadAgents} disabled={agentsLoading} aria-label={t("agentProfiles.header.refresh")} title={t("agentProfiles.header.refresh")}>
                     <RefreshCw className={cn("size-3.5", agentsLoading && "animate-spin")} aria-hidden="true" />
                   </Button>
@@ -1269,41 +1046,6 @@ export default function AgentProfilesPage() {
                   </div>
                 </div>
               )}
-              {tab === "advanced" && (
-                <div className="space-y-6 max-w-3xl">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">{t("agentProfiles.tabs.advancedFile")}</span>
-                    <Select value={advancedFile} onValueChange={(v) => setAdvancedFile(v as AdvancedTab)}>
-                      <SelectTrigger className="h-9 text-sm flex-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {advancedFileOptions.map((opt) => (
-                          <SelectItem key={opt.key} value={opt.key} className="text-sm">
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {renderFileContent(FILE_LABELS[advancedFile])}
-
-                  <Separator />
-
-                  <ToolsAndSkillsTab
-                    allTools={allTools}
-                    allSkills={allSkills}
-                    draftAllowedTools={draftAllowedTools}
-                    draftAllowedSkills={draftAllowedSkills}
-                    draftToolAutonomy={draftToolAutonomy}
-                    draftConfig={draftConfig}
-                    onAllowedToolsChange={setDraftAllowedTools}
-                    onAllowedSkillsChange={setDraftAllowedSkills}
-                    onToolAutonomyChange={setDraftToolAutonomy}
-                    onConfigChange={setDraftConfig}
-                  />
-                </div>
-              )}
             </>
           )}
 
@@ -1419,28 +1161,6 @@ export default function AgentProfilesPage() {
                 </div>
               </section>
 
-              <section>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <span className="size-1.5 rounded-full bg-indigo-500" />
-                  <h4 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("agentProfiles.create.model")}</h4>
-                </div>
-                <Select value={newAgentModel} onValueChange={setNewAgentModel} disabled={creating}>
-                  <SelectTrigger id="new-agent-model" className="w-full h-7 text-sm">
-                    <SelectValue placeholder={t("agentProfiles.create.modelPlaceholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t("agentProfiles.create.noModel")}</SelectItem>
-                    {models.map((m) => (
-                      <SelectItem key={m.id} value={m.modelName}>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{m.modelName}</span>
-                          <span className="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{m.provider}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </section>
             </div>
 
             <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/30 px-5 py-3 flex-shrink-0">
@@ -1457,9 +1177,6 @@ export default function AgentProfilesPage() {
                       <span className="text-[9px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-medium">{selectedTemplate.role || selectedTemplate.slug}</span>
                     ) : (
                       <span className="text-[9px] bg-slate-200 dark:bg-slate-700 text-slate-500 px-1.5 py-0.5 rounded">CUSTOM</span>
-                    )}
-                    {newAgentModel && newAgentModel !== "none" && (
-                      <span className="text-[9px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded font-mono">{newAgentModel.split("/").pop()}</span>
                     )}
                   </div>
                 </div>
@@ -1506,381 +1223,6 @@ export default function AgentProfilesPage() {
               {deleting ? t("agentProfiles.archive.archiving") : t("agentProfiles.archive.confirmButton")}
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-/* ─── Tools & Skills Tab ────────────────────────────────────────── */
-
-function ToolsAndSkillsTab({
-  allTools, allSkills,
-  draftAllowedTools, draftAllowedSkills, draftToolAutonomy, draftConfig,
-  onAllowedToolsChange, onAllowedSkillsChange, onToolAutonomyChange, onConfigChange,
-}: {
-  allTools: Array<{ name: string; description?: string; sideEffects?: string }>;
-  allSkills: Array<{ id: string; displayName?: string; description?: string; allowedTools?: string[] }>;
-  draftAllowedTools: string[];
-  draftAllowedSkills: string[];
-  draftToolAutonomy: Record<string, string>;
-  draftConfig: Record<string, string>;
-  onAllowedToolsChange: (tools: string[]) => void;
-  onAllowedSkillsChange: (skills: string[]) => void;
-  onToolAutonomyChange: (autonomy: Record<string, string>) => void;
-  onConfigChange: (config: Record<string, string>) => void;
-}) {
-  const { t } = useTranslation();
-  const [toolsSearch, setToolsSearch] = useState("");
-  const [skillsSearch, setSkillsSearch] = useState("");
-  const [addToolOpen, setAddToolOpen] = useState(false);
-  const [addSkillOpen, setAddSkillOpen] = useState(false);
-  const [addToolSearch, setAddToolSearch] = useState("");
-  const [addSkillSearch, setAddSkillSearch] = useState("");
-  const [helpDialogOpen, setHelpDialogOpen] = useState(false);
-
-  const filteredTools = useMemo(() => {
-    if (!toolsSearch.trim()) return allTools;
-    const q = toolsSearch.toLowerCase();
-    return allTools.filter((t) => t.name.toLowerCase().includes(q) || (t.description || "").toLowerCase().includes(q));
-  }, [allTools, toolsSearch]);
-
-  const readTools = filteredTools.filter((t) => !t.sideEffects || t.sideEffects === "read");
-  const writeTools = filteredTools.filter((t) => t.sideEffects === "write");
-
-  const filteredSkills = useMemo(() => {
-    if (!skillsSearch.trim()) return allSkills;
-    const q = skillsSearch.toLowerCase();
-    return allSkills.filter((s) =>
-      s.id.toLowerCase().includes(q) || (s.displayName || "").toLowerCase().includes(q) || (s.description || "").toLowerCase().includes(q)
-    );
-  }, [allSkills, skillsSearch]);
-
-  const toggleTool = (toolName: string) => {
-    const next = draftAllowedTools.includes(toolName)
-      ? draftAllowedTools.filter((t) => t !== toolName)
-      : [...draftAllowedTools, toolName];
-    onAllowedToolsChange(next);
-    if (!draftAllowedTools.includes(toolName)) {
-      onToolAutonomyChange({ ...draftToolAutonomy, [toolName]: draftToolAutonomy[toolName] || "auto" });
-    }
-  };
-
-  const setToolAutonomy = (toolName: string, level: string) => {
-    onToolAutonomyChange({ ...draftToolAutonomy, [toolName]: level });
-  };
-
-  const toggleSkill = (skillId: string) => {
-    const next = draftAllowedSkills.includes(skillId)
-      ? draftAllowedSkills.filter((s) => s !== skillId)
-      : [...draftAllowedSkills, skillId];
-    onAllowedSkillsChange(next);
-  };
-
-  const enableAllTools = () => {
-    onAllowedToolsChange(allTools.map((t) => t.name));
-    const autonomyUpdate = { ...draftToolAutonomy };
-    for (const t of allTools) {
-      if (!autonomyUpdate[t.name]) autonomyUpdate[t.name] = "auto";
-    }
-    onToolAutonomyChange(autonomyUpdate);
-  };
-  const disableAllTools = () => onAllowedToolsChange([]);
-  const enableAllSkills = () => onAllowedSkillsChange(allSkills.map((s) => s.id));
-  const disableAllSkills = () => onAllowedSkillsChange([]);
-
-  const enabledToolsCount = draftAllowedTools.length;
-  const enabledSkillsCount = draftAllowedSkills.length;
-
-  const autonomyOptions = [
-    { value: "auto", label: t("agentProfiles.autonomy.auto"), color: "text-emerald-600" },
-    { value: "approval", label: t("agentProfiles.autonomy.approval"), color: "text-amber-600" },
-    { value: "blocked", label: t("agentProfiles.autonomy.blocked"), color: "text-destructive" },
-  ] as const;
-
-  const AutonomySelect = ({ toolName }: { toolName: string }) => {
-    const current = draftToolAutonomy[toolName] || "auto";
-    return (
-      <select value={current} onChange={(e) => { e.stopPropagation(); setToolAutonomy(toolName, e.target.value); }}
-        onClick={(e) => e.stopPropagation()}
-        className={cn(
-          "h-7 rounded-md border bg-background px-1.5 text-[0.65rem] font-semibold cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary",
-          current === "auto" && "border-emerald-400/50 text-emerald-600",
-          current === "approval" && "border-amber-400/50 text-amber-600",
-          current === "blocked" && "border-destructive/50 text-destructive",
-        )}
-      >
-        {autonomyOptions.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
-    );
-  };
-
-  return (
-    <div className="max-w-3xl space-y-6">
-      {/* ── Tools Section ── */}
-      <div>
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <Wrench className="size-4 text-slate-500" aria-hidden="true" />
-          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{t("agentProfiles.tools.title")}</p>
-          <Badge variant="secondary" className="text-xs">{enabledToolsCount} / {allTools.length}</Badge>
-          <div className="mr-auto flex gap-1">
-            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => setAddToolOpen(true)}>{t("agentProfiles.tools.add")}</Button>
-            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={enableAllTools}>{t("agentProfiles.tools.enableAll")}</Button>
-            <Button variant="ghost" size="sm" className="h-7 text-xs px-2 text-destructive hover:text-destructive" onClick={disableAllTools}>{t("agentProfiles.tools.disableAll")}</Button>
-          </div>
-        </div>
-        <div className="relative mb-3">
-          <Search className="absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          <Input placeholder={t("agentProfiles.tools.search")} value={toolsSearch} onChange={(e) => setToolsSearch(e.target.value)} className="h-8 pr-8 text-xs" />
-        </div>
-
-        {allTools.length === 0 ? (
-          <div className="w-full rounded-lg border border-dashed px-4 py-6 text-center text-xs text-slate-400">
-            <Wrench className="mx-auto mb-2 size-6 text-slate-300/30" />
-            {t("agentProfiles.tools.empty")}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {readTools.length > 0 && (
-              <div>
-                <p className="text-xs text-slate-500 mb-1.5 font-medium">{t("agentProfiles.tools.readOnly")}</p>
-                <div className="grid grid-cols-1 gap-1.5">
-                  {readTools.map((tool) => {
-                    const enabled = draftAllowedTools.includes(tool.name);
-                    return (
-                      <div key={tool.name} className={cn("flex items-center rounded-lg border text-sm transition-colors overflow-hidden", enabled ? "border-indigo-400/40 bg-indigo-500/5" : "border-slate-200 dark:border-slate-700 hover:border-indigo-400/20 opacity-60")}>
-                        <button type="button" onClick={() => toggleTool(tool.name)}
-                          className="flex-1 flex items-center gap-2 px-3 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                        >
-                          <Switch checked={enabled} className="pointer-events-none shrink-0" />
-                          <div className="min-w-0 flex-1">
-                            <p className={cn("text-xs font-semibold truncate", enabled ? "text-indigo-700 dark:text-indigo-400" : "text-slate-500")}>{tool.name}</p>
-                            {tool.description && <p className="text-[0.65rem] text-slate-500 truncate mt-0.5">{tool.description}</p>}
-                          </div>
-                        </button>
-                        {enabled && (
-                          <div className="px-2">
-                            <AutonomySelect toolName={tool.name} />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            {writeTools.length > 0 && (
-              <div>
-                <p className="text-xs text-slate-500 mb-1.5 font-medium">{t("agentProfiles.tools.write")}</p>
-                <div className="grid grid-cols-1 gap-1.5">
-                  {writeTools.map((tool) => {
-                    const enabled = draftAllowedTools.includes(tool.name);
-                    return (
-                      <div key={tool.name} className={cn("flex items-center rounded-lg border text-sm transition-colors overflow-hidden", enabled ? "border-amber-400/40 bg-amber-500/5" : "border-slate-200 dark:border-slate-700 hover:border-amber-400/20 opacity-60")}>
-                        <button type="button" onClick={() => toggleTool(tool.name)}
-                          className="flex-1 flex items-center gap-2 px-3 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
-                        >
-                          <Switch checked={enabled} className="pointer-events-none shrink-0" />
-                          <div className="min-w-0 flex-1">
-                            <p className={cn("text-xs font-semibold truncate", enabled ? "text-amber-600 dark:text-amber-400" : "text-slate-500")}>{tool.name}</p>
-                            {tool.description && <p className="text-[0.65rem] text-slate-500 truncate mt-0.5">{tool.description}</p>}
-                          </div>
-                        </button>
-                        {enabled && (
-                          <div className="px-2">
-                            <AutonomySelect toolName={tool.name} />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* ── Google Sheets Integration ── */}
-      {draftAllowedTools.some((t) => t.startsWith("googlesheets.")) && (
-        <>
-          <Separator />
-          <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 p-4 space-y-4">
-            <div className="flex items-center gap-2">
-              <Wrench className="size-4 text-emerald-600" />
-              <p className="text-sm font-bold text-emerald-800 dark:text-emerald-200">{t("agentProfiles.googleSheets.title")}</p>
-            </div>
-            <p className="text-xs text-emerald-700 dark:text-emerald-400">{t("agentProfiles.googleSheets.desc")}</p>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-emerald-800 dark:text-emerald-200 mb-1">{t("agentProfiles.googleSheets.productsLabel")}</label>
-                <Input value={draftConfig.productsSheetUrl || ""} onChange={(e) => onConfigChange({ ...draftConfig, productsSheetUrl: e.target.value })}
-                  placeholder="https://docs.google.com/spreadsheets/d/..." dir="ltr" className="h-9 text-xs bg-white dark:bg-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-emerald-800 dark:text-emerald-200 mb-1">
-                  {t("agentProfiles.googleSheets.ordersLabel")}
-                  <button type="button" onClick={() => setHelpDialogOpen(true)}
-                    className="inline-flex items-center justify-center mr-1.5 align-middle size-4 rounded-full text-emerald-600 hover:text-emerald-800 hover:bg-emerald-200/50 dark:hover:bg-emerald-800/50 transition-colors"
-                  >
-                    <HelpCircle className="size-3.5" />
-                  </button>
-                </label>
-                <Input value={draftConfig.ordersAppsScriptUrl || ""} onChange={(e) => onConfigChange({ ...draftConfig, ordersAppsScriptUrl: e.target.value })}
-                  placeholder="https://script.google.com/macros/s/..." dir="ltr" className="h-9 text-xs bg-white dark:bg-gray-900"
-                />
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      <Dialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen}>
-        <DialogContent className="sm:max-w-xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="text-base">{t("agentProfiles.googleSheets.helpTitle")}</DialogTitle></DialogHeader>
-          <div className="space-y-3 text-sm leading-relaxed">
-            <p className="font-medium text-emerald-700 dark:text-emerald-400">{t("agentProfiles.googleSheets.helpTitle")}</p>
-            <ol className="list-decimal pr-5 space-y-2 text-slate-600 dark:text-slate-400">
-              <li dangerouslySetInnerHTML={{ __html: t("agentProfiles.googleSheets.helpStep1") }} />
-              <li dangerouslySetInnerHTML={{ __html: t("agentProfiles.googleSheets.helpStep2") }} />
-              <li>{t("agentProfiles.googleSheets.helpStep3")}</li>
-              <li>{t("agentProfiles.googleSheets.helpStep4")}</li>
-            </ol>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Skills Section ── */}
-      <div>
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <Shield className="size-4 text-slate-500" aria-hidden="true" />
-          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{t("agentProfiles.skills.title")}</p>
-          <Badge variant="secondary" className="text-xs">{enabledSkillsCount} / {allSkills.length}</Badge>
-          <div className="mr-auto flex gap-1">
-            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => setAddSkillOpen(true)}>{t("agentProfiles.skills.add")}</Button>
-            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={enableAllSkills}>{t("agentProfiles.skills.enableAll")}</Button>
-            <Button variant="ghost" size="sm" className="h-7 text-xs px-2 text-destructive hover:text-destructive" onClick={disableAllSkills}>{t("agentProfiles.skills.disableAll")}</Button>
-          </div>
-        </div>
-        <div className="relative mb-3">
-          <Search className="absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          <Input placeholder={t("agentProfiles.skills.search")} value={skillsSearch} onChange={(e) => setSkillsSearch(e.target.value)} className="h-8 pr-8 text-xs" />
-        </div>
-
-        {allSkills.length === 0 ? (
-          <div className="w-full rounded-lg border border-dashed px-4 py-6 text-center text-xs text-slate-400">
-            <Shield className="mx-auto mb-2 size-6 text-slate-300/30" />
-            {t("agentProfiles.skills.empty")}
-          </div>
-        ) : (
-          <div className="space-y-1.5">
-            {filteredSkills.map((skill) => {
-              const enabled = draftAllowedSkills.includes(skill.id);
-              return (
-                <button key={skill.id} type="button" onClick={() => toggleSkill(skill.id)}
-                  className={cn(
-                    "w-full flex items-start gap-3 rounded-lg border p-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 text-left",
-                    enabled ? "border-indigo-400/40 bg-indigo-500/5" : "border-slate-200 dark:border-slate-700 hover:border-indigo-400/20 opacity-60",
-                  )}
-                >
-                  <Switch checked={enabled} className="pointer-events-none shrink-0 mt-0.5" />
-                  <div className="min-w-0 flex-1">
-                    <p className={cn("font-semibold text-sm", enabled ? "text-indigo-700 dark:text-indigo-400" : "text-slate-500")}>
-                      {skill.displayName || skill.id}
-                    </p>
-                    {skill.description && <p className="text-xs text-slate-500 mt-0.5">{skill.description}</p>}
-                    {skill.allowedTools && skill.allowedTools.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1.5">
-                        {skill.allowedTools.map((t) => (
-                          <Badge key={t} variant="secondary" className="text-[0.6rem] h-4 px-1.5">{t}</Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Add Tool Dialog */}
-      <Dialog open={addToolOpen} onOpenChange={setAddToolOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>{t("agentProfiles.tools.addDialogTitle")}</DialogTitle></DialogHeader>
-          <div className="relative mb-3">
-            <Search className="absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            <Input placeholder={t("agentProfiles.tools.addSearch")} value={addToolSearch} onChange={(e) => setAddToolSearch(e.target.value)} className="h-9 pr-8 text-sm" autoFocus />
-          </div>
-          <div className="max-h-[300px] overflow-y-auto space-y-1">
-            {allTools.filter((t) => {
-              if (!addToolSearch.trim()) return true;
-              const q = addToolSearch.toLowerCase();
-              return t.name.toLowerCase().includes(q) || (t.description || "").toLowerCase().includes(q);
-            }).map((tool) => {
-              const enabled = draftAllowedTools.includes(tool.name);
-              return (
-                <div key={tool.name} className={cn("flex items-center rounded-lg border text-sm transition-colors overflow-hidden", enabled ? "border-indigo-400/40 bg-indigo-500/5" : "border-slate-200 dark:border-slate-700 hover:border-indigo-400/20")}
-                >
-                  <button type="button" onClick={() => toggleTool(tool.name)}
-                    className="flex-1 flex items-center gap-2 px-3 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                  >
-                    <Switch checked={enabled} className="pointer-events-none shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className={cn("text-xs font-semibold", enabled ? "text-indigo-700 dark:text-indigo-400" : "text-slate-500")}>{tool.name}</p>
-                      {tool.description && <p className="text-[0.65rem] text-slate-500 truncate">{tool.description}</p>}
-                    </div>
-                  </button>
-                  {enabled && (
-                    <div className="px-2">
-                      <select value={draftToolAutonomy[tool.name] || "auto"} onChange={(e) => { e.stopPropagation(); setToolAutonomy(tool.name, e.target.value); }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="h-6 rounded border bg-background px-1 text-[0.6rem]"
-                      >
-                        {autonomyOptions.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Skill Dialog */}
-      <Dialog open={addSkillOpen} onOpenChange={setAddSkillOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>{t("agentProfiles.skills.addDialogTitle")}</DialogTitle></DialogHeader>
-          <div className="relative mb-3">
-            <Search className="absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            <Input placeholder={t("agentProfiles.skills.addSearch")} value={addSkillSearch} onChange={(e) => setAddSkillSearch(e.target.value)} className="h-9 pr-8 text-sm" autoFocus />
-          </div>
-          <div className="max-h-[300px] overflow-y-auto space-y-1">
-            {allSkills.filter((s) => {
-              if (!addSkillSearch.trim()) return true;
-              const q = addSkillSearch.toLowerCase();
-              return s.id.toLowerCase().includes(q) || (s.displayName || "").toLowerCase().includes(q) || (s.description || "").toLowerCase().includes(q);
-            }).map((skill) => {
-              const enabled = draftAllowedSkills.includes(skill.id);
-              return (
-                <button key={skill.id} type="button" onClick={() => toggleSkill(skill.id)}
-                  className={cn("w-full flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
-                    enabled ? "border-indigo-400/40 bg-indigo-500/5" : "border-slate-200 dark:border-slate-700 hover:border-indigo-400/20",
-                  )}
-                >
-                  <Switch checked={enabled} className="pointer-events-none shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className={cn("text-xs font-semibold", enabled ? "text-indigo-700 dark:text-indigo-400" : "text-slate-500")}>{skill.displayName || skill.id}</p>
-                    {skill.description && <p className="text-[0.65rem] text-slate-500 truncate">{skill.description}</p>}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
         </DialogContent>
       </Dialog>
     </div>

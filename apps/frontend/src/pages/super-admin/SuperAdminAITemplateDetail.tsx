@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
@@ -7,7 +7,7 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
 import i18n from "../../i18n";
 import {
-  ArrowRight, Pencil, Copy, Send, Trash2, Edit3,
+  ArrowRight, Pencil, Copy, Check, Send, Trash2, Edit3,
   Brain, BookOpen, Wrench, Layers, Globe, CreditCard,
   Shield, Share2, Server, Split, Calendar,
 } from "lucide-react";
@@ -53,12 +53,19 @@ const SuperAdminAITemplateDetail: React.FC = () => {
   }, [slug]);
 
   const color = (role?: string) => ROLE_COLORS[role || ""] || "bg-gray-100 text-gray-700";
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const copyText = useCallback(async (text: string, id: string) => {
+    try { await navigator.clipboard.writeText(text); setCopiedId(id); setTimeout(() => setCopiedId(null), 1500); } catch { }
+  }, []);
 
   if (loading) return <div className="flex justify-center items-center h-[60vh]"><LoadingSpinner size="lg" /></div>;
   if (error) return (
     <div className="flex flex-col items-center justify-center h-[60vh] gap-3">
       <Alert variant="destructive" className="max-w-md"><AlertDescription>{error}</AlertDescription></Alert>
-      <Button variant="outline" onClick={() => navigate("/super-admin/ai-templates")}>العودة للقوائم</Button>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={fetchTemplate}>إعادة المحاولة</Button>
+        <Button variant="outline" onClick={() => navigate("/super-admin/ai-templates")}>العودة للقوائم</Button>
+      </div>
     </div>
   );
   if (!template) return null;
@@ -86,9 +93,9 @@ const SuperAdminAITemplateDetail: React.FC = () => {
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <p className="text-sm font-bold">{t.name}</p>
-              <span className={`text-[0.6rem] px-2 py-0.5 rounded-full font-medium ${color(t.role)}`}>{t.role}</span>
-              <Badge variant="outline" className="text-[0.55rem]">v{t.version}</Badge>
-              <span className="text-[0.55rem] font-mono text-muted-foreground">{t.slug}</span>
+              <span className={`text-[0.7rem] px-2 py-0.5 rounded-full font-medium ${color(t.role)}`}>{t.role}</span>
+              <Badge variant="outline" className="text-[0.65rem]">v{t.version}</Badge>
+              <span className="text-[0.65rem] font-mono text-muted-foreground">{t.slug}</span>
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Pencil className="size-3.5 ml-1" /> تعديل</Button>
@@ -99,22 +106,28 @@ const SuperAdminAITemplateDetail: React.FC = () => {
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-6 gap-2 px-4 py-2 bg-white/50 border-b shrink-0">
-        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{t.allowed_tools?.length || 0}</p><p className="text-[0.55rem] text-muted-foreground">أدوات</p></div>
-        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{t.allowed_skills?.length || 0}</p><p className="text-[0.55rem] text-muted-foreground">مهارات</p></div>
-        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{t.channels?.length || 0}</p><p className="text-[0.55rem] text-muted-foreground">قنوات</p></div>
-        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{t.budget?.dailyUsd ? `$${t.budget.dailyUsd}` : "-"}</p><p className="text-[0.55rem] text-muted-foreground">الميزانية/يوم</p></div>
-        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{t.model_policy?.default || "-"}</p><p className="text-[0.55rem] text-muted-foreground">النموذج</p></div>
-        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{(t.handoffs?.length || 0) + (t.mcp_servers?.length || 0)}</p><p className="text-[0.55rem] text-muted-foreground">تكاملات</p></div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 px-4 py-2 bg-white/50 border-b shrink-0">
+        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{t.allowed_tools?.length || 0}</p><p className="text-[0.65rem] text-muted-foreground">أدوات</p></div>
+        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{t.allowed_skills?.length || 0}</p><p className="text-[0.65rem] text-muted-foreground">مهارات</p></div>
+        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{t.channels?.length || 0}</p><p className="text-[0.65rem] text-muted-foreground">قنوات</p></div>
+        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{t.budget?.dailyUsd ? `$${t.budget.dailyUsd}` : "-"}</p><p className="text-[0.65rem] text-muted-foreground">الميزانية/يوم</p></div>
+        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{t.model_policy?.default || "-"}</p><p className="text-[0.65rem] text-muted-foreground">النموذج</p></div>
+        <div className="rounded-lg bg-white border p-2 text-center"><p className="text-lg font-bold text-primary">{(t.handoffs?.length || 0) + (t.mcp_servers?.length || 0)}</p><p className="text-[0.65rem] text-muted-foreground">تكاملات</p></div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 px-4 pt-2 bg-white/50 border-b shrink-0">
-        {TABS.map(tab => {
+      <div className="flex gap-1 px-4 pt-2 bg-white/50 border-b shrink-0" role="tablist">
+        {TABS.map((tab, i) => {
           const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
           return (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1 px-3 py-2 rounded-t-lg text-xs font-medium transition-all ${activeTab === tab.id ? "bg-white border border-b-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+            <button key={tab.id} role="tab" aria-selected={isActive} tabIndex={isActive ? 0 : -1}
+              onClick={() => setActiveTab(tab.id)}
+              onKeyDown={e => {
+                if (e.key === "ArrowRight") { e.preventDefault(); setActiveTab(TABS[(i + 1) % TABS.length].id); }
+                if (e.key === "ArrowLeft") { e.preventDefault(); setActiveTab(TABS[(i - 1 + TABS.length) % TABS.length].id); }
+              }}
+              className={`flex items-center gap-1 px-3 py-2 rounded-t-lg text-xs font-medium transition-all ${isActive ? "bg-white border border-b-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
               <Icon className="size-3.5" /> {tab.label}
             </button>
           );
@@ -126,8 +139,13 @@ const SuperAdminAITemplateDetail: React.FC = () => {
         {activeTab === "soul" && (
           <div className="max-w-3xl space-y-4">
             <Section title="الشخصية (Soul)" icon={Brain}>
-              <div className="bg-muted/30 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-wrap font-mono dir-rtl" dir={i18n.dir()}>
-                {t.instructions_soul || "لا توجد شخصية محددة"}
+              <div className="relative">
+                {t.instructions_soul && <button onClick={() => copyText(t.instructions_soul, "soul")} className="absolute top-2 left-2 opacity-50 hover:opacity-100 transition-opacity z-10">
+                  {copiedId === "soul" ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
+                </button>}
+                <div className="bg-muted/30 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-wrap font-mono dir-rtl" dir={i18n.dir()}>
+                  {t.instructions_soul || "لا توجد شخصية محددة"}
+                </div>
               </div>
             </Section>
             {t.persona_meta && Object.keys(t.persona_meta).length > 0 && (
@@ -146,18 +164,33 @@ const SuperAdminAITemplateDetail: React.FC = () => {
         {activeTab === "instructions" && (
           <div className="max-w-3xl space-y-4">
             <Section title="قواعد الوكيل (AGENTS.md)" icon={BookOpen}>
-              <div className="bg-muted/30 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-wrap font-mono dir-rtl max-h-[300px] overflow-auto" dir={i18n.dir()}>
-                {t.instructions_agents || "لا توجد قواعد محددة"}
+              <div className="relative">
+                {t.instructions_agents && <button onClick={() => copyText(t.instructions_agents, "agents")} className="absolute top-2 left-2 opacity-50 hover:opacity-100 transition-opacity z-10">
+                  {copiedId === "agents" ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
+                </button>}
+                <div className="bg-muted/30 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-wrap font-mono dir-rtl max-h-[300px] overflow-auto" dir={i18n.dir()}>
+                  {t.instructions_agents || "لا توجد قواعد محددة"}
+                </div>
               </div>
             </Section>
             <Section title="تعليمات الأدوات (TOOLS.md)" icon={Wrench}>
-              <div className="bg-muted/30 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-wrap font-mono dir-rtl max-h-[300px] overflow-auto" dir={i18n.dir()}>
-                {t.instructions_tools || "لا توجد تعليمات أدوات"}
+              <div className="relative">
+                {t.instructions_tools && <button onClick={() => copyText(t.instructions_tools, "tools")} className="absolute top-2 left-2 opacity-50 hover:opacity-100 transition-opacity z-10">
+                  {copiedId === "tools" ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
+                </button>}
+                <div className="bg-muted/30 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-wrap font-mono dir-rtl max-h-[300px] overflow-auto" dir={i18n.dir()}>
+                  {t.instructions_tools || "لا توجد تعليمات أدوات"}
+                </div>
               </div>
             </Section>
             <Section title="تعليمات الشخصية (PERSONA.md)" icon={Globe}>
-              <div className="bg-muted/30 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-wrap font-mono dir-rtl max-h-[300px] overflow-auto" dir={i18n.dir()}>
-                {t.instructions_persona || "لا توجد تعليمات شخصية"}
+              <div className="relative">
+                {t.instructions_persona && <button onClick={() => copyText(t.instructions_persona, "persona")} className="absolute top-2 left-2 opacity-50 hover:opacity-100 transition-opacity z-10">
+                  {copiedId === "persona" ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
+                </button>}
+                <div className="bg-muted/30 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-wrap font-mono dir-rtl max-h-[300px] overflow-auto" dir={i18n.dir()}>
+                  {t.instructions_persona || "لا توجد تعليمات شخصية"}
+                </div>
               </div>
             </Section>
           </div>
@@ -212,7 +245,7 @@ const SuperAdminAITemplateDetail: React.FC = () => {
                 <MetaCard label="رمز الموافقة" value={t.human_approval?.approvalCode ? "مفعل" : "غير مفعل"} />
                 {t.human_approval?.requiredTools?.length > 0 && (
                   <div><p className="text-xs font-medium text-muted-foreground mb-1">الأدوات التي تتطلب موافقة:</p>
-                    <div className="flex flex-wrap gap-1">{t.human_approval.requiredTools.map((tool: string) => <Badge key={tool} variant="outline" className="text-[0.55rem]">{tool}</Badge>)}</div>
+                    <div className="flex flex-wrap gap-1">{t.human_approval.requiredTools.map((tool: string) => <Badge key={tool} variant="outline" className="text-[0.65rem]">{tool}</Badge>)}</div>
                   </div>
                 )}
               </div>
@@ -224,38 +257,58 @@ const SuperAdminAITemplateDetail: React.FC = () => {
           <div className="max-w-3xl space-y-4">
             {t.handoffs?.length > 0 && (
               <Section title={`التسليم (Handoffs) — ${t.handoffs.length}`} icon={Share2}>
-                <div className="space-y-2">
-                  {t.handoffs.map((h: any, i: number) => (
-                    <div key={i} className="bg-muted/30 rounded-lg p-3 text-xs">
-                      <pre className="whitespace-pre-wrap font-mono">{JSON.stringify(h, null, 2)}</pre>
-                    </div>
-                  ))}
+                <div className="relative">
+                  <button onClick={() => copyText(JSON.stringify(t.handoffs, null, 2), "handoffs")} className="absolute top-1 left-1 opacity-50 hover:opacity-100 transition-opacity z-10">
+                    {copiedId === "handoffs" ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
+                  </button>
+                  <div className="space-y-2">
+                    {t.handoffs.map((h: any, i: number) => (
+                      <div key={i} className="bg-muted/30 rounded-lg p-3 text-xs">
+                        <pre className="whitespace-pre-wrap font-mono">{JSON.stringify(h, null, 2)}</pre>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </Section>
             )}
             {t.mcp_servers?.length > 0 && (
               <Section title={`خوادم MCP — ${t.mcp_servers.length}`} icon={Server}>
-                <div className="space-y-2">
-                  {t.mcp_servers.map((m: any, i: number) => (
-                    <div key={i} className="bg-muted/30 rounded-lg p-3 text-xs">
-                      <p className="font-bold mb-1">{m.name}</p>
-                      <pre className="whitespace-pre-wrap font-mono">{JSON.stringify(m, null, 2)}</pre>
-                    </div>
-                  ))}
+                <div className="relative">
+                  <button onClick={() => copyText(JSON.stringify(t.mcp_servers, null, 2), "mcp")} className="absolute top-1 left-1 opacity-50 hover:opacity-100 transition-opacity z-10">
+                    {copiedId === "mcp" ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
+                  </button>
+                  <div className="space-y-2">
+                    {t.mcp_servers.map((m: any, i: number) => (
+                      <div key={i} className="bg-muted/30 rounded-lg p-3 text-xs">
+                        <p className="font-bold mb-1">{m.name}</p>
+                        <pre className="whitespace-pre-wrap font-mono">{JSON.stringify(m, null, 2)}</pre>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </Section>
             )}
             {t.output_schema && (
               <Section title="مخطط الإخراج (Output Schema)" icon={Split}>
-                <div className="bg-muted/30 rounded-lg p-3 text-xs">
-                  <pre className="whitespace-pre-wrap font-mono max-h-[300px] overflow-auto">{JSON.stringify(t.output_schema, null, 2)}</pre>
+                <div className="relative">
+                  <button onClick={() => copyText(JSON.stringify(t.output_schema, null, 2), "schema")} className="absolute top-1 left-1 opacity-50 hover:opacity-100 transition-opacity z-10">
+                    {copiedId === "schema" ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
+                  </button>
+                  <div className="bg-muted/30 rounded-lg p-3 text-xs">
+                    <pre className="whitespace-pre-wrap font-mono max-h-[300px] overflow-auto">{JSON.stringify(t.output_schema, null, 2)}</pre>
+                  </div>
                 </div>
               </Section>
             )}
             {t.config && Object.keys(t.config).length > 0 && (
               <Section title="إعدادات إضافية (Config)" icon={Edit3}>
-                <div className="bg-muted/30 rounded-lg p-3 text-xs">
-                  <pre className="whitespace-pre-wrap font-mono max-h-[300px] overflow-auto">{JSON.stringify(t.config, null, 2)}</pre>
+                <div className="relative">
+                  <button onClick={() => copyText(JSON.stringify(t.config, null, 2), "config")} className="absolute top-1 left-1 opacity-50 hover:opacity-100 transition-opacity z-10">
+                    {copiedId === "config" ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
+                  </button>
+                  <div className="bg-muted/30 rounded-lg p-3 text-xs">
+                    <pre className="whitespace-pre-wrap font-mono max-h-[300px] overflow-auto">{JSON.stringify(t.config, null, 2)}</pre>
+                  </div>
                 </div>
               </Section>
             )}
@@ -273,7 +326,7 @@ const SuperAdminAITemplateDetail: React.FC = () => {
       {editOpen && (
         <EditDialog
           template={{ slug: t.slug, name: t.name, role: t.role, version: t.version, icon, description: t.role, personaMeta: t.persona_meta || {}, soulPreview: (t.instructions_soul || "").substring(0, 200), toolsCount: t.allowed_tools?.length || 0, skillsCount: t.allowed_skills?.length || 0, channels: t.channels || [], budget: t.budget || {}, industries: [] }}
-          onClose={() => setEditOpen(false)} onUpdated={() => window.location.reload()}
+          onClose={() => setEditOpen(false)} onUpdated={fetchTemplate}
         />
       )}
       {duplicateOpen && (
@@ -310,7 +363,7 @@ const Section: React.FC<{ title: string; icon: React.FC<{ className?: string }>;
 
 const MetaCard: React.FC<{ label: string; value: string; className?: string }> = ({ label, value, className }) => (
   <div className={`bg-muted/30 rounded-lg px-3 py-2 ${className || ""}`}>
-    <p className="text-[0.55rem] text-muted-foreground">{label}</p>
+    <p className="text-[0.65rem] text-muted-foreground">{label}</p>
     <p className="text-sm font-medium">{value}</p>
   </div>
 );

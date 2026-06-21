@@ -60,7 +60,7 @@ export function CompanyFilters({
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
             placeholder="ابحث باسم الشركة"
-            className="h-8 rounded-lg border-border/60 bg-white pr-9 text-xs shadow-sm transition-all focus:border-primary/50 focus:ring-2 focus:ring-primary/5 dark:bg-slate-950"
+            className="h-8 rounded-lg border-border/60 bg-white pr-9 text-xs shadow-sm transition-all focus:border-primary/50 focus:ring-2 focus:ring-primary/5 dark:bg-card"
           />
           {localSearch && (
             <button
@@ -113,7 +113,7 @@ export function CompanyFilters({
                 onClick={() => onStatusChange(opt.value)}
                 className={cn(
                   "rounded px-2.5 py-1 text-xs font-bold transition-all",
-                  status === opt.value ? "bg-white text-foreground shadow-sm dark:bg-slate-800" : "text-muted-foreground hover:text-foreground"
+                  status === opt.value ? "bg-white text-foreground shadow-sm dark:bg-muted" : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 {opt.label}
