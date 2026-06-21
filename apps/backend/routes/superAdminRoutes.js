@@ -639,6 +639,28 @@ router.get("/agents/available-models", async (req, res) => {
   }
 });
 
+// GET /agents/tools — all available tools from tool registry
+router.get("/agents/tools", async (req, res) => {
+  try {
+    const tools = await aiServiceAdminClient.listTools();
+    const list = Array.isArray(tools) ? tools.map(t => ({ name: t.name, description: t.description, group: t.group })) : [];
+    return res.json({ success: true, tools: list, count: list.length });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /agents/skills — all available skills
+router.get("/agents/skills", async (req, res) => {
+  try {
+    const skills = await aiServiceAdminClient.listSkills();
+    const list = Array.isArray(skills) ? skills.map(s => ({ id: s.id, displayName: s.displayName, description: s.description })) : [];
+    return res.json({ success: true, skills: list, count: list.length });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // POST /agents/apply-template — apply a template to a company
 router.post("/agents/apply-template", async (req, res) => {
   try {

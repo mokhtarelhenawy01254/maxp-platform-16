@@ -7,9 +7,21 @@ import { Switch } from "../../components/ui/switch";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../components/ui/dialog";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import { MultiSelect, MultiSelectOption } from "../../components/ui/MultiSelect";
 import { apiClient } from "../../services/apiClient";
 import i18n from "../../i18n";
 import { Brain, Plus, Trash2, Send, CheckCircle, Copy } from "lucide-react";
+
+const CHANNEL_OPTIONS: MultiSelectOption[] = [
+  { value: "dashboard", label: "لوحة التحكم" },
+  { value: "whatsapp", label: "واتساب" },
+  { value: "messenger", label: "ماسنجر" },
+  { value: "facebook", label: "فيسبوك" },
+  { value: "chat", label: "محادثة" },
+  { value: "telegram", label: "تيليجرام" },
+  { value: "instagram", label: "انستجرام" },
+  { value: "merchant", label: "التاجر" },
+];
 
 export const ROLE_ICONS: Record<string, string> = {
   CEO: "👔", SUPPORT: "🎧", SALES: "🤝", SMART_SELLER: "🛒",
@@ -121,15 +133,24 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [form, setForm] = useState<Record<string, any>>({});
+  const [allTools, setAllTools] = useState<MultiSelectOption[]>([]);
+  const [allSkills, setAllSkills] = useState<MultiSelectOption[]>([]);
 
   const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await apiClient.get(`/super-admin/agents/${t.slug}`);
-        if (data.agent) {
-          const a = data.agent as FullTemplate; setFull(a);
+        const [templateRes, toolsRes, skillsRes] = await Promise.all([
+          apiClient.get(`/super-admin/agents/${t.slug}`),
+          apiClient.get("/super-admin/agents/tools"),
+          apiClient.get("/super-admin/agents/skills"),
+        ]);
+        if (toolsRes.data.success) setAllTools(toolsRes.data.tools.map(t => ({ value: t.name, label: t.name, group: t.group })));
+        if (skillsRes.data.success) setAllSkills(skillsRes.data.skills.map(s => ({ value: s.id, label: s.displayName })));
+        const d = templateRes.data;
+        if (d.agent) {
+          const a = d.agent as FullTemplate; setFull(a);
           setIsActive(a.is_active !== false);
           setForm({
             name: a.name, role: a.role, version: a.version,
@@ -234,9 +255,9 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
           )}
           {tab === "config" && (
             <>
-              <Input label="القنوات (مفصولة بفاصلة)" value={(form.channels || []).join(", ")} onChange={e => update("channels", e.target.value.split(",").map((s: string) => s.trim()).filter(Boolean))} />
-              <Input label="الأدوات المسموحة (مفصولة بفاصلة)" value={(form.allowed_tools || []).join(", ")} onChange={e => update("allowed_tools", e.target.value.split(",").map((s: string) => s.trim()).filter(Boolean))} />
-              <Input label="المهارات المسموحة (مفصولة بفاصلة)" value={(form.allowed_skills || []).join(", ")} onChange={e => update("allowed_skills", e.target.value.split(",").map((s: string) => s.trim()).filter(Boolean))} />
+              <div><label className="text-xs font-medium text-muted-foreground">القنوات</label><MultiSelect options={CHANNEL_OPTIONS} selected={form.channels || []} onChange={v => update("channels", v)} placeholder="اختر القنوات..." /></div>
+              <div><label className="text-xs font-medium text-muted-foreground">الأدوات المسموحة</label><MultiSelect options={allTools} selected={form.allowed_tools || []} onChange={v => update("allowed_tools", v)} placeholder="اختر الأدوات..." searchPlaceholder="ابحث عن أداة..." emptyText="لا توجد أدوات" /></div>
+              <div><label className="text-xs font-medium text-muted-foreground">المهارات المسموحة</label><MultiSelect options={allSkills} selected={form.allowed_skills || []} onChange={v => update("allowed_skills", v)} placeholder="اختر المهارات..." searchPlaceholder="ابحث عن مهارة..." emptyText="لا توجد مهارات" /></div>
               <div className="grid grid-cols-2 gap-2">
                 <Input label="النموذج الافتراضي (model)" value={form.model_policy?.default || ""} onChange={e => update("model_policy", { ...form.model_policy, default: e.target.value })} />
                 <Input label="النموذج البديل (fallback)" value={form.model_policy?.fallback || ""} onChange={e => update("model_policy", { ...form.model_policy, fallback: e.target.value })} />
