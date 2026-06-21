@@ -232,6 +232,7 @@ async def init_registry_from_db(session_factory) -> None:
                             default_options={"model": db_agent.model or settings.default_model},
                         )
                     else:
+                        _agent_config_json = db_agent.config or {}
                         config = BaseAgentConfig(
                             id=db_agent.id,
                             name=db_agent.name,
@@ -242,6 +243,7 @@ async def init_registry_from_db(session_factory) -> None:
                             model=db_agent.model or settings.default_model,
                             allowed_skills=list(db_agent.allowed_skills or []),
                             persona=db_agent.persona or {},
+                            provider=_agent_config_json.get("provider") or None,
                         )
                         agent = BaseAgent(config)
                         agent._db_rules = db_agent.rules or ""

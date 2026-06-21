@@ -44,17 +44,53 @@ async def run_orchestration(
     memory_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     settings = get_settings()
+    effective_channel = channel or ("merchant" if is_merchant else "chat")
 
-    fallback = LLMFallbackProvider()
-    client = await fallback.get_client(
-        company_id=company_id,
-        system_prompt=None,
-    )
+    # Load registry early so we can pick the agent's configured provider
+    manager = get_agent_manager_service()
+    registry = get_agent_registry()
+    state_manager = RunStateManager(session) if session else None
+    checkpointer = PipelineCheckpointer(session) if session else None
+    checkpoint_storage = PostgresCheckpointStorage(session) if session else None
+
+    await _ensure_default_agents(company_id, manager, registry, session)
+
+    # Pick the agent configured for this channel (or any agent with a provider as fallback)
+    client = None
+    _channel_normalized = effective_channel.lower()
+    _all_agents = list(registry.list_agents(company_id))
+
+    # Pass 1: agent that covers this channel AND has a provider
+    for _aid, _agent, _ in _all_agents:
+        _cfg = getattr(_agent, "config", None)
+        _provider = getattr(_cfg, "provider", None)
+        _channels = [c.lower() for c in (getattr(_cfg, "allowed_channels", None) or [])]
+        if _provider and (_channel_normalized in _channels):
+            try:
+                client = await _agent.ensure_client()
+                logger.info("orchestration_using_channel_agent", agent=_aid, provider=_provider, channel=_channel_normalized)
+                break
+            except Exception as _exc:
+                logger.warning("agent_provider_unavailable", agent=_aid, provider=_provider, error=str(_exc))
+
+    # Pass 2: any agent with a provider (channel-agnostic fallback)
+    if not client:
+        for _aid, _agent, _ in _all_agents:
+            _provider = getattr(getattr(_agent, "config", None), "provider", None)
+            if _provider:
+                try:
+                    client = await _agent.ensure_client()
+                    logger.info("orchestration_using_agent_provider", agent=_aid, provider=_provider)
+                    break
+                except Exception as _exc:
+                    logger.warning("agent_provider_unavailable", agent=_aid, provider=_provider, error=str(_exc))
+
+    if not client:
+        fallback = LLMFallbackProvider()
+        client = await fallback.get_client(company_id=company_id, system_prompt=None)
 
     if not client:
         raise RuntimeError("No LLM provider available for orchestration")
-
-    effective_channel = channel or ("merchant" if is_merchant else "chat")
 
     # Try Magentic orchestration only for merchant/internal requests until the
     # Magentic path is wrapped with MaxP's customer intent, approval, and audit
@@ -77,13 +113,6 @@ async def run_orchestration(
             logger.warning("magentic orchestration failed, falling back to pipeline", error=str(exc))
 
     # Fall back to standard pipeline orchestration
-    manager = get_agent_manager_service()
-    registry = get_agent_registry()
-    state_manager = RunStateManager(session) if session else None
-    checkpointer = PipelineCheckpointer(session) if session else None
-    checkpoint_storage = PostgresCheckpointStorage(session) if session else None
-
-    await _ensure_default_agents(company_id, manager, registry, session)
 
     previous_state = None
     if state_manager:
