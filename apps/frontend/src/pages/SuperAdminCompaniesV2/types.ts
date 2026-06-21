@@ -119,7 +119,6 @@ export interface CompanyUser {
 export interface QuickStats {
   totalCompanies: number;
   activeCompanies: number;
-  enterpriseCompanies: number;
   connectedFacebookPages: number;
   followUpNow: number;
   escalationDue: number;
@@ -130,10 +129,7 @@ export interface QuickStats {
 
 export interface FilterState {
   search: string;
-  savedView: string;
   status: string;
-  plan: string;
-  funnelStage: string;
   sort: string;
 }
 
@@ -142,7 +138,6 @@ export interface CompanyFormData {
   email: string;
   phone: string;
   website: string;
-  plan: string;
   currency: string;
   adminFirstName: string;
   adminLastName: string;

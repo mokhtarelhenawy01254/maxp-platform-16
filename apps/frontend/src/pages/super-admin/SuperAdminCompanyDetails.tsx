@@ -5,6 +5,7 @@ import i18n from "../../i18n";
 import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Skeleton } from "../../components/ui/skeleton";
 import { Switch } from "../../components/ui/switch";
@@ -61,7 +62,7 @@ const SuperAdminCompanyDetails = () => {
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={() => navigate("/super-admin/companies-v2")}>
+                <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={() => navigate(-1)}>
                   <ArrowLeft className="size-4" /> رجوع
                 </Button>
                 <Button type="button" variant="outline" className="h-11 rounded-2xl"
@@ -212,7 +213,7 @@ const SuperAdminCompanyDetails = () => {
             </Select>
           </FormField>
         </div>
-        <div className="py-3">
+        <div className="space-y-1">
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-1">
               <p className="text-sm font-black text-foreground">حالة الشركة</p>
@@ -224,6 +225,9 @@ const SuperAdminCompanyDetails = () => {
             </div>
           </div>
         </div>
+        <FormField label="ملاحظات">
+          <Textarea value={editForm.notes} onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setEditForm((current) => ({ ...current, notes: event.target.value }))} className="h-24 rounded-2xl" placeholder="أي ملاحظات عن الشركة..." />
+        </FormField>
       </ResponsiveOverlay>
 
       <ResponsiveOverlay mobile={isMobile} open={transferOpen} onOpenChange={setTransferOpen}

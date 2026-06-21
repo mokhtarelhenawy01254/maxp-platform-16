@@ -34,7 +34,7 @@ const baseStats: QuickStats = {
 
 const makeCompany = (id: string, overrides: Partial<Company> = {}): Company => ({
   id, name: `Company ${id}`, email: `${id}@test.com`, phone: null, website: null,
-  plan: "BASIC", currency: "EGP", isActive: true, createdAt: "2024-01-01",
+  currency: "EGP", isActive: true, createdAt: "2024-01-01",
   _count: { users: 0, customers: 0, facebookPages: 0 },
   ...overrides,
 } as Company);
@@ -90,12 +90,6 @@ describe("CompaniesTable", () => {
     render(<CompaniesTable {...defaultProps} companies={companies} totalItems={2} />);
     expect(screen.getByText("شركة الأولى")).toBeInTheDocument();
     expect(screen.getByText("شركة الثانية")).toBeInTheDocument();
-  });
-
-  it("renders plan badges correctly", () => {
-    const companies = [makeCompany("1", { plan: "ENTERPRISE" })];
-    render(<CompaniesTable {...defaultProps} companies={companies} totalItems={1} />);
-    expect(screen.getByText("مؤسسي")).toBeInTheDocument();
   });
 
   it("renders active status badge", () => {

@@ -70,7 +70,7 @@ model Notification {
   createdAt DateTime  @default(now())
   userId    String?
   companyId String
-  company   Company   @relation(fields: [companyId], references: [id])
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user      User?     @relation(fields: [userId], references: [id])
 
   @@index([companyId])

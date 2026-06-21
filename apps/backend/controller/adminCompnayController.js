@@ -1313,7 +1313,8 @@ const updateCompany = async (req, res) => {
             website,
             plan,
             currency,
-            isActive
+            isActive,
+            notes
         } = req.body;
 
         console.log(req.body);
@@ -1359,7 +1360,8 @@ const updateCompany = async (req, res) => {
                 ...(website !== undefined && { website }),
                 ...(plan !== undefined && { plan }),
                 ...(currency !== undefined && { currency }),
-                ...(isActive !== undefined && { isActive })
+                ...(isActive !== undefined && { isActive }),
+                ...(notes !== undefined && { notes })
             }
         });
 
@@ -1413,7 +1415,11 @@ const deleteCompany = async (req, res) => {
 
         console.log(`Company data for deletion:`, companyData);
 
-        // Delete company (cascade will handle related records)
+        // Delete related notifications first (missing onDelete: Cascade in schema)
+        await getSharedPrismaClient().notification.deleteMany({
+            where: { companyId }
+        });
+
         await getSharedPrismaClient().company.delete({
             where: { id: companyId }
         });
@@ -1775,9 +1781,10 @@ const bulkDeleteCompanies = async (req, res) => {
 
         console.log(`🗑️ [BULK DELETE] Deleting ${companyIds.length} companies...`);
 
-        // Use transaction or deleteMany
-        // Note: Prisma cascade delete should be configured in schema, otherwise we might fail if relations exist without cascade.
-        // Assuming database handles cascade or schema is set up correctly.
+        // Delete related notifications first (missing onDelete: Cascade in schema)
+        await getSharedPrismaClient().notification.deleteMany({
+            where: { companyId: { in: companyIds } }
+        });
 
         const result = await getSharedPrismaClient().company.deleteMany({
             where: {
