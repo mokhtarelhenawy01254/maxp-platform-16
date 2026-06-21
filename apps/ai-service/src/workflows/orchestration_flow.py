@@ -55,39 +55,32 @@ async def run_orchestration(
 
     await _ensure_default_agents(company_id, manager, registry, session)
 
-    # Pick the agent configured for this channel (or any agent with a provider as fallback)
-    client = None
+    # Find the agent assigned to this channel and use it directly
     _channel_normalized = effective_channel.lower()
-    _all_agents = list(registry.list_agents(company_id))
-
-    # Pass 1: agent that covers this channel AND has a provider
-    for _aid, _agent, _ in _all_agents:
+    for _aid, _agent, _ in registry.list_agents(company_id):
         _cfg = getattr(_agent, "config", None)
-        _provider = getattr(_cfg, "provider", None)
         _channels = [c.lower() for c in (getattr(_cfg, "allowed_channels", None) or [])]
-        if _provider and (_channel_normalized in _channels):
-            try:
-                client = await _agent.ensure_client()
-                logger.info("orchestration_using_channel_agent", agent=_aid, provider=_provider, channel=_channel_normalized)
-                break
-            except Exception as _exc:
-                logger.warning("agent_provider_unavailable", agent=_aid, provider=_provider, error=str(_exc))
+        if _channel_normalized in _channels:
+            logger.info("orchestration_direct_channel_agent", agent=_aid, channel=_channel_normalized)
+            result = await _agent.process_task({
+                "current_message": message,
+                "session_id": thread_id,
+                "user_id": customer_id,
+                "channel": effective_channel,
+                "source_channel": effective_channel,
+                "_db_session": session,
+            })
+            inner = result.get("result") or {}
+            reply = inner.get("reply") or result.get("reply") or ""
+            return {
+                "reply": reply,
+                "thread_id": thread_id,
+                "tool_results": result.get("tool_results") or inner.get("tool_results") or [],
+            }
 
-    # Pass 2: any agent with a provider (channel-agnostic fallback)
-    if not client:
-        for _aid, _agent, _ in _all_agents:
-            _provider = getattr(getattr(_agent, "config", None), "provider", None)
-            if _provider:
-                try:
-                    client = await _agent.ensure_client()
-                    logger.info("orchestration_using_agent_provider", agent=_aid, provider=_provider)
-                    break
-                except Exception as _exc:
-                    logger.warning("agent_provider_unavailable", agent=_aid, provider=_provider, error=str(_exc))
-
-    if not client:
-        fallback = LLMFallbackProvider()
-        client = await fallback.get_client(company_id=company_id, system_prompt=None)
+    # No channel-specific agent — fall through to CEO orchestration
+    fallback = LLMFallbackProvider()
+    client = await fallback.get_client(company_id=company_id, system_prompt=None)
 
     if not client:
         raise RuntimeError("No LLM provider available for orchestration")
