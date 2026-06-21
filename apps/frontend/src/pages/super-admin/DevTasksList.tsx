@@ -578,22 +578,24 @@ const DevTasksList: React.FC = () => {
   return (
     <div className="space-y-4" dir={i18n.dir()}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <ClipboardDocumentListIcon className="size-5" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-black text-foreground">
-                قائمة المهام
-              </h1>
-              <p className="text-muted-foreground text-sm mt-1">
-                {pagination.total} مهمة
-              </p>
+      <div className="w-full">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <ClipboardDocumentListIcon className="size-5" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black text-foreground">
+                  قائمة المهام
+                </h1>
+                <p className="text-muted-foreground text-sm mt-1">
+                  {pagination.total} مهمة
+                </p>
+              </div>
             </div>
           </div>
-        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => handleExport("csv")}>
             <ArrowDownTrayIcon className="size-4" />
             تصدير CSV
@@ -683,7 +685,7 @@ const DevTasksList: React.FC = () => {
 
       {/* Search & Filters */}
       <div className="rounded-xl border border-border/40 bg-card ring-1 ring-foreground/5 p-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           {/* Search */}
           <form onSubmit={handleSearch} className="flex-1">
             <div className="relative">
