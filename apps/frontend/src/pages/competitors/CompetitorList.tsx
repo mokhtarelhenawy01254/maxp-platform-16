@@ -366,7 +366,7 @@ const CompetitorList: React.FC = () => {
               )}
               <div className="flex gap-4 mt-3 text-sm text-gray-500">
                 <span>{c._count.products} {t('competitors.products')}</span>
-                <span>{c._count.ads} {t('competitors.ads')}</span>
+                <span>{c._count.ads} {t('competitors.adsTab')}</span>
                 <span>{c._count.reports} {t('competitors.reports')}</span>
               </div>
             </div>

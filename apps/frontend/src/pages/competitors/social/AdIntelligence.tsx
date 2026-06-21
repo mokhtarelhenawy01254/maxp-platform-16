@@ -153,9 +153,9 @@ export default function AdIntelligence() {
     return (
       <div className="flex flex-col items-center mt-10 text-muted-foreground">
         <Inbox className="size-12 mb-2" />
-        <p>{t('competitors.noAdData')}</p>
+        <p>{t('competitors.ads.noAdData')}</p>
         <Badge variant="outline" className="mt-2 border-blue-500 text-blue-500">
-          {t('competitors.addAdData')}
+          {t('competitors.ads.addAdData')}
         </Badge>
       </div>
     );

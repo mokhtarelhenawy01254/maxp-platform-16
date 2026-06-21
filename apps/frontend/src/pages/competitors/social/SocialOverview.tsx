@@ -137,9 +137,9 @@ export default function SocialOverview() {
     return (
       <div className="flex flex-col items-center mt-10 text-muted-foreground">
         <Inbox className="size-12 mb-2" />
-        <p>{t('competitors.noSocialProfiles')}</p>
+        <p>{t('competitors.social.noSocialProfiles')}</p>
         <Badge variant="outline" className="mt-2 border-blue-500 text-blue-500">
-          {t('competitors.addSocialProfile')}
+          {t('competitors.social.addSocialProfile')}
         </Badge>
       </div>
     );

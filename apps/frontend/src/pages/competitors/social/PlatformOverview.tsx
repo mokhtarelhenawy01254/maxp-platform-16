@@ -166,9 +166,9 @@ export default function PlatformOverview() {
     return (
       <div className="flex flex-col items-center mt-10 text-muted-foreground">
         <Inbox className="size-12 mb-2" />
-        <p>{t('competitors.noPlatformData')}</p>
+        <p>{t('competitors.platforms.noPlatformData')}</p>
         <Badge variant="outline" className="mt-2 border-blue-500 text-blue-500">
-          {t('competitors.addPlatformData')}
+          {t('competitors.platforms.addPlatformData')}
         </Badge>
       </div>
     );

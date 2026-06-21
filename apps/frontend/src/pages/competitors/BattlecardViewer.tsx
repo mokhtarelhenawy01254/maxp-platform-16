@@ -68,7 +68,7 @@ const DiffBadge = ({ value }: { value: string | null }) => {
 };
 
 const BattlecardViewer: React.FC = () => {
-  const { t } = useTranslation("competitors");
+  const { t } = useTranslation();
   const { competitorId } = useParams<{ competitorId: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -105,7 +105,7 @@ const BattlecardViewer: React.FC = () => {
   if (!data) {
     return (
       <div className="p-6 text-center text-gray-500">
-        {t("battlecard.noBattlecardData")}
+        {t("competitors.battlecard.noBattlecardData")}
       </div>
     );
   }
@@ -122,30 +122,30 @@ const BattlecardViewer: React.FC = () => {
           {i18n.dir() === 'rtl' ? <ArrowRight className="w-5 h-5 text-gray-600 dark:text-gray-400" /> : <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />}
         </button>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {t("battlecard.title")}: {data.competitor.name}
+          {t("competitors.battlecard.title")}: {data.competitor.name}
         </h1>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>{t("battlecard.overview")}</CardTitle>
+          <CardTitle>{t("competitors.battlecard.overview")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div>
-              <div className="text-sm text-gray-500">{t("platform")}</div>
+              <div className="text-sm text-gray-500">{t("competitors.platform")}</div>
               <div className="text-lg font-semibold">{data.competitor.platform || "--"}</div>
             </div>
             <div>
-              <div className="text-sm text-gray-500">{t("products")}</div>
+              <div className="text-sm text-gray-500">{t("competitors.products")}</div>
               <div className="text-lg font-semibold">{data.metrics.theirProducts}</div>
             </div>
             <div>
-              <div className="text-sm text-gray-500">{t("battlecard.yourProduct")}</div>
+              <div className="text-sm text-gray-500">{t("competitors.battlecard.yourProduct")}</div>
               <div className="text-lg font-semibold">{data.metrics.yourProducts}</div>
             </div>
             <div>
-              <div className="text-sm text-gray-500">{t("battlecard.priceComparison")}</div>
+              <div className="text-sm text-gray-500">{t("competitors.battlecard.priceComparison")}</div>
               <div className="text-lg font-semibold">{data.metrics.priceComparisonCount}</div>
             </div>
           </div>
@@ -154,17 +154,17 @@ const BattlecardViewer: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t("battlecard.priceComparison")}</CardTitle>
+          <CardTitle>{t("competitors.battlecard.priceComparison")}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t("battlecard.yourProduct")}</TableHead>
-                <TableHead>{t("battlecard.yourPrice")}</TableHead>
-                <TableHead>{t("battlecard.theirProduct")}</TableHead>
-                <TableHead>{t("battlecard.theirPrice")}</TableHead>
-                <TableHead>{t("battlecard.diffPercent")}</TableHead>
+                <TableHead>{t("competitors.battlecard.yourProduct")}</TableHead>
+                <TableHead>{t("competitors.battlecard.yourPrice")}</TableHead>
+                <TableHead>{t("competitors.battlecard.theirProduct")}</TableHead>
+                <TableHead>{t("competitors.battlecard.theirPrice")}</TableHead>
+                <TableHead>{t("competitors.battlecard.diffPercent")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -186,12 +186,12 @@ const BattlecardViewer: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t("battlecard.marketGaps")}</CardTitle>
+          <CardTitle>{t("competitors.battlecard.marketGaps")}</CardTitle>
         </CardHeader>
         <CardContent>
           {data.gaps.length === 0 ? (
             <div className="text-center text-gray-500 py-4">
-              {t("noGaps")}
+              {t("competitors.noGaps")}
             </div>
           ) : (
             <ul className="space-y-2">
@@ -214,13 +214,13 @@ const BattlecardViewer: React.FC = () => {
       {hasInsights && (
         <Card>
           <CardHeader>
-            <CardTitle>{t("insights")}</CardTitle>
+            <CardTitle>{t("competitors.insights")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {(data.reportInsights as any).newProducts != null && (
                 <div>
-                  <div className="text-sm text-gray-500">{t("newProducts")}</div>
+                  <div className="text-sm text-gray-500">{t("competitors.newProducts")}</div>
                   <div className="text-lg font-semibold text-blue-600">
                     {(data.reportInsights as any).newProducts}
                   </div>
@@ -228,7 +228,7 @@ const BattlecardViewer: React.FC = () => {
               )}
               {(data.reportInsights as any).priceChanges != null && (
                 <div>
-                  <div className="text-sm text-gray-500">{t("priceChanges")}</div>
+                  <div className="text-sm text-gray-500">{t("competitors.priceChanges")}</div>
                   <div className="text-lg font-semibold text-yellow-600">
                     {(data.reportInsights as any).priceChanges}
                   </div>

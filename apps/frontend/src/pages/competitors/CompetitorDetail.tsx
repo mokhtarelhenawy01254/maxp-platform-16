@@ -280,7 +280,7 @@ const CompetitorDetail: React.FC = () => {
               {competitor._count.products} {t('competitors.products')}
             </span>
             <span className="bg-green-50 dark:bg-green-900/30 px-3 py-1 rounded-full">
-              {competitor._count.ads} {t('competitors.ads')}
+              {competitor._count.ads} {t('competitors.adsTab')}
             </span>
             <span className="bg-purple-50 dark:bg-purple-900/30 px-3 py-1 rounded-full">
               {competitor._count.reports} {t('competitors.reports')}
