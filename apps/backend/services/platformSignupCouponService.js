@@ -41,20 +41,6 @@ const getCouponState = (coupon, now = new Date()) => {
   return "live";
 };
 
-const addLimitBonus = (baseLimit, bonus = 0) => {
-  const normalizedBonus = toPositiveInt(bonus);
-  if (baseLimit === undefined || baseLimit === null) {
-    return normalizedBonus > 0 ? normalizedBonus : -1;
-  }
-
-  const numericBase = Number(baseLimit);
-  if (!Number.isFinite(numericBase) || numericBase === -1) {
-    return -1;
-  }
-
-  return numericBase + normalizedBonus;
-};
-
 const buildBenefitSummary = (benefits) => {
   const summary = [];
 
@@ -172,47 +158,6 @@ const ensureCouponPayloadIsValid = (payload) => {
   if (!hasAnyBenefit(payload.benefits)) {
     throw new Error("يجب تحديد ميزة واحدة على الأقل للكوبون");
   }
-};
-
-const buildCompanyBonusSnapshot = (company) => ({
-  trialDays: toPositiveInt(company?.signupTrialBonusDays),
-  bonusUsers: toPositiveInt(company?.signupBonusUsers),
-  bonusProducts: toPositiveInt(company?.signupBonusProducts),
-  bonusOrdersPerMonth: toPositiveInt(company?.signupBonusOrdersPerMonth),
-  bonusCustomers: toPositiveInt(company?.signupBonusCustomers),
-});
-
-const applyPlanLimitBonuses = (planLimit, company) => {
-  const bonuses = buildCompanyBonusSnapshot(company);
-
-  return {
-    ...planLimit,
-    maxEmployees: addLimitBonus(planLimit?.maxEmployees ?? -1, bonuses.bonusUsers),
-    maxProducts: addLimitBonus(planLimit?.maxProducts ?? -1, bonuses.bonusProducts),
-    maxOrdersPerMonth: addLimitBonus(
-      planLimit?.maxOrdersPerMonth ?? -1,
-      bonuses.bonusOrdersPerMonth,
-    ),
-    maxCustomers: addLimitBonus(
-      planLimit?.maxCustomers ?? -1,
-      bonuses.bonusCustomers,
-    ),
-  };
-};
-
-const applyServiceLimitBonuses = (limits, company) => {
-  const bonuses = buildCompanyBonusSnapshot(company);
-
-  return {
-    ...limits,
-    users: addLimitBonus(limits?.users ?? -1, bonuses.bonusUsers),
-    customers: addLimitBonus(limits?.customers ?? -1, bonuses.bonusCustomers),
-    products: addLimitBonus(limits?.products ?? -1, bonuses.bonusProducts),
-    orders: addLimitBonus(
-      limits?.orders ?? limits?.ordersPerMonth ?? -1,
-      bonuses.bonusOrdersPerMonth,
-    ),
-  };
 };
 
 const getUsagePercentage = (current, limit) => {
@@ -400,8 +345,4 @@ module.exports = {
   validateCouponForRegistration,
   applySignupCouponRedemption,
   getAdminCouponSummary,
-  buildCompanyBonusSnapshot,
-  applyPlanLimitBonuses,
-  applyServiceLimitBonuses,
-  addLimitBonus,
 };

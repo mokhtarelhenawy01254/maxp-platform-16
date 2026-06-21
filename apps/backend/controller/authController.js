@@ -238,7 +238,7 @@ const register = async (req, res) => {
     }
 
     await initializeRegisteredCompany(company.id, totalTrialDays, {
-      specialtyAppSlugs: selectedSpecialty?.autoInstallOnSignup ? (selectedSpecialty.appSlugs || []) : [],
+      specialtyAppSlugs: [],
       specialtySlug: selectedSpecialty?.slug || null,
     });
 

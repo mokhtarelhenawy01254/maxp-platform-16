@@ -12,8 +12,6 @@ const {
     mergeCompanyFollowUpSettings,
 } = require('../utils/companyFollowUp');
 const {
-    applyPlanLimitBonuses,
-    buildCompanyBonusSnapshot,
     findCouponByCode,
     getUsagePercentage,
     serializeCoupon,

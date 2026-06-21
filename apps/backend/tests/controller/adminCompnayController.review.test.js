@@ -4,12 +4,6 @@ const mockPrisma = {
   company: {
     findUnique: jest.fn(),
   },
-  planConfiguration: {
-    findFirst: jest.fn(),
-  },
-  planLimit: {
-    findUnique: jest.fn(),
-  },
   employee: {
     count: jest.fn(),
   },
@@ -46,28 +40,6 @@ jest.mock("../../services/sharedDatabase", () => ({
   executeWithRetry: (...args) => mockExecuteWithRetry(...args),
 }));
 
-const mockBuildCompanyBonusSnapshot = jest.fn((company) => ({
-  trialDays: Number(company?.signupTrialBonusDays || 0),
-  bonusUsers: Number(company?.signupBonusUsers || 0),
-  bonusProducts: Number(company?.signupBonusProducts || 0),
-  bonusOrdersPerMonth: Number(company?.signupBonusOrdersPerMonth || 0),
-  bonusCustomers: Number(company?.signupBonusCustomers || 0),
-}));
-
-const mockApplyPlanLimitBonuses = jest.fn((planLimit, company) => ({
-  ...planLimit,
-  maxEmployees:
-    Number(planLimit?.maxEmployees || -1) + Number(company?.signupBonusUsers || 0),
-  maxProducts:
-    Number(planLimit?.maxProducts || -1) + Number(company?.signupBonusProducts || 0),
-  maxOrdersPerMonth:
-    Number(planLimit?.maxOrdersPerMonth || -1) +
-    Number(company?.signupBonusOrdersPerMonth || 0),
-  maxCustomers:
-    Number(planLimit?.maxCustomers || -1) +
-    Number(company?.signupBonusCustomers || 0),
-}));
-
 const mockGetUsagePercentage = jest.fn((current, limit) => {
   const numericLimit = Number(limit);
   if (!Number.isFinite(numericLimit) || numericLimit <= 0 || numericLimit === -1) {
@@ -89,8 +61,6 @@ const mockSerializeCoupon = jest.fn((coupon) => ({
 const mockFindCouponByCode = jest.fn();
 
 jest.mock("../../services/platformSignupCouponService", () => ({
-  applyPlanLimitBonuses: (...args) => mockApplyPlanLimitBonuses(...args),
-  buildCompanyBonusSnapshot: (...args) => mockBuildCompanyBonusSnapshot(...args),
   findCouponByCode: (...args) => mockFindCouponByCode(...args),
   getUsagePercentage: (...args) => mockGetUsagePercentage(...args),
   serializeCoupon: (...args) => mockSerializeCoupon(...args),
@@ -225,16 +195,6 @@ describe("adminCompnayController.getCompanyDetails review payload", () => {
       },
     });
 
-    mockPrisma.planConfiguration.findFirst.mockResolvedValue({ price: 199 });
-    mockPrisma.planLimit.findUnique.mockResolvedValue({
-      plan: "PRO",
-      maxEmployees: 5,
-      maxProducts: 100,
-      maxOrdersPerMonth: 50,
-      maxCustomers: 20,
-      hasAdvancedReports: true,
-      hasAPIAccess: false,
-    });
     mockPrisma.employee.count.mockResolvedValue(2);
     mockPrisma.order.count.mockResolvedValue(18);
     mockPrisma.companyApp.findMany.mockResolvedValue([
