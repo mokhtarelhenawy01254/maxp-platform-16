@@ -360,8 +360,6 @@ const getOrderDetailFeatureAccess = async (companyId) => {
   if (!companyId) return defaultAccess;
 
   const prisma = getSharedPrismaClient();
-  // ponytail: ENTERPRISE plan bypass removed — order features now per-app
-
   const companyApps = await prisma.companyApp.findMany({
     where: {
       companyId,

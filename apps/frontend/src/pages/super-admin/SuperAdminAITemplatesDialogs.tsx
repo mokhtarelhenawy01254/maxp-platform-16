@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "../../components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../components/ui/dialog";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { MultiSelect, MultiSelectOption } from "../../components/ui/MultiSelect";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../../components/ui/select";
 import { apiClient } from "../../services/apiClient";
 import i18n from "../../i18n";
 import { Brain, Plus, Trash2, Send, CheckCircle, Copy } from "lucide-react";
@@ -64,6 +65,12 @@ interface FullTemplate {
   human_approval: Record<string, any>; handoffs: any[]; mcp_servers: any[];
   budget: Record<string, any>; output_schema: Record<string, any> | null;
   is_active: boolean; config: Record<string, any>; created_at: string; updated_at: string;
+}
+
+interface ModelOption {
+  modelName: string;
+  provider: string;
+  keyName: string;
 }
 
 /* ════════════════════════════════════════════════
@@ -135,19 +142,22 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
   const [form, setForm] = useState<Record<string, any>>({});
   const [allTools, setAllTools] = useState<MultiSelectOption[]>([]);
   const [allSkills, setAllSkills] = useState<MultiSelectOption[]>([]);
+  const [allModels, setAllModels] = useState<ModelOption[]>([]);
 
   const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
-        const [templateRes, toolsRes, skillsRes] = await Promise.all([
+        const [templateRes, toolsRes, skillsRes, modelsRes] = await Promise.all([
           apiClient.get(`/super-admin/agents/${t.slug}`),
           apiClient.get("/super-admin/agents/tools"),
           apiClient.get("/super-admin/agents/skills"),
+          apiClient.get("/super-admin/agents/available-models"),
         ]);
         if (toolsRes.data.success) setAllTools(toolsRes.data.tools.map(t => ({ value: t.name, label: t.name, group: t.group })));
         if (skillsRes.data.success) setAllSkills(skillsRes.data.skills.map(s => ({ value: s.id, label: s.displayName })));
+        if (modelsRes.data.success) setAllModels(modelsRes.data.models);
         const d = templateRes.data;
         if (d.agent) {
           const a = d.agent as FullTemplate; setFull(a);
@@ -179,6 +189,13 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
     catch (e: any) { setErr(e?.response?.data?.error || e.message || "حدث خطأ"); }
     finally { setSaving(false); }
   };
+
+  const modelOptions = allModels.map(m => ({
+    value: m.modelName,
+    label: `${m.modelName} (${m.provider} — ${m.keyName})`,
+  }));
+
+  const isRtl = i18n.dir() === "rtl";
 
   if (loadingDetail) return (
     <Dialog open onOpenChange={o => { if (!o) onClose(); }}>
@@ -258,9 +275,45 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
               <div><label className="text-xs font-medium text-muted-foreground">القنوات</label><MultiSelect options={CHANNEL_OPTIONS} selected={form.channels || []} onChange={v => update("channels", v)} placeholder="اختر القنوات..." /></div>
               <div><label className="text-xs font-medium text-muted-foreground">الأدوات المسموحة</label><MultiSelect options={allTools} selected={form.allowed_tools || []} onChange={v => update("allowed_tools", v)} placeholder="اختر الأدوات..." searchPlaceholder="ابحث عن أداة..." emptyText="لا توجد أدوات" /></div>
               <div><label className="text-xs font-medium text-muted-foreground">المهارات المسموحة</label><MultiSelect options={allSkills} selected={form.allowed_skills || []} onChange={v => update("allowed_skills", v)} placeholder="اختر المهارات..." searchPlaceholder="ابحث عن مهارة..." emptyText="لا توجد مهارات" /></div>
-              <div className="grid grid-cols-2 gap-2">
-                <Input label="النموذج الافتراضي (model)" value={form.model_policy?.default || ""} onChange={e => update("model_policy", { ...form.model_policy, default: e.target.value })} />
-                <Input label="النموذج البديل (fallback)" value={form.model_policy?.fallback || ""} onChange={e => update("model_policy", { ...form.model_policy, fallback: e.target.value })} />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">النموذج الافتراضي</label>
+                  <Select value={form.model_policy?.default || ""} onValueChange={v => update("model_policy", { ...form.model_policy, default: v || undefined })}>
+                    <SelectTrigger className="mt-1" dir={isRtl ? "rtl" : "ltr"}>
+                      <SelectValue placeholder="اختر النموذج..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">بدون نموذج</SelectItem>
+                      {allModels.map(m => (
+                        <SelectItem key={m.modelName} value={m.modelName}>
+                          <span className="flex items-center gap-2">
+                            <span>{m.modelName}</span>
+                            <span className="text-[0.6rem] text-muted-foreground">({m.provider})</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">النموذج البديل</label>
+                  <Select value={form.model_policy?.fallback || ""} onValueChange={v => update("model_policy", { ...form.model_policy, fallback: v || undefined })}>
+                    <SelectTrigger className="mt-1" dir={isRtl ? "rtl" : "ltr"}>
+                      <SelectValue placeholder="اختر النموذج..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">بدون نموذج</SelectItem>
+                      {allModels.map(m => (
+                        <SelectItem key={m.modelName} value={m.modelName}>
+                          <span className="flex items-center gap-2">
+                            <span>{m.modelName}</span>
+                            <span className="text-[0.6rem] text-muted-foreground">({m.provider})</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <Input label="الميزانية اليومية ($)" type="number" value={form.budget?.dailyUsd || ""} onChange={e => update("budget", { ...form.budget, dailyUsd: e.target.value ? parseFloat(e.target.value) : undefined })} />
               <div className="flex items-center gap-2">
@@ -363,6 +416,8 @@ export const ApplyDialog: React.FC<{ template: TemplateItem; onClose: () => void
     catch (e: any) { setErr(e?.response?.data?.error || e.message || "حدث خطأ"); } finally { setApplying(false); }
   };
 
+  const isRtl = i18n.dir() === "rtl";
+
   return (
     <Dialog open onOpenChange={o => { if (!o) onClose(); }}>
       <DialogContent>
@@ -374,17 +429,34 @@ export const ApplyDialog: React.FC<{ template: TemplateItem; onClose: () => void
           {err && <Alert variant="destructive"><AlertDescription>{err}</AlertDescription></Alert>}
           <p className="text-sm">تطبيق قالب <strong>{t.icon} {t.name}</strong> على شركة:</p>
           {modelsLoading ? <div className="flex justify-center py-2"><LoadingSpinner /></div>
-          : <select value={selectedModel} onChange={e => setSelectedModel(e.target.value)}
-              className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm mb-2">
-              <option value="">النموذج الافتراضي (من القالب)</option>
-              {models.map(m => <option key={m.modelName} value={m.modelName}>{m.modelName} ({m.provider} — {m.keyName})</option>)}
-            </select>}
+          : <div>
+              <label className="text-xs font-medium text-muted-foreground">النموذج</label>
+              <Select value={selectedModel} onValueChange={setSelectedModel}>
+                <SelectTrigger className="mt-1" dir={isRtl ? "rtl" : "ltr"}>
+                  <SelectValue placeholder="النموذج الافتراضي (من القالب)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">النموذج الافتراضي (من القالب)</SelectItem>
+                  {models.map(m => (
+                    <SelectItem key={m.modelName} value={m.modelName}>
+                      <span className="flex items-center gap-2">
+                        <span>{m.modelName}</span>
+                        <span className="text-[0.6rem] text-muted-foreground">({m.provider} — {m.keyName})</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>}
           {loadingCompanies ? <div className="flex justify-center py-4"><LoadingSpinner /></div>
-          : <select value={selectedId} onChange={e => setSelectedId(e.target.value)}
-              className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm">
-              <option value="">اختر شركة...</option>
-              {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>}
+          : <div>
+              <label className="text-xs font-medium text-muted-foreground">الشركة</label>
+              <select value={selectedId} onChange={e => setSelectedId(e.target.value)}
+                className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm mt-1">
+                <option value="">اختر شركة...</option>
+                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>}
           <DialogFooter>
             <Button variant="outline" onClick={onClose} disabled={applying}>إلغاء</Button>
             <Button onClick={apply} disabled={!selectedId || applying}>

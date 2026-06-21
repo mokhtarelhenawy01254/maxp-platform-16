@@ -83,7 +83,6 @@ router.delete(
 );
 router.get('/business-specialties/app-options', platformSpecialtyController.getMarketplaceAppOptions);
 
-// ponytail: /plan-limit/:plan route removed — plan limits deleted
 
 // Platform Central Settings
 router.get('/settings/kashier', superAdminSettingsController.getKashierSettings);

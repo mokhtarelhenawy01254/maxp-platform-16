@@ -257,22 +257,21 @@ const SupportAdmin: React.FC = () => {
   };
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900">
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                إدارة الدعم الفني
-              </h1>
-              <p className="text-gray-600 dark:text-gray-300">
-                إدارة تذاكر الدعم والأسئلة الشائعة
-              </p>
-            </div>
-            <ThemeToggle />
+    <>
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              إدارة الدعم الفني
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300">
+              إدارة تذاكر الدعم والأسئلة الشائعة
+            </p>
           </div>
+          <ThemeToggle />
         </div>
+      </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -753,8 +752,7 @@ const SupportAdmin: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </>
   );
 };
 

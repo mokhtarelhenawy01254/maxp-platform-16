@@ -39,18 +39,18 @@ const SuperAdminAITemplateDetail: React.FC = () => {
   const [applyOpen, setApplyOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  useEffect(() => {
+  const fetchTemplate = useCallback(async () => {
     if (!slug) return;
-    (async () => {
-      try {
-        setLoading(true);
-        const { data } = await apiClient.get(`/super-admin/agents/${slug}`);
-        if (data.agent) setTemplate(data.agent);
-        else setError("القالب غير موجود");
-      } catch { setError("فشل تحميل بيانات القالب"); }
-      finally { setLoading(false); }
-    })();
+    try {
+      setLoading(true);
+      const { data } = await apiClient.get(`/super-admin/agents/${slug}`);
+      if (data.agent) setTemplate(data.agent);
+      else setError("القالب غير موجود");
+    } catch { setError("فشل تحميل بيانات القالب"); }
+    finally { setLoading(false); }
   }, [slug]);
+
+  useEffect(() => { fetchTemplate(); }, [fetchTemplate]);
 
   const color = (role?: string) => ROLE_COLORS[role || ""] || "bg-gray-100 text-gray-700";
   const [copiedId, setCopiedId] = useState<string | null>(null);

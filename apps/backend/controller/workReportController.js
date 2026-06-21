@@ -243,12 +243,10 @@ const evaluateFormula = (formula, numericContext = {}) => {
     throw new Error('صيغة المعادلة تحتوي على رموز غير مدعومة');
   }
 
-  // ponytail: safe eval via math expr parser, not Function()
   const result = evaluateSafeMath(expression);
   return Number.isFinite(result) ? Number(result.toFixed(4)) : null;
 };
 
-// ponytail: recursive descent parser, upgrades to mathjs if complex funcs needed
 function evaluateSafeMath(expr) {
   let pos = 0;
   const peek = () => expr[pos];
@@ -285,7 +283,6 @@ function evaluateSafeMath(expr) {
     return v;
   };
   const result = parseExpr();
-  // ponytail: global lock, per-account locks if throughput matters
   validateRemainingInput();
   return result;
   function validateRemainingInput() { while (peek() === ' ') next(); if (peek()) throw new Error('Unexpected characters after expression'); }

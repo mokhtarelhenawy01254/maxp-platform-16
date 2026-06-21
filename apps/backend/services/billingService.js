@@ -13,7 +13,6 @@ class BillingService {
      */
     async createSubscription(companyId) {
         const prisma = getSharedPrismaClient();
-        // ponytail: platform-level trial removed — app-level trials (CompanyApp) handle it
         const nextBillingDate = new Date();
         nextBillingDate.setDate(nextBillingDate.getDate() + 30);
 
@@ -127,10 +126,6 @@ class BillingService {
             throw error;
         }
     }
-
-// ponytail: upgradePlan removed — pricing now per-app/bundle, not plan tiers
-
-// ponytail: getPlanLimits removed — limits now come from installed apps, not plan tiers
 
     /**
      * Get billing history for a company (paginated).

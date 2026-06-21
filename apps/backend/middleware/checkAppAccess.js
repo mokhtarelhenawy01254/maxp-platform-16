@@ -34,8 +34,6 @@ const checkAppAccess = (appSlug) => {
         });
       }
 
-      // ponytail: Enterprise plan bypass removed — access now purely per-app (companyApp)
-
       // Get the app
       const candidateSlugs = getCandidateAppSlugs(appSlug);
       const app = await executeWithRetry(async () => {

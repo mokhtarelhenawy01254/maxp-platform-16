@@ -5391,6 +5391,151 @@
         "positions": "Positions",
         "invoices": "Invoices"
       }
+    },
+    "whatsapp": {
+      "overview": {
+        "title": "WhatsApp Platform",
+        "description": "Monitor WhatsApp readiness across companies from a single screen.",
+        "errorTitle": "Loading Failed",
+        "errorMessage": "Unable to load WhatsApp overview for super admin at this time.",
+        "retry": "Retry",
+        "infoTitle": "Clear Screen Ownership",
+        "infoDescription": "The super admin screen monitors company readiness, session linking, and platform automation. Customer notifications and orders remain inside each company's workspace.",
+        "openCompanies": "Open Companies",
+        "metrics": {
+          "totalCompanies": "Total Companies",
+          "totalCompaniesHint": "{{active}} Active Companies",
+          "companiesWithSessions": "Companies with Sessions",
+          "companiesWithSessionsHint": "{{connected}} Connected",
+          "connectedSessions": "Connected Sessions",
+          "connectedSessionsHint": "{{disconnected}} Sessions Need Attention",
+          "messages24h": "Messages Last 24h",
+          "messages24hHint": "{{failed}} Failures in 7 Days",
+          "notificationsEnabled": "Notifications Enabled",
+          "notificationsEnabledHint": "Companies that enabled notifications engine",
+          "templates": "Templates",
+          "templatesHint": "{{active}} Active Templates"
+        },
+        "topEvents": {
+          "title": "Most Used Events",
+          "description": "Most sent notification types in the last 30 days.",
+          "empty": "Not enough send data yet.",
+          "eventColumn": "Event",
+          "categoryColumn": "Category",
+          "totalColumn": "Total"
+        },
+        "quickNav": {
+          "title": "Quick Navigation",
+          "description": "Key screens for managing WhatsApp from super admin.",
+          "links": {
+            "logs": {
+              "title": "Central Logs",
+              "description": "Monitor sending and failures across all companies from one screen."
+            },
+            "companies": {
+              "title": "WhatsApp Companies",
+              "description": "Review each company's readiness and open their workspace."
+            },
+            "session": {
+              "title": "Session Linking",
+              "description": "Go to the sessions tab inside a company to link a session and make it default."
+            },
+            "automations": {
+              "title": "Platform Automation",
+              "description": "Only shows automations owned by the super admin, not company automations."
+            },
+            "workspace": {
+              "title": "WhatsApp Company Workspace",
+              "titleWithName": "WhatsApp Workspace · {{name}}",
+              "loadingDescription": "Loading company data...",
+              "description": "Quick summary of company registration and subscription messages before opening sessions or onboarding notifications.",
+              "backLabel": "Back to Companies",
+              "actions": {
+                "linkSession": "Link Session",
+                "settings": "Settings",
+                "notifications": "Registration Notifications",
+                "inbox": "Inbox",
+                "analytics": "Analytics",
+                "openSessions": "Open Sessions"
+              },
+              "noSessionAlert": {
+                "title": "Company needs a session linked first",
+                "description": "Before enabling automation or relying on notifications, open the sessions tab and link a connected session, then make it default."
+              },
+              "metrics": {
+                "sessions": "Sessions",
+                "sessionsHint": "{{connected}} Connected",
+                "notifications": "Notifications",
+                "notificationsEnabled": "Enabled",
+                "notificationsDisabled": "Disabled",
+                "notificationsHint": "Notifications engine status",
+                "templates": "Templates",
+                "templatesHint": "{{total}} onboarding messages in 30 days",
+                "failures": "Failures",
+                "failuresHint": "{{read}} Read"
+              },
+              "sessionsCard": {
+                "title": "Current Sessions",
+                "description": "Available sessions for the company, with the default session highlighted.",
+                "empty": "No WhatsApp sessions for this company yet.",
+                "defaultBadge": "Default"
+              },
+              "templatesCard": {
+                "title": "Recent Templates",
+                "description": "Latest company registration and subscription templates reviewed by the super admin for this company.",
+                "empty": "No templates saved for this company yet.",
+                "active": "Active",
+                "inactive": "Inactive"
+              }
+            }
+          }
+        },
+        "recentFailures": {
+          "title": "Recent Failures",
+          "description": "Most recent failed messages to track struggling companies or templates.",
+          "empty": "No failures recorded in the last 7 days."
+        }
+      },
+      "companies": {
+        "title": "WhatsApp Companies",
+        "description": "Each company's WhatsApp onboarding status, with a clear path to link a session and open registration and subscription messages.",
+        "filtersTitle": "Company Filters",
+        "filtersDescription": "Quickly find ready companies or those needing attention.",
+        "searchPlaceholder": "Search by name, email, or slug",
+        "statusAll": "All Statuses",
+        "statusLabels": {
+          "connected": "Connected",
+          "disconnected": "Disconnected",
+          "not-configured": "Not Configured",
+          "attention": "Needs Attention"
+        },
+        "notificationsAll": "All",
+        "notificationsEnabled": "Notifications Enabled",
+        "notificationsDisabled": "Notifications Disabled",
+        "listTitle": "Company List",
+        "listDescription": "Open any company to manage sessions, registration, and subscription messages.",
+        "empty": "No companies match the current filters.",
+        "columns": {
+          "company": "Company",
+          "status": "Status",
+          "sessions": "Sessions",
+          "notifications": "Notifications",
+          "templates": "Templates",
+          "failures": "Failures",
+          "actions": "Actions"
+        },
+        "stats": {
+          "sessions": "Sessions",
+          "notifications": "Notifications",
+          "templates": "Templates",
+          "failures": "Failures"
+        },
+        "buttons": {
+          "linkSession": "Link Session",
+          "openWorkspace": "Open Workspace",
+          "notifications": "Notifications"
+        }
+      }
     }
   },
   "tasks": {

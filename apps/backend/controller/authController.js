@@ -179,7 +179,7 @@ const register = async (req, res) => {
         slug: uniqueSlug,
         email: normalizedEmail,
         phone: phone || null,
-        plan: 'PRO', // ponytail: plan tier kept as reference, pricing is per-app/bundle
+        plan: 'PRO',
         isActive: true,
         sidebarLayout: 'three-tier',
         timezone: userTimezone,

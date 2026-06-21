@@ -8,7 +8,6 @@ const router = express.Router();
 const billingService = require('../services/billingService');
 const verifyToken = require("../utils/verifyToken");
 
-// ponytail: checkSubscription middleware removed
 router.use(verifyToken.authenticateToken);
 
 /**

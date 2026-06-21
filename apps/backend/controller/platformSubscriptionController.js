@@ -5,8 +5,6 @@ const {
 const WhatsAppNotificationService = require("../services/whatsapp/WhatsAppNotificationService");
 const KashierService = require("../services/kashierService");
 
-// ponytail: plan pricing removed — pricing is now per-app/bundle
-
 const getNextBillingDate = () => {
   const nextBillingDate = new Date();
   nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
@@ -112,10 +110,6 @@ exports.getSubscription = async (req, res) => {
   }
 };
 
-// ponytail: getPlans removed — no plan tiers anymore
-
-// ponytail: upgradePlan removed — upgrades now via app/bundle activation
-
 /**
  * @route POST /api/v1/platform-subscription/cancel
  * @desc Cancel platform subscription
@@ -204,10 +198,6 @@ exports.getBillingHistory = async (req, res) => {
   }
 };
 
-// ponytail: getUsageStats removed — limits now per-app, not plan-level
-
-
-// ponytail: createCheckoutSession removed — plan upgrade checkout removed. Bundle checkout via messaging-checkout.
 
 /**
  * @route POST /api/v1/platform-subscription/messaging-checkout
@@ -231,7 +221,6 @@ exports.messagingCheckout = async (req, res) => {
     nextBillingDate.setDate(nextBillingDate.getDate() + 30);
 
     await prisma.$transaction(async (tx) => {
-      // ponytail: subscription now tracks status only, not plan pricing
       await tx.platformSubscription.upsert({
         where: { companyId },
         update: { status: subscriptionStatus, trialEndDate, nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
@@ -269,7 +258,7 @@ exports.messagingCheckout = async (req, res) => {
 exports.messagingUpgrade = async (req, res) => {
   try {
     const { companyId, email, phone } = req.user;
-    const amount = 999; // ponytail: AI + Inbox bundle price
+    const amount = 999;
     const prisma = getSharedPrismaClient();
 
     const sub = await prisma.platformSubscription.findUnique({ where: { companyId } });
@@ -369,7 +358,6 @@ exports.handleWebhook = async (req, res) => {
     const newStatus = paymentSuccessful ? "SUCCESS" : "FAILED";
 
     if (paymentSuccessful) {
-      // ponytail: plan-based upgrade removed — webhook now only marks billing as paid
       const nextBillingDate = new Date();
       nextBillingDate.setDate(nextBillingDate.getDate() + 30);
 

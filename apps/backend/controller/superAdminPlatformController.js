@@ -287,8 +287,6 @@ exports.updateSubscription = async (req, res) => {
  * @desc Update plan limits
  * @access Super Admin
  */
-// ponytail: updatePlanLimit removed — plan limits system deleted
-
 /**
  * @route POST /api/v1/super-admin/platform/retry-failed-payment/:id
  * @desc Retry failed payment

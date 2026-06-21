@@ -314,8 +314,6 @@ const safeUsageEndpoint = async (req, res) => {
   }
 };
 
-// ponytail: companyPlansEndpoint removed — plan tiers deleted
-
 const getCompanyInfoEndpoint = async (req, res) => {
   try {
     const companyId = req.params.id;
@@ -3728,7 +3726,6 @@ module.exports = {
   REMOVEDDangerousFallbackEndpoint,
   companyUsageEndpoint,
   mockEndpoint,
-// ponytail: companyPlansEndpoint removed
   getCompanyInfoEndpoint,
   safeUsageEndpoint,
   updateCompanyCurrency,

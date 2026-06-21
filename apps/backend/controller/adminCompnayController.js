@@ -22,7 +22,6 @@ const {
 
 const REVIEW_RECENT_LIMIT = 5;
 const DEFAULT_PLATFORM_FEES = Object.freeze({});
-// ponytail: per-plan fees removed — platform fee now per-app/bundle
 const ACTIVE_COMPANY_APP_STATUSES = ['TRIAL', 'ACTIVE'];
 const FOLLOW_UP_OWNER_ROLES = ['SUPER_ADMIN', 'Project Manager', 'Team Lead', 'Developer', 'Tester'];
 const FOLLOW_UP_NOTIFICATION_TYPES = Object.freeze({
@@ -223,7 +222,6 @@ const getCurrentMonthWindow = () => {
 };
 
 const getDefaultPlatformFee = (plan) => 0;
-// ponytail: per-plan fees removed
 
 const isMissingTableError = (error, tableName) =>
     String(error?.message || '').includes(`The table \`public.${tableName}\` does not exist`);
@@ -495,7 +493,6 @@ const getAllCompanies = async (req, res) => {
             prisma.company.count({ where })
         ]);
 
-        // ponytail: bulk slug ensure — no loop overhead once slug exists
         const companies = [];
         for (const company of rawCompanies) {
             if (!company.slug) await ensureCompanySlug(company, { prisma });
@@ -570,7 +567,6 @@ const getCompanyDetails = async (req, res) => {
 
         const { start: periodStart, end: periodEnd } = getCurrentMonthWindow();
         const resolvedPlan = company.plan || 'BASIC';
-        // ponytail: planConfiguration/planLimit queries removed — limits now per-app/bundle
         const adjustedLimits = {};
         const bonusSnapshot = {};
 
@@ -782,7 +778,6 @@ const getCompanyDetails = async (req, res) => {
                 ? await findCouponByCode(company.signupCouponCode, prisma)
                 : null);
 
-        // ponytail: plan limits removed — per-app/bundle limits used instead
 
         const usageLookup = new Map(
             usageByApp.map((entry) => [
@@ -905,7 +900,6 @@ const getCompanyDetails = async (req, res) => {
                 }),
             },
             limits: {
-                // ponytail: plan-based limits removed — per-app/bundle limits apply
                 features: {
                     advancedReports: Boolean(adjustedLimits?.hasAdvancedReports),
                     apiAccess: Boolean(adjustedLimits?.hasAPIAccess),

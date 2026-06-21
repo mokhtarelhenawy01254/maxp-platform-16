@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
   BarChart3,
@@ -7,6 +8,7 @@ import {
   Building2,
   MessageSquareText,
   MessageSquare,
+  RefreshCw,
   Settings2,
   Smartphone,
 } from "lucide-react";
@@ -68,55 +70,45 @@ interface CompanySummaryResponse {
 }
 
 export default function SuperAdminWhatsAppCompanyWorkspace() {
+  const { t } = useTranslation();
   const { companyId } = useParams<{ companyId: string }>();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<CompanySummaryResponse | null>(null);
 
-  useEffect(() => {
+  const ws = (key: string) => t(`superAdmin.whatsapp.workspace.${key}`);
+
+  const load = useCallback(async () => {
     if (!companyId) return;
-    let active = true;
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiClient.get(
+        `/admin/whatsapp/companies/${companyId}/summary`,
+        { params: { scope: "SUPER_ADMIN" } },
+      );
+      setData(response.data.data);
+    } catch (err) {
+      console.error("Error loading company WhatsApp workspace:", err);
+      setError(t("superAdmin.whatsapp.overview.errorMessage"));
+    } finally {
+      setLoading(false);
+    }
+  }, [companyId, t]);
 
-    const load = async () => {
-      try {
-        setLoading(true);
-        const response = await apiClient.get(
-          `/admin/whatsapp/companies/${companyId}/summary`,
-          {
-            params: {
-              scope: "SUPER_ADMIN",
-            },
-          },
-        );
-        if (active) {
-          setData(response.data.data);
-        }
-      } catch (error) {
-        console.error("Error loading company WhatsApp workspace:", error);
-        if (active) {
-          setData(null);
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    };
-
+  useEffect(() => {
     void load();
-    return () => {
-      active = false;
-    };
-  }, [companyId]);
+  }, [load]);
 
   if (loading) {
     return (
       <WhatsAppPageShell
-        title="مساحة شركة واتساب"
-        description="تحميل بيانات الشركة..."
+        title={ws("title")}
+        description={ws("loadingDescription")}
         icon={Building2}
         eyebrow="Super Admin"
         backHref="/super-admin/whatsapp/companies"
-        backLabel="الرجوع للشركات"
+        backLabel={ws("backLabel")}
       >
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
@@ -133,27 +125,48 @@ export default function SuperAdminWhatsAppCompanyWorkspace() {
 
   const company = data?.company;
 
+  if (error) {
+    return (
+      <WhatsAppPageShell
+        title={company ? t("superAdmin.whatsapp.workspace.titleWithName", { name: company.name }) : ws("title")}
+        description={ws("description")}
+        icon={Building2}
+        eyebrow="Super Admin"
+        backHref="/super-admin/whatsapp/companies"
+        backLabel={ws("backLabel")}
+      >
+        <Alert className="rounded-[24px] border-amber-300/70 bg-amber-500/10 text-amber-900">
+          <AlertTriangle className="size-4" />
+          <AlertTitle>{t("superAdmin.whatsapp.overview.errorTitle")}</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+          <Button onClick={load} variant="outline" className="mt-3 rounded-full">
+            <RefreshCw className="size-4" />
+            {t("superAdmin.whatsapp.overview.retry")}
+          </Button>
+        </Alert>
+      </WhatsAppPageShell>
+    );
+  }
+
   return (
     <WhatsAppPageShell
-      title={company ? `مساحة واتساب · ${company.name}` : "مساحة شركة واتساب"}
-      description="ملخص سريع لرسائل تسجيل الشركة والاشتراك قبل فتح الجلسات أو شاشة إشعارات onboarding."
+      title={company ? t("superAdmin.whatsapp.workspace.titleWithName", { name: company.name }) : ws("title")}
+      description={ws("description")}
       icon={Building2}
       eyebrow="Super Admin"
       backHref="/super-admin/whatsapp/companies"
-      backLabel="الرجوع للشركات"
+      backLabel={ws("backLabel")}
       actions={
         companyId ? (
           <>
             <Button
               nativeButton={false}
               variant="outline"
-              render={
-                <Link to={`/super-admin/whatsapp/companies/${companyId}/settings?tab=sessions`} />
-              }
+              render={<Link to={`/super-admin/whatsapp/companies/${companyId}/settings?tab=sessions`} />}
               className="rounded-full"
             >
               <Smartphone className="size-4" />
-              ربط السيشن
+              {ws("actions.linkSession")}
             </Button>
             <Button
               nativeButton={false}
@@ -162,18 +175,16 @@ export default function SuperAdminWhatsAppCompanyWorkspace() {
               className="rounded-full"
             >
               <Settings2 className="size-4" />
-              الإعدادات
+              {ws("actions.settings")}
             </Button>
             <Button
               nativeButton={false}
               variant="outline"
-              render={
-                <Link to={`/super-admin/whatsapp/companies/${companyId}/notifications`} />
-              }
+              render={<Link to={`/super-admin/whatsapp/companies/${companyId}/notifications`} />}
               className="rounded-full"
             >
               <Bell className="size-4" />
-              إشعارات التسجيل
+              {ws("actions.notifications")}
             </Button>
             <Button
               nativeButton={false}
@@ -182,7 +193,7 @@ export default function SuperAdminWhatsAppCompanyWorkspace() {
               className="rounded-full"
             >
               <MessageSquare className="size-4" />
-              صندوق الوارد
+              {ws("actions.inbox")}
             </Button>
             <Button
               nativeButton={false}
@@ -190,7 +201,7 @@ export default function SuperAdminWhatsAppCompanyWorkspace() {
               className="rounded-full bg-[color:var(--color-primary)] text-white hover:bg-[color:color-mix(in_srgb,var(--color-primary)_84%,black)]"
             >
               <BarChart3 className="size-4" />
-              التحليلات
+              {ws("actions.analytics")}
             </Button>
           </>
         ) : null
@@ -199,22 +210,18 @@ export default function SuperAdminWhatsAppCompanyWorkspace() {
       {data?.summary.connectedSessions === 0 || !data?.summary.defaultSession ? (
         <Alert className="rounded-[24px] border-amber-300/70 bg-amber-500/10 text-amber-950 dark:text-amber-100">
           <AlertTriangle className="size-4" />
-          <AlertTitle>الشركة تحتاج ربط سيشن أولًا</AlertTitle>
+          <AlertTitle>{ws("noSessionAlert.title")}</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-2">
-            <span>
-              قبل تشغيل الأتمتة أو الاعتماد على الإشعارات، افتح تبويب الجلسات واربط session متصلة واجعلها افتراضية.
-            </span>
+            <span>{ws("noSessionAlert.description")}</span>
             {companyId ? (
               <Button
                 nativeButton={false}
                 size="sm"
-                render={
-                  <Link to={`/super-admin/whatsapp/companies/${companyId}/settings?tab=sessions`} />
-                }
+                render={<Link to={`/super-admin/whatsapp/companies/${companyId}/settings?tab=sessions`} />}
                 className="rounded-full bg-amber-700 text-white hover:bg-amber-800"
               >
                 <Smartphone className="size-4" />
-                فتح الجلسات
+                {ws("actions.openSessions")}
               </Button>
             ) : null}
           </AlertDescription>
@@ -223,30 +230,30 @@ export default function SuperAdminWhatsAppCompanyWorkspace() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <WhatsAppMetricCard
-          label="الجلسات"
+          label={ws("metrics.sessions")}
           value={data?.summary.sessionsTotal || 0}
-          hint={`${data?.summary.connectedSessions || 0} جلسة متصلة`}
+          hint={t("superAdmin.whatsapp.workspace.metrics.sessionsHint", { connected: data?.summary.connectedSessions || 0 })}
           icon={Smartphone}
           tone="success"
         />
         <WhatsAppMetricCard
-          label="الإشعارات"
-          value={data?.summary.notificationsEnabled ? "مفعلة" : "معطلة"}
-          hint="حالة محرك الإشعارات"
+          label={ws("metrics.notifications")}
+          value={data?.summary.notificationsEnabled ? ws("metrics.notificationsEnabled") : ws("metrics.notificationsDisabled")}
+          hint={ws("metrics.notificationsHint")}
           icon={Bell}
           tone="primary"
         />
         <WhatsAppMetricCard
-          label="القوالب"
+          label={ws("metrics.templates")}
           value={data?.summary.templatesTotal || 0}
-          hint={`${data?.stats.total || 0} رسالة onboarding خلال 30 يوم`}
+          hint={t("superAdmin.whatsapp.workspace.metrics.templatesHint", { total: data?.stats.total || 0 })}
           icon={Settings2}
           tone="info"
         />
         <WhatsAppMetricCard
-          label="الفشل"
+          label={ws("metrics.failures")}
           value={data?.stats.failed || 0}
-          hint={`${data?.stats.read || 0} رسالة مقروءة`}
+          hint={t("superAdmin.whatsapp.workspace.metrics.failuresHint", { read: data?.stats.read || 0 })}
           icon={MessageSquareText}
           tone="danger"
         />
@@ -254,12 +261,12 @@ export default function SuperAdminWhatsAppCompanyWorkspace() {
 
       <div className="grid gap-4 xl:grid-cols-2">
         <WhatsAppSurfaceCard
-          title="الجلسات الحالية"
-          description="الجلسات المتاحة للشركة، مع توضيح الجلسة الافتراضية."
+          title={ws("sessionsCard.title")}
+          description={ws("sessionsCard.description")}
         >
           <div className="space-y-3">
             {(data?.sessions || []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">لا توجد جلسات واتساب لهذه الشركة حتى الآن.</p>
+              <p className="text-sm text-muted-foreground">{ws("sessionsCard.empty")}</p>
             ) : (
               data?.sessions.map((session) => (
                 <div
@@ -274,7 +281,7 @@ export default function SuperAdminWhatsAppCompanyWorkspace() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {session.isDefault ? (
-                      <Badge className="rounded-full bg-emerald-600 text-white">افتراضية</Badge>
+                      <Badge className="rounded-full bg-emerald-600 text-white">{ws("sessionsCard.defaultBadge")}</Badge>
                     ) : null}
                     <Badge variant="outline" className="rounded-full">
                       {session.status}
@@ -287,12 +294,12 @@ export default function SuperAdminWhatsAppCompanyWorkspace() {
         </WhatsAppSurfaceCard>
 
         <WhatsAppSurfaceCard
-          title="أحدث القوالب"
-          description="آخر قوالب تسجيل الشركات والاشتراكات التي يراجعها السوبر أدمن لهذه الشركة."
+          title={ws("templatesCard.title")}
+          description={ws("templatesCard.description")}
         >
           <div className="space-y-3">
             {(data?.templates || []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">لا توجد قوالب محفوظة لهذه الشركة بعد.</p>
+              <p className="text-sm text-muted-foreground">{ws("templatesCard.empty")}</p>
             ) : (
               data?.templates.map((template) => (
                 <div
@@ -307,7 +314,7 @@ export default function SuperAdminWhatsAppCompanyWorkspace() {
                       </p>
                     </div>
                     <Badge variant="outline" className="rounded-full">
-                      {template.isActive ? "نشط" : "غير نشط"}
+                      {template.isActive ? ws("templatesCard.active") : ws("templatesCard.inactive")}
                     </Badge>
                   </div>
                 </div>

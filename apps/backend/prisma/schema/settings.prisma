@@ -604,33 +604,6 @@ model StorefrontSettings {
   @@map("storefront_settings")
 }
 
-/// UNUSED - Legacy feature
-model Subscription {
-  id              String                @id @default(cuid())
-  companyId       String
-  planType        SubscriptionsPlanType
-  status          SubscriptionsStatus   @default(ACTIVE)
-  startDate       DateTime              @default(now())
-  endDate         DateTime?
-  nextBillingDate DateTime?
-  billingCycle    String                @default("monthly")
-  price           Float
-  currency        String                @default("EGP")
-  autoRenew       Boolean               @default(true)
-  trialEndDate    DateTime?
-  cancelledAt     DateTime?
-  cancelReason    String?
-  metadata        String?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  invoices        Invoice[]
-  payments        Payment[]
-  company         Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@index([companyId])
-  @@map("subscriptions")
-}
-
 model SystemPrompt {
   id        String   @id @default(cuid())
   name      String

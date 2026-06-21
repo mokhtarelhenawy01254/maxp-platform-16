@@ -2100,7 +2100,6 @@ model Company {
   storePromotionSettings          StorePromotionSettings?
   storeVisits                     StoreVisit[]
   storefrontSettings              StorefrontSettings?
-  subscriptions                   Subscription[]
   supplierPayments                SupplierPayment[]
   suppliers                       Supplier[]
   systemPrompts                   SystemPrompt[]
@@ -8551,7 +8550,6 @@ model InvoiceItem {
 model Invoice {
   id              String           @id @default(cuid())
   invoiceNumber   String           @unique
-  subscriptionId  String?
   companyId       String
   status          InvoicesStatus   @default(DRAFT)
   type            InvoiceType      @default(SUBSCRIPTION)
@@ -8570,12 +8568,10 @@ model Invoice {
   updatedAt       DateTime         @updatedAt
   invoiceItems    InvoiceItem[]
   company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  subscription    Subscription?    @relation(fields: [subscriptionId], references: [id])
   paymentReceipts PaymentReceipt[]
   payments        Payment[]
 
   @@index([companyId])
-  @@index([subscriptionId])
   @@map("invoices")
 }
 
@@ -8804,7 +8800,6 @@ model Payment {
   id               String         @id @default(cuid())
   paymentNumber    String         @unique
   invoiceId        String?
-  subscriptionId   String?
   companyId        String
   amount           Float
   currency         String         @default("EGP")
@@ -8821,11 +8816,9 @@ model Payment {
   updatedAt        DateTime       @updatedAt
   company          Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   invoice          Invoice?       @relation(fields: [invoiceId], references: [id])
-  subscription     Subscription?  @relation(fields: [subscriptionId], references: [id])
 
   @@index([companyId])
   @@index([invoiceId])
-  @@index([subscriptionId])
   @@map("payments")
 }
 
@@ -10777,33 +10770,6 @@ model StorefrontSettings {
   @@index([facebookConvApiEnabled])
   @@index([facebookPixelEnabled])
   @@map("storefront_settings")
-}
-
-/// UNUSED - Legacy feature
-model Subscription {
-  id              String                @id @default(cuid())
-  companyId       String
-  planType        SubscriptionsPlanType
-  status          SubscriptionsStatus   @default(ACTIVE)
-  startDate       DateTime              @default(now())
-  endDate         DateTime?
-  nextBillingDate DateTime?
-  billingCycle    String                @default("monthly")
-  price           Float
-  currency        String                @default("EGP")
-  autoRenew       Boolean               @default(true)
-  trialEndDate    DateTime?
-  cancelledAt     DateTime?
-  cancelReason    String?
-  metadata        String?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  invoices        Invoice[]
-  payments        Payment[]
-  company         Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@index([companyId])
-  @@map("subscriptions")
 }
 
 model SystemPrompt {

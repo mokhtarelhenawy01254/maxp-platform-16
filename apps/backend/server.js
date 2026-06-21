@@ -718,7 +718,6 @@ app.use("/api/v1/admin/whatsapp-inbox", adminWhatsAppInboxRoutes);
 app.use("/api/v1/admin/wallet", adminWalletRoutes);
 app.use("/api/v1/admin/payments", paymentRoutes);
 app.use("/api/v1/admin/invoices", invoiceRoutes);
-// ponytail: legacy plan routes removed — app/bundle pricing replaces them
 app.use("/api/v1/admin/schedulers", schedulerRoutes);
 // Backward-compatible alias for legacy admin tools that still call /api/v1/admin/*
 app.use("/api/v1/admin", systemManagementRoutes);

@@ -205,7 +205,6 @@ model Company {
   storePromotionSettings          StorePromotionSettings?
   storeVisits                     StoreVisit[]
   storefrontSettings              StorefrontSettings?
-  subscriptions                   Subscription[]
   supplierPayments                SupplierPayment[]
   suppliers                       Supplier[]
   systemPrompts                   SystemPrompt[]

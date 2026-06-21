@@ -1877,7 +1877,6 @@ exports.subscribeToBundle = async (req, res) => {
       const nextBillingDate = new Date();
       nextBillingDate.setDate(nextBillingDate.getDate() + 30);
       await prisma.$transaction(async (tx) => {
-        // ponytail: subscription now tracks status only, not plan pricing
         await tx.platformSubscription.upsert({
           where: { companyId },
           update: { status: subscriptionStatus, trialEndDate, nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
@@ -2046,4 +2045,3 @@ exports.subscribeToBundle = async (req, res) => {
   }
 };
 
-// ponytail: subscribeToUnlimited removed — unlimited access model removed with plan system

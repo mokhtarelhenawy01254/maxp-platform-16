@@ -5,7 +5,6 @@ const verifyToken = require("../utils/verifyToken");
 
 // Middleware for all routes
 router.use(verifyToken.authenticateToken);
-// ponytail: checkSubscription removed — wallet access not gated by plan anymore
 
 // --- Company Wallet & Billing Routes ---
 router.get('/balance', walletController.getBalance);

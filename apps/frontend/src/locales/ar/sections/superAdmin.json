@@ -241,5 +241,170 @@
       "positions": "المناصب",
       "invoices": "الفواتير"
     }
+  },
+  "whatsapp": {
+    "overview": {
+      "title": "واتساب المنصة",
+      "description": "مراقبة جاهزية واتساب عبر الشركات من شاشة واحدة.",
+      "errorTitle": "تعذر التحميل",
+      "errorMessage": "تعذر تحميل لوحة واتساب للسوبر أدمن حالياً.",
+      "retry": "إعادة المحاولة",
+      "infoTitle": "ملكية واضحة للشاشات",
+      "infoDescription": "شاشة السوبر أدمن تتابع جاهزية الشركات، ربط السيشن، وأتمتة المنصة. أما إشعارات العملاء والطلبات فتظل داخل مساحة كل شركة.",
+      "openCompanies": "فتح الشركات",
+      "metrics": {
+        "totalCompanies": "إجمالي الشركات",
+        "totalCompaniesHint": "{{active}} شركة فعالة",
+        "companiesWithSessions": "شركات لديها جلسات",
+        "companiesWithSessionsHint": "{{connected}} منها متصلة",
+        "connectedSessions": "الجلسات المتصلة",
+        "connectedSessionsHint": "{{disconnected}} جلسة تحتاج متابعة",
+        "messages24h": "رسائل آخر 24 ساعة",
+        "messages24hHint": "{{failed}} فشل خلال 7 أيام",
+        "notificationsEnabled": "شركات الإشعارات المفعلة",
+        "notificationsEnabledHint": "الشركات التي فعّلت محرك الإشعارات",
+        "templates": "القوالب",
+        "templatesHint": "{{active}} قالب نشط"
+      },
+      "topEvents": {
+        "title": "الأحداث الأكثر استخدامًا",
+        "description": "أكثر أنواع الإشعارات إرسالًا خلال آخر 30 يومًا.",
+        "empty": "لا توجد بيانات إرسال كافية حتى الآن.",
+        "eventColumn": "الحدث",
+        "categoryColumn": "التصنيف",
+        "totalColumn": "الإجمالي"
+      },
+      "quickNav": {
+        "title": "تنقل سريع",
+        "description": "أهم الشاشات التي ستحتاجها لإدارة واتساب من السوبر أدمن.",
+        "links": {
+    "logs": {
+      "title": "سجلات واتساب",
+      "description": "مراقبة رسائل تسجيل الشركات والاشتراك التي تمر عبر مساحة السوبر أدمن فقط.",
+      "filtersTitle": "فلاتر السجلات",
+      "searchPlaceholder": "ابحث بالرقم أو المحتوى أو الشركة",
+      "statusAll": "كل الحالات",
+      "companyAll": "كل الشركات",
+      "listTitle": "سجل onboarding للشركات",
+      "listDescription": "أحدث رسائل تسجيل الشركات والاشتراك الخارجة من نطاق السوبر أدمن.",
+      "empty": "لا توجد سجلات مطابقة للفلاتر الحالية.",
+      "columns": {
+        "company": "الشركة",
+        "event": "الحدث",
+        "status": "الحالة",
+        "recipient": "المستلم",
+        "time": "الوقت"
+      },
+      "statusPlaceholder": "الحالة",
+      "companyPlaceholder": "الشركة"
+    },
+    "companies": {
+            "title": "شركات واتساب",
+            "description": "راجع جاهزية كل شركة وافتح مساحة العمل الخاصة بها."
+          },
+          "session": {
+            "title": "ربط السيشن",
+            "description": "ادخل إلى تبويب الجلسات داخل الشركة لربط session وجعلها افتراضية."
+          },
+          "automations": {
+            "title": "أتمتة المنصة",
+            "description": "تعرض فقط الأتمتة المملوكة للسوبر أدمن وليس كل أتمتة الشركات."
+          },
+    "workspace": {
+      "title": "مساحة شركة واتساب",
+      "titleWithName": "مساحة واتساب · {{name}}",
+      "loadingDescription": "تحميل بيانات الشركة...",
+      "description": "ملخص سريع لرسائل تسجيل الشركة والاشتراك قبل فتح الجلسات أو شاشة إشعارات onboarding.",
+      "backLabel": "الرجوع للشركات",
+      "actions": {
+        "linkSession": "ربط السيشن",
+        "settings": "الإعدادات",
+        "notifications": "إشعارات التسجيل",
+        "inbox": "صندوق الوارد",
+        "analytics": "التحليلات",
+        "openSessions": "فتح الجلسات"
+      },
+      "noSessionAlert": {
+        "title": "الشركة تحتاج ربط سيشن أولًا",
+        "description": "قبل تشغيل الأتمتة أو الاعتماد على الإشعارات، افتح تبويب الجلسات واربط session متصلة واجعلها افتراضية."
+      },
+      "metrics": {
+        "sessions": "الجلسات",
+        "sessionsHint": "{{connected}} جلسة متصلة",
+        "notifications": "الإشعارات",
+        "notificationsEnabled": "مفعلة",
+        "notificationsDisabled": "معطلة",
+        "notificationsHint": "حالة محرك الإشعارات",
+        "templates": "القوالب",
+        "templatesHint": "{{total}} رسالة onboarding خلال 30 يوم",
+        "failures": "الفشل",
+        "failuresHint": "{{read}} رسالة مقروءة"
+      },
+      "sessionsCard": {
+        "title": "الجلسات الحالية",
+        "description": "الجلسات المتاحة للشركة، مع توضيح الجلسة الافتراضية.",
+        "empty": "لا توجد جلسات واتساب لهذه الشركة حتى الآن.",
+        "defaultBadge": "افتراضية"
+      },
+      "templatesCard": {
+        "title": "أحدث القوالب",
+        "description": "آخر قوالب تسجيل الشركات والاشتراكات التي يراجعها السوبر أدمن لهذه الشركة.",
+        "empty": "لا توجد قوالب محفوظة لهذه الشركة بعد.",
+        "active": "نشط",
+        "inactive": "غير نشط"
+      }
+    },
+    "logs": {
+            "title": "السجلات المركزية",
+            "description": "راقب الإرسال والفشل عبر جميع الشركات من شاشة واحدة."
+          }
+        }
+      },
+      "recentFailures": {
+        "title": "آخر حالات الفشل",
+        "description": "آخر الرسائل التي فشلت حتى يسهل تتبع الشركات أو القوالب المتعثرة.",
+        "empty": "لا توجد حالات فشل مسجلة خلال آخر 7 أيام."
+      }
+    },
+    "companies": {
+      "title": "شركات واتساب",
+      "description": "كل شركة وحالتها في onboarding واتساب، مع مسار واضح لربط السيشن ثم فتح رسائل التسجيل والاشتراك.",
+      "filtersTitle": "فلاتر الشركات",
+      "filtersDescription": "ابحث بسرعة عن الشركات الجاهزة أو التي تحتاج تدخل.",
+      "searchPlaceholder": "ابحث بالاسم أو الإيميل أو الـ slug",
+      "statusAll": "كل الحالات",
+      "statusLabels": {
+        "connected": "متصل",
+        "disconnected": "غير متصل",
+        "not-configured": "غير مُجهز",
+        "attention": "يحتاج متابعة"
+      },
+      "notificationsAll": "الكل",
+      "notificationsEnabled": "الإشعارات مفعلة",
+      "notificationsDisabled": "الإشعارات معطلة",
+      "listTitle": "قائمة الشركات",
+      "listDescription": "افتح أي شركة للتحكم في الجلسات ورسائل تسجيل الشركة والاشتراك.",
+      "empty": "لا توجد شركات مطابقة للفلاتر الحالية.",
+      "columns": {
+        "company": "الشركة",
+        "status": "الحالة",
+        "sessions": "الجلسات",
+        "notifications": "الإشعارات",
+        "templates": "القوالب",
+        "failures": "الفشل",
+        "actions": "إجراءات"
+      },
+      "stats": {
+        "sessions": "الجلسات",
+        "notifications": "الإشعارات",
+        "templates": "القوالب",
+        "failures": "الفشل"
+      },
+      "buttons": {
+        "linkSession": "ربط السيشن",
+        "openWorkspace": "فتح المساحة",
+        "notifications": "الإشعارات"
+      }
+    }
   }
 }

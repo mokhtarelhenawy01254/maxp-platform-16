@@ -239,8 +239,23 @@ export default function AgentProfilesPage() {
     }
   }, []);
 
+  const autoOpenedRef = useRef(false);
+
   /* ── Load agents ── */
   useEffect(() => { loadAgents(); }, [loadAgents]);
+
+  /* ── Auto-open create dialog when no agents ── */
+  useEffect(() => {
+    if (agentsLoading) return;
+    if (agents.length > 0) {
+      autoOpenedRef.current = false;
+      return;
+    }
+    if (!autoOpenedRef.current && agents.length === 0) {
+      autoOpenedRef.current = true;
+      setCreateOpen(true);
+    }
+  }, [agents.length, agentsLoading]);
 
   const orderedAgents = useMemo(() => {
     const ceo = agents.find((a) => a.role === "CEO");
@@ -623,7 +638,7 @@ export default function AgentProfilesPage() {
                   <p className={`text-xs font-semibold truncate ${
                     selectedId === agent.id ? "text-primary" : "text-foreground/80"
                   }`}>{agent.name}</p>
-                  <span className={`inline-block size-1.5 rounded-full flex-shrink-0 ${
+                  <span className={`inline-block size-2.5 rounded-full flex-shrink-0 ${
                     profile && selectedId === agent.id && active ? "bg-emerald-500" : "bg-muted-foreground/30"
                   }`} />
                 </div>
@@ -717,7 +732,7 @@ export default function AgentProfilesPage() {
                     )}
                     {profile && (
                       <>
-                        <span className={`inline-block size-2 rounded-full ${active ? "bg-emerald-500" : "bg-muted-foreground/30"}`} aria-hidden="true" />
+                        <span className={`inline-block size-3 rounded-full ${active ? "bg-emerald-500" : "bg-muted-foreground/30"}`} aria-hidden="true" />
                         <span className="text-xs text-muted-foreground">{active ? t("agentProfiles.header.status.active") : t("agentProfiles.header.status.paused")}</span>
                         {channels.map((ch) => (
                           <span key={ch} className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">{t(`agentProfiles.channel.${ch}`)}</span>
@@ -770,21 +785,28 @@ export default function AgentProfilesPage() {
               )}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground/70">{t("agentProfiles.header.noSelection")}</p>
+            <div className="space-y-2">
+            <p className="text-sm text-muted-foreground/70">{t("agentProfiles.header.noSelectionHint")}</p>
+            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setCreateOpen(true)}>
+              <Plus className="size-3.5 ml-1" />{t("agentProfiles.sidebar.addTitle")}
+            </Button>
+          </div>
           )}
         </div>
         {/* Tabs */}
-        <div className="border-b border-border/50 px-4 lg:px-6 flex gap-1 overflow-x-auto scrollbar-thin">
-          {tabs.map(({ key, label, icon }) => (
-            <button key={key} onClick={() => setTab(key)}
-              className={`flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors whitespace-nowrap rounded-t-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                tab === key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground/80"
-              }`}
-            >
-              {icon}{label}
-            </button>
-          ))}
-        </div>
+        {tabs.length > 1 && (
+          <div className="border-b border-border/50 px-4 lg:px-6 flex gap-1 overflow-x-auto scrollbar-thin">
+            {tabs.map(({ key, label, icon }) => (
+              <button key={key} onClick={() => setTab(key)}
+                className={`flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors whitespace-nowrap rounded-t-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  tab === key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground/80"
+                }`}
+              >
+                {icon}{label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto p-4 lg:p-6">
@@ -1054,14 +1076,17 @@ export default function AgentProfilesPage() {
               <Bot className="mx-auto mb-4 size-14 text-muted-foreground/20" />
               <h2 className="text-base font-semibold text-muted-foreground/80">{t("agentProfiles.empty.title")}</h2>
               <p className="mt-2 text-sm text-muted-foreground/60 max-w-md">{t("agentProfiles.empty.desc")}</p>
-              <Button className="mt-6" onClick={() => navigate("/admin/ai-chat")}>
-                <MessageSquare className="size-4 ml-2" />{t("agentProfiles.empty.chatCta")}
+              <Button className="mt-6" onClick={() => setCreateOpen(true)}>
+                <Plus className="size-4 ml-2" />{t("agentProfiles.empty.createCta")}
               </Button>
             </div>
           ) : !selectedId && (
             <div className="flex flex-col items-center justify-center py-24 text-center">
-              <Bot className="size-10 text-muted-foreground/20 mb-3" />
-              <p className="text-sm text-muted-foreground/60">{t("agentProfiles.header.noSelection")}</p>
+              <Bot className="size-12 text-muted-foreground/15 mb-4" />
+              <p className="text-sm text-muted-foreground/60 mb-4">{t("agentProfiles.header.noSelectionHint")}</p>
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setCreateOpen(true)}>
+                <Plus className="size-3.5 ml-1" />{t("agentProfiles.sidebar.addTitle")}
+              </Button>
             </div>
           )}
         </div>

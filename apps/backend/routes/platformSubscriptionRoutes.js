@@ -3,7 +3,6 @@ const router = express.Router();
 const platformSubscriptionController = require('../controller/platformSubscriptionController');
 const verifyToken = require("../utils/verifyToken");
 
-// ponytail: checkSubscription middleware removed — subscription status handled per-app via checkAppAccess
 const basicSubscriptionCheck = async (req, res, next) => {
   next();
 };
