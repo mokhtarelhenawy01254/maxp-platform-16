@@ -205,12 +205,21 @@ class ModelManager:
                 result = await db_session.execute(select(GlobalAiConfig))
                 config = result.scalar_one_or_none()
                 if config:
+                    raw_settings = config.settings or {}
+                    if isinstance(raw_settings, str):
+                        import json as _json
+                        try:
+                            raw_settings = _json.loads(raw_settings)
+                        except Exception:
+                            raw_settings = {}
+                    priority_from_col = config.provider_priority or []
+                    priority_from_settings = raw_settings.get("providerPriority") or []
                     cfg_dict = {
                         "id": str(config.id),
                         "default_provider": config.default_provider,
                         "enable_failover": config.enable_failover,
-                        "provider_priority": config.provider_priority or [],
-                        "settings": config.settings or {},
+                        "provider_priority": priority_from_col or priority_from_settings,
+                        "settings": raw_settings,
                     }
                     self._global_config_cache = cfg_dict
                     self._global_config_last_loaded = now
