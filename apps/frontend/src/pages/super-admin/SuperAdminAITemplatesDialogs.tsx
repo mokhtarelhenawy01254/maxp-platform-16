@@ -14,7 +14,7 @@ import { Brain, Plus, Trash2, Send, CheckCircle, Copy } from "lucide-react";
 export const ROLE_ICONS: Record<string, string> = {
   CEO: "👔", SUPPORT: "🎧", SALES: "🤝", SMART_SELLER: "🛒",
   MARKETING: "📢", ORDER: "📦", INVENTORY: "📊", COMPETITOR: "🔍",
-  FACEBOOK_SALES_SUPPORT: "💬", SAS_SALES: "🛍️",
+  FACEBOOK_SALES_SUPPORT: "💬", SAS_SALES: "🛍️", SALES_REP: "🛒",
 };
 
 export const ROLE_COLORS: Record<string, string> = {
@@ -23,9 +23,10 @@ export const ROLE_COLORS: Record<string, string> = {
   MARKETING: "bg-pink-100 text-pink-700", ORDER: "bg-cyan-100 text-cyan-700",
   INVENTORY: "bg-slate-100 text-slate-700", COMPETITOR: "bg-red-100 text-red-700",
   FACEBOOK_SALES_SUPPORT: "bg-indigo-100 text-indigo-700", SAS_SALES: "bg-green-100 text-green-700",
+  SALES_REP: "bg-amber-100 text-amber-700",
 };
 
-export const ROLES = ["CEO", "SUPPORT", "SALES", "SMART_SELLER", "MARKETING", "ORDER", "INVENTORY", "COMPETITOR", "FACEBOOK_SALES_SUPPORT", "SAS_SALES"];
+export const ROLES = ["CEO", "SUPPORT", "SALES", "SMART_SELLER", "MARKETING", "ORDER", "INVENTORY", "COMPETITOR", "FACEBOOK_SALES_SUPPORT", "SAS_SALES", "SALES_REP"];
 
 export const toneColors: Record<string, string> = {
   empathetic: "text-pink-600 bg-pink-50", persuasive: "text-amber-600 bg-amber-50",
@@ -39,7 +40,7 @@ export interface TemplateItem {
   description: string;
   personaMeta: { language?: string; dialect?: string; tone?: string; formality?: string; };
   soulPreview: string; toolsCount: number; skillsCount: number; channels: string[];
-  budget: { dailyUsd?: number; }; industries: string[];
+  budget: { dailyUsd?: number; }; industries: string[]; isActive?: boolean;
 }
 
 interface FullTemplate {
@@ -50,7 +51,7 @@ interface FullTemplate {
   instructions_tools: string | null; instructions_persona: string | null;
   human_approval: Record<string, any>; handoffs: any[]; mcp_servers: any[];
   budget: Record<string, any>; output_schema: Record<string, any> | null;
-  config: Record<string, any>; created_at: string; updated_at: string;
+  is_active: boolean; config: Record<string, any>; created_at: string; updated_at: string;
 }
 
 /* ════════════════════════════════════════════════
@@ -117,12 +118,15 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
   const [err, setErr] = useState<string | null>(null);
   const [form, setForm] = useState<Record<string, any>>({});
 
+  const [isActive, setIsActive] = useState(true);
+
   useEffect(() => {
     (async () => {
       try {
         const { data } = await apiClient.get(`/super-admin/agents/${t.slug}`);
         if (data.agent) {
           const a = data.agent as FullTemplate; setFull(a);
+          setIsActive(a.is_active !== false);
           setForm({
             name: a.name, role: a.role, version: a.version,
             persona_meta: a.persona_meta || {},
@@ -143,7 +147,10 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
   const update = (key: string, value: any) => setForm(p => ({ ...p, [key]: value }));
   const save = async () => {
     setSaving(true); setErr(null);
-    try { await apiClient.put(`/super-admin/agents/${t.slug}`, form); onUpdated(); onClose(); }
+    try {
+      await apiClient.put(`/super-admin/agents/${t.slug}`, { ...form, is_active: isActive });
+      onUpdated(); onClose();
+    }
     catch (e: any) { setErr(e?.response?.data?.error || e.message || "حدث خطأ"); }
     finally { setSaving(false); }
   };
@@ -189,6 +196,10 @@ export const EditDialog: React.FC<{ template: TemplateItem; onClose: () => void;
                 </select>
               </div>
               <Input label="الإصدار" value={form.version || ""} onChange={e => update("version", e.target.value)} />
+              <div className="flex items-center gap-2">
+                <Switch checked={isActive} onCheckedChange={setIsActive} />
+                <span className="text-xs font-medium">{isActive ? "نشط (يظهر في إنشاء الوكيل)" : "مخفي (لا يظهر في إنشاء الوكيل)"}</span>
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 <Input label="اللغة" value={form.persona_meta?.language || ""} onChange={e => update("persona_meta", { ...form.persona_meta, language: e.target.value })} />
                 <Input label="اللهجة" value={form.persona_meta?.dialect || ""} onChange={e => update("persona_meta", { ...form.persona_meta, dialect: e.target.value })} />
@@ -250,11 +261,13 @@ export const PreviewDialog: React.FC<{ template: TemplateItem; onClose: () => vo
   const [loadingSoul, setLoadingSoul] = useState(false);
 
   useEffect(() => {
-    if (t.slug && !fullSoul && !loadingSoul) {
-      setLoadingSoul(true);
-      apiClient.get(`/super-admin/agents/${t.slug}`).then(({ data }) => setFullSoul(data.agent?.instructions_soul || "")).catch(() => setFullSoul("")).finally(() => setLoadingSoul(false));
-    }
-  }, [t.slug, fullSoul, loadingSoul]);
+    setFullSoul(null);
+    setLoadingSoul(true);
+    apiClient.get(`/super-admin/agents/${t.slug}`)
+      .then(({ data }) => setFullSoul(data.agent?.instructions_soul || null))
+      .catch(() => setFullSoul(null))
+      .finally(() => setLoadingSoul(false));
+  }, [t.slug]);
 
   const toneColor = (tone?: string) => toneColors[tone || ""] || "text-gray-600 bg-gray-50";
 
@@ -297,21 +310,27 @@ export const PreviewDialog: React.FC<{ template: TemplateItem; onClose: () => vo
    ════════════════════════════════════════════════ */
 export const ApplyDialog: React.FC<{ template: TemplateItem; onClose: () => void }> = ({ template: t, onClose }) => {
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [models, setModels] = useState<{ modelName: string; provider: string; keyName: string }[]>([]);
   const [loadingCompanies, setLoadingCompanies] = useState(true);
+  const [modelsLoading, setModelsLoading] = useState(true);
   const [selectedId, setSelectedId] = useState("");
+  const [selectedModel, setSelectedModel] = useState("");
   const [applying, setApplying] = useState(false);
   const [done, setDone] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => { (async () => {
     try { const { data } = await apiClient.get("/super-admin/companies/quick-list"); if (data.success) setCompanies(data.companies); }
     catch { } finally { setLoadingCompanies(false); }
+    try { const { data } = await apiClient.get("/super-admin/agents/available-models"); if (data.success) setModels(data.models); }
+    catch { } finally { setModelsLoading(false); }
   })(); }, []);
 
   const apply = async () => {
     if (!selectedId) return;
-    setApplying(true);
-    try { await apiClient.post("/super-admin/agents/apply-template", { templateSlug: t.slug, companyId: selectedId }); setDone(true); }
-    catch { } finally { setApplying(false); }
+    setApplying(true); setErr(null);
+    try { await apiClient.post("/super-admin/agents/apply-template", { templateSlug: t.slug, companyId: selectedId, model: selectedModel || undefined }); setDone(true); }
+    catch (e: any) { setErr(e?.response?.data?.error || e.message || "حدث خطأ"); } finally { setApplying(false); }
   };
 
   return (
@@ -322,7 +341,14 @@ export const ApplyDialog: React.FC<{ template: TemplateItem; onClose: () => void
           <div className="flex flex-col items-center gap-2 py-4"><CheckCircle className="size-12 text-green-500" /><p className="font-bold">تم تطبيق قالب {t.name} بنجاح!</p><p className="text-xs text-muted-foreground">الوكيل جاهز للعمل على الشركة المحددة.</p></div>
           <DialogFooter><Button onClick={onClose}>إغلاق</Button></DialogFooter>
         </> : <>
+          {err && <Alert variant="destructive"><AlertDescription>{err}</AlertDescription></Alert>}
           <p className="text-sm">تطبيق قالب <strong>{t.icon} {t.name}</strong> على شركة:</p>
+          {modelsLoading ? <div className="flex justify-center py-2"><LoadingSpinner /></div>
+          : <select value={selectedModel} onChange={e => setSelectedModel(e.target.value)}
+              className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm mb-2">
+              <option value="">النموذج الافتراضي (من القالب)</option>
+              {models.map(m => <option key={m.modelName} value={m.modelName}>{m.modelName} ({m.provider} — {m.keyName})</option>)}
+            </select>}
           {loadingCompanies ? <div className="flex justify-center py-4"><LoadingSpinner /></div>
           : <select value={selectedId} onChange={e => setSelectedId(e.target.value)}
               className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm">
@@ -385,18 +411,10 @@ export const DuplicateDialog: React.FC<{ template: TemplateItem; onClose: () => 
     try {
       const { data } = await apiClient.get(`/super-admin/agents/${t.slug}`);
       if (!data.agent) throw new Error("فشل تحميل بيانات القالب");
-      const a = data.agent;
+      const { created_at, updated_at, is_active, agent_templates, ...rest } = data.agent;
       await apiClient.post("/super-admin/agents", {
-        slug: newSlug.trim(), name: newName.trim(), role: a.role || t.role,
-        version: a.version, model_policy: a.model_policy,
-        allowed_tools: a.allowed_tools, allowed_skills: a.allowed_skills,
-        channels: a.channels, guardrails: a.guardrails,
-        persona_meta: a.persona_meta,
-        instructions_soul: a.instructions_soul,
-        instructions_agents: a.instructions_agents,
-        instructions_tools: a.instructions_tools,
-        instructions_persona: a.instructions_persona,
-        human_approval: a.human_approval, budget: a.budget,
+        ...rest,
+        slug: newSlug.trim(), name: newName.trim(), role: rest.role || t.role,
       });
       onCreated(); onClose();
     } catch (e: any) { setErr(e?.response?.data?.error || e.message || "حدث خطأ"); }

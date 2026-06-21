@@ -563,7 +563,7 @@ router.get("/companies/quick-list", async (req, res) => {
 // GET /agents — list all agent templates
 router.get("/agents", async (req, res) => {
   try {
-    const result = await aiServiceAdminClient.listAgentTemplates();
+    const result = await aiServiceAdminClient.listAgentTemplates({ all: 'true' });
     return res.json({
       success: true,
       agents: Array.isArray(result) ? result.map(a => ({
@@ -581,7 +581,7 @@ router.get("/agents", async (req, res) => {
 const AGENT_ICONS = {
   CEO: '👔', SUPPORT: '🎧', SALES: '🤝', SMART_SELLER: '🛒',
   MARKETING: '📢', ORDER: '📦', INVENTORY: '📊', COMPETITOR: '🔍',
-  FACEBOOK_SALES_SUPPORT: '💬', SAS_SALES: '🛍️',
+  FACEBOOK_SALES_SUPPORT: '💬', SAS_SALES: '🛍️', SALES_REP: '🛒',
 };
 
 const AGENT_INDUSTRIES = {
@@ -601,7 +601,7 @@ const AGENT_INDUSTRIES = {
 // GET /agents/marketplace — enriched listing for the template marketplace
 router.get("/agents/marketplace", async (req, res) => {
   try {
-    const result = await aiServiceAdminClient.listAgentTemplates();
+    const result = await aiServiceAdminClient.listAgentTemplates({ all: 'true' });
     return res.json({
       success: true,
       templates: Array.isArray(result) ? result.map(a => ({
@@ -615,6 +615,7 @@ router.get("/agents/marketplace", async (req, res) => {
         channels: a.channels || [],
         budget: a.budget || {},
         industries: AGENT_INDUSTRIES[a.slug] || [],
+        isActive: a.is_active !== false,
       })) : [],
     });
   } catch (error) {
@@ -623,10 +624,25 @@ router.get("/agents/marketplace", async (req, res) => {
   }
 });
 
+// GET /agents/available-models — list all enabled models for super admin
+router.get("/agents/available-models", async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const models = await prisma.aiModelConfig.findMany({
+      where: { isEnabled: true, aiKey: { isActive: true } },
+      include: { aiKey: { select: { id: true, name: true, provider: true, keyType: true } } },
+      orderBy: [{ priority: "asc" }, { createdAt: "asc" }],
+    });
+    return res.json({ success: true, models: models.map(m => ({ id: m.id, modelName: m.modelName, provider: m.aiKey.provider, keyId: m.aiKey.id, keyName: m.aiKey.name, keyType: m.aiKey.keyType, priority: m.priority })), count: models.length });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // POST /agents/apply-template — apply a template to a company
 router.post("/agents/apply-template", async (req, res) => {
   try {
-    const { templateSlug, companyId } = req.body || {};
+    const { templateSlug, companyId, model } = req.body || {};
     if (!templateSlug || !companyId)
       return res.status(400).json({ success: false, error: 'templateSlug و companyId مطلوبان' });
     const template = await aiServiceAdminClient.getAgentTemplate(templateSlug);
@@ -634,7 +650,7 @@ router.post("/agents/apply-template", async (req, res) => {
       return res.status(404).json({ success: false, error: 'القالب غير موجود' });
     const result = await aiServiceAdminClient.spawnAgent({
       companyId, template_slug: templateSlug, role: template.role || 'CEO',
-      name: template.name,
+      name: template.name, model: model || undefined,
     });
     return res.json({ success: true, agent: result, message: 'تم تطبيق القالب بنجاح' });
   } catch (error) {

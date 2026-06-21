@@ -14,6 +14,7 @@ class AgentTemplateRead(BaseModel):
     name: str
     version: str
     model_policy: dict[str, Any]
+    is_active: bool = True
     allowed_tools: list[str]
     allowed_skills: list[str]
     channels: list[str]
@@ -46,6 +47,7 @@ class AgentTemplateList(BaseModel):
     persona_meta: dict[str, Any] = {}
     instructions_soul: str | None = None
     budget: dict[str, Any] = {}
+    is_active: bool = True
 
 
 class AgentCreate(BaseModel):
