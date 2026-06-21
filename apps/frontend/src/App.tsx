@@ -15,6 +15,7 @@ import PerformanceOptimizer from "./components/PerformanceOptimizer";
 
 const Layout = React.lazy(() => import("./components/layout/Layout"));
 const AuthLayout = React.lazy(() => import("./components/layout/AuthLayout"));
+const SuperAdminLayout = React.lazy(() => import("./components/layout/SuperAdminLayout"));
 
 
 // Import pages directly
@@ -1533,14 +1534,6 @@ const AppContent = () => {
             />
             {/* New Storefront Theme Engine - Fully Isolated */}
             <Route path="/store/*" element={<StorefrontShell />} />
-            <Route
-              path="/super-admin/login"
-              element={
-                <AuthLayout>
-                  <ModernLogin />
-                </AuthLayout>
-              }
-            />
             {isAuthenticated && (
               <>
             <Route
@@ -5962,9 +5955,9 @@ const AppContent = () => {
                 <Route
                   path="/admin/support"
                   element={
-                    <Layout>
+                    <SuperAdminLayout>
                       <SupportAdmin />
-                    </Layout>
+                    </SuperAdminLayout>
                   }
                 />
                 {/* Gamification Route */}

@@ -593,6 +593,7 @@ const DevTasksList: React.FC = () => {
               </p>
             </div>
           </div>
+        </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => handleExport("csv")}>
             <ArrowDownTrayIcon className="size-4" />
