@@ -347,11 +347,27 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     );
   }
 
-  const handleBackToCompanies = () => {
+  const isValidSuperAdminSession = (): boolean => {
     const superAuth = localStorage.getItem("superAuth");
-    const superUser = localStorage.getItem("superUser");
+    const superUserStr = localStorage.getItem("superUser");
+    if (!superAuth || !superUserStr) return false;
+    try {
+      const superUser = JSON.parse(superUserStr);
+      if (superUser.role !== "SUPER_ADMIN") return false;
+      const payload = JSON.parse(atob(superAuth.split(".")[1]));
+      if (payload.exp * 1000 < Date.now()) return false;
+      return true;
+    } catch { return false; }
+  };
 
-    if (!superAuth || !superUser) return;
+  const handleBackToCompanies = () => {
+    if (!isValidSuperAdminSession()) {
+      localStorage.removeItem("superAuth");
+      localStorage.removeItem("superUser");
+      return;
+    }
+    const superAuth = localStorage.getItem("superAuth")!;
+    const superUser = localStorage.getItem("superUser")!;
 
     tokenManager.setAccessToken(superAuth);
     localStorage.setItem("user", superUser);
@@ -453,7 +469,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
             ) : null}
           </div>
 
-          {localStorage.getItem("superAuth") ? (
+          {isValidSuperAdminSession() ? (
             <div className="business-shell-chip" data-variant="warning">
               <span>{t("sidebar.superAdminLogin")}</span>
               <button

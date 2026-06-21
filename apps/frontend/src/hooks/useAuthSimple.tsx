@@ -570,6 +570,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       bumpAuthStateVersion();
       tokenManager.clearTokens();
       localStorage.removeItem('user');
+      localStorage.removeItem('superAuth');
+      localStorage.removeItem('superUser');
       setUser(null);
 
       // 🔌 Disconnect socket to force fresh connection on next login
