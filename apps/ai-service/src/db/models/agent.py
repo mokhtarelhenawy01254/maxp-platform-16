@@ -39,6 +39,7 @@ class AgentTemplate(Base):
     mcp_servers: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
     budget: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     output_schema: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    is_active: Mapped[bool] = mapped_column(nullable=False, default=True)
     config: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),

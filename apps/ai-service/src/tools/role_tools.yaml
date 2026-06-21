@@ -117,4 +117,23 @@ roles:
     - deal_params
     - purchase_prediction
 
+  SALES_REP:
+    - product_search
+    - product_top_selling
+    - product_performance
+    - category_list
+    - customer_info
+    - customer_top_buyers
+    - order_lookup
+    - order_create_confirmed
+    - inventory_check
+    - discount_create_draft
+    - shipping_rates
+    - whatsapp_send
+    - facebook_reply
+    - knowledge_search
+    - knowledge_ask_merchant
+    - knowledge_create_faq
+    - abandoned_carts
+
   CEO: []

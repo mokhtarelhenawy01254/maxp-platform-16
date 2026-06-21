@@ -380,9 +380,12 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
 
 @router.get("/templates", response_model=list[AgentTemplateList])
 @router.get("/agent-templates", response_model=list[AgentTemplateList])
-async def list_agent_templates(session: SessionDep) -> list[AgentTemplateList]:
-    """List all agent templates."""
-    templates = await list_templates(session)
+async def list_agent_templates(
+    session: SessionDep,
+    include_inactive: bool = Query(False, alias="all"),
+) -> list[AgentTemplateList]:
+    """List agent templates. Default: active only. Use ?all=true to include inactive."""
+    templates = await list_templates(session, active_only=not include_inactive)
     return [AgentTemplateList.model_validate(t) for t in templates]
 
 
@@ -785,6 +788,7 @@ async def get_manager_context(
                     "maxToolCount": meta.get("max_tool_count", 0),
                     "skillMd": meta.get("instructions", ""),
                     "version": row.version or "1.0.0",
+                    "group": _skill_group(row.id),
                 })
             else:
                 skills.append({
@@ -796,6 +800,7 @@ async def get_manager_context(
                     "maxToolCount": row.max_tool_count or 0,
                     "skillMd": row.content or row.instructions or "",
                     "version": row.version or "1.0.0",
+                    "group": _skill_group(row.id),
                 })
     except Exception:
         logger.warning("skills_db_query_failed", company_id=company_id)
@@ -842,6 +847,27 @@ def _tool_group(name: str) -> str:
     return prefix
 
 
+_SKILL_GROUP = {
+    "campaign-report": "marketing", "facebook-ad-draft": "marketing",
+    "facebook-sales-conversion": "marketing",
+    "cart-recovery": "sales", "deal-closing": "sales",
+    "discount-proposal": "sales", "post-sale-retention": "sales",
+    "sales-co-pilot": "sales", "smart-followup": "sales",
+    "smart-negotiation": "sales", "upsell-engine": "sales",
+    "catalog-search": "product", "pricing-review": "pricing",
+    "customer-context-summary": "customer",
+    "exchange-support": "support", "handoff-to-human": "support",
+    "delegate-goal": "management", "hire-agent": "management",
+    "read-company-state": "management", "review-agent-performance": "management",
+    "low-stock-watch": "inventory", "order-support": "order",
+    "public-store-builder": "store",
+}
+
+
+def _skill_group(skill_id: str) -> str:
+    return _SKILL_GROUP.get(skill_id, "other")
+
+
 @router.get("/tools")
 async def list_tools() -> list[dict[str, Any]]:
     """List all available tools from the tool registry."""
@@ -862,6 +888,50 @@ async def list_tools() -> list[dict[str, Any]]:
         })
     from src.tools.overrides import merge_descriptions
     return merge_descriptions(result)
+
+
+@router.get("/skills")
+async def list_skills(
+    session: SessionDep,
+) -> list[dict[str, Any]]:
+    """List all enabled skills across all companies."""
+    from src.db.models.skill import Skill as SkillModel
+    from src.skills.integration import _get_skill_meta
+
+    skills = []
+    try:
+        skill_rows = (await session.execute(
+            select(SkillModel).where(SkillModel.enabled).order_by(SkillModel.name)
+        )).scalars().all()
+        for row in skill_rows:
+            meta = _get_skill_meta(row.id)
+            if meta:
+                skills.append({
+                    "id": meta["id"],
+                    "displayName": meta["name"],
+                    "description": meta.get("description", ""),
+                    "allowedTools": meta.get("allowed_tools", []),
+                    "requiresHumanApproval": meta.get("requires_human_approval", False),
+                    "maxToolCount": meta.get("max_tool_count", 0),
+                    "skillMd": meta.get("instructions", ""),
+                    "version": row.version or "1.0.0",
+                    "group": _skill_group(row.id),
+                })
+            else:
+                skills.append({
+                    "id": row.id,
+                    "displayName": row.name,
+                    "description": row.description or "",
+                    "allowedTools": row.allowed_tools or [],
+                    "requiresHumanApproval": row.requires_human_approval,
+                    "maxToolCount": row.max_tool_count or 0,
+                    "skillMd": row.content or row.instructions or "",
+                    "version": row.version or "1.0.0",
+                    "group": _skill_group(row.id),
+                })
+    except Exception:
+        logger.warning("skills_query_failed")
+    return skills
 
 
 @router.put("/tools/{name}")
@@ -1318,6 +1388,7 @@ async def create_agent_template(
         handoffs=body.get("handoffs", []),
         mcp_servers=body.get("mcpServers", []),
         budget=body.get("budget", {}),
+        is_active=body.get("isActive", body.get("is_active", True)),
         config=body.get("config", {}),
     )
     session.add(template)
@@ -1340,7 +1411,7 @@ async def update_agent_template(
     updatable = [
         "name", "role", "version", "model_policy", "allowed_tools", "allowed_skills",
         "channels", "guardrails", "persona_meta", "human_approval", "handoffs",
-        "mcp_servers", "budget", "config",
+        "mcp_servers", "budget", "is_active", "config",
     ]
     for field in updatable:
         if field in body:

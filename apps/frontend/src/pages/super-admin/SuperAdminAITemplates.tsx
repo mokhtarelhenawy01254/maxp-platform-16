@@ -117,6 +117,7 @@ const SuperAdminAITemplates: React.FC = () => {
                 <tr className="border-b bg-muted/30 text-xs text-muted-foreground">
                   <th className="text-right p-3 font-medium">القالب</th>
                   <th className="text-right p-3 font-medium">الدور</th>
+                  <th className="text-right p-3 font-medium">الحالة</th>
                   <th className="text-right p-3 font-medium">الإصدار</th>
                   <th className="text-right p-3 font-medium">المجالات</th>
                   <th className="text-right p-3 font-medium">الإحصائيات</th>
@@ -144,6 +145,11 @@ const SuperAdminAITemplates: React.FC = () => {
                       </td>
                       <td className="p-3">
                         <span className={`text-[0.65rem] px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[t.role] || "bg-gray-100 text-gray-700"}`}>{t.role}</span>
+                      </td>
+                      <td className="p-3">
+                        <span className={`text-[0.55rem] px-1.5 py-0.5 rounded-full font-medium ${t.isActive !== false ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                          {t.isActive !== false ? "نشط" : "مخفي"}
+                        </span>
                       </td>
                       <td className="p-3 text-xs text-muted-foreground">{t.version}</td>
                       <td className="p-3">
@@ -175,7 +181,7 @@ const SuperAdminAITemplates: React.FC = () => {
                     </tr>
                     {expandedSlug === t.slug && (
                       <tr className="bg-muted/20">
-                        <td colSpan={7} className="p-3">
+                        <td colSpan={8} className="p-3">
                           <div className="flex gap-4">
                             {t.soulPreview && <div className="flex-1"><p className="text-[0.6rem] font-bold text-muted-foreground mb-1">لمحة عن الشخصية</p><p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap line-clamp-4 dir-rtl">{t.soulPreview}</p></div>}
                             {t.personaMeta?.tone && (

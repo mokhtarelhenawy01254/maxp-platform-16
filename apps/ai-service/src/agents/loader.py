@@ -94,6 +94,7 @@ def _discover_templates(agents_root: Path | None = None) -> list[dict[str, Any]]
             "mcp_servers": manifest.get("mcpServers", []),
             "budget": manifest.get("budget", {}),
             "output_schema": manifest.get("outputSchema"),
+            "is_active": manifest.get("isActive", True),
             "config": manifest.get("config", {}),
         })
     return templates
@@ -143,10 +144,12 @@ async def get_template(slug: str, session: AsyncSession) -> AgentTemplate | None
     return result.scalar_one_or_none()
 
 
-async def list_templates(session: AsyncSession) -> list[AgentTemplate]:
-    result = await session.execute(
-        select(AgentTemplate).order_by(AgentTemplate.role, AgentTemplate.slug)
-    )
+async def list_templates(session: AsyncSession, active_only: bool = False) -> list[AgentTemplate]:
+    stmt = select(AgentTemplate)
+    if active_only:
+        stmt = stmt.where(AgentTemplate.is_active == True)
+    stmt = stmt.order_by(AgentTemplate.role, AgentTemplate.slug)
+    result = await session.execute(stmt)
     return list(result.scalars().all())
 
 

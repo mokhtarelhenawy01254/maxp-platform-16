@@ -61,6 +61,10 @@ async function listTools() {
   return request('GET', '/admin/tools') || [];
 }
 
+async function listSkills() {
+  return request('GET', '/admin/skills') || [];
+}
+
 async function updateToolMeta(toolName, data) {
   return request('PUT', `/admin/tools/${encodeURIComponent(toolName)}`, data);
 }
@@ -215,8 +219,12 @@ async function deleteKnowledgeEmbeddingItem(sourceId, sourceType) {
 
 // ── Agent Template Management (2026 unified approach) ──────────────
 
-async function listAgentTemplates() {
-  return request('GET', '/admin/agent-templates');
+async function listAgentTemplates(params = {}) {
+  const query = Object.entries(params)
+    .filter(([_, v]) => v !== undefined && v !== null)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join('&');
+  return request('GET', `/admin/agent-templates${query ? '?' + query : ''}`);
 }
 
 async function getAgentTemplate(slug) {
@@ -266,6 +274,7 @@ async function updateGlobalFilterSettings(companyId, data) {
 
 module.exports = {
   listTools,
+  listSkills,
   updateToolMeta,
   listAgentTemplates,
   getAgentTemplate,
