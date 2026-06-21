@@ -12,7 +12,7 @@ import {
   ClockIcon,
   PhoneIcon,
   EnvelopeIcon,
-  BoltIcon,
+
   ChevronDownIcon,
   ChevronUpIcon,
   CheckIcon,
@@ -1885,7 +1885,7 @@ const UnifiedInbox: React.FC = () => {
                       className="business-chip-button"
                       aria-label={t("unifiedInbox.quickReplies")}
                     >
-                      <BoltIcon className="w-5 h-5" aria-hidden="true" />
+                      <ChatBubbleLeftRightIcon className="w-5 h-5" aria-hidden="true" />
                     </button>
                     <button
                       onClick={() => setShowTextGallery(true)}

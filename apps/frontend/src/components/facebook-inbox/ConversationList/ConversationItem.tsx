@@ -128,7 +128,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
 
             <div className="mb-0.5 flex items-center justify-between gap-2">
               <h4
-                className={`truncate text-sm ${conversation.unreadCount > 0 ? "font-bold" : "font-medium"}`}
+                className="truncate text-sm font-bold"
                 style={{ color: "var(--color-foreground)" }}
               >
                 {conversation.customerName}
@@ -143,8 +143,12 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
 
             {/* Last message */}
             <p
-              className={`truncate text-[13px] ${conversation.unreadCount > 0 ? "font-medium" : ""}`}
-              style={{ color: "var(--color-muted-foreground)" }}
+              className={`truncate text-[12px] ${conversation.unreadCount > 0 ? "font-medium" : "font-normal"}`}
+              style={{
+                color: conversation.unreadCount > 0
+                  ? "var(--color-muted-foreground)"
+                  : "color-mix(in srgb, var(--color-muted-foreground) 70%, transparent)",
+              }}
             >
               {conversation.lastMessageIsFromCustomer ? "" : "أنت: "}
               {conversation.lastMessage}
