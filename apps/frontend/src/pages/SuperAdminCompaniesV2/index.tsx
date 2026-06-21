@@ -367,7 +367,7 @@ export default function SuperAdminCompaniesV2() {
   const [transferring, setTransferring] = useState(false);
 
   const [actionsSheetOpen, setActionsSheetOpen] = useState(false);
-  const [actionsCompany, setActionsCompany] = useState<Company | null>(null);
+  const [actionsCompany] = useState<Company | null>(null);
 
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; ids: string[]; name: string }>({ open: false, ids: [], name: "" });
   const [deleting, setDeleting] = useState(false);
@@ -381,7 +381,7 @@ export default function SuperAdminCompaniesV2() {
 
   // Data integration
   const enrichedCompanies = useMemo(() => enrichCompanies(companies, admin?.id || null), [companies, admin?.id]);
-  const quickStats = useMemo(() => computeQuickStats(enrichedCompanies, admin?.id || null), [enrichedCompanies, admin?.id]);
+  const quickStats = useMemo(() => computeQuickStats(enrichedCompanies), [enrichedCompanies]);
 
   const filteredCompanies = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -848,7 +848,6 @@ export default function SuperAdminCompaniesV2() {
                 onLoginAsAdmin={handleLoginAsAdmin}
                 onRunFollowUpAction={handleRunFollowUpAction}
                 isMobile={isMobile}
-                stats={quickStats}
               />
             </CardContent>
           </Card>

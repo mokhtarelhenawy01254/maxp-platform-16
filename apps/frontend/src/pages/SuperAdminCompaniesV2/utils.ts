@@ -140,13 +140,13 @@ export function enrichCompanies(companies: Company[], currentAdminId: string | n
     return {
       ...company,
       followUp,
-      followUpReminder: getCompanyFollowUpReminderState(followUp, { currentAdminId: currentAdminId || null, staleStatus } as Parameters<typeof getCompanyFollowUpReminderState>[1]),
-      followUpAutomation: getCompanyFollowUpAutomationState(followUp, { staleStatus } as Parameters<typeof getCompanyFollowUpAutomationState>[1]),
+      followUpReminder: getCompanyFollowUpReminderState(followUp, { currentAdminId, staleStatus } as any),
+      followUpAutomation: getCompanyFollowUpAutomationState(followUp, { staleStatus } as any),
     };
   });
 }
 
-export function computeQuickStats(companies: Company[], currentAdminId: string | null): QuickStats {
+export function computeQuickStats(companies: Company[]): QuickStats {
   const activeCompanies = companies.filter((c) => c.isActive).length;
   const enterpriseCompanies = companies.filter((c) => c.plan === "ENTERPRISE").length;
   const connectedFacebookPages = companies.reduce((s, c) => s + getCount(c, "facebookPages"), 0);
@@ -161,8 +161,12 @@ export function computeQuickStats(companies: Company[], currentAdminId: string |
       if (Date.now() - ct.getTime() > 72 * 60 * 60 * 1000) stale72h++;
     }
   }
-  const automationStats = getCompaniesFollowUpAutomationStats(companies);
-  const reminderStats = getCompaniesFollowUpReminderStats(companies, currentAdminId || null);
+  let escalationDue = 0, urgentEscalationDue = 0, myDueToday = 0;
+  for (const c of companies) {
+    if (c.followUpAutomation?.needsEscalation) escalationDue++;
+    if (c.followUpAutomation?.needsUrgentEscalation) urgentEscalationDue++;
+    if (c.followUpReminder?.isMine && c.followUpReminder?.needsFollowUpToday) myDueToday++;
+  }
 
   return {
     totalCompanies: companies.length,
@@ -170,9 +174,9 @@ export function computeQuickStats(companies: Company[], currentAdminId: string |
     enterpriseCompanies,
     connectedFacebookPages,
     followUpNow,
-    escalationDue: automationStats.escalationDue,
-    urgentEscalationDue: automationStats.urgentEscalationDue,
+    escalationDue,
+    urgentEscalationDue,
     stale72h,
-    myDueToday: reminderStats.myDueToday,
+    myDueToday,
   };
 }

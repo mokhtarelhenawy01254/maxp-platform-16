@@ -304,7 +304,11 @@ export default function BundleDetails() {
                 )}
               </button>
 
-              <button className="w-full mt-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 text-sm flex items-center justify-center gap-2">
+              <button
+                onClick={handleSubscribe}
+                disabled={activating}
+                className="w-full mt-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 text-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
                 <CreditCard size={16} />
                 اشترك وادفع الآن — ٩٩٩ ج.م/شهر
               </button>
