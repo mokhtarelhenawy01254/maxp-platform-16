@@ -1124,80 +1124,59 @@ export default function AgentProfilesPage() {
               {createStep === 0 && (
                 <div className="space-y-3">
                   <section>
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <span className="size-1.5 rounded-full bg-indigo-500" />
-                      <h4 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("agentProfiles.create.template")}</h4>
-                    </div>
+                    <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">{t("agentProfiles.create.template")}</label>
                     {templatesLoading ? (
-                      <div className="flex items-center gap-2 py-2.5 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                      <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
                         <Loader2 className="size-3.5 animate-spin text-indigo-500" />
                         <span className="text-xs text-slate-400">{t("agentProfiles.create.loadingTemplates")}</span>
                       </div>
                     ) : (
-                      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
                         <button type="button" onClick={() => setNewAgentTemplate(null)}
-                          className={`flex flex-col items-center gap-1 p-2 min-w-[72px] rounded-xl border-2 text-center transition-colors shrink-0 ${
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-colors shrink-0 ${
                             !newAgentTemplate
-                              ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30"
-                              : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                              ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400"
+                              : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300"
                           }`}
-                        >
-                          <span className={`size-7 flex items-center justify-center rounded-lg text-base transition-colors ${!newAgentTemplate ? "bg-indigo-100 dark:bg-indigo-900/40" : "bg-slate-100 dark:bg-slate-800"}`}>⚙️</span>
-                          <p className={`text-[10px] font-semibold ${!newAgentTemplate ? "text-indigo-700 dark:text-indigo-400" : "text-slate-600 dark:text-slate-400"}`}>{t("agentProfiles.create.custom")}</p>
-                          {!newAgentTemplate && <span className="size-1 rounded-full bg-indigo-500" />}
-                        </button>
+                        >⚙️ {t("agentProfiles.create.custom")}</button>
                         {templates.map((tpl) => (
                           <button key={tpl.slug} type="button" onClick={() => { setNewAgentTemplate(tpl.slug); if (!newAgentName) setNewAgentName(tpl.name); }}
-                            className={`flex flex-col items-center gap-1 p-2 min-w-[72px] rounded-xl border-2 text-center transition-colors shrink-0 ${
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-colors shrink-0 ${
                               newAgentTemplate === tpl.slug
-                                ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30"
-                                : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                                ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400"
+                                : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300"
                             }`}
-                          >
-                            <span className={`size-7 flex items-center justify-center rounded-lg text-base transition-colors ${newAgentTemplate === tpl.slug ? "bg-indigo-100 dark:bg-indigo-900/40" : "bg-slate-100 dark:bg-slate-800"}`}>
-                              {templateIcon(tpl.slug)}
-                            </span>
-                            <p className={`text-[10px] font-semibold leading-tight ${newAgentTemplate === tpl.slug ? "text-indigo-700 dark:text-indigo-400" : "text-slate-600 dark:text-slate-400"}`}>{tpl.name}</p>
-                            <span className="text-[8px] text-slate-400">{t("agentProfiles.create.toolsCount", { n: tpl.allowedTools?.length ?? 0, m: tpl.allowedSkills?.length ?? 0 })}</span>
-                            {newAgentTemplate === tpl.slug && <span className="size-1 rounded-full bg-indigo-500" />}
-                          </button>
+                          >{templateIcon(tpl.slug)} {tpl.name}</button>
                         ))}
                       </div>
                     )}
                   </section>
 
-                  <section>
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <span className="size-1.5 rounded-full bg-indigo-500" />
-                      <h4 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("agentProfiles.create.identity")}</h4>
+                  <div className="flex gap-2">
+                    <div className="flex-1 space-y-1.5">
+                      <label htmlFor="new-agent-name" className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">{t("agentProfiles.create.name")}</label>
+                      <Input id="new-agent-name" placeholder={t("agentProfiles.create.namePlaceholder")} value={newAgentName} onChange={(e) => setNewAgentName(e.target.value)} disabled={creating} className="h-7 text-sm" />
                     </div>
-                    <div className="flex gap-2.5">
-                      <div className="flex-shrink-0">
-                        <label className="text-[9px] font-medium text-slate-400 block mb-1 text-center">{t("agentProfiles.icon.label")}</label>
-                        <div className="grid grid-cols-4 gap-0.5">
-                          {AGENT_ICONS.map((icon) => (
-                            <button key={icon} type="button" onClick={() => setNewAgentIcon(icon)} title={icon}
-                              className={`size-7 flex items-center justify-center rounded-lg text-sm border transition-colors shadow-sm ${
-                                newAgentIcon === icon
-                                  ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 dark:border-indigo-600"
-                                  : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                              }`}
-                            >{icon}</button>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex-1 space-y-1.5">
-                        <div>
-                          <label htmlFor="new-agent-name" className="text-[9px] font-medium text-slate-400 block mb-0.5">{t("agentProfiles.create.name")}</label>
-                          <Input id="new-agent-name" placeholder={t("agentProfiles.create.namePlaceholder")} value={newAgentName} onChange={(e) => setNewAgentName(e.target.value)} disabled={creating} className="h-7 text-sm" />
-                        </div>
-                        <div>
-                          <label htmlFor="new-agent-desc" className="text-[9px] font-medium text-slate-400 block mb-0.5">{t("agentProfiles.create.description")}</label>
-                          <Input id="new-agent-desc" placeholder={t("agentProfiles.create.descPlaceholder")} value={newAgentDesc} onChange={(e) => setNewAgentDesc(e.target.value)} disabled={creating} className="h-7 text-sm" />
-                        </div>
+                    <div className="flex-shrink-0">
+                      <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">{t("agentProfiles.icon.label")}</label>
+                      <div className="grid grid-cols-4 gap-0.5">
+                        {AGENT_ICONS.map((icon) => (
+                          <button key={icon} type="button" onClick={() => setNewAgentIcon(icon)} title={icon}
+                            className={`size-7 flex items-center justify-center rounded-md text-sm border transition-colors ${
+                              newAgentIcon === icon
+                                ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30"
+                                : "border-slate-200 dark:border-slate-700 hover:border-slate-300"
+                            }`}
+                          >{icon}</button>
+                        ))}
                       </div>
                     </div>
-                  </section>
+                  </div>
+
+                  <div>
+                    <label htmlFor="new-agent-desc" className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">{t("agentProfiles.create.description")}</label>
+                    <Input id="new-agent-desc" placeholder={t("agentProfiles.create.descPlaceholder")} value={newAgentDesc} onChange={(e) => setNewAgentDesc(e.target.value)} disabled={creating} className="h-7 text-sm" />
+                  </div>
                 </div>
               )}
 
