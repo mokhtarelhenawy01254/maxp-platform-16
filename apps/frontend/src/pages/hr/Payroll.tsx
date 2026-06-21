@@ -390,7 +390,7 @@ const Payroll: React.FC = () => {
   const handleEdit = (payroll: Payroll) => {
     setSelectedPayroll(payroll);
     setEditFormData({
-      baseSalary: payroll.baseSalary,
+      baseSalary: payroll.fullMonthBaseSalary || payroll.baseSalary,
       totalAllowances: payroll.totalAllowances,
       totalDeductions: payroll.totalDeductions,
       overtimeAmount: payroll.overtimeAmount,

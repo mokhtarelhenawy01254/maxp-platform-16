@@ -296,7 +296,7 @@ class PayrollService {
         const validUsers = await this.prisma.user.findMany({
           where: {
             OR: [
-              { userCompanies: { some: { companyId } } },
+              { userCompanies: { some: { companyId, isActive: true } } },
               { companyId: companyId } // Some users might have direct companyId
             ]
           },
@@ -771,9 +771,14 @@ class PayrollService {
   async getPayrollSummary(companyId, month, year, status) {
     try {
       // Filter out orphaned records by ensuring userId exists in User table
-      const userWhere = { companyId };
+      // Include both direct companyId and userCompanies for proper multi-tenant filtering
       const validUserIds = await this.prisma.user.findMany({
-        where: userWhere,
+        where: {
+          OR: [
+            { companyId: companyId },
+            { userCompanies: { some: { companyId, isActive: true } } }
+          ]
+        },
         select: { id: true }
       });
       const validUserIdList = validUserIds.map(u => u.id);
@@ -815,12 +820,13 @@ class PayrollService {
         where
       });
 
-      // جلب بيانات المستخدمين بشكل منفصل للحصول على أقسامهم
+      // جلب بيانات المستخدمين بشكل منفصل للحصول على أقسامهم والراتب الأساسي الكامل
       const userIds = [...new Set(payrolls.map(p => p.userId))];
       const users = await this.prisma.user.findMany({
         where: { id: { in: userIds } },
         select: {
           id: true,
+          baseSalary: true,
           departmentRelation: { select: { id: true, name: true } }
         }
       });
@@ -845,7 +851,10 @@ class PayrollService {
       };
 
       payrolls.forEach(p => {
-        summary.totalBaseSalary += parseFloat(p.baseSalary) || 0;
+        const user = usersMap.get(p.userId);
+        // Use user's full baseSalary (not pro-rated payroll baseSalary) for accurate totals
+        const fullBaseSalary = user?.baseSalary ? Number(user.baseSalary) : Number(p.baseSalary);
+        summary.totalBaseSalary += fullBaseSalary || 0;
         summary.totalAllowances += parseFloat(p.totalAllowances) || 0;
         summary.totalDeductions += parseFloat(p.totalDeductions) || 0;
         summary.totalOvertime += parseFloat(p.overtimeAmount) || 0;
@@ -859,7 +868,6 @@ class PayrollService {
         summary.byStatus[p.status] = (summary.byStatus[p.status] || 0) + 1;
 
         // حسب القسم
-        const user = usersMap.get(p.userId);
         const deptName = user?.departmentRelation?.name || 'بدون قسم';
         if (!summary.byDepartment[deptName]) {
           summary.byDepartment[deptName] = { count: 0, total: 0 };
@@ -1213,7 +1221,11 @@ class PayrollService {
           companyId,
           effectiveMonth: parseInt(month),
           effectiveYear: parseInt(year),
-          status: { in: ['APPROVED'] },
+          // Include both APPROVED and PENDING auto-deductions so they are always applied
+          OR: [
+            { status: 'APPROVED' },
+            { status: 'PENDING', category: 'AUTO_DEDUCTION' }
+          ],
           category: manualDeductionCategoryFilter
         }
       });
@@ -1363,13 +1375,14 @@ class PayrollService {
       }
     }
 
-    // Early Leave
+    // Early Leave - 60 دقيقة مسموحة شهرياً، يتم حساب الخصم بعد تجاوزها
     if (totalEarlyMinutes > 60) {
-      const earlyPenaltyHours = Math.floor(totalEarlyMinutes / 60);
+      const penalizedMinutes = totalEarlyMinutes - 60;
+      const earlyPenaltyHours = Math.ceil(penalizedMinutes / 60);
       const amount = hourlyRate * earlyPenaltyHours;
       const lastCheckOut = attendance.filter(a => a.check_out).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
       if (lastCheckOut) {
-        addDailyPenalty(lastCheckOut.date, amount, `خروج مبكر ${earlyPenaltyHours}س`);
+        addDailyPenalty(lastCheckOut.date, amount, `خروج مبكر ${earlyPenaltyHours}س (بعد خصم 60د مسموحة)`);
       }
     }
 
