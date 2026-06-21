@@ -1947,6 +1947,50 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                 }
             }
 
+            // ── AI auto-reply (Baileys sessions) ─────────────────────────────────
+            if (!fromMe && !importHistory && isNewMessage && messageContent.type === 'TEXT' && syncedCustomer?.companyId) {
+                setImmediate(async () => {
+                    try {
+                        const prisma = getSharedPrismaClient();
+                        const aiSetting = await prisma.aiSetting.findUnique({ where: { companyId: syncedCustomer.companyId } });
+                        if (!aiSetting?.autoReplyEnabled) { return; }
+                        if (aiSetting.workingHoursEnabled && aiSetting.workingHours) {
+                            try {
+                                const hours = JSON.parse(typeof aiSetting.workingHours === 'string' ? aiSetting.workingHours : '{}');
+                                const now = new Date();
+                                const dayName = now.toLocaleString('en', { weekday: 'long', timeZone: 'Africa/Cairo' }).toLowerCase();
+                                const today = hours[dayName];
+                                if (today && !today.enabled) return;
+                                if (today && today.start && today.end) {
+                                    const cur = now.getHours() * 60 + now.getMinutes();
+                                    const [sh, sm] = today.start.split(':').map(Number);
+                                    const [eh, em] = today.end.split(':').map(Number);
+                                    if (cur < sh * 60 + sm || cur > eh * 60 + em) return;
+                                }
+                            } catch(e) { /* continue */ }
+                        }
+                        console.log();
+                        const aiSdkClient = require('../aiSdkClient');
+                        const result = await aiSdkClient.sendChatMessage({
+                            companyId: syncedCustomer.companyId,
+                            customerId: syncedCustomer.id,
+                            message: messageContent.text,
+                            threadId: syncedConversation?.id || null,
+                            channel: 'WHATSAPP',
+                            memoryContext: null,
+                        });
+                        const replyText = result?.reply;
+                        if (replyText) {
+                            const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
+                            await WhatsAppMessageHandler.sendText(sessionId, remoteJid, replyText, { isAIResponse: true });
+                            console.log();
+                        }
+                    } catch(e) {
+                        console.error('❌ [WA-BAILEYS-AUTOREPLY] Error:', e.message);
+                    }
+                });
+            }
+
             // معالجة التفاعلات (أزرار/قوائم) إذا كان مفعلاً
             if (!fromMe && !importHistory && (messageContent.type === 'BUTTON_RESPONSE' || messageContent.type === 'LIST_RESPONSE')) {
                 const WhatsAppInteractionService = require('./WhatsAppInteractionService');
