@@ -276,13 +276,20 @@ def _memory_context_with_provider_controls(
 
 
 async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> BaseAgent:
-    # Look up company display name so it appears correctly in the system prompt
+    # Look up company display name + business specialty
     _company_name_row = await session.execute(
-        text("SELECT name FROM public.companies WHERE id = :cid LIMIT 1"),
+        text("""
+            SELECT c.name, bs."nameEn" AS specialty_en, bs."nameAr" AS specialty_ar
+            FROM public.companies c
+            LEFT JOIN public.business_specialties bs ON bs.id = c."businessSpecialtyId"
+            WHERE c.id = :cid
+            LIMIT 1
+        """),
         {"cid": body.company_id},
     )
     _company_name_rec = _company_name_row.mappings().one_or_none()
     _company_display_name: str = (_company_name_rec["name"] if _company_name_rec else None) or body.company_id
+    _business_specialty: str = (_company_name_rec["specialty_en"] if _company_name_rec else None) or ""
 
     # Try Python-managed agents table first
     result = await session.execute(
@@ -295,9 +302,11 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
     db_agent = result.scalar_one_or_none()
     request_config = dict(body.agent_config or {})
     raw_config = _agent_config_from_record(db_agent) if db_agent else {}
-    # Inject company display name into persona so it reaches the prompt template
+    # Inject company display name + business specialty into persona
     if raw_config:
         raw_config.setdefault("persona", {})["company_name"] = _company_display_name
+        if _business_specialty:
+            raw_config["persona"]["business_specialty"] = _business_specialty
 
     if request_config:
         req_tools = request_config.get("allowedTools") or request_config.get("allowed_tools")

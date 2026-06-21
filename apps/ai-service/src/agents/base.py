@@ -548,6 +548,7 @@ class BaseAgent:
 
         variables = {
             "company_name": self.persona.get("company_name") or self.company_id,
+            "business_specialty": self.persona.get("business_specialty") or "",
             "agent_id": self.id,
             "agent_name": self.name,
             "agent_role": self.role,

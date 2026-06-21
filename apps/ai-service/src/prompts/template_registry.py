@@ -505,12 +505,16 @@ class PromptTemplateRegistry:
         tone = template.persona_meta.get("tone", "professional")
         formality = template.persona_meta.get("formality", "formal")
 
+        specialty = str(variables.get("business_specialty") or "").strip()
+
         parts = [
             f"Name: {runtime_name}",
             f"Role: {runtime_role}",
             f"Company: {company}",
-            f"Language: {language}",
         ]
+        if specialty:
+            parts.append(f"Industry: {specialty}")
+        parts.append(f"Language: {language}")
         if runtime_name != template.name or runtime_role != template.role:
             parts.append(
                 "Identity precedence: use this runtime Name and Role instead of template metadata; "
