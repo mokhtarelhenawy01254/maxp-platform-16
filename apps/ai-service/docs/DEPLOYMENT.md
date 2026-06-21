@@ -2,6 +2,10 @@
 
 > **One script. One command. Done.** This guide targets a fresh Ubuntu 22.04/24.04 server that already runs the MaxP Node.js backend (PM2 on port 3007).
 
+## Recent Changes
+
+- **2026-06-21 — Model visibility lockdown**: Model selection moved entirely to super-admin side (`/super-admin/ai-templates`). Company clients no longer see or control the AI model. Agent files PUT no longer accepts `model` from company requests. Super-admin `apply-template` endpoint now accepts `model` parameter.
+
 ## 0. Prerequisites (one-time, on the existing server)
 
 You need **exactly one** A-record in DNS:
