@@ -167,16 +167,16 @@ export default function AIHubLayout() {
         )}
       </div>
 
-      <div className="flex-1 bg-slate-50/20 overflow-y-auto">
+      <div className="flex-1 bg-slate-50/20 overflow-hidden">
         <React.Suspense fallback={
           <div className="flex h-[400px] items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
           </div>
         }>
           {currentTab === "sandbox" && <AIAgentSandboxPage />}
-          {currentTab === "routing" && <ChannelRoutingPage />}
+          {currentTab === "routing" && <div className="h-full overflow-y-auto"><ChannelRoutingPage /></div>}
           {currentTab === "test" && selectedCompanyId
-            ? <AgentTestTab key={selectedCompanyId} companyId={selectedCompanyId} />
+            ? <div className="h-full overflow-y-auto"><AgentTestTab key={selectedCompanyId} companyId={selectedCompanyId} /></div>
             : currentTab === "test" && <div className="flex h-64 items-center justify-center text-muted-foreground">اختر شركة أولاً</div>
           }
         </React.Suspense>
