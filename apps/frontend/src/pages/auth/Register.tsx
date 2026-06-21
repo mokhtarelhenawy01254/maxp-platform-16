@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Lock, Mail, Phone, User, Eye, EyeOff, Globe2, Briefcase } from "lucide-react";
+import { Lock, Mail, Phone, User, Eye, EyeOff, Globe2, Briefcase, ChevronDown, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuthSimple";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
@@ -16,6 +16,128 @@ interface BusinessSpecialty {
   nameEn: string;
   icon: string;
 }
+
+interface BusinessTypeSelectProps {
+  specialties: BusinessSpecialty[];
+  value: string;
+  onChange: (id: string) => void;
+  placeholder: string;
+  label: string;
+  isArabic: boolean;
+  disabled?: boolean;
+}
+
+const BusinessTypeSelect: React.FC<BusinessTypeSelectProps> = ({
+  specialties, value, onChange, placeholder, label, isArabic, disabled,
+}) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = specialties.find((s) => s.id === value);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div className="elite-input-group" ref={ref} style={{ position: "relative" }}>
+      <label className="elite-label">{label}</label>
+      <div className="elite-input-wrapper">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setOpen((o) => !o)}
+          style={{
+            width: "100%",
+            padding: "0.75rem 2.75rem",
+            background: "var(--auth-input-bg)",
+            border: `1px solid ${open ? "var(--auth-accent)" : "var(--auth-input-border)"}`,
+            borderRadius: "0.875rem",
+            fontSize: "0.9375rem",
+            color: selected ? "var(--auth-text-main)" : "var(--auth-text-muted)",
+            textAlign: isArabic ? "right" : "left",
+            height: "2.875rem",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            boxShadow: open ? "0 0 0 4px rgba(184,26,26,0.1)" : "none",
+            transition: "all 0.2s ease",
+          }}
+        >
+          <span style={{ flex: 1, textAlign: isArabic ? "right" : "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {selected ? (isArabic ? selected.nameAr : selected.nameEn) : placeholder}
+          </span>
+          <ChevronDown
+            size={16}
+            style={{
+              flexShrink: 0,
+              marginInlineStart: "0.5rem",
+              color: "var(--auth-text-muted)",
+              transform: open ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "transform 0.2s ease",
+            }}
+          />
+        </button>
+        <Briefcase className="elite-input-icon" style={{ [isArabic ? "right" : "left"]: "1rem", pointerEvents: "none" }} />
+      </div>
+
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            zIndex: 999,
+            marginTop: "0.375rem",
+            background: "var(--auth-surface, #1a1a2e)",
+            border: "1px solid var(--auth-input-border)",
+            borderRadius: "0.875rem",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+            maxHeight: "240px",
+            overflowY: "auto",
+            padding: "0.375rem",
+          }}
+        >
+          {specialties.map((s) => {
+            const isSelected = s.id === value;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => { onChange(s.id); setOpen(false); }}
+                style={{
+                  width: "100%",
+                  padding: "0.625rem 0.875rem",
+                  background: isSelected ? "rgba(184,26,26,0.15)" : "transparent",
+                  border: "none",
+                  borderRadius: "0.625rem",
+                  color: isSelected ? "var(--auth-accent)" : "var(--auth-text-main)",
+                  fontSize: "0.9rem",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  textAlign: isArabic ? "right" : "left",
+                  transition: "background 0.15s ease",
+                }}
+                onMouseEnter={(e) => { if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; }}
+                onMouseLeave={(e) => { if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+              >
+                <span>{isArabic ? s.nameAr : s.nameEn}</span>
+                {isSelected && <Check size={14} style={{ flexShrink: 0, color: "var(--auth-accent)" }} />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const NEW_ACCOUNT_DESTINATION = "/marketplace";
 
@@ -280,27 +402,15 @@ const Register: React.FC = () => {
         </div>
 
         {specialties.length > 0 && (
-          <div className="elite-input-group">
-            <label className="elite-label">{copy.labels.businessType}</label>
-            <div className="elite-input-wrapper">
-              <select
-                name="businessSpecialtyId"
-                value={formData.businessSpecialtyId}
-                onChange={(e) => setFormData((prev) => ({ ...prev, businessSpecialtyId: e.target.value }))}
-                className="elite-input"
-                disabled={isLoading}
-                style={{ appearance: "none" }}
-              >
-                <option value="">{copy.businessTypePlaceholder}</option>
-                {specialties.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {isArabic ? s.nameAr : s.nameEn}
-                  </option>
-                ))}
-              </select>
-              <Briefcase className="elite-input-icon" />
-            </div>
-          </div>
+          <BusinessTypeSelect
+            specialties={specialties}
+            value={formData.businessSpecialtyId}
+            onChange={(id) => setFormData((prev) => ({ ...prev, businessSpecialtyId: id }))}
+            placeholder={copy.businessTypePlaceholder}
+            label={copy.labels.businessType}
+            isArabic={isArabic}
+            disabled={isLoading}
+          />
         )}
 
         <div className="elite-input-group">
