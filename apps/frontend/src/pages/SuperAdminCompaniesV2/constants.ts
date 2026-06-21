@@ -4,6 +4,36 @@ export const STATUS_FILTERS = [
   { value: "INACTIVE", label: "متوقفة" },
 ] as const;
 
+export const PLAN_FILTERS = [
+  { value: "ALL", label: "كل الخطط" },
+  { value: "BASIC", label: "أساسي" },
+  { value: "PRO", label: "احترافي" },
+  { value: "ENTERPRISE", label: "مؤسسي" },
+] as const;
+
+export const PLAN_OPTIONS = [
+  { value: "BASIC", label: "أساسي" },
+  { value: "PRO", label: "احترافي" },
+  { value: "ENTERPRISE", label: "مؤسسي" },
+] as const;
+
+export const FUNNEL_STAGE_FILTERS = [
+  { value: "ALL", label: "كل الرحلات" },
+  { value: "registered_no_start", label: "سجل ولم يبدأ" },
+  { value: "onboarding_in_progress", label: "Onboarding جارٍ" },
+  { value: "activation_in_progress", label: "التفعيل جارٍ" },
+  { value: "activated", label: "مفعلة" },
+  { value: "untracked", label: "بدون Funnel" },
+] as const;
+
+export const FOLLOW_UP_SAVED_VIEWS = [
+  { value: "ALL", label: "كل الشركات" },
+  { value: "FOLLOW_UP_NOW", label: "تحتاج متابعة الآن" },
+  { value: "MY_TODAY", label: "متابعتي اليوم" },
+  { value: "ESCALATION_DUE", label: "تصعيد مطلوب" },
+  { value: "STALE_72H", label: "متوقف 72 ساعة+" },
+] as const;
+
 export const CURRENCY_OPTIONS = [
   { value: "EGP", label: "جنيه مصري" },
   { value: "USD", label: "دولار أمريكي" },

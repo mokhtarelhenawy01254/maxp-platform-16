@@ -280,14 +280,14 @@ const WhatsAppInbox: React.FC = () => {
                 key={item.id}
                 type="button"
                 onClick={() => {
-                  setActiveSession(item.id);
-                  navigate(`/whatsapp-inbox/${item.id}`);
-                }}
-                className={`mb-2 w-full rounded-3xl border px-4 py-4 text-left transition ${
-                  active
-                    ? 'border-cyan-300 bg-cyan-50 shadow-sm dark:border-cyan-500/50 dark:bg-cyan-950/20'
-                    : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700'
-                }`}
+                    setActiveSession(item.id);
+                    navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/inbox/${item.id}` : `/whatsapp-inbox/${item.id}`);
+                  }}
+                  className={`mb-2 w-full rounded-3xl border px-4 py-4 text-left transition ${
+                    active
+                      ? 'border-cyan-300 bg-cyan-50 shadow-sm dark:border-cyan-500/50 dark:bg-cyan-950/20'
+                      : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700'
+                  }`}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -352,7 +352,7 @@ const WhatsAppInbox: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setActiveSession(item.id);
-                      navigate(`/whatsapp-inbox/${item.id}`);
+                      navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/inbox/${item.id}` : `/whatsapp-inbox/${item.id}`);
                     }}
                     className={`min-w-[220px] rounded-3xl border px-4 py-4 text-left transition ${
                       active
@@ -453,7 +453,7 @@ const WhatsAppInbox: React.FC = () => {
                     <button
                       key={conversation.id}
                       type="button"
-                      onClick={() => navigate(`/whatsapp-chat/${conversation.id}`)}
+                      onClick={() => navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/chat/${conversation.id}` : `/whatsapp-chat/${conversation.id}`)}
                       className="mb-3 w-full rounded-3xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-cyan-300 hover:bg-cyan-50/50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-cyan-500/60 dark:hover:bg-slate-900"
                     >
                       <div className="flex items-start justify-between gap-3">

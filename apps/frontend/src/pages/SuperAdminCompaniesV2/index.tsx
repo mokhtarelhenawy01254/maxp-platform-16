@@ -21,8 +21,8 @@ import { AlertBanner } from "./components/AlertBanner";
 import { CompanyFilters } from "./components/CompanyFilters";
 import { CompaniesTable } from "./components/CompaniesTable";
 import { BulkActionsBar } from "./components/BulkActionsBar";
-import { extractErrorMessage, formatDate, formatDateTime, sortCompanies, enrichCompanies, computeQuickStats, getCount, getDefaultFollowUpScheduleValue, toDateTimeLocalValue, fromDateTimeLocalValue, addHoursToDateTimeLocal } from "./utils";
-import { CURRENCY_OPTIONS, DEFAULT_SORT, FOLLOW_UP_STATUS_OPTIONS, PAGE_SIZE_OPTIONS } from "./constants";
+import { extractErrorMessage, formatDate, formatDateTime, sortCompanies, enrichCompanies, computeQuickStats, getCount, getPlanMeta, getDefaultFollowUpScheduleValue, toDateTimeLocalValue, fromDateTimeLocalValue, addHoursToDateTimeLocal } from "./utils";
+import { PLAN_OPTIONS, CURRENCY_OPTIONS, DEFAULT_SORT, FOLLOW_UP_STATUS_OPTIONS, PAGE_SIZE_OPTIONS } from "./constants";
 import type { Company, CompanyFormData, EmployeeFormData, FollowUpFormData, FollowUpState, FollowUpReminder, FollowUpAutomation } from "./types";
 
 // ---- Reusable components ----
@@ -312,6 +312,11 @@ function FollowUpFormContent({
 // ===== MAIN PAGE =====
 export default function SuperAdminCompaniesV2() {
   const navigate = useNavigate();
+  const { companies, isLoading, error: pageError, admin, refetch } = useCompanies();
+  const { bulkStatus, bulkDelete } = useBulkMutations();
+  const { createCompany, editCompany } = useCompanyMutations();
+  const facebookLookup = useFacebookLookup();
+
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
@@ -323,6 +328,8 @@ export default function SuperAdminCompaniesV2() {
   const [search, setSearch] = useState("");
   const [savedView, setSavedView] = useState("ALL");
   const [status, setStatus] = useState("ALL");
+  const [plan, setPlan] = useState("ALL");
+  const [funnelStage, setFunnelStage] = useState("ALL");
   const [sort, setSort] = useState(DEFAULT_SORT);
   const [rowsPerPage, setRowsPerPage] = useState("10");
   const [currentPage, setCurrentPage] = useState(1);
@@ -332,7 +339,7 @@ export default function SuperAdminCompaniesV2() {
   // Modals
   const [companyModal, setCompanyModal] = useState<{ open: boolean; mode: "create" | "edit"; company: Company | null }>({ open: false, mode: "create", company: null });
   const [companyForm, setCompanyForm] = useState<CompanyFormData>({
-    name: "", email: "", phone: "", website: "", currency: "EGP",
+    name: "", email: "", phone: "", website: "", plan: "BASIC", currency: "EGP",
     adminFirstName: "", adminLastName: "", adminEmail: "", adminPassword: "",
   });
   const [companyFormErrors, setCompanyFormErrors] = useState<Record<string, string>>({});
@@ -374,45 +381,44 @@ export default function SuperAdminCompaniesV2() {
   const [fbResults, setFbResults] = useState<import("./types").FacebookPageResult[]>([]);
   const [fbSearched, setFbSearched] = useState(false);
 
-  const pageSize = Number(rowsPerPage) || 10;
-  const { bulkStatus, bulkDelete } = useBulkMutations();
-  const { createCompany, editCompany } = useCompanyMutations();
-  const facebookLookup = useFacebookLookup();
-
-  // Server-side data — filter params trigger refetch
-  const { companies, isLoading, error: pageError, admin, refetch, total, totalPages, serverStats } = useCompanies({
-    search,
-    status,
-    savedView,
-    page: currentPage,
-    pageSize,
-  });
-
-  // Enrichment + in-page sort
+  // Data integration
   const enrichedCompanies = useMemo(() => enrichCompanies(companies, admin?.id || null), [companies, admin?.id]);
-  const sortedCompanies = useMemo(() => sortCompanies(enrichedCompanies, sort), [enrichedCompanies, sort]);
+  const quickStats = useMemo(() => computeQuickStats(enrichedCompanies, admin?.id || null), [enrichedCompanies, admin?.id]);
 
-  // Stats: DB-level totals + page-level enrichment stats
-  const pageStats = useMemo(() => computeQuickStats(sortedCompanies, admin?.id || null), [sortedCompanies, admin?.id]);
-  const quickStats = useMemo<QuickStats>(() => ({
-    totalCompanies: serverStats?.totalCompanies ?? pageStats.totalCompanies,
-    activeCompanies: serverStats?.activeCompanies ?? pageStats.activeCompanies,
-    connectedFacebookPages: pageStats.connectedFacebookPages,
-    followUpNow: serverStats?.followUpNow ?? pageStats.followUpNow,
-    escalationDue: serverStats?.escalationDue ?? pageStats.escalationDue,
-    urgentEscalationDue: serverStats?.urgentEscalationDue ?? pageStats.urgentEscalationDue,
-    stale72h: serverStats?.stale72h ?? pageStats.stale72h,
-    myDueToday: serverStats?.myDueToday ?? pageStats.myDueToday,
-  }), [serverStats, pageStats]);
+  const filteredCompanies = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return enrichedCompanies.filter((c) => {
+      if (q && !c.name?.toLowerCase().includes(q) && !c.email?.toLowerCase().includes(q) && !c.phone?.toLowerCase().includes(q) && !c.website?.toLowerCase().includes(q)) return false;
+      if (status !== "ALL") { if (status === "ACTIVE" ? !c.isActive : c.isActive) return false; }
+      if (plan !== "ALL" && String(c.plan) !== String(plan)) return false;
+      if (funnelStage !== "ALL" && c.funnelSummary?.stageKey !== funnelStage) return false;
+      if (savedView !== "ALL") {
+        if (savedView === "FOLLOW_UP_NOW" && !c.funnelStaleStatus?.needsFollowUpNow) return false;
+        if (savedView === "MY_TODAY" && !(c.followUpReminder?.isMine && c.followUpReminder?.needsFollowUpToday)) return false;
+        if (savedView === "ESCALATION_DUE" && !(c.followUpAutomation?.needsEscalation || c.followUpAutomation?.needsUrgentEscalation)) return false;
+        if (savedView === "STALE_72H" && !c.funnelStaleStatus?.isStale72h) return false;
+      }
+      return true;
+    });
+  }, [enrichedCompanies, search, status, plan, funnelStage, savedView]);
 
-  useEffect(() => { setCurrentPage(1); }, [search, savedView, status, sort, rowsPerPage]);
+  const sortedCompanies = useMemo(() => sortCompanies(filteredCompanies, sort), [filteredCompanies, sort]);
+  const pageSize = Number(rowsPerPage) || 10;
+  const totalPages = Math.max(1, Math.ceil(sortedCompanies.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedCompanies = useMemo(() => sortedCompanies.slice((safeCurrentPage - 1) * pageSize, safeCurrentPage * pageSize), [pageSize, safeCurrentPage, sortedCompanies]);
 
-  const visibleIds = sortedCompanies.map((c) => c.id);
+  useEffect(() => { setCurrentPage(1); }, [search, savedView, status, plan, funnelStage, sort, rowsPerPage]);
+  useEffect(() => { if (currentPage > totalPages) setCurrentPage(totalPages); }, [currentPage, totalPages]);
+
+  const visibleIds = paginatedCompanies.map((c) => c.id);
   const isAllVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
   const isSomeVisibleSelected = visibleIds.some((id) => selectedIds.includes(id)) && !isAllVisibleSelected;
-  const filterCount = [status !== "ALL"].filter(Boolean).length;
+  const filterCount = [status !== "ALL", plan !== "ALL", funnelStage !== "ALL"].filter(Boolean).length;
   const activeFilterLabels = [
     status !== "ALL" ? (status === "ACTIVE" ? "نشطة" : "متوقفة") : null,
+    plan !== "ALL" ? PLAN_OPTIONS.find((o) => o.value === plan)?.label : null,
+    funnelStage !== "ALL" ? funnelStage : null,
   ].filter(Boolean);
 
   // ---- Handlers ----
@@ -422,7 +428,7 @@ export default function SuperAdminCompaniesV2() {
   }, []);
 
   const handleClearFilters = useCallback(() => {
-    setSearch(""); setSavedView("ALL"); setStatus("ALL"); setSort(DEFAULT_SORT);
+    setSearch(""); setSavedView("ALL"); setStatus("ALL"); setPlan("ALL"); setFunnelStage("ALL"); setSort(DEFAULT_SORT);
   }, []);
 
   const handleOpenDetails = useCallback((company: Company) => navigate(`/super-admin/companies/${company.id}`), [navigate]);
@@ -441,10 +447,10 @@ export default function SuperAdminCompaniesV2() {
   const handleBulkDelete = useCallback(() => setDeleteDialog({ open: true, ids: selectedIds, name: "" }), [selectedIds]);
 
   const handleExport = useCallback(() => {
-    const headers = ["ID", "Name", "Email", "Phone", "Website", "Is Active", "Users", "Customers", "Facebook Pages", "Created At"];
+    const headers = ["ID", "Name", "Email", "Phone", "Website", "Plan", "Is Active", "Users", "Customers", "Facebook Pages", "Created At"];
     const lines = sortedCompanies.map((c) => [
       c.id, `"${c.name || ""}"`, c.email || "", c.phone || "", c.website || "",
-      c.isActive ? "Active" : "Inactive",
+      c.plan || "", c.isActive ? "Active" : "Inactive",
       getCount(c, "users"), getCount(c, "customers"), getCount(c, "facebookPages"),
       c.createdAt ? new Date(c.createdAt).toISOString() : "",
     ].join(","));
@@ -457,13 +463,13 @@ export default function SuperAdminCompaniesV2() {
   }, [sortedCompanies]);
 
   const handleCreateCompany = useCallback(() => {
-    setCompanyForm({ name: "", email: "", phone: "", website: "", currency: "EGP", adminFirstName: "", adminLastName: "", adminEmail: "", adminPassword: "" });
+    setCompanyForm({ name: "", email: "", phone: "", website: "", plan: "BASIC", currency: "EGP", adminFirstName: "", adminLastName: "", adminEmail: "", adminPassword: "" });
     setCompanyFormErrors({});
     setCompanyModal({ open: true, mode: "create", company: null });
   }, []);
 
   const handleEditCompany = useCallback((company: Company) => {
-    setCompanyForm({ name: company.name || "", email: company.email || "", phone: company.phone || "", website: company.website || "", currency: company.currency || "EGP", adminFirstName: "", adminLastName: "", adminEmail: "", adminPassword: "" });
+    setCompanyForm({ name: company.name || "", email: company.email || "", phone: company.phone || "", website: company.website || "", plan: company.plan || "BASIC", currency: company.currency || "EGP", adminFirstName: "", adminLastName: "", adminEmail: "", adminPassword: "" });
     setCompanyFormErrors({});
     setCompanyModal({ open: true, mode: "edit", company });
   }, []);
@@ -473,7 +479,6 @@ export default function SuperAdminCompaniesV2() {
     if (!companyForm.name.trim()) errors.name = "اسم الشركة مطلوب";
     if (!companyForm.email.trim()) errors.email = "البريد الإلكتروني مطلوب";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(companyForm.email)) errors.email = "صيغة غير صحيحة";
-    if (!companyForm.phone.trim()) errors.phone = "رقم الهاتف مطلوب";
     if (companyModal.mode === "create") {
       if (!companyForm.adminFirstName.trim()) errors.adminFirstName = "مطلوب";
       if (!companyForm.adminLastName.trim()) errors.adminLastName = "مطلوب";
@@ -493,7 +498,7 @@ export default function SuperAdminCompaniesV2() {
         await createCompany.mutateAsync({
           name: companyForm.name.trim(), email: companyForm.email.trim(),
           phone: companyForm.phone.trim() || undefined, website: companyForm.website.trim() || undefined,
-          currency: companyForm.currency,
+          plan: companyForm.plan, currency: companyForm.currency,
           adminFirstName: companyForm.adminFirstName.trim(), adminLastName: companyForm.adminLastName.trim(),
           adminEmail: companyForm.adminEmail.trim(), adminPassword: companyForm.adminPassword,
         });
@@ -501,7 +506,7 @@ export default function SuperAdminCompaniesV2() {
         await editCompany.mutateAsync({
           id: companyModal.company.id, name: companyForm.name.trim(), email: companyForm.email.trim(),
           phone: companyForm.phone.trim() || "", website: companyForm.website.trim() || "",
-          currency: companyForm.currency,
+          plan: companyForm.plan, currency: companyForm.currency,
         });
       }
       setCompanyModal((prev) => ({ ...prev, open: false }));
@@ -701,7 +706,7 @@ export default function SuperAdminCompaniesV2() {
                 <CardDescription className="text-sm text-muted-foreground/60">قاعدة بيانات متكاملة للتحكم في حسابات الشركات وأتمتة المتابعة.</CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" variant="outline" className="h-9 rounded-lg border-border/60 px-4 text-[13px] font-black" onClick={handleExport} disabled={total === 0}>
+                <Button type="button" variant="outline" className="h-9 rounded-lg border-border/60 px-4 text-[13px] font-black" onClick={handleExport} disabled={!sortedCompanies.length}>
                   <Download className="ml-1.5 size-3.5" /> تصدير
                 </Button>
                 <Button type="button" variant="outline" className="h-9 rounded-lg border-border/60 px-4 text-[13px] font-black" onClick={() => refetch()} disabled={isLoading}>
@@ -732,7 +737,7 @@ export default function SuperAdminCompaniesV2() {
                   )}
                 </Button>
                 <div className="flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/10 px-4 py-2">
-                  <span className="text-[13px] font-black text-foreground">{total} شركة</span>
+                  <span className="text-[13px] font-black text-foreground">{sortedCompanies.length} شركة</span>
                   <div className="h-4 w-px bg-primary/20" />
                   <span className="text-[13px] font-bold text-primary">{quickStats.activeCompanies} نشطة</span>
                 </div>
@@ -764,7 +769,22 @@ export default function SuperAdminCompaniesV2() {
                 </div>
                 <p className="mt-1 text-xs font-semibold text-emerald-600">{quickStats.activeCompanies} نشطة</p>
               </button>
-
+              <button
+                type="button"
+                onClick={() => { handleClearFilters(); setFunnelStage("activated"); }}
+                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-emerald-400/60 hover:bg-emerald-50/30 hover:shadow-md dark:bg-slate-950"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+                    <CheckCircle2 className="size-4" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black text-foreground">{quickStats.activated}</p>
+                    <p className="text-xs font-bold text-muted-foreground">مفعلة بالكامل</p>
+                  </div>
+                </div>
+                <p className="mt-1 text-xs font-semibold text-emerald-600">وصلت للإطلاق الأول</p>
+              </button>
               <button
                 type="button"
                 onClick={() => handleOpenView("FOLLOW_UP_NOW")}
@@ -803,11 +823,16 @@ export default function SuperAdminCompaniesV2() {
                   <CompanyFilters
                   collapsed={!filterOpen}
                   search={search} onSearchChange={setSearch}
+                  savedView={savedView} onSavedViewChange={handleOpenView}
                   status={status} onStatusChange={setStatus}
+                  plan={plan} onPlanChange={setPlan}
+                  funnelStage={funnelStage} onFunnelStageChange={setFunnelStage}
                   sort={sort} onSortChange={setSort}
                   rowsPerPage={rowsPerPage} onRowsPerPageChange={setRowsPerPage}
                   onClearAll={handleClearFilters}
+                  stats={quickStats} totalResults={sortedCompanies.length}
                   filterCount={filterCount} activeFilterLabels={activeFilterLabels}
+                  onOpenView={handleOpenView}
                   facebookLookup={{
                     query: fbQuery, onQueryChange: setFbQuery,
                     onSearch: handleFbSearch, onClear: handleFbClear,
@@ -828,12 +853,12 @@ export default function SuperAdminCompaniesV2() {
               </div>
 
               <CompaniesTable
-                companies={sortedCompanies}
+                companies={paginatedCompanies}
                 totalPages={totalPages}
-                currentPage={currentPage}
+                currentPage={safeCurrentPage}
                 onPageChange={setCurrentPage}
                 pageSize={pageSize}
-                totalItems={total}
+                totalItems={sortedCompanies.length}
                 selectedIds={selectedIds}
                 onToggleSelect={handleToggleSelect}
                 onToggleSelectAll={handleToggleSelectAll}
@@ -919,11 +944,21 @@ export default function SuperAdminCompaniesV2() {
             <FormField label="البريد الإلكتروني" error={companyFormErrors.email} required>
               <input aria-label="البريد الإلكتروني للشركة" name="company-email" autoComplete="email" type="email" dir="ltr" className="h-12 w-full rounded-lg border-border/60 bg-background px-5 text-sm font-bold shadow-sm transition-all focus:border-primary/50 focus:ring-4 focus:ring-primary/5 text-right" value={companyForm.email} onChange={(e) => setCompanyForm((prev) => ({ ...prev, email: e.target.value }))} placeholder="company@example.com" />
             </FormField>
-            <FormField label="الهاتف" error={companyFormErrors.phone} required>
+            <FormField label="الهاتف" error={companyFormErrors.phone}>
               <input aria-label="هاتف الشركة" name="company-phone" autoComplete="tel" dir="ltr" className="h-12 w-full rounded-lg border-border/60 bg-background px-5 text-sm font-bold shadow-sm transition-all focus:border-primary/50 focus:ring-4 focus:ring-primary/5 text-right" value={companyForm.phone} onChange={(e) => setCompanyForm((prev) => ({ ...prev, phone: e.target.value }))} placeholder="01000000000" />
             </FormField>
             <FormField label="الموقع الإلكتروني" error={companyFormErrors.website}>
               <input aria-label="الموقع الإلكتروني للشركة" name="company-website" autoComplete="url" dir="ltr" className="h-12 w-full rounded-lg border-border/60 bg-background px-5 text-sm font-bold shadow-sm transition-all focus:border-primary/50 focus:ring-4 focus:ring-primary/5 text-right" value={companyForm.website} onChange={(e) => setCompanyForm((prev) => ({ ...prev, website: e.target.value }))} placeholder="company.com" />
+            </FormField>
+            <FormField label="الخطة" error={companyFormErrors.plan} required>
+              <Select value={companyForm.plan} onValueChange={(v) => setCompanyForm((prev) => ({ ...prev, plan: v }))}>
+                <SelectTrigger aria-label="خطة الشركة" className="h-12 w-full rounded-lg border-border/60 bg-background px-5 text-sm font-black shadow-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-lg">
+                  {PLAN_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </FormField>
             <FormField label="العملة" error={companyFormErrors.currency} required>
               <Select value={companyForm.currency} onValueChange={(v) => setCompanyForm((prev) => ({ ...prev, currency: v }))}>

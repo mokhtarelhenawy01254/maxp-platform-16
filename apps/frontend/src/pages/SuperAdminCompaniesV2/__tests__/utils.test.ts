@@ -18,7 +18,7 @@ jest.mock("../../../utils/companyFollowUp", () => ({
 
 import {
   extractErrorMessage, formatDate, formatDateTime, toDateTimeLocalValue,
-  fromDateTimeLocalValue, normalizeWebsite, getCount, getRoleLabel,
+  fromDateTimeLocalValue, normalizeWebsite, getCount, getPlanMeta, getRoleLabel,
   sortCompanies, addHoursToDateTimeLocal,
 } from "../utils";
 
@@ -124,6 +124,23 @@ describe("getCount", () => {
 
   it("returns 0 when _count is missing", () => {
     expect(getCount({} as Company, "users")).toBe(0);
+  });
+});
+
+describe("getPlanMeta", () => {
+  it("returns enterprise meta", () => {
+    const meta = getPlanMeta("ENTERPRISE");
+    expect(meta.label).toBe("مؤسسي");
+  });
+
+  it("returns pro meta", () => {
+    const meta = getPlanMeta("PRO");
+    expect(meta.label).toBe("احترافي");
+  });
+
+  it("returns basic meta for BASIC and unknown", () => {
+    expect(getPlanMeta("BASIC").label).toBe("أساسي");
+    expect(getPlanMeta("UNKNOWN").label).toBe("أساسي");
   });
 });
 
