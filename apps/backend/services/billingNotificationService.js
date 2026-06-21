@@ -53,10 +53,6 @@ class BillingNotificationService {
         await this.checkUpcomingRenewals();
       }, 2);
 
-      await safeQuery(async () => {
-        await this.checkTrialExpirations();
-      }, 2);
-
     } catch (error) {
       console.error('❌ [BILLING] Error in daily billing checks:', error.message);
     }
@@ -94,92 +90,6 @@ class BillingNotificationService {
       }
     } catch (error) {
       console.error('❌ [BILLING] Error checking upcoming renewals:', error.message);
-    }
-  }
-
-  /**
-   * Check for trial expirations
-   * Expires TRIAL subscriptions where trialEndDate has passed.
-   * Sends reminder notifications at 7, 3, and 1 day before expiry.
-   */
-  async checkTrialExpirations() {
-    try {
-      const prisma = getSharedPrismaClient();
-      const now = new Date();
-
-      // ——— Send reminders for trials nearing expiry ———
-      const reminderDays = [7, 3, 1];
-      for (const days of reminderDays) {
-        const targetDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
-        const expiringTrials = await prisma.platformSubscription.findMany({
-          where: {
-            status: 'TRIAL',
-            trialEndDate: {
-              gte: new Date(targetDate.getTime() - 12 * 60 * 60 * 1000),
-              lte: new Date(targetDate.getTime() + 12 * 60 * 60 * 1000),
-            },
-          },
-          include: {
-            company: {
-              select: { id: true, name: true, email: true, phone: true },
-            },
-          },
-        });
-
-        for (const sub of expiringTrials) {
-          console.log(`📧 [BILLING] Trial expiry reminder (${days}d) for ${sub.company.email}`);
-
-          await prisma.billingHistory.create({
-            data: {
-              companyId: sub.companyId,
-              type: 'PLATFORM_FEE',
-              amount: 0,
-              status: 'SUCCESS',
-              description: `Trial expiry reminder: ${days} days remaining`,
-            },
-          });
-
-          // WhatsApp notifications will be added in Sprint 5
-        }
-      }
-
-      // ——— Expire trials where trialEndDate has passed ———
-      const expiredTrials = await prisma.platformSubscription.findMany({
-        where: {
-          status: 'TRIAL',
-          trialEndDate: { lte: now },
-        },
-        include: {
-          company: {
-            select: { id: true, name: true, email: true, phone: true },
-          },
-        },
-      });
-
-      for (const sub of expiredTrials) {
-        await prisma.platformSubscription.update({
-          where: { id: sub.id },
-          data: { status: 'EXPIRED' },
-        });
-
-        await prisma.billingHistory.create({
-          data: {
-            companyId: sub.companyId,
-            type: 'PLATFORM_FEE',
-            amount: 0,
-            status: 'EXPIRED',
-            description: 'Trial period ended — subscription expired',
-          },
-        });
-
-        console.log(`⏰ [BILLING] Trial expired for company ${sub.companyId} (${sub.company.name})`);
-      }
-
-      if (expiredTrials.length > 0) {
-        console.log(`⏰ [BILLING] Expired ${expiredTrials.length} trial subscriptions`);
-      }
-    } catch (error) {
-      console.error('❌ [BILLING] Error checking trial expirations:', error.message);
     }
   }
 

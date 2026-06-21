@@ -66,8 +66,7 @@ class BillingCronService {
             company: {
               select: {
                 id: true,
-                name: true,
-                plan: true
+                name: true
               }
             }
           }
@@ -172,7 +171,7 @@ class BillingCronService {
               type: 'DEDUCT',
               amount: fee,
               balanceAfter: newBalance,
-              description: `رسوم المنصة الشهرية - خطة ${company.plan}`,
+              description: `رسوم المنصة الشهرية`,
               metadata: JSON.stringify({ subscriptionId: subscription.id })
             }
           });
@@ -196,7 +195,7 @@ class BillingCronService {
               companyId,
               type: 'PLATFORM_FEE',
               amount: fee,
-              description: `رسوم المنصة الشهرية - خطة ${company.plan}`,
+              description: `رسوم المنصة الشهرية`,
               status: 'SUCCESS',
               referenceId: subscription.id
             }

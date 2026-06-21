@@ -10,6 +10,7 @@ from src.db.base import Base
 
 class AiSetting(Base):
     __tablename__ = "ai_settings"
+    __table_args__ = {"schema": "ai"}
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     company_id: Mapped[str] = mapped_column("companyId", String, nullable=False, index=True, unique=True)

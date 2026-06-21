@@ -177,7 +177,12 @@ async function getAgentFiles(agentId, companyId) {
 }
 
 async function updateAgent(agentId, companyId, data) {
-  return request('PUT', `/admin/agents/${encodeURIComponent(agentId)}/files?company_id=${encodeURIComponent(companyId)}`, data);
+  const body = { ...data };
+  if (body.allowedChannels !== undefined) {
+    body.allowed_channels = body.allowedChannels;
+    delete body.allowedChannels;
+  }
+  return request('PUT', `/admin/agents/${encodeURIComponent(agentId)}?company_id=${encodeURIComponent(companyId)}`, body);
 }
 
 async function getProductEmbeddingStatus(companyId) {

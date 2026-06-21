@@ -38,14 +38,9 @@ async def get_guardrails(
     session: SessionDep = None,
 ) -> dict[str, Any]:
     result = await session.execute(
-        text("""
-            SELECT model_settings, write_tool_scopes,
-                   human_approval_required_for_write, max_replies_per_customer
-            FROM ai.ai_settings WHERE company_id = :cid
-        """),
-        {"cid": company_id},
+        select(AiSetting).where(AiSetting.company_id == company_id)
     )
-    row = result.mappings().one_or_none()
+    row = result.scalar_one_or_none()
     if not row:
         return {
             "modelSettings": {},
@@ -54,22 +49,22 @@ async def get_guardrails(
             "maxRepliesPerCustomer": 5,
         }
     model_settings = {}
-    if row["model_settings"]:
+    if row.modelSettings:
         try:
-            model_settings = json.loads(row["model_settings"])
+            model_settings = json.loads(row.modelSettings)
         except (json.JSONDecodeError, TypeError):
             pass
     write_tool_scopes = {}
-    if row["write_tool_scopes"]:
+    if row.writeToolScopes:
         try:
-            write_tool_scopes = json.loads(row["write_tool_scopes"])
+            write_tool_scopes = json.loads(row.writeToolScopes)
         except (json.JSONDecodeError, TypeError):
             pass
     return {
         "modelSettings": model_settings,
         "writeToolScopes": write_tool_scopes,
-        "humanApprovalRequiredForWrite": row["human_approval_required_for_write"],
-        "maxRepliesPerCustomer": row["max_replies_per_customer"],
+        "humanApprovalRequiredForWrite": row.humanApprovalRequiredForWrite,
+        "maxRepliesPerCustomer": row.maxRepliesPerCustomer,
     }
 
 
@@ -102,11 +97,10 @@ async def get_auto_reply(
     session: SessionDep = None,
 ) -> dict[str, Any]:
     result = await session.execute(
-        text("SELECT auto_reply_enabled FROM ai.ai_settings WHERE company_id = :cid"),
-        {"cid": company_id},
+        select(AiSetting).where(AiSetting.company_id == company_id)
     )
-    row = result.mappings().one_or_none()
-    return {"autoReplyEnabled": row["auto_reply_enabled"] if row else False}
+    row = result.scalar_one_or_none()
+    return {"autoReplyEnabled": row.autoReplyEnabled if row else False}
 
 
 @router.put("/settings/auto-reply")
@@ -130,19 +124,15 @@ async def get_filters(
     session: SessionDep = None,
 ) -> dict[str, Any]:
     result = await session.execute(
-        text("""
-            SELECT auto_filter_enabled, negative_keywords, negative_comment_action
-            FROM ai.ai_settings WHERE company_id = :cid
-        """),
-        {"cid": company_id},
+        select(AiSetting).where(AiSetting.company_id == company_id)
     )
-    row = result.mappings().one_or_none()
+    row = result.scalar_one_or_none()
     if not row:
         return {"autoFilterEnabled": False, "negativeKeywords": "", "negativeCommentAction": "hide"}
     return {
-        "autoFilterEnabled": row["auto_filter_enabled"],
-        "negativeKeywords": row["negative_keywords"] or "",
-        "negativeCommentAction": row["negative_comment_action"],
+        "autoFilterEnabled": row.autoFilterEnabled,
+        "negativeKeywords": row.negativeKeywords or "",
+        "negativeCommentAction": row.negativeCommentAction,
     }
 
 
