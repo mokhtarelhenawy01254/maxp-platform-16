@@ -33,6 +33,7 @@ interface ChatAreaProps {
     message: string,
     attachments?: Array<{ type: string; url: string; dataUrl?: string; base64Data?: string }>
   ) => void;
+  isSuper?: boolean;
 }
 
 const TEST_IMAGES = [
@@ -64,6 +65,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   typingStage,
   activeToolCalls,
   onSendMessage,
+  isSuper = false,
 }) => {
   const { t } = useTranslation();
   const [input, setInput] = useState("");
@@ -249,6 +251,30 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     <div className="flex-1 flex flex-col h-full min-w-0 bg-slate-50/20 dark:bg-slate-905 overflow-hidden">
       {/* Scrollable Chat Message History */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        {/* Quick action chips for merchants when chat is empty */}
+        {!isSuper && messages.length === 0 && agent && canSend && (
+          <div className="flex flex-col items-center justify-center min-h-[200px] gap-4">
+            <p className="text-sm text-slate-500 font-medium">بماذا تريد أن يساعدك {agent.name}؟</p>
+            <div className="flex flex-wrap justify-center gap-2 max-w-lg">
+              {[
+                { icon: "📊", label: "كيف حال المبيعات اليوم؟" },
+                { icon: "📦", label: "تفقد آخر الطلبات" },
+                { icon: "🏪", label: "ما حالة المخزون؟" },
+                { icon: "📋", label: "أريد تقرير سريع عن المتجر" },
+                { icon: "💰", label: "كم إجمالي الإيرادات هذا الشهر؟" },
+              ].map((chip) => (
+                <button
+                  key={chip.label}
+                  onClick={() => onSendMessage(chip.label)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-600 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors"
+                >
+                  <span>{chip.icon}</span>
+                  <span>{chip.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {messages.map((msg) => {
           const parsed = parseMessageContent(msg.content);
           const attachmentImages = (msg.responseAttachments || [])
@@ -474,6 +500,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             className="w-full text-xs rounded-md border border-slate-200 dark:border-slate-800 bg-background px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-650"
           />
 
+          {isSuper && (
           <div className="flex items-center gap-2 flex-wrap text-xs">
             <span className="text-slate-450 font-medium">{t("aiHub.sandbox.chat.quickSelect")}</span>
             {TEST_IMAGES.map((img) => (
@@ -488,6 +515,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               </Badge>
             ))}
           </div>
+          )}
 
           {selectedImageUrl && (
             <div className="relative size-20">

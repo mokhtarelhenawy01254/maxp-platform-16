@@ -11,8 +11,8 @@ const AIAgentSandboxPage = React.lazy(() => import("./ai-agent-sandbox/AIAgentSa
 import ChannelRoutingPage from "./ChannelRoutingPage";
 
 const TABS = [
-  { key: "sandbox", label: "Sandbox" },
-  { key: "routing", label: "توجيه" },
+  { key: "sandbox", label: "المساعد الذكي" },
+  { key: "routing", label: "توجيه القنوات" },
   { key: "test", label: "اختبار", superOnly: true },
 ] as const;
 

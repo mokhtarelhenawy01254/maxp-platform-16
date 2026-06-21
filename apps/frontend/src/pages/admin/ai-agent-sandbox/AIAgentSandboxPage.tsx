@@ -13,6 +13,7 @@ import { HeaderBar } from "./components/HeaderBar";
 import { Button } from "@/components/ui/button";
 import AgentProfilePanel from "./components/AgentProfilePanel";
 import type { SandboxTraceSummary } from "./types/sandbox.types";
+import { useAuth } from "@/hooks/useAuthSimple";
 
 const AIAgentSandboxPage: React.FC = () => {
   const {
@@ -53,6 +54,9 @@ const AIAgentSandboxPage: React.FC = () => {
     clearError,
     clearActivityLog,
   } = useAgentSandbox();
+
+  const { user } = useAuth();
+  const isSuper = user?.role === "SUPER_ADMIN";
 
   // Agent profile files (SOUL.md, AGENTS.md) for InspectorPanel System tab
   const [agentSystemPrompt, setAgentSystemPrompt] = useState<string>("");
@@ -163,6 +167,7 @@ const AIAgentSandboxPage: React.FC = () => {
         onExport={() => setExportDialogOpen(true)}
         onAgentProfile={() => setAgentProfileDialogOpen(true)}
         isStreaming={isStreaming}
+        isSuper={isSuper}
       />
 
       {/* Main workspace - three columns */}
@@ -178,6 +183,7 @@ const AIAgentSandboxPage: React.FC = () => {
           collapsed={false}
           isSessionsLoading={isSessionsLoading}
           width={300}
+          isSuper={isSuper}
         />
         <ChatArea
           messages={activeSession?.messages || []}
@@ -190,7 +196,9 @@ const AIAgentSandboxPage: React.FC = () => {
           typingStage={typingStage}
           activeToolCalls={activeToolCalls}
           onSendMessage={sendMessage}
+          isSuper={isSuper}
         />
+        {isSuper && (
         <InspectorPanel
           tools={toolsMetadata.map((t) => ({ name: t.name, description: t.description, sideEffect: t.sideEffects || "read", enabled: true, inputSchema: undefined }))}
           activityLog={activityLog}
@@ -208,6 +216,7 @@ const AIAgentSandboxPage: React.FC = () => {
           collapsed={false}
           width={320}
         />
+        )}
       </div>
 
       {/* Export Session Modal overlay */}

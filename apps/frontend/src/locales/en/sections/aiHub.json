@@ -3,7 +3,7 @@
   "subtitle": "Intelligent Agents Center",
   "tabs": {
     "agents": "Agents",
-    "sandbox": "Sandbox",
+    "sandbox": "AI Assistant",
     "rag": "Knowledge Base",
     "tools": "Tools",
     "skills": "Skills",

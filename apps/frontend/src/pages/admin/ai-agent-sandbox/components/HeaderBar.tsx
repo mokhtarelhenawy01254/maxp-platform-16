@@ -27,6 +27,7 @@ interface HeaderBarProps {
   onExport?: () => void;
   onAgentProfile?: () => void;
   isStreaming: boolean;
+  isSuper?: boolean;
 }
 
 export const HeaderBar: React.FC<HeaderBarProps> = ({
@@ -44,6 +45,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   onExport,
   onAgentProfile,
   isStreaming,
+  isSuper = false,
 }) => {
   const optionValue = (m: ModelConfig) => `${m.provider}::${m.model}::${m.keyId || ""}`;
   const currentModel = models.find((m) => m.model === model && (!keyId || m.keyId === keyId))
@@ -71,7 +73,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
       <div className="px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3 bg-white dark:bg-slate-900 text-xs">
         <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200">
           <FlaskConical className="size-4 text-indigo-600" />
-          <span>AI Agent Sandbox</span>
+          <span>{isSuper ? "AI Agent Sandbox" : "المساعد الذكي"}</span>
         </div>
         <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
         <span className="text-slate-500">
@@ -85,7 +87,9 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
     <div className="px-2 py-1.5 border-b border-slate-200 dark:border-slate-800 flex flex-col gap-1 md:flex-row md:flex-wrap md:items-center md:gap-2 bg-white dark:bg-slate-900 text-xs select-none">
       <div className="flex items-center gap-2 min-w-0">
         <FlaskConical className="size-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-        <span className="font-bold text-slate-800 dark:text-slate-200 truncate">AI Agent Sandbox</span>
+        <span className="font-bold text-slate-800 dark:text-slate-200 truncate">
+          {isSuper ? "AI Agent Sandbox" : agent.name}
+        </span>
         {isStreaming && (
           <span className="relative flex h-2 w-2 ml-1 flex-shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -94,7 +98,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         )}
       </div>
  
-      <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+      {isSuper && <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />}
  
       {/* Agent Dropdown */}
       <div className="flex items-center gap-1.5 min-w-0">
@@ -111,7 +115,8 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         </select>
       </div>
  
-      {/* Model Dropdown */}
+      {/* Model Dropdown — super admin only */}
+      {isSuper && (
       <div className="flex items-center gap-1.5 min-w-0">
         <select
           value={selectedValue}
@@ -132,15 +137,16 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
           ))}
         </select>
       </div>
+      )}
 
-      {currentModel?.keyName && (
+      {isSuper && currentModel?.keyName && (
         <div className="hidden sm:block text-[10px] text-slate-500 pl-1">
           <span className="font-semibold block text-[9px] uppercase tracking-wider text-slate-400">Central Key</span>
           <span className="text-slate-700 dark:text-slate-300 font-medium">{currentModel.keyName}</span>
         </div>
       )}
 
-      {visibleCentralKeys.length > 0 && (
+      {isSuper && visibleCentralKeys.length > 0 && (
         <div className="hidden sm:flex items-center gap-1.5">
           <select
             value=""
@@ -158,8 +164,9 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         </div>
       )}
 
-      <div className="flex-1" />
+      {isSuper && <div className="flex-1" />}
 
+      {isSuper && (
       <div className="flex items-center gap-1.5">
         <Button
           size="sm"
@@ -222,6 +229,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
           </Button>
         )}
       </div>
+      )}
     </div>
   );
 };

@@ -25,6 +25,7 @@ interface SessionListProps {
   collapsed?: boolean;
   isSessionsLoading?: boolean;
   width?: number;
+  isSuper?: boolean;
 }
 
 export const SessionList: React.FC<SessionListProps> = ({
@@ -38,6 +39,7 @@ export const SessionList: React.FC<SessionListProps> = ({
   collapsed = false,
   isSessionsLoading = false,
   width = 256,
+  isSuper = false,
 }) => {
   const [search, setSearch] = React.useState("");
   const [editingId, setEditingId] = React.useState<string | null>(null);
@@ -204,6 +206,8 @@ export const SessionList: React.FC<SessionListProps> = ({
 
               {/* Meta details */}
               <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-semibold select-none">
+                {isSuper ? (
+                  <>
                 <span>{session.messageCount} msgs</span>
                 <span className="w-1 h-1 bg-slate-200 dark:bg-slate-800 rounded-full" />
                 <span>{session.toolCallCount} tools</span>
@@ -221,6 +225,14 @@ export const SessionList: React.FC<SessionListProps> = ({
                 <span className="ml-auto font-mono text-[9px] text-slate-400 dark:text-slate-500">
                   {formatCost(session.totalCost)}
                 </span>
+                  </>
+                ) : (
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                    {session.messages?.slice(-1)[0]?.role === "user"
+                      ? session.messages.slice(-1)[0].content.slice(0, 50) + (session.messages.slice(-1)[0].content.length > 50 ? "..." : "")
+                      : session.messages?.slice(-2, -1)[0]?.content.slice(0, 50) || ""}
+                  </span>
+                )}
               </div>
             </div>
           );
