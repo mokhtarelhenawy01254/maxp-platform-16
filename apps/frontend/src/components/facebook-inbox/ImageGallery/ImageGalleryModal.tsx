@@ -51,7 +51,6 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
   const [deleting, setDeleting] = useState<string | null>(null);
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [sendingMultiple, setSendingMultiple] = useState(false);
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   // Load images
   const loadImages = useCallback(async () => {
@@ -159,12 +158,6 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
       } else {
         newSet.add(imageId);
       }
-      console.log(
-        "🖼️ [IMAGE-GALLERY] Selection toggled:",
-        imageId,
-        "New size:",
-        newSet.size,
-      );
       return newSet;
     });
   };
@@ -181,7 +174,6 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
     onSelectMultipleImages(imagesToSend);
     setSelectedImages(new Set());
     setSendingMultiple(false);
-    setIsSelectionMode(false);
     onClose();
   };
 
@@ -301,8 +293,8 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
             </label>
 
             <div className="flex flex-wrap items-center gap-2">
-              {/* Select All Button - Only visible in Selection Mode */}
-              {isSelectionMode && savedImages.length > 0 && (
+              {/* Select All Button */}
+              {savedImages.length > 0 && (
                 <button
                   type="button"
                   onClick={toggleSelectAll}
@@ -311,38 +303,6 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
                   {selectedImages.size === savedImages.length
                     ? "إلغاء الكل"
                     : "تحديد الكل"}
-                </button>
-              )}
-
-              {/* Selection Mode Toggle */}
-              {savedImages.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsSelectionMode(!isSelectionMode);
-                    if (isSelectionMode) {
-                      setSelectedImages(new Set()); // Clear selection when turning off
-                    }
-                  }}
-                  className="business-chip-button flex items-center gap-2 px-3 py-2 text-sm"
-                  data-active={isSelectionMode}
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <span>
-                    {isSelectionMode ? "إلغاء التحديد" : "تحديد متعدد"}
-                  </span>
                 </button>
               )}
             </div>
@@ -436,19 +396,8 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
                   key={image.id}
                   className="business-gallery-card relative group cursor-pointer overflow-hidden border-2"
                   data-selected={selectedImages.has(image.id)}
-                  data-mode={isSelectionMode ? "selection" : "view"}
                   onClick={() => {
-                    if (isSelectionMode || selectedImages.size > 0) {
-                      toggleSelection(image.id);
-                      if (!isSelectionMode) setIsSelectionMode(true);
-                    } else {
-                      console.log(
-                        "🖼️ [IMAGE-GALLERY] Single click - sending:",
-                        image.filename,
-                      );
-                      onSelectImage(image.url, image.filename);
-                      onClose();
-                    }
+                    toggleSelection(image.id);
                   }}
                 >
                   <img
@@ -458,16 +407,11 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
                   />
 
                   <div
-                    className={`business-gallery-check absolute left-2 top-2 cursor-pointer transition-all ${
-                      isSelectionMode
-                        ? "opacity-100"
-                        : "opacity-0 group-hover:opacity-100"
-                    }`}
+                    className="business-gallery-check absolute left-2 top-2 cursor-pointer"
                     data-selected={selectedImages.has(image.id)}
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleSelection(image.id);
-                      if (!isSelectionMode) setIsSelectionMode(true);
                     }}
                   >
                     {selectedImages.has(image.id) ? (
@@ -589,8 +533,8 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
         <div className="business-hint-bar flex items-center justify-between text-center">
           <span>
             {selectedImages.size > 0
-              ? '💡 اضغط على "إرسال" لإرسال الصور المحددة'
-              : "💡 اضغط على الصورة لإرسالها مباشرة، أو استخدم علامة (+) لتحديد أكثر من صورة"}
+              ? `💡 اضغط على "إرسال ${selectedImages.size} صورة" لإرسال الصور المحددة`
+              : "💡 اضغط على الصور لتحديدها ثم اضغط على زر الإرسال"}
           </span>
         </div>
       </div>

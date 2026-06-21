@@ -4883,7 +4883,7 @@ select {
 }
 
 [data-theme="business-os-enterprise"]
-  .business-gallery-card[data-mode="selection"] {
+  .business-gallery-card[data-selected="true"] {
   border-style: dashed;
 }
 
