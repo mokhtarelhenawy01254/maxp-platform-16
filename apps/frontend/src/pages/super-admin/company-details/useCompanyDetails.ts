@@ -64,7 +64,7 @@ interface Metric {
 }
 
 interface EditForm {
-  name: string; email: string; phone: string; website: string; currency: string; isActive: boolean;
+  name: string; email: string; phone: string; website: string; currency: string; isActive: boolean; notes: string;
 }
 
 interface EmployeeForm {
@@ -118,7 +118,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
   const [editOpen, setEditOpen] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>({
-    name: "", email: "", phone: "", website: "", currency: "EGP", isActive: true,
+    name: "", email: "", phone: "", website: "", currency: "EGP", isActive: true, notes: "",
   });
   const [editErrors, setEditErrors] = useState<any>({});
 
@@ -165,6 +165,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
       website: nextCompany.website || "",
       currency: nextCompany.currency || "EGP",
       isActive: nextCompany.isActive ?? true,
+      notes: (nextCompany as any)["notes"] || "",
     });
   };
 
@@ -251,6 +252,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
       const response: any = await apiClient.put(`/admin/companies/${companyId}`, {
         name: editForm["name"].trim(), email: editForm["email"].trim(), phone: editForm["phone"].trim(),
         website: editForm["website"].trim(), currency: editForm["currency"], isActive: editForm["isActive"],
+        notes: editForm["notes"].trim(),
       });
       if (response.data?.success) { toast.success("تم تحديث بيانات الشركة"); setEditOpen(false); await refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في تحديث الشركة");

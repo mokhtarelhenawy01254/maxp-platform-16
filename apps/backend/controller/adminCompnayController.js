@@ -1313,7 +1313,8 @@ const updateCompany = async (req, res) => {
             website,
             plan,
             currency,
-            isActive
+            isActive,
+            notes
         } = req.body;
 
         console.log(req.body);
@@ -1359,7 +1360,8 @@ const updateCompany = async (req, res) => {
                 ...(website !== undefined && { website }),
                 ...(plan !== undefined && { plan }),
                 ...(currency !== undefined && { currency }),
-                ...(isActive !== undefined && { isActive })
+                ...(isActive !== undefined && { isActive }),
+                ...(notes !== undefined && { notes })
             }
         });
 
