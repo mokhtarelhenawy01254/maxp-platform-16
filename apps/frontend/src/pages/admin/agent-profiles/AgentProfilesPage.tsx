@@ -1119,38 +1119,24 @@ export default function AgentProfilesPage() {
               </div>
             </div>
 
-            <div className="px-5 py-2 flex-1 min-h-0 overflow-y-auto">
+              <div className="px-5 py-2 flex-1 min-h-0 overflow-y-auto">
               {/* Step 0: Template + Identity */}
               {createStep === 0 && (
                 <div className="space-y-3">
-                  <section>
+                  <div>
                     <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">{t("agentProfiles.create.template")}</label>
-                    {templatesLoading ? (
-                      <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-                        <Loader2 className="size-3.5 animate-spin text-indigo-500" />
-                        <span className="text-xs text-slate-400">{t("agentProfiles.create.loadingTemplates")}</span>
-                      </div>
-                    ) : (
-                      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
-                        <button type="button" onClick={() => setNewAgentTemplate(null)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-colors shrink-0 ${
-                            !newAgentTemplate
-                              ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400"
-                              : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300"
-                          }`}
-                        >⚙️ {t("agentProfiles.create.custom")}</button>
+                    <Select value={newAgentTemplate || "custom"} onValueChange={(v) => { setNewAgentTemplate(v === "custom" ? null : v); if (v !== "custom") { const tpl = templates.find((t) => t.slug === v); if (tpl && !newAgentName) setNewAgentName(tpl.name); } }}>
+                      <SelectTrigger className="h-7 text-sm">
+                        <SelectValue>{newAgentTemplate ? `${templateIcon(newAgentTemplate)} ${templates.find((t) => t.slug === newAgentTemplate)?.name || ""}` : `⚙️ ${t("agentProfiles.create.custom")}`}</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="custom">⚙️ {t("agentProfiles.create.custom")}</SelectItem>
                         {templates.map((tpl) => (
-                          <button key={tpl.slug} type="button" onClick={() => { setNewAgentTemplate(tpl.slug); if (!newAgentName) setNewAgentName(tpl.name); }}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-colors shrink-0 ${
-                              newAgentTemplate === tpl.slug
-                                ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400"
-                                : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300"
-                            }`}
-                          >{templateIcon(tpl.slug)} {tpl.name}</button>
+                          <SelectItem key={tpl.slug} value={tpl.slug}>{templateIcon(tpl.slug)} {tpl.name}</SelectItem>
                         ))}
-                      </div>
-                    )}
-                  </section>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                   <div className="flex gap-2">
                     <div className="flex-1 space-y-1.5">
