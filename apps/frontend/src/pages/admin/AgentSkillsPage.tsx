@@ -40,7 +40,14 @@ import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
 
 interface ToolDefinition { name: string; description: string; sideEffects: "read" | "write"; requiresApproval: boolean; }
-interface SkillDefinition { id: string; displayName: string; version?: string; description?: string; allowedTools: string[]; requiresHumanApproval?: boolean; maxToolCount?: number; skillMd?: string; }
+interface SkillDefinition { id: string; displayName: string; version?: string; description?: string; allowedTools: string[]; requiresHumanApproval?: boolean; maxToolCount?: number; skillMd?: string; group?: string; }
+
+const SKILL_GROUP_LABELS: Record<string, string> = {
+  sales: "المبيعات", marketing: "التسويق", support: "الدعم",
+  product: "المنتجات", customer: "العملاء", management: "الإدارة",
+  inventory: "المخزون", order: "الطلبات", pricing: "التسعير",
+  store: "المتجر", other: "أخرى",
+};
 interface AgentDefinition { id: string; name: string; role: string; icon: string; status: string; allowedSkills?: string[]; allowedTools?: string[]; }
 
 const cq = (path: string, companyId?: string) =>
@@ -209,10 +216,21 @@ export default function AgentSkillsPage({ companyId }: { companyId?: string } = 
   const [assignSkill, setAssignSkill] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [query, setQuery] = useState(""); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
   const toolMap = useMemo(() => new Map(tools.map((t) => [t.name, t])), [tools]);
-  const filteredSkills = useMemo(() => { const n = query.trim().toLowerCase(); if (!n) return skills; return skills.filter((s) => [s.id, s.displayName, s.description, ...(s.allowedTools || [])].filter(Boolean).some((v) => String(v).toLowerCase().includes(n))); }, [skills, query]);
-  const loadAll = useCallback(async () => { setLoading(true); setError(null); try { const [sd, td, ad] = await Promise.all([apiRequest<{ success: true; skills: SkillDefinition[] }>("agent/skills", companyId), apiRequest<{ success: true; tools: ToolDefinition[] }>("agent/tools", companyId), apiRequest<{ success: true; agents: AgentDefinition[] }>("agent-manager/agents", companyId)]); setSkills(sd.skills || []); setTools(td.tools || []); setAgents(ad.agents || []); } catch (err: any) { setError(err.message || t("common.loadError")); } finally { setLoading(false); } }, [companyId]);
+  const allGroups = useMemo(() => {
+    const groups = [...new Set(skills.map((s) => s.group).filter(Boolean))] as string[];
+    return groups.sort((a, b) => (SKILL_GROUP_LABELS[a] || a).localeCompare(SKILL_GROUP_LABELS[b] || b, "ar"));
+  }, [skills]);
+  const filteredSkills = useMemo(() => {
+    let list = skills;
+    const n = query.trim().toLowerCase();
+    if (n) list = list.filter((s) => [s.id, s.displayName, s.description, ...(s.allowedTools || [])].filter(Boolean).some((v) => String(v).toLowerCase().includes(n)));
+    if (selectedGroup) list = list.filter((s) => s.group === selectedGroup);
+    return list;
+  }, [skills, query, selectedGroup]);
+  const loadAll = useCallback(async () => { setLoading(true); setError(null); try { const [sd, td, ad] = await Promise.all([apiRequest<{ success: true; skills: SkillDefinition[] }>("agent/skills", companyId), apiRequest<{ success: true; tools: ToolDefinition[] }>("agent/tools", companyId), companyId ? apiRequest<{ success: true; agents: AgentDefinition[] }>("agent-manager/agents", companyId) : { success: true as const, agents: [] as AgentDefinition[] }]); setSkills(sd.skills || []); setTools(td.tools || []); setAgents(ad.agents || []); } catch (err: any) { setError(err.message || t("common.loadError")); } finally { setLoading(false); } }, [companyId]);
   useEffect(() => { loadAll(); }, [loadAll]);
   const skillAgentCount = useMemo(() => { const m = new Map<string, number>(); for (const a of agents) { for (const sid of a.allowedSkills || []) m.set(sid, (m.get(sid) || 0) + 1); } return m; }, [agents]);
 
@@ -234,17 +252,32 @@ export default function AgentSkillsPage({ companyId }: { companyId?: string } = 
       {loading ? (
         <div className="flex min-h-[420px] items-center justify-center rounded-xl bg-card"><LoadingSpinner size="lg" /></div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filteredSkills.map((skill) => { const ac = skillAgentCount.get(skill.id) || 0; return (
-            <div key={skill.id} className="flex flex-col rounded-xl border bg-card p-4">
-              <div className="mb-3 flex items-start justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-2"><Sparkles className="size-5 shrink-0 text-primary" /><h3 className="truncate text-sm font-black">{skill.displayName || skill.id}</h3></div>
-                <div className="flex shrink-0 gap-1"><Badge variant="outline" className="h-5 text-[0.65rem]">v{skill.version || "1"}</Badge>{ac > 0 && <Badge variant="outline" className="h-5 text-[0.65rem] text-green-600">{ac} {t("agentSkills.agents")}</Badge>}</div>
+        <div className="flex gap-4">
+          {allGroups.length > 0 && (
+            <aside className="hidden w-44 shrink-0 md:block">
+              <div className="sticky top-20 space-y-1 rounded-xl border bg-card p-2">
+                <button onClick={() => setSelectedGroup(null)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${!selectedGroup ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>الكل ({skills.length})</button>
+                {allGroups.map((g) => (
+                  <button key={g} onClick={() => setSelectedGroup(g)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${selectedGroup === g ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{SKILL_GROUP_LABELS[g] || g} ({skills.filter((s) => s.group === g).length})</button>
+                ))}
               </div>
-              <p className="mb-3 min-h-[42px] text-sm text-muted-foreground">{skill.description || t("agentSkills.noDescription")}</p>
-              <div className="mb-4 flex flex-wrap gap-2">{(skill.allowedTools || []).map((t) => (<Badge key={t} variant="outline" className="h-5 gap-1 text-[0.6rem]"><Zap className="size-3" />{t}</Badge>))}</div>
-              <div className="mt-auto flex gap-2"><Button onClick={() => setSelected(skill)} className="flex-1"><ExternalLink className="size-4" />{t("agentSkills.details")}</Button><Button variant="outline" onClick={() => setAssignSkill(skill.id)} className="flex-1"><UserPlus className="size-4" />{t("agentSkills.assignToAgent")}</Button></div>
-            </div>); })}
+            </aside>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {filteredSkills.map((skill) => { const ac = skillAgentCount.get(skill.id) || 0; return (
+                <div key={skill.id} className="flex flex-col rounded-xl border bg-card p-4">
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2"><Sparkles className="size-5 shrink-0 text-primary" /><h3 className="truncate text-sm font-black">{skill.displayName || skill.id}</h3></div>
+                    <div className="flex shrink-0 gap-1"><Badge variant="outline" className="h-5 text-[0.65rem]">v{skill.version || "1"}</Badge>{ac > 0 && <Badge variant="outline" className="h-5 text-[0.65rem] text-green-600">{ac} {t("agentSkills.agents")}</Badge>}</div>
+                  </div>
+                  <p className="mb-3 min-h-[42px] text-sm text-muted-foreground">{skill.description || t("agentSkills.noDescription")}</p>
+                  <div className="mb-4 flex flex-wrap gap-2">{(skill.allowedTools || []).map((t) => (<Badge key={t} variant="outline" className="h-5 gap-1 text-[0.6rem]"><Zap className="size-3" />{t}</Badge>))}</div>
+                  <div className="mt-auto flex gap-2"><Button onClick={() => setSelected(skill)} className="flex-1"><ExternalLink className="size-4" />{t("agentSkills.details")}</Button><Button variant="outline" onClick={() => setAssignSkill(skill.id)} className="flex-1"><UserPlus className="size-4" />{t("agentSkills.assignToAgent")}</Button></div>
+                </div>); })}
+            </div>
+            {filteredSkills.length === 0 && <div className="flex min-h-[200px] items-center justify-center rounded-xl bg-card"><p className="text-muted-foreground">{t("agentSkills.noDescription")}</p></div>}
+          </div>
         </div>
       )}
 

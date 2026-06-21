@@ -96,9 +96,13 @@ router.put('/tools/:name', async (req, res) => {
 router.get('/skills', async (req, res) => {
   try {
     const companyId = getCompanyId(req);
-    if (!companyId) return res.status(400).json({ error: 'companyId is required' });
-    const context = await aiServiceAdminClient.getManagerContext(companyId);
-    const skills = (context && context.skills) || [];
+    let skills = [];
+    if (companyId) {
+      const context = await aiServiceAdminClient.getManagerContext(companyId);
+      skills = (context && context.skills) || [];
+    } else {
+      skills = await aiServiceAdminClient.listSkills();
+    }
     return res.json({ success: true, skills, count: skills.length });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
