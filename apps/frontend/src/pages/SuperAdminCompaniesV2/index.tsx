@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Building2, Sparkles, Download, RefreshCw, Plus, Loader2,
-  Search, ChevronDown, ChevronUp, AlertTriangle, CheckCircle2, UserPlus, ArrowLeftRight,
+  AlertTriangle, CheckCircle2, UserPlus, ArrowLeftRight,
   Pencil, Eye, LogIn, Trash2, Facebook, Users, X, Filter, Clock,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -16,13 +16,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { tokenManager } from "../../utils/tokenManager";
 import { apiClient } from "../../services/apiClient";
 
-import { useCompanies, useBulkMutations, useCompanyMutations, useFacebookLookup, useFollowUpOwners, useCompanyUsers, useSaveFollowUp, useAddEmployee, useTransferOwnership } from "./hooks/useCompanies";
+import { useCompanies, useBulkMutations, useCompanyMutations, useFacebookLookup, useFollowUpOwners, useCompanyUsers } from "./hooks/useCompanies";
 import { AlertBanner } from "./components/AlertBanner";
 import { CompanyFilters } from "./components/CompanyFilters";
 import { CompaniesTable } from "./components/CompaniesTable";
 import { BulkActionsBar } from "./components/BulkActionsBar";
-import { extractErrorMessage, formatDate, formatDateTime, sortCompanies, enrichCompanies, computeQuickStats, getCount, getPlanMeta, getDefaultFollowUpScheduleValue, toDateTimeLocalValue, fromDateTimeLocalValue, addHoursToDateTimeLocal } from "./utils";
-import { PLAN_OPTIONS, CURRENCY_OPTIONS, DEFAULT_SORT, FOLLOW_UP_STATUS_OPTIONS, PAGE_SIZE_OPTIONS } from "./constants";
+import { extractErrorMessage, formatDate, formatDateTime, sortCompanies, enrichCompanies, computeQuickStats, getCount, getDefaultFollowUpScheduleValue, toDateTimeLocalValue, fromDateTimeLocalValue, addHoursToDateTimeLocal } from "./utils";
+import { PLAN_OPTIONS, CURRENCY_OPTIONS, DEFAULT_SORT, FOLLOW_UP_STATUS_OPTIONS } from "./constants";
 import type { Company, CompanyFormData, EmployeeFormData, FollowUpFormData, FollowUpState, FollowUpReminder, FollowUpAutomation } from "./types";
 
 // ---- Reusable components ----
@@ -99,10 +99,9 @@ function ResponsiveOverlay({
 
 // ---- FollowUp Form Fields ----
 function FollowUpFormContent({
-  company, followUp, reminder, automation, owners, loadingOwners,
+  followUp, reminder, automation, owners, loadingOwners,
   form, setForm, onSave, saving, onLogReminder, onLogEscalation, onAssignSelf, currentAdminId,
 }: {
-  company: Company;
   followUp: FollowUpState;
   reminder: FollowUpReminder | null;
   automation: FollowUpAutomation | null;
@@ -544,10 +543,6 @@ export default function SuperAdminCompaniesV2() {
     finally { setDeleting(false); }
   };
 
-  const handleOpenActions = useCallback((company: Company) => {
-    setActionsCompany(company); setActionsSheetOpen(true);
-  }, []);
-
   const handleLoginAsAdmin = useCallback(async (company: Company) => {
     try {
       const res = await apiClient.post(`/admin/companies/${company.id}/login-as-admin`);
@@ -977,7 +972,6 @@ export default function SuperAdminCompaniesV2() {
       >
         {followUpCompany && activeFollowUp ? (
           <FollowUpFormContent
-            company={followUpCompany}
             followUp={activeFollowUp}
             reminder={activeReminder}
             automation={activeAutomation}

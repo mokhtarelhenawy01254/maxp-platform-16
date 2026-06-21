@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { flexRender, getCoreRowModel, useReactTable, createColumnHelper, getExpandedRowModel } from "@tanstack/react-table";
+import { flexRender, getCoreRowModel, useReactTable, createColumnHelper } from "@tanstack/react-table";
 import {
   Mail, Facebook, Eye, LogIn, MoreHorizontal, ChevronLeft, ChevronRight,
   CheckCircle2, AlertTriangle, Trash2, Pencil, Users, UserPlus, ArrowLeftRight,
@@ -11,14 +10,13 @@ import { Checkbox } from "../../../components/ui/checkbox";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Skeleton } from "../../../components/ui/skeleton";
-import { Separator } from "../../../components/ui/separator";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "../../../components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../../../components/ui/tooltip";
 import { cn } from "../../../lib/utils";
 import { getCount, getPlanMeta, formatDateTime } from "../utils";
-import type { Company, QuickStats } from "../types";
+import type { Company } from "../types";
 
 const columnHelper = createColumnHelper<Company>();
 
@@ -46,7 +44,6 @@ interface CompaniesTableProps {
   onLoginAsAdmin: (company: Company) => void;
   onRunFollowUpAction: (company: Company, action: "remind" | "escalate") => void;
   isMobile: boolean;
-  stats: QuickStats;
 }
 
 export function CompaniesTable({
@@ -56,9 +53,8 @@ export function CompaniesTable({
   onOpenDetails, onEdit, onDelete,
   onOpenUsers, onOpenFollowUp, onOpenFacebookPages,
   onTransferOwnership, onAddEmployee, onLoginAsAdmin,
-  onRunFollowUpAction, isMobile, stats,
+  onRunFollowUpAction, isMobile,
 }: CompaniesTableProps) {
-  const navigate = useNavigate();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const columns = useMemo(() => [
     columnHelper.display({
@@ -163,7 +159,6 @@ export function CompaniesTable({
       header: "",
       cell: ({ row }) => {
         const company = row.original;
-        const followUpAuto = company.followUpAutomation;
 
         const dropdownActions = [
           { key: "edit", icon: Pencil, label: "تعديل", action: () => onEdit(company) },
@@ -301,7 +296,6 @@ export function CompaniesTable({
         <div className="space-y-3">
           {companies.map((company) => {
             const meta = getPlanMeta(company.plan);
-            const followUp = company.followUp;
             const isExpanded = expandedId === company.id;
             const attention = company.followUpAutomation?.needsEscalation || company.followUpAutomation?.needsUrgentEscalation;
             const critical = company.followUpAutomation?.needsUrgentEscalation;
@@ -462,7 +456,6 @@ export function CompaniesTable({
                         <TableCell colSpan={row.getVisibleCells().length} className="bg-muted/10 px-6 py-4">
                           <ExpandedRowContent
                             company={row.original}
-                            onOpenDetails={onOpenDetails}
                             onOpenFollowUp={onOpenFollowUp}
                             onOpenUsers={onOpenUsers}
                             onOpenFacebookPages={onOpenFacebookPages}
@@ -532,12 +525,11 @@ export function CompaniesTable({
 }
 
 function ExpandedRowContent({
-  company, onOpenDetails, onOpenFollowUp, onOpenUsers, onOpenFacebookPages,
+  company, onOpenFollowUp, onOpenUsers, onOpenFacebookPages,
   onLoginAsAdmin, onEdit, onDelete, onTransferOwnership, onAddEmployee,
   onRunFollowUpAction,
 }: {
   company: Company;
-  onOpenDetails: (c: Company) => void;
   onOpenFollowUp: (c: Company) => void;
   onOpenUsers: (c: Company) => void;
   onOpenFacebookPages: (c: Company) => void;

@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../../services/apiClient";
 import { toast } from "sonner";
 import { extractErrorMessage, enrichCompanies } from "../utils";
-import type { Company, FacebookPageResult, FollowUpOwner, CompanyUser, FollowUpFormData, EmployeeFormData } from "../types";
+import type { Company, FacebookPageResult, FollowUpOwner, CompanyUser } from "../types";
 
 export function useAdmin() {
   let user = null;
@@ -169,7 +169,7 @@ export function useTransferOwnership() {
 
 export function useLoginAsAdmin() {
   return useMutation({
-    mutationFn: async ({ companyId, redirectPath = "/company-dashboard" }: { companyId: string; redirectPath?: string }) => {
+    mutationFn: async ({ companyId }: { companyId: string; redirectPath?: string }) => {
       const res = await apiClient.post(`/admin/companies/${companyId}/login-as-admin`);
       if (!res.data?.success) throw new Error(res.data?.message || "فشل في تسجيل الدخول");
       return res.data.data as { token: string; user: Record<string, unknown> };
