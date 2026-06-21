@@ -1933,7 +1933,7 @@ const UnifiedInbox: React.FC = () => {
                       </button>
 
                       {showAttachmentMenu && (
-                        <div className="absolute bottom-full mb-2 left-0 w-48 rounded-xl shadow-lg border overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--business-card-border)' }}>
+                        <div className={`absolute bottom-full mb-2 ${isRtl ? 'right-0' : 'left-0'} w-48 rounded-xl shadow-lg border overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2`} style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--business-card-border)' }}>
                           <button
                             onClick={() => {
                               setShowAttachmentMenu(false);
