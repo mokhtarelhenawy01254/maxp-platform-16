@@ -1092,8 +1092,8 @@ export default function AgentProfilesPage() {
 
       {/* ── Create Agent Dialog (Multi-Step) ── */}
       <Dialog open={createOpen} onOpenChange={(o) => { if (!o && !creating) { setCreateOpen(false); setCreateStep(0); } }}>
-        <DialogContent className="sm:max-w-lg !p-0 !gap-0">
-          <div className="flex flex-col">
+        <DialogContent className="sm:max-w-lg !p-0 !gap-0 max-h-[calc(100vh-2rem)]">
+          <div className="flex flex-col max-h-[calc(100vh-2rem)]">
             <div className="px-5 pt-5 pb-2 flex-shrink-0">
               <DialogHeader className="mb-0">
                 <DialogTitle className="text-base flex items-center gap-2">
@@ -1119,7 +1119,7 @@ export default function AgentProfilesPage() {
               </div>
             </div>
 
-            <div className="px-5 py-2 flex-1 min-h-0">
+            <div className="px-5 py-2 flex-1 min-h-0 overflow-y-auto">
               {/* Step 0: Template + Identity */}
               {createStep === 0 && (
                 <div className="space-y-3">
