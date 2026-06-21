@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+﻿import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   MagnifyingGlassIcon,
   PaperAirplaneIcon,
@@ -13,7 +13,7 @@ import {
   PhoneIcon,
   EnvelopeIcon,
 
-  ChevronDownIcon,
+
   ChevronUpIcon,
   CheckIcon,
   LinkIcon,
@@ -33,7 +33,6 @@ import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import { apiClient } from "../../services/apiClient";
 import { socketService } from "../../services/socketService";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 import EmojiPicker from "emoji-picker-react";
 
 import QuickOrderModal from "../../components/facebook-inbox/Modals/QuickOrderModal";
@@ -183,7 +182,6 @@ const FlaskIcon = ({ className, style }: { className?: string; style?: React.CSS
 const UnifiedInbox: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === "rtl";
-  const navigate = useNavigate();
 
   // State
   const [conversations, setConversations] = useState<UnifiedConversation[]>([]);
@@ -248,6 +246,8 @@ const UnifiedInbox: React.FC = () => {
   const attachmentMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const socketHandlerRef = useRef<((message: any) => void) | null>(null);
+  const waSocketHandlerRef = useRef<((payload: any) => void) | null>(null);
+  const waSentHandlerRef = useRef<((payload: any) => void) | null>(null);
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -832,10 +832,75 @@ const UnifiedInbox: React.FC = () => {
     socketHandlerRef.current = handler;
     socketService.onMessage(handler);
 
+    const findWaConv = (convs: UnifiedConversation[], sessionId: string, remoteJid: string) =>
+      convs.find(c => c.platform === 'whatsapp' && c.metadata?.sessionId === sessionId && c.metadata?.jid === remoteJid);
+
+    const waHandler = (payload: any) => {
+      const { sessionId, message } = payload;
+      if (!sessionId || !message?.remoteJid) return;
+
+      setConversations((prev) => {
+        const match = findWaConv(prev, sessionId, message.remoteJid);
+        if (!match) return prev;
+        return prev.map((c) =>
+          c.id === match.id
+            ? {
+                ...c,
+                lastMessage: message.content || '',
+                lastMessageTime: message.timestamp ? new Date(message.timestamp).toISOString() : new Date().toISOString(),
+                unreadCount: c.unreadCount + (message.fromMe ? 0 : 1),
+                lastMessageIsFromCustomer: !message.fromMe,
+              }
+            : c,
+        );
+      });
+
+      if (selectedConversation?.platform === 'whatsapp' &&
+          selectedConversation.metadata?.sessionId === sessionId &&
+          selectedConversation.metadata?.jid === message.remoteJid) {
+        setMessages((prev) => {
+          if (prev.some(m => m.messageId === message.messageId || m.id === message.id)) return prev;
+          return [...prev, {
+            id: message.id,
+            platform: 'whatsapp',
+            messageId: message.messageId,
+            content: message.content || '',
+            type: (message.messageType || 'TEXT').toLowerCase(),
+            isFromCustomer: !message.fromMe,
+            timestamp: message.timestamp,
+            status: (message.status || 'sent').toLowerCase(),
+            mediaUrl: message.mediaUrl || null,
+            mediaType: message.mediaType || null,
+            mediaFileName: message.mediaFileName || null,
+            quotedMessage: message.quotedContent ? { id: message.quotedMessageId, content: message.quotedContent } : null,
+            isAIResponse: message.isAIResponse || false,
+            sender: message.fromMe ? 'agent' : 'customer',
+            interactiveData: message.interactiveData || null,
+          }];
+        });
+        setTimeout(() => scrollToBottom(), 50);
+      }
+    };
+
+    const waSentHandler = (payload: any) => waHandler(payload);
+
+    waSocketHandlerRef.current = waHandler;
+    waSentHandlerRef.current = waSentHandler;
+    socketService.on("whatsapp:message:new", waHandler);
+    socketService.on("whatsapp:message:sent", waSentHandler);
+
     return () => {
       if (socketHandlerRef.current) {
         socketService.off("message:new", socketHandlerRef.current);
         socketHandlerRef.current = null;
+      }
+      if (waSocketHandlerRef.current) {
+        socketService.off("whatsapp:message:new", waSocketHandlerRef.current);
+        waSocketHandlerRef.current = null;
+      }
+      if (waSentHandlerRef.current) {
+        socketService.off("whatsapp:message:sent", waSentHandlerRef.current);
+        waSentHandlerRef.current = null;
       }
     };
   }, [selectedConversation]);
@@ -888,11 +953,8 @@ const UnifiedInbox: React.FC = () => {
         {/* 1. Global Header */}
       <div className="unified-inbox-header px-5 pt-4 pb-3 border-b shrink-0" style={{ borderColor: 'var(--business-muted-line)', background: 'var(--business-surface-panel)' }}>
         <h1 className="text-[22px] font-bold mb-1" style={{ color: 'var(--color-foreground)' }}>{t("unifiedInbox.pageTitle", "البريد الوارد")}</h1>
-        <p className="text-[14px] font-medium mb-3" style={{ color: 'var(--color-muted-foreground)' }}>
-          {t("unifiedInbox.pageDescription", "يمكنك الرد على الرسائل وإعداد عمليات الأتمتة وغير ذلك الكثير.")}
-        </p>
 
-        {/* Platform Dropdown + Filters */}
+{/* Platform Dropdown + Filters */}
         <div className="flex items-center gap-3 flex-wrap">
           {/* Platform Dropdown */}
           <div className="relative">
@@ -2511,3 +2573,4 @@ const UnifiedInbox: React.FC = () => {
 };
 
 export default UnifiedInbox;
+
