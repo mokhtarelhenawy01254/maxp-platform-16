@@ -1,4 +1,5 @@
-import { CalendarDays } from "lucide-react";
+import type { CompanyReview } from "./companyDetailsTypes";
+import { CalendarDays, XOctagon, RefreshCw } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
@@ -12,21 +13,44 @@ import {
   getStatusMeta,
 } from "./helpers";
 
-export function CompanySubscriptionSection({ review, reviewCurrency, company, nextBillingDate, scrollToActivationSection }) {
+export function CompanySubscriptionSection({ review, reviewCurrency, nextBillingDate, scrollToActivationSection, handleCancelSubscription, handleRetryPayment }: {
+  review?: CompanyReview | null;
+  reviewCurrency: string;
+  nextBillingDate: string | null;
+  scrollToActivationSection: () => void;
+  handleCancelSubscription: () => Promise<void>;
+  handleRetryPayment: () => Promise<void>;
+}) {
+  const hasFailedAttempts = (review?.subscription?.failedAttempts || 0) > 0;
+  const isActive = review?.subscription?.status === "ACTIVE";
+
   return (
     <SectionShell
       title="الاشتراك والتجديد"
       description="الخطة الحالية، رسوم المنصة، ومؤشرات التجديد القادمة."
       actions={
-        <Button type="button" variant="outline" className="rounded-2xl" onClick={scrollToActivationSection}>
-          <CalendarDays className="size-4" />
-          إدارة التفعيل
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {hasFailedAttempts ? (
+            <Button type="button" variant="outline" className="rounded-2xl" onClick={() => void handleRetryPayment()}>
+              <RefreshCw className="size-4" /> إعادة محاولة الدفع
+            </Button>
+          ) : null}
+          {isActive ? (
+            <Button type="button" variant="outline" className="rounded-2xl text-destructive border-destructive/30 hover:bg-destructive/10"
+              onClick={() => void handleCancelSubscription()}
+            >
+              <XOctagon className="size-4" /> إلغاء الاشتراك
+            </Button>
+          ) : null}
+          <Button type="button" variant="outline" className="rounded-2xl" onClick={scrollToActivationSection}>
+            <CalendarDays className="size-4" /> إدارة التفعيل
+          </Button>
+        </div>
       }
     >
       <div className="grid gap-3 sm:grid-cols-2">
         <MiniStat label="رسوم المنصة" value={formatCurrency(review?.subscription?.monthlyFee, reviewCurrency)}
-          helper={`الخطة ${getStatusMeta("plan", review?.subscription?.plan || company.plan).label}`} />
+          helper="الرسوم الشهرية الحالية للمنصة" />
         <MiniStat label="التجديد القادم" value={nextBillingDate ? formatDate(nextBillingDate) : "غير متوفر"}
           helper={nextBillingDate ? formatRelativeDateLabel(nextBillingDate) : "بدون موعد"} />
       </div>

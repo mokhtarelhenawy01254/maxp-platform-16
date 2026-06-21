@@ -11,7 +11,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "../../components/ui/select";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import { useTheme } from "../../hooks/useTheme";
 import { buildApiUrl } from "../../utils/urlHelper";
 import { tokenManager } from "../../utils/tokenManager";
 import { Send, Copy, RefreshCw, Bot, Timer, BarChart3, Radio } from "lucide-react";
@@ -28,8 +27,6 @@ const PROVIDERS = [
 const DEFAULT_MODELS: Record<string, string> = { GOOGLE: "gemini-2.5-flash", DEEPSEEK: "deepseek-v4-flash", OPENAI: "gpt-4o-mini", ANTHROPIC: "claude-sonnet-4-20250514", HUGGINGFACE: "mistralai/Mistral-7B-Instruct-v0.3", OLLAMA: "llama3.2", GROQ: "llama-3.3-70b-versatile", OPENROUTER: "openrouter/auto", NVIDIA: "openai/gpt-oss-120b", CEREBRAS: "qwen-3-235b-a22b-instruct-2507", GITHUB: "gpt-4o", SAMBANOVA: "DeepSeek-V3.1", MISTRAL: "mistral-large-latest" };
 
 const SuperAdminAIPlayground = () => {
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
   const [provider, setProvider] = useState("GOOGLE");
   const [model, setModel] = useState(DEFAULT_MODELS.GOOGLE);
   const [prompt, setPrompt] = useState("");
@@ -116,7 +113,7 @@ const SuperAdminAIPlayground = () => {
     <div className="p-3 rtl">
       <h1 className="text-xl font-bold mb-3 flex items-center gap-1"><Bot className="size-5" /> AI Playground</h1>
 
-      <Card className={`mb-3 ${isDark ? "bg-card border-border" : ""}`}>
+      <Card className="mb-3">
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <Select value={provider} onValueChange={setProvider}><SelectTrigger><SelectValue placeholder="Provider" /></SelectTrigger><SelectContent>{PROVIDERS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent></Select>
@@ -139,7 +136,7 @@ const SuperAdminAIPlayground = () => {
 
       {error && <Alert variant="destructive" className="mb-2"><AlertDescription>{error}</AlertDescription></Alert>}
 
-      {(displayReply || loading) && <Card className={`${isDark ? "bg-card border-border" : ""}`}><CardContent className="space-y-3">
+      {(displayReply || loading) && <Card><CardContent className="space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-1">
           <h2 className="text-base font-semibold">{i18n.t("aiPlayground.reply")}</h2>
           <div className="flex items-center gap-1 flex-wrap">

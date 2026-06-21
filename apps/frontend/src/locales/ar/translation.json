@@ -647,7 +647,11 @@
       "saved": "تم حفظ التغييرات",
       "saveFailed": "فشل الحفظ",
       "loadFailed": "فشل تحميل البيانات",
-      "emptyState": "لم يتم تخصيص أي وكيل بعد. سيتم استخدام التوجيه التلقائي (CEO) لجميع القنوات."
+      "emptyState": "لم يتم تخصيص أي وكيل بعد. سيتم استخدام التوجيه التلقائي (CEO) لجميع القنوات.",
+      "assignAll": "تعيين وكيل للجميع",
+      "assignAllPlaceholder": "اختر وكيل للكل",
+      "reset": "تراجع",
+      "modified": "تم التعديل"
     },
     "sandbox": {
       "chat": {
@@ -5145,7 +5149,6 @@
       "teamPortal": "بوابة الفريق",
       "changelog": "سجل التغييرات",
       "companies": "إدارة الشركات",
-      "companiesV2": "إدارة الشركات V2",
       "companyReports": "تقارير الشركات",
       "whatsappPlatform": "واتساب المنصة",
       "whatsappOverview": "نظرة عامة",

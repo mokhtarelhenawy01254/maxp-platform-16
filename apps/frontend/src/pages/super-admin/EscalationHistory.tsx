@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 import { ArrowUturnLeftIcon, ClockIcon } from "@heroicons/react/24/outline";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -58,7 +59,7 @@ const EscalationHistory = () => {
   };
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6" dir={i18n.dir()}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">

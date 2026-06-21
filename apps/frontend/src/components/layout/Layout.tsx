@@ -123,10 +123,10 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     location.pathname,
   );
 
-  // Active Users Monitor Logic (Ported from SuperAdminLayout)
+  // Active Users Monitor Logic (shared with SuperAdminLayout)
   useEffect(() => {
     const fetchActiveUsersCount = async (): Promise<void> => {
-      if (!isSuperAdmin || useSuperAdminShell) return;
+      if (!isSuperAdmin) return;
       try {
         const requestConfig = {
           _skipErrorToast: true,
@@ -342,7 +342,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   if (useSuperAdminShell) {
     return (
       <React.Suspense fallback={<div className="min-h-screen bg-gray-50" />}>
-        <SuperAdminLayout fullWidth={fullWidth}>{children}</SuperAdminLayout>
+        <SuperAdminLayout fullWidth={fullWidth} activeUsersCount={activeUsersCount}>{children}</SuperAdminLayout>
       </React.Suspense>
     );
   }
@@ -357,7 +357,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     localStorage.setItem("user", superUser);
     localStorage.removeItem("superAuth");
     localStorage.removeItem("superUser");
-    window.location.href = "/super-admin/companies";
+    window.location.href = "/super-admin/companies-v2";
   };
 
   const profileMenu = (

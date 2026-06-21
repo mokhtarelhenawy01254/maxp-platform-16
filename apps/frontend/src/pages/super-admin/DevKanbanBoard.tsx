@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
 import {
   PlusIcon,
@@ -105,8 +106,6 @@ const typeIcons: Record<string, React.ReactNode> = {
 
 const DevKanbanBoard: React.FC = () => {
   const navigate = useNavigate();
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
   const [kanbanData, setKanbanData] = useState<KanbanData>({});
   const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -385,7 +384,7 @@ const DevKanbanBoard: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col" dir="rtl">
+    <div className="h-full flex flex-col" dir={i18n.dir()}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>

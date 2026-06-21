@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
 import {
   ArrowRightIcon,
@@ -88,8 +89,6 @@ interface CheckIn {
 const DevGoalDetails: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
 
   const [goal, setGoal] = useState<Goal | null>(null);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
@@ -248,7 +247,7 @@ const DevGoalDetails: React.FC = () => {
   const confidenceInfo = goal.confidence ? confidenceConfig[goal.confidence] : null;
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6" dir={i18n.dir()}>
       {/* Header */}
       <div className="flex items-center gap-4">
         <button

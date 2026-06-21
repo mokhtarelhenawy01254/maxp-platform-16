@@ -1,7 +1,7 @@
 import { cn } from "../../../lib/utils"
 import { Badge } from "../../../components/ui/badge"
 
-export function StatusBadge({ isActive }) {
+export function StatusBadge({ isActive }: { isActive: boolean }) {
   return (
     <Badge
       variant="outline"

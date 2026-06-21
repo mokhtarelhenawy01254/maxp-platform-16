@@ -1,3 +1,4 @@
+import type { CompanyReview } from "./companyDetailsTypes";
 import { BarChart3, Package } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { Badge } from "../../../components/ui/badge";
@@ -13,7 +14,10 @@ import {
   getPricingModelLabel,
 } from "./helpers";
 
-export function CompanyUsageSection({ review, reviewCurrency }) {
+export function CompanyUsageSection({ review, reviewCurrency }: {
+  review?: CompanyReview | null;
+  reviewCurrency: string;
+}) {
   return (
     <>
       <SectionShell title="الاستهلاك هذا الشهر" description="إجمالي التكلفة، تقسيم الاستخدام، ومؤشرات الحمل الحالية.">
@@ -68,7 +72,7 @@ export function CompanyUsageSection({ review, reviewCurrency }) {
                   </div>
                   <div className="grid min-w-[180px] gap-2 text-xs text-muted-foreground sm:text-left">
                     <span>شهر حالي: {formatCurrency(companyApp.monthlyUsage?.totalCost, reviewCurrency)}</span>
-                    <span>{formatNumber(companyApp.monthlyUsage?.totalActions || 0)} عملية</span>
+                    <span>{companyApp.monthlyUsage?.totalActions || 0} عملية</span>
                     <span>إجمالي مصروف {formatCurrency(companyApp.totalSpent, reviewCurrency)}</span>
                   </div>
                 </div>

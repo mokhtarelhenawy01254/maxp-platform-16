@@ -349,3 +349,9 @@ _archive/
 _archive/**
 
 chrome_profile/
+
+# Local build dist-check artifacts
+dist-check/
+
+# Backup translation files (manual backups)
+*.backup.json

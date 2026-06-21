@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 import { buildApiUrl } from "../../utils/urlHelper";
 import {
   PlusIcon,
@@ -564,7 +565,7 @@ const DevTasksList: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4" dir="rtl">
+    <div className="space-y-4" dir={i18n.dir()}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -1252,7 +1253,7 @@ const DevTasksList: React.FC = () => {
 
       {/* Filters Sidebar */}
       {showFiltersSidebar && (
-        <div className="fixed inset-0 z-50 overflow-hidden" dir="rtl">
+        <div className="fixed inset-0 z-50 overflow-hidden" dir={i18n.dir()}>
           <div
             className="absolute inset-0 bg-black bg-opacity-50"
             onClick={() => setShowFiltersSidebar(false)}
@@ -1568,7 +1569,7 @@ const DevTasksList: React.FC = () => {
       {confirmModal.show && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center"
-          dir="rtl"
+          dir={i18n.dir()}
         >
           <div
             className="absolute inset-0 bg-black bg-opacity-50"

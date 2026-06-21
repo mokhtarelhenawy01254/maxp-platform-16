@@ -10,6 +10,7 @@ import {
 } from "../../components/ui/dialog";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
+import i18n from "../../i18n";
 import { Brain, Gavel, Puzzle, Save, Plus, Trash2, CheckCircle, ChevronDown, ChevronRight, Bot, Sparkles, Store, Eye, Send, Globe, Shield, Music, MessageSquare, BarChart3, ShoppingCart, Package, TrendingUp, Search, Users, DollarSign } from "lucide-react";
 
 const TABS = [
@@ -132,7 +133,7 @@ const AgentExplorer: React.FC = () => {
           {selectedKey.fileId === "soul" && <div className="flex-1 flex flex-col p-3 gap-1.5 overflow-hidden">
             <div className="flex items-center gap-1"><Brain className="size-4 text-primary" /><span className="text-sm font-bold">soul.md</span><Badge variant="outline" className="text-xs">شخصية الوكيل</Badge><Button variant="link" size="sm" className="mr-auto text-xs" onClick={() => { const s = agentStates[selectedKey.agentId]; if (s) updateField(selectedKey.agentId, "soul", BOILERPLATE_SOUL.replace("{agentName}", agents.find(a => a.id === selectedKey.agentId)?.name || "")); }}>قالب</Button></div>
             <p className="text-xs text-muted-foreground">هذا النص يُدرج في بداية كل محادثة ويحدد شخصية الوكيل.</p>
-            <Textarea className="flex-1 font-mono text-sm leading-relaxed" dir="rtl" value={agentStates[selectedKey.agentId]?.config.soul || ""} onChange={e => updateField(selectedKey.agentId, "soul", e.target.value)} placeholder={BOILERPLATE_SOUL.replace("{agentName}", agents.find(a => a.id === selectedKey.agentId)?.name || "")} />
+            <Textarea className="flex-1 font-mono text-sm leading-relaxed" dir={i18n.dir()} value={agentStates[selectedKey.agentId]?.config.soul || ""} onChange={e => updateField(selectedKey.agentId, "soul", e.target.value)} placeholder={BOILERPLATE_SOUL.replace("{agentName}", agents.find(a => a.id === selectedKey.agentId)?.name || "")} />
             <p className="text-xs text-muted-foreground">{(agentStates[selectedKey.agentId]?.config.soul || "").length} حرف</p>
           </div>}
           {selectedKey.fileId === "rules" && <RulesEditor rules={agentStates[selectedKey.agentId]?.config.rules || []} onChange={r => updateField(selectedKey.agentId, "rules", r)} />}
@@ -163,7 +164,7 @@ const SkillsEditor: React.FC<{ skills: Skill[]; onChange: (s: Skill[]) => void }
     <div className="flex items-center gap-1 flex-wrap"><Puzzle className="size-4 text-green-600" /><span className="text-sm font-bold">skills.json</span><Badge variant="outline" className="border-green-500 text-green-600 text-xs"><CheckCircle className="size-3" /> {enabledCount} / {skills.length} مفعّل</Badge><div className="mr-auto flex gap-0.5"><Button variant="link" size="sm" className="text-xs" onClick={() => onChange(skills.map(s => ({ ...s, enabled: true })))}>تفعيل الكل</Button><Button variant="link" size="sm" className="text-xs text-red-500" onClick={() => onChange(skills.map(s => ({ ...s, enabled: false })))}>تعطيل الكل</Button></div></div>
     <p className="text-xs text-muted-foreground">الأدوات المتاحة لهذا الوكيل.</p>
     {Object.entries(grouped).map(([group, groupSkills]) => <div key={group}><p className="text-[0.65rem] font-bold tracking-wider text-muted-foreground">{group}</p><div className="grid grid-cols-2 gap-1 mt-0.5">{groupSkills.map(skill => <div key={skill.name} className={`p-2 rounded-lg border-2 cursor-pointer transition-all flex items-start justify-between gap-1 ${skill.enabled ? "border-green-500 bg-green-50/50 dark:bg-green-950/20" : "border-border"}`} onClick={() => onChange(skills.map(s => s.name === skill.name ? { ...s, enabled: !s.enabled } : s))}>
-      <div className="flex-1 min-w-0"><p className="text-[0.7rem] font-mono font-semibold" style={{ color: skill.enabled ? "#10b981" : "var(--muted-foreground)" }}>{skill.name}</p><p className="text-[0.74rem] text-muted-foreground">{skill.description}</p><Badge variant="outline" className="text-[0.6rem] h-4 mt-0.5">{skill.readOnly ? "قراءة" : "كتابة"}</Badge></div>
+      <div className="flex-1 min-w-0"><p className="text-[0.7rem] font-mono font-semibold" style={{ color: skill.enabled ? "var(--color-success)" : "var(--muted-foreground)" }}>{skill.name}</p><p className="text-[0.74rem] text-muted-foreground">{skill.description}</p><Badge variant="outline" className="text-[0.6rem] h-4 mt-0.5">{skill.readOnly ? "قراءة" : "كتابة"}</Badge></div>
       <Switch checked={skill.enabled} onCheckedChange={() => onChange(skills.map(s => s.name === skill.name ? { ...s, enabled: !s.enabled } : s))} onClick={e => e.stopPropagation()} size="sm" />
     </div>)}</div></div>)}
   </div>;
@@ -313,7 +314,7 @@ const TemplatePreviewDialog: React.FC<{ template: TemplateItem; onClose: () => v
   const [fullSoul, setFullSoul] = useState<string | null>(null);
   const [loadingSoul, setLoadingSoul] = useState(false);
 
-  useEffect(() => { if (t.slug && !fullSoul && !loadingSoul) { setLoadingSoul(true); apiClient.get(`/super-admin/agents/${t.slug}`).then(({ data }) => { if (data.success?.agent?.instructions_soul) setFullSoul(data.agent.instructions_soul); else setFullSoul(""); }).catch(() => setFullSoul("")).finally(() => setLoadingSoul(false)); } }, [t.slug, fullSoul, loadingSoul]);
+  useEffect(() => { if (t.slug && !fullSoul && !loadingSoul) { setLoadingSoul(true); apiClient.get(`/super-admin/agents/${t.slug}`).then(({ data }) => { if (data.agent?.instructions_soul) setFullSoul(data.agent.instructions_soul); else setFullSoul(""); }).catch(() => setFullSoul("")).finally(() => setLoadingSoul(false)); } }, [t.slug, fullSoul, loadingSoul]);
 
   return <Dialog open onOpenChange={o => { if (!o) onClose(); }}><DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
     <DialogHeader>

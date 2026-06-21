@@ -10,6 +10,7 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 import { buildApiUrl } from "../../utils/urlHelper";
 
 type TeamMember = {
@@ -383,7 +384,7 @@ const DevTaskIntegrations: React.FC = () => {
   }'`;
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6" dir={i18n.dir()}>
       <section className="rounded-[28px] border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-sky-950 p-6 text-white shadow-[0_28px_60px_-38px_rgba(15,23,42,0.95)]">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">

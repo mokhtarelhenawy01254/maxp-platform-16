@@ -1,6 +1,7 @@
+import type { ReactNode, ElementType } from "react"
 import { ExternalLink } from "lucide-react"
 
-function InfoLineInner({ icon: Icon, children, asLink }) {
+function InfoLineInner({ icon: Icon, children, asLink }: { icon: ElementType; children: ReactNode; asLink?: boolean }) {
   return (
     <span className="inline-flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
       <Icon className="size-4 shrink-0 text-primary/80" />
@@ -10,7 +11,7 @@ function InfoLineInner({ icon: Icon, children, asLink }) {
   )
 }
 
-export function InfoLine({ icon, children, asLink, href }) {
+export function InfoLine({ icon, children, asLink, href }: { icon: ElementType; children: ReactNode; asLink?: boolean; href?: string }) {
   if (asLink && href) {
     return (
       <a

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 import {
   ArrowRightIcon,
   LightBulbIcon,
@@ -955,7 +956,7 @@ const DevTaskForm: React.FC = () => {
   );
 
   return (
-    <div className="max-w-[1600px] mx-auto p-6" dir="rtl">
+    <div className="max-w-[1600px] mx-auto p-6" dir={i18n.dir()}>
       {/* Page Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">

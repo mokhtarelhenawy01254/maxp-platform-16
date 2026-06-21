@@ -6,7 +6,7 @@ import {
 describe("shouldUseSuperAdminShell", () => {
   it("uses the super admin shell for super admin routes only", () => {
     expect(shouldUseSuperAdminShell("SUPER_ADMIN", "/super-admin")).toBe(true);
-    expect(shouldUseSuperAdminShell("SUPER_ADMIN", "/super-admin/companies")).toBe(
+    expect(shouldUseSuperAdminShell("SUPER_ADMIN", "/super-admin/companies-v2")).toBe(
       true,
     );
     expect(shouldUseSuperAdminShell("SUPER_ADMIN", "/company-dashboard")).toBe(
@@ -15,25 +15,31 @@ describe("shouldUseSuperAdminShell", () => {
   });
 
   it("keeps company roles on the company shell even when a URL is under super admin", () => {
-    expect(shouldUseSuperAdminShell("OWNER", "/super-admin/companies")).toBe(
+    expect(shouldUseSuperAdminShell("OWNER", "/super-admin/companies-v2")).toBe(
       false,
     );
-    expect(shouldUseSuperAdminShell(null, "/super-admin/companies")).toBe(false);
+    expect(shouldUseSuperAdminShell(null, "/super-admin/companies-v2")).toBe(false);
   });
 });
 
 describe("matchesSuperAdminNavigationPath", () => {
-  it("treats companies-v2 as the current companies navigation item", () => {
+  it("matches the companies route", () => {
     expect(
       matchesSuperAdminNavigationPath(
         "/super-admin/companies-v2",
-        "/super-admin/companies",
+        "/super-admin/companies-v2",
       ),
     ).toBe(true);
     expect(
       matchesSuperAdminNavigationPath(
-        "/super-admin/companies-v2/health",
-        "/super-admin/companies",
+        "/super-admin/companies/123",
+        "/super-admin/companies-v2",
+      ),
+    ).toBe(false);
+    expect(
+      matchesSuperAdminNavigationPath(
+        "/super-admin/companies-v2/123",
+        "/super-admin/companies-v2",
       ),
     ).toBe(true);
   });
@@ -41,8 +47,8 @@ describe("matchesSuperAdminNavigationPath", () => {
   it("keeps unrelated company-like routes separate", () => {
     expect(
       matchesSuperAdminNavigationPath(
-        "/super-admin/companies-legacy",
-        "/super-admin/companies",
+        "/super-admin/companies-reports",
+        "/super-admin/companies-v2",
       ),
     ).toBe(false);
   });

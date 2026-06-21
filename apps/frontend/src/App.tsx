@@ -681,9 +681,6 @@ const CompanyLinks = React.lazy(() => import("./pages/CompanyLinks"));
 // PublicCompanyLinks already declared above
 
 // Super Admin
-const SuperAdminCompanies = React.lazy(
-  () => import("./pages/SuperAdminCompanies"),
-);
 const SuperAdminCompaniesV2 = React.lazy(
   () => import("./pages/SuperAdminCompaniesV2"),
 );
@@ -762,6 +759,12 @@ const SuperAdminAIChatPage = React.lazy(
 );
 const SuperAdminAIHubLayout = React.lazy(
   () => import("./pages/super-admin/SuperAdminAIHubLayout"),
+);
+const SuperAdminAITemplates = React.lazy(
+  () => import("./pages/super-admin/SuperAdminAITemplates"),
+);
+const SuperAdminAITemplateDetail = React.lazy(
+  () => import("./pages/super-admin/SuperAdminAITemplateDetail"),
 );
 // Super Admin Product Embeddings
 const SuperAdminProductEmbeddings = React.lazy(
@@ -1614,20 +1617,16 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/super-admin/companies"
-              element={
-                <Layout>
-                  <SuperAdminCompanies />
-                </Layout>
-              }
-            />
-            <Route
               path="/super-admin/companies-v2"
               element={
                 <Layout fullWidth>
                   <SuperAdminCompaniesV2 />
                 </Layout>
               }
+            />
+            <Route
+              path="/super-admin/companies"
+              element={<Navigate to="/super-admin/companies-v2" replace />}
             />
             <Route
               path="/super-admin/companies-reports"
@@ -1840,6 +1839,22 @@ const AppContent = () => {
               element={
                 <Layout fullWidth>
                   <SuperAdminAIChatPage />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/ai-templates"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminAITemplates />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/ai-templates/:slug"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminAITemplateDetail />
                 </Layout>
               }
             />

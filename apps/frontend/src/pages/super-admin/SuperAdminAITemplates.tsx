@@ -1,0 +1,220 @@
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { Input } from "../../components/ui/input";
+import { Alert, AlertDescription } from "../../components/ui/alert";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import { apiClient } from "../../services/apiClient";
+import { Store, Search, Eye, Pencil, Copy, Send, Trash2, ChevronDown, ChevronUp, Plus, Layers, ExternalLink } from "lucide-react";
+import {
+  CreateDialog, EditDialog, PreviewDialog, ApplyDialog, DeleteDialog, DuplicateDialog,
+  ROLE_ICONS, ROLE_COLORS, toneColors, TemplateItem,
+} from "./SuperAdminAITemplatesDialogs";
+
+/* ════════════════════════════════════════════════
+   Main Page
+   ════════════════════════════════════════════════ */
+const SuperAdminAITemplates: React.FC = () => {
+  const navigate = useNavigate();
+  const [templates, setTemplates] = useState<TemplateItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("");
+  const [industryFilter, setIndustryFilter] = useState<string>("");
+  const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [editTarget, setEditTarget] = useState<TemplateItem | null>(null);
+  const [previewTarget, setPreviewTarget] = useState<TemplateItem | null>(null);
+  const [applyTarget, setApplyTarget] = useState<TemplateItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TemplateItem | null>(null);
+  const [duplicateTarget, setDuplicateTarget] = useState<TemplateItem | null>(null);
+
+  const fetchTemplates = async () => {
+    try { setLoading(true); const { data } = await apiClient.get("/super-admin/agents/marketplace"); if (data.success) setTemplates(data.templates); }
+    catch { setError("فشل تحميل قوالب الذكاء الاصطناعي"); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchTemplates(); }, []);
+
+  const allRoles = [...new Set(templates.map(t => t.role))].sort();
+  const allIndustries = [...new Set(templates.flatMap(t => t.industries))].sort();
+
+  const filtered = templates.filter(t => {
+    if (search && !t.name.toLowerCase().includes(search.toLowerCase()) && !t.role.toLowerCase().includes(search.toLowerCase()) && !t.slug.toLowerCase().includes(search.toLowerCase())) return false;
+    if (roleFilter && t.role !== roleFilter) return false;
+    if (industryFilter && !t.industries.includes(industryFilter)) return false;
+    return true;
+  });
+
+  const stats = {
+    total: templates.length,
+    byRole: templates.reduce<Record<string, number>>((acc, t) => { acc[t.role] = (acc[t.role] || 0) + 1; return acc; }, {}),
+    totalTools: templates.reduce((s, t) => s + t.toolsCount, 0),
+    totalSkills: templates.reduce((s, t) => s + t.skillsCount, 0),
+    withDailyBudget: templates.filter(t => t.budget?.dailyUsd).length,
+  };
+
+  if (loading) return <div className="flex justify-center items-center h-[60vh]"><LoadingSpinner size="lg" /></div>;
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-64px)] bg-gradient-to-br from-slate-50 to-blue-50/30">
+      {/* Header */}
+      <div className="px-4 py-2 border-b bg-white/80 backdrop-blur-sm shrink-0 flex items-center gap-2">
+        <Layers className="size-6 text-primary" />
+        <div className="flex-1">
+          <p className="text-sm font-bold">قوالب الذكاء الاصطناعي</p>
+          <p className="text-xs text-muted-foreground">إدارة ونشر قوالب وكلاء AI — {stats.total} قالب</p>
+        </div>
+        <Button onClick={() => setShowCreate(true)} size="sm"><Plus className="size-4 ml-1" /> قالب جديد</Button>
+      </div>
+
+      {/* Stats bar */}
+      <div className="grid grid-cols-5 gap-2 px-4 py-2 bg-white/50 border-b shrink-0">
+        <StatBox label="إجمالي القوالب" value={stats.total} />
+        <StatBox label="أدوات" value={stats.totalTools} />
+        <StatBox label="مهارات" value={stats.totalSkills} />
+        <StatBox label="قوالب بميزانية" value={stats.withDailyBudget} />
+        <StatBox label="أدوار مختلفة" value={Object.keys(stats.byRole).length} />
+      </div>
+
+      {/* Search & Filter */}
+      <div className="px-4 py-2 border-b bg-white/50 shrink-0 flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="size-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث عن قالب..." className="pr-9 h-9 text-sm" />
+        </div>
+        <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
+          className="h-9 rounded-lg border border-input bg-background px-3 text-xs text-muted-foreground">
+          <option value="">كل الأدوار</option>
+          {allRoles.map(r => <option key={r} value={r}>{r}</option>)}
+        </select>
+        <select value={industryFilter} onChange={e => setIndustryFilter(e.target.value)}
+          className="h-9 rounded-lg border border-input bg-background px-3 text-xs text-muted-foreground">
+          <option value="">كل المجالات</option>
+          {allIndustries.map(ind => <option key={ind} value={ind}>{ind}</option>)}
+        </select>
+        <span className="text-xs text-muted-foreground">{filtered.length} من {templates.length}</span>
+      </div>
+
+      {error && <Alert variant="destructive" className="mx-4 mt-2 shrink-0"><AlertDescription>{error}</AlertDescription></Alert>}
+
+      {/* Table */}
+      <div className="flex-1 overflow-auto p-4">
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full gap-2">
+            <Store className="size-16 opacity-15" />
+            <p className="text-sm text-muted-foreground">لا توجد قوالب تطابق بحثك</p>
+            <Button variant="outline" size="sm" onClick={() => { setSearch(""); setRoleFilter(""); setIndustryFilter(""); }}>مسح الفلتر</Button>
+          </div>
+        ) : (
+          <div className="rounded-xl border bg-card overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/30 text-xs text-muted-foreground">
+                  <th className="text-right p-3 font-medium">القالب</th>
+                  <th className="text-right p-3 font-medium">الدور</th>
+                  <th className="text-right p-3 font-medium">الإصدار</th>
+                  <th className="text-right p-3 font-medium">المجالات</th>
+                  <th className="text-right p-3 font-medium">الإحصائيات</th>
+                  <th className="text-right p-3 font-medium">القنوات</th>
+                  <th className="text-left p-3 font-medium">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(t => (
+                  <React.Fragment key={t.slug}>
+                    <tr
+                      className="border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                      onClick={() => setExpandedSlug(expandedSlug === t.slug ? null : t.slug)}
+                    >
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{t.icon || ROLE_ICONS[t.role] || "🤖"}</span>
+                          <div>
+                            <button onClick={e => { e.stopPropagation(); navigate(`/super-admin/ai-templates/${t.slug}`); }} className="text-sm font-semibold hover:text-primary transition-colors flex items-center gap-1">
+                              {t.name} <ExternalLink className="size-3 opacity-50" />
+                            </button>
+                            <p className="text-[0.6rem] text-muted-foreground font-mono">{t.slug}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <span className={`text-[0.65rem] px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[t.role] || "bg-gray-100 text-gray-700"}`}>{t.role}</span>
+                      </td>
+                      <td className="p-3 text-xs text-muted-foreground">{t.version}</td>
+                      <td className="p-3">
+                        <div className="flex flex-wrap gap-1">
+                          {t.industries.slice(0, 2).map(ind => (<span key={ind} className="text-[0.55rem] px-1.5 py-0.5 rounded-full bg-primary/5 text-primary">{ind}</span>))}
+                          {t.industries.length > 2 && <span className="text-[0.55rem] text-muted-foreground">+{t.industries.length - 2}</span>}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-3 text-[0.65rem] text-muted-foreground">
+                          <span>{t.toolsCount} أداة</span><span>{t.skillsCount} مهارة</span>
+                          {t.budget?.dailyUsd && <span>${t.budget.dailyUsd}/d</span>}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex gap-1">{t.channels.slice(0, 2).map(ch => (<Badge key={ch} variant="outline" className="text-[0.55rem] h-4">{ch}</Badge>))}</div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon-xs" onClick={() => navigate(`/super-admin/ai-templates/${t.slug}`)} title="التفاصيل"><ExternalLink className="size-3.5" /></Button>
+                          <Button variant="ghost" size="icon-xs" onClick={() => setPreviewTarget(t)} title="معاينة"><Eye className="size-3.5" /></Button>
+                          <Button variant="ghost" size="icon-xs" onClick={() => setEditTarget(t)} title="تعديل"><Pencil className="size-3.5" /></Button>
+                          <Button variant="ghost" size="icon-xs" onClick={() => setDuplicateTarget(t)} title="نسخ"><Copy className="size-3.5" /></Button>
+                          <Button variant="ghost" size="icon-xs" onClick={() => setApplyTarget(t)} title="تطبيق على شركة"><Send className="size-3.5" /></Button>
+                          <Button variant="ghost" size="icon-xs" onClick={() => setDeleteTarget(t)} title="حذف"><Trash2 className="size-3.5 text-red-500" /></Button>
+                          {expandedSlug === t.slug ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />}
+                        </div>
+                      </td>
+                    </tr>
+                    {expandedSlug === t.slug && (
+                      <tr className="bg-muted/20">
+                        <td colSpan={7} className="p-3">
+                          <div className="flex gap-4">
+                            {t.soulPreview && <div className="flex-1"><p className="text-[0.6rem] font-bold text-muted-foreground mb-1">لمحة عن الشخصية</p><p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap line-clamp-4 dir-rtl">{t.soulPreview}</p></div>}
+                            {t.personaMeta?.tone && (
+                              <div className="shrink-0">
+                                <p className="text-[0.6rem] font-bold text-muted-foreground mb-1">الشخصية</p>
+                                <div className="flex flex-wrap gap-1">
+                                  <span className={`text-[0.6rem] px-1.5 py-0.5 rounded-full font-medium ${toneColors[t.personaMeta.tone] || "bg-gray-100 text-gray-700"}`}>{t.personaMeta.tone}</span>
+                                  {t.personaMeta.language && <Badge variant="outline" className="text-[0.55rem]">{t.personaMeta.language === "arabic" ? "عربي" : t.personaMeta.language}</Badge>}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Dialogs */}
+      {showCreate && <CreateDialog onClose={() => setShowCreate(false)} onCreated={fetchTemplates} />}
+      {editTarget && <EditDialog template={editTarget} onClose={() => setEditTarget(null)} onUpdated={fetchTemplates} />}
+      {previewTarget && <PreviewDialog template={previewTarget} onClose={() => setPreviewTarget(null)} />}
+      {duplicateTarget && <DuplicateDialog template={duplicateTarget} onClose={() => setDuplicateTarget(null)} onCreated={fetchTemplates} />}
+      {applyTarget && <ApplyDialog template={applyTarget} onClose={() => setApplyTarget(null)} />}
+      {deleteTarget && <DeleteDialog template={deleteTarget} onClose={() => setDeleteTarget(null)} onDeleted={fetchTemplates} />}
+    </div>
+  );
+};
+
+const StatBox: React.FC<{ label: string; value: number | string }> = ({ label, value }) => (
+  <div className="rounded-lg bg-white border p-2 text-center">
+    <p className="text-lg font-bold text-primary">{value}</p>
+    <p className="text-[0.6rem] text-muted-foreground">{label}</p>
+  </div>
+);
+
+export default SuperAdminAITemplates;

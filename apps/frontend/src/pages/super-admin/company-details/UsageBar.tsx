@@ -1,12 +1,12 @@
 import { cn } from "../../../lib/utils"
 
-function clampPercentage(value) {
+function clampPercentage(value: unknown): number {
   const numericValue = Number(value || 0)
   if (!Number.isFinite(numericValue)) return 0
   return Math.max(0, Math.min(numericValue, 100))
 }
 
-function getUsageTone(percentage) {
+function getUsageTone(percentage: number): { bar: string; text: string; track: string } {
   if (percentage >= 100) {
     return {
       bar: "bg-rose-500",
@@ -28,7 +28,7 @@ function getUsageTone(percentage) {
   }
 }
 
-export function UsageBar({ percentage }) {
+function UsageBar({ percentage }: { percentage: number }) {
   const clamped = clampPercentage(percentage)
   const tone = getUsageTone(clamped)
 
@@ -42,4 +42,4 @@ export function UsageBar({ percentage }) {
   )
 }
 
-export { getUsageTone, clampPercentage }
+export { UsageBar, getUsageTone, clampPercentage }

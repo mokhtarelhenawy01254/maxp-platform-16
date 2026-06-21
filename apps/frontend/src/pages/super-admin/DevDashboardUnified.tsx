@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
-import { useTheme } from "../../hooks/useTheme";
+import i18n from "../../i18n";
 import {
   UserGroupIcon,
   ClockIcon,
@@ -67,8 +67,6 @@ interface UnifiedData {
 }
 
 const DevDashboardUnified: React.FC = () => {
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
   const [data, setData] = useState<UnifiedData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -194,7 +192,7 @@ const DevDashboardUnified: React.FC = () => {
   if (!data) return null;
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6" dir={i18n.dir()}>
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
@@ -302,10 +300,10 @@ const DevDashboardUnified: React.FC = () => {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: isDark ? "#1f2937" : "#fff",
+                    backgroundColor: "var(--color-card)",
                     border: "none",
                     borderRadius: "8px",
-                    color: isDark ? "#fff" : "#000",
+                    color: "var(--color-primary-foreground)",
                   }}
                 />
                 <Legend />
@@ -331,24 +329,24 @@ const DevDashboardUnified: React.FC = () => {
                     x2="0"
                     y2="1"
                   >
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    <stop offset="5%" stopColor="var(--color-success)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--color-success)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke={isDark ? "#374151" : "#e5e7eb"}
+                  stroke={"var(--color-border)"}
                   vertical={false}
                 />
                 <XAxis
                   dataKey="date"
-                  stroke={isDark ? "#9ca3af" : "#6b7280"}
+                  stroke={"var(--color-muted-foreground)"}
                   fontSize={10}
                 />
-                <YAxis stroke={isDark ? "#9ca3af" : "#6b7280"} fontSize={10} />
+                <YAxis stroke={"var(--color-muted-foreground)"} fontSize={10} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: isDark ? "#1f2937" : "#fff",
+                    backgroundColor: "var(--color-card)",
                     border: "none",
                     borderRadius: "8px",
                   }}
@@ -357,7 +355,7 @@ const DevDashboardUnified: React.FC = () => {
                   type="monotone"
                   dataKey="completed"
                   name="مكتملة"
-                  stroke="#10b981"
+                  stroke="var(--color-success)"
                   fillOpacity={1}
                   fill="url(#colorCompleted)"
                 />
@@ -365,7 +363,7 @@ const DevDashboardUnified: React.FC = () => {
                   type="monotone"
                   dataKey="created"
                   name="جديدة"
-                  stroke="#6366f1"
+                  stroke="var(--color-primary)"
                   fillOpacity={0}
                 />
               </AreaChart>
@@ -388,26 +386,26 @@ const DevDashboardUnified: React.FC = () => {
             >
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke={isDark ? "#374151" : "#e5e7eb"}
+                stroke={"var(--color-border)"}
                 vertical={false}
               />
               <XAxis
                 dataKey="memberName"
-                stroke={isDark ? "#9ca3af" : "#6b7280"}
-                tick={{ fill: isDark ? "#d1d5db" : "#4b5563", fontSize: 12 }}
+                stroke={"var(--color-muted-foreground)"}
+                tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
-                stroke={isDark ? "#9ca3af" : "#6b7280"}
-                tick={{ fill: isDark ? "#d1d5db" : "#4b5563", fontSize: 12 }}
+                stroke={"var(--color-muted-foreground)"}
+                tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: isDark ? "#1f2937" : "#ffffff",
-                  border: `1px solid ${isDark ? "#374151" : "#e5e7eb"}`,
+                  backgroundColor: "var(--color-card)",
+                  border: `1px solid ${"var(--color-border)"}`,
                   borderRadius: "12px",
                 }}
               />
@@ -424,21 +422,21 @@ const DevDashboardUnified: React.FC = () => {
               <Bar
                 dataKey="tasksCompleted"
                 name="مهام مكتملة"
-                fill="#10b981"
+                fill="var(--color-success)"
                 radius={[4, 4, 0, 0]}
                 barSize={40}
               />
               <Bar
                 dataKey="tasksInProgress"
                 name="قيد العمل"
-                fill="#6366f1"
+                fill="var(--color-primary)"
                 radius={[4, 4, 0, 0]}
                 barSize={40}
               />
               <Bar
                 dataKey="overdueTasks"
                 name="متأخرة"
-                fill="#ef4444"
+                fill="var(--color-destructive)"
                 radius={[4, 4, 0, 0]}
                 barSize={40}
               />

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
 import {
   PlusIcon,
@@ -84,8 +85,6 @@ const priorityColors: Record<string, string> = {
 
 const DevProjects: React.FC = () => {
   const navigate = useNavigate();
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("");
@@ -149,7 +148,7 @@ const DevProjects: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6" dir={i18n.dir()}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -428,8 +427,6 @@ const ProjectFormModal: React.FC<{
   onClose: () => void;
   onSuccess: () => void;
 }> = ({ onClose, onSuccess }) => {
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
   const [formData, setFormData] = useState({
     name: "",
     description: "",

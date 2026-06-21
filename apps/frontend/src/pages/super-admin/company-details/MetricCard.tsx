@@ -1,6 +1,13 @@
+import type { ReactNode, ElementType } from "react"
 import { cn } from "../../../lib/utils"
 
-export function MetricCard({ icon: Icon, label, value, hint, tone }) {
+export function MetricCard({ icon: Icon, label, value, hint, tone }: {
+  icon: ElementType;
+  label: string;
+  value: ReactNode;
+  hint?: string;
+  tone?: string;
+}) {
   return (
     <div
       className={cn(

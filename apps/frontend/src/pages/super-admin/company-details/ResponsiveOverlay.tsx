@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import { cn } from "../../../lib/utils"
 import {
   Dialog,
@@ -26,6 +27,16 @@ export function ResponsiveOverlay({
   footer,
   contentClassName,
   bodyClassName,
+}: {
+  mobile: boolean;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  title: string;
+  description?: string;
+  children: ReactNode;
+  footer?: ReactNode;
+  contentClassName?: string;
+  bodyClassName?: string;
 }) {
   if (mobile) {
     return (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
 import {
   UserGroupIcon,
@@ -86,8 +87,6 @@ const availabilityConfig: Record<
 };
 
 const DevTeam = () => {
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -198,7 +197,7 @@ const DevTeam = () => {
   }
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6" dir={i18n.dir()}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -438,8 +437,6 @@ const TeamMemberFormModal: React.FC<{
   onClose: () => void;
   onSuccess: () => void;
 }> = ({ member, availableUsers, loadingUsers, onClose, onSuccess }) => {
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
   const [formData, setFormData] = useState({
     userId: member?.userId || "",
     role: member?.role || "developer",

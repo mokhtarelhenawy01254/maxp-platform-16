@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 import {
   UserGroupIcon,
   PlusIcon,
@@ -171,7 +172,7 @@ const StaffCompanyAccess = () => {
   if (loading) return <div className="p-10 text-center">جاري التحميل...</div>;
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6" dir={i18n.dir()}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">

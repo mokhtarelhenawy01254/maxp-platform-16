@@ -4,6 +4,7 @@ import { Badge } from "../../components/ui/badge";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { apiClient } from "../../services/apiClient";
+import i18n from "../../i18n";
 import {
   Database, RefreshCw, Play, CheckCircle, AlertCircle, Clock, Layers,
   Building2, ChevronDown, ChevronRight, Info, BookOpen, Search,
@@ -333,7 +334,7 @@ const SuperAdminProductEmbeddings: React.FC = () => {
   });
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)]" dir="rtl">
+    <div className="flex flex-col h-[calc(100vh-64px)]" dir={i18n.dir()}>
       {/* Header */}
       <div className="px-4 py-3 shrink-0 border-b bg-card flex items-center gap-3">
         <div className="p-2 rounded-lg bg-blue-50">

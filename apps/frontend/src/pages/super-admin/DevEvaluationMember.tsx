@@ -128,7 +128,7 @@ const DevEvaluationMember: React.FC = () => {
   }
 
   return (
-    <div className="w-full" dir="rtl">
+    <div className="w-full" dir={i18n.dir()}>
       <button
         onClick={() => navigate("/super-admin/dev-evaluations")}
         className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-4"

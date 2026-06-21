@@ -1,7 +1,14 @@
+import type { ReactNode } from "react"
 import { cn } from "../../../lib/utils"
 import { Separator } from "../../../components/ui/separator"
 
-export function SectionShell({ title, description, actions, children, className }) {
+export function SectionShell({ title, description, actions, children, className }: {
+  title: string;
+  description?: string;
+  actions?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <div className={cn("space-y-4", className)}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

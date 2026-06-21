@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
 import {
   ArrowRightIcon,
@@ -148,8 +149,6 @@ const GoalNodeComponent: React.FC<{
 
 const DevGoalAlignmentTree: React.FC = () => {
   const navigate = useNavigate();
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
   const [tree, setTree] = useState<GoalNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterQuarter, setFilterQuarter] = useState("Q2-2026");
@@ -194,7 +193,7 @@ const DevGoalAlignmentTree: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6" dir={i18n.dir()}>
       {/* Header */}
       <div className="flex items-center gap-4">
         <button

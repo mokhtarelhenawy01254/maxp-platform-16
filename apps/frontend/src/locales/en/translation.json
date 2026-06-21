@@ -647,7 +647,11 @@
       "saved": "Changes saved successfully",
       "saveFailed": "Failed to save changes",
       "loadFailed": "Failed to load data",
-      "emptyState": "No agent assigned yet. CEO auto-routing will be used for all channels."
+      "emptyState": "No agent assigned yet. CEO auto-routing will be used for all channels.",
+      "assignAll": "Assign Agent to All",
+      "assignAllPlaceholder": "Select agent for all",
+      "reset": "Reset",
+      "modified": "Modified"
     },
     "sandbox": {
       "chat": {
@@ -5082,7 +5086,6 @@
       "teamPortal": "Team Portal",
       "changelog": "Changelog",
       "companies": "Companies",
-      "companiesV2": "Companies V2",
       "companyReports": "Company Reports",
       "whatsappPlatform": "WhatsApp Platform",
       "whatsappOverview": "WhatsApp Overview",

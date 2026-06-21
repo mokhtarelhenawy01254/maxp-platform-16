@@ -25,6 +25,7 @@ import {
 import { exportToExcel } from "../../utils/exportHelpers";
 import { Button } from "../../components/ui/button";
 import { apiClient } from "../../services/apiClient";
+import i18n from "../../i18n";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -148,7 +149,7 @@ export default function QueueMonitor() {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-slate-50/50" dir="rtl">
+    <div className="p-6 space-y-6 bg-slate-50/50" dir={i18n.dir()}>
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -332,12 +333,12 @@ export default function QueueMonitor() {
                       >
                         <stop
                           offset="5%"
-                          stopColor="#10b981"
+                          stopColor="var(--color-success)"
                           stopOpacity={0.2}
                         />
                         <stop
                           offset="95%"
-                          stopColor="#10b981"
+                          stopColor="var(--color-success)"
                           stopOpacity={0}
                         />
                       </linearGradient>
@@ -350,12 +351,12 @@ export default function QueueMonitor() {
                       >
                         <stop
                           offset="5%"
-                          stopColor="#ef4444"
+                          stopColor="var(--color-destructive)"
                           stopOpacity={0.2}
                         />
                         <stop
                           offset="95%"
-                          stopColor="#ef4444"
+                          stopColor="var(--color-destructive)"
                           stopOpacity={0}
                         />
                       </linearGradient>
@@ -363,24 +364,24 @@ export default function QueueMonitor() {
                     <CartesianGrid
                       strokeDasharray="3 3"
                       vertical={false}
-                      stroke="#f1f5f9"
+                      stroke="var(--color-muted)"
                     />
                     <XAxis
                       dataKey={timeRange === "1" ? "time" : "date"}
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 11, fill: "#64748b" }}
+                      tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                       minTickGap={40}
                     />
                     <YAxis
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 11, fill: "#64748b" }}
+                      tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                     />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "rgba(255, 255, 255, 0.95)",
-                        border: "1px solid #e2e8f0",
+                        backgroundColor: "var(--color-card)",
+                        border: "1px solid var(--color-border)",
                         borderRadius: "12px",
                         boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
                         padding: "12px",
@@ -388,7 +389,7 @@ export default function QueueMonitor() {
                       labelStyle={{
                         fontWeight: "bold",
                         marginBottom: "8px",
-                        color: "#1e293b",
+                        color: "var(--color-foreground)",
                       }}
                     />
                     <Legend
@@ -401,7 +402,7 @@ export default function QueueMonitor() {
                       type="monotone"
                       name="الناجحة"
                       dataKey="completed"
-                      stroke="#10b981"
+                      stroke="var(--color-success)"
                       strokeWidth={3}
                       fillOpacity={1}
                       fill="url(#colorCompleted)"
@@ -411,7 +412,7 @@ export default function QueueMonitor() {
                       type="monotone"
                       name="الفاشلة"
                       dataKey="failed"
-                      stroke="#ef4444"
+                      stroke="var(--color-destructive)"
                       strokeWidth={3}
                       fillOpacity={1}
                       fill="url(#colorFailed)"

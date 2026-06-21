@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
 import {
   PlusIcon,
@@ -77,8 +78,6 @@ const statusConfig: Record<
 
 const DevReleases: React.FC = () => {
   const navigate = useNavigate();
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
   const [releases, setReleases] = useState<Release[]>([]);
   const [projects, setProjects] = useState<Array<{ id: string; name: string }>>(
     [],
@@ -183,7 +182,7 @@ const DevReleases: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6" dir={i18n.dir()}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

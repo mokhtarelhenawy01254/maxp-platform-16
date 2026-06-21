@@ -15,6 +15,7 @@ import {
   platformSiteHomepageService,
   type PlatformSiteHomepageSettings,
 } from "../../services/platformSiteHomepageService";
+import i18n from "../../i18n";
 import {
   PLATFORM_LANDING_VARIANTS,
   getPlatformLandingPreviewPath,
@@ -150,7 +151,7 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
   if (loading) {
     return (
       <div
-        dir="rtl"
+        dir={i18n.dir()}
         className="bg-slate-50 p-6 dark:bg-slate-900"
       >
         <div className="mx-auto flex h-[60vh] max-w-7xl items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
@@ -164,7 +165,7 @@ const PlatformSiteHomepageTemplates: React.FC = () => {
   }
 
   return (
-    <div dir="rtl" className="bg-slate-50 p-6 dark:bg-slate-900">
+    <div dir={i18n.dir()} className="bg-slate-50 p-6 dark:bg-slate-900">
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">

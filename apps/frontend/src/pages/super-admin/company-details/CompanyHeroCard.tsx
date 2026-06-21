@@ -1,11 +1,16 @@
+import type { CompanyData, CompanyReview, CompanyUser } from "./companyDetailsTypes";
 import { Globe, Mail, Phone, ShieldCheck } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
 import { Card, CardContent } from "../../../components/ui/card";
 import { StatusBadge } from "./StatusBadge";
 import { InfoLine } from "./InfoLine";
-import { getStatusMeta, normalizeWebsite } from "./helpers";
+import { normalizeWebsite } from "./helpers";
 
-export function CompanyHeroCard({ company, review, ownerUser }) {
+export function CompanyHeroCard({ company, review, ownerUser }: {
+  company: CompanyData;
+  review?: CompanyReview | null;
+  ownerUser?: CompanyUser | null;
+}) {
   return (
     <Card className="app-panel-theme rounded-2xl border">
       <CardContent className="space-y-5 p-5 sm:p-6">
@@ -18,16 +23,13 @@ export function CompanyHeroCard({ company, review, ownerUser }) {
               <h1 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">
                 {company.name}
               </h1>
-              <Badge variant="outline" className="rounded-full px-2.5 py-1 text-[11px] font-bold">
-                {getStatusMeta("plan", company.plan).label}
-              </Badge>
               <StatusBadge isActive={company.isActive} />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <InfoLine icon={Mail}>{company.email || "غير متوفر"}</InfoLine>
               {company.phone ? <InfoLine icon={Phone}>{company.phone}</InfoLine> : null}
               {company.website ? (
-                <InfoLine icon={Globe} asLink href={normalizeWebsite(company.website)}>
+                <InfoLine icon={Globe} asLink href={normalizeWebsite(company.website) ?? undefined}>
                   {company.website}
                 </InfoLine>
               ) : null}

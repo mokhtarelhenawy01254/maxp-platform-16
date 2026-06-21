@@ -7,6 +7,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { lpAdminService, type LpPage } from "../../services/lpAdminService";
+import i18n from "../../i18n";
 
 const SuperAdminLandingPages: React.FC = () => {
   const [pages, setPages] = useState<LpPage[]>([]);
@@ -42,7 +43,7 @@ const SuperAdminLandingPages: React.FC = () => {
 
   if (loading) {
     return (
-      <div dir="rtl" className="bg-slate-50 p-6 dark:bg-slate-900">
+      <div dir={i18n.dir()} className="bg-slate-50 p-6 dark:bg-slate-900">
         <div className="mx-auto flex h-[60vh] max-w-7xl items-center justify-center rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
           <div className="flex items-center gap-3 text-slate-700 dark:text-slate-200">
             <ArrowPathIcon className="h-6 w-6 animate-spin" />
@@ -54,7 +55,7 @@ const SuperAdminLandingPages: React.FC = () => {
   }
 
   return (
-    <div dir="rtl" className="bg-slate-50 p-6 dark:bg-slate-900">
+    <div dir={i18n.dir()} className="bg-slate-50 p-6 dark:bg-slate-900">
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
           <p className="text-xs font-bold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">

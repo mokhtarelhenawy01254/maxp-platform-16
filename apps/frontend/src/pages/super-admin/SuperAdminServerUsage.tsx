@@ -5,6 +5,7 @@ import { Separator } from "../../components/ui/separator";
 import { apiClient } from "../../services/apiClient";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "../../lib/utils";
 import { HardDrive, RefreshCw, PieChart as PieChartIcon, Info, Server, Cloud, Cpu, Gauge, Settings, BarChart3, Image, Video, Music, FileText, MoreHorizontal } from "lucide-react";
 
 const formatSize = (bytes: number) => {
@@ -19,7 +20,6 @@ const SuperAdminServerUsage = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const isDark = true;
 
   useEffect(() => { fetchStats(); }, []);
 
@@ -29,8 +29,8 @@ const SuperAdminServerUsage = () => {
 
   if (loading && !stats) return <div className="flex justify-center items-center min-h-[60vh]"><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}><LoadingSpinner size="xl" /></motion.div></div>;
 
-  const chartData = stats ? [{ name: "المساحة المستخدمة", value: stats.used, color: "#3b82f6" }, { name: "المساحة الفارغة", value: stats.free, color: isDark ? "rgba(255,255,255,0.1)" : "#f1f5f9" }] : [];
-  const breakdownData = stats?.breakdown ? [{ name: "الصور", value: stats.breakdown.images, color: "#3b82f6", icon: <Image className="size-4" /> }, { name: "الفيديوهات", value: stats.breakdown.videos, color: "#ef4444", icon: <Video className="size-4" /> }, { name: "الصوتيات", value: stats.breakdown.audio, color: "#8b5cf6", icon: <Music className="size-4" /> }, { name: "المستندات", value: stats.breakdown.documents, color: "#fbbf24", icon: <FileText className="size-4" /> }, { name: "أخرى", value: stats.breakdown.other, color: "#94a3b8", icon: <MoreHorizontal className="size-4" /> }] : [];
+  const chartData = stats ? [{ name: "المساحة المستخدمة", value: stats.used, color: "var(--color-primary)" }, { name: "المساحة الفارغة", value: stats.free, color: "var(--color-muted)" }] : [];
+  const breakdownData = stats?.breakdown ? [{ name: "الصور", value: stats.breakdown.images, color: "var(--color-primary)", icon: <Image className="size-4" /> }, { name: "الفيديوهات", value: stats.breakdown.videos, color: "var(--color-destructive)", icon: <Video className="size-4" /> }, { name: "الصوتيات", value: stats.breakdown.audio, color: "var(--color-secondary)", icon: <Music className="size-4" /> }, { name: "المستندات", value: stats.breakdown.documents, color: "var(--color-warning)", icon: <FileText className="size-4" /> }, { name: "أخرى", value: stats.breakdown.other, color: "var(--color-muted-foreground)", icon: <MoreHorizontal className="size-4" /> }] : [];
 
   return (
     <div className="p-4 rtl min-h-full bg-gradient-to-br from-transparent via-transparent to-blue-50/50 dark:to-slate-900/50">
@@ -47,7 +47,7 @@ const SuperAdminServerUsage = () => {
             <h2 className="font-bold flex items-center gap-1 mb-3"><PieChartIcon className="size-4 text-blue-500" /> نظرة عامة</h2>
             <div className="relative min-h-[280px] w-full"><ResponsiveContainer width="100%" height={280}><PieChart><Pie data={chartData} cx="50%" cy="50%" innerRadius={80} outerRadius={100} stroke="none" paddingAngle={8} dataKey="value" startAngle={90} endAngle={-270}>{chartData.map((entry, index) => <Cell key={index} fill={entry.color} />)}</Pie></PieChart></ResponsiveContainer>
               <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full">
-                <p className="text-3xl font-black" style={{ color: "#3b82f6" }}>{stats.usagePercent}%</p>
+                <p className="text-3xl font-black text-primary">{stats.usagePercent}%</p>
                 <p className="text-xs font-semibold text-muted-foreground">نسبة الاستهلاك</p>
               </motion.div>
             </div>
@@ -66,7 +66,7 @@ const SuperAdminServerUsage = () => {
         </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 col-span-1 lg:col-span-3">
-          {[{ icon: <HardDrive className="size-6" />, label: "نظام التشغيل", value: stats.platform, color: "#3b82f6" }, { icon: <Settings className="size-6" />, label: "اسم القرص", value: "القرص المحلي (Root)", color: "#10b981" }, { icon: <RefreshCw className="size-6" />, label: "آخر تحديث", value: new Date(stats.timestamp).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }), color: "#fbbf24" }].map((item, i) => <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (i + 2) * 0.1 }}><Card className="h-full border"><CardContent><div className="flex items-center gap-2"><div className="p-3 rounded-xl" style={{ backgroundColor: `${item.color}20`, color: item.color }}>{item.icon}</div><div><p className="text-xs font-semibold text-muted-foreground">{item.label}</p><p className="text-base font-bold">{item.value}</p></div></div></CardContent></Card></motion.div>)}
+          {[{ icon: <HardDrive className="size-6" />, label: "نظام التشغيل", value: stats.platform, iconClass: "bg-blue-500/10 text-blue-500" }, { icon: <Settings className="size-6" />, label: "اسم القرص", value: "القرص المحلي (Root)", iconClass: "bg-green-500/10 text-green-500" }, { icon: <RefreshCw className="size-6" />, label: "آخر تحديث", value: new Date(stats.timestamp).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }), iconClass: "bg-amber-500/10 text-amber-500" }].map((item, i) => <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (i + 2) * 0.1 }}><Card className="h-full border"><CardContent><div className="flex items-center gap-2"><div className={cn("p-3 rounded-xl", item.iconClass)}>{item.icon}</div><div><p className="text-xs font-semibold text-muted-foreground">{item.label}</p><p className="text-base font-bold">{item.value}</p></div></div></CardContent></Card></motion.div>)}
         </div>
       </div>}
 

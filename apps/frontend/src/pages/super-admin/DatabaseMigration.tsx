@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 import {
   ServerIcon,
   PlayIcon,
@@ -146,7 +147,7 @@ const DatabaseMigration: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6" dir={i18n.dir()}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

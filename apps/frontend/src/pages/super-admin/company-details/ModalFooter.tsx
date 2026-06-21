@@ -1,3 +1,4 @@
+import type { ElementType } from "react"
 import { Loader2 } from "lucide-react"
 import { Button } from "../../../components/ui/button"
 
@@ -8,6 +9,13 @@ export function ModalFooter({
   confirmLabel,
   confirmIcon: ConfirmIcon,
   disabled,
+}: {
+  loading: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  confirmLabel: string;
+  confirmIcon: ElementType;
+  disabled?: boolean;
 }) {
   return (
     <>

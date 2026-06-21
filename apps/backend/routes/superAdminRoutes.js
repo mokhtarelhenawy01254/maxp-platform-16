@@ -658,10 +658,15 @@ router.get("/agents/:id", async (req, res) => {
 // POST /agents — create new agent template (via ai-service)
 router.post("/agents", async (req, res) => {
   try {
-    const { name, type, description } = req.body || {};
-    if (!name?.trim() || !type?.trim())
+    const { name, type, slug, role: bodyRole, ...rest } = req.body || {};
+    const templateSlug = slug || type;
+    if (!name?.trim() || !templateSlug?.trim())
       return res.status(400).json({ success: false, error: 'الاسم والمعرف مطلوبان' });
-    const result = await aiServiceAdminClient.createAgentTemplate({ slug: type.trim(), name: name.trim(), role: type.trim().toUpperCase(), description: description?.trim() || '' });
+    const result = await aiServiceAdminClient.createAgentTemplate({
+      slug: templateSlug.trim(), name: name.trim(),
+      role: (bodyRole || templateSlug).trim().toUpperCase(),
+      ...rest,
+    });
     return res.status(201).json({ success: true, agent: result });
   } catch (error) {
     console.error('[SA-AGENTS] POST error:', error.message);

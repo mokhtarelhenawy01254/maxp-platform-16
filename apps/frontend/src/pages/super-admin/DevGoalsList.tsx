@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 import { useTheme } from "../../hooks/useTheme";
 import {
   PlusIcon,
@@ -109,8 +110,6 @@ interface DashboardStats {
 
 const DevGoalsList: React.FC = () => {
   const navigate = useNavigate();
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
 
   const [goals, setGoals] = useState<Goal[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -210,7 +209,7 @@ const DevGoalsList: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6" dir={i18n.dir()}>
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
@@ -392,7 +391,7 @@ const DevGoalsList: React.FC = () => {
                 className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow"
               >
                 {/* Progress Bar */}
-                <div className="h-1.5" style={{ backgroundColor: isDark ? "#374151" : "#e5e7eb" }}>
+                <div className="h-1.5 bg-gray-200 dark:bg-gray-700">
                   <div
                     className={`h-full rounded-r-xl transition-all ${getProgressColor(goal.progress)}`}
                     style={{ width: `${goal.progress}%` }}

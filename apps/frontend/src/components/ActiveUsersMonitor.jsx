@@ -9,8 +9,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
-import tokenManager from "../utils/tokenManager";
-import { buildApiUrl } from "../utils/urlHelper";
+import { apiClient } from "../services/apiClient";
 
 const ActiveUsersMonitor = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -21,7 +20,6 @@ const ActiveUsersMonitor = ({ isOpen, onClose }) => {
   const [error, setError] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [stoppingTimer, setStoppingTimer] = useState(null);
-  const getAccessToken = () => tokenManager.getAccessToken();
 
   const themeColors = {
     bg: isDark ? "bg-slate-800" : "bg-white",
@@ -74,36 +72,17 @@ const ActiveUsersMonitor = ({ isOpen, onClose }) => {
     try {
       setLoading(true);
       setError(null);
-      const token = getAccessToken();
 
-      if (!token) {
-        setLoading(false);
-        return;
+      const response = await apiClient.get("admin/active-users", { _skipErrorToast: true, _skipTransientRetry: true });
+
+      if (response.status === 200) {
+        setActiveUsers(response.data?.data?.activeUsers || []);
       }
-
-      const response = await fetch(buildApiUrl("admin/active-users"), {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        // Silently fail on 401 - user not authenticated yet
-        if (response.status === 401) {
-          setActiveUsers([]);
-          setLoading(false);
-          return;
-        }
-        throw new Error("فشل في جلب البيانات");
-      }
-
-      const result = await response.json();
-      setActiveUsers(result.data?.activeUsers || []);
     } catch (err) {
-      // Only show error if it's not a network/auth issue
-      if (err.message !== "فشل في جلب البيانات") {
-        setError(err.message);
+      if (err?.response?.status === 401) {
+        setActiveUsers([]);
+      } else {
+        setError(err?.message || "حدث خطأ");
       }
       setActiveUsers([]);
     } finally {
@@ -144,30 +123,12 @@ const ActiveUsersMonitor = ({ isOpen, onClose }) => {
   const handleTaskClick = async (taskId, entryId) => {
     try {
       setStoppingTimer(entryId);
-      const token = getAccessToken();
 
-      if (!token) {
-        console.error("No token found");
-        return;
-      }
+      const response = await apiClient.post(`super-admin/dev/tasks/${taskId}/timer/stop`, { timerId: entryId });
 
-      const response = await fetch(
-        buildApiUrl(`super-admin/dev/tasks/${taskId}/timer/stop`),
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ timerId: entryId }),
-        },
-      );
-
-      if (response.ok) {
+      if (response.status === 200) {
         onClose();
         navigate(`/super-admin/dev-tasks/${taskId}`);
-      } else {
-        console.error("Failed to stop timer");
       }
     } catch (err) {
       console.error("Error stopping timer:", err);
@@ -179,23 +140,10 @@ const ActiveUsersMonitor = ({ isOpen, onClose }) => {
   const handleStopTimerOnly = async (taskId, entryId) => {
     try {
       setStoppingTimer(entryId);
-      const token = getAccessToken();
 
-      if (!token) return;
+      const response = await apiClient.post(`super-admin/dev/tasks/${taskId}/timer/stop`, { timerId: entryId, description: "" });
 
-      const response = await fetch(
-        buildApiUrl(`super-admin/dev/tasks/${taskId}/timer/stop`),
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ timerId: entryId, description: "" }),
-        },
-      );
-
-      if (response.ok) {
+      if (response.status === 200) {
         // Refresh list instead of navigating
         fetchActiveUsers();
       } else {
@@ -208,12 +156,23 @@ const ActiveUsersMonitor = ({ isOpen, onClose }) => {
     }
   };
 
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center pt-20"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="active-users-title"
     >
       <div
         className={`${themeColors.bg} rounded-2xl shadow-2xl border ${themeColors.border} w-full max-w-4xl mx-4 max-h-[80vh] overflow-hidden`}
@@ -228,7 +187,7 @@ const ActiveUsersMonitor = ({ isOpen, onClose }) => {
               <ClockIcon className="h-6 w-6 text-green-600" />
             </div>
             <div>
-              <h2 className={`text-xl font-bold ${themeColors.text}`}>
+              <h2 id="active-users-title" className={`text-xl font-bold ${themeColors.text}`}>
                 المستخدمون النشطون
               </h2>
               <p className={`text-sm ${themeColors.subText}`}>

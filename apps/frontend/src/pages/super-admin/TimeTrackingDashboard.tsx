@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "../../hooks/useTheme";
 import {
   Clock,
   Users,
@@ -17,6 +16,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
+import i18n from "../../i18n";
 
 interface DashboardStats {
   totalHours: number;
@@ -76,8 +76,6 @@ interface MemberPerformance {
 
 const TimeTrackingDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [timeLogs, setTimeLogs] = useState<TimeLog[]>([]);
@@ -208,11 +206,11 @@ const TimeTrackingDashboard: React.FC = () => {
   if (loading) {
     return (
       <div
-        className={`flex items-center justify-center h-64 ${isDark ? "bg-gray-900" : "bg-gray-50"}`}
+        className={`flex items-center justify-center h-64 bg-gray-50 dark:bg-gray-900`}
       >
         <div className="text-center">
           <RefreshCw className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className={isDark ? "text-gray-300" : "text-gray-600"}>
+          <p className={"text-gray-600 dark:text-gray-300"}>
             جاري تحميل البيانات...
           </p>
         </div>
@@ -222,20 +220,20 @@ const TimeTrackingDashboard: React.FC = () => {
 
   return (
     <div
-      className={`p-6 w-full transition-colors ${isDark ? "bg-gray-900" : "bg-gray-50"}`}
-      dir="rtl"
+      className={`p-6 w-full transition-colors bg-gray-50 dark:bg-gray-900`}
+      dir={i18n.dir()}
     >
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1
-              className={`text-3xl font-bold flex items-center gap-2 ${isDark ? "text-white" : "text-gray-900"}`}
+              className={`text-3xl font-bold flex items-center gap-2 text-gray-900 dark:text-white`}
             >
               <Clock className="w-8 h-8 text-blue-600" />
               تتبع الوقت والإنتاجية
             </h1>
-            <p className={`mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+            <p className={`mt-1 text-gray-600 dark:text-gray-400`}>
               آخر تحديث: {lastUpdate.toLocaleTimeString("ar-EG")}
             </p>
           </div>
@@ -257,11 +255,7 @@ const TimeTrackingDashboard: React.FC = () => {
 
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-                isDark
-                  ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700`}
             >
               <Filter className="w-4 h-4" />
               فلاتر
@@ -281,29 +275,17 @@ const TimeTrackingDashboard: React.FC = () => {
               </button>
               <div
                 id="export-menu"
-                className={`hidden absolute left-0 mt-2 w-48 rounded-lg shadow-lg border z-10 ${
-                  isDark
-                    ? "bg-gray-800 border-gray-700"
-                    : "bg-white border-gray-200"
-                }`}
+                className={`hidden absolute left-0 mt-2 w-48 rounded-lg shadow-lg border z-10 bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700`}
               >
                 <button
                   onClick={() => handleExport("csv")}
-                  className={`w-full px-4 py-2 text-right rounded-t-lg transition-colors ${
-                    isDark
-                      ? "hover:bg-gray-700 text-gray-300"
-                      : "hover:bg-gray-50 text-gray-900"
-                  }`}
+                  className={`w-full px-4 py-2 text-right rounded-t-lg transition-colors hover:bg-gray-50 text-gray-900 dark:hover:bg-gray-700 dark:text-gray-300`}
                 >
                   تصدير CSV
                 </button>
                 <button
                   onClick={() => handleExport("json")}
-                  className={`w-full px-4 py-2 text-right rounded-b-lg transition-colors ${
-                    isDark
-                      ? "hover:bg-gray-700 text-gray-300"
-                      : "hover:bg-gray-50 text-gray-900"
-                  }`}
+                  className={`w-full px-4 py-2 text-right rounded-b-lg transition-colors hover:bg-gray-50 text-gray-900 dark:hover:bg-gray-700 dark:text-gray-300`}
                 >
                   تصدير JSON
                 </button>
@@ -315,29 +297,19 @@ const TimeTrackingDashboard: React.FC = () => {
         {/* Filters */}
         {showFilters && (
           <div
-            className={`p-4 rounded-lg shadow-sm border mb-4 transition-colors ${
-              isDark
-                ? "bg-gray-800 border-gray-700"
-                : "bg-white border-gray-200"
-            }`}
+            className={`p-4 rounded-lg shadow-sm border mb-4 transition-colors bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700`}
           >
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label
-                  className={`block text-sm font-medium mb-2 ${
-                    isDark ? "text-gray-300" : "text-gray-700"
-                  }`}
+                      className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300"
                 >
                   الفترة الزمنية
                 </label>
                 <select
                   value={dateRange}
                   onChange={(e) => setDateRange(e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
-                    isDark
-                      ? "bg-gray-700 border-gray-600 text-white"
-                      : "bg-white border-gray-300 text-gray-900"
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
                 >
                   <option value="today">اليوم</option>
                   <option value="yesterday">أمس</option>
@@ -352,7 +324,7 @@ const TimeTrackingDashboard: React.FC = () => {
                   <div>
                     <label
                       className={`block text-sm font-medium mb-2 ${
-                        isDark ? "text-gray-300" : "text-gray-700"
+                        "text-gray-700 dark:text-gray-300"
                       }`}
                     >
                       من تاريخ
@@ -361,17 +333,13 @@ const TimeTrackingDashboard: React.FC = () => {
                       type="date"
                       value={customStartDate}
                       onChange={(e) => setCustomStartDate(e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
-                        isDark
-                          ? "bg-gray-700 border-gray-600 text-white"
-                          : "bg-white border-gray-300 text-gray-900"
-                      }`}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
                     />
                   </div>
                   <div>
                     <label
                       className={`block text-sm font-medium mb-2 ${
-                        isDark ? "text-gray-300" : "text-gray-700"
+                        "text-gray-700 dark:text-gray-300"
                       }`}
                     >
                       إلى تاريخ
@@ -380,11 +348,7 @@ const TimeTrackingDashboard: React.FC = () => {
                       type="date"
                       value={customEndDate}
                       onChange={(e) => setCustomEndDate(e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors ${
-                        isDark
-                          ? "bg-gray-700 border-gray-600 text-white"
-                          : "bg-white border-gray-300 text-gray-900"
-                      }`}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors bg-white border-gray-300 text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white`}
                     />
                   </div>
                 </>
@@ -398,33 +362,33 @@ const TimeTrackingDashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div
           className={`p-6 rounded-lg shadow-sm border transition-colors ${
-            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+            "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700"
           }`}
         >
           <div className="flex items-center justify-between mb-2">
             <div
               className={`p-3 rounded-lg ${
-                isDark ? "bg-blue-900/50" : "bg-blue-100"
+                "bg-blue-100 dark:bg-blue-900/50"
               }`}
             >
               <Clock className="w-6 h-6 text-blue-600" />
             </div>
             <span
               className={`text-2xl font-bold ${
-                isDark ? "text-white" : "text-gray-900"
+                "text-gray-900 dark:text-white"
               }`}
             >
               {stats?.totalHours.toFixed(1)}h
             </span>
           </div>
           <h3
-            className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+            className={`text-sm text-gray-600 dark:text-gray-400`}
           >
             إجمالي ساعات العمل
           </h3>
           <p
             className={`text-xs mt-1 ${
-              isDark ? "text-gray-500" : "text-gray-500"
+              "text-gray-500"
             }`}
           >
             قابل للفوترة: {stats?.billableHours.toFixed(1)}h
@@ -433,33 +397,33 @@ const TimeTrackingDashboard: React.FC = () => {
 
         <div
           className={`p-6 rounded-lg shadow-sm border transition-colors ${
-            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+            "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700"
           }`}
         >
           <div className="flex items-center justify-between mb-2">
             <div
               className={`p-3 rounded-lg ${
-                isDark ? "bg-green-900/50" : "bg-green-100"
+                "bg-green-100 dark:bg-green-900/50"
               }`}
             >
               <Users className="w-6 h-6 text-green-600" />
             </div>
             <span
               className={`text-2xl font-bold ${
-                isDark ? "text-white" : "text-gray-900"
+                "text-gray-900 dark:text-white"
               }`}
             >
               {stats?.activeMembers}/{stats?.totalMembers}
             </span>
           </div>
           <h3
-            className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+            className={`text-sm text-gray-600 dark:text-gray-400`}
           >
             الأعضاء النشطون
           </h3>
           <p
             className={`text-xs mt-1 ${
-              isDark ? "text-gray-500" : "text-gray-500"
+              "text-gray-500"
             }`}
           >
             يعملون الآن: {stats?.runningTimers.length || 0}
@@ -468,33 +432,33 @@ const TimeTrackingDashboard: React.FC = () => {
 
         <div
           className={`p-6 rounded-lg shadow-sm border transition-colors ${
-            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+            "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700"
           }`}
         >
           <div className="flex items-center justify-between mb-2">
             <div
               className={`p-3 rounded-lg ${
-                isDark ? "bg-purple-900/50" : "bg-purple-100"
+                "bg-purple-100 dark:bg-purple-900/50"
               }`}
             >
               <CheckCircle className="w-6 h-6 text-purple-600" />
             </div>
             <span
               className={`text-2xl font-bold ${
-                isDark ? "text-white" : "text-gray-900"
+                "text-gray-900 dark:text-white"
               }`}
             >
               {stats?.tasksCompleted}
             </span>
           </div>
           <h3
-            className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+            className={`text-sm text-gray-600 dark:text-gray-400`}
           >
             المهام المكتملة
           </h3>
           <p
             className={`text-xs mt-1 ${
-              isDark ? "text-gray-500" : "text-gray-500"
+              "text-gray-500"
             }`}
           >
             في الفترة المحددة
@@ -503,33 +467,33 @@ const TimeTrackingDashboard: React.FC = () => {
 
         <div
           className={`p-6 rounded-lg shadow-sm border transition-colors ${
-            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+            "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700"
           }`}
         >
           <div className="flex items-center justify-between mb-2">
             <div
               className={`p-3 rounded-lg ${
-                isDark ? "bg-orange-900/50" : "bg-orange-100"
+                "bg-orange-100 dark:bg-orange-900/50"
               }`}
             >
               <TrendingUp className="w-6 h-6 text-orange-600" />
             </div>
             <span
               className={`text-2xl font-bold ${
-                isDark ? "text-white" : "text-gray-900"
+                "text-gray-900 dark:text-white"
               }`}
             >
               {stats?.avgTimePerTask.toFixed(1)}h
             </span>
           </div>
           <h3
-            className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
+            className={`text-sm text-gray-600 dark:text-gray-400`}
           >
             متوسط وقت المهمة
           </h3>
           <p
             className={`text-xs mt-1 ${
-              isDark ? "text-gray-500" : "text-gray-500"
+              "text-gray-500"
             }`}
           >
             لكل مهمة مكتملة
@@ -541,22 +505,18 @@ const TimeTrackingDashboard: React.FC = () => {
       {stats?.runningTimers && stats.runningTimers.length > 0 && (
         <div
           className={`p-6 rounded-lg shadow-sm border mb-6 transition-colors ${
-            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+            "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700"
           }`}
         >
           <h2
             className={`text-xl font-bold mb-4 flex items-center gap-2 ${
-              isDark ? "text-white" : "text-gray-900"
+              "text-gray-900 dark:text-white"
             }`}
           >
             <Activity className="w-5 h-5 text-green-600" />
             النشاط الحي
             <span
-              className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                isDark
-                  ? "bg-green-900/50 text-green-400"
-                  : "bg-green-100 text-green-700"
-              }`}
+              className={`inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400`}
             >
               {stats.runningTimers.length} يعملون الآن
             </span>
@@ -566,11 +526,7 @@ const TimeTrackingDashboard: React.FC = () => {
             {stats.runningTimers.map((timer) => (
               <div
                 key={timer.id}
-                className={`flex items-center justify-between p-4 rounded-lg transition-colors ${
-                  isDark
-                    ? "bg-gray-700 hover:bg-gray-600"
-                    : "bg-gray-50 hover:bg-gray-100"
-                }`}
+                className={`flex items-center justify-between p-4 rounded-lg transition-colors bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600`}
               >
                 <div className="flex items-center gap-3">
                   <div className="relative">
@@ -583,12 +539,12 @@ const TimeTrackingDashboard: React.FC = () => {
                     ) : (
                       <div
                         className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          isDark ? "bg-blue-900" : "bg-blue-100"
+                          "bg-blue-100 dark:bg-blue-900"
                         }`}
                       >
                         <span
                           className={`font-medium ${
-                            isDark ? "text-blue-300" : "text-blue-600"
+                            "text-blue-600 dark:text-blue-300"
                           }`}
                         >
                           {timer.memberName.charAt(0)}
@@ -601,14 +557,14 @@ const TimeTrackingDashboard: React.FC = () => {
                   <div>
                     <p
                       className={`font-medium ${
-                        isDark ? "text-white" : "text-gray-900"
+                        "text-gray-900 dark:text-white"
                       }`}
                     >
                       {timer.memberName}
                     </p>
                     <p
                       className={`text-sm ${
-                        isDark ? "text-gray-400" : "text-gray-600"
+                        "text-gray-600 dark:text-gray-400"
                       }`}
                     >
                       {timer.taskTitle}
@@ -624,7 +580,7 @@ const TimeTrackingDashboard: React.FC = () => {
                   </span>
                   <div
                     className={`flex items-center gap-2 ${
-                      isDark ? "text-gray-300" : "text-gray-700"
+                      "text-gray-700 dark:text-gray-300"
                     }`}
                   >
                     <Timer className="w-4 h-4" />
@@ -643,12 +599,12 @@ const TimeTrackingDashboard: React.FC = () => {
         {/* Recent Time Logs */}
         <div
           className={`p-6 rounded-lg shadow-sm border transition-colors ${
-            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+            "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700"
           }`}
         >
           <h2
             className={`text-xl font-bold mb-4 flex items-center gap-2 ${
-              isDark ? "text-white" : "text-gray-900"
+              "text-gray-900 dark:text-white"
             }`}
           >
             <Calendar className="w-5 h-5 text-blue-600" />
@@ -660,11 +616,7 @@ const TimeTrackingDashboard: React.FC = () => {
               timeLogs.map((log) => (
                 <div
                   key={log.id}
-                  className={`p-3 border rounded-lg transition-colors cursor-pointer ${
-                    isDark
-                      ? "border-gray-700 hover:bg-gray-700"
-                      : "border-gray-200 hover:bg-gray-50"
-                  }`}
+                  className={`p-3 border rounded-lg transition-colors cursor-pointer border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700`}
                   onClick={() =>
                     navigate(`/super-admin/dev-tasks/${log.taskId}`)
                   }
@@ -673,14 +625,14 @@ const TimeTrackingDashboard: React.FC = () => {
                     <div className="flex-1">
                       <p
                         className={`font-medium text-sm ${
-                          isDark ? "text-white" : "text-gray-900"
+                          "text-gray-900 dark:text-white"
                         }`}
                       >
                         {log.taskTitle}
                       </p>
                       <p
                         className={`text-xs mt-1 ${
-                          isDark ? "text-gray-400" : "text-gray-600"
+                          "text-gray-600 dark:text-gray-400"
                         }`}
                       >
                         {log.memberName}
@@ -689,7 +641,7 @@ const TimeTrackingDashboard: React.FC = () => {
                     <div className="text-left">
                       <p
                         className={`font-bold ${
-                          isDark ? "text-white" : "text-gray-900"
+                          "text-gray-900 dark:text-white"
                         }`}
                       >
                         {formatDuration(log.duration)}
@@ -705,7 +657,7 @@ const TimeTrackingDashboard: React.FC = () => {
 
                   <div
                     className={`flex items-center gap-2 text-xs ${
-                      isDark ? "text-gray-500" : "text-gray-500"
+                      "text-gray-500"
                     }`}
                   >
                     <span
@@ -732,7 +684,7 @@ const TimeTrackingDashboard: React.FC = () => {
             ) : (
               <p
                 className={`text-center py-8 ${
-                  isDark ? "text-gray-500" : "text-gray-500"
+                  "text-gray-500"
                 }`}
               >
                 لا توجد سجلات في هذه الفترة
@@ -744,12 +696,12 @@ const TimeTrackingDashboard: React.FC = () => {
         {/* Team Performance */}
         <div
           className={`p-6 rounded-lg shadow-sm border transition-colors ${
-            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+            "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700"
           }`}
         >
           <h2
             className={`text-xl font-bold mb-4 flex items-center gap-2 ${
-              isDark ? "text-white" : "text-gray-900"
+              "text-gray-900 dark:text-white"
             }`}
           >
             <BarChart3 className="w-5 h-5 text-purple-600" />
@@ -761,17 +713,13 @@ const TimeTrackingDashboard: React.FC = () => {
               memberPerformance.map((member, index) => (
                 <div
                   key={member.memberId}
-                  className={`p-3 border rounded-lg transition-colors ${
-                    isDark
-                      ? "border-gray-700 hover:bg-gray-700"
-                      : "border-gray-200 hover:bg-gray-50"
-                  }`}
+                  className={`p-3 border rounded-lg transition-colors border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
                       <span
                         className={`text-lg font-bold ${
-                          isDark ? "text-gray-600" : "text-gray-400"
+                          "text-gray-400 dark:text-gray-600"
                         }`}
                       >
                         #{index + 1}
@@ -785,12 +733,12 @@ const TimeTrackingDashboard: React.FC = () => {
                       ) : (
                         <div
                           className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            isDark ? "bg-purple-900" : "bg-purple-100"
+                            "bg-purple-100 dark:bg-purple-900"
                           }`}
                         >
                           <span
                             className={`text-sm font-medium ${
-                              isDark ? "text-purple-300" : "text-purple-600"
+                              "text-purple-600 dark:text-purple-300"
                             }`}
                           >
                             {member.name.charAt(0)}
@@ -800,7 +748,7 @@ const TimeTrackingDashboard: React.FC = () => {
                       <div>
                         <p
                           className={`font-medium text-sm ${
-                            isDark ? "text-white" : "text-gray-900"
+                            "text-gray-900 dark:text-white"
                           }`}
                         >
                           {member.name}
@@ -808,7 +756,7 @@ const TimeTrackingDashboard: React.FC = () => {
                         {member.department && (
                           <p
                             className={`text-xs ${
-                              isDark ? "text-gray-500" : "text-gray-500"
+                              "text-gray-500"
                             }`}
                           >
                             {member.department}
@@ -820,14 +768,14 @@ const TimeTrackingDashboard: React.FC = () => {
                     <div className="text-left">
                       <p
                         className={`font-bold ${
-                          isDark ? "text-white" : "text-gray-900"
+                          "text-gray-900 dark:text-white"
                         }`}
                       >
                         {member.totalHours}h
                       </p>
                       <p
                         className={`text-xs ${
-                          isDark ? "text-gray-500" : "text-gray-500"
+                          "text-gray-500"
                         }`}
                       >
                         {member.tasksCompleted} مهام
@@ -838,7 +786,7 @@ const TimeTrackingDashboard: React.FC = () => {
                   <div className="flex items-center gap-3 text-xs">
                     <div
                       className={`flex-1 rounded-full h-2 ${
-                        isDark ? "bg-gray-700" : "bg-gray-200"
+                        "bg-gray-200 dark:bg-gray-700"
                       }`}
                     >
                       <div
@@ -850,7 +798,7 @@ const TimeTrackingDashboard: React.FC = () => {
                     </div>
                     <span
                       className={`font-medium ${
-                        isDark ? "text-gray-400" : "text-gray-600"
+                        "text-gray-600 dark:text-gray-400"
                       }`}
                     >
                       كفاءة: {member.efficiencyScore.toFixed(1)}

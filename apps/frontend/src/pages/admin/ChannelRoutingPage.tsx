@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Loader2, Save, GitFork, MessageSquareOff, MessageSquare } from "lucide-react";
+import { Loader2, Save, GitFork, MessageSquareOff, MessageSquare, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -59,6 +59,8 @@ export default function ChannelRoutingPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [dirtyChannels, setDirtyChannels] = useState<Set<string>>(new Set());
+  const initialConfigsRef = React.useRef<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -87,6 +89,8 @@ export default function ChannelRoutingPage() {
         };
       });
       setChannelConfigs(configs);
+      initialConfigsRef.current = JSON.stringify(configs);
+      setDirtyChannels(new Set());
     } catch (e) {
       setError(e instanceof Error ? e.message : t("aiHub.channelRouting.loadFailed"));
     } finally {
@@ -100,12 +104,26 @@ export default function ChannelRoutingPage() {
     setChannelConfigs((prev) =>
       prev.map((c) => (c.channel === channel ? { ...c, agentId: agentId || null } : c))
     );
+    setDirtyChannels((prev) => new Set(prev).add(channel));
     setDirty(true);
   };
 
   const handleAutoReplyToggle = (enabled: boolean) => {
     setAutoReplyEnabled(enabled);
     setDirty(true);
+  };
+
+  const handleAssignAll = (agentId: string) => {
+    setChannelConfigs((prev) => prev.map((c) => ({ ...c, agentId: agentId || null })));
+    setDirtyChannels(new Set(CHANNELS.map((c) => c.key)));
+    setDirty(true);
+  };
+
+  const handleReset = () => {
+    if (!initialConfigsRef.current) return;
+    setChannelConfigs(JSON.parse(initialConfigsRef.current));
+    setDirtyChannels(new Set());
+    setDirty(false);
   };
 
   const handleSave = async () => {
@@ -147,6 +165,7 @@ export default function ChannelRoutingPage() {
       });
       toast.success(t("aiHub.channelRouting.saved"));
       setDirty(false);
+      setDirtyChannels(new Set());
       await load();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("aiHub.channelRouting.saveFailed"));
@@ -175,10 +194,16 @@ export default function ChannelRoutingPage() {
             <p className="text-sm text-muted-foreground">{t("aiHub.channelRouting.subtitle")}</p>
           </div>
         </div>
-        <Button onClick={handleSave} disabled={!dirty || saving} className="gap-2">
-          {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-          {t("aiHub.channelRouting.save")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleReset} disabled={!dirty || saving} className="gap-1.5">
+            <Undo2 className="size-4" />
+            {t("aiHub.channelRouting.reset")}
+          </Button>
+          <Button onClick={handleSave} disabled={!dirty || saving} className="gap-2">
+            {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+            {t("aiHub.channelRouting.save")}
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -194,14 +219,32 @@ export default function ChannelRoutingPage() {
               <CardTitle className="text-base">{t("aiHub.channelRouting.cardTitle")}</CardTitle>
               <CardDescription>{t("aiHub.channelRouting.cardDesc")}</CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-              {autoReplyEnabled ? (
-                <MessageSquare className="size-4 text-green-600" />
-              ) : (
-                <MessageSquareOff className="size-4 text-muted-foreground" />
+            <div className="flex items-center gap-4">
+              {agents.filter((a) => a.status === "ACTIVE").length > 0 && (
+                <div className="flex items-center gap-2 max-sm:hidden">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">{t("aiHub.channelRouting.assignAll")}</span>
+                  <Select onValueChange={handleAssignAll}>
+                    <SelectTrigger className="w-[140px] h-8">
+                      <SelectValue placeholder={t("aiHub.channelRouting.assignAllPlaceholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">{t("aiHub.channelRouting.noRouting")}</SelectItem>
+                      {agents.filter((a) => a.status === "ACTIVE").map((a) => (
+                        <SelectItem key={a.id} value={a.id}>{a.name || a.id}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
-              <span className="text-sm text-muted-foreground">{t("aiHub.channelRouting.autoReply")}</span>
-              <Switch checked={autoReplyEnabled} onCheckedChange={handleAutoReplyToggle} />
+              <div className="flex items-center gap-2">
+                {autoReplyEnabled ? (
+                  <MessageSquare className="size-4 text-green-600" />
+                ) : (
+                  <MessageSquareOff className="size-4 text-muted-foreground" />
+                )}
+                <span className="text-sm text-muted-foreground">{t("aiHub.channelRouting.autoReply")}</span>
+                <Switch checked={autoReplyEnabled} onCheckedChange={handleAutoReplyToggle} />
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -216,11 +259,14 @@ export default function ChannelRoutingPage() {
             </TableHeader>
             <TableBody>
               {channelConfigs.map((config) => (
-                <TableRow key={config.channel}>
+                <TableRow key={config.channel} className={dirtyChannels.has(config.channel) ? "bg-amber-50/60 dark:bg-amber-950/20" : ""}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{config.icon}</span>
                       <span>{config.label}</span>
+                      {dirtyChannels.has(config.channel) && (
+                        <span className="size-1.5 rounded-full bg-amber-500" title={t("aiHub.channelRouting.modified")} />
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -229,7 +275,9 @@ export default function ChannelRoutingPage() {
                       onValueChange={(val) => handleAgentChange(config.channel, val)}
                     >
                       <SelectTrigger className="w-[240px]">
-                        <SelectValue placeholder={t("aiHub.channelRouting.selectPlaceholder")} />
+                        <SelectValue placeholder={t("aiHub.channelRouting.selectPlaceholder")}>
+                          {config.agentId ? (agents.find((a) => a.id === config.agentId)?.name || config.agentId) : undefined}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="">{t("aiHub.channelRouting.noRouting")}</SelectItem>
@@ -237,7 +285,7 @@ export default function ChannelRoutingPage() {
                           .filter((a) => a.status === "ACTIVE")
                           .map((agent) => (
                             <SelectItem key={agent.id} value={agent.id}>
-                              {agent.name} ({agent.role})
+                              {agent.name || agent.id}
                             </SelectItem>
                           ))}
                       </SelectContent>
@@ -259,11 +307,6 @@ export default function ChannelRoutingPage() {
         </CardContent>
       </Card>
 
-      {!dirty && channelConfigs.every((c) => !c.agentId) && (
-        <div className="text-center py-8 text-muted-foreground text-sm">
-          <p>{t("aiHub.channelRouting.emptyState")}</p>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import type { CompanyReview } from "./companyDetailsTypes";
 import { cn } from "../../../lib/utils";
 import { Badge } from "../../../components/ui/badge";
 import { MiniStat } from "./MiniStat";
@@ -5,7 +6,10 @@ import { SectionShell } from "./SectionShell";
 import { UsageBar, getUsageTone } from "./UsageBar";
 import { formatNumber, formatLimit } from "./helpers";
 
-export function CompanyLimitsSection({ review, limitEntries }) {
+export function CompanyLimitsSection({ review, limitEntries }: {
+  review?: CompanyReview | null;
+  limitEntries: NonNullable<CompanyReview['limits']>['entries'];
+}) {
   return (
     <SectionShell
       title="الحدود والمزايا"
@@ -24,7 +28,7 @@ export function CompanyLimitsSection({ review, limitEntries }) {
       </div>
 
       <div className="space-y-3">
-        {limitEntries.map((entry) => {
+        {(limitEntries || []).map((entry) => {
           const tone = getUsageTone(entry.percentage);
           return (
             <div key={entry.key} className="py-3">

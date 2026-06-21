@@ -7,6 +7,7 @@ import {
   ProjectNodeStatus,
 } from "./projectMapData";
 import { useAuth } from "../../hooks/useAuthSimple";
+import i18n from "../../i18n";
 
 // --- Badges ---
 const StatusBadge = ({
@@ -233,7 +234,7 @@ const ProjectMap = () => {
   };
 
   return (
-    <div className="p-6 bg-slate-50 dark:bg-slate-900" dir="rtl">
+    <div className="p-6 bg-slate-50 dark:bg-slate-900" dir={i18n.dir()}>
       <div className="w-full">
         <div className="mb-8 text-center sm:text-right">
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3 justify-center sm:justify-start">

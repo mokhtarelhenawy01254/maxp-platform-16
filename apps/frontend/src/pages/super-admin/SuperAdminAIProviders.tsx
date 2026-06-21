@@ -840,7 +840,6 @@ const RuntimeDashboardPanel = ({
                 <div
                   key={provider.provider}
                   className="rounded-lg border bg-card text-card-foreground shadow-sm p-2"
-                  style={{ backgroundColor: isDark ? "rgba(15, 23, 42, 0.52)" : "#ffffff" }}
                 >
                   <div className="flex flex-col" style={{ gap: 3 }}>
                     <div className="flex flex-row items-center" style={{ gap: 3 }}>
@@ -1006,9 +1005,9 @@ const SortableProviderPriorityRow = ({
       ref={setNodeRef}
       className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden"
       style={{
-        borderColor: isDark ? "rgba(148, 163, 184, 0.18)" : "rgba(15, 23, 42, 0.1)",
+        borderColor: "var(--color-border)",
         backgroundColor: isDragging
-          ? isDark ? "rgba(37, 99, 235, 0.18)" : "rgba(37, 99, 235, 0.08)"
+          ? "color-mix(in srgb, var(--color-primary) 12%, transparent)"
           : undefined,
         transform: CSS.Transform.toString(transform),
         transition,
@@ -1120,9 +1119,8 @@ const SortableProviderPriorityRow = ({
                 className="rounded min-w-0"
                 style={{
                   padding: "3px 4px",
-                  backgroundColor: isDark ? "rgba(15, 23, 42, 0.58)" : "rgba(248, 250, 252, 0.95)",
-                  border: "1px solid",
-                  borderColor: isDark ? "rgba(148, 163, 184, 0.12)" : "rgba(15, 23, 42, 0.08)",
+                  backgroundColor: "var(--color-card)",
+                  border: "1px solid var(--color-border)",
                 }}
               >
                 <span className="text-xs text-gray-500 block">
@@ -2235,7 +2233,7 @@ const SuperAdminAIProviders = ({
       className="p-1 md:p-1"
       style={{
         minHeight: "calc(100vh - 64px)",
-        backgroundColor: isDark ? "rgba(2, 6, 23, 0.28)" : "rgba(248, 250, 252, 0.72)",
+        backgroundColor: "var(--color-card)",
       }}
     >
       <div
@@ -2243,8 +2241,8 @@ const SuperAdminAIProviders = ({
         style={{
           marginBottom: 6,
           padding: "clamp(6px, 1vw, 12px)",
-          borderColor: isDark ? "rgba(148, 163, 184, 0.18)" : "rgba(15, 23, 42, 0.1)",
-          backgroundColor: isDark ? "rgba(15, 23, 42, 0.82)" : undefined,
+          borderColor: "var(--color-border)",
+          backgroundColor: undefined,
         }}
       >
         <div className="flex flex-col gap-1">
@@ -2256,9 +2254,9 @@ const SuperAdminAIProviders = ({
                   width: 34,
                   height: 34,
                   color: "#6366f1",
-                  backgroundColor: isDark ? "rgba(96, 165, 250, 0.14)" : "rgba(37, 99, 235, 0.08)",
+                  backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, var(--color-card))",
                   border: "1px solid",
-                  borderColor: isDark ? "rgba(148, 163, 184, 0.18)" : "rgba(15, 23, 42, 0.08)",
+                  borderColor: "var(--color-border)",
                 }}
               >
                 <BotIcon className="h-4 w-4" />
@@ -2375,7 +2373,7 @@ const SuperAdminAIProviders = ({
               style={{
                 minHeight: 42,
                 padding: "0 3px",
-                borderColor: isDark ? "rgba(148, 163, 184, 0.14)" : "rgba(15, 23, 42, 0.08)",
+                borderColor: "var(--color-border)",
               }}
             >
               {activeProviderInfo?.icon}
@@ -2400,7 +2398,7 @@ const SuperAdminAIProviders = ({
               className="flex items-center justify-between rounded border min-h-[42px]"
               style={{
                 padding: "0 3px",
-                borderColor: isDark ? "rgba(148, 163, 184, 0.14)" : "rgba(15, 23, 42, 0.08)",
+                borderColor: "var(--color-border)",
               }}
             >
               <div className="mr-1">
@@ -2466,7 +2464,7 @@ const SuperAdminAIProviders = ({
 
           <div
             className="grid grid-cols-1 sm:grid-cols-[145px_minmax(180px,1fr)_100px_auto] items-center rounded border mt-1"
-            style={{ gap: 3, padding: 3, borderColor: isDark ? "rgba(148, 163, 184, 0.14)" : "rgba(15, 23, 42, 0.08)" }}
+            style={{ gap: 3, padding: 3, borderColor: "var(--color-border)" }}
           >
             {embeddingHealth && (
               <Alert
@@ -2584,7 +2582,7 @@ const SuperAdminAIProviders = ({
           {activeTab === "keys" && (
           <div
             className="flex flex-col xl:flex-row gap-1 items-stretch xl:items-center pt-1 border-t"
-            style={{ borderColor: isDark ? "rgba(148, 163, 184, 0.14)" : "rgba(15, 23, 42, 0.08)" }}
+            style={{ borderColor: "var(--color-border)" }}
           >
             <div
               className="flex flex-row flex-wrap items-center gap-1 min-w-0"
@@ -2596,7 +2594,7 @@ const SuperAdminAIProviders = ({
                   flex: "1 1 280px",
                   maxWidth: 460,
                   padding: "3px 4px",
-                  backgroundColor: isDark ? "rgba(37, 99, 235, 0.12)" : "rgba(37, 99, 235, 0.06)",
+                  backgroundColor: "color-mix(in srgb, var(--color-primary) 8%, var(--color-card))",
                 }}
               >
                 <Key className="h-4 w-4 text-indigo-500 flex-shrink-0" />
@@ -2690,7 +2688,7 @@ const SuperAdminAIProviders = ({
           style={{
             marginBottom: 6,
             padding: "clamp(4px, 1vw, 6px)",
-            borderColor: isDark ? "rgba(148, 163, 184, 0.16)" : "rgba(15, 23, 42, 0.1)",
+            borderColor: "var(--color-border)",
           }}
         >
           <div className="flex flex-col gap-1">
@@ -2775,7 +2773,7 @@ const SuperAdminAIProviders = ({
         <div
           className="rounded mb-1 px-1 py-0.5"
           style={{
-            backgroundColor: isDark ? "rgba(25, 118, 210, 0.1)" : "rgba(25, 118, 210, 0.05)",
+            backgroundColor: "color-mix(in srgb, var(--color-primary) 6%, var(--color-card))",
           }}
         >
           <div className="flex flex-col sm:flex-row gap-1 items-stretch sm:items-center justify-between">
@@ -2798,7 +2796,7 @@ const SuperAdminAIProviders = ({
       <div
         className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-x-auto"
         style={{
-          borderColor: isDark ? "rgba(148, 163, 184, 0.16)" : "rgba(15, 23, 42, 0.1)",
+          borderColor: "var(--color-border)",
         }}
       >
         <Table>

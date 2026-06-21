@@ -14,14 +14,6 @@ export const matchesSuperAdminNavigationPath = (
   itemPath: string,
   search?: string,
 ): boolean => {
-  if (
-    itemPath === "/super-admin/companies" &&
-    (pathname === "/super-admin/companies-v2" ||
-      pathname.startsWith("/super-admin/companies-v2/"))
-  ) {
-    return true;
-  }
-
   const [itemPathname, itemSearch] = itemPath.split("?");
   if (itemSearch) {
     const itemParams = new URLSearchParams(itemSearch);

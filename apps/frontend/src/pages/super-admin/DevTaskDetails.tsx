@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 import { buildApiUrl } from "../../utils/urlHelper";
 import { useTimer } from "../../contexts/TimerContext";
 
@@ -2031,7 +2032,7 @@ const DevTaskDetails: React.FC = () => {
   );
 
   return (
-    <div className="w-full pb-10" dir="rtl">
+    <div className="w-full pb-10" dir={i18n.dir()}>
       {renderModals()}
 
       <TaskHeader

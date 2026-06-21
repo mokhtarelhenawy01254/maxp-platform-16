@@ -19,3 +19,4 @@ export { getStatusMeta } from "./statusMeta"
 export { ModalFooter } from "./ModalFooter"
 
 export { SectionSubheader } from "./SectionSubheader"
+export { CompanyActivationCenter } from "./CompanyActivationCenter"

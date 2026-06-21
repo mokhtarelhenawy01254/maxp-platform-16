@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useTheme } from "../../hooks/useTheme";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 import {
   TrophyIcon,
   FireIcon,
@@ -165,7 +166,7 @@ const DevLeaderboard: React.FC = () => {
   }
 
   return (
-    <div className="w-full" dir="rtl">
+    <div className="w-full" dir={i18n.dir()}>
       <div className="text-center mb-10">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center gap-3">
           <SparklesIcon className="h-8 w-8 text-yellow-500" />

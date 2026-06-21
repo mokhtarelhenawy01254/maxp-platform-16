@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
+import i18n from "../../i18n";
 
 interface KashierSettings {
   merchantId: string;
@@ -159,7 +160,7 @@ export default function SuperAdminPaymentSettings() {
   const isLive = settings.mode === "live";
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto" dir="rtl">
+    <div className="space-y-6 max-w-3xl mx-auto" dir={i18n.dir()}>
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

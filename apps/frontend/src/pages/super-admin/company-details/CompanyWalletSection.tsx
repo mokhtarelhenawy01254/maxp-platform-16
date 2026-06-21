@@ -1,3 +1,4 @@
+import type { CompanyReview } from "./companyDetailsTypes";
 import { ArrowUpCircle, Wallet as WalletIcon } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
@@ -7,12 +8,16 @@ import { EmptyState } from "./EmptyState";
 import {
   formatDate,
   formatDateTime,
-  formatNumber,
   formatCurrency,
   getTransactionTypeLabel,
 } from "./helpers";
 
-export function CompanyWalletSection({ review, reviewCurrency, openTopUpModal, navigate }) {
+export function CompanyWalletSection({ review, reviewCurrency, openTopUpModal, navigate }: {
+  review?: CompanyReview | null;
+  reviewCurrency: string;
+  openTopUpModal: () => void;
+  navigate: (path: string) => void;
+}) {
   return (
     <SectionShell
       title="المحفظة والشحن"

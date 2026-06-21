@@ -152,8 +152,6 @@ const PlanDistributionItem = ({ plan, count, total }: { plan: string; count: num
 
 const SuperAdminDashboard = () => {
   const { user } = useAuth();
-  const { actualTheme } = useTheme();
-  const isDark = actualTheme === "dark";
 
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [loading, setLoading] = useState(true);

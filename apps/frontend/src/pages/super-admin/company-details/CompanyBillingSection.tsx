@@ -1,3 +1,4 @@
+import type { CompanyReview } from "./companyDetailsTypes";
 import { CreditCard, FileText, History, Receipt, RotateCcw } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { Badge } from "../../../components/ui/badge";
@@ -24,6 +25,10 @@ export function CompanyBillingSection({
   review,
   reviewCurrency,
   navigate,
+}: {
+  review?: CompanyReview | null;
+  reviewCurrency: string;
+  navigate: (path: string) => void;
 }) {
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { useNavigate } from "react-router-dom";
 
 import { Search, Loader2, Building2, Users, Code2, BarChart3, DollarSign, Key, Ticket, Package, ShoppingCart, UserRound, MessageSquare, Facebook, Briefcase, TrendingUp, Tag, FolderTree, Store, Megaphone, UserCheck, FileText, HelpCircle, BookOpen, Target, Zap, ClipboardList, Star, Brain, Layout, ArrowLeft, X, Settings, Bell, History, Rocket } from "lucide-react";
-import { useTheme } from "../../hooks/useTheme";
+import i18n from "../../i18n";
 import { apiClient } from "../../services/apiClient";
 import { cn } from "@/lib/utils";
 
@@ -178,9 +178,7 @@ const loadingSkeleton = (
 );
 
 const GlobalSearch: React.FC = () => {
-  const { actualTheme } = useTheme();
   const navigate = useNavigate();
-  const isDark = actualTheme === "dark";
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResultGroup[]>([]);
@@ -358,13 +356,10 @@ const GlobalSearch: React.FC = () => {
   const totalResults = meta?.total || 0;
 
   return (
-    <div ref={containerRef} className="relative flex-1 max-w-md mx-2 sm:mx-4" dir="rtl">
+    <div ref={containerRef} className="relative flex-1 max-w-md mx-2 sm:mx-4" dir={i18n.dir()}>
       <div className={cn(
-        "relative flex items-center rounded-xl border transition-all duration-200",
-        isDark
-          ? "bg-[#1e293b] border-white/10 focus-within:border-blue-500/50"
-          : "bg-gray-100 border-transparent focus-within:border-blue-400 focus-within:bg-white",
-        isOpen && (isDark ? "border-blue-500/50" : "border-blue-400 bg-white shadow-sm")
+        "relative flex items-center rounded-xl border transition-all duration-200 bg-muted border-transparent focus-within:border-primary/50 focus-within:bg-background",
+        isOpen && "border-primary/50 bg-card shadow-sm"
       )}>
         <div className="flex items-center px-3 order-1">
           {isLoading ? (
@@ -386,9 +381,8 @@ const GlobalSearch: React.FC = () => {
           placeholder={AR.placeholder}
           dir="auto"
           className={cn(
-            "h-9 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground",
+            "h-9 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground text-foreground",
             "pr-2 pl-2",
-            isDark ? "text-white" : "text-gray-900"
           )}
         />
         {query && (
@@ -405,9 +399,8 @@ const GlobalSearch: React.FC = () => {
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div className={cn(
-            "absolute top-full mt-2 w-full min-w-[320px] sm:min-w-[450px] rounded-xl border shadow-xl z-50 overflow-hidden",
+            "absolute top-full mt-2 w-full min-w-[320px] sm:min-w-[450px] rounded-xl border shadow-xl z-50 overflow-hidden bg-card border-border",
             "animate-in fade-in slide-in-from-top-2 duration-150",
-            isDark ? "bg-[#1e293b] border-white/10" : "bg-white border-gray-200"
           )} style={{ right: 0, left: 'auto' }}>
             {isLoading && (
               <div className="flex items-center gap-3 px-4 py-3 border-b border-inherit/10">
@@ -436,14 +429,12 @@ const GlobalSearch: React.FC = () => {
                 {results.map((group, gi) => (
                   <div key={group.type}>
                     <div className={cn(
-                      "flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider sticky top-0 z-10",
-                      isDark ? "text-gray-400 bg-[#0f172a]/95 backdrop-blur-sm" : "text-gray-500 bg-gray-50/95 backdrop-blur-sm"
+                      "flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider sticky top-0 z-10 text-muted-foreground bg-muted/95 backdrop-blur-sm",
                     )}>
                       {iconMap[group.icon] || <Search className="size-3.5" />}
                       <span>{typeLabelMap[group.type] || group.type}</span>
                       <span className={cn(
-                        "mr-auto text-[10px] px-1.5 py-0.5 rounded-full",
-                        isDark ? "bg-white/5 text-gray-400" : "bg-gray-200 text-gray-500"
+                        "mr-auto text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-muted-foreground",
                       )}>
                         {group.items.length}
                       </span>
@@ -462,19 +453,15 @@ const GlobalSearch: React.FC = () => {
                           onClick={() => handleItemClick(item)}
                           onMouseEnter={() => setSelectedIndex(globalIdx)}
                           className={cn(
-                            "flex w-full items-center gap-3 px-4 py-2.5 text-right transition-colors",
-                            isDark
-                              ? "hover:bg-blue-500/10 text-gray-300"
-                              : "hover:bg-blue-50 text-gray-700",
-                            isSelected && (isDark ? "bg-blue-500/15 ring-1 ring-blue-500/20" : "bg-blue-50 ring-1 ring-blue-200")
+                            "flex w-full items-center gap-3 px-4 py-2.5 text-right transition-colors hover:bg-accent text-foreground",
+                            isSelected && "bg-accent ring-1 ring-primary/20"
                           )}
                         >
                           {item.image ? (
                             <img src={item.image} alt="" className="size-8 rounded-lg object-cover flex-shrink-0" />
                           ) : (
                             <div className={cn(
-                              "flex size-8 items-center justify-center rounded-lg flex-shrink-0 text-xs font-bold",
-                              isDark ? "bg-[#0f172a] text-gray-400" : "bg-gray-100 text-gray-500"
+                              "flex size-8 items-center justify-center rounded-lg flex-shrink-0 text-xs font-bold bg-muted text-muted-foreground",
                             )}>
                               {item.title?.charAt(0)}
                             </div>
@@ -488,8 +475,7 @@ const GlobalSearch: React.FC = () => {
                             </div>
                             {item.subtitle && (
                               <span className={cn(
-                                "block text-xs truncate mt-0.5",
-                                isDark ? "text-gray-500" : "text-gray-400"
+                                "block text-xs truncate mt-0.5 text-muted-foreground/60",
                               )}>
                                 {highlightText(item.subtitle, query)}
                               </span>
@@ -518,8 +504,7 @@ const GlobalSearch: React.FC = () => {
 
             {(hasResults || hasSearched) && !isLoading && (
               <div className={cn(
-                "flex items-center justify-between px-4 py-1.5 border-t text-[10px]",
-                isDark ? "border-white/5 text-gray-500" : "border-gray-100 text-gray-400"
+                "flex items-center justify-between px-4 py-1.5 border-t border-border text-[10px] text-muted-foreground/60",
               )}>
                 <span>
                   {totalResults > 0 && `${totalResults} ${AR.resultsCount}`}

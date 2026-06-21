@@ -1,4 +1,4 @@
-const severityClasses = {
+const severityClasses: Record<string, string> = {
   success:
     "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/70 dark:bg-emerald-950/40 dark:text-emerald-300",
   warning:
@@ -13,12 +13,7 @@ const severityClasses = {
     "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800/70 dark:bg-blue-950/40 dark:text-blue-300",
 }
 
-const statusMap = {
-  plan: {
-    ENTERPRISE: { label: "مؤسسي", severity: "success" },
-    PRO: { label: "احترافي", severity: "warning" },
-    BASIC: { label: "أساسي", severity: "blue" },
-  },
+const statusMap: Record<string, Record<string, { label: string; severity: string }>> = {
   subscription: {
     CANCELLED: { label: "ملغي", severity: "danger" },
     PAUSED: { label: "متوقف مؤقتًا", severity: "warning" },
@@ -49,10 +44,10 @@ const statusMap = {
   },
 }
 
-export function getStatusMeta(category, status) {
-  const entry = statusMap[category]?.[status]
+export function getStatusMeta(category: string, status?: string): { label: string; className: string } {
+  const entry = statusMap[category]?.[status ?? ""]
   if (entry) {
-    return { label: entry.label, className: severityClasses[entry.severity] }
+    return { label: entry.label, className: severityClasses[entry.severity] ?? "" }
   }
-  return { label: status || "غير معروف", className: severityClasses.neutral }
+  return { label: status || "غير معروف", className: severityClasses["neutral"] ?? "" }
 }
