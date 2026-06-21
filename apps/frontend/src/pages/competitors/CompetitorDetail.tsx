@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, ExternalLink, RefreshCw, BarChart2, TrendingUp, Scale, History, Settings, Instagram, Share2, Crosshair, Lightbulb, Plus, Pencil, X, AlertTriangle, CheckCircle2, Circle, Calendar, Clock } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
+import CompetitorStatusBar from './CompetitorStatusBar';
+import { updateCompetitorStatus, useCompetitorStatusSync } from './useCompetitorStatus';
 import CompetitorFeatures from './CompetitorFeatures';
 import i18n from '../../i18n';
 
@@ -69,6 +71,22 @@ const CompetitorDetail: React.FC = () => {
   const [editingTask, setEditingTask] = useState<DevTask | null>(null);
   const [taskForm, setTaskForm] = useState({ title: '', description: '', status: 'not_started', targetDate: '' });
   const [taskError, setTaskError] = useState('');
+
+  const handleStatusChange = useCallback(async (newStatus: string) => {
+    if (!id) return;
+    const prevStatus = competitor?.status;
+    setCompetitor((existing: any) => existing ? { ...existing, status: newStatus } : existing);
+    const ok = await updateCompetitorStatus(id, newStatus as any);
+    if (!ok && prevStatus) {
+      setCompetitor((existing: any) => existing ? { ...existing, status: prevStatus } : existing);
+    }
+  }, [id, competitor?.status]);
+
+  useCompetitorStatusSync((competitorId, status) => {
+    if (competitorId === id && competitor) {
+      setCompetitor((existing: any) => existing ? { ...existing, status } : existing);
+    }
+  });
 
   const fetchData = async () => {
     if (!id) return;
@@ -220,6 +238,14 @@ const CompetitorDetail: React.FC = () => {
                 {competitor.url.replace(/^https?:\/\//, '').slice(0, 40)}
               </a>
             )}
+          </div>
+          <div className="mt-2">
+            <CompetitorStatusBar
+              currentStatus={competitor.status}
+              competitorId={id}
+              onChange={handleStatusChange}
+              size="md"
+            />
           </div>
           {competitor.createdAt && (
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 flex items-center gap-1.5">

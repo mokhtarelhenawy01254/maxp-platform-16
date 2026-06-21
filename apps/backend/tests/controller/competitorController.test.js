@@ -1,8 +1,10 @@
 const mockPrisma = {
-  competitor: { findMany: jest.fn(), findFirst: jest.fn(), count: jest.fn() },
-  competitorProduct: { findMany: jest.fn(), findFirst: jest.fn(), count: jest.fn() },
-  competitorAd: { findMany: jest.fn(), count: jest.fn() },
+  competitor: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(), count: jest.fn() },
+  competitorProduct: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), count: jest.fn() },
+  competitorAd: { findMany: jest.fn(), create: jest.fn(), count: jest.fn() },
   competitorReport: { findMany: jest.fn(), count: jest.fn(), create: jest.fn() },
+  competitorSocialProfile: { create: jest.fn() },
+  competitorPriceHistory: { create: jest.fn(), findMany: jest.fn() },
   product: { findMany: jest.fn() },
 };
 
@@ -255,6 +257,44 @@ describe('CompetitorController', () => {
       const res = createResponse();
 
       await controller.priceCompare(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+  });
+
+  describe('updateStatus', () => {
+    it('updates competitor status successfully', async () => {
+      mockPrisma.competitor.findFirst.mockResolvedValue({ id: 'c1', companyId: 'company-1' });
+      mockPrisma.competitor.update.mockResolvedValue({ id: 'c1', status: 'FOLLOWING' });
+
+      const req = { user: { companyId: 'company-1' }, params: { id: 'c1' }, body: { status: 'FOLLOWING' } };
+      const res = createResponse();
+
+      await controller.updateStatus(req, res);
+
+      expect(mockPrisma.competitor.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'c1' }, data: { status: 'FOLLOWING' } })
+      );
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+
+    it('rejects invalid status values', async () => {
+      const req = { user: { companyId: 'company-1' }, params: { id: 'c1' }, body: { status: 'INVALID' } };
+      const res = createResponse();
+
+      await controller.updateStatus(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Invalid status value' }));
+    });
+
+    it('returns 404 if competitor not found', async () => {
+      mockPrisma.competitor.findFirst.mockResolvedValue(null);
+
+      const req = { user: { companyId: 'company-1' }, params: { id: 'nonexistent' }, body: { status: 'NEW' } };
+      const res = createResponse();
+
+      await controller.updateStatus(req, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
     });
