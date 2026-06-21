@@ -1,6 +1,8 @@
 const CompetitorService = require('../services/competitorService');
 const CompetitorFeatureService = require('../services/competitorFeatureService');
 const CompetitorDevRecommendationService = require('../services/competitorDevRecommendationService');
+const CompetitorMediaAnalysisService = require('../services/competitorMediaAnalysisService');
+const CompetitorEncryptionService = require('../services/competitorEncryptionService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { t } = require('../services/i18n');
 const getPrisma = () => getSharedPrismaClient();
@@ -575,6 +577,359 @@ exports.deleteDevTask = async (req, res) => {
   } catch (error) {
     console.error('Error deleting dev task:', error);
     res.status(500).json({ success: false, error: t('competitor.feature_delete_failed') });
+  }
+};
+
+// ---- Media Notes ----
+exports.getMediaNotes = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const result = await CompetitorMediaAnalysisService.listMediaNotes(companyId, req.params.id);
+    if (!result) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('Error fetching media notes:', error);
+    res.status(500).json({ success: false, error: t('competitor.media_note_list_failed') });
+  }
+};
+
+exports.addMediaNote = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { note } = req.body;
+    if (!note || !note.trim()) {
+      return res.status(400).json({ success: false, error: 'Note content is required' });
+    }
+    const created = await CompetitorMediaAnalysisService.createMediaNote(companyId, req.params.id, note);
+    if (!created) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.status(201).json({ success: true, data: created });
+  } catch (error) {
+    console.error('Error creating media note:', error);
+    res.status(500).json({ success: false, error: t('competitor.media_note_create_failed') });
+  }
+};
+
+exports.deleteMediaNote = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const deleted = await CompetitorMediaAnalysisService.deleteMediaNote(companyId, req.params.id, req.params.noteId);
+    if (!deleted) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.json({ success: true, message: 'Media note deleted' });
+  } catch (error) {
+    console.error('Error deleting media note:', error);
+    res.status(500).json({ success: false, error: t('competitor.media_note_delete_failed') });
+  }
+};
+
+// ---- Comparisons ----
+exports.listComparisons = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const result = await CompetitorMediaAnalysisService.listComparisons(companyId, req.params.id);
+    if (!result) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('Error fetching comparisons:', error);
+    res.status(500).json({ success: false, error: t('competitor.comparison_list_failed') });
+  }
+};
+
+exports.createComparison = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { featureName } = req.body;
+    if (!featureName || !featureName.trim()) {
+      return res.status(400).json({ success: false, error: 'Feature name is required' });
+    }
+    const created = await CompetitorMediaAnalysisService.createComparison(companyId, req.params.id, req.body);
+    if (!created) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.status(201).json({ success: true, data: created });
+  } catch (error) {
+    console.error('Error creating comparison:', error);
+    res.status(500).json({ success: false, error: t('competitor.comparison_create_failed') });
+  }
+};
+
+exports.updateComparison = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const updated = await CompetitorMediaAnalysisService.updateComparison(companyId, req.params.id, req.params.comparisonId, req.body);
+    if (!updated) return res.status(404).json({ success: false, error: t('competitor.comparison_not_found') });
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Error updating comparison:', error);
+    res.status(500).json({ success: false, error: t('competitor.comparison_update_failed') });
+  }
+};
+
+exports.deleteComparison = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const deleted = await CompetitorMediaAnalysisService.deleteComparison(companyId, req.params.id, req.params.comparisonId);
+    if (!deleted) return res.status(404).json({ success: false, error: t('competitor.comparison_not_found') });
+    res.json({ success: true, message: 'Comparison deleted' });
+  } catch (error) {
+    console.error('Error deleting comparison:', error);
+    res.status(500).json({ success: false, error: t('competitor.comparison_delete_failed') });
+  }
+};
+
+exports.reorderComparisons = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds)) {
+      return res.status(400).json({ success: false, error: 'orderedIds array is required' });
+    }
+    const result = await CompetitorMediaAnalysisService.reorderComparisons(companyId, req.params.id, orderedIds);
+    if (!result) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error reordering comparisons:', error);
+    res.status(500).json({ success: false, error: t('competitor.comparison_reorder_failed') });
+  }
+};
+
+// ---- Dev Ideas ----
+exports.listDevIdeas = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const result = await CompetitorMediaAnalysisService.listDevIdeas(companyId, req.params.id);
+    if (!result) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('Error fetching dev ideas:', error);
+    res.status(500).json({ success: false, error: t('competitor.dev_idea_list_failed') });
+  }
+};
+
+exports.createDevIdea = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { title } = req.body;
+    if (!title || !title.trim()) {
+      return res.status(400).json({ success: false, error: 'Title is required' });
+    }
+    const created = await CompetitorMediaAnalysisService.createDevIdea(companyId, req.params.id, req.body);
+    if (!created) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.status(201).json({ success: true, data: created });
+  } catch (error) {
+    console.error('Error creating dev idea:', error);
+    res.status(500).json({ success: false, error: t('competitor.dev_idea_create_failed') });
+  }
+};
+
+exports.updateDevIdea = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const updated = await CompetitorMediaAnalysisService.updateDevIdea(companyId, req.params.id, req.params.ideaId, req.body);
+    if (!updated) return res.status(404).json({ success: false, error: t('competitor.dev_idea_not_found') });
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Error updating dev idea:', error);
+    res.status(500).json({ success: false, error: t('competitor.dev_idea_update_failed') });
+  }
+};
+
+exports.deleteDevIdea = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const deleted = await CompetitorMediaAnalysisService.deleteDevIdea(companyId, req.params.id, req.params.ideaId);
+    if (!deleted) return res.status(404).json({ success: false, error: t('competitor.dev_idea_not_found') });
+    res.json({ success: true, message: 'Dev idea deleted' });
+  } catch (error) {
+    console.error('Error deleting dev idea:', error);
+    res.status(500).json({ success: false, error: t('competitor.dev_idea_delete_failed') });
+  }
+};
+
+exports.reorderDevIdeas = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds)) {
+      return res.status(400).json({ success: false, error: 'orderedIds array is required' });
+    }
+    const result = await CompetitorMediaAnalysisService.reorderDevIdeas(companyId, req.params.id, orderedIds);
+    if (!result) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error reordering dev ideas:', error);
+    res.status(500).json({ success: false, error: t('competitor.dev_idea_reorder_failed') });
+  }
+};
+
+exports.addDevIdeaImage = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { imageUrl } = req.body;
+    if (!imageUrl) {
+      return res.status(400).json({ success: false, error: 'imageUrl is required' });
+    }
+    const created = await CompetitorMediaAnalysisService.addDevIdeaImage(companyId, req.params.id, req.params.ideaId, imageUrl);
+    if (!created) return res.status(404).json({ success: false, error: t('competitor.dev_idea_not_found') });
+    res.status(201).json({ success: true, data: created });
+  } catch (error) {
+    console.error('Error adding dev idea image:', error);
+    res.status(500).json({ success: false, error: t('competitor.dev_idea_image_add_failed') });
+  }
+};
+
+exports.deleteDevIdeaImage = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const deleted = await CompetitorMediaAnalysisService.deleteDevIdeaImage(companyId, req.params.id, req.params.ideaId, req.params.imageId);
+    if (!deleted) return res.status(404).json({ success: false, error: t('competitor.dev_idea_not_found') });
+    res.json({ success: true, message: 'Image deleted' });
+  } catch (error) {
+    console.error('Error deleting dev idea image:', error);
+    res.status(500).json({ success: false, error: t('competitor.dev_idea_image_delete_failed') });
+  }
+};
+
+// ---- Activity Images ----
+exports.listActivityImages = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const result = await CompetitorMediaAnalysisService.listActivityImages(companyId, req.params.id);
+    if (!result) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('Error fetching activity images:', error);
+    res.status(500).json({ success: false, error: t('competitor.activity_image_list_failed') });
+  }
+};
+
+exports.addActivityImage = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { imageUrl } = req.body;
+    if (!imageUrl) {
+      return res.status(400).json({ success: false, error: 'imageUrl is required' });
+    }
+    const created = await CompetitorMediaAnalysisService.addActivityImage(companyId, req.params.id, imageUrl);
+    if (!created) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.status(201).json({ success: true, data: created });
+  } catch (error) {
+    console.error('Error adding activity image:', error);
+    res.status(500).json({ success: false, error: t('competitor.activity_image_add_failed') });
+  }
+};
+
+exports.deleteActivityImage = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const deleted = await CompetitorMediaAnalysisService.deleteActivityImage(companyId, req.params.id, req.params.imageId);
+    if (!deleted) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.json({ success: true, message: 'Activity image deleted' });
+  } catch (error) {
+    console.error('Error deleting activity image:', error);
+    res.status(500).json({ success: false, error: t('competitor.activity_image_delete_failed') });
+  }
+};
+
+exports.reorderActivityImages = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds)) {
+      return res.status(400).json({ success: false, error: 'orderedIds array is required' });
+    }
+    const result = await CompetitorMediaAnalysisService.reorderActivityImages(companyId, req.params.id, orderedIds);
+    if (!result) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error reordering activity images:', error);
+    res.status(500).json({ success: false, error: t('competitor.activity_image_reorder_failed') });
+  }
+};
+
+// ---- Feature Images ----
+exports.listFeatureImages = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const result = await CompetitorMediaAnalysisService.listFeatureImages(companyId, req.params.id);
+    if (!result) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('Error fetching feature images:', error);
+    res.status(500).json({ success: false, error: t('competitor.feature_image_list_failed') });
+  }
+};
+
+exports.addFeatureImage = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { imageUrl } = req.body;
+    if (!imageUrl) {
+      return res.status(400).json({ success: false, error: 'imageUrl is required' });
+    }
+    const created = await CompetitorMediaAnalysisService.addFeatureImage(companyId, req.params.id, imageUrl);
+    if (!created) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.status(201).json({ success: true, data: created });
+  } catch (error) {
+    console.error('Error adding feature image:', error);
+    res.status(500).json({ success: false, error: t('competitor.feature_image_add_failed') });
+  }
+};
+
+exports.deleteFeatureImage = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const deleted = await CompetitorMediaAnalysisService.deleteFeatureImage(companyId, req.params.id, req.params.imageId);
+    if (!deleted) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.json({ success: true, message: 'Feature image deleted' });
+  } catch (error) {
+    console.error('Error deleting feature image:', error);
+    res.status(500).json({ success: false, error: t('competitor.feature_image_delete_failed') });
+  }
+};
+
+exports.reorderFeatureImages = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds)) {
+      return res.status(400).json({ success: false, error: 'orderedIds array is required' });
+    }
+    const result = await CompetitorMediaAnalysisService.reorderFeatureImages(companyId, req.params.id, orderedIds);
+    if (!result) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error reordering feature images:', error);
+    res.status(500).json({ success: false, error: t('competitor.feature_image_reorder_failed') });
+  }
+};
+
+// ---- Social Profile Credentials ----
+exports.updateSocialProfileCredentials = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const { email, password } = req.body;
+    const prisma = getPrisma();
+
+    const profile = await prisma.competitorSocialProfile.findFirst({
+      where: { id: req.params.profileId, competitor: { companyId, id: req.params.id } },
+    });
+    if (!profile) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+
+    const data = {};
+    if (email !== undefined) {
+      data.email = CompetitorEncryptionService.encryptField(email);
+    }
+    if (password !== undefined) {
+      data.password = CompetitorEncryptionService.encryptField(password);
+    }
+
+    const updated = await prisma.competitorSocialProfile.update({
+      where: { id: req.params.profileId },
+      data,
+    });
+
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Error updating social profile credentials:', error);
+    res.status(500).json({ success: false, error: t('competitor.social_credentials_update_failed') });
   }
 };
 

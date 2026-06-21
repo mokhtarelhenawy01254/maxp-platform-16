@@ -37,7 +37,40 @@ router.delete('/:id/dev-tasks/:taskId', controller.deleteDevTask);
 router.get('/:id/price-compare', controller.priceCompare);
 router.get('/:id/battlecard', controller.getBattlecard);
 
-router.get('/reports/all', controller.getAllReports);
-router.get('/summary', controller.summary);
+// ---- Media Notes ----
+router.get('/:id/media-notes', controller.getMediaNotes);
+router.post('/:id/media-notes', controller.addMediaNote);
+router.delete('/:id/media-notes/:noteId', controller.deleteMediaNote);
+
+// ---- Comparisons ----
+router.get('/:id/comparisons', controller.listComparisons);
+router.post('/:id/comparisons', controller.createComparison);
+router.put('/:id/comparisons/reorder', controller.reorderComparisons);
+router.put('/:id/comparisons/:comparisonId', controller.updateComparison);
+router.delete('/:id/comparisons/:comparisonId', controller.deleteComparison);
+
+// ---- Dev Ideas ----
+router.get('/:id/dev-ideas', controller.listDevIdeas);
+router.post('/:id/dev-ideas', controller.createDevIdea);
+router.put('/:id/dev-ideas/reorder', controller.reorderDevIdeas);
+router.put('/:id/dev-ideas/:ideaId', controller.updateDevIdea);
+router.delete('/:id/dev-ideas/:ideaId', controller.deleteDevIdea);
+router.post('/:id/dev-ideas/:ideaId/images', controller.addDevIdeaImage);
+router.delete('/:id/dev-ideas/:ideaId/images/:imageId', controller.deleteDevIdeaImage);
+
+// ---- Activity Images ----
+router.get('/:id/activity-images', controller.listActivityImages);
+router.post('/:id/activity-images', controller.addActivityImage);
+router.put('/:id/activity-images/reorder', controller.reorderActivityImages);
+router.delete('/:id/activity-images/:imageId', controller.deleteActivityImage);
+
+// ---- Feature Images ----
+router.get('/:id/feature-images', controller.listFeatureImages);
+router.post('/:id/feature-images', controller.addFeatureImage);
+router.put('/:id/feature-images/reorder', controller.reorderFeatureImages);
+router.delete('/:id/feature-images/:imageId', controller.deleteFeatureImage);
+
+// ---- Social Profile Credentials ----
+router.put('/:id/social-profiles/:profileId/credentials', controller.updateSocialProfileCredentials);
 
 module.exports = router;

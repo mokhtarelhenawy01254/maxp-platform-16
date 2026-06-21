@@ -3,6 +3,8 @@ model CompetitorSocialProfile {
   platform        String               @default("instagram")
   platformUserId  String?
   username        String?
+  email           String?
+  password        String?
   displayName     String?
   bio             String?
   profileImage    String?

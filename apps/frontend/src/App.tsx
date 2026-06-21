@@ -209,6 +209,7 @@ const StoreAnalyticsDashboard = React.lazy(
 
 const Categories = React.lazy(() => import("./pages/categories/Categories"));
 const CompetitorList = React.lazy(() => import("./pages/competitors/CompetitorList"));
+const CompetitorAdd = React.lazy(() => import("./pages/competitors/CompetitorAdd"));
 const CompetitorDetail = React.lazy(() => import("./pages/competitors/CompetitorDetail"));
 const CompetitorGapAnalysis = React.lazy(() => import("./pages/competitors/gap-analysis"));
 const CompetitorPriceHistory = React.lazy(() => import("./pages/competitors/price-history"));
@@ -3215,6 +3216,22 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <CompetitorList />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/competitors/add"
+                  element={
+                    <Layout>
+                      <CompetitorAdd />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/competitors/:id/edit"
+                  element={
+                    <Layout>
+                      <CompetitorAdd />
                     </Layout>
                   }
                 />

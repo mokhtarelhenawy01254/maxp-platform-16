@@ -21,6 +21,16 @@ model Competitor {
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
 
+  founderName     String?
+  founderLinkedIn String?
+  country         String?
+  city            String?
+  geoLocation     String?
+  monthlyPrice    Decimal?             @db.Decimal(10, 2)
+  yearlyPrice     Decimal?             @db.Decimal(10, 2)
+  pricingNotes    String?              @db.Text
+  trafficSource   String?
+
   company         Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   products        CompetitorProduct[]
   ads             CompetitorAd[]
@@ -34,6 +44,11 @@ model Competitor {
   adIntelligence  CompetitorAdIntelligence[]
   features        CompetitorFeature[]
   devRecommendations CompetitorDevRecommendation[]
+  mediaNotes      CompetitorMediaNote[]
+  comparisons     CompetitorComparison[]
+  devIdeas        CompetitorDevIdea[]
+  activityImages  CompetitorActivityImage[]
+  featureImages   CompetitorFeatureImage[]
 
   @@unique([companyId, slug])
   @@index([companyId])
