@@ -14,7 +14,7 @@ interface Company {
 
 const TABS = [
   { key: "skills", label: "مهارات الوكيل", needsCompany: true },
-  { key: "tools", label: "أدوات الوكيل", needsCompany: true },
+  { key: "tools", label: "أدوات الوكيل", needsCompany: false },
   { key: "rag", label: "قاعدة المعرفة (RAG)", needsCompany: true },
 ] as const;
 
@@ -124,9 +124,7 @@ export default function SuperAdminAIHubLayout() {
               : <div className="flex h-64 items-center justify-center text-muted-foreground">اختر شركة لعرض مهارات الوكيل</div>
           )}
           {activeTab === "tools" && (
-            selectedCompanyId
-              ? <AgentToolsPage key={selectedCompanyId} companyId={selectedCompanyId} />
-              : <div className="flex h-64 items-center justify-center text-muted-foreground">اختر شركة لعرض أدوات الوكيل</div>
+            <AgentToolsPage key={selectedCompanyId || "no-company"} companyId={selectedCompanyId || undefined} />
           )}
           {activeTab === "rag" && (
             selectedCompanyId
