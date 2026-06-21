@@ -1,12 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Lock, Mail, Phone, User, Eye, EyeOff, Globe2 } from "lucide-react";
+import { Lock, Mail, Phone, User, Eye, EyeOff, Globe2, Briefcase } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuthSimple";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
 import { trackPlatformSiteCompleteRegistration } from "../../utils/platformSiteMetaPixel";
 import { getPostAuthDestination } from "../../utils/authRouting";
+import { getApiUrl } from "../../config/environment";
+
+interface BusinessSpecialty {
+  id: string;
+  slug: string;
+  nameAr: string;
+  nameEn: string;
+  icon: string;
+}
 
 const NEW_ACCOUNT_DESTINATION = "/marketplace";
 
@@ -32,7 +41,9 @@ const copyByLanguage = {
       email: "البريد الإلكتروني",
       phone: "رقم الهاتف (اختياري)",
       password: "كلمة المرور",
+      businessType: "نوع النشاط التجاري",
     },
+    businessTypePlaceholder: "اختر نوع نشاطك التجاري",
     placeholders: {
       fullName: "أحمد محمد",
       email: "name@company.com",
@@ -59,7 +70,9 @@ const copyByLanguage = {
       email: "Email",
       phone: "Phone (optional)",
       password: "Password",
+      businessType: "Business type",
     },
+    businessTypePlaceholder: "Select your business type",
     placeholders: {
       fullName: "Ahmed Mohamed",
       email: "name@company.com",
@@ -106,13 +119,24 @@ const Register: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [specialties, setSpecialties] = useState<BusinessSpecialty[]>([]);
 
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     password: "",
     phone: "",
+    businessSpecialtyId: "",
   });
+
+  useEffect(() => {
+    fetch(`${getApiUrl()}/auth/business-specialties`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json?.data?.items) setSpecialties(json.data.items);
+      })
+      .catch(() => {});
+  }, []);
 
   const { register: registerUser } = useAuth();
   const navigate = useNavigate();
@@ -156,6 +180,7 @@ const Register: React.FC = () => {
         password: formData.password,
         phone: formData.phone || undefined,
         partnerCode,
+        businessSpecialtyId: formData.businessSpecialtyId || undefined,
       });
       const urlParams = new URLSearchParams(window.location.search);
       const redirectParam = urlParams.get("redirect");
@@ -253,6 +278,30 @@ const Register: React.FC = () => {
           </div>
           {fieldErrors.phone && <p className="elite-field-error">{fieldErrors.phone}</p>}
         </div>
+
+        {specialties.length > 0 && (
+          <div className="elite-input-group">
+            <label className="elite-label">{copy.labels.businessType}</label>
+            <div className="elite-input-wrapper">
+              <select
+                name="businessSpecialtyId"
+                value={formData.businessSpecialtyId}
+                onChange={(e) => setFormData((prev) => ({ ...prev, businessSpecialtyId: e.target.value }))}
+                className="elite-input"
+                disabled={isLoading}
+                style={{ appearance: "none" }}
+              >
+                <option value="">{copy.businessTypePlaceholder}</option>
+                {specialties.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {isArabic ? s.nameAr : s.nameEn}
+                  </option>
+                ))}
+              </select>
+              <Briefcase className="elite-input-icon" />
+            </div>
+          </div>
+        )}
 
         <div className="elite-input-group">
           <label className="elite-label">{copy.labels.password}</label>
