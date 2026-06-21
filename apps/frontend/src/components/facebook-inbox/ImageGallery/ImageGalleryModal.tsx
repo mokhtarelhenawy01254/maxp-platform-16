@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { apiClient } from "../../../services/apiClient";
 
 const overlayStyle: React.CSSProperties = {
@@ -188,9 +189,9 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-4"
       style={overlayStyle}
     >
       <div className="business-modal-surface flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden">
@@ -538,7 +539,8 @@ const ImageGalleryModal: React.FC<ImageGalleryModalProps> = ({
           </span>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

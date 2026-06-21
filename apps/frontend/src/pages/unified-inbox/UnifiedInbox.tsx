@@ -1933,29 +1933,39 @@ const UnifiedInbox: React.FC = () => {
                       </button>
 
                       {showAttachmentMenu && (
-                        <div className={`absolute bottom-full mb-2 ${isRtl ? 'right-0' : 'left-0'} w-48 rounded-xl shadow-lg border overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2`} style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--business-card-border)' }}>
+                        <div 
+                          className="inbox-platform-dropdown animate-in fade-in slide-in-from-bottom-2"
+                          style={{
+                            top: "auto",
+                            bottom: "calc(100% + 6px)",
+                            [isRtl ? "left" : "right"]: "auto",
+                            [isRtl ? "right" : "left"]: 0,
+                            minWidth: 180,
+                            zIndex: 200,
+                          }}
+                        >
                           <button
                             onClick={() => {
                               setShowAttachmentMenu(false);
                               setShowImageGallery(true);
                             }}
-                            className="w-full text-start px-4 py-3 text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-                            style={{ color: 'var(--color-foreground)' }}
+                            className="inbox-dropdown-item w-full"
                           >
-                            {t("unifiedInbox.chooseExistingFile", "Choose existing file")}
+                            <span className="inbox-platform-text">
+                              {t("unifiedInbox.chooseExistingFile", "Choose existing file")}
+                            </span>
                           </button>
                           <div style={{ borderTop: '1px solid var(--business-card-border)' }} />
                           <button
                             onClick={() => {
                               setShowAttachmentMenu(false);
-                              // Trigger a click on the file input, optionally restricting to images could be done but 
-                              // we'll just use the same fileInputRef as before
                               fileInputRef.current?.click();
                             }}
-                            className="w-full text-start px-4 py-3 text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
-                            style={{ color: 'var(--color-foreground)' }}
+                            className="inbox-dropdown-item w-full"
                           >
-                            {t("unifiedInbox.upload", "Upload")}
+                            <span className="inbox-platform-text">
+                              {t("unifiedInbox.upload", "Upload")}
+                            </span>
                           </button>
                         </div>
                       )}
