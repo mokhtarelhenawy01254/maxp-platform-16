@@ -44,7 +44,15 @@ import tokenManager from "../../utils/tokenManager";
 import { buildApiUrl } from "../../utils/urlHelper";
 import i18n from "../../i18n";
 
-interface ToolDefinition { name: string; description: string; sideEffects: "read" | "write"; requiresApproval: boolean; approvalMode?: string; source?: string; runtimeSource?: string; aliases?: string[]; companyScoped?: boolean; }
+interface ToolDefinition { name: string; description: string; sideEffects: "read" | "write"; requiresApproval: boolean; approvalMode?: string; source?: string; runtimeSource?: string; aliases?: string[]; companyScoped?: boolean; group?: string; }
+
+const GROUP_LABELS: Record<string, string> = {
+  product: "المنتجات", order: "الطلبات", customer: "العملاء", inventory: "المخزون",
+  sales: "المبيعات", shipping: "الشحن", competitor: "المنافسين", governance: "الحوكمة",
+  knowledge_base: "قاعدة المعرفة", facebook: "فيسبوك", hr: "الموارد البشرية",
+  smart_seller: "البائع الذكي", agents: "الوكلاء", audit: "التدقيق",
+  management: "الإدارة", system: "النظام", mcp: "MCP",
+};
 interface AgentToolInfo { id: string; name: string; role: string; icon: string; status: string; autonomy?: string; }
 interface AgentDefinition { id: string; name: string; role: string; icon: string; status: string; allowedTools: string[]; toolAutonomy?: Record<string, string>; }
 
@@ -98,14 +106,25 @@ export default function AgentToolsPage({ companyId }: { companyId?: string } = {
   const [query, setQuery] = useState(""); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null);
   const [expandedTool, setExpandedTool] = useState<string | null>(null);
   const [assignTool, setAssignTool] = useState<string | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
   const toolToAgents = useMemo(() => {
     const alias = new Map<string, string>(); for (const t of tools) { alias.set(t.name, t.name); for (const a of t.aliases || []) alias.set(a, t.name); }
     const m = new Map<string, AgentToolInfo[]>(); for (const a of agents) { for (const tn of a.allowedTools || []) { const cn = alias.get(tn) || tn; if (!m.has(cn)) m.set(cn, []); m.get(cn)!.push({ id: a.id, name: a.name, role: a.role, icon: a.icon, status: a.status, autonomy: a.toolAutonomy?.[tn] || "auto" }); } }
     return m;
   }, [agents, tools]);
-  const filteredTools = useMemo(() => { const n = query.trim().toLowerCase(); if (!n) return tools; return tools.filter((t) => { const an = (toolToAgents.get(t.name) || []).map((a) => a.name).join(" "); return [t.name, t.description, t.sideEffects, an].filter(Boolean).some((v) => String(v).toLowerCase().includes(n)); }); }, [tools, query, toolToAgents]);
-  const loadAll = useCallback(async () => { setLoading(true); setError(null); try { const [td, ad] = await Promise.all([apiRequest<{ success: true; tools: ToolDefinition[] }>("agent/tools", companyId), apiRequest<{ success: true; agents: AgentDefinition[] }>("agent-manager/agents", companyId)]); setTools(td.tools || []); setAgents(ad.agents || []); } catch (err: any) { setError(err.message || i18n.t("common.loadError")); } finally { setLoading(false); } }, [companyId]);
+  const allGroups = useMemo(() => {
+    const groups = [...new Set(tools.map((t) => t.group).filter(Boolean))] as string[];
+    return groups.sort((a, b) => (GROUP_LABELS[a] || a).localeCompare(GROUP_LABELS[b] || b, "ar"));
+  }, [tools]);
+  const filteredTools = useMemo(() => {
+    let list = tools;
+    const n = query.trim().toLowerCase();
+    if (n) list = list.filter((t) => { const an = (toolToAgents.get(t.name) || []).map((a) => a.name).join(" "); return [t.name, t.description, t.sideEffects, an].filter(Boolean).some((v) => String(v).toLowerCase().includes(n)); });
+    if (selectedGroup) list = list.filter((t) => t.group === selectedGroup);
+    return list;
+  }, [tools, query, toolToAgents, selectedGroup]);
+  const loadAll = useCallback(async () => { setLoading(true); setError(null); try { const [td, ad] = await Promise.all([apiRequest<{ success: true; tools: ToolDefinition[] }>("agent/tools", companyId), companyId ? apiRequest<{ success: true; agents: AgentDefinition[] }>("agent-manager/agents", companyId) : { success: true as const, agents: [] as AgentDefinition[] }]); setTools(td.tools || []); setAgents(ad.agents || []); } catch (err: any) { setError(err.message || i18n.t("common.loadError")); } finally { setLoading(false); } }, [companyId]);
   useEffect(() => { loadAll(); }, [loadAll]);
   const readT = filteredTools.filter((t) => !t.sideEffects || t.sideEffects === "read");
   const writeT = filteredTools.filter((t) => t.sideEffects === "write");
@@ -206,12 +225,26 @@ export default function AgentToolsPage({ companyId }: { companyId?: string } = {
 
       {error && <Alert variant="destructive" className="mb-4"><AlertCircle className="size-4" /><AlertDescription>{error}</AlertDescription></Alert>}
 
-      {loading ? <div className="flex min-h-[420px] items-center justify-center rounded-xl bg-card"><LoadingSpinner size="lg" /></div>
-      : filteredTools.length === 0 ? <div className="flex min-h-[200px] items-center justify-center rounded-xl bg-card"><p className="text-muted-foreground">{i18n.t("agentTools.dialogNoResults", { query })}</p></div>
-      : <div className="flex flex-col gap-6">
-          {readT.length > 0 && <div><div className="mb-3 flex items-center gap-2"><Unlock className="size-5 text-primary" /><h2 className="text-base font-black">{i18n.t("agentTools.readSection")}</h2><Badge variant="outline">{readT.length}</Badge></div><div className="grid grid-cols-1 gap-3 md:grid-cols-2">{readT.map((t) => (<ToolCard key={t.name} tool={t} />))}</div></div>}
-          {writeT.length > 0 && <div><div className="mb-3 flex items-center gap-2"><Lock className="size-5 text-amber-600" /><h2 className="text-base font-black">{i18n.t("agentTools.writeSection")}</h2><Badge variant="outline" className="border-amber-600 text-amber-600">{writeT.length}</Badge></div><div className="grid grid-cols-1 gap-3 md:grid-cols-2">{writeT.map((t) => (<ToolCard key={t.name} tool={t} />))}</div></div>}
-        </div>}
+      <div className="flex gap-4">
+        {allGroups.length > 0 && (
+          <aside className="hidden w-44 shrink-0 md:block">
+            <div className="sticky top-20 space-y-1 rounded-xl border bg-card p-2">
+              <button onClick={() => setSelectedGroup(null)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${!selectedGroup ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>الكل ({tools.length})</button>
+              {allGroups.map((g) => (
+                <button key={g} onClick={() => setSelectedGroup(g)} className={`w-full rounded-lg px-3 py-1.5 text-right text-sm transition-colors ${selectedGroup === g ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>{GROUP_LABELS[g] || g} ({tools.filter((t) => t.group === g).length})</button>
+              ))}
+            </div>
+          </aside>
+        )}
+        <div className="flex-1 min-w-0">
+          {loading ? <div className="flex min-h-[420px] items-center justify-center rounded-xl bg-card"><LoadingSpinner size="lg" /></div>
+          : filteredTools.length === 0 ? <div className="flex min-h-[200px] items-center justify-center rounded-xl bg-card"><p className="text-muted-foreground">{i18n.t("agentTools.dialogNoResults", { query })}</p></div>
+          : <div className="flex flex-col gap-6">
+              {readT.length > 0 && <div><div className="mb-3 flex items-center gap-2"><Unlock className="size-5 text-primary" /><h2 className="text-base font-black">{i18n.t("agentTools.readSection")}</h2><Badge variant="outline">{readT.length}</Badge></div><div className="grid grid-cols-1 gap-3 md:grid-cols-2">{readT.map((t) => (<ToolCard key={t.name} tool={t} />))}</div></div>}
+              {writeT.length > 0 && <div><div className="mb-3 flex items-center gap-2"><Lock className="size-5 text-amber-600" /><h2 className="text-base font-black">{i18n.t("agentTools.writeSection")}</h2><Badge variant="outline" className="border-amber-600 text-amber-600">{writeT.length}</Badge></div><div className="grid grid-cols-1 gap-3 md:grid-cols-2">{writeT.map((t) => (<ToolCard key={t.name} tool={t} />))}</div></div>}
+            </div>}
+        </div>
+      </div>
 
       <AssignToolDialog open={!!assignTool} toolName={assignTool || ""} agents={agents} onClose={() => setAssignTool(null)} onSaved={loadAll} companyId={companyId} />
     </div>

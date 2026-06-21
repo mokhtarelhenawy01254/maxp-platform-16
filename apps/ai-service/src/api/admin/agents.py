@@ -824,6 +824,24 @@ async def get_manager_context(
                                   tools=tools, skills=skills, inbox=inbox)
 
 
+def _tool_group(name: str) -> str:
+    overrides = {
+        "scheduler_create_job": "governance", "message_broadcast": "governance",
+        "knowledge_search": "knowledge_base", "knowledge_ask_merchant": "knowledge_base",
+        "knowledge_create_faq": "knowledge_base", "knowledge_create_policy": "knowledge_base",
+        "facebook_ad_create_draft": "facebook", "facebook_reply": "facebook",
+        "category_list": "product", "company_snapshot": "sales",
+        "whatsapp_send": "sales", "discount_create_draft": "sales", "discount_create": "sales",
+        "lead_score": "smart_seller", "abandoned_carts": "smart_seller",
+        "pipeline_overview": "smart_seller", "followup_suggestions": "smart_seller",
+        "deal_params": "smart_seller", "purchase_prediction": "smart_seller",
+    }
+    if name in overrides:
+        return overrides[name]
+    prefix = name.split("_")[0] if "_" in name else "other"
+    return prefix
+
+
 @router.get("/tools")
 async def list_tools() -> list[dict[str, Any]]:
     """List all available tools from the tool registry."""
@@ -840,6 +858,7 @@ async def list_tools() -> list[dict[str, Any]]:
             "name": t.name,
             "description": t.description,
             "input_schema": schema,
+            "group": _tool_group(t.name),
         })
     from src.tools.overrides import merge_descriptions
     return merge_descriptions(result)
