@@ -1,10 +1,10 @@
 import type { CompanyData, CompanyReview, CompanyUser } from "./companyDetailsTypes";
-import { Globe, Mail, Phone, ShieldCheck } from "lucide-react";
+import { CalendarClock, Globe, Mail, Phone, ShieldCheck } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
 import { Card, CardContent } from "../../../components/ui/card";
 import { StatusBadge } from "./StatusBadge";
 import { InfoLine } from "./InfoLine";
-import { normalizeWebsite } from "./helpers";
+import { formatDateTime, normalizeWebsite } from "./helpers";
 
 export function CompanyHeroCard({ company, review, ownerUser }: {
   company: CompanyData;
@@ -41,6 +41,11 @@ export function CompanyHeroCard({ company, review, ownerUser }: {
               <Badge variant="outline" className="rounded-full border-border/50 bg-muted/30 px-3 py-1.5 text-xs">
                 العملة: {company.currency || "EGP"}
               </Badge>
+              {company.createdAt ? (
+                <Badge variant="outline" className="rounded-full border-border/50 bg-muted/30 px-3 py-1.5 text-xs gap-1">
+                  <CalendarClock className="size-3" /> {formatDateTime(company.createdAt)}
+                </Badge>
+              ) : null}
               {company.slug ? (
                 <Badge variant="outline" className="rounded-full border-border/50 bg-muted/30 px-3 py-1.5 text-xs">
                   slug: {company.slug}

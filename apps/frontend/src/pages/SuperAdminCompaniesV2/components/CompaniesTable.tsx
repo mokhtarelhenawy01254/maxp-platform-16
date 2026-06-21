@@ -17,7 +17,7 @@ import {
 } from "../../../components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/ui/tooltip";
 import { cn } from "../../../lib/utils";
-import { getCount, getPlanMeta, formatDate } from "../utils";
+import { getCount, formatDateTime } from "../utils";
 import type { Company, QuickStats } from "../types";
 
 const columnHelper = createColumnHelper<Company>();
@@ -114,14 +114,6 @@ export function CompaniesTable({
         </div>
       ),
     }),
-    columnHelper.accessor("plan", {
-      header: "الخطة",
-      cell: ({ getValue }) => {
-        const meta = getPlanMeta(getValue());
-        return <Badge variant="outline" className={cn("rounded-full border-primary/20 bg-primary/5 px-2.5 py-1 text-[13px] font-black text-primary", meta.className)}>{meta.label}</Badge>;
-      },
-      meta: { className: "hidden md:table-cell" },
-    }),
     columnHelper.accessor("isActive", {
       header: "الحالة",
       cell: ({ getValue }) => {
@@ -206,7 +198,7 @@ export function CompaniesTable({
     }),
     columnHelper.accessor("createdAt", {
       header: "الإنشاء",
-      cell: ({ getValue }) => <span className="text-xs font-bold text-muted-foreground/70">{formatDate(getValue())}</span>,
+      cell: ({ getValue }) => <span className="text-xs font-bold text-muted-foreground/70">{formatDateTime(getValue())}</span>,
       meta: { className: "hidden lg:table-cell" },
     }),
     columnHelper.display({
@@ -351,7 +343,6 @@ export function CompaniesTable({
       {isMobile ? (
         <div className="space-y-3">
           {companies.map((company) => {
-            const meta = getPlanMeta(company.plan);
             const funnelSummary = company.funnelSummary;
             const followUp = company.followUp;
             const isExpanded = expandedId === company.id;
@@ -387,7 +378,6 @@ export function CompaniesTable({
                           {company.name}
                         </button>
                         <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                          <Badge variant="outline" className={cn("rounded-full border-primary/20 bg-primary/5 px-2 py-0.5 text-xs font-black text-primary", meta.className)}>{meta.label}</Badge>
                           <Badge variant="outline" className={cn("rounded-full px-2 py-0.5 text-xs font-black", company.isActive ? "border-emerald-200/60 bg-emerald-50 text-emerald-700" : "border-rose-200/60 bg-rose-50 text-rose-700")}>
                             {company.isActive ? "نشطة" : "متوقفة"}
                           </Badge>

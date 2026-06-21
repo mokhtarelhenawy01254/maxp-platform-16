@@ -61,7 +61,7 @@ const SuperAdminCompanyDetails = () => {
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={() => navigate("/super-admin/companies-v2")}>
+                <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={() => navigate(-1)}>
                   <ArrowLeft className="size-4" /> رجوع
                 </Button>
                 <Button type="button" variant="outline" className="h-11 rounded-2xl"

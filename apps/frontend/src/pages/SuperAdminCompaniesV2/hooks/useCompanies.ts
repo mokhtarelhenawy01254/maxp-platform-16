@@ -16,7 +16,6 @@ export function useAdmin() {
 export interface CompaniesFilters {
   search?: string;
   status?: string;
-  plan?: string;
   savedView?: string;
   page?: number;
   pageSize?: number;
@@ -33,7 +32,6 @@ export function useCompanies(filters: CompaniesFilters = {}) {
       const params = new URLSearchParams();
       if (filters.search) params.set("search", filters.search);
       if (filters.status && filters.status !== "ALL") params.set("status", filters.status);
-      if (filters.plan && filters.plan !== "ALL") params.set("plan", filters.plan);
       if (filters.page) params.set("page", String(filters.page));
       if (filters.pageSize) params.set("pageSize", String(filters.pageSize));
       if (filters.savedView && filters.savedView !== "ALL") params.set("savedView", filters.savedView);
