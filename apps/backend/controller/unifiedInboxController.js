@@ -212,8 +212,6 @@ const getUnifiedConversations = async (req, res) => {
                             category: true,
                             unreadCount: true,
                             lastMessageAt: true,
-                            lastMessagePreview: true,
-                            lastMessageIsFromMe: true,
                             isPinned: true,
                             isMuted: true,
                             whatsAppSession: {
@@ -285,7 +283,7 @@ const getUnifiedConversations = async (req, res) => {
             lastMessage: contact.lastMessagePreview || '',
             lastMessageType: 'TEXT',
             lastMessageTime: contact.lastMessageAt,
-            lastMessageIsFromCustomer: !contact.lastMessageIsFromMe,
+            lastMessageIsFromCustomer: contact.lastMessageIsFromMe !== undefined ? !contact.lastMessageIsFromMe : true,
             unreadCount: contact.unreadCount || 0,
             status: 'active',
             assignedTo: null,
