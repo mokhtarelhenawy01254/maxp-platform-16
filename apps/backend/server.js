@@ -713,6 +713,8 @@ app.use(
 app.use("/api/v1/wallet-payment", walletPaymentRoutes);
 app.use("/api/v1/admin/companies", adminCompanyRoutes);
 app.use("/api/v1/admin/whatsapp", adminWhatsAppRoutes);
+const adminWhatsAppInboxRoutes = require("./routes/adminWhatsAppInboxRoutes");
+app.use("/api/v1/admin/whatsapp-inbox", adminWhatsAppInboxRoutes);
 app.use("/api/v1/admin/wallet", adminWalletRoutes);
 app.use("/api/v1/admin/payments", paymentRoutes);
 app.use("/api/v1/admin/invoices", invoiceRoutes);

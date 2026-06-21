@@ -178,13 +178,13 @@ export function computeQuickStats(companies: Company[], currentAdminId: string |
   const automationStats = getCompaniesFollowUpAutomationStats(companies);
 
   return {
-    ...funnelStats,
-    ...followUpStats,
-    ...reminderStats,
-    ...automationStats,
     totalCompanies: companies.length,
     activeCompanies,
     enterpriseCompanies,
     connectedFacebookPages,
+    ...funnelStats,
+    ...followUpStats,
+    ...reminderStats,
+    ...automationStats,
   };
 }

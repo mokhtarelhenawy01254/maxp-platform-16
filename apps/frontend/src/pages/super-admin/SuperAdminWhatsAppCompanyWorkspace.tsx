@@ -6,6 +6,7 @@ import {
   Bell,
   Building2,
   MessageSquareText,
+  MessageSquare,
   Settings2,
   Smartphone,
 } from "lucide-react";
@@ -173,6 +174,15 @@ export default function SuperAdminWhatsAppCompanyWorkspace() {
             >
               <Bell className="size-4" />
               إشعارات التسجيل
+            </Button>
+            <Button
+              nativeButton={false}
+              variant="outline"
+              render={<Link to={`/super-admin/whatsapp/companies/${companyId}/inbox`} />}
+              className="rounded-full"
+            >
+              <MessageSquare className="size-4" />
+              صندوق الوارد
             </Button>
             <Button
               nativeButton={false}

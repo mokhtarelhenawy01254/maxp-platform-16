@@ -731,6 +731,12 @@ const SuperAdminWhatsAppLogs = React.lazy(
 const SuperAdminWhatsAppAutomations = React.lazy(
   () => import("./pages/super-admin/SuperAdminWhatsAppAutomations"),
 );
+const SuperAdminWhatsAppCompanyInbox = React.lazy(
+  () => import("./pages/super-admin/SuperAdminWhatsAppCompanyInbox"),
+);
+const SuperAdminWhatsAppCompanyChat = React.lazy(
+  () => import("./pages/super-admin/SuperAdminWhatsAppCompanyChat"),
+);
 
 const SuperAdminServerUsage = React.lazy(
   () => import("./pages/super-admin/SuperAdminServerUsage"),
@@ -1614,6 +1620,30 @@ const AppContent = () => {
               element={
                 <Layout>
                   <SuperAdminWhatsAppAutomations />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/whatsapp/companies/:companyId/inbox"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminWhatsAppCompanyInbox />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/whatsapp/companies/:companyId/inbox/:sessionId"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminWhatsAppCompanyInbox />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/whatsapp/companies/:companyId/chat/:conversationId"
+              element={
+                <Layout fullWidth>
+                  <SuperAdminWhatsAppCompanyChat />
                 </Layout>
               }
             />
