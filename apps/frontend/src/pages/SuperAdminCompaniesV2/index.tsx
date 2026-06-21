@@ -329,7 +329,6 @@ export default function SuperAdminCompaniesV2() {
   const [savedView, setSavedView] = useState("ALL");
   const [status, setStatus] = useState("ALL");
   const [plan, setPlan] = useState("ALL");
-  const [funnelStage, setFunnelStage] = useState("ALL");
   const [sort, setSort] = useState(DEFAULT_SORT);
   const [rowsPerPage, setRowsPerPage] = useState("10");
   const [currentPage, setCurrentPage] = useState(1);
@@ -391,16 +390,23 @@ export default function SuperAdminCompaniesV2() {
       if (q && !c.name?.toLowerCase().includes(q) && !c.email?.toLowerCase().includes(q) && !c.phone?.toLowerCase().includes(q) && !c.website?.toLowerCase().includes(q)) return false;
       if (status !== "ALL") { if (status === "ACTIVE" ? !c.isActive : c.isActive) return false; }
       if (plan !== "ALL" && String(c.plan) !== String(plan)) return false;
-      if (funnelStage !== "ALL" && c.funnelSummary?.stageKey !== funnelStage) return false;
       if (savedView !== "ALL") {
-        if (savedView === "FOLLOW_UP_NOW" && !c.funnelStaleStatus?.needsFollowUpNow) return false;
+        if (savedView === "FOLLOW_UP_NOW") {
+          const fu = c.followUp;
+          const isActionable = fu && ['pending', 'contacted', 'waiting'].includes(fu.status) && fu.assignedOwner?.id;
+          const isOverdueOrUnscheduled = !fu?.nextActionAt || new Date(fu.nextActionAt) <= new Date();
+          if (!isActionable || !isOverdueOrUnscheduled) return false;
+        }
         if (savedView === "MY_TODAY" && !(c.followUpReminder?.isMine && c.followUpReminder?.needsFollowUpToday)) return false;
         if (savedView === "ESCALATION_DUE" && !(c.followUpAutomation?.needsEscalation || c.followUpAutomation?.needsUrgentEscalation)) return false;
-        if (savedView === "STALE_72H" && !c.funnelStaleStatus?.isStale72h) return false;
+        if (savedView === "STALE_72H") {
+          if (c.followUp?.assignedOwner?.id) return false;
+          if (!c.createdAt || (Date.now() - new Date(c.createdAt).getTime()) < 72 * 60 * 60 * 1000) return false;
+        }
       }
       return true;
     });
-  }, [enrichedCompanies, search, status, plan, funnelStage, savedView]);
+  }, [enrichedCompanies, search, status, plan, savedView]);
 
   const sortedCompanies = useMemo(() => sortCompanies(filteredCompanies, sort), [filteredCompanies, sort]);
   const pageSize = Number(rowsPerPage) || 10;
@@ -408,27 +414,25 @@ export default function SuperAdminCompaniesV2() {
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const paginatedCompanies = useMemo(() => sortedCompanies.slice((safeCurrentPage - 1) * pageSize, safeCurrentPage * pageSize), [pageSize, safeCurrentPage, sortedCompanies]);
 
-  useEffect(() => { setCurrentPage(1); }, [search, savedView, status, plan, funnelStage, sort, rowsPerPage]);
+  useEffect(() => { setCurrentPage(1); }, [search, savedView, status, plan, sort, rowsPerPage]);
   useEffect(() => { if (currentPage > totalPages) setCurrentPage(totalPages); }, [currentPage, totalPages]);
 
   const visibleIds = paginatedCompanies.map((c) => c.id);
   const isAllVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
   const isSomeVisibleSelected = visibleIds.some((id) => selectedIds.includes(id)) && !isAllVisibleSelected;
-  const filterCount = [status !== "ALL", plan !== "ALL", funnelStage !== "ALL"].filter(Boolean).length;
+  const filterCount = [status !== "ALL", plan !== "ALL"].filter(Boolean).length;
   const activeFilterLabels = [
     status !== "ALL" ? (status === "ACTIVE" ? "نشطة" : "متوقفة") : null,
     plan !== "ALL" ? PLAN_OPTIONS.find((o) => o.value === plan)?.label : null,
-    funnelStage !== "ALL" ? funnelStage : null,
   ].filter(Boolean);
 
   // ---- Handlers ----
   const handleOpenView = useCallback((view: string) => {
     setSavedView(view);
-    if (view !== "ALL") setSort("attention:desc");
   }, []);
 
   const handleClearFilters = useCallback(() => {
-    setSearch(""); setSavedView("ALL"); setStatus("ALL"); setPlan("ALL"); setFunnelStage("ALL"); setSort(DEFAULT_SORT);
+    setSearch(""); setSavedView("ALL"); setStatus("ALL"); setPlan("ALL"); setSort(DEFAULT_SORT);
   }, []);
 
   const handleOpenDetails = useCallback((company: Company) => navigate(`/super-admin/companies/${company.id}`), [navigate]);
@@ -752,7 +756,7 @@ export default function SuperAdminCompaniesV2() {
             )}
 
             {/* Stats cards */}
-            <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
               <button
                 type="button"
                 onClick={handleClearFilters}
@@ -768,22 +772,6 @@ export default function SuperAdminCompaniesV2() {
                   </div>
                 </div>
                 <p className="mt-1 text-xs font-semibold text-emerald-600">{quickStats.activeCompanies} نشطة</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => { handleClearFilters(); setFunnelStage("activated"); }}
-                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-emerald-400/60 hover:bg-emerald-50/30 hover:shadow-md dark:bg-card"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
-                    <CheckCircle2 className="size-4" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-black text-foreground">{quickStats.activated}</p>
-                    <p className="text-xs font-bold text-muted-foreground">مفعلة بالكامل</p>
-                  </div>
-                </div>
-                <p className="mt-1 text-xs font-semibold text-emerald-600">وصلت للإطلاق الأول</p>
               </button>
               <button
                 type="button"
@@ -823,16 +811,11 @@ export default function SuperAdminCompaniesV2() {
                   <CompanyFilters
                   collapsed={!filterOpen}
                   search={search} onSearchChange={setSearch}
-                  savedView={savedView} onSavedViewChange={handleOpenView}
                   status={status} onStatusChange={setStatus}
-                  plan={plan} onPlanChange={setPlan}
-                  funnelStage={funnelStage} onFunnelStageChange={setFunnelStage}
                   sort={sort} onSortChange={setSort}
                   rowsPerPage={rowsPerPage} onRowsPerPageChange={setRowsPerPage}
                   onClearAll={handleClearFilters}
-                  stats={quickStats} totalResults={sortedCompanies.length}
                   filterCount={filterCount} activeFilterLabels={activeFilterLabels}
-                  onOpenView={handleOpenView}
                   facebookLookup={{
                     query: fbQuery, onQueryChange: setFbQuery,
                     onSearch: handleFbSearch, onClear: handleFbClear,

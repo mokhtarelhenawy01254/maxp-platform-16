@@ -248,6 +248,10 @@ async function deleteAgentTemplate(slug) {
   return request('DELETE', `/admin/agent-templates/${encodeURIComponent(slug)}`);
 }
 
+async function bulkUpdateAgentTemplatesStatus(slugs, isActive) {
+  return request('PATCH', '/admin/agent-templates/bulk-status', { slugs, is_active: isActive });
+}
+
 async function listDepartments(companyId) {
   const qs = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
   return request('GET', `/admin/departments${qs}`) || [];
@@ -286,6 +290,7 @@ module.exports = {
   createAgentTemplate,
   updateAgentTemplate,
   deleteAgentTemplate,
+  bulkUpdateAgentTemplatesStatus,
   listDepartments,
   listAgents,
   chatWithAgent,

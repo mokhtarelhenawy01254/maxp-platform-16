@@ -1,4 +1,4 @@
-import type { Company, QuickStats, FunnelSummary, LastActivity, StaleStatus, InterventionAction, FollowUpState, FollowUpReminder, FollowUpAutomation } from "./types";
+import type { Company, QuickStats } from "./types";
 
 export function extractErrorMessage(error: unknown, fallback: string): string {
   const err = error as Record<string, unknown>;
@@ -98,18 +98,6 @@ export function sortCompanies(companies: Company[], sortValue: string): Company[
   const [sortKey, sortDirection = "asc"] = sortValue.split(":");
   return [...companies].sort((a, b) => {
     switch (sortKey) {
-      case "attention":
-        return compareValues(
-          a.funnelAttentionScore ?? 0,
-          b.funnelAttentionScore ?? 0,
-          sortDirection,
-        );
-      case "lastActivity":
-        return compareValues(
-          a.funnelLastActivity?.sortValue ?? "",
-          b.funnelLastActivity?.sortValue ?? "",
-          sortDirection,
-        );
       case "name":
         return compareValues(a.name, b.name, sortDirection);
       case "users":
@@ -128,42 +116,32 @@ export function getDefaultFollowUpScheduleValue(status: string): string {
 }
 
 import {
-  getCompaniesFunnelStats,
-  getCompaniesFunnelFollowUpStats,
-  getCompanyFunnelAttentionScore,
-  getCompanyFunnelLastActivity,
-  getCompanyFunnelSummary,
-  getCompanyFunnelStaleStatus,
-  getCompanyInterventionAction,
-} from "../../utils/companyFunnelAnalytics";
-import {
-  getCompaniesFollowUpAutomationStats,
   getCompanyFollowUpState,
   getCompanyFollowUpAutomationState,
   getCompanyFollowUpReminderState,
-  getCompaniesFollowUpReminderStats,
 } from "../../utils/companyFollowUp";
+
+const FOLLOW_UP_ACTIONABLE_STATUSES = new Set(["pending", "contacted", "waiting"]);
+
+function computeFollowUpNow(followUp: ReturnType<typeof getCompanyFollowUpState>): boolean {
+  const isActionable = !!followUp.assignedOwner.id && FOLLOW_UP_ACTIONABLE_STATUSES.has(followUp.status);
+  if (!isActionable) return false;
+  const nextActionAt = followUp.nextActionAt ? new Date(followUp.nextActionAt) : null;
+  return !nextActionAt || nextActionAt.getTime() <= Date.now();
+}
 
 export function enrichCompanies(companies: Company[], currentAdminId: string | null): Company[] {
   return companies.map((company) => {
-    const funnelSummary = getCompanyFunnelSummary(company);
     const followUp = getCompanyFollowUpState(company);
-    const funnelStaleStatus = getCompanyFunnelStaleStatus(funnelSummary);
+    const needsFollowUpNow = computeFollowUpNow(followUp);
+    const createdAt = company.createdAt ? new Date(company.createdAt) : null;
+    const isStale72h = !followUp.assignedOwner.id && !!createdAt && (Date.now() - createdAt.getTime()) > 72 * 60 * 60 * 1000;
+    const staleStatus = { needsFollowUpNow, isStale72h };
     return {
       ...company,
-      funnelSummary,
-      funnelLastActivity: getCompanyFunnelLastActivity(funnelSummary),
-      funnelStaleStatus,
-      funnelAttentionScore: getCompanyFunnelAttentionScore(funnelSummary),
-      funnelIntervention: getCompanyInterventionAction(funnelSummary),
       followUp,
-      followUpReminder: getCompanyFollowUpReminderState(followUp, {
-        currentAdminId: currentAdminId || null,
-        staleStatus: funnelStaleStatus,
-      }),
-      followUpAutomation: getCompanyFollowUpAutomationState(followUp, {
-        staleStatus: funnelStaleStatus,
-      }),
+      followUpReminder: getCompanyFollowUpReminderState(followUp, { currentAdminId: currentAdminId || null, staleStatus } as Parameters<typeof getCompanyFollowUpReminderState>[1]),
+      followUpAutomation: getCompanyFollowUpAutomationState(followUp, { staleStatus } as Parameters<typeof getCompanyFollowUpAutomationState>[1]),
     };
   });
 }
@@ -172,19 +150,29 @@ export function computeQuickStats(companies: Company[], currentAdminId: string |
   const activeCompanies = companies.filter((c) => c.isActive).length;
   const enterpriseCompanies = companies.filter((c) => c.plan === "ENTERPRISE").length;
   const connectedFacebookPages = companies.reduce((s, c) => s + getCount(c, "facebookPages"), 0);
-  const funnelStats = getCompaniesFunnelStats(companies);
-  const followUpStats = getCompaniesFunnelFollowUpStats(companies);
-  const reminderStats = getCompaniesFollowUpReminderStats(companies, currentAdminId || null);
+  let followUpNow = 0, stale72h = 0;
+  for (const c of companies) {
+    const fu = c.followUp;
+    if (!fu) continue;
+    if (computeFollowUpNow(fu)) followUpNow++;
+    const isActionable = !!fu.assignedOwner?.id && FOLLOW_UP_ACTIONABLE_STATUSES.has(fu.status);
+    if (!isActionable && c.createdAt) {
+      const ct = new Date(c.createdAt);
+      if (Date.now() - ct.getTime() > 72 * 60 * 60 * 1000) stale72h++;
+    }
+  }
   const automationStats = getCompaniesFollowUpAutomationStats(companies);
+  const reminderStats = getCompaniesFollowUpReminderStats(companies, currentAdminId || null);
 
   return {
     totalCompanies: companies.length,
     activeCompanies,
     enterpriseCompanies,
     connectedFacebookPages,
-    ...funnelStats,
-    ...followUpStats,
-    ...reminderStats,
-    ...automationStats,
+    followUpNow,
+    escalationDue: automationStats.escalationDue,
+    urgentEscalationDue: automationStats.urgentEscalationDue,
+    stale72h,
+    myDueToday: reminderStats.myDueToday,
   };
 }

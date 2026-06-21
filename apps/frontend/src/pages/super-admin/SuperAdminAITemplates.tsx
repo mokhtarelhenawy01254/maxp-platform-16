@@ -5,8 +5,9 @@ import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import { Checkbox } from "../../components/ui/checkbox";
 import { apiClient } from "../../services/apiClient";
-import { Bot, Search, Eye, Pencil, Copy, Send, Trash2, ChevronDown, ChevronUp, Plus, Layers, ExternalLink } from "lucide-react";
+import { Bot, Search, Eye, Pencil, Copy, Send, Trash2, ChevronDown, ChevronUp, Plus, Layers, ExternalLink, CheckSquare, CheckCheck, X } from "lucide-react";
 import {
   CreateDialog, EditDialog, PreviewDialog, ApplyDialog, DeleteDialog, DuplicateDialog,
   ROLE_ICONS, ROLE_COLORS, toneColors, TemplateItem,
@@ -24,6 +25,8 @@ const SuperAdminAITemplates: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState<string>("");
   const [industryFilter, setIndustryFilter] = useState<string>("");
   const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
+  const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   const [showCreate, setShowCreate] = useState(false);
   const [editTarget, setEditTarget] = useState<TemplateItem | null>(null);
@@ -56,6 +59,37 @@ const SuperAdminAITemplates: React.FC = () => {
     totalTools: templates.reduce((s, t) => s + t.toolsCount, 0),
     totalSkills: templates.reduce((s, t) => s + t.skillsCount, 0),
     withDailyBudget: templates.filter(t => t.budget?.dailyUsd).length,
+  };
+
+  const filteredSlugs = new Set(filtered.map(t => t.slug));
+  const allFilteredSelected = filtered.length > 0 && filtered.every(t => selectedSlugs.has(t.slug));
+
+  const toggleSelect = (slug: string) => {
+    setSelectedSlugs(prev => {
+      const next = new Set(prev);
+      if (next.has(slug)) next.delete(slug); else next.add(slug);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) {
+      setSelectedSlugs(prev => { const next = new Set(prev); filteredSlugs.forEach(s => next.delete(s)); return next; });
+    } else {
+      setSelectedSlugs(prev => { const next = new Set(prev); filteredSlugs.forEach(s => next.add(s)); return next; });
+    }
+  };
+
+  const handleBulkStatus = async (isActive: boolean) => {
+    const slugs = [...selectedSlugs];
+    if (!slugs.length) return;
+    setBulkUpdating(true);
+    try {
+      await apiClient.patch("/super-admin/agents/bulk-status", { slugs, isActive });
+      await fetchTemplates();
+      setSelectedSlugs(new Set());
+    } catch { /* toast handled by interceptor */ }
+    finally { setBulkUpdating(false); }
   };
 
   if (loading) return <div className="flex justify-center items-center h-[60vh]"><LoadingSpinner size="lg" /></div>;
@@ -102,6 +136,25 @@ const SuperAdminAITemplates: React.FC = () => {
 
       {error && <Alert variant="destructive" className="mx-4 mt-2 shrink-0"><AlertDescription>{error}</AlertDescription><div className="mt-1"><Button variant="outline" size="sm" onClick={fetchTemplates}>إعادة المحاولة</Button></div></Alert>}
 
+      {/* Bulk action bar */}
+      {selectedSlugs.size > 0 && (
+        <div className="px-4 py-2 bg-primary/5 border-b border-primary/20 shrink-0 flex items-center gap-3">
+          <CheckCheck className="size-4 text-primary" />
+          <span className="text-sm font-medium">{selectedSlugs.size} قالب محدد</span>
+          <div className="flex gap-2 mr-auto">
+            <Button variant="outline" size="sm" disabled={bulkUpdating} onClick={() => handleBulkStatus(true)}>
+              <CheckSquare className="size-3.5 ml-1" /> تفعيل
+            </Button>
+            <Button variant="outline" size="sm" disabled={bulkUpdating} onClick={() => handleBulkStatus(false)}>
+              <X className="size-3.5 ml-1" /> إيقاف
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setSelectedSlugs(new Set())}>
+              إلغاء التحديد
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="flex-1 overflow-auto p-4">
         {filtered.length === 0 ? (
@@ -114,7 +167,10 @@ const SuperAdminAITemplates: React.FC = () => {
           <div className="rounded-xl border bg-card overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-muted/30 text-xs text-muted-foreground">
+                  <tr className="border-b bg-muted/30 text-xs text-muted-foreground">
+                  <th className="p-3 w-10">
+                    <Checkbox checked={allFilteredSelected} onCheckedChange={toggleSelectAll} aria-label="تحديد الكل" />
+                  </th>
                   <th className="text-right p-3 font-medium">القالب</th>
                   <th className="text-right p-3 font-medium">الدور</th>
                   <th className="text-right p-3 font-medium">الحالة</th>
@@ -132,6 +188,9 @@ const SuperAdminAITemplates: React.FC = () => {
                       className="border-b last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
                       onClick={() => setExpandedSlug(expandedSlug === t.slug ? null : t.slug)}
                     >
+                      <td className="p-3" onClick={e => e.stopPropagation()}>
+                        <Checkbox checked={selectedSlugs.has(t.slug)} onCheckedChange={() => toggleSelect(t.slug)} aria-label={`تحديد ${t.name}`} />
+                      </td>
                       <td className="p-3">
                         <div className="flex items-center gap-2">
                           <span className="text-2xl">{t.icon || ROLE_ICONS[t.role] || "🤖"}</span>
@@ -181,7 +240,7 @@ const SuperAdminAITemplates: React.FC = () => {
                     </tr>
                     {expandedSlug === t.slug && (
                       <tr className="bg-muted/20">
-                        <td colSpan={8} className="p-3">
+                        <td colSpan={9} className="p-3">
                           <div className="flex gap-4">
                             {t.soulPreview && <div className="flex-1"><p className="text-[0.7rem] font-bold text-muted-foreground mb-1">لمحة عن الشخصية</p><p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap line-clamp-4 dir-rtl">{t.soulPreview}</p></div>}
                             {t.personaMeta?.tone && (

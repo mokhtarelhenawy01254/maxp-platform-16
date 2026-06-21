@@ -1469,3 +1469,27 @@ async def delete_agent_template(
     await session.delete(template)
     await session.commit()
     return {"success": True, "deleted": slug}
+
+
+@router.patch("/agent-templates/bulk-status")
+async def bulk_update_agent_template_status(
+    body: dict[str, Any],
+    session: SessionDep,
+) -> dict[str, Any]:
+    """Bulk activate/deactivate agent templates."""
+    slugs = body.get("slugs", [])
+    is_active = body.get("is_active", True)
+    if not slugs:
+        raise HTTPException(status_code=400, detail="slugs list is required")
+    from src.agents.loader import get_template
+    updated = []
+    not_found = []
+    for slug in slugs:
+        template = await get_template(slug, session)
+        if template:
+            template.is_active = is_active
+            updated.append(slug)
+        else:
+            not_found.append(slug)
+    await session.commit()
+    return {"success": True, "updated": updated, "not_found": not_found}

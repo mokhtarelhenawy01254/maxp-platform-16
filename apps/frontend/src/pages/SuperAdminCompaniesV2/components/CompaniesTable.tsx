@@ -17,7 +17,7 @@ import {
 } from "../../../components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/ui/tooltip";
 import { cn } from "../../../lib/utils";
-import { getCount, getPlanMeta, formatDate } from "../utils";
+import { getCount, getPlanMeta, formatDateTime } from "../utils";
 import type { Company, QuickStats } from "../types";
 
 const columnHelper = createColumnHelper<Company>();
@@ -143,56 +143,6 @@ export function CompaniesTable({
       meta: { className: "hidden md:table-cell" },
     }),
     columnHelper.display({
-      id: "funnel",
-      header: "الرحلة",
-      cell: ({ row }) => {
-        const company = row.original;
-        const funnelSummary = company.funnelSummary;
-        const followUp = company.followUp;
-        if (!funnelSummary) return null;
-        return (
-          <div className="space-y-1.5 min-w-[180px]">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className={cn("rounded-full px-2.5 py-0.5 text-xs font-black", funnelSummary.badgeClassName)}>
-                {funnelSummary.label}
-              </Badge>
-              <span className="text-xs font-black text-muted-foreground">{funnelSummary.progressLabel}</span>
-            </div>
-            {followUp ? (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <div className={cn("size-2 rounded-full", followUp.statusMeta.className.replace("bg-", "bg-").replace("text-", "bg-"))} />
-                <span className="text-xs font-bold text-foreground/80">{followUp.statusMeta.label}</span>
-                <span className="text-xs text-muted-foreground">•</span>
-                <span className="text-xs font-medium text-muted-foreground">{followUp.assignedOwner.label || "بدون مسؤول"}</span>
-              </div>
-            ) : null}
-          </div>
-        );
-      },
-      meta: { className: "hidden lg:table-cell" },
-    }),
-    columnHelper.display({
-      id: "lastActivity",
-      header: "آخر نشاط",
-      cell: ({ row }) => {
-        const act = row.original.funnelLastActivity;
-        const stale = row.original.funnelStaleStatus;
-        if (!act) return null;
-        return (
-          <div className="space-y-1 min-w-[140px]">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[13px] font-black text-foreground">{act.relativeLabel}</span>
-              {stale?.isPending ? (
-                <div className={cn("size-2 animate-pulse rounded-full", stale.badgeClassName.replace("border-", "bg-").replace("text-", "bg-"))} />
-              ) : null}
-            </div>
-            <p className="text-xs font-medium text-muted-foreground line-clamp-1">{act.label}</p>
-          </div>
-        );
-      },
-      meta: { className: "hidden lg:table-cell" },
-    }),
-    columnHelper.display({
       id: "stats",
       header: "إحصائيات",
       cell: ({ row }) => (
@@ -206,7 +156,7 @@ export function CompaniesTable({
     }),
     columnHelper.accessor("createdAt", {
       header: "الإنشاء",
-      cell: ({ getValue }) => <span className="text-xs font-bold text-muted-foreground/70">{formatDate(getValue())}</span>,
+      cell: ({ getValue }) => <span className="text-xs font-bold text-muted-foreground/70">{formatDateTime(getValue())}</span>,
       meta: { className: "hidden lg:table-cell" },
     }),
     columnHelper.display({
@@ -352,11 +302,10 @@ export function CompaniesTable({
         <div className="space-y-3">
           {companies.map((company) => {
             const meta = getPlanMeta(company.plan);
-            const funnelSummary = company.funnelSummary;
             const followUp = company.followUp;
             const isExpanded = expandedId === company.id;
-            const attention = company.funnelStaleStatus?.needsFollowUpNow || company.followUpAutomation?.needsEscalation || company.followUpAutomation?.needsUrgentEscalation;
-            const critical = company.funnelStaleStatus?.isStale72h || company.followUpAutomation?.needsUrgentEscalation;
+            const attention = company.followUpAutomation?.needsEscalation || company.followUpAutomation?.needsUrgentEscalation;
+            const critical = company.followUpAutomation?.needsUrgentEscalation;
             return (
               <div key={company.id} className={cn(
                 "rounded-lg border bg-white shadow-sm dark:bg-card",
@@ -391,11 +340,6 @@ export function CompaniesTable({
                           <Badge variant="outline" className={cn("rounded-full px-2 py-0.5 text-xs font-black", company.isActive ? "border-emerald-200/60 bg-emerald-50 text-emerald-700" : "border-rose-200/60 bg-rose-50 text-rose-700")}>
                             {company.isActive ? "نشطة" : "متوقفة"}
                           </Badge>
-                          {funnelSummary ? (
-                            <Badge variant="outline" className={cn("rounded-full px-2 py-0.5 text-xs font-black", funnelSummary.badgeClassName)}>
-                              {funnelSummary.label}
-                            </Badge>
-                          ) : null}
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
@@ -495,8 +439,8 @@ export function CompaniesTable({
               <TableBody>
                 {table.getRowModel().rows.map((row, idx) => {
                   const company = row.original;
-                  const attention = company.funnelStaleStatus?.needsFollowUpNow || company.followUpAutomation?.needsEscalation || company.followUpAutomation?.needsUrgentEscalation;
-                  const critical = company.funnelStaleStatus?.isStale72h || company.followUpAutomation?.needsUrgentEscalation;
+                   const attention = company.followUpAutomation?.needsEscalation || company.followUpAutomation?.needsUrgentEscalation;
+                   const critical = company.followUpAutomation?.needsUrgentEscalation;
                   return (
                   <React.Fragment key={row.id}>
                     <TableRow
@@ -605,28 +549,13 @@ function ExpandedRowContent({
   onAddEmployee: (c: Company) => void;
   onRunFollowUpAction: (c: Company, a: "remind" | "escalate") => void;
 }) {
-  const funnelSummary = company.funnelSummary;
   const followUp = company.followUp;
   const followUpAuto = company.followUpAutomation;
-  const stale = company.funnelStaleStatus;
 
   return (
     <div className="flex flex-wrap items-start gap-6">
-      {/* Left: funnel & activity summary */}
+      {/* Left: follow-up status */}
       <div className="min-w-[200px] flex-1 space-y-3">
-        {funnelSummary ? (
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">مرحلة الرحلة</p>
-            <div className="mt-1 flex items-center gap-2">
-              <Badge variant="outline" className={cn("rounded-full px-2.5 py-0.5 text-xs font-black", funnelSummary.badgeClassName)}>
-                {funnelSummary.label}
-              </Badge>
-              <span className="text-xs font-bold text-muted-foreground/80">{funnelSummary.progressLabel}</span>
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground/70">{funnelSummary.hint}</p>
-          </div>
-        ) : null}
-
         {followUp ? (
           <div>
             <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">حالة المتابعة</p>
@@ -639,10 +568,10 @@ function ExpandedRowContent({
           </div>
         ) : null}
 
-        {stale?.isStale72h ? (
+        {followUpAuto?.needsUrgentEscalation || followUpAuto?.needsEscalation ? (
           <div className="rounded-lg border border-rose-200/60 bg-rose-50/50 px-3 py-2 text-xs font-bold text-rose-700 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-300">
             <AlertTriangle className="ml-1.5 inline size-3" />
-            {stale.label || "متوقفة منذ أكثر من 72 ساعة"}
+            {followUpAuto?.needsUrgentEscalation ? "حرجة: تحتاج تصعيدًا فوريًا" : "مستحقة أكثر من 24 ساعة — تحتاج تصعيدًا"}
           </div>
         ) : null}
       </div>

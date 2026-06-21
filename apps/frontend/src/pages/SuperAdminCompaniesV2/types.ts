@@ -15,43 +15,9 @@ export interface Company {
   isActive: boolean;
   createdAt: string;
   _count?: CompanyCount;
-  funnelSummary?: FunnelSummary;
-  funnelLastActivity?: LastActivity;
-  funnelStaleStatus?: StaleStatus;
-  funnelAttentionScore?: number;
-  funnelIntervention?: InterventionAction;
   followUp?: FollowUpState;
   followUpReminder?: FollowUpReminder;
   followUpAutomation?: FollowUpAutomation;
-}
-
-export interface FunnelSummary {
-  stageKey: string;
-  label: string;
-  progressLabel: string;
-  hint: string;
-  badgeClassName: string;
-}
-
-export interface LastActivity {
-  label: string;
-  relativeLabel: string;
-  sortValue: string;
-}
-
-export interface StaleStatus {
-  label: string;
-  badgeClassName: string;
-  isPending: boolean;
-  needsFollowUpNow: boolean;
-  isStale72h: boolean;
-}
-
-export interface InterventionAction {
-  mode: "details" | "redirect";
-  path: string | null;
-  label: string;
-  hint: string;
 }
 
 export interface FollowUpState {
@@ -121,12 +87,6 @@ export interface QuickStats {
   activeCompanies: number;
   enterpriseCompanies: number;
   connectedFacebookPages: number;
-  activated: number;
-  trackedCompanies: number;
-  untrackedCompanies: number;
-  registeredNoStart: number;
-  onboardingInProgress: number;
-  activationInProgress: number;
   followUpNow: number;
   escalationDue: number;
   urgentEscalationDue: number;
@@ -139,7 +99,6 @@ export interface FilterState {
   savedView: string;
   status: string;
   plan: string;
-  funnelStage: string;
   sort: string;
 }
 

@@ -118,21 +118,18 @@ async def seed_templates(session: AsyncSession) -> list[AgentTemplate]:
         template = existing.scalar_one_or_none()
 
         if template:
-            for key, value in data.items():
-                setattr(template, key, value)
-            logger.debug("Template updated", slug=data["slug"])
+            logger.debug("Template exists, skipping seed update", slug=data["slug"])
         else:
             template = AgentTemplate(**data)
             session.add(template)
             seeded.append(template)
             logger.debug("Template created", slug=data["slug"])
 
+    await session.commit()
     if seeded:
-        await session.commit()
-        logger.info("Seeded agent templates", count=len(seeded), slugs=[t.slug for t in seeded])
+        logger.info("New templates seeded", count=len(seeded), slugs=[t.slug for t in seeded])
     else:
-        await session.commit()
-        logger.info("Templates up-to-date, no new templates seeded")
+        logger.info("All templates already exist in DB, skipped")
 
     return seeded
 

@@ -17,15 +17,6 @@ export const PLAN_OPTIONS = [
   { value: "ENTERPRISE", label: "مؤسسي" },
 ] as const;
 
-export const FUNNEL_STAGE_FILTERS = [
-  { value: "ALL", label: "كل الرحلات" },
-  { value: "registered_no_start", label: "سجل ولم يبدأ" },
-  { value: "onboarding_in_progress", label: "Onboarding جارٍ" },
-  { value: "activation_in_progress", label: "التفعيل جارٍ" },
-  { value: "activated", label: "مفعلة" },
-  { value: "untracked", label: "بدون Funnel" },
-] as const;
-
 export const FOLLOW_UP_SAVED_VIEWS = [
   { value: "ALL", label: "كل الشركات" },
   { value: "FOLLOW_UP_NOW", label: "تحتاج متابعة الآن" },
@@ -47,9 +38,6 @@ export const EMPLOYEE_ROLE_OPTIONS = [
 ] as const;
 
 export const SORT_OPTIONS = [
-  { value: "attention:desc", label: "الأكثر احتياجًا للمتابعة" },
-  { value: "lastActivity:asc", label: "الأقدم نشاطًا أولًا" },
-  { value: "lastActivity:desc", label: "الأحدث نشاطًا أولًا" },
   { value: "createdAt:desc", label: "الأحدث أولًا" },
   { value: "createdAt:asc", label: "الأقدم أولًا" },
   { value: "name:asc", label: "الاسم من أ إلى ي" },

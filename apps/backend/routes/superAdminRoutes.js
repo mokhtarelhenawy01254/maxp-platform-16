@@ -723,6 +723,20 @@ router.put("/agents/:id", async (req, res) => {
   }
 });
 
+// PATCH /agents/bulk-status — bulk activate/deactivate templates
+router.patch("/agents/bulk-status", async (req, res) => {
+  try {
+    const { slugs, isActive } = req.body || {};
+    if (!Array.isArray(slugs) || slugs.length === 0)
+      return res.status(400).json({ success: false, error: 'slugs array is required' });
+    const result = await aiServiceAdminClient.bulkUpdateAgentTemplatesStatus(slugs, isActive);
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('[SA-AGENTS] bulk-status error:', error.message);
+    return res.status(500).json({ success: false, error: 'فشل تحديث الحالة الجماعي' });
+  }
+});
+
 // DELETE /agents/:id — delete agent template
 router.delete("/agents/:id", async (req, res) => {
   try {

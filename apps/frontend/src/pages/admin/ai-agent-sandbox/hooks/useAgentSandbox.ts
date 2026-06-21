@@ -344,6 +344,7 @@ export function useAgentSandbox() {
           sandboxApi.getTools(),
         ]);
         if (cancelled) return;
+        let preferredAgent: AgentConfig | null = null;
         if (agentsRes.status === "fulfilled" && agentsRes.value.agents?.length) {
           const mappedAgents = agentsRes.value.agents.map(mapAgentFromBackend);
           setAgents(mappedAgents);
@@ -362,7 +363,7 @@ export function useAgentSandbox() {
           }));
           setSkills(derivedSkills);
           
-          const preferredAgent =
+          preferredAgent =
             mappedAgents.find((agent) => agent.role === "FACEBOOK_SALES_SUPPORT")
             || mappedAgents[0]
             || null;
@@ -375,7 +376,12 @@ export function useAgentSandbox() {
           if (mapped.length) {
             setModels(mapped);
             const selectableModels = mapped.filter((m) => m.isSelectable !== false && m.keyIsActive !== false);
-            const initialModel = selectableModels.find((m) => m.isPreferred) || selectableModels[0];
+            // ponytail: prefer agent's template model over first preferred from DB
+            let initialModel = null;
+            if (preferredAgent?.defaultModel) {
+              initialModel = selectableModels.find((m) => m.model === preferredAgent.defaultModel);
+            }
+            initialModel = initialModel || selectableModels.find((m) => m.isPreferred) || selectableModels[0];
             if (initialModel) {
               setSelectedModel(initialModel.model);
               setSelectedProvider(initialModel.provider);
@@ -423,6 +429,21 @@ export function useAgentSandbox() {
       loadSessionMessages(sessions[0].id);
     }
   }, [activeSessionId, sessions, loadSessionMessages]);
+
+  // ponytail: auto-select model from agent's template config when agent changes
+  useEffect(() => {
+    if (!selectedAgentId || agents.length === 0 || models.length === 0) return;
+    const agent = agents.find((a) => a.id === selectedAgentId);
+    if (!agent?.defaultModel) return;
+    const match = models.find(
+      (m) => m.model === agent.defaultModel && m.isSelectable !== false && m.keyIsActive !== false
+    );
+    if (match) {
+      setSelectedModel(match.model);
+      setSelectedProvider(match.provider);
+      setSelectedKeyId(match.keyId || null);
+    }
+  }, [selectedAgentId, agents, models]);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) || null;
   const selectedAgent = agents.find((a) => a.id === selectedAgentId) || agents[0] || null;
