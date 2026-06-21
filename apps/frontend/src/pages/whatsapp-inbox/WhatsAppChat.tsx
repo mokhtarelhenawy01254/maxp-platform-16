@@ -84,8 +84,18 @@ type ConversationApiResponse = {
 
 const statusOptions = ['NEW', 'QUEUED', 'ASSIGNED', 'ACTIVE', 'PENDING', 'WAITING_CUSTOMER', 'ESCALATED', 'CLOSED'];
 
-const WhatsAppChat: React.FC = () => {
+interface WhatsAppChatProps {
+  companyId?: string;
+  superAdminMode?: boolean;
+}
+
+const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }) => {
   const { conversationId } = useParams();
+  const apiBase = superAdminMode ? '/api/v1/admin/whatsapp-inbox' : '/api/v1/whatsapp-inbox';
+  const apiParams = useMemo(
+    () => superAdminMode && companyId ? { params: { companyId } } : undefined,
+    [superAdminMode, companyId],
+  );
   const navigate = useNavigate();
   const [conversation, setConversation] = useState<ConversationDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,18 +126,18 @@ const WhatsAppChat: React.FC = () => {
     }
 
     try {
-      const response = await apiClient.get<ConversationApiResponse>(`/api/v1/whatsapp-inbox/conversations/${conversationId}`);
+      const response = await apiClient.get<ConversationApiResponse>(`${apiBase}/conversations/${conversationId}`, apiParams);
       if (response.data?.success) {
         setConversation(response.data.conversation);
       }
     } catch (error: any) {
       if (error?.response?.status === 403 || error?.response?.status === 404) {
-        navigate('/whatsapp-inbox');
+        navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/inbox` : '/whatsapp-inbox');
       }
     } finally {
       setLoading(false);
     }
-  }, [conversationId, navigate]);
+  }, [conversationId, navigate, apiBase, apiParams, superAdminMode, companyId]);
 
   const fetchCustomerOrders = useCallback(async (customerId: string) => {
     if (!customerId) return;
@@ -181,7 +191,7 @@ const WhatsAppChat: React.FC = () => {
     if (!draft.trim() || !conversationId) return;
     setSaving(true);
     try {
-      await apiClient.post(`/api/v1/whatsapp-inbox/conversations/${conversationId}/messages`, {
+      await apiClient.post(`${apiBase}/conversations/${conversationId}/messages${superAdminMode && companyId ? `?companyId=${companyId}` : ''}`, {
         content: draft,
         type: 'TEXT',
       });
@@ -227,7 +237,7 @@ const WhatsAppChat: React.FC = () => {
 
   const updateStatus = async (status: string) => {
     if (!conversationId) return;
-    await apiClient.patch(`/api/v1/whatsapp-inbox/conversations/${conversationId}/status`, {
+    await apiClient.patch(`${apiBase}/conversations/${conversationId}/status${superAdminMode && companyId ? `?companyId=${companyId}` : ''}`, {
       status,
     });
     await loadConversation();
@@ -235,7 +245,7 @@ const WhatsAppChat: React.FC = () => {
 
   const transferConversation = async () => {
     if (!conversationId || !transferTarget) return;
-    await apiClient.post(`/api/v1/whatsapp-inbox/conversations/${conversationId}/transfer`, {
+    await apiClient.post(`${apiBase}/conversations/${conversationId}/transfer${superAdminMode && companyId ? `?companyId=${companyId}` : ''}`, {
       toUserId: transferTarget,
       note: noteDraft || undefined,
     });
@@ -311,7 +321,7 @@ const WhatsAppChat: React.FC = () => {
             <div className="flex items-start gap-4">
               <button
                 type="button"
-                onClick={() => navigate('/whatsapp-inbox')}
+                onClick={() => navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/inbox` : '/whatsapp-inbox')}
                 className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               >
                 Back

@@ -410,7 +410,7 @@ const WhatsAppInbox: React.FC = () => {
                 </div>
                 <button
                   type="button"
-                  onClick={() => navigate('/moderator-dashboard')}
+                  onClick={() => navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/moderator-dashboard` : '/moderator-dashboard')}
                   className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                 >
                   {copy.inbox.openDashboard}
