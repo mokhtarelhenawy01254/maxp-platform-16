@@ -224,6 +224,7 @@ const UnifiedInbox: React.FC = () => {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [selectedConvIds, setSelectedConvIds] = useState<Set<string>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
@@ -244,6 +245,7 @@ const UnifiedInbox: React.FC = () => {
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const actionsMenuRef = useRef<HTMLDivElement>(null);
+  const attachmentMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const socketHandlerRef = useRef<((message: any) => void) | null>(null);
 
@@ -255,6 +257,9 @@ const UnifiedInbox: React.FC = () => {
       }
       if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
         setShowActionsMenu(false);
+      }
+      if (attachmentMenuRef.current && !attachmentMenuRef.current.contains(event.target as Node)) {
+        setShowAttachmentMenu(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -1906,33 +1911,42 @@ const UnifiedInbox: React.FC = () => {
                         />
                       </svg>
                     </button>
-                    <button
-                      onClick={() => setShowImageGallery(true)}
-                      className="business-icon-button rounded-xl p-1.5 transition-colors sm:p-2"
-                      aria-label={t("unifiedInbox.savedImages")}
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                    <div className="relative" ref={attachmentMenuRef}>
+                      <button
+                        onClick={() => setShowAttachmentMenu(prev => !prev)}
+                        className={`business-icon-button rounded-xl p-1.5 transition-colors sm:p-2 ${uploadingFile ? 'animate-pulse opacity-50' : ''}`}
+                        aria-label={t("unifiedInbox.attachFile", "Attach File")}
+                        disabled={uploadingFile}
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className={`business-icon-button rounded-xl p-1.5 transition-colors sm:p-2 ${uploadingFile ? 'animate-pulse opacity-50' : ''}`}
-                      aria-label={t("unifiedInbox.attachFile")}
-                      disabled={uploadingFile}
-                    >
-                      <PaperClipIcon className="w-5 h-5" aria-hidden="true" />
-                    </button>
+                        <PaperClipIcon className="w-5 h-5" aria-hidden="true" />
+                      </button>
+
+                      {showAttachmentMenu && (
+                        <div className="absolute bottom-full mb-2 left-0 w-48 rounded-xl shadow-lg border overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--business-card-border)' }}>
+                          <button
+                            onClick={() => {
+                              setShowAttachmentMenu(false);
+                              setShowImageGallery(true);
+                            }}
+                            className="w-full text-start px-4 py-3 text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                            style={{ color: 'var(--color-foreground)' }}
+                          >
+                            {t("unifiedInbox.chooseExistingFile", "Choose existing file")}
+                          </button>
+                          <div style={{ borderTop: '1px solid var(--business-card-border)' }} />
+                          <button
+                            onClick={() => {
+                              setShowAttachmentMenu(false);
+                              fileInputRef.current?.click();
+                            }}
+                            className="w-full text-start px-4 py-3 text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                            style={{ color: 'var(--color-foreground)' }}
+                          >
+                            {t("unifiedInbox.upload", "Upload")}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     <button
                       onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                       className={`business-icon-button rounded-xl p-1.5 transition-colors sm:p-2 ${showEmojiPicker ? 'text-primary' : ''}`}
