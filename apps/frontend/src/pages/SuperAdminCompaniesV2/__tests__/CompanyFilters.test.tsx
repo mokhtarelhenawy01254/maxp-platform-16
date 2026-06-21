@@ -12,23 +12,11 @@ const fbLookupProps = {
 
 const defaultProps = {
   search: "", onSearchChange: jest.fn(),
-  savedView: "ALL", onSavedViewChange: jest.fn(),
   status: "ALL", onStatusChange: jest.fn(),
-  plan: "ALL", onPlanChange: jest.fn(),
-  funnelStage: "ALL", onFunnelStageChange: jest.fn(),
   sort: "createdAt:desc", onSortChange: jest.fn(),
   rowsPerPage: "10", onRowsPerPageChange: jest.fn(),
   onClearAll: jest.fn(),
-  totalResults: 0,
-  stats: {
-    totalCompanies: 0, activeCompanies: 0, enterpriseCompanies: 0,
-    connectedFacebookPages: 0, activated: 0, trackedCompanies: 0,
-    untrackedCompanies: 0, registeredNoStart: 0, onboardingInProgress: 0,
-    activationInProgress: 0, followUpNow: 0, escalationDue: 0,
-    urgentEscalationDue: 0, stale72h: 0, myDueToday: 0,
-  },
   filterCount: 0, activeFilterLabels: [],
-  onOpenView: jest.fn(),
   facebookLookup: fbLookupProps,
 };
 

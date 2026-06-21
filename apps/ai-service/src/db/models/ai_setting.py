@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, Integer, String, Text, func
@@ -12,7 +13,7 @@ class AiSetting(Base):
     __tablename__ = "ai_settings"
     __table_args__ = {"schema": "ai"}
 
-    id: Mapped[str] = mapped_column(String, primary_key=True)
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     company_id: Mapped[str] = mapped_column("companyId", String, nullable=False, index=True, unique=True)
     autoReplyEnabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     promptTemplate: Mapped[str | None] = mapped_column(Text, nullable=True)

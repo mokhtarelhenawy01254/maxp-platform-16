@@ -707,17 +707,16 @@ async def evaluate_sandbox_response(body: SandboxEvaluateRequest) -> SandboxEval
     )
 
 
-async def _ensure_agent_in_db(agent_id: str, session: AsyncSession) -> AgentModel | None:
+async def _ensure_agent_in_db(agent_id: str, session: AsyncSession, company_id: str | None = None) -> AgentModel | None:
     """Retrieve agent from ai.agents table.
 
     2026: The migration bridge from public.company_agents has been removed.
     All agents should exist in ai.agent_templates or ai.agents.
     """
-    result = await session.execute(
-        select(AgentModel)
-        .options(selectinload(AgentModel.department))
-        .where(AgentModel.id == agent_id)
-    )
+    query = select(AgentModel).options(selectinload(AgentModel.department)).where(AgentModel.id == agent_id)
+    if company_id:
+        query = query.where(AgentModel.company_id == company_id)
+    result = await session.execute(query)
     return result.scalar_one_or_none()
 
 
@@ -972,10 +971,11 @@ async def get_agent(agent_id: str, session: SessionDep) -> AgentRead:
 
 @router.put("/agents/{agent_id}", response_model=AgentRead)
 async def update_agent(
-    agent_id: str, body: AgentUpdate, session: SessionDep
+    agent_id: str, body: AgentUpdate, session: SessionDep,
+    company_id: str | None = Query(default=None),
 ) -> AgentRead:
     """Update an agent's configuration."""
-    agent = await _ensure_agent_in_db(agent_id, session)
+    agent = await _ensure_agent_in_db(agent_id, session, company_id)
     if not agent:
         raise HTTPException(status_code=404, detail=f"Agent not found: {agent_id}")
 
@@ -1030,9 +1030,12 @@ async def patch_agent_status(
 
 
 @router.delete("/agents/{agent_id}", response_model=AgentRead)
-async def archive_agent(agent_id: str, session: SessionDep) -> AgentRead:
+async def archive_agent(
+    agent_id: str, session: SessionDep,
+    company_id: str | None = Query(default=None),
+) -> AgentRead:
     """Archive (soft-delete) an agent."""
-    agent = await _ensure_agent_in_db(agent_id, session)
+    agent = await _ensure_agent_in_db(agent_id, session, company_id)
     if not agent:
         raise HTTPException(status_code=404, detail=f"Agent not found: {agent_id}")
 

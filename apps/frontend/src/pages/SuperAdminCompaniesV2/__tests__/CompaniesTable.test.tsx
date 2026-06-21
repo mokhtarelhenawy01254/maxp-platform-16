@@ -2,16 +2,6 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { CompaniesTable } from "../components/CompaniesTable";
 import type { Company, QuickStats } from "../types";
 
-jest.mock("../../../utils/companyFunnelAnalytics", () => ({
-  getCompaniesFunnelStats: jest.fn(() => ({ activated: 0, trackedCompanies: 0, untrackedCompanies: 0, registeredNoStart: 0, onboardingInProgress: 0, activationInProgress: 0 })),
-  getCompaniesFunnelFollowUpStats: jest.fn(() => ({ followUpNow: 0, escalationDue: 0, urgentEscalationDue: 0, stale72h: 0 })),
-  getCompanyFunnelAttentionScore: jest.fn(() => 0),
-  getCompanyFunnelLastActivity: jest.fn(() => ({ label: "-", relativeLabel: "-", sortValue: "" })),
-  getCompanyFunnelSummary: jest.fn(() => ({ stageKey: "untracked", label: "بدون مسار", progressLabel: "-", hint: "", badgeClassName: "" })),
-  getCompanyFunnelStaleStatus: jest.fn(() => ({ label: "", badgeClassName: "", isPending: false, needsFollowUpNow: false, isStale72h: false })),
-  getCompanyInterventionAction: jest.fn(() => null),
-}));
-
 jest.mock("../../../utils/companyFollowUp", () => ({
   getCompaniesFollowUpAutomationStats: jest.fn(() => ({})),
   getCompanyFollowUpState: jest.fn(() => ({ status: "unassigned", statusMeta: { label: "", className: "" }, assignedOwner: { id: null, label: "" }, updatedAt: null, nextActionAt: null, lastReminderSentAt: null, lastEscalatedAt: null, history: [] })),
@@ -27,8 +17,6 @@ jest.mock("react-router-dom", () => ({
 const baseStats: QuickStats = {
   totalCompanies: 0, activeCompanies: 0, enterpriseCompanies: 0,
   connectedFacebookPages: 0,
-  activated: 0, trackedCompanies: 0, untrackedCompanies: 0,
-  registeredNoStart: 0, onboardingInProgress: 0, activationInProgress: 0,
   followUpNow: 0, escalationDue: 0, urgentEscalationDue: 0, stale72h: 0, myDueToday: 0,
 };
 
@@ -53,7 +41,6 @@ const defaultProps = {
   isSomeVisibleSelected: false,
   loading: false,
   onOpenDetails: jest.fn(),
-  onOpenIntervention: jest.fn(),
   onEdit: jest.fn(),
   onDelete: jest.fn(),
   onOpenUsers: jest.fn(),

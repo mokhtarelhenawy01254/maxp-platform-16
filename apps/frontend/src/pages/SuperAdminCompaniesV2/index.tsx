@@ -563,12 +563,6 @@ export default function SuperAdminCompaniesV2() {
     } catch (err) { toast.error(extractErrorMessage(err, "فشل تسجيل الدخول")); }
   }, []);
 
-  const handleOpenIntervention = useCallback((company: Company) => {
-    const intervention = company.funnelIntervention;
-    if (!intervention || intervention.mode === "details") { handleOpenDetails(company); return; }
-    handleLoginAsAdmin(company);
-  }, [handleOpenDetails, handleLoginAsAdmin]);
-
   const handleOpenFollowUp = useCallback(async (company: Company) => {
     const state = company.followUp || (await import("../../utils/companyFollowUp")).getCompanyFollowUpState(company);
     setFollowUpCompany(company);
@@ -849,7 +843,6 @@ export default function SuperAdminCompaniesV2() {
                 isSomeVisibleSelected={isSomeVisibleSelected}
                 loading={isLoading}
                 onOpenDetails={handleOpenDetails}
-                onOpenIntervention={handleOpenIntervention}
                 onEdit={handleEditCompany}
                 onDelete={handleDeleteCompany}
                 onOpenUsers={handleOpenUsers}

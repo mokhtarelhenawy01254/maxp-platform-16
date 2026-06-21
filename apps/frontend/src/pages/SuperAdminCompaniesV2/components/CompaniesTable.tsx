@@ -36,7 +36,6 @@ interface CompaniesTableProps {
   isSomeVisibleSelected: boolean;
   loading: boolean;
   onOpenDetails: (company: Company) => void;
-  onOpenIntervention: (company: Company) => void;
   onEdit: (company: Company) => void;
   onDelete: (company: Company) => void;
   onOpenUsers: (company: Company) => void;
@@ -54,7 +53,7 @@ export function CompaniesTable({
   companies, totalPages, currentPage, onPageChange, pageSize, totalItems,
   selectedIds, onToggleSelect, onToggleSelectAll,
   isAllVisibleSelected, isSomeVisibleSelected, loading,
-  onOpenDetails, onOpenIntervention, onEdit, onDelete,
+  onOpenDetails, onEdit, onDelete,
   onOpenUsers, onOpenFollowUp, onOpenFacebookPages,
   onTransferOwnership, onAddEmployee, onLoginAsAdmin,
   onRunFollowUpAction, isMobile, stats,

@@ -92,11 +92,11 @@ class PolicyEngine:
 
                 result = await db_session.execute(
                     text("""
-                        SELECT human_approval_required_for_write,
-                               max_replies_per_customer,
-                               write_tool_scopes
-                        FROM ai.ai_setting
-                        WHERE company_id = :company_id
+                        SELECT "humanApprovalRequiredForWrite",
+                               "maxRepliesPerCustomer",
+                               "writeToolScopes"
+                        FROM ai.ai_settings
+                        WHERE "companyId" = :company_id
                     """),
                     {"company_id": company_id},
                 )

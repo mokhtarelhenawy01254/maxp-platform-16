@@ -39,9 +39,13 @@ async function request(method, path, body) {
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
         try {
-          resolve(res.statusCode < 400 ? (data ? JSON.parse(data) : {}) : null);
-        } catch {
-          resolve(null);
+          const parsed = data ? JSON.parse(data) : {};
+          if (res.statusCode >= 400) {
+            return reject(new Error(parsed.detail || parsed.message || parsed.error || `AI service error (${res.statusCode})`));
+          }
+          resolve(parsed);
+        } catch (e) {
+          reject(new Error(res.statusCode >= 400 ? `AI service error (${res.statusCode})` : 'Invalid JSON from AI service'));
         }
       });
     });

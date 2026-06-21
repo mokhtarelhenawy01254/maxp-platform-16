@@ -485,9 +485,9 @@ class BudgetLedgerService:
                 from sqlalchemy import text
                 result = await db_session.execute(
                     text("""
-                        SELECT model_settings
-                        FROM ai.ai_setting
-                        WHERE company_id = :company_id
+                        SELECT "modelSettings"
+                        FROM ai.ai_settings
+                        WHERE "companyId" = :company_id
                     """),
                     {"company_id": company_id},
                 )
