@@ -62,16 +62,16 @@ jobs:
             fi
 
             echo "=== Build Docker image ==="
-            docker compose -f docker-compose.prod.yml build
+            docker compose -f apps/ai-service/docker-compose.prod.yml build
 
             echo "=== Start services ==="
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f apps/ai-service/docker-compose.prod.yml up -d
 
             echo "=== Wait for postgres ==="
             sleep 5
 
             echo "=== Run migrations ==="
-            docker compose -f docker-compose.prod.yml run --rm maxp-ai-service alembic upgrade head
+            docker compose -f apps/ai-service/docker-compose.prod.yml run --rm maxp-ai-service alembic upgrade head
 
             echo "=== Health check ==="
             sleep 5
