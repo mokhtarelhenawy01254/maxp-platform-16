@@ -161,6 +161,10 @@ const cookieParser = require("cookie-parser");
 const http = require("http");
 const socketService = require("./services/socketService");
 const { startWebhookWorker } = require("./workers/webhookWorker");
+const {
+  getProcessInstanceId,
+  shouldOwnSingletonWork,
+} = require("./utils/processOwnership");
 const tenantContext = require("./services/tenantContext");
 
 // Import all routes (alphabetic order for sanity)
@@ -483,24 +487,6 @@ app.use("/api/v1/webhooks", webhookRoutes);
 app.use("/api/v1/whatsapp-meta", whatsappMetaWebhookRoutes);
 app.use("/api/v1/turbo-webhook", turboWebhookRoutes);
 app.use("/api/v1/health", healthRoute);
-app.get("/api/v1/temp-query-session", async (req, res) => {
-  try {
-    const { getSharedPrismaClient } = require('./services/sharedDatabase');
-    const sessions = await getSharedPrismaClient().whatsAppSession.findMany({
-      where: { provider: 'META_CLOUD' },
-      select: {
-        id: true,
-        name: true,
-        metaWebhookVerifyToken: true,
-        metaWebhookSecret: true,
-        metaDisplayPhoneNumber: true
-      }
-    });
-    res.json({ success: true, sessions });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
 app.use("/api/geolocation", geolocationRoutes);
 app.use("/api/v1/geolocation", geolocationRoutes);
 
@@ -1093,8 +1079,14 @@ async function startServer() {
     await telegramBotService.initialize();
     console.log("✅ [SERVER] Telegram Bot initialized");
 
-    await WhatsAppManager.restoreAllSessions();
-    console.log("✅ [SERVER] WhatsApp Sessions Restored");
+    if (shouldOwnSingletonWork()) {
+      await WhatsAppManager.restoreAllSessions();
+      console.log("✅ [SERVER] WhatsApp Sessions Restored");
+    } else {
+      console.log(
+        `WhatsApp session restore skipped for process instance ${getProcessInstanceId()}`,
+      );
+    }
 
     const { startTelegramScheduler } = require("./cron/telegramScheduler");
     startTelegramScheduler();
