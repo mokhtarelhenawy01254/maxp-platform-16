@@ -10,3 +10,4 @@
 - Highlight attention rows (amber) and critical stale rows (rose) with left border
 - Mobile card: added funnel stage badge + action buttons in expanded section
 - Sort dropdown now shows human-readable labels instead of raw values
+- Fix: state declarations (`search`, `status`, `plan`, `sort`, etc.) moved before their usage in `useCompanies` hook to prevent ReferenceError (temporal dead zone) that kept page stuck at loading

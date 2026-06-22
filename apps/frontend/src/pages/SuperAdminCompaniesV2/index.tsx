@@ -324,14 +324,7 @@ export default function SuperAdminCompaniesV2() {
   const { createCompany, editCompany } = useCompanyMutations();
   const facebookLookup = useFacebookLookup();
 
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  // Filter & Sort state
+  // Filter & Sort state — MUST be before useCompanies
   const [search, setSearch] = useState("");
   const [savedView, setSavedView] = useState("ALL");
   const [status, setStatus] = useState("ALL");
@@ -341,6 +334,13 @@ export default function SuperAdminCompaniesV2() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   // Modals
   const [companyModal, setCompanyModal] = useState<{ open: boolean; mode: "create" | "edit"; company: Company | null }>({ open: false, mode: "create", company: null });
