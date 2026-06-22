@@ -3970,15 +3970,31 @@ async function getUrlInfo(sessionId, url) {
 /**
  * مزامنة الملف الشخصي (جلب من واتساب وحفظ في قاعدة البيانات)
  */
+function getProfileSessionSnapshot(session) {
+    const sock = session?.sock;
+    const user = sock?.user;
+    const jid = user?.id;
+
+    if (!sock || !jid) {
+        return null;
+    }
+
+    return {
+        sock,
+        user,
+        jid,
+        cleanJid: jid.split(':')[0] + '@s.whatsapp.net'
+    };
+}
+
 async function syncProfile(sessionId) {
-    const session = getSession(sessionId);
-    if (!session || !session.sock?.user) {
+    const snapshot = getProfileSessionSnapshot(getSession(sessionId));
+    if (!snapshot) {
         console.warn(`⚠️ Cannot sync profile for session ${sessionId}: Session not ready`);
         return null;
     }
 
-    const jid = session.sock.user.id;
-    const cleanJid = jid.split(':')[0] + '@s.whatsapp.net';
+    const { sock, user, cleanJid } = snapshot;
 
     try {
         console.log(`🔄 Syncing profile for session ${sessionId}...`);
@@ -3986,7 +4002,7 @@ async function syncProfile(sessionId) {
         // 1. Get Status
         let status = '';
         try {
-            const statusData = await session.sock.fetchStatus(cleanJid);
+            const statusData = await sock.fetchStatus(cleanJid);
             status = statusData?.status || '';
         } catch (err) {
             console.warn(`⚠️ Failed to fetch status for ${sessionId}:`, err.message);
@@ -3995,13 +4011,13 @@ async function syncProfile(sessionId) {
         // 2. Get Profile Picture
         let profilePicUrl = null;
         try {
-            profilePicUrl = await session.sock.profilePictureUrl(cleanJid, 'image');
+            profilePicUrl = await sock.profilePictureUrl(cleanJid, 'image');
         } catch (err) {
             // It's common to not have a profile pic or fail to fetch it
         }
 
         // 3. Get Name
-        const name = session.sock.user.name || session.sock.user.notify || '';
+        const name = user.name || user.notify || '';
 
         // 4. Update Database
         await safeQuery(async () => {
@@ -4334,8 +4350,7 @@ module.exports = {
         getMessageStatusFromBaileysStatus,
         shouldApplyMessageStatus,
         classifySessionSocketHealth,
-        getSocketReadyState
+        getSocketReadyState,
+        getProfileSessionSnapshot
     }
 };
-
-

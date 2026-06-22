@@ -108,6 +108,11 @@ describe('WhatsAppManager message capture helpers', () => {
         // importHistory overrides and accepts append even from others
         await expect(__testing.shouldProcessMessageUpsertType('append', false, undefined, { importHistory: true })).resolves.toBe(true);
         // incoming append with a known messageId → skip (DB mock needed — without DB returns true)
+        getSharedPrismaClient.mockReturnValueOnce({
+            whatsAppMessage: {
+                findUnique: jest.fn().mockResolvedValue(null)
+            }
+        });
         await expect(__testing.shouldProcessMessageUpsertType('append', false, 'BAE5F0A1B2C3')).resolves.toBe(true);
     });
 
@@ -288,6 +293,32 @@ describe('WhatsAppManager message capture helpers', () => {
             status: 'connected',
             sock: {}
         })).toMatchObject({ alive: true, stale: false, reason: 'websocket_state_unavailable' });
+    });
+
+    test('captures a stable profile socket snapshot before async profile sync work', () => {
+        const { getProfileSessionSnapshot } = __testing;
+        const session = {
+            sock: {
+                user: {
+                    id: '201001112223:7@s.whatsapp.net',
+                    name: 'Store Phone'
+                },
+                fetchStatus: jest.fn(),
+                profilePictureUrl: jest.fn()
+            }
+        };
+
+        const snapshot = getProfileSessionSnapshot(session);
+        session.sock = null;
+
+        expect(snapshot).toMatchObject({
+            cleanJid: '201001112223@s.whatsapp.net',
+            user: {
+                id: '201001112223:7@s.whatsapp.net',
+                name: 'Store Phone'
+            }
+        });
+        expect(snapshot.sock.fetchStatus).toBeDefined();
     });
 });
 
