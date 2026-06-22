@@ -13,6 +13,7 @@ const {
 } = require('../whatsappRealtimeAudienceService');
 const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
 const aiSdkClient = require('../aiSdkClient');
+const { getEffectiveAiAutoReplySetting } = require('../aiSettingsResolver');
 
 const getIO = () => socketService.getIO();
 
@@ -249,7 +250,7 @@ async function saveIncomingMessage(payload) {
       try {
         const { getSharedPrismaClient } = require('../sharedDatabase');
         const prisma = getSharedPrismaClient();
-        const aiSetting = await prisma.aiSetting.findUnique({ where: { companyId: syncedCustomer.companyId } });
+        const aiSetting = await getEffectiveAiAutoReplySetting(syncedCustomer.companyId, prisma);
         if (!aiSetting?.autoReplyEnabled) {
           console.log('🤖 [WA-AI-AUTOREPLY] AI auto-reply disabled for company');
           return;

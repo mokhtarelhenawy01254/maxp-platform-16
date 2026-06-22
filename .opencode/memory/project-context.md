@@ -29,3 +29,9 @@
 - WhatsApp customer auto-replies can use a company-assigned Python ai-service agent from `ai.agents`.
 - For agent `agent_rKLv5iSNfkm-ukRfieKUWg`, model routing must preserve `config.provider=DEEPSEEK` and `config.keyId=cmqguj2zc08akjugf77y348pl`.
 - DeepSeek structured JSON calls must use `response_format: {"type":"json_object"}`. Sending OpenAI `json_schema` makes the classifier fail over to Gemini before final reply generation.
+
+## 2026-06-23 Meta Cloud WhatsApp Auto-Reply
+- AI Hub auto-reply settings live in `ai.ai_settings`; legacy backend Prisma `AiSetting` maps to `public.ai_settings`.
+- Customer-channel runtime gates must use `services/aiSettingsResolver.js`, which prefers `ai.ai_settings` and falls back to `public.ai_settings`.
+- Meta App callbacks may post WhatsApp Cloud payloads to `/api/v1/webhook`; `webhookController` must forward `object="whatsapp_business_account"` to `whatsappMetaWebhookController`.
+- Harf Online WhatsApp Cloud session: company `cmqpayohr2pwqju47cqz9l9li`, active session `cmqppump800c8julajuvawupw`, phone number id `1165821659950962`, display `+20 10 33316739`, WABA `1306119191241535`, agent `agent_k8fD5T6GiIuExPcKKvGlrQ`.

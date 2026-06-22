@@ -8,6 +8,7 @@ const {
   shouldStrictlyEnforceMetaWebhookSignature,
   verifyMetaWebhookSignature
 } = require('../utils/webhookSignature');
+const whatsappMetaWebhookController = require('./whatsappMetaWebhookController');
 
 // ⚠️ CRITICAL: Always use safeQuery() instead of direct prisma calls
 // This ensures proper connection management and retry logic
@@ -112,10 +113,7 @@ const getWebhook = async (req, res) => {
       console.log('✅ [WEBHOOK] Facebook webhook verified successfully');
       res.status(200).send(challenge);
     } else {
-      console.warn('❌ [WEBHOOK] Verification failed - token mismatch');
-      console.warn(`   Expected: ${VERIFY_TOKEN.substring(0, 10)}... (truncated)`);
-      console.warn(`   Received: ${token.substring(0, 10)}... (truncated)`);
-      res.sendStatus(403);
+      return whatsappMetaWebhookController.getWebhook(req, res);
     }
   } else {
     console.warn('⚠️ [WEBHOOK] Missing mode or token in verification request');
@@ -124,6 +122,10 @@ const getWebhook = async (req, res) => {
 }
 
 const postWebhook = async (req, res) => {
+  if (req.body?.object === 'whatsapp_business_account') {
+    return whatsappMetaWebhookController.postWebhook(req, res);
+  }
+
   const signatureCheck = verifyMetaWebhookSignature(
     req,
     String(process.env.FACEBOOK_APP_SECRET || '').trim()

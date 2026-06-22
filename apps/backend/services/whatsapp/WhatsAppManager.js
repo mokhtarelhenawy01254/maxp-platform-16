@@ -1999,7 +1999,8 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                 setImmediate(async () => {
                     try {
                         const prisma = getSharedPrismaClient();
-                        const aiSetting = await prisma.aiSetting.findUnique({ where: { companyId: syncedCustomer.companyId } });
+                        const { getEffectiveAiAutoReplySetting } = require('../aiSettingsResolver');
+                        const aiSetting = await getEffectiveAiAutoReplySetting(syncedCustomer.companyId, prisma);
                         if (!aiSetting?.autoReplyEnabled) { return; }
                         if (aiSetting.workingHoursEnabled && aiSetting.workingHours) {
                             try {

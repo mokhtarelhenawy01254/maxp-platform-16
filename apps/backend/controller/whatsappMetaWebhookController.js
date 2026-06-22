@@ -6,6 +6,34 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { saveIncomingMessage, updateMessageStatus } = require('../services/whatsapp/WhatsAppInboundService');
 const { verifyMetaWebhookSignature } = require('../utils/webhookSignature');
 
+const DELETED_METADATA_FILTERS = [
+  { metadata: { contains: '"isDeleted":true' } },
+  { metadata: { contains: '"isDeleted": true' } }
+];
+
+function buildMetaSessionLookup({ phoneNumberId, displayPhoneNumber }) {
+  const identifiers = [
+    phoneNumberId ? { metaPhoneNumberId: phoneNumberId } : undefined,
+    displayPhoneNumber ? { metaDisplayPhoneNumber: displayPhoneNumber } : undefined
+  ].filter(Boolean);
+
+  if (identifiers.length === 0) {
+    return null;
+  }
+
+  return {
+    where: {
+      provider: 'META_CLOUD',
+      OR: identifiers,
+      NOT: DELETED_METADATA_FILTERS
+    },
+    orderBy: [
+      { isDefault: 'desc' },
+      { updatedAt: 'desc' }
+    ]
+  };
+}
+
 async function isVerifyTokenValid(token) {
   if (!token) return false;
   if (process.env.META_WA_WEBHOOK_VERIFY_TOKEN && token === process.env.META_WA_WEBHOOK_VERIFY_TOKEN) {
@@ -13,7 +41,11 @@ async function isVerifyTokenValid(token) {
   }
 
   const match = await getSharedPrismaClient().whatsAppSession.findFirst({
-    where: { metaWebhookVerifyToken: token }
+    where: {
+      provider: 'META_CLOUD',
+      metaWebhookVerifyToken: token,
+      NOT: DELETED_METADATA_FILTERS
+    }
   });
   return !!match;
 }
@@ -184,14 +216,10 @@ async function postWebhook(req, res) {
         const phoneNumberId = metadata.phone_number_id;
         const displayPhoneNumber = metadata.display_phone_number;
 
-        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
-          where: {
-            OR: [
-              phoneNumberId ? { metaPhoneNumberId: phoneNumberId } : undefined,
-              displayPhoneNumber ? { metaDisplayPhoneNumber: displayPhoneNumber } : undefined
-            ].filter(Boolean)
-          }
-        });
+        const lookup = buildMetaSessionLookup({ phoneNumberId, displayPhoneNumber });
+        const session = lookup
+          ? await getSharedPrismaClient().whatsAppSession.findFirst(lookup)
+          : null;
 
         if (!session) {
           continue;
@@ -248,5 +276,6 @@ async function postWebhook(req, res) {
 
 module.exports = {
   getWebhook,
-  postWebhook
+  postWebhook,
+  buildMetaSessionLookup
 };

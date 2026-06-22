@@ -54,7 +54,7 @@ export default function ChannelRoutingPage() {
   const isRtl = i18n.language === "ar";
   const [agents, setAgents] = useState<AgentSummary[]>([]);
   const [channelConfigs, setChannelConfigs] = useState<ChannelConfig[]>([]);
-  const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
+  const [autoReplyEnabled, setAutoReplyEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +71,7 @@ export default function ChannelRoutingPage() {
       setAgents(agentsList);
 
       const activeAgents = agentsList.filter((a) => a.status === "ACTIVE");
-      const autoReplyResp = await apiFetch<{ autoReplyEnabled: boolean }>("/agent-manager/auto-reply").catch(() => ({ autoReplyEnabled: true }));
+      const autoReplyResp = await apiFetch<{ autoReplyEnabled: boolean }>("/agent-manager/auto-reply").catch(() => ({ autoReplyEnabled: false }));
       setAutoReplyEnabled(autoReplyResp.autoReplyEnabled !== false);
       const configs: ChannelConfig[] = CHANNELS.map((ch) => {
         const assigned = activeAgents.find((a) =>

@@ -487,6 +487,35 @@ app.use("/api/v1/webhooks", webhookRoutes);
 app.use("/api/v1/whatsapp-meta", whatsappMetaWebhookRoutes);
 app.use("/api/v1/turbo-webhook", turboWebhookRoutes);
 app.use("/api/v1/health", healthRoute);
+app.get("/api/v1/temp-debug-verify", async (req, res) => {
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+  
+  try {
+    const { getSharedPrismaClient } = require('./services/sharedDatabase');
+    const dbTokenMatch = await getSharedPrismaClient().whatsAppSession.findFirst({
+      where: { metaWebhookVerifyToken: token }
+    });
+    
+    const allTokens = await getSharedPrismaClient().whatsAppSession.findMany({
+      select: {
+        id: true,
+        name: true,
+        metaWebhookVerifyToken: true
+      }
+    });
+
+    res.json({
+      success: true,
+      query: { mode, token, challenge },
+      dbTokenMatch: dbTokenMatch ? { id: dbTokenMatch.id, name: dbTokenMatch.name, token: dbTokenMatch.metaWebhookVerifyToken } : null,
+      allTokens
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 app.use("/api/geolocation", geolocationRoutes);
 app.use("/api/v1/geolocation", geolocationRoutes);
 

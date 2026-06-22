@@ -1976,7 +1976,8 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
             // 1. Gate check: AI settings and working hours
             const { getSharedPrismaClient } = require('../services/sharedDatabase');
             const prisma = getSharedPrismaClient();
-            const aiSetting = await prisma.aiSetting.findUnique({ where: { companyId: customer.companyId } });
+            const { getEffectiveAiAutoReplySetting } = require('../services/aiSettingsResolver');
+            const aiSetting = await getEffectiveAiAutoReplySetting(customer.companyId, prisma);
             if (!aiSetting?.autoReplyEnabled) { console.log('🤖 [AI-AUTOREPLY] AI auto-reply disabled for company'); return; }
             if (aiSetting.workingHoursEnabled && aiSetting.workingHours) {
               try {
@@ -2569,7 +2570,8 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
           console.log(`🤖 [IG-AI-AUTOREPLY] Triggered AI auto-reply for Instagram user: ${senderId}`);
           const { getSharedPrismaClient } = require('../services/sharedDatabase');
           const prisma = getSharedPrismaClient();
-          const aiSetting = await prisma.aiSetting.findUnique({ where: { companyId: customer.companyId } });
+          const { getEffectiveAiAutoReplySetting } = require('../services/aiSettingsResolver');
+          const aiSetting = await getEffectiveAiAutoReplySetting(customer.companyId, prisma);
           if (!aiSetting?.autoReplyEnabled) { console.log('🤖 [IG-AI-AUTOREPLY] AI auto-reply disabled for company'); return; }
           if (aiSetting.workingHoursEnabled && aiSetting.workingHours) {
             try {

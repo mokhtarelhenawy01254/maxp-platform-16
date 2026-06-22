@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
 const socketService = require('./socketService');
 const aiSdkClient = require('./aiSdkClient');
+const { getEffectiveAiAutoReplySetting } = require('./aiSettingsResolver');
 
 function buildWebhookSecret(configId, token) {
     return crypto
@@ -404,7 +405,7 @@ class TelegramBotService {
                 const configId = metadata.telegramConfigId;
                 setImmediate(async () => {
                     try {
-                        const aiSetting = await prisma.aiSetting.findUnique({ where: { companyId } });
+                        const aiSetting = await getEffectiveAiAutoReplySetting(companyId, prisma);
                         if (!aiSetting?.autoReplyEnabled) { console.log('🤖 [TG-AI-AUTOREPLY] AI auto-reply disabled for company'); return; }
                         if (aiSetting.workingHoursEnabled && aiSetting.workingHours) {
                             try {
