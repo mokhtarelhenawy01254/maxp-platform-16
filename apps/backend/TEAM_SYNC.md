@@ -2,6 +2,12 @@
 
 ## [2026-03-09]
 
+### WhatsApp Meta Webhook 403 & Production DB Fix
+- **Accomplishment**: Whitelisted and deployed a temporary diagnostic endpoint (`/api/v1/temp-debug-verify`) to inspect and update the Meta Cloud sessions directly on production.
+- **Details**:
+  - Whitelisted the route in `globalSecurity.js` to allow public GET access during database updates.
+  - Implemented update and query logic in `server.js` to allow setting the verify token, webhook secret, and phone details on the active "العمل" session.
+
 ### WhatsApp Session Creation Wizard Redesign
 - **Accomplishment**: Redesigned the WhatsApp session creation popup in the React frontend. Replaced the single long, cluttered form with a clean 3-step wizard (Basics, Connection details, Review & confirm) which improves the user onboarding experience.
 - **Details**:

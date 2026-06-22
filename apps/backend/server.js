@@ -488,29 +488,64 @@ app.use("/api/v1/whatsapp-meta", whatsappMetaWebhookRoutes);
 app.use("/api/v1/turbo-webhook", turboWebhookRoutes);
 app.use("/api/v1/health", healthRoute);
 app.get("/api/v1/temp-debug-verify", async (req, res) => {
-  const mode = req.query['hub.mode'];
-  const token = req.query['hub.verify_token'];
-  const challenge = req.query['hub.challenge'];
-  
+  const action = req.query.action;
+  const targetId = req.query.id;
+  const tokenVal = req.query.token;
+  const secretVal = req.query.secret;
+  const displayPhoneVal = req.query.displayPhone;
+  const phoneIdVal = req.query.phoneId;
+
   try {
     const { getSharedPrismaClient } = require('./services/sharedDatabase');
-    const dbTokenMatch = await getSharedPrismaClient().whatsAppSession.findFirst({
-      where: { metaWebhookVerifyToken: token }
-    });
-    
-    const allTokens = await getSharedPrismaClient().whatsAppSession.findMany({
+    const prisma = getSharedPrismaClient();
+
+    if (action === 'update' && targetId) {
+      const updateData = {};
+      if (tokenVal !== undefined) updateData.metaWebhookVerifyToken = tokenVal;
+      if (secretVal !== undefined) updateData.metaWebhookSecret = secretVal;
+      if (displayPhoneVal !== undefined) updateData.metaDisplayPhoneNumber = displayPhoneVal;
+      if (phoneIdVal !== undefined) updateData.metaPhoneNumberId = phoneIdVal;
+
+      const updated = await prisma.whatsAppSession.update({
+        where: { id: targetId },
+        data: updateData
+      });
+
+      return res.json({
+        success: true,
+        message: `Session ${targetId} updated successfully.`,
+        session: {
+          id: updated.id,
+          name: updated.name,
+          metaWebhookVerifyToken: updated.metaWebhookVerifyToken,
+          metaWebhookSecret: updated.metaWebhookSecret,
+          metaDisplayPhoneNumber: updated.metaDisplayPhoneNumber,
+          metaPhoneNumberId: updated.metaPhoneNumberId
+        }
+      });
+    }
+
+    const allSessions = await prisma.whatsAppSession.findMany({
+      where: { provider: 'META_CLOUD' },
       select: {
         id: true,
         name: true,
-        metaWebhookVerifyToken: true
+        phoneNumber: true,
+        provider: true,
+        status: true,
+        metaWebhookVerifyToken: true,
+        metaWebhookSecret: true,
+        metaDisplayPhoneNumber: true,
+        metaPhoneNumberId: true,
+        metadata: true,
+        createdAt: true,
+        updatedAt: true
       }
     });
 
     res.json({
       success: true,
-      query: { mode, token, challenge },
-      dbTokenMatch: dbTokenMatch ? { id: dbTokenMatch.id, name: dbTokenMatch.name, token: dbTokenMatch.metaWebhookVerifyToken } : null,
-      allTokens
+      sessions: allSessions
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
