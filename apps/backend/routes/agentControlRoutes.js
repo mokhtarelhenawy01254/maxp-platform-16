@@ -195,9 +195,12 @@ router.post('/agents', async (req, res) => {
     if (!companyId) return res.status(400).json({ error: 'companyId is required' });
     const result = await aiServiceAdminClient.spawnAgent({
       companyId, name: req.body?.name, role: req.body?.role,
+      description: req.body?.description, icon: req.body?.icon,
       templateSlug: req.body?.templateSlug, model: req.body?.model,
       parentId: req.body?.parentId, allowedTools: req.body?.allowedTools,
       allowedSkills: req.body?.allowedSkills, allowedChannels: req.body?.allowedChannels,
+      persona: req.body?.persona, guardrails: req.body?.guardrails,
+      budget: req.body?.budget, config: req.body?.config,
     });
     // 2026: ai-service manages agents; no dual-write to public.company_agents
     if (result && result.id) {
@@ -287,12 +290,16 @@ router.put('/agents/:id/files', async (req, res) => {
     const files = req.body?.files || {};
     const payload = {
       name: req.body?.name, role: req.body?.role, model: req.body?.model,
+      description: req.body?.description, icon: req.body?.icon, config: req.body?.config,
       allowedTools: req.body?.allowedTools, allowedSkills: req.body?.allowedSkills,
+      allowedChannels: req.body?.allowedChannels,
       soulInstructions: files['SOUL.md'] ?? req.body?.soulInstructions,
       agentInstructions: files['AGENTS.md'] ?? req.body?.agentInstructions,
       toolsInstructions: files['TOOLS.md'] ?? req.body?.toolsInstructions,
       personaInstructions: files['PERSONA.md'] ?? req.body?.personaInstructions,
+      persona: req.body?.persona,
       style: req.body?.style, policies: req.body?.policies,
+      guardrails: req.body?.guardrails, budget: req.body?.budget,
     };
     const result = await aiServiceAdminClient.updateAgent(req.params.id, companyId, payload);
     // 2026: ai-service manages agents; no dual-write to public.company_agents

@@ -211,14 +211,20 @@ def _agent_config_from_record(agent: AgentModel) -> dict[str, Any]:
     base_persona = dict(agent.persona or {})
     if soul_text:
         base_persona['soulInstructions'] = soul_text
+    config = dict(getattr(agent, "config", None) or {})
 
     return {
         "id": agent.id,
         "name": agent.name,
         "role": agent.role,
         "company_id": agent.company_id,
+        "description": getattr(agent, "description", None),
+        "icon": getattr(agent, "icon", None),
         "template_slug": agent.template_slug,
         "model": agent.model,
+        "provider": _first_present(config, "provider", "providerType"),
+        "keyId": _first_present(config, "keyId", "key_id"),
+        "config": config,
         "persona": base_persona,
         "policies": {
             "guardrails": agent.guardrails or {},
@@ -239,6 +245,7 @@ def _normalize_agent_config(
 ) -> dict[str, Any]:
     persona = dict(_first_present(config, "persona", default={}) or {})
     policies = dict(_first_present(config, "policies", default={}) or {})
+    runtime_config = dict(_first_present(config, "config", default={}) or {})
     template_slug = _first_present(config, "template_slug", "templateSlug")
     role = str(_first_present(config, "role", default="") or "").upper()
     name = str(_first_present(config, "name", default=role or agent_id) or agent_id)
@@ -250,8 +257,18 @@ def _normalize_agent_config(
         "company_id": company_id,
         "template_slug": template_slug,
         "model": _first_present(config, "model"),
-        "provider": _first_present(config, "provider"),
-        "keyId": _first_present(config, "key_id", "keyId"),
+        "provider": _first_present(
+            config,
+            "provider",
+            default=_first_present(runtime_config, "provider", "providerType"),
+        ),
+        "keyId": _first_present(
+            config,
+            "key_id",
+            "keyId",
+            default=_first_present(runtime_config, "key_id", "keyId"),
+        ),
+        "config": runtime_config,
         "persona": persona,
         "policies": policies,
         "allowed_tools": list(_first_present(config, "allowed_tools", "allowedTools", default=[]) or []),
@@ -354,6 +371,7 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
         "model": cfg.get("model"),
         "provider": cfg.get("provider"),
         "key_id": cfg.get("key_id") or cfg.get("keyId"),
+        "config": cfg.get("config") or {},
         "persona": cfg.get("persona") or {},
         "policies": cfg.get("policies") or {},
         "allowed_tools": allowed_tools,
@@ -481,13 +499,15 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         company_id=body.company_id,
         name=name,
         role=role,
+        description=body.description,
+        icon=body.icon or "🤖",
         template_slug=template_slug,
         status="ACTIVE",
         model=model,
         persona=body.persona or {},
         allowed_tools=allowed_tools,
         allowed_skills=allowed_skills,
-        channels=template.channels if template else [],
+        channels=body.allowed_channels or (template.channels if template else []),
         guardrails=body.guardrails or (template.guardrails if template else {}),
         budget=body.budget or (template.budget if template else {}),
         parent_id=body.parent_id,
@@ -983,6 +1003,8 @@ async def update_agent(
         agent.name = body.name
     if body.description is not None:
         agent.description = body.description
+    if body.icon is not None:
+        agent.icon = body.icon
     if body.model is not None:
         agent.model = body.model
     if body.soul is not None:
@@ -995,8 +1017,27 @@ async def update_agent(
         agent.allowed_skills = body.allowed_skills
     if body.allowed_channels is not None:
         agent.channels = body.allowed_channels
+    persona = dict(agent.persona or {})
+    persona_changed = False
     if body.persona is not None:
-        agent.persona = body.persona
+        persona = dict(body.persona or {})
+        persona_changed = True
+    for request_key, persona_key in (
+        ("soulInstructions", "soulInstructions"),
+        ("agentInstructions", "agentInstructions"),
+        ("toolsInstructions", "toolsInstructions"),
+        ("personaInstructions", "personaInstructions"),
+    ):
+        value = getattr(body, request_key)
+        if value is not None:
+            persona[persona_key] = value
+            persona_changed = True
+    if body.soulInstructions is not None:
+        agent.soul = body.soulInstructions
+    elif body.persona is not None and body.persona.get("soulInstructions") is not None:
+        agent.soul = body.persona["soulInstructions"]
+    if persona_changed:
+        agent.persona = persona
     if body.guardrails is not None:
         agent.guardrails = body.guardrails
     if body.budget is not None:
@@ -1192,6 +1233,8 @@ async def _build_agent_files_response(
         agent_raw.update({
             "id": agent_model.id, "name": agent_model.name, "role": agent_model.role,
             "status": agent_model.status, "model": agent_model.model,
+            "description": agent_model.description, "icon": agent_model.icon,
+            "soul": agent_model.soul, "rules": agent_model.rules,
             "template_slug": agent_model.template_slug, "parent_id": agent_model.parent_id,
             "persona": agent_model.persona or {},
             "policies": {"guardrails": agent_model.guardrails or {}, "budget": agent_model.budget or {}},
@@ -1212,7 +1255,7 @@ async def _build_agent_files_response(
             }
 
     persona = agent_raw.get("persona") or {}
-    soul = persona.get("soulInstructions") or (template.instructions_soul if template else "")
+    soul = persona.get("soulInstructions") or agent_raw.get("soul") or (template.instructions_soul if template else "")
     agents_i = persona.get("agentInstructions") or (template.instructions_agents if template else "")
     tools_i = persona.get("toolsInstructions") or (template.instructions_tools if template else "")
     persona_i = persona.get("personaInstructions") or (template.instructions_persona if template else "")
@@ -1309,8 +1352,14 @@ async def save_agent_files(
     if agent_model:
         if body.name is not None:
             agent_model.name = body.name
+        if body.description is not None:
+            agent_model.description = body.description
+        if body.icon is not None:
+            agent_model.icon = body.icon
         if body.model is not None:
             agent_model.model = body.model
+        if body.config is not None:
+            agent_model.config = body.config
         if body.allowedTools is not None:
             agent_model.allowed_tools = body.allowedTools
         if body.allowedSkills is not None:
@@ -1321,6 +1370,7 @@ async def save_agent_files(
         persona = dict(agent_model.persona or {})
         if body.soulInstructions is not None:
             persona["soulInstructions"] = body.soulInstructions
+            agent_model.soul = body.soulInstructions
         if body.agentInstructions is not None:
             persona["agentInstructions"] = body.agentInstructions
         if body.toolsInstructions is not None:

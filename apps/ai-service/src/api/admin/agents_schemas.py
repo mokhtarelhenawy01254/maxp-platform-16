@@ -53,6 +53,8 @@ class AgentTemplateList(BaseModel):
 class AgentCreate(BaseModel):
     company_id: str = Field(..., min_length=1)
     name: str | None = None
+    description: str | None = None
+    icon: str | None = None
     role: str | None = None
     template_slug: str | None = None
     model: str | None = None
@@ -69,9 +71,14 @@ class AgentCreate(BaseModel):
 class AgentUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
+    icon: str | None = None
     model: str | None = None
     soul: str | None = None
     rules: str | None = None
+    soulInstructions: str | None = None
+    agentInstructions: str | None = None
+    toolsInstructions: str | None = None
+    personaInstructions: str | None = None
     allowed_tools: list[str] | None = None
     allowed_skills: list[str] | None = None
     allowed_channels: list[str] | None = None
@@ -321,6 +328,8 @@ class AgentFilesResponse(BaseModel):
 
 class AgentFilesSaveRequest(BaseModel):
     name: str | None = None
+    description: str | None = None
+    icon: str | None = None
     role: str | None = None
     model: str | None = None
     allowedTools: list[str] | None = None
@@ -332,3 +341,4 @@ class AgentFilesSaveRequest(BaseModel):
     personaInstructions: str | None = None
     style: str | None = None
     policies: dict[str, Any] | None = None
+    config: dict[str, Any] | None = None

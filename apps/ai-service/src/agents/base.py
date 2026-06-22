@@ -266,6 +266,7 @@ class BaseAgent:
             output_schema=overrides.get("output_schema") or profile.output_schema,
             status=overrides.get("status", "ACTIVE"),
             handoffs=overrides.get("handoffs") or profile.handoffs,
+            config=overrides.get("config") or {},
         )
         return cls(config)
 

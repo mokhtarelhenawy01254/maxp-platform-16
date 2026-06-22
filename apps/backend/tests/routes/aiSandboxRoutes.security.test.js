@@ -630,6 +630,77 @@ describe('AI sandbox route security', () => {
     }));
   });
 
+  test('uses the persisted agent model instead of an outdated UI model selection', async () => {
+    mockSandboxAgentConfig = {
+      ...mockSandboxAgentConfig,
+      model: 'deepseek-v4-flash',
+      config: { provider: 'DEEPSEEK', keyId: 'key_deepseek' },
+    };
+    mockPrisma.aiKey.findMany.mockResolvedValue([
+      {
+        id: 'key_google',
+        name: 'Production Gemini',
+        provider: 'GOOGLE',
+        keyType: 'CENTRAL',
+        companyId: null,
+        isActive: true,
+        apiKey: 'google-secret',
+        baseUrl: null,
+        priority: 1,
+      },
+      {
+        id: 'key_deepseek',
+        name: 'Production DeepSeek',
+        provider: 'DEEPSEEK',
+        keyType: 'CENTRAL',
+        companyId: null,
+        isActive: true,
+        apiKey: 'deepseek-secret',
+        baseUrl: null,
+        priority: 2,
+      },
+    ]);
+    mockPrisma.aiModelConfig.findMany.mockResolvedValue([
+      {
+        keyId: 'key_google',
+        modelName: 'gemini-2.5-flash',
+        isEnabled: true,
+        priority: 1,
+      },
+      {
+        keyId: 'key_deepseek',
+        modelName: 'deepseek-v4-flash',
+        isEnabled: true,
+        priority: 1,
+      },
+    ]);
+
+    const response = await request(app)
+      .post('/ai-sandbox/chat')
+      .send({
+        sessionId: 'session_1',
+        agentId: 'agent_sales',
+        provider: 'GOOGLE',
+        model: 'gemini-2.5-flash',
+        keyId: 'key_google',
+        message: 'Recommend a protective case',
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(expect.objectContaining({
+      model: 'deepseek-v4-flash',
+      provider: 'DEEPSEEK',
+      keyId: 'key_deepseek',
+    }));
+    expect(aiServiceAdminClient.chatWithAgent).toHaveBeenCalledWith(expect.objectContaining({
+      agentConfig: expect.objectContaining({
+        model: 'deepseek-v4-flash',
+        provider: 'DEEPSEEK',
+        keyId: 'key_deepseek',
+      }),
+    }));
+  });
+
   test('returns and persists token usage and cost from sandbox runtime metadata', async () => {
     mockAiServiceChatResult = {
       status: 'ok',

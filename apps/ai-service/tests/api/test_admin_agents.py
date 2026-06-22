@@ -158,8 +158,11 @@ def test_spawn_agent_success(client, mock_session, valid_headers):
             "name": "New Support",
             "role": "SUPPORT",
             "model": "gpt-4o",
+            "description": "Handles mobile accessory customers",
+            "icon": "phone-accessory",
             "persona": {"soulInstructions": "Be nice"},
             "allowed_tools": ["search"],
+            "config": {"provider": "OPENAI", "keyId": "key_openai"},
         },
         headers=valid_headers
     )
@@ -169,8 +172,11 @@ def test_spawn_agent_success(client, mock_session, valid_headers):
     assert data["name"] == "New Support"
     assert data["role"] == "SUPPORT"
     assert data["model"] == "gpt-4o"
+    assert data["description"] == "Handles mobile accessory customers"
+    assert data["icon"] == "phone-accessory"
     assert data["persona"]["soulInstructions"] == "Be nice"
     assert data["allowed_tools"] == ["search"]
+    assert data["config"] == {"provider": "OPENAI", "keyId": "key_openai"}
 
 
 def test_spawn_agent_with_template(client, mock_session, valid_headers):
@@ -219,18 +225,30 @@ def test_update_agent_success(client, mock_session, valid_headers):
         "/admin/agents/agent_123",
         json={
             "name": "Updated Name",
+            "description": "Updated customer-facing description",
+            "icon": "updated-icon",
             "model": "claude-3-5-sonnet",
             "persona": {"soulInstructions": "Brand new soul"},
+            "agentInstructions": "Follow the CRM workflow",
+            "toolsInstructions": "Use product tools before recommending",
+            "personaInstructions": "Speak in Egyptian Arabic",
             "allowed_tools": ["custom_tool"],
+            "config": {"provider": "ANTHROPIC", "keyId": "key_claude"},
         },
         headers=valid_headers
     )
     assert resp.status_code == 200
     data = resp.json()
     assert data["name"] == "Updated Name"
+    assert data["description"] == "Updated customer-facing description"
+    assert data["icon"] == "updated-icon"
     assert data["model"] == "claude-3-5-sonnet"
     assert data["persona"]["soulInstructions"] == "Brand new soul"
+    assert data["persona"]["agentInstructions"] == "Follow the CRM workflow"
+    assert data["persona"]["toolsInstructions"] == "Use product tools before recommending"
+    assert data["persona"]["personaInstructions"] == "Speak in Egyptian Arabic"
     assert data["allowed_tools"] == ["custom_tool"]
+    assert data["config"] == {"provider": "ANTHROPIC", "keyId": "key_claude"}
 
 
 def test_archive_agent(client, mock_session, valid_headers):
@@ -279,4 +297,3 @@ def test_reconcile_agent_no_template(client, mock_session, valid_headers):
     resp = client.post("/admin/agents/agent_123/reconcile", headers=valid_headers)
     assert resp.status_code == 400
     assert "no template to reconcile with" in resp.json()["detail"]
-

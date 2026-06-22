@@ -127,6 +127,23 @@ async function setKeyStatus(id, isActive) {
   return request('PATCH', `/admin/keys/${encodeURIComponent(id)}/status`, { is_active: isActive });
 }
 
+function normalizeAgentPayload(data = {}) {
+  const fieldMap = {
+    companyId: 'company_id',
+    templateSlug: 'template_slug',
+    parentId: 'parent_id',
+    allowedTools: 'allowed_tools',
+    allowedSkills: 'allowed_skills',
+    allowedChannels: 'allowed_channels',
+    keyId: 'key_id',
+  };
+  return Object.entries(data).reduce((body, [key, value]) => {
+    if (value === undefined) return body;
+    body[fieldMap[key] || key] = value;
+    return body;
+  }, {});
+}
+
 /**
  * Test a provider API key via Python ai-service.
  * @param {Object} params
@@ -139,7 +156,7 @@ async function setKeyStatus(id, isActive) {
  * @returns {Promise<{ok: boolean, reply: string, latency_ms: number, model: string, provider: string}>}
  */
 async function spawnAgent({ companyId, role, ...rest }) {
-  return request('POST', '/admin/agents/spawn', { company_id: companyId, role, ...rest });
+  return request('POST', '/admin/agents/spawn', normalizeAgentPayload({ companyId, role, ...rest }));
 }
 
 async function getAgent(companyId, agentId) {
@@ -181,11 +198,7 @@ async function getAgentFiles(agentId, companyId) {
 }
 
 async function updateAgent(agentId, companyId, data) {
-  const body = { ...data };
-  if (body.allowedChannels !== undefined) {
-    body.allowed_channels = body.allowedChannels;
-    delete body.allowedChannels;
-  }
+  const body = normalizeAgentPayload(data);
   return request('PUT', `/admin/agents/${encodeURIComponent(agentId)}?company_id=${encodeURIComponent(companyId)}`, body);
 }
 

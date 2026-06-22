@@ -876,7 +876,19 @@ async function listTenantAIKeys(companyId, includeSecret = false, options = {}) 
   return (keys || []).filter(key => key.keyType === 'CENTRAL' && (includeInactive || key.isActive === true));
 }
 
-async function resolveSandboxModelSelection(companyId, { provider, model, keyId }) {
+function getAgentModelHints(agentConfig) {
+  const config = parseJsonObject(agentConfig?.config, {});
+  const provider = String(
+    config.provider || config.providerType || agentConfig?.provider || ''
+  ).trim().toUpperCase();
+  const keyId = String(
+    config.keyId || config.key_id || agentConfig?.keyId || agentConfig?.key_id || ''
+  ).trim();
+  const configuredModel = String(agentConfig?.model || config.model || '').trim();
+  return { model: configuredModel, provider, keyId };
+}
+
+async function resolveRequestedSandboxModelSelection(companyId, { provider, model, keyId }) {
   const requestedProvider = String(provider || '').trim().toUpperCase();
   const requestedModel = String(model || '').trim();
   const requestedKeyId = typeof keyId === 'string' ? keyId.trim() : '';
@@ -936,6 +948,37 @@ async function resolveSandboxModelSelection(companyId, { provider, model, keyId 
     key: selectedKey,
     usedFallbackKey,
   };
+}
+
+async function resolveSandboxModelSelection(companyId, { provider, model, keyId, agentId }) {
+  const requestedProvider = String(provider || '').trim().toUpperCase();
+  const requestedModel = String(model || '').trim();
+  const requestedKeyId = typeof keyId === 'string' ? keyId.trim() : '';
+  const agentConfig = agentId ? await getAgentConfig(companyId, agentId) : null;
+  const agentModel = getAgentModelHints(agentConfig);
+
+  if (agentModel.model) {
+    const shouldUseAgentModel =
+      agentModel.model !== requestedModel ||
+      (agentModel.provider && agentModel.provider !== requestedProvider) ||
+      (agentModel.keyId && agentModel.keyId !== requestedKeyId);
+
+    if (shouldUseAgentModel || !requestedProvider || !requestedModel) {
+      const selection = await resolveRequestedSandboxModelSelection(companyId, {
+        provider: agentModel.provider || requestedProvider,
+        model: agentModel.model,
+        keyId: agentModel.keyId || '',
+      });
+      return {
+        ...selection,
+        source: 'agent',
+        requestedModel: requestedModel || null,
+        requestedProvider: requestedProvider || null,
+      };
+    }
+  }
+
+  return resolveRequestedSandboxModelSelection(companyId, { provider, model, keyId });
 }
 
 async function listAgents(req, res) {
@@ -1377,7 +1420,7 @@ async function sendChatMessage(req, res) {
     const messageText = validateRequiredText(message, 'MESSAGE_REQUIRED', MAX_SANDBOX_MESSAGE_CHARS);
     const safeSessionId = validateOptionalSessionId(sessionId);
     const safeAttachments = normalizeSandboxAttachments(attachments);
-    const modelSelection = await resolveSandboxModelSelection(companyId, { provider, model, keyId });
+    const modelSelection = await resolveSandboxModelSelection(companyId, { provider, model, keyId, agentId });
     const startTime = Date.now();
     const turnResult = await runSandboxChatTurn({
       companyId,
@@ -1427,7 +1470,7 @@ async function streamChatMessage(req, res) {
     const messageText = validateRequiredText(message, 'MESSAGE_REQUIRED', MAX_SANDBOX_MESSAGE_CHARS);
     const safeSessionId = validateOptionalSessionId(sessionId);
     const safeAttachments = normalizeSandboxAttachments(attachments);
-    const modelSelection = await resolveSandboxModelSelection(companyId, { provider, model, keyId });
+    const modelSelection = await resolveSandboxModelSelection(companyId, { provider, model, keyId, agentId });
 
     const existingSession = safeSessionId
       ? await aiSandboxService.getSession(safeSessionId, companyId)
