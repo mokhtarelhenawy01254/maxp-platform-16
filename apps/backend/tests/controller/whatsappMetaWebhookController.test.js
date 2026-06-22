@@ -13,7 +13,7 @@ jest.mock('../../utils/webhookSignature', () => ({
 
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 const { saveIncomingMessage } = require('../../services/whatsapp/WhatsAppInboundService');
-const { buildMetaSessionLookup, postWebhook } = require('../../controller/whatsappMetaWebhookController');
+const { buildMetaSessionLookup, getWebhook, postWebhook } = require('../../controller/whatsappMetaWebhookController');
 
 describe('whatsappMetaWebhookController', () => {
   let prisma;
@@ -57,9 +57,18 @@ describe('whatsappMetaWebhookController', () => {
           { metaPhoneNumberId: '1165821659950962' },
           { metaDisplayPhoneNumber: '+201033316739' }
         ],
-        NOT: [
-          { metadata: { contains: '"isDeleted":true' } },
-          { metadata: { contains: '"isDeleted": true' } }
+        AND: [
+          {
+            OR: [
+              { metadata: null },
+              {
+                NOT: [
+                  { metadata: { contains: '"isDeleted":true' } },
+                  { metadata: { contains: '"isDeleted": true' } }
+                ]
+              }
+            ]
+          }
         ]
       },
       orderBy: [
@@ -118,5 +127,45 @@ describe('whatsappMetaWebhookController', () => {
       pushName: 'Mokhtar'
     }));
     expect(res.sendStatus).toHaveBeenCalledWith(200);
+  });
+
+  test('accepts verify tokens from active Meta sessions with null metadata', async () => {
+    const req = {
+      query: {
+        'hub.mode': 'subscribe',
+        'hub.verify_token': 'maxwhats_2026',
+        'hub.challenge': 'challenge-ok'
+      }
+    };
+    const res = {
+      status: jest.fn(function status() { return this; }),
+      send: jest.fn(),
+      sendStatus: jest.fn()
+    };
+
+    await getWebhook(req, res);
+
+    expect(prisma.whatsAppSession.findFirst).toHaveBeenCalledWith({
+      where: {
+        provider: 'META_CLOUD',
+        metaWebhookVerifyToken: 'maxwhats_2026',
+        AND: [
+          {
+            OR: [
+              { metadata: null },
+              {
+                NOT: [
+                  { metadata: { contains: '"isDeleted":true' } },
+                  { metadata: { contains: '"isDeleted": true' } }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    });
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.send).toHaveBeenCalledWith('challenge-ok');
+    expect(res.sendStatus).not.toHaveBeenCalled();
   });
 });

@@ -33,9 +33,21 @@
 ### [FIX] Meta Cloud Webhook Could Match Deleted Duplicate Session
 - **Date**: 2026-06-23
 - **Description**: WhatsApp Cloud API webhooks could resolve to an older duplicated `META_CLOUD` session for the same `metaPhoneNumberId`, including rows marked with `metadata.isDeleted=true`.
-- **Root Cause**: `whatsappMetaWebhookController` used an unordered `findFirst` across phone number identifiers without filtering deleted duplicate sessions or preferring the default/latest connected configuration.
-- **Resolution**: Centralized Meta session lookup, restricted it to `META_CLOUD`, ignored deleted metadata rows, and ordered by `isDefault` then `updatedAt` so inbound messages attach to the active session.
+- **Root Cause**:
+    1. `whatsappMetaWebhookController` used an unordered `findFirst` across phone number identifiers without filtering deleted duplicate sessions or preferring the default/latest connected configuration.
+    2. The deleted-session filter used `NOT metadata contains ...` directly, which excluded active Meta sessions whose `metadata` column was `null`. This made Meta verify-token checks return `403` and made inbound message lookup skip the active session.
+- **Resolution**: Centralized Meta session lookup, restricted it to `META_CLOUD`, ignored deleted metadata rows, explicitly allowed `metadata: null`, and ordered by `isDefault` then `updatedAt` so inbound messages attach to the active session.
 - **Files Modified**:
+    - `backend/controller/whatsappMetaWebhookController.js`
+    - `backend/tests/controller/whatsappMetaWebhookController.test.js`
+
+### [FIX] Meta Cloud App Subscription Missing For Harf WhatsApp
+- **Date**: 2026-06-23
+- **Description**: Harf Online's WhatsApp Cloud number showed as connected in MaxP, but customer WhatsApp messages did not reach the unified inbox or trigger the assigned AI agent.
+- **Root Cause**: The WABA and phone number were stored correctly, but the Meta app `Harfcrm` had no app-level webhook subscription (`/{app-id}/subscriptions` returned `data: []`). MaxP therefore had credentials for sending and session metadata, but Meta had no active callback target for `whatsapp_business_account/messages`.
+- **Resolution**: Verified MaxP's callback challenge on `/api/v1/whatsapp-meta`, registered the Meta app subscription for `whatsapp_business_account` field `messages`, and ensured the WABA was subscribed to the app. Graph API now reports the callback as active on `https://maxp.online/api/v1/whatsapp-meta`.
+- **Files Modified**:
+    - Production Meta app configuration
     - `backend/controller/whatsappMetaWebhookController.js`
     - `backend/tests/controller/whatsappMetaWebhookController.test.js`
 

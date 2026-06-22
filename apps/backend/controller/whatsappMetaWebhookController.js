@@ -11,6 +11,13 @@ const DELETED_METADATA_FILTERS = [
   { metadata: { contains: '"isDeleted": true' } }
 ];
 
+const ACTIVE_METADATA_FILTER = {
+  OR: [
+    { metadata: null },
+    { NOT: DELETED_METADATA_FILTERS }
+  ]
+};
+
 function buildMetaSessionLookup({ phoneNumberId, displayPhoneNumber }) {
   const identifiers = [
     phoneNumberId ? { metaPhoneNumberId: phoneNumberId } : undefined,
@@ -25,7 +32,7 @@ function buildMetaSessionLookup({ phoneNumberId, displayPhoneNumber }) {
     where: {
       provider: 'META_CLOUD',
       OR: identifiers,
-      NOT: DELETED_METADATA_FILTERS
+      AND: [ACTIVE_METADATA_FILTER]
     },
     orderBy: [
       { isDefault: 'desc' },
@@ -44,7 +51,7 @@ async function isVerifyTokenValid(token) {
     where: {
       provider: 'META_CLOUD',
       metaWebhookVerifyToken: token,
-      NOT: DELETED_METADATA_FILTERS
+      AND: [ACTIVE_METADATA_FILTER]
     }
   });
   return !!match;
@@ -162,7 +169,8 @@ async function postWebhook(req, res) {
       const sessionsWithSecret = await getSharedPrismaClient().whatsAppSession.findMany({
         where: {
           provider: 'META_CLOUD',
-          metaWebhookSecret: { not: null }
+          metaWebhookSecret: { not: null },
+          AND: [ACTIVE_METADATA_FILTER]
         },
         select: { metaWebhookSecret: true }
       });
@@ -184,7 +192,11 @@ async function postWebhook(req, res) {
       // because the admin hasn't set the secret yet.
       const hasAnySecret = globalSecret ||
         (await getSharedPrismaClient().whatsAppSession.count({
-          where: { provider: 'META_CLOUD', metaWebhookSecret: { not: null } }
+          where: {
+            provider: 'META_CLOUD',
+            metaWebhookSecret: { not: null },
+            AND: [ACTIVE_METADATA_FILTER]
+          }
         })) > 0;
 
       if (hasAnySecret) {

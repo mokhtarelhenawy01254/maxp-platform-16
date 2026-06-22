@@ -35,3 +35,5 @@
 - Customer-channel runtime gates must use `services/aiSettingsResolver.js`, which prefers `ai.ai_settings` and falls back to `public.ai_settings`.
 - Meta App callbacks may post WhatsApp Cloud payloads to `/api/v1/webhook`; `webhookController` must forward `object="whatsapp_business_account"` to `whatsappMetaWebhookController`.
 - Harf Online WhatsApp Cloud session: company `cmqpayohr2pwqju47cqz9l9li`, active session `cmqppump800c8julajuvawupw`, phone number id `1165821659950962`, display `+20 10 33316739`, WABA `1306119191241535`, agent `agent_k8fD5T6GiIuExPcKKvGlrQ`.
+- Active Meta sessions can have `metadata = null`; deleted-session filters must explicitly allow null metadata and only reject `metadata.isDeleted=true`.
+- Harf's Meta app is `Harfcrm` (`1688924222334388`). It needs an app-level subscription for `whatsapp_business_account/messages` pointing to `https://maxp.online/api/v1/whatsapp-meta`; WABA subscription alone is not enough for inbound delivery.
