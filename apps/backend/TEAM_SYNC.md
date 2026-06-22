@@ -12,6 +12,13 @@
   - Placed advanced settings (webhook verify token, app secret, display phone) inside a collapsible settings panel.
   - Added form validation to restrict progress to the next step if required fields are missing.
 
+### WhatsApp Meta Cloud Webhook Fixes
+- **Accomplishment**: Fixed Meta Cloud Webhook signature verification and route isolation, enabling incoming WhatsApp messages to correctly sync to the platform.
+- **Details**:
+  - Excluded the new Webhook route `/api/v1/whatsapp-meta` from company isolation checks.
+  - Whitelisted `/api/v1/whatsapp-meta` and subpaths in `PUBLIC_ROUTES` to prevent unauthorized routing blockages.
+  - Rewrote the signature validation logic in `whatsappMetaWebhookController` to verify requests using active DB session secrets (`metaWebhookSecret`) when global environment secrets are missing.
+
 ### Meta Graph API Upgrade to v25.0
 - **Accomplishment**: Successfully upgraded all Meta Graph API and WhatsApp Cloud API integrations across the Node.js backend and Python AI service to utilize version `v25.0` (latest release).
 - **Details**:

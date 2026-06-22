@@ -455,7 +455,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
       >
         <div className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-[280px] rounded-[24px]" />
+            <Skeleton key={i} className="h-[280px] rounded-3xl" />
           ))}
         </div>
       </WhatsAppPageShell>
@@ -472,7 +472,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
           variant="outline"
           onClick={refreshPageData}
           disabled={refreshing}
-          className="rounded-full bg-[color:var(--shell-control-bg)]"
+          className="rounded-full bg-[color:var(--color-muted)]"
         >
           {refreshing ? (
             <span className="flex items-center gap-2">
@@ -508,7 +508,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
           }
           action={
             <Button
-              className="rounded-full bg-[color:var(--color-primary)] text-white hover:bg-[color:color-mix(in_srgb,var(--color-primary)_84%,black)]"
+              className="rounded-full bg-[color:var(--color-primary)] text-white hover:brightness-90"
               onClick={openCreateTemplateDialog}
             >
               <Plus className="size-4" />
@@ -554,7 +554,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                       value={templateSearch}
                       onChange={(event) => setTemplateSearch(event.target.value)}
                       placeholder={t("common.search")}
-                      className="h-11 rounded-full bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] pl-10"
+                      className="h-11 rounded-full bg-[color:var(--color-card)] pl-10"
                     />
                   </div>
                 </div>
@@ -562,8 +562,8 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
             </div>
 
             {filteredTemplates.length === 0 ? (
-              <div className="rounded-[28px] border border-dashed border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_88%,var(--shell-control-bg)_12%)] px-6 py-12 text-center">
-                <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_10%,white)] text-[color:var(--color-primary)]">
+              <div className="rounded-3xl border border-dashed border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-6 py-12 text-center">
+                <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary/10 text-[color:var(--color-primary)]">
                   <FileText className="size-7" />
                 </div>
                 <div className="mt-4 space-y-2">
@@ -577,7 +577,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                   </p>
                   <Button
                     variant="outline"
-                    className="mt-2 rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+                    className="mt-2 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:brightness-95"
                     onClick={() => {
                       setTemplateSearch("");
                       handleCategoryChange("ALL");
@@ -592,7 +592,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                 {filteredTemplates.map((template) => (
                   <div
                     key={template.id ?? template.eventType}
-                    className="flex h-full flex-col rounded-[24px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] p-5 shadow-[0_18px_40px_rgba(15,27,45,0.05)] transition-transform duration-200 hover:-translate-y-1"
+                    className="flex h-full flex-col rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-5 shadow-md transition-transform duration-200 hover:-translate-y-1"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-2">
@@ -618,7 +618,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                           {template.isDefault && !template.id ? (
                             <Badge
                               variant="outline"
-                              className="rounded-full border-dashed border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_88%,var(--shell-control-bg)_12%)] text-[color:var(--color-muted-foreground)]"
+                              className="rounded-full border-dashed border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] text-[color:var(--color-muted-foreground)]"
                             >
                               {i18n.language === "ar" ? "نظامي" : "System"}
                             </Badge>
@@ -644,7 +644,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        className="rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_6%,white)] text-[color:var(--color-primary)] hover:bg-[color:color-mix(in_srgb,var(--color-primary)_12%,white)]"
+                        className="rounded-full bg-primary/6 text-[color:var(--color-primary)] hover:bg-primary/12"
                         onClick={() => {
                           setEditingTemplate(template);
                           setTemplateDialogOpen(true);
@@ -654,7 +654,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                       </Button>
                     </div>
 
-                    <div className="mt-4 rounded-[22px] border border-emerald-200/80 bg-emerald-500/10 px-4 py-4">
+                    <div className="mt-4 rounded-2xl border border-emerald-200/80 bg-emerald-500/10 px-4 py-4">
                       <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-emerald-800">
                         {i18n.language === "ar" ? "محتوى الرسالة" : "Message preview"}
                       </p>
@@ -663,7 +663,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                       </p>
                     </div>
 
-                    <div className="mt-4 flex items-center rounded-[20px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--color-background)_86%,white)] px-2 py-2">
+                    <div className="mt-4 flex items-center rounded-xl border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--color-background)_86%,white)] px-2 py-2">
                       <TemplateMetric
                         icon={Send}
                         label={i18n.language === "ar" ? "مرسل" : "Sent"}
@@ -693,11 +693,11 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
         </WhatsAppSurfaceCard>
 
         <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
-          <DialogContent className="max-w-2xl gap-0 p-0 sm:rounded-[32px]">
+          <DialogContent className="max-w-2xl gap-0 p-0 sm:rounded-3xl">
             <div className="px-6 pb-4 pt-8 sm:px-8">
               <DialogHeader>
                 <div className="flex items-center gap-4">
-                  <div className="flex size-12 items-center justify-center rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_10%,white)] text-[color:var(--color-primary)]">
+                  <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-[color:var(--color-primary)]">
                     <Edit className="size-5" />
                   </div>
                   <div>
@@ -736,7 +736,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                         ? "مثال: ترحيب بالعملاء الجدد"
                         : "e.g., New customer welcome"
                     }
-                    className="h-12 bg-[color:var(--shell-control-bg)]"
+                    className="h-12 bg-[color:var(--color-muted)]"
                   />
                 </div>
 
@@ -752,7 +752,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                       }
                       disabled={superAdminMode}
                     >
-                      <SelectTrigger className="h-12 bg-[color:var(--shell-control-bg)]">
+                      <SelectTrigger className="h-12 bg-[color:var(--color-muted)]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -775,7 +775,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                         setTemplateForm((prev) => ({ ...prev, eventType: val }))
                       }
                     >
-                      <SelectTrigger className="h-12 bg-[color:var(--shell-control-bg)]">
+                      <SelectTrigger className="h-12 bg-[color:var(--color-muted)]">
                         <SelectValue
                           placeholder={
                             i18n.language === "ar" ? "اختر الحدث..." : "Select event..."
@@ -818,7 +818,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
                         ? "اكتب رسالتك هنا...\nيمكنك استخدام المتغيرات مثل {{customer_name}}"
                         : "Type your message here...\nYou can use variables like {{customer_name}}"
                     }
-                    className="min-h-[200px] resize-y bg-[color:var(--shell-control-bg)] p-4 leading-7"
+                    className="min-h-[200px] resize-y bg-[color:var(--color-muted)] p-4 leading-7"
                     dir="auto"
                   />
                   <p className="text-sm text-[color:var(--color-muted-foreground)]">
@@ -830,7 +830,7 @@ const WhatsAppTemplates: React.FC<WhatsAppTemplatesProps> = ({
               </div>
             </div>
 
-            <div className="border-t border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_96%,var(--shell-control-bg)_4%)] px-6 py-5 sm:rounded-b-[32px] sm:px-8">
+            <div className="border-t border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-6 py-5 sm:rounded-b-3xl sm:px-8">
               <DialogFooter className="gap-3 sm:gap-0">
                 <Button
                   variant="outline"

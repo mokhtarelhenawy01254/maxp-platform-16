@@ -251,15 +251,15 @@ html *::after {
   );
 
   /* WhatsApp Chat Theme Variables */
-  --whatsapp-bg: color-mix(in srgb, var(--color-background) 84%, var(--shell-control-bg) 16%);
-  --whatsapp-surface: color-mix(in srgb, white 78%, var(--color-background) 22%);
-  --whatsapp-surface-hover: color-mix(in srgb, white 90%, var(--color-background) 10%);
-  --whatsapp-surface-active: color-mix(in srgb, white 95%, var(--color-background) 5%);
-  --whatsapp-surface-strong: color-mix(in srgb, white 86%, var(--color-background) 14%);
-  --whatsapp-surface-elevated: white;
-  --whatsapp-surface-overlay: color-mix(in srgb, white 92%, var(--color-background) 8%);
-  --whatsapp-surface-muted: color-mix(in srgb, black 5%, white 95%);
-  --whatsapp-input-bg: color-mix(in srgb, white 85%, var(--color-background) 15%);
+  --whatsapp-bg: var(--color-background);
+  --whatsapp-surface: var(--color-card);
+  --whatsapp-surface-hover: var(--color-muted);
+  --whatsapp-surface-active: #f0f1f3;
+  --whatsapp-surface-strong: var(--color-card);
+  --whatsapp-surface-elevated: var(--color-card);
+  --whatsapp-surface-overlay: var(--color-muted);
+  --whatsapp-surface-muted: var(--color-muted);
+  --whatsapp-input-bg: var(--color-muted);
   --whatsapp-typing-bg: rgba(255, 255, 255, 0.92);
   --whatsapp-message-outgoing: #d9fdd3;
   --whatsapp-message-outgoing-text: #1f2d1f;
@@ -497,15 +497,15 @@ html *::after {
   );
 
   /* WhatsApp Chat Dark Mode Variables */
-  --whatsapp-bg: color-mix(in srgb, var(--color-background) 92%, black 8%);
-  --whatsapp-surface: color-mix(in srgb, var(--color-background) 72%, white 28%);
-  --whatsapp-surface-hover: color-mix(in srgb, var(--color-background) 62%, white 38%);
-  --whatsapp-surface-active: color-mix(in srgb, var(--color-background) 55%, white 45%);
-  --whatsapp-surface-strong: color-mix(in srgb, var(--color-background) 65%, white 35%);
-  --whatsapp-surface-elevated: color-mix(in srgb, var(--color-background) 55%, white 45%);
-  --whatsapp-surface-overlay: color-mix(in srgb, var(--color-background) 75%, white 25%);
-  --whatsapp-surface-muted: color-mix(in srgb, white 8%, transparent);
-  --whatsapp-input-bg: color-mix(in srgb, var(--color-background) 55%, white 45%);
+  --whatsapp-bg: var(--color-background);
+  --whatsapp-surface: var(--color-card);
+  --whatsapp-surface-hover: #1a2c42;
+  --whatsapp-surface-active: #1f3350;
+  --whatsapp-surface-strong: var(--color-card);
+  --whatsapp-surface-elevated: var(--color-card);
+  --whatsapp-surface-overlay: var(--color-muted);
+  --whatsapp-surface-muted: var(--color-muted);
+  --whatsapp-input-bg: var(--color-muted);
   --whatsapp-typing-bg: rgba(7, 17, 32, 0.92);
   --whatsapp-message-outgoing: #005c4b;
   --whatsapp-message-outgoing-text: #e9edef;

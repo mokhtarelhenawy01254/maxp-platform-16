@@ -85,7 +85,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
     const renderMessageContent = () => {
       if (message.mediaUrl === "FAILED_DOWNLOAD") {
         return (
-          <div className="flex items-center gap-2 rounded-[16px] border border-rose-300/70 bg-rose-500/10 px-3 py-2 text-rose-800 dark:border-rose-500/40 dark:bg-rose-950/40 dark:text-rose-200">
+          <div className="flex items-center gap-2 rounded-xl border border-rose-300/70 bg-rose-500/10 px-3 py-2 text-rose-800 dark:border-rose-500/40 dark:bg-rose-950/40 dark:text-rose-200">
             <AlertTriangle className="size-4" />
             <span className="text-sm">{t("whatsapp.dialogs.failedDownload")}</span>
           </div>
@@ -102,7 +102,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
                 <img
                   src={fullMediaUrl}
                   alt="Message media"
-                  className="max-h-[20rem] max-w-full rounded-[16px] object-cover"
+                  className="max-h-[20rem] max-w-full rounded-xl object-cover"
                   onClick={() => window.open(fullMediaUrl, "_blank")}
                 />
                 {message.content ? (
@@ -119,7 +119,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
                 <video
                   src={fullMediaUrl}
                   controls
-                  className="max-h-[20rem] max-w-full rounded-[16px]"
+                  className="max-h-[20rem] max-w-full rounded-xl"
                 />
                 {message.content ? (
                   <LinkifiedText
@@ -133,7 +133,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
             return <audio src={fullMediaUrl} controls className="min-w-[14rem] max-w-full" />;
           case "DOCUMENT":
             return (
-              <div className="flex min-w-[14rem] items-center gap-3 rounded-[16px] border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[var(--whatsapp-surface-muted)] px-3 py-3">
+              <div className="flex min-w-[14rem] items-center gap-3 rounded-xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[var(--whatsapp-surface-muted)] px-3 py-3">
                 <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
                   <FileText className="size-5" />
                 </div>
@@ -185,7 +185,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
               href={mapUrl}
               target="_blank"
               rel="noreferrer"
-              className="block rounded-[16px] border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[var(--whatsapp-surface-muted)] px-3 py-3 transition-colors hover:bg-[var(--whatsapp-surface)]"
+              className="block rounded-xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[var(--whatsapp-surface-muted)] px-3 py-3 transition-colors hover:bg-[var(--whatsapp-surface)]"
             >
               <div className="flex items-center gap-3">
                 <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400">
@@ -226,7 +226,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
       <div className="w-full px-2 py-1">
         {shouldShowDateSeparator(message, previousMessage) ? (
           <div className="mb-2 flex justify-center">
-            <div className="rounded-full border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-3 py-1 text-xs text-[color:var(--color-muted-foreground)] shadow-[0_6px_18px_rgba(15,27,45,0.04)]">
+            <div className="rounded-full border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-3 py-1 text-xs text-[color:var(--color-muted-foreground)] shadow-sm">
               {getDateSeparatorText(message.timestamp)}
             </div>
           </div>
@@ -240,7 +240,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
         >
           <div
             className={cn(
-              "min-w-[7rem] max-w-[78%] cursor-context-menu rounded-[20px] px-4 py-3 shadow-[0_8px_24px_rgba(15,27,45,0.08)]",
+              "min-w-[7rem] max-w-[78%] cursor-context-menu rounded-2xl px-4 py-3 shadow-sm",
               "border border-transparent",
               message.fromMe
               ? "rounded-tr-[6px] bg-[#d9fdd3] dark:bg-[var(--whatsapp-message-outgoing)]"
@@ -257,7 +257,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
 
             {message.quotedMessageId ? (
               <div
-                className="mb-2 cursor-pointer rounded-[14px] border border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[var(--whatsapp-surface-muted)] px-3 py-2 transition-colors hover:bg-[color:color-mix(in_srgb,var(--color-primary)_8%,var(--whatsapp-surface-muted))]"
+                className="mb-2 cursor-pointer rounded-xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[var(--whatsapp-surface-muted)] px-3 py-2 transition-colors hover:bg-primary/8"
                 onClick={(e) => {
                   e.stopPropagation();
                   onQuotedMessageClick?.(message.quotedMessageId!);

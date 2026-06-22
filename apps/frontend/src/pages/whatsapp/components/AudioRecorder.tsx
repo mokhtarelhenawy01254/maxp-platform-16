@@ -63,7 +63,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
   };
 
   return (
-    <div className="flex w-full items-center gap-2 rounded-[24px] border border-[color:var(--shell-control-border)] bg-white/80 px-3 py-2 shadow-[0_14px_28px_rgba(15,27,45,0.06)]">
+    <div className="flex w-full items-center gap-2 rounded-3xl border border-[color:var(--shell-control-border)] bg-white/80 px-3 py-2 shadow-md">
       <Button
         variant="ghost"
         size="icon-sm"
@@ -73,7 +73,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
         <Trash2 className="size-4" />
       </Button>
 
-      <div className="flex min-w-0 flex-1 items-center gap-3 rounded-[18px] bg-[color:color-mix(in_srgb,var(--color-primary)_5%,white)] px-3 py-2">
+      <div className="flex min-w-0 flex-1 items-center gap-3 rounded-xl bg-primary/5 px-3 py-2">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-rose-500/10 text-rose-600">
           {status === "recording" ? (
             <Mic className="size-4 animate-pulse" />

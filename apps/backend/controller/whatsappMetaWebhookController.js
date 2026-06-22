@@ -106,23 +106,66 @@ async function getWebhook(req, res) {
 
 async function postWebhook(req, res) {
   try {
-    const signatureCheck = verifyMetaWebhookSignature(
-      req,
-      String(process.env.META_WA_APP_SECRET || process.env.META_WA_WEBHOOK_SECRET || '').trim()
-    );
+    // ── Signature verification with per-session fallback ──────────────
+    const globalSecret = String(
+      process.env.META_WA_APP_SECRET || process.env.META_WA_WEBHOOK_SECRET || ''
+    ).trim();
 
-    if (!signatureCheck.ok) {
-      const statusCode = signatureCheck.reason === 'missing_secret'
-        ? 503
-        : signatureCheck.reason === 'missing_raw_body'
-          ? 500
-          : 401;
+    let signatureOk = false;
 
-      return res.status(statusCode).json({
-        success: false,
-        error: 'Invalid signature',
-        reason: signatureCheck.reason
+    if (globalSecret) {
+      // Try global secret first
+      const check = verifyMetaWebhookSignature(req, globalSecret);
+      signatureOk = check.ok;
+      if (!check.ok && check.reason !== 'missing_raw_body') {
+        console.warn('⚠️ [Meta Webhook] Global secret signature mismatch, trying per-session secrets...');
+      }
+      if (check.reason === 'missing_raw_body') {
+        return res.status(500).json({ success: false, error: 'Invalid signature', reason: 'missing_raw_body' });
+      }
+    }
+
+    if (!signatureOk) {
+      // Fallback: try per-session secrets stored in the DB
+      const sessionsWithSecret = await getSharedPrismaClient().whatsAppSession.findMany({
+        where: {
+          provider: 'META_CLOUD',
+          metaWebhookSecret: { not: null }
+        },
+        select: { metaWebhookSecret: true }
       });
+
+      for (const s of sessionsWithSecret) {
+        const secret = String(s.metaWebhookSecret || '').trim();
+        if (!secret) continue;
+        const check = verifyMetaWebhookSignature(req, secret);
+        if (check.ok) {
+          signatureOk = true;
+          break;
+        }
+      }
+    }
+
+    if (!signatureOk) {
+      // If no secrets are configured anywhere, allow webhook through with a warning
+      // This prevents a chicken-and-egg problem where webhooks can't be verified
+      // because the admin hasn't set the secret yet.
+      const hasAnySecret = globalSecret ||
+        (await getSharedPrismaClient().whatsAppSession.count({
+          where: { provider: 'META_CLOUD', metaWebhookSecret: { not: null } }
+        })) > 0;
+
+      if (hasAnySecret) {
+        // Secrets exist but none matched — reject
+        return res.status(401).json({
+          success: false,
+          error: 'Invalid signature',
+          reason: 'invalid_signature'
+        });
+      }
+
+      // No secrets configured at all — allow with warning
+      console.warn('⚠️ [Meta Webhook] No webhook secret configured (env or session). Processing without signature verification.');
     }
 
     const body = req.body;

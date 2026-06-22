@@ -73,8 +73,7 @@ interface ChatWindowProps {
 }
 
 const backgroundStyle: React.CSSProperties = {
-  backgroundColor:
-    "color-mix(in srgb, var(--color-background) 84%, var(--shell-control-bg) 16%)",
+  backgroundColor: "var(--color-muted)",
   backgroundImage:
     'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")',
   backgroundPosition: "center",
@@ -126,12 +125,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     return (
       <div
         className={cn(
-          "whatsapp-theme-transition flex min-h-[24rem] flex-1 items-center justify-center bg-[color:color-mix(in_srgb,var(--app-panel-bg)_80%,var(--shell-control-bg)_20%)] px-6 text-center",
+          "whatsapp-theme-transition flex min-h-[24rem] flex-1 items-center justify-center bg-[color:var(--color-muted)] px-6 text-center",
           className,
         )}
       >
         <div className="max-w-sm space-y-4">
-          <div className="mx-auto flex size-16 items-center justify-center rounded-[24px] border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] text-[color:var(--color-primary)] shadow-[0_16px_40px_rgba(15,27,45,0.08)]">
+          <div className="mx-auto flex size-16 items-center justify-center rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] text-[color:var(--color-primary)] shadow-md">
             <Send className="size-7" />
           </div>
           <p className="text-lg font-semibold text-[color:var(--color-foreground)]">
@@ -154,7 +153,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         className,
       )}
     >
-      <div className="flex items-center justify-between gap-4 border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_88%,var(--shell-control-bg)_12%)] px-5 py-4">
+      <div className="flex items-center justify-between gap-4 border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:var(--color-muted)] px-5 py-4">
         <div className="flex min-w-0 items-center gap-3">
           {onBackToList ? (
             <Button
@@ -170,9 +169,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               <span className="sr-only">{t("whatsapp.sidebar.all")}</span>
             </Button>
           ) : null}
-          <Avatar size="lg" className="shadow-[0_12px_30px_rgba(15,27,45,0.1)]">
+          <Avatar size="lg" className="shadow-md">
             <AvatarImage src={selectedContact.profilePicUrl || undefined} />
-            <AvatarFallback className="bg-[color:color-mix(in_srgb,var(--color-primary)_12%,var(--color-background))] text-[color:var(--color-primary)]">
+            <AvatarFallback className="bg-primary/10 text-[color:var(--color-primary)]">
               {getContactName(selectedContact).slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
@@ -265,16 +264,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
         {typingUsers.size > 0 ? (
           <div className="pointer-events-none absolute bottom-3 left-4 right-4 flex justify-start">
-            <div className="pointer-events-auto rounded-full border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-typing-bg)] px-3 py-1.5 text-xs text-[color:var(--color-muted-foreground)] shadow-[0_10px_24px_rgba(15,27,45,0.08)]">
+            <div className="pointer-events-auto rounded-full border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-typing-bg)] px-3 py-1.5 text-xs text-[color:var(--color-muted-foreground)] shadow-sm">
               {t("whatsapp.window.typing")}
             </div>
           </div>
         ) : null}
       </div>
 
-      <div className="border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_88%,white_12%)] px-3 py-3 sm:px-4 sm:py-4">
+      <div className="border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:var(--color-card)] px-3 py-3 sm:px-4 sm:py-4">
         {replyingTo ? (
-          <div className="mb-3 flex items-start justify-between gap-3 rounded-[20px] border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-4 py-3">
+          <div className="mb-3 flex items-start justify-between gap-3 rounded-xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-4 py-3">
             <div className="min-w-0 space-y-1">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--color-primary)]">
                 {replyingTo.fromMe
@@ -309,7 +308,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         ) : (
           <div className="relative flex flex-wrap items-end gap-2">
             {showEmojiPicker ? (
-              <div className="whatsapp-emoji-picker absolute bottom-full left-0 z-20 mb-3 overflow-hidden rounded-[24px] border border-[color:var(--shell-control-border)] shadow-[0_20px_50px_rgba(15,27,45,0.18)]">
+              <div className="whatsapp-emoji-picker absolute bottom-full left-0 z-20 mb-3 overflow-hidden rounded-3xl border border-[color:var(--shell-control-border)] shadow-lg">
                 <EmojiPicker
                   onEmojiClick={(data) => setNewMessage(newMessage + data.emoji)}
                 />
@@ -322,7 +321,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 size="icon-sm"
                 className={cn(
                   "rounded-full border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] hover:bg-[var(--whatsapp-surface-hover)]",
-                  showEmojiPicker && "bg-[color:color-mix(in_srgb,var(--color-primary)_12%,var(--color-background))]",
+                  showEmojiPicker && "bg-primary/10",
                 )}
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
               >
@@ -413,7 +412,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               value={newMessage}
               onChange={(event) => setNewMessage(event.target.value)}
               placeholder={t("whatsapp.window.inputPlaceholder")}
-              className="order-2 min-h-[2.75rem] min-w-[14rem] flex-1 resize-none rounded-[22px] border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-input-bg)] px-4 py-3 text-sm leading-6 text-[color:var(--color-foreground)] outline-none transition-colors placeholder:text-[color:var(--color-muted-foreground)] focus:border-[color:var(--color-primary)] sm:order-3"
+              className="order-2 min-h-[2.75rem] min-w-[14rem] flex-1 resize-none rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-input-bg)] px-4 py-3 text-sm leading-6 text-[color:var(--color-foreground)] outline-none transition-colors placeholder:text-[color:var(--color-muted-foreground)] focus:border-[color:var(--color-primary)] sm:order-3"
               rows={1}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
@@ -425,7 +424,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
             {newMessage.trim() ? (
               <Button
-                className="order-4 rounded-full bg-[color:var(--business-success)] px-4 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)]"
+                className="order-4 rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90"
                 onClick={onSendMessage}
                 disabled={isSendingMessage}
               >
@@ -437,7 +436,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               </Button>
             ) : (
               <Button
-                className="order-4 rounded-full bg-[color:var(--color-primary)] px-4 text-white hover:bg-[color:color-mix(in_srgb,var(--color-primary)_78%,black)]"
+                className="order-4 rounded-full bg-[color:var(--color-primary)] px-4 text-white hover:brightness-90"
                 onClick={() => setIsRecording(true)}
               >
                 <Mic className="size-4" />

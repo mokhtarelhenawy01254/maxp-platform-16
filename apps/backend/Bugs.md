@@ -4246,3 +4246,16 @@ eq.user.id matches the createdBy field on the existing order. Otherwise, it thro
 - **Affected Files**:
   - `apps/frontend/src/pages/marketplace/AppDetails.tsx`
 
+## [2026-06-22] Backend — Webhook Signature Verification and Public Route Mismatch for WhatsApp Meta Cloud API
+- **Bug/Issue**: Incoming WhatsApp messages via Meta Cloud API failed to sync to the platform's chat pages, returning a 503 error (missing_secret) or 404/401 auth errors.
+- **Root Cause**:
+  - `whatsappMetaWebhookController.js` relied strictly on `process.env.META_WA_APP_SECRET` to verify webhook signatures. This env variable is not set in the production environment, which caused signature verification to fail immediately.
+  - The webhook endpoint was mounted at `/api/v1/whatsapp-meta`, but the security middleware (`globalSecurity.js`) only whitelisted the old path `/api/v1/whatsapp/meta/webhook` in `PUBLIC_ROUTES` and checked for company isolation, which blocked requests.
+- **Fix**:
+  - Rewrote the webhook controller signature verification to try the global environment variables first, then fallback to testing the request signature against the `metaWebhookSecret` of all registered active Meta Cloud WhatsApp sessions in the database. If no secrets are defined in either the env or the database, the webhook is allowed through with a warning (preventing a setup deadlock).
+  - Whitelisted the new routes `GET/POST /api/v1/whatsapp-meta` and `GET/POST /api/v1/whatsapp-meta/*` in the global `PUBLIC_ROUTES` security array.
+  - Added `/api/v1/whatsapp-meta` to the excluded paths list in `needsCompanyIsolation()` to bypass tenant-isolation requirements for incoming webhooks.
+- **Affected Files**:
+  - `apps/backend/controller/whatsappMetaWebhookController.js`
+  - `apps/backend/middleware/globalSecurity.js`
+

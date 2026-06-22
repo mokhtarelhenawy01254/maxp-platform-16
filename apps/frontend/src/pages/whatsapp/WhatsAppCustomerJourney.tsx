@@ -155,8 +155,7 @@ const variableTokens = [
 ];
 
 const previewBackgroundStyle: React.CSSProperties = {
-  backgroundColor:
-    "color-mix(in srgb, var(--color-background) 82%, var(--shell-control-bg) 18%)",
+  backgroundColor: "var(--color-muted)",
   backgroundImage:
     'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")',
   backgroundPosition: "center",
@@ -164,10 +163,10 @@ const previewBackgroundStyle: React.CSSProperties = {
 };
 
 const floatingNoticeBaseClass =
-  "rounded-[22px] border shadow-[0_18px_40px_rgba(15,27,45,0.12)] backdrop-blur";
+  "rounded-2xl border shadow-[0_18px_40px_rgba(15,27,45,0.12)] backdrop-blur";
 
 const primaryActionClassName =
-  "rounded-full bg-[color:var(--business-success)] px-4 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)]";
+  "rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90";
 
 const outlineActionClassName =
   "rounded-full border-[color:var(--shell-control-border)] bg-white/75 hover:bg-white";
@@ -207,8 +206,8 @@ function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-[18rem] flex-col items-center justify-center gap-4 rounded-[24px] border border-dashed border-[color:var(--shell-control-border)] bg-white/45 px-6 py-10 text-center">
-      <div className="flex size-16 items-center justify-center rounded-3xl bg-[color:color-mix(in_srgb,var(--color-primary)_10%,white)] text-[color:var(--color-primary)]">
+    <div className="flex min-h-[18rem] flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-[color:var(--shell-control-border)] bg-white/45 px-6 py-10 text-center">
+      <div className="flex size-16 items-center justify-center rounded-3xl bg-primary/10 text-[color:var(--color-primary)]">
         <Icon className="size-8" />
       </div>
       <div className="space-y-2">
@@ -227,10 +226,10 @@ function EmptyState({
 function MessagePreview({ content }: { content: string }) {
   return (
     <div
-      className="overflow-hidden rounded-[24px] border border-[color:var(--shell-control-border)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]"
+      className="overflow-hidden rounded-3xl border border-[color:var(--shell-control-border)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]"
       style={previewBackgroundStyle}
     >
-      <div className="max-w-[22rem] rounded-[18px] rounded-bl-[6px] bg-[color:color-mix(in_srgb,var(--color-background)_92%,var(--shell-control-bg)_8%)] px-4 py-3 text-start shadow-[0_10px_24px_rgba(15,27,45,0.08)]">
+      <div className="max-w-[22rem] rounded-xl rounded-bl-[6px] bg-[color:color-mix(in_srgb,var(--color-background)_92%,var(--shell-control-bg)_8%)] px-4 py-3 text-start shadow-sm">
         <p className="whitespace-pre-wrap text-sm leading-6 text-[color:var(--color-foreground)]">
           {replaceVariables(content)}
         </p>
@@ -592,16 +591,16 @@ const WhatsAppCustomerJourney: React.FC = () => {
       >
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-36 rounded-[24px]" />
+            <Skeleton key={index} className="h-36 rounded-3xl" />
           ))}
         </div>
         <Skeleton className="h-14 rounded-full" />
         <div className="grid gap-4 xl:grid-cols-[minmax(0,0.96fr)_minmax(0,1.6fr)]">
           <div className="space-y-4">
-            <Skeleton className="h-[28rem] rounded-[28px]" />
-            <Skeleton className="h-64 rounded-[28px]" />
+            <Skeleton className="h-[28rem] rounded-3xl" />
+            <Skeleton className="h-64 rounded-3xl" />
           </div>
-          <Skeleton className="h-[38rem] rounded-[28px]" />
+          <Skeleton className="h-[38rem] rounded-3xl" />
         </div>
       </WhatsAppPageShell>
     );
@@ -741,10 +740,10 @@ const WhatsAppCustomerJourney: React.FC = () => {
                               }
                             }}
                             className={cn(
-                              "rounded-[24px] border px-4 py-4 shadow-[0_12px_30px_rgba(15,27,45,0.04)] transition-all",
+                              "rounded-3xl border px-4 py-4 shadow-sm transition-all",
                               "cursor-pointer bg-white/70 hover:-translate-y-0.5 hover:bg-white",
                               selected
-                                ? "border-[color:var(--business-success)] bg-[color:color-mix(in_srgb,var(--business-success)_8%,white)] shadow-[0_18px_34px_rgba(35,159,90,0.12)]"
+                                ? "border-[color:var(--business-success)] bg-[color:color-mix(in_srgb,var(--business-success)_8%,white)] shadow-md"
                                 : "border-[color:var(--shell-control-border)]",
                             )}
                           >
@@ -862,7 +861,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                     {[1, 2, 3].map((index) => (
                       <div
                         key={index}
-                        className="flex items-start gap-3 rounded-[20px] border border-white/10 bg-white/6 px-4 py-3"
+                        className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/6 px-4 py-3"
                       >
                         <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-white">
                           {index}
@@ -930,7 +929,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                   {Array.from({ length: 3 }).map((_, index) => (
                     <Skeleton
                       key={index}
-                      className="h-48 rounded-[24px] border border-[color:var(--shell-control-border)]"
+                      className="h-48 rounded-3xl border border-[color:var(--shell-control-border)]"
                     />
                   ))}
                 </div>
@@ -951,14 +950,14 @@ const WhatsAppCustomerJourney: React.FC = () => {
                     <div key={step.id || `${step.stepOrder}-${index}`} className="relative">
                       <div
                         className={cn(
-                          "absolute top-4 flex size-10 items-center justify-center rounded-full border border-[color:var(--business-success)] bg-[var(--app-panel-bg)] text-sm font-semibold text-[color:var(--business-success)] shadow-[0_10px_24px_rgba(35,159,90,0.14)]",
+                          "absolute top-4 flex size-10 items-center justify-center rounded-full border border-[color:var(--business-success)] bg-[var(--app-panel-bg)] text-sm font-semibold text-[color:var(--business-success)] shadow-sm",
                           isRtl ? "-right-14" : "-left-14",
                         )}
                       >
                         {index + 1}
                       </div>
 
-                      <div className="rounded-[26px] border border-[color:var(--shell-control-border)] bg-white/72 p-5 shadow-[0_18px_40px_rgba(15,27,45,0.05)]">
+                      <div className="rounded-3xl border border-[color:var(--shell-control-border)] bg-white/72 p-5 shadow-md">
                         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.85fr)]">
                           <div className="space-y-4">
                             <div className="flex flex-wrap items-center gap-2">
@@ -1057,9 +1056,9 @@ const WhatsAppCustomerJourney: React.FC = () => {
             }
           >
             {journeys.length > 0 ? (
-              <div className="overflow-hidden rounded-[24px] border border-[color:var(--shell-control-border)] bg-white/70">
+              <div className="overflow-hidden rounded-3xl border border-[color:var(--shell-control-border)] bg-white/70">
                 <Table>
-                  <TableHeader className="bg-[color:color-mix(in_srgb,var(--color-background)_84%,var(--shell-control-bg)_16%)]">
+                  <TableHeader className="bg-[color:var(--color-muted)]">
                     <TableRow className="hover:bg-transparent">
                       <TableHead>{t("whatsappJourney.monitoring.customer")}</TableHead>
                       <TableHead>
@@ -1086,7 +1085,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                         >
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-[color:color-mix(in_srgb,var(--color-primary)_12%,white)] text-sm font-semibold text-[color:var(--color-primary)]">
+                              <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-sm font-semibold text-[color:var(--color-primary)]">
                                 {initials}
                               </div>
                               <div className="space-y-1">
@@ -1167,7 +1166,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                 </Table>
               </div>
             ) : (
-              <Alert className="rounded-[24px] border-[color:var(--shell-control-border)] bg-white/70">
+              <Alert className="rounded-3xl border-[color:var(--shell-control-border)] bg-white/70">
                 <AlertCircle className="size-4 text-[color:var(--color-warning)]" />
                 <AlertTitle>{t("whatsappJourney.tabs.monitoring")}</AlertTitle>
                 <AlertDescription>{t("common.no_data")}</AlertDescription>
@@ -1178,7 +1177,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
       </Tabs>
 
       <Dialog open={!!selectedJourney} onOpenChange={(open) => !open && setSelectedJourney(null)}>
-        <DialogContent className="max-w-[calc(100%-2rem)] rounded-[28px] border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0 sm:max-w-2xl">
+        <DialogContent className="max-w-[calc(100%-2rem)] rounded-3xl border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0 sm:max-w-2xl">
           <DialogHeader className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-6 pt-6">
             <DialogTitle>{t("whatsappJourney.monitoring.details")}</DialogTitle>
             <DialogDescription>{t("whatsappJourney.subtitle")}</DialogDescription>
@@ -1187,7 +1186,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
           {selectedJourney ? (
             <div className="space-y-5 px-6 pb-6">
               <div className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-[22px] border border-[color:var(--shell-control-border)] bg-white/70 p-4">
+                <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-white/70 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
                     {t("whatsappJourney.monitoring.customer")}
                   </p>
@@ -1199,7 +1198,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="rounded-[22px] border border-[color:var(--shell-control-border)] bg-white/70 p-4">
+                <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-white/70 p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
                     {t("whatsappJourney.monitoring.status")}
                   </p>
@@ -1235,7 +1234,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                   <RefreshCw className="size-4" />
                   Activity History
                 </div>
-                <div className="max-h-72 space-y-3 overflow-y-auto rounded-[22px] border border-[color:var(--shell-control-border)] bg-white/70 p-4">
+                <div className="max-h-72 space-y-3 overflow-y-auto rounded-2xl border border-[color:var(--shell-control-border)] bg-white/70 p-4">
                   {selectedJourney.logs?.trim() ? (
                     selectedJourney.logs
                       .split("\n")
@@ -1244,7 +1243,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                       .map((log, index) => (
                         <div
                           key={`${log}-${index}`}
-                          className="rounded-[18px] border border-[color:color-mix(in_srgb,var(--shell-control-border)_66%,transparent)] bg-[color:color-mix(in_srgb,var(--color-background)_88%,white)] px-4 py-3"
+                          className="rounded-xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_66%,transparent)] bg-[color:var(--color-card)] px-4 py-3"
                         >
                           <p className="text-sm leading-6 text-[color:var(--color-foreground)]">
                             {log}
@@ -1274,7 +1273,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
       </Dialog>
 
       <Dialog open={flowDialogOpen} onOpenChange={setFlowDialogOpen}>
-        <DialogContent className="max-w-[calc(100%-2rem)] rounded-[28px] border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0 sm:max-w-xl">
+        <DialogContent className="max-w-[calc(100%-2rem)] rounded-3xl border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0 sm:max-w-xl">
           <DialogHeader className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-6 pt-6">
             <DialogTitle>
               {currentFlow.id
@@ -1302,7 +1301,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
               />
             </div>
 
-            <div className="rounded-[22px] border border-[color:var(--shell-control-border)] bg-white/70 px-4 py-4">
+            <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-white/70 px-4 py-4">
               <div className="flex items-center justify-between gap-4">
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-[color:var(--color-foreground)]">
@@ -1350,7 +1349,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
       </Dialog>
 
       <Dialog open={stepDialogOpen} onOpenChange={setStepDialogOpen}>
-        <DialogContent className="max-w-[calc(100%-2rem)] rounded-[28px] border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0 sm:max-w-4xl">
+        <DialogContent className="max-w-[calc(100%-2rem)] rounded-3xl border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0 sm:max-w-4xl">
           <DialogHeader className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-6 pt-6">
             <DialogTitle>
               {currentStep.id
@@ -1386,7 +1385,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
                 />
               </div>
 
-              <div className="space-y-3 rounded-[22px] border border-[color:var(--shell-control-border)] bg-white/70 p-4">
+              <div className="space-y-3 rounded-2xl border border-[color:var(--shell-control-border)] bg-white/70 p-4">
                 <div>
                   <p className="text-sm font-medium text-[color:var(--color-foreground)]">
                     {t("whatsappJourney.steps.variables")}
@@ -1478,7 +1477,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
       >
         <AlertDialogContent
           size="sm"
-          className="rounded-[28px] border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)]"
+          className="rounded-3xl border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)]"
         >
           <AlertDialogHeader>
             <AlertDialogMedia className="rounded-2xl bg-rose-500/10 text-rose-700 dark:text-rose-200">
@@ -1487,7 +1486,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
             <AlertDialogTitle>{flowDeleteTitle}</AlertDialogTitle>
             <AlertDialogDescription>{flowDeleteDescription}</AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="rounded-b-[28px] border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:color-mix(in_srgb,var(--color-background)_86%,var(--shell-control-bg)_14%)]">
+          <AlertDialogFooter className="rounded-b-3xl border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:color-mix(in_srgb,var(--color-background)_86%,var(--shell-control-bg)_14%)]">
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"

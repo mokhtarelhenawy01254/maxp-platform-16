@@ -1762,7 +1762,7 @@ const WhatsAppChatContent: React.FC = () => {
   return (
     <div className="whatsapp-theme-transition flex h-[calc(100dvh-6rem)] min-h-[34rem] flex-col overflow-hidden sm:h-[calc(100dvh-7rem)] sm:min-h-[38rem] lg:h-[calc(100dvh-7.5rem)] lg:min-h-[40rem]">
       <h1 className="sr-only">لوحة تشغيل واتساب</h1>
-      <div className="whatsapp-theme-transition flex min-h-0 flex-1 flex-col overflow-hidden rounded-[18px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_90%,var(--shell-control-bg)_10%)] shadow-[0_24px_70px_rgba(15,27,45,0.08)] xl:flex-row">
+      <div className="whatsapp-theme-transition flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] shadow-lg xl:flex-row">
       {/* Sidebar */}
       <ChatSidebar
         className={cn(selectedContact && "max-xl:hidden")}
@@ -2000,13 +2000,13 @@ const WhatsAppChatContent: React.FC = () => {
                   className={cn(
                     'flex w-full items-center gap-3 rounded-[22px] border px-3 py-3 text-start transition-all',
                     isSelected
-                      ? 'border-[color:var(--color-primary)] bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-background))]'
+                      ? 'border-[color:var(--color-primary)] bg-primary/10'
                       : 'border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] hover:bg-[var(--whatsapp-surface-hover)]',
                   )}
                 >
                   <UiAvatar className="size-11">
                     <UiAvatarImage src={contact.profilePicUrl || undefined} />
-                    <UiAvatarFallback className="bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-background))] font-semibold text-[color:var(--color-primary)]">
+                    <UiAvatarFallback className="bg-primary/10 font-semibold text-[color:var(--color-primary)]">
                       {contactName.slice(0, 2).toUpperCase()}
                     </UiAvatarFallback>
                   </UiAvatar>
@@ -2057,11 +2057,11 @@ const WhatsAppChatContent: React.FC = () => {
           >
             {selectedContact && !selectedContact.isGroup ? (
               <>
-              <UiSheetHeader className="border-b border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_88%,var(--shell-control-bg)_12%)] px-6 py-6 text-start">
+              <UiSheetHeader className="border-b border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-6 py-6 text-start">
                 <div className="flex flex-col items-center gap-4 pt-7">
                   <UiAvatar className="size-28 shadow-[0_18px_40px_rgba(15,27,45,0.12)]">
                     <UiAvatarImage src={selectedContact.profilePicUrl || undefined} />
-                    <UiAvatarFallback className="bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-background))] text-2xl font-semibold text-[color:var(--color-primary)]">
+                    <UiAvatarFallback className="bg-primary/10 text-2xl font-semibold text-[color:var(--color-primary)]">
                       {getContactInitials(selectedContactName)}
                     </UiAvatarFallback>
                   </UiAvatar>
@@ -2692,7 +2692,7 @@ const WhatsAppChatContent: React.FC = () => {
                     className={cn(
                       'overflow-hidden rounded-[24px] border text-start transition-all',
                       selectedProduct?.id === product.id
-                        ? 'border-[color:var(--color-primary)] bg-[color:color-mix(in_srgb,var(--color-primary)_8%,var(--color-background))] shadow-[0_18px_40px_rgba(15,27,45,0.08)]'
+                        ? 'border-[color:var(--color-primary)] bg-primary/8 shadow-md'
                         : 'border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] hover:bg-[var(--whatsapp-surface-hover)]',
                     )}
                   >

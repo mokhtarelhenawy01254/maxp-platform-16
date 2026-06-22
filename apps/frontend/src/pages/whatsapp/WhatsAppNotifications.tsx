@@ -256,7 +256,7 @@ function FeatureToggle({
   onCheckedChange: (checked: boolean) => void;
 }) {
   return (
-    <div className="rounded-[22px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)] px-4 py-4 shadow-[0_12px_30px_rgba(15,27,45,0.04)]">
+    <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <p className="text-sm font-medium text-[color:var(--color-foreground)]">
@@ -290,7 +290,7 @@ function SectionHeader({
   toneClass: string;
 }) {
   return (
-    <div className="flex flex-col gap-4 rounded-[24px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)] p-5 shadow-[0_18px_40px_rgba(15,27,45,0.05)] sm:flex-row sm:items-start sm:justify-between">
+    <div className="flex flex-col gap-4 rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-5 shadow-md sm:flex-row sm:items-start sm:justify-between">
       <div className="flex items-start gap-3">
         <div className={cn("flex size-11 shrink-0 items-center justify-center rounded-2xl", toneClass)}>
           <Icon className="size-5" />
@@ -1152,13 +1152,13 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       >
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-36 rounded-[24px]" />
+            <Skeleton key={index} className="h-36 rounded-3xl" />
           ))}
         </div>
-        <Skeleton className="h-16 rounded-[28px]" />
+        <Skeleton className="h-16 rounded-3xl" />
         <div className="grid gap-4 xl:grid-cols-2">
-          <Skeleton className="h-80 rounded-[28px]" />
-          <Skeleton className="h-80 rounded-[28px]" />
+          <Skeleton className="h-80 rounded-3xl" />
+          <Skeleton className="h-80 rounded-3xl" />
         </div>
       </WhatsAppPageShell>
     );
@@ -1176,7 +1176,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
         actions={
           <Button
             variant="outline"
-            className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+            className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:brightness-95"
             onClick={() => void refreshPageData()}
           >
             <RefreshCw className="size-4" />
@@ -1184,7 +1184,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
           </Button>
         }
       >
-        <Alert className="rounded-[24px] border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)]">
+        <Alert className="rounded-3xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
           <AlertTriangle className="size-4 text-[color:var(--color-warning)]" />
           <AlertTitle>{t("whatsappNotifications.title")}</AlertTitle>
           <AlertDescription>
@@ -1209,7 +1209,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
         <>
           <Button
             variant="outline"
-            className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+            className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:brightness-95"
             onClick={() => {
               if (superAdminMode) {
                 setTestEventType("NEW_SIGNUP_WELCOME");
@@ -1222,7 +1222,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
           </Button>
           <Button
             variant="outline"
-            className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+            className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:brightness-95"
             onClick={() => void refreshPageData()}
             disabled={refreshing}
           >
@@ -1230,7 +1230,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
             {t("common.refresh")}
           </Button>
           <Button
-            className="rounded-full bg-[color:var(--color-primary)] text-white hover:bg-[color:color-mix(in_srgb,var(--color-primary)_84%,black)]"
+            className="rounded-full bg-[color:var(--color-primary)] text-white hover:brightness-90"
             onClick={() => void saveSettings()}
             disabled={saving}
           >
@@ -1241,7 +1241,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       }
     >
       {notice ? (
-        <Alert className={cn("rounded-[24px]", noticeStyles[notice.tone])}>
+        <Alert className={cn("rounded-3xl", noticeStyles[notice.tone])}>
           {notice.tone === "success" ? (
             <CheckCircle className="size-4" />
           ) : notice.tone === "error" ? (
@@ -1320,7 +1320,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
         onValueChange={(value) => setSearchParams({ tab: value })}
         className="gap-4"
       >
-        <div className="overflow-hidden rounded-[28px] border border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] px-3 py-3 shadow-[0_18px_45px_rgba(15,27,45,0.05)]">
+        <div className="overflow-hidden rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] px-3 py-3 shadow-md">
           <TabsList variant="line" className="flex h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
             {TABS.map((tab) => {
               const Icon = tab.icon;
@@ -1328,7 +1328,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
-                  className="rounded-full border border-transparent px-4 py-2 text-sm text-[color:var(--color-muted-foreground)] data-active:border-[color:var(--shell-control-border)] data-active:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_78%,var(--shell-control-bg)_22%)] data-active:text-[color:var(--color-foreground)]"
+                  className="rounded-full border border-transparent px-4 py-2 text-sm text-[color:var(--color-muted-foreground)] data-active:border-[color:var(--shell-control-border)] data-active:bg-[color:var(--color-card)] data-active:text-[color:var(--color-foreground)]"
                 >
                   <Icon className="size-4" />
                   {tab.label}
@@ -1348,7 +1348,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
               >
                 <div className="space-y-4">
                   {!settings.isEnabled ? (
-                    <Alert className="rounded-[20px] border-amber-300/70 bg-amber-500/10 text-amber-900">
+                    <Alert className="rounded-xl border-amber-300/70 bg-amber-500/10 text-amber-900">
                       <AlertTriangle className="size-4" />
                       <AlertTitle>{t("whatsappNotifications.title")}</AlertTitle>
                       <AlertDescription>
@@ -1373,7 +1373,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                       >
                         <SelectTrigger
                           id="default-session"
-                          className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                          className="h-11 bg-[color:var(--color-card)]"
                         >
                           <SelectValue placeholder={t("whatsappNotifications.general.selectSession")} />
                         </SelectTrigger>
@@ -1390,7 +1390,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                       </Select>
                     </div>
 
-                    <div className="rounded-[22px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)] px-4 py-4">
+                    <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4">
                       <p className="text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
                         {i18n.language === "ar" ? "الجلسة الحالية" : "Current session"}
                       </p>
@@ -1431,7 +1431,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                   />
 
                   {sessions.length === 0 ? (
-                    <Alert className="rounded-[20px] border-sky-300/70 bg-sky-500/10 text-sky-900">
+                    <Alert className="rounded-xl border-sky-300/70 bg-sky-500/10 text-sky-900">
                       <AlertCircle className="size-4" />
                       <AlertTitle>{t("whatsappNotifications.general.noSessionsWarning")}</AlertTitle>
                       <AlertDescription>
@@ -1478,7 +1478,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                           onChange={(event) =>
                             updateSetting("quietHoursStart", event.target.value)
                           }
-                          className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                          className="h-11 bg-[color:var(--color-card)]"
                         />
                       </div>
                       <div className="space-y-2">
@@ -1492,7 +1492,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                           onChange={(event) =>
                             updateSetting("quietHoursEnd", event.target.value)
                           }
-                          className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                          className="h-11 bg-[color:var(--color-card)]"
                         />
                       </div>
                     </div>
@@ -1514,7 +1514,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                           parseInteger(event.target.value, 30),
                         )
                       }
-                      className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                      className="h-11 bg-[color:var(--color-card)]"
                     />
                     <p className="text-sm text-[color:var(--color-muted-foreground)]">
                       {t("whatsappNotifications.general.antiBanHelp")}
@@ -1531,14 +1531,14 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                 action={
                   <Button
                     variant="outline"
-                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:brightness-95"
                     onClick={() => navigate(automationsHref)}
                   >
                     {t("common.actions")}
                   </Button>
                 }
               >
-                <div className="rounded-[22px] border border-emerald-300/70 bg-emerald-500/10 p-5">
+                <div className="rounded-2xl border border-emerald-300/70 bg-emerald-500/10 p-5">
                   <div className="flex items-start gap-3">
                     <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 text-white">
                       <TrendingUp className="size-5" />
@@ -1570,7 +1570,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                     sessions.map((session) => (
                       <div
                         key={session.id}
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)] px-4 py-3"
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-3"
                       >
                         <div className="space-y-1">
                           <p className="text-sm font-medium text-[color:var(--color-foreground)]">
@@ -1668,7 +1668,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                         parseInteger(event.target.value, 24),
                       )
                     }
-                    className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                    className="h-11 bg-[color:var(--color-card)]"
                   />
                 </div>
               ) : null}
@@ -1735,7 +1735,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
               {settings.abandonedCartEnabled ? (
                 <>
-                  <Alert className="rounded-[20px] border-sky-300/70 bg-sky-500/10 text-sky-900">
+                  <Alert className="rounded-xl border-sky-300/70 bg-sky-500/10 text-sky-900">
                     <AlertCircle className="size-4" />
                     <AlertTitle>{t("whatsappNotifications.abandonedCart.title")}</AlertTitle>
                     <AlertDescription>
@@ -1760,7 +1760,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                             parseInteger(event.target.value, 1),
                           )
                         }
-                        className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                        className="h-11 bg-[color:var(--color-card)]"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1779,7 +1779,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                             parseInteger(event.target.value, 24),
                           )
                         }
-                        className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                        className="h-11 bg-[color:var(--color-card)]"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1798,7 +1798,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                             parseInteger(event.target.value, 72),
                           )
                         }
-                        className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                        className="h-11 bg-[color:var(--color-card)]"
                       />
                     </div>
                   </div>
@@ -1839,7 +1839,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                           parseInteger(event.target.value, 10),
                         )
                       }
-                      className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                      className="h-11 bg-[color:var(--color-card)]"
                     />
                     <p className="text-sm text-[color:var(--color-muted-foreground)]">
                       {t("whatsappNotifications.abandonedCart.discountHelp")}
@@ -1874,7 +1874,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
               {settings.marketingNotificationsEnabled ? (
                 <>
-                  <Alert className="rounded-[20px] border-amber-300/70 bg-amber-500/10 text-amber-900">
+                  <Alert className="rounded-xl border-amber-300/70 bg-amber-500/10 text-amber-900">
                     <AlertTriangle className="size-4" />
                     <AlertTitle>{t("whatsappNotifications.marketing.title")}</AlertTitle>
                     <AlertDescription>
@@ -1939,7 +1939,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
               {settings.companyLifecycleNotificationsEnabled ? (
                 <>
-                  <Alert className="rounded-[20px] border-indigo-300/70 bg-indigo-500/10 text-indigo-950">
+                  <Alert className="rounded-xl border-indigo-300/70 bg-indigo-500/10 text-indigo-950">
                     <AlertCircle className="size-4" />
                     <AlertTitle>
                       {i18n.language === "ar" ? "مناسبة للتعامل مع أصحاب الشركات" : "Owner-ready controls"}
@@ -1975,7 +1975,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                         </Label>
                         <Badge
                           variant="outline"
-                          className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)]"
+                          className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]"
                         >
                           {manualAdminRecipientCount}
                           {i18n.language === "ar" ? " رقم" : " recipients"}
@@ -1996,7 +1996,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                             ? "01123087745\n01000000000"
                             : "15551234567\n15557654321"
                         }
-                        className="min-h-[148px] resize-y bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                        className="min-h-[148px] resize-y bg-[color:var(--color-card)]"
                       />
                       <p className="text-sm leading-6 text-[color:var(--color-muted-foreground)]">
                         {superAdminMode
@@ -2009,7 +2009,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                       </p>
                     </div>
 
-                    <div className="space-y-4 rounded-[24px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_88%,var(--shell-control-bg)_12%)] p-5">
+                    <div className="space-y-4 rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] p-5">
                       <div className="space-y-2">
                         <Label htmlFor="company-lifecycle-admin-routing-mode">
                           {i18n.language === "ar"
@@ -2027,7 +2027,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                         >
                           <SelectTrigger
                             id="company-lifecycle-admin-routing-mode"
-                            className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                            className="h-11 bg-[color:var(--color-card)]"
                           >
                             <SelectValue />
                           </SelectTrigger>
@@ -2051,7 +2051,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                         </Select>
                       </div>
 
-                      <div className="rounded-[20px] border border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-4">
+                      <div className="rounded-xl border border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-4">
                         <p className="text-sm font-medium text-[color:var(--color-foreground)]">
                           {i18n.language === "ar"
                             ? "ما الذي سيحدث عند الإرسال؟"
@@ -2161,7 +2161,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
       </Tabs>
 
       <Dialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>
-        <DialogContent className="sm:max-w-lg rounded-[28px]" showCloseButton>
+        <DialogContent className="sm:max-w-lg rounded-3xl" showCloseButton>
           <DialogHeader>
             <DialogTitle>{t("whatsappNotifications.test.sendTest")}</DialogTitle>
             <DialogDescription>
@@ -2183,7 +2183,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                 value={testPhone}
                 onChange={(event) => setTestPhone(event.target.value)}
                 placeholder="01xxxxxxxxx"
-                className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                className="h-11 bg-[color:var(--color-card)]"
               />
             </div>
 
@@ -2192,7 +2192,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                 {t("whatsappNotifications.test.eventLabel")}
               </Label>
               <Select value={testEventType} onValueChange={setTestEventType}>
-                <SelectTrigger id="test-event" className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]">
+                <SelectTrigger id="test-event" className="h-11 bg-[color:var(--color-card)]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -2228,7 +2228,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
 
       <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
         <DialogContent
-          className="max-h-[88vh] overflow-y-auto rounded-[28px] sm:max-w-4xl"
+          className="max-h-[88vh] overflow-y-auto rounded-3xl sm:max-w-4xl"
           showCloseButton
         >
           <DialogHeader>
@@ -2279,7 +2279,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                         ? "مثلاً: قالب تأكيد الطلب"
                         : "Example: Custom order confirmation"
                   }
-                  className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                  className="h-11 bg-[color:var(--color-card)]"
                 />
               </div>
 
@@ -2296,7 +2296,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                     }))
                   }
                 >
-                  <SelectTrigger id="template-category" className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]">
+                  <SelectTrigger id="template-category" className="h-11 bg-[color:var(--color-card)]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -2323,7 +2323,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                   }
                   disabled={Boolean(editingTemplate)}
                 >
-                  <SelectTrigger id="template-event" className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]">
+                  <SelectTrigger id="template-event" className="h-11 bg-[color:var(--color-card)]">
                     <SelectValue
                       placeholder={
                         i18n.language === "ar"
@@ -2350,7 +2350,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                 </p>
               </div>
 
-              <div className="rounded-[22px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)] px-4 py-4">
+              <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-[color:var(--color-foreground)]">
@@ -2390,7 +2390,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                       content: event.target.value,
                     }))
                   }
-                  className="min-h-[18rem] rounded-[22px] border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] font-mono text-sm leading-7"
+                  className="min-h-[18rem] rounded-2xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] font-mono text-sm leading-7"
                   placeholder={
                     superAdminMode
                       ? i18n.language === "ar"
@@ -2408,11 +2408,11 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                 </p>
               </div>
 
-              <div className="rounded-[24px] border border-emerald-200/80 bg-emerald-500/10 p-5">
+              <div className="rounded-3xl border border-emerald-200/80 bg-emerald-500/10 p-5">
                 <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-emerald-800">
                   {i18n.language === "ar" ? "معاينة سريعة" : "Quick preview"}
                 </p>
-                <div className="rounded-[20px] border border-emerald-200 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_78%,var(--shell-control-bg)_22%)] px-4 py-4 shadow-[0_10px_25px_rgba(16,185,129,0.08)]">
+                <div className="rounded-xl border border-emerald-200 bg-[color:var(--color-card)] px-4 py-4 shadow-[0_10px_25px_rgba(16,185,129,0.08)]">
                   <p className="whitespace-pre-wrap text-sm leading-7 text-[color:var(--color-foreground)]">
                     {templateForm.content ||
                       (i18n.language === "ar"
@@ -2422,7 +2422,7 @@ const WhatsAppNotifications: React.FC<WhatsAppNotificationsProps> = ({
                 </div>
               </div>
 
-              <Alert className="rounded-[22px] border-sky-300/70 bg-sky-500/10 text-sky-900">
+              <Alert className="rounded-2xl border-sky-300/70 bg-sky-500/10 text-sky-900">
                 <AlertCircle className="size-4" />
                 <AlertTitle>
                   {i18n.language === "ar" ? "تلميح للمتغيرات" : "Variable tip"}

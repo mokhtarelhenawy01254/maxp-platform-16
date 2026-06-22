@@ -295,14 +295,14 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
       >
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-36 rounded-[24px]" />
+            <Skeleton key={index} className="h-36 rounded-3xl" />
           ))}
         </div>
         <div className="grid gap-4 xl:grid-cols-2">
-          <Skeleton className="h-64 rounded-[28px]" />
-          <Skeleton className="h-64 rounded-[28px]" />
+          <Skeleton className="h-64 rounded-3xl" />
+          <Skeleton className="h-64 rounded-3xl" />
         </div>
-        <Skeleton className="h-[26rem] rounded-[28px]" />
+        <Skeleton className="h-[26rem] rounded-3xl" />
       </WhatsAppPageShell>
     );
   }
@@ -324,7 +324,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
               setDateRange(Number(value));
             }}
           >
-            <SelectTrigger className="min-w-[13rem] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]">
+            <SelectTrigger className="min-w-[13rem] bg-[color:var(--color-card)]">
               <SelectValue placeholder={t("whatsappAnalytics.timeRange.label")} />
             </SelectTrigger>
             <SelectContent>
@@ -345,7 +345,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
 
           <Button
             variant="outline"
-            className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] text-[color:var(--color-foreground)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+            className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] text-[color:var(--color-foreground)] hover:brightness-95"
             onClick={handleRefresh}
             disabled={refreshing}
           >
@@ -356,7 +356,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
       }
     >
       {error ? (
-        <Alert className="rounded-[24px] border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)] text-[color:var(--color-foreground)]">
+        <Alert className="rounded-3xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] text-[color:var(--color-foreground)]">
           <AlertTriangle className="size-4 text-[color:var(--color-warning)]" />
           <AlertTitle>{t("whatsappAnalytics.title")}</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
@@ -480,7 +480,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
                       <div className="flex items-center gap-2">
                         <Badge
                           variant="outline"
-                          className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_88%,var(--shell-control-bg)_12%)]"
+                          className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]"
                         >
                           {percentage}%
                         </Badge>
@@ -489,7 +489,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
                         </span>
                       </div>
                     </div>
-                    <div className="h-2 rounded-full bg-[color:color-mix(in_srgb,var(--color-primary)_10%,white)]">
+                    <div className="h-2 rounded-full bg-primary/10">
                       <div
                         className="h-2 rounded-full bg-[color:var(--color-primary)] transition-[width]"
                         style={{ width: `${percentage}%` }}
@@ -500,7 +500,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
               })}
             </div>
           ) : (
-            <Alert className="rounded-[20px] border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_88%,var(--shell-control-bg)_12%)]">
+            <Alert className="rounded-xl border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]">
               <AlertTitle>{t("whatsappAnalytics.charts.byCategory")}</AlertTitle>
               <AlertDescription>
                 {t("whatsappAnalytics.charts.noData")}
@@ -529,7 +529,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
                       <div className="flex items-center gap-2">
                         <Badge
                           variant="outline"
-                          className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_88%,var(--shell-control-bg)_12%)]"
+                          className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]"
                         >
                           {percentage}%
                         </Badge>
@@ -538,7 +538,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
                         </span>
                       </div>
                     </div>
-                    <div className="h-2 rounded-full bg-[color:color-mix(in_srgb,var(--color-secondary)_12%,white)]">
+                    <div className="h-2 rounded-full bg-secondary/10">
                       <div
                         className="h-2 rounded-full bg-[color:var(--color-secondary)] transition-[width]"
                         style={{ width: `${percentage}%` }}
@@ -549,7 +549,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
               })}
             </div>
           ) : (
-            <Alert className="rounded-[20px] border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_88%,var(--shell-control-bg)_12%)]">
+            <Alert className="rounded-xl border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]">
               <AlertTitle>{t("whatsappAnalytics.charts.topEvents")}</AlertTitle>
               <AlertDescription>
                 {t("whatsappAnalytics.charts.noData")}
@@ -571,7 +571,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
                 setCategoryFilter(value === "__all__" ? "" : value);
               }}
             >
-              <SelectTrigger className="min-w-[11rem] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]">
+              <SelectTrigger className="min-w-[11rem] bg-[color:var(--color-card)]">
                 <SelectValue placeholder={t("whatsappAnalytics.logs.type")} />
               </SelectTrigger>
               <SelectContent>
@@ -591,7 +591,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
                 setStatusFilter(value === "__all__" ? "" : value);
               }}
             >
-              <SelectTrigger className="min-w-[11rem] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]">
+              <SelectTrigger className="min-w-[11rem] bg-[color:var(--color-card)]">
                 <SelectValue placeholder={t("whatsappAnalytics.logs.status")} />
               </SelectTrigger>
               <SelectContent>
@@ -606,7 +606,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
           </div>
         }
       >
-        <div className="overflow-hidden rounded-[22px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)]">
+        <div className="overflow-hidden rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -633,7 +633,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
                     <TableCell>
                       <Badge
                         variant="outline"
-                        className="max-w-full rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_88%,var(--shell-control-bg)_12%)] text-[color:var(--color-foreground)]"
+                        className="max-w-full rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] text-[color:var(--color-foreground)]"
                       >
                         {EVENT_LABELS[log.eventType] || log.eventType}
                       </Badge>
@@ -693,7 +693,7 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
                   setPage(0);
                 }}
               >
-                <SelectTrigger className="w-[6.5rem] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]">
+                <SelectTrigger className="w-[6.5rem] bg-[color:var(--color-card)]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -712,18 +712,18 @@ const WhatsAppAnalytics: React.FC<WhatsAppAnalyticsProps> = ({
               variant="outline"
               onClick={() => setPage((current) => Math.max(0, current - 1))}
               disabled={!canGoPrevious}
-              className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+              className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:brightness-95"
             >
               {t("common.previous")}
             </Button>
-            <div className="rounded-full border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)] px-3 py-1 text-sm text-[color:var(--color-muted-foreground)]">
+            <div className="rounded-full border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-3 py-1 text-sm text-[color:var(--color-muted-foreground)]">
               {page + 1} / {totalPages}
             </div>
             <Button
               variant="outline"
               onClick={() => setPage((current) => current + 1)}
               disabled={!canGoNext}
-              className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+              className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:brightness-95"
             >
               {t("common.next")}
             </Button>
