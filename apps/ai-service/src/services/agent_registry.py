@@ -244,6 +244,7 @@ async def init_registry_from_db(session_factory) -> None:
                             allowed_skills=list(db_agent.allowed_skills or []),
                             persona=db_agent.persona or {},
                             provider=_agent_config_json.get("provider") or None,
+                            template_slug=db_agent.template_slug or None,
                         )
                         agent = BaseAgent(config)
                         agent._db_rules = db_agent.rules or ""
