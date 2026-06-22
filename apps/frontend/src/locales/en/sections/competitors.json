@@ -228,7 +228,10 @@
     "youtube": "YouTube",
     "snapchat": "Snapchat",
     "telegram": "Telegram",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "linkUrl": "Page URL",
+    "username": "Username/Email",
+    "password": "Password"
   },
   "autoDiscover": {
     "title": "Auto Discover Competitors",
@@ -427,6 +430,7 @@
   "city": "City (Optional)",
   "geoLocation": "Geo Location",
   "platformOptions": {
+    "manual": "Manual",
     "shopify": "Shopify",
     "woocommerce": "WooCommerce",
     "salla": "Salla",
@@ -501,5 +505,20 @@
   "yearInvalid": "Invalid founded year",
   "confirmCancel": "Are you sure? Data will be lost",
   "cancel": "Cancel",
-  "confirm": "Confirm"
+  "confirm": "Confirm",
+  "referenceImages": "Reference Images",
+  "activityTypeImages": "Activity Type Images",
+  "featureReferenceImages": "Feature Reference Images",
+  "mediaNotesPlaceholder": "Add a note...",
+  "noMediaNotes": "No notes yet. Add your notes above.",
+  "featureNamePlaceholder": "e.g. Delivery speed",
+  "competitorDesc": "Competitor Description",
+  "ourDesc": "Our Description",
+  "theCompetitor": "Competitor",
+  "stronger": "Who is stronger?",
+  "additionalNotesPlaceholder": "Any additional notes...",
+  "noDevIdeas": "No development ideas yet. Add a new idea.",
+  "ideaTitlePlaceholder": "Development idea title",
+  "ideaImages": "Idea Images",
+  "summary": "Summary"
 }

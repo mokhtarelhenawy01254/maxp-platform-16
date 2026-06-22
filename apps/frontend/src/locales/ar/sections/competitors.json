@@ -228,7 +228,10 @@
     "youtube": "يوتيوب",
     "snapchat": "سناب شات",
     "telegram": "تيليجرام",
-    "whatsapp": "واتساب"
+    "whatsapp": "واتساب",
+    "linkUrl": "رابط الصفحة",
+    "username": "اسم المستخدم/البريد الإلكتروني",
+    "password": "كلمة المرور"
   },
   "autoDiscover": {
     "title": "اكتشاف المنافسين",
@@ -427,6 +430,7 @@
   "city": "المدينة (اختياري)",
   "geoLocation": "الموقع الجغرافي",
   "platformOptions": {
+    "manual": "يدوي",
     "shopify": "Shopify",
     "woocommerce": "WooCommerce",
     "salla": "سلة",
@@ -501,5 +505,20 @@
   "yearInvalid": "سنة التأسيس غير صالحة",
   "confirmCancel": "هل أنت متأكد من إلغاء الإضافة؟ سيتم فقدان البيانات",
   "cancel": "إلغاء",
-  "confirm": "تأكيد"
+  "confirm": "تأكيد",
+  "referenceImages": "الصور المرجعية",
+  "activityTypeImages": "صور نوع النشاط",
+  "featureReferenceImages": "صور مرجعية للميزات",
+  "mediaNotesPlaceholder": "أضف ملاحظة...",
+  "noMediaNotes": "لا توجد ملاحظات بعد. أضف ملاحظاتك أعلاه.",
+  "featureNamePlaceholder": "مثال: سرعة التوصيل",
+  "competitorDesc": "وصف المنافس",
+  "ourDesc": "وصفنا",
+  "theCompetitor": "المنافس",
+  "stronger": "من الأقوى؟",
+  "additionalNotesPlaceholder": "أي ملاحظات إضافية...",
+  "noDevIdeas": "لم تضف أي أفكار تطويرية بعد. أضف فكرة جديدة.",
+  "ideaTitlePlaceholder": "عنوان الفكرة التطويرية",
+  "ideaImages": "الصور المرجعية للأفكار",
+  "summary": "الملخص"
 }

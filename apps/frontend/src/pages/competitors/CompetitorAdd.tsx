@@ -413,7 +413,7 @@ const CompetitorAdd: React.FC = () => {
                     className="w-full h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm dark:bg-input/30"
                   >
                     {PLATFORMS.map(p => (
-                      <option key={p} value={p}>{p === 'manual' ? 'يدوي' : p === 'easy_orders' ? 'Easy Orders' : p.charAt(0).toUpperCase() + p.slice(1)}</option>
+                      <option key={p} value={p}>{t(`competitors.platformOptions.${p === 'easy_orders' ? 'easyOrders' : p}`)}</option>
                     ))}
                   </select>
                 </div>
@@ -628,7 +628,7 @@ const CompetitorAdd: React.FC = () => {
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    {t(`competitors.trafficSource_${val}`) || (val === 'organic' ? 'عضوي' : val === 'paid' ? 'مدفوع' : 'كلاهما')}
+                    {t(`competitors.${val}`)}
                   </button>
                 ))}
               </div>
@@ -717,7 +717,7 @@ const CompetitorAdd: React.FC = () => {
               <div className="flex items-center justify-between w-full">
                 <CardTitle className="flex items-center gap-2">
                   <Scale size={18} className="text-indigo-500" />
-                  {t('competitors.comparison') || 'المقارنة مع شركتنا'}
+                  {t('competitors.comparisonSection')}
                 </CardTitle>
                 <Button variant="outline" size="sm" onClick={handleAddComparison}>
                   <Plus size={14} /> {t('common.add') || 'إضافة'}
@@ -786,7 +786,7 @@ const CompetitorAdd: React.FC = () => {
                                 onChange={() => handleUpdateComparison(comp.id, 'easierToUse', val)}
                                 className="accent-blue-600"
                               />
-                              {val === 'competitor' ? (t('competitors.theCompetitor') || 'المنافس') : (t('competitors.us') || 'نحن')}
+                              {val === 'competitor' ? t('competitors.competitor') : t('competitors.us')}
                             </label>
                           ))}
                         </div>
@@ -803,7 +803,7 @@ const CompetitorAdd: React.FC = () => {
                                 onChange={() => handleUpdateComparison(comp.id, 'stronger', val)}
                                 className="accent-blue-600"
                               />
-                              {val === 'competitor' ? (t('competitors.theCompetitor') || 'المنافس') : (t('competitors.us') || 'نحن')}
+                              {val === 'competitor' ? t('competitors.competitor') : t('competitors.us')}
                             </label>
                           ))}
                         </div>

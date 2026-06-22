@@ -115,7 +115,7 @@ const Reports: React.FC = () => {
                 </div>
                 <h3 className="font-semibold text-sm line-clamp-2">{report.title}</h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <p className="text-xs text-gray-500">{report.competitor?.name || 'N/A'}</p>
+                  <p className="text-xs text-gray-500">{report.competitor?.name || t('competitors.notAvailable')}</p>
                   {report.competitor?.status && (
                     <CompetitorStatusBar
                       currentStatus={report.competitor.status}
