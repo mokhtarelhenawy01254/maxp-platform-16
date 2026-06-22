@@ -18,6 +18,11 @@ jest.mock('../../services/socketService', () => ({
   getIO: jest.fn(() => null)
 }));
 
+jest.mock('../../services/whatsappRealtimeAudienceService', () => ({
+  emitToAudience: jest.fn(),
+  getConversationAudience: jest.fn(async () => ({ userIds: [] }))
+}));
+
 jest.mock('../../utils/dbPermissionHelper', () => ({
   isPermissionError: jest.fn(() => false),
   getPermissionErrorMessage: jest.fn(() => 'permission error')

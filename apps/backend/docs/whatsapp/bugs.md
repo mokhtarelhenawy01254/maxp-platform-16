@@ -2,6 +2,27 @@
 
 > Domain-specific bug tracker for WhatsApp sessions, notifications, Telegram, and campaigns.
 
+### [FIX] WhatsApp AI Auto-Reply Failed On Connected Session With Null Socket
+- **Date**: 2026-06-22
+- **Description**: Production WhatsApp AI auto-reply generated the correct agent response but failed before delivery with `Cannot read properties of null (reading 'sendMessage')`.
+- **Root Cause**:
+    1. `WhatsAppMessageHandler.sendText` trusted `session.status === 'connected'` and called `session.sock.sendMessage(...)` without verifying that the Baileys socket was still present and sendable.
+    2. A session could remain marked connected in memory while the socket was already unavailable, so the AI pipeline completed but outbound WhatsApp delivery crashed.
+    3. Optional outgoing message metadata was accepted by the handler but not persisted by `saveOutgoingMessage`.
+- **Resolution**:
+    1. Added a Baileys send-readiness guard that reconnects and waits briefly for a usable socket before sending.
+    2. Re-checks the sendable session after the typing delay so a socket that drops mid-send does not produce a null dereference.
+    3. Persisted optional outgoing metadata for both Baileys and Meta Cloud text sends.
+- **Verification**:
+    - `backend: npx jest tests/services/WhatsAppMessageHandler.sendTextSession.test.js tests/services/WhatsAppMessageHandler.sourceMetadata.test.js tests/services/WhatsAppMessageHandler.markAsRead.test.js tests/services/WhatsAppMessageHandler.getMessages.test.js --runInBand --testTimeout=30000 --forceExit`
+    - `backend: npx jest tests/services/WhatsAppManager.messageCapture.test.js --runInBand --testTimeout=30000 --forceExit`
+    - `backend: node --check services/whatsapp/WhatsAppMessageHandler.js`
+- **Files Modified**:
+    - `backend/services/whatsapp/WhatsAppMessageHandler.js`
+    - `backend/tests/services/WhatsAppMessageHandler.sendTextSession.test.js`
+    - `backend/tests/services/WhatsAppMessageHandler.sourceMetadata.test.js`
+    - `backend/docs/whatsapp/bugs.md`
+
 ### [FIX] ReferenceError: whatsappContacts is not defined in Unified Inbox
 - **Date**: 2026-06-16
 - **Description**: Accessing the Unified Inbox with platform filter excluding WhatsApp (e.g. `platform=instagram,facebook`) caused a 500 server error.

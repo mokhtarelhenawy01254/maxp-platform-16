@@ -20,6 +20,9 @@ const { isPermissionError, getPermissionErrorMessage } = require('../../utils/db
 const { normalizeWhatsAppContactIdentity } = require('./contactIdentity');
 const { emitToAudience, getConversationAudience } = require('../whatsappRealtimeAudienceService');
 
+const DEFAULT_BAILEYS_SEND_RECONNECT_WAIT_MS = 10000;
+const BAILEYS_SEND_RECONNECT_POLL_MS = 500;
+
 async function getSessionProvider(sessionId) {
     const session = await getSharedPrismaClient().whatsAppSession.findUnique({
         where: { id: sessionId }
@@ -67,6 +70,109 @@ async function ensureMetaContact(sessionId, jid, options = {}) {
     }
 }
 
+function isSendableBaileysSession(session) {
+    return Boolean(
+        session &&
+        session.status === 'connected' &&
+        session.sock &&
+        typeof session.sock.sendMessage === 'function'
+    );
+}
+
+function getBaileysSessionReadinessReason(session) {
+    if (!session) return 'not_in_memory';
+    if (session.status !== 'connected') return `status_${session.status || 'unknown'}`;
+    if (!session.sock) return 'no_socket';
+    if (typeof session.sock.sendMessage !== 'function') return 'send_message_unavailable';
+    return 'unknown';
+}
+
+function createBaileysSessionNotReadyError(sessionId, reason) {
+    const error = new Error('جلسة واتساب غير جاهزة للإرسال');
+    error.code = 'WA_SESSION_NOT_READY';
+    error.sessionId = sessionId;
+    error.reason = reason;
+    return error;
+}
+
+function getBaileysSendReconnectWaitMs() {
+    const configured = Number(process.env.WHATSAPP_SEND_RECONNECT_WAIT_MS);
+    return Number.isFinite(configured) && configured >= 0
+        ? configured
+        : DEFAULT_BAILEYS_SEND_RECONNECT_WAIT_MS;
+}
+
+async function waitForSendableBaileysSession(sessionId, timeoutMs = getBaileysSendReconnectWaitMs()) {
+    const deadline = Date.now() + timeoutMs;
+
+    while (Date.now() <= deadline) {
+        const session = WhatsAppManager.getSession(sessionId);
+        if (isSendableBaileysSession(session)) {
+            return session;
+        }
+
+        const remaining = deadline - Date.now();
+        if (remaining <= 0) break;
+        await delay(Math.min(BAILEYS_SEND_RECONNECT_POLL_MS, remaining));
+    }
+
+    return null;
+}
+
+async function getSendableBaileysSession(sessionId, dbSession = null) {
+    let session = WhatsAppManager.getSession(sessionId);
+    if (isSendableBaileysSession(session)) {
+        return session;
+    }
+
+    const reason = getBaileysSessionReadinessReason(session);
+    const companyId = session?.companyId || dbSession?.companyId;
+
+    if (!session && dbSession?.status && dbSession.status !== 'CONNECTED') {
+        throw new Error('الجلسة غير متصلة');
+    }
+
+    if (session && session.status !== 'connected') {
+        throw new Error('الجلسة غير متصلة');
+    }
+
+    if (companyId && typeof WhatsAppManager.reconnectSession === 'function') {
+        console.warn(`⚠️ [WA-SEND:${sessionId}] Baileys session is not ready (${reason}); reconnecting before send`);
+        try {
+            const reconnectedSession = await WhatsAppManager.reconnectSession(sessionId, companyId, 0, {
+                syncFullHistory: session?.syncFullHistory || false
+            });
+
+            if (isSendableBaileysSession(reconnectedSession)) {
+                return reconnectedSession;
+            }
+        } catch (reconnectError) {
+            console.error(`❌ [WA-SEND:${sessionId}] Reconnect before send failed:`, reconnectError.message);
+        }
+
+        session = await waitForSendableBaileysSession(sessionId);
+        if (session) {
+            return session;
+        }
+    }
+
+    throw createBaileysSessionNotReadyError(sessionId, reason);
+}
+
+async function sendTypingSafely(sessionId, jid, isTyping) {
+    try {
+        await WhatsAppManager.sendTyping(sessionId, jid, isTyping);
+    } catch (typingError) {
+        console.warn(`⚠️ [WA-SEND:${sessionId}] Failed to update typing state:`, typingError.message);
+    }
+}
+
+function serializeOutgoingMetadata(metadata) {
+    if (metadata === undefined) return undefined;
+    if (metadata === null) return null;
+    return typeof metadata === 'string' ? metadata : JSON.stringify(metadata);
+}
+
 /**
  * إرسال رسالة نصية
  * @param {string} sessionId - معرف الجلسة
@@ -91,28 +197,26 @@ async function sendText(sessionId, to, text, options = {}) {
                 quotedMessageId: options.quotedMessageId,
                 interactiveData: options.interactiveData ? JSON.stringify(options.interactiveData) : null,
                 isAIResponse: options.isAIResponse || false,
-                aiConfidence: options.aiConfidence
+                aiConfidence: options.aiConfidence,
+                metadata: options.metadata
             }, { companyId: dbSession?.companyId });
 
             await ensureMetaContact(sessionId, jid, { isOutgoing: true });
             return savedMessage;
         }
 
-        const session = WhatsAppManager.getSession(sessionId);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
         console.log(`🔍 [DEBUG] sendText: Retrieving session ${sessionId}`, {
             exists: !!session,
             status: session?.status,
-            isConnected: session?.status === 'connected'
+            isConnected: session?.status === 'connected',
+            hasSocket: !!session?.sock
         });
-
-        if (!session || session.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة');
-        }
 
         const jid = formatJid(to);
 
         // إرسال حالة الكتابة
-        await WhatsAppManager.sendTyping(sessionId, jid, true);
+        await sendTypingSafely(sessionId, jid, true);
 
         // تأخير بسيط لمحاكاة الكتابة
         await delay(Math.min(text.length * 20, 2000));
@@ -132,10 +236,11 @@ async function sendText(sessionId, to, text, options = {}) {
             };
         }
 
+        session = await getSendableBaileysSession(sessionId, dbSession);
         const result = await session.sock.sendMessage(jid, messageOptions);
 
         // إيقاف حالة الكتابة
-        await WhatsAppManager.sendTyping(sessionId, jid, false);
+        await sendTypingSafely(sessionId, jid, false);
 
         // حفظ الرسالة في قاعدة البيانات
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
@@ -145,7 +250,8 @@ async function sendText(sessionId, to, text, options = {}) {
             quotedMessageId: options.quotedMessageId,
             interactiveData: options.interactiveData ? JSON.stringify(options.interactiveData) : null,
             isAIResponse: options.isAIResponse || false,
-            aiConfidence: options.aiConfidence
+            aiConfidence: options.aiConfidence,
+            metadata: options.metadata
         }, { companyId: session.companyId });
 
         // تحديث جهة الاتصال
@@ -1077,6 +1183,7 @@ async function markAsRead(sessionId, remoteJid) {
  * حفظ رسالة صادرة
  */
 async function saveOutgoingMessage(sessionId, remoteJid, data, options = {}) {
+    const metadata = serializeOutgoingMetadata(data.metadata);
     const savedMessage = await getSharedPrismaClient().whatsAppMessage.upsert({
         where: { messageId: data.messageId },
         update: {
@@ -1095,6 +1202,7 @@ async function saveOutgoingMessage(sessionId, remoteJid, data, options = {}) {
             timestamp: new Date(),
             isAIResponse: data.isAIResponse || false,
             aiConfidence: data.aiConfidence,
+            metadata,
             updatedAt: new Date()
         },
         create: {
@@ -1114,6 +1222,7 @@ async function saveOutgoingMessage(sessionId, remoteJid, data, options = {}) {
             timestamp: new Date(),
             isAIResponse: data.isAIResponse || false,
             aiConfidence: data.aiConfidence,
+            metadata,
             updatedAt: new Date()
         }
     });
