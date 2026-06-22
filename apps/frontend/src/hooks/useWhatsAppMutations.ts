@@ -204,7 +204,7 @@ export const useSendMedia = (
       if (params.userId) formData.append("userId", params.userId);
 
       const response = await api.post(
-        "/whatsapp/messages/send-media",
+        "/whatsapp/messages/upload-send",
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
