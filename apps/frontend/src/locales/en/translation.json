@@ -1770,6 +1770,10 @@
       "FOLLOWING": "Following",
       "COMPLETED": "Completed"
     },
+    "statusFilterAll": "All",
+    "competitorsCount": "Competitors Count",
+    "statusUpdated": "Competitor status updated successfully",
+    "filterByStatus": "Filter by status",
     "products": "Products",
     "ads": {
       "overview": "Ad Overview",
