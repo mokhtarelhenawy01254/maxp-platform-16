@@ -253,6 +253,9 @@ class ModelManager:
         for p in DEFAULT_PROVIDER_PRIORITY:
             push(p)
 
+        for p in SUPPORTED_PROVIDER_ORDER:
+            push(p)
+
         if not ordered:
             ordered = list(DEFAULT_PROVIDER_PRIORITY)
 

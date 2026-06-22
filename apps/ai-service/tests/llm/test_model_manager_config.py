@@ -5,6 +5,14 @@ import pytest
 from src.llm.model_manager import ModelManager, ModelManagerError
 
 
+def test_provider_priority_falls_through_to_all_supported_providers():
+    priority = ModelManager().resolve_provider_priority(None)
+
+    assert priority[:3] == ["GOOGLE", "GROQ", "OPENROUTER"]
+    assert "DEEPSEEK" in priority
+    assert "NVIDIA" in priority
+
+
 @pytest.mark.asyncio
 async def test_get_global_ui_config_skips_db_when_session_factory_is_uninitialized(monkeypatch):
     errors: list[dict[str, object]] = []

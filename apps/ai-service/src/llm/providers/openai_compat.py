@@ -44,6 +44,12 @@ def _response_format(output_schema: Any) -> dict[str, Any] | None:
     }
 
 
+def _provider_response_format(provider_name: str, output_schema: Any) -> dict[str, Any] | None:
+    if str(provider_name or "").upper() == "DEEPSEEK" and output_schema is not None:
+        return {"type": "json_object"}
+    return _response_format(output_schema)
+
+
 def _message_value(message: Any, key: str, default: Any = None) -> Any:
     if isinstance(message, dict):
         return message.get(key, default)
@@ -137,7 +143,7 @@ class OpenAICompatProvider(BaseProvider):
             body["max_tokens"] = options["max_tokens"]
         if options.get("top_p") is not None:
             body["top_p"] = options["top_p"]
-        response_format = _response_format(options.get("output_schema"))
+        response_format = _provider_response_format(self.provider_name, options.get("output_schema"))
         if response_format:
             body["response_format"] = response_format
 

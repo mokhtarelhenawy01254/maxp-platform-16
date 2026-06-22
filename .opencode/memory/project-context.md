@@ -24,3 +24,8 @@
 - Translations: Arabic/English sidebar labels (gapAnalysis, competitorReports, competitorSettings)
 - Fixes: 400 errors, 403 errors, merge conflict resolutions
 - Unified Inbox: Redesigned search and filter UI with unread, pending, and platform dropdown controls, and updated backend controller to support multi-platform queries.
+
+## 2026-06-22 WhatsApp AI Agent Routing
+- WhatsApp customer auto-replies can use a company-assigned Python ai-service agent from `ai.agents`.
+- For agent `agent_rKLv5iSNfkm-ukRfieKUWg`, model routing must preserve `config.provider=DEEPSEEK` and `config.keyId=cmqguj2zc08akjugf77y348pl`.
+- DeepSeek structured JSON calls must use `response_format: {"type":"json_object"}`. Sending OpenAI `json_schema` makes the classifier fail over to Gemini before final reply generation.
