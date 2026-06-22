@@ -652,10 +652,11 @@ async function runSandboxChatTurn({
     throw createHttpError('SESSION_NOT_FOUND', 404);
   }
 
-  const resolvedSessionId = sessionId || generateSandboxSessionId();
+  const reusableSession = existingSession?.agentId === agentId ? existingSession : null;
+  const resolvedSessionId = reusableSession ? sessionId : generateSandboxSessionId();
   const conversationId = buildSandboxConversationId(companyId, userId, resolvedSessionId);
-  const toolMemory = hydrateSandboxWorkingMemory(companyId, conversationId, existingSession?.messages || []);
-  const conversationHistory = (existingSession?.messages || [])
+  const toolMemory = hydrateSandboxWorkingMemory(companyId, conversationId, reusableSession?.messages || []);
+  const conversationHistory = (reusableSession?.messages || [])
     .filter(m => m.role === 'user' || m.role === 'assistant')
     .map(m => ({ role: m.role, content: m.content }));
   const promptCtx = mergeSandboxToolMemory({ messageText, sessionId: resolvedSessionId, recentMessages: conversationHistory }, toolMemory);
@@ -698,7 +699,7 @@ async function runSandboxChatTurn({
   const pipelineTrace = taskResult?.result?.pipelineTrace || null;
   const compiledSystemPrompt = taskResult?.result?.compiledSystemPrompt || null;
 
-  if (!sessionId) {
+  if (!reusableSession) {
     await aiSandboxService.createSession({
       id: resolvedSessionId,
       companyId,
@@ -1484,10 +1485,11 @@ async function streamChatMessage(req, res) {
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no');
 
-    const resolvedSessionId = safeSessionId || generateSandboxSessionId();
+    const reusableSession = existingSession?.agentId === agentId ? existingSession : null;
+    const resolvedSessionId = reusableSession ? safeSessionId : generateSandboxSessionId();
     const conversationId = buildSandboxConversationId(companyId, userId, resolvedSessionId);
-    const toolMemory = hydrateSandboxWorkingMemory(companyId, conversationId, existingSession?.messages || []);
-    const conversationHistory = (existingSession?.messages || [])
+    const toolMemory = hydrateSandboxWorkingMemory(companyId, conversationId, reusableSession?.messages || []);
+    const conversationHistory = (reusableSession?.messages || [])
       .filter(m => m.role === 'user' || m.role === 'assistant')
       .map(m => ({ role: m.role, content: m.content }));
     const agentBundle = await createSandboxRuntimeAgent(companyId, agentId, modelSelection);
@@ -1560,7 +1562,7 @@ async function streamChatMessage(req, res) {
     })}\n\n`);
 
     // Persist session and messages
-    if (!safeSessionId) {
+    if (!reusableSession) {
       await aiSandboxService.createSession({
         id: resolvedSessionId,
         companyId,

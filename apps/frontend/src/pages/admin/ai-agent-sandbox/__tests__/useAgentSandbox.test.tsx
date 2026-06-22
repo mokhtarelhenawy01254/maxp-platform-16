@@ -263,4 +263,103 @@ describe("useAgentSandbox", () => {
       && (entry.metadata as any)?.params?.product_name_or_sku === "black shoes"
     ))).toBe(true);
   });
+
+  test("creates a fresh session before sending when the active session belongs to another agent", async () => {
+    sandboxApiMock.listSessions.mockResolvedValue({
+      success: true,
+      sessions: [{
+        id: "old_session",
+        title: "Old Agent Session",
+        agentId: "agent_other",
+        model: "gemini-2.5-flash",
+        provider: "GOOGLE",
+        messageCount: 0,
+        toolCallCount: 0,
+        totalCost: 0,
+        totalTokens: 0,
+        avgLatency: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }],
+      count: 1,
+    });
+    sandboxApiMock.getSession.mockResolvedValue({
+      success: true,
+      session: {
+        id: "old_session",
+        title: "Old Agent Session",
+        agentId: "agent_other",
+        model: "gemini-2.5-flash",
+        provider: "GOOGLE",
+        messageCount: 0,
+        toolCallCount: 0,
+        totalCost: 0,
+        totalTokens: 0,
+        avgLatency: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messages: [],
+      },
+    });
+    sandboxApiMock.createSession.mockResolvedValue({
+      success: true,
+      session: {
+        id: "new_agent_session",
+        title: "Test Session",
+        createdAt: new Date().toISOString(),
+      },
+    });
+    sandboxApiMock.streamMessage.mockImplementation(async (
+      _sessionId: string,
+      _message: string,
+      _agentId: string,
+      _model: string,
+      _provider: string,
+      _keyId: string | null,
+      _attachments: unknown,
+      onEvent?: (event: Record<string, unknown>) => void
+    ) => {
+      onEvent?.({
+        type: "agent_reply",
+        reply: "Fresh session reply",
+        isIncremental: false,
+      });
+      onEvent?.({
+        done: true,
+        tokens: { input: 1, output: 2, total: 3 },
+        latencyMs: 25,
+        model: "gemini-2.5-flash",
+        provider: "GOOGLE",
+        keyId: "central_key",
+        keyName: "Central Key",
+        cost: 0,
+        sessionId: "new_agent_session",
+        runtime: "python-agent",
+      });
+    });
+
+    const { result } = renderHook(() => useAgentSandbox());
+
+    await waitFor(() => {
+      expect(result.current.isSessionsLoading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.sendMessage("Hello from the selected agent");
+    });
+
+    expect(sandboxApiMock.createSession).toHaveBeenCalledWith(expect.objectContaining({
+      agentId: "agent_fb",
+    }));
+    expect(sandboxApiMock.streamMessage).toHaveBeenCalledWith(
+      "new_agent_session",
+      "Hello from the selected agent",
+      "agent_fb",
+      "gemini-2.5-flash",
+      "GOOGLE",
+      "central_key",
+      undefined,
+      expect.any(Function)
+    );
+  });
 });

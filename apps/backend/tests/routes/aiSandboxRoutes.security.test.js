@@ -1082,6 +1082,60 @@ describe('AI sandbox route security', () => {
     expect(mockProviderClient.generateContent).not.toHaveBeenCalled();
   });
 
+  test('starts a new streaming session when the supplied session belongs to another agent', async () => {
+    mockPrisma.aiSandboxSession.findFirst.mockResolvedValueOnce({
+      id: 'old_session',
+      companyId: 'company_1',
+      userId: 'user_1',
+      title: 'Old agent session',
+      agentId: 'agent_other',
+      agentName: 'Other Agent',
+      agentRole: 'SUPPORT',
+      model: 'gemini-2.5-flash',
+      provider: 'GOOGLE',
+      keyId: 'key_google',
+      isDeleted: false,
+      messages: [{
+        role: 'user',
+        content: 'Old agent history',
+      }],
+    });
+    mockAiServiceChatResult = {
+      status: 'ok',
+      reply: 'Fresh selected agent reply',
+      runtime: 'python-agent',
+      tool_calls: [],
+    };
+
+    const response = await request(app)
+      .post('/ai-sandbox/chat/stream')
+      .send({
+        sessionId: 'old_session',
+        agentId: 'agent_sales',
+        provider: 'GOOGLE',
+        model: 'gemini-2.5-flash',
+        keyId: 'key_google',
+        message: 'Hello selected agent',
+      });
+
+    expect(response.status).toBe(200);
+    expect(mockPrisma.aiSandboxSession.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        agentId: 'agent_sales',
+      }),
+    }));
+    const events = response.text
+      .split('\n\n')
+      .filter(Boolean)
+      .map(block => JSON.parse(block.replace(/^data: /, '')));
+    const doneEvent = events.find(event => event.done === true);
+    expect(doneEvent.sessionId).toEqual(expect.any(String));
+    expect(doneEvent.sessionId).not.toBe('old_session');
+    const task = aiServiceAdminClient.chatWithAgent.mock.calls[0][0];
+    expect(task.threadId).toContain(doneEvent.sessionId);
+    expect(task.memoryContext.recentMessages).toEqual([]);
+  });
+
   test('streams Python pipeline trace in the final sandbox event', async () => {
     mockAiServiceChatResult = {
       status: 'ok',

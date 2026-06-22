@@ -424,11 +424,28 @@ export function useAgentSandbox() {
   }, [loadSessionMessages]);
 
   useEffect(() => {
-    if (!activeSessionId && sessions.length > 0) {
-      setActiveSessionId(sessions[0].id);
-      loadSessionMessages(sessions[0].id);
+    if (!selectedAgentId) return;
+
+    const currentSession = activeSessionId
+      ? sessions.find((session) => session.id === activeSessionId)
+      : null;
+
+    if (currentSession?.agentId === selectedAgentId) {
+      return;
     }
-  }, [activeSessionId, sessions, loadSessionMessages]);
+
+    const nextSession = sessions.find((session) => session.agentId === selectedAgentId) || null;
+    setActiveSessionId(nextSession?.id || null);
+    setActivityLog([]);
+    setCurrentEval(null);
+    setSafetyChecks([]);
+
+    if (nextSession && nextSession.messages.length === 0) {
+      loadSessionMessages(nextSession.id);
+    } else if (nextSession) {
+      setActivityLog(reconstructActivityLogFromMessages(nextSession.messages));
+    }
+  }, [activeSessionId, selectedAgentId, sessions, loadSessionMessages]);
 
   // ponytail: auto-select model from agent's template config when agent changes
   useEffect(() => {
@@ -445,7 +462,13 @@ export function useAgentSandbox() {
     }
   }, [selectedAgentId, agents, models]);
 
-  const activeSession = sessions.find((s) => s.id === activeSessionId) || null;
+  const selectedAgentSessions = useMemo(
+    () => sessions.filter((session) => session.agentId === selectedAgentId),
+    [selectedAgentId, sessions]
+  );
+  const activeSession = sessions.find((s) => (
+    s.id === activeSessionId && s.agentId === selectedAgentId
+  )) || null;
   const selectedAgent = agents.find((a) => a.id === selectedAgentId) || agents[0] || null;
 
   const handleSetActiveSessionId = useCallback((id: string | null) => {
@@ -555,6 +578,12 @@ export function useAgentSandbox() {
       }
 
       let sessionId = activeSessionId;
+      const activeSessionForSend = sessionId
+        ? sessions.find((session) => session.id === sessionId)
+        : null;
+      if (!activeSessionForSend || activeSessionForSend.agentId !== selectedAgentId) {
+        sessionId = null;
+      }
       if (!sessionId) {
         const newId = await createSession();
         if (!newId) return;
@@ -979,6 +1008,7 @@ export function useAgentSandbox() {
     },
     [
       activeSessionId,
+      sessions,
       selectedAgentId,
       selectedModel,
       selectedProvider,
@@ -1082,7 +1112,7 @@ export function useAgentSandbox() {
   }, [t]);
 
   return {
-    sessions,
+    sessions: selectedAgentSessions,
     activeSession,
     activeSessionId,
     selectedAgentId,
