@@ -163,6 +163,17 @@ exports.updateStatus = async (req, res) => {
   }
 };
 
+exports.getStatusCounts = async (req, res) => {
+  try {
+    const { companyId } = req.user;
+    const counts = await CompetitorService.getStatusCounts(companyId);
+    res.json({ success: true, data: counts });
+  } catch (error) {
+    console.error('Error fetching status counts:', error);
+    res.status(500).json({ success: false, error: t('competitor.summary_failed') });
+  }
+};
+
 exports.remove = async (req, res) => {
   try {
     const { companyId } = req.user;

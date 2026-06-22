@@ -10,6 +10,7 @@ router.post('/', controller.create);
 router.get('/reports/all', controller.getAllReports);
 router.get('/auto-discover', controller.autoDiscover);
 router.get('/summary', controller.summary);
+router.get('/status-counts', controller.getStatusCounts);
 router.get('/:id', controller.getById);
 router.put('/:id', controller.update);
 router.patch('/:id/status', controller.updateStatus);

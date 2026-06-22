@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, RefreshCw, Plus, Pencil, Trash2, AlertTriangle, ExternalLink, Eye } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import CompetitorStatusBar from './CompetitorStatusBar';
+import GlobalCompetitorStatusBar, { type StatusFilter } from './GlobalCompetitorStatusBar';
 import { updateCompetitorStatus, useCompetitorStatusSync } from './useCompetitorStatus';
 import type { CompetitorStatus } from './CompetitorStatusBar';
 import i18n from '../../i18n';
@@ -33,6 +34,13 @@ interface Competitor {
   _count: { products: number; ads: number; reports: number };
 }
 
+interface StatusCounts {
+  total: number;
+  NEW: number;
+  FOLLOWING: number;
+  COMPLETED: number;
+}
+
 const SOCIAL_PLATFORMS = [
   { key: 'instagram', labelKey: 'social.instagram', icon: '📸' },
   { key: 'facebook', labelKey: 'social.facebook', icon: '📘' },
@@ -52,12 +60,28 @@ const CompetitorList: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  const [statusCounts, setStatusCounts] = useState<StatusCounts>({ total: 0, NEW: 0, FOLLOWING: 0, COMPLETED: 0 });
+  const [countsLoading, setCountsLoading] = useState(false);
+
+  const fetchStatusCounts = useCallback(async () => {
+    setCountsLoading(true);
+    try {
+      const res = await apiClient.get('/competitors/status-counts');
+      if (res.data.success) setStatusCounts(res.data.data);
+    } catch {
+      console.error('Failed to fetch status counts');
+    } finally {
+      setCountsLoading(false);
+    }
+  }, []);
 
   const fetchCompetitors = useCallback(async () => {
     setIsLoading(true);
     try {
       const params: Record<string, string> = {};
       if (search) params.search = search;
+      if (statusFilter !== 'ALL') params.status = statusFilter;
       const res = await apiClient.get('/competitors', { params });
       if (res.data.success) setCompetitors(res.data.data || []);
     } catch {
@@ -65,21 +89,40 @@ const CompetitorList: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [search]);
+  }, [search, statusFilter]);
 
   useEffect(() => { fetchCompetitors(); }, [fetchCompetitors]);
+  useEffect(() => { fetchStatusCounts(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useCompetitorStatusSync((competitorId, status) => {
     setCompetitors(prev => prev.map(c => c.id === competitorId ? { ...c, status } : c));
+    fetchStatusCounts();
   });
 
   const handleStatusChange = async (id: string, newStatus: CompetitorStatus) => {
     const prevStatus = competitors.find(c => c.id === id)?.status;
     setCompetitors(existing => existing.map(c => c.id === id ? { ...c, status: newStatus } : c));
+    setStatusCounts(prev => {
+      const next = { ...prev };
+      if (prevStatus && prevStatus in next) next[prevStatus as keyof StatusCounts] = Math.max(0, next[prevStatus as keyof StatusCounts] - 1);
+      next[newStatus] = (next[newStatus] || 0) + 1;
+      return next;
+    });
     const ok = await updateCompetitorStatus(id, newStatus);
     if (!ok && prevStatus) {
       setCompetitors(existing => existing.map(c => c.id === id ? { ...c, status: prevStatus } : c));
+      setStatusCounts(prev => {
+        const next = { ...prev };
+        next[newStatus] = Math.max(0, (next[newStatus] || 0) - 1);
+        if (prevStatus in next) next[prevStatus as keyof StatusCounts] = (next[prevStatus as keyof StatusCounts] || 0) + 1;
+        return next;
+      });
     }
+    fetchStatusCounts();
+  };
+
+  const handleStatusFilterChange = (filter: StatusFilter) => {
+    setStatusFilter(filter);
   };
 
   const handleDelete = async (id: string) => {
@@ -87,6 +130,7 @@ const CompetitorList: React.FC = () => {
       await apiClient.delete(`/competitors/${id}`);
       setDeleteConfirm(null);
       fetchCompetitors();
+      fetchStatusCounts();
     } catch {
       console.error('Failed to delete');
     }
@@ -97,7 +141,7 @@ const CompetitorList: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">{t('competitors.title')}</h1>
         <div className="flex gap-2">
-          <button onClick={fetchCompetitors} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+          <button onClick={() => { fetchCompetitors(); fetchStatusCounts(); }} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
             <RefreshCw size={20} className={isLoading ? 'animate-spin' : ''} />
           </button>
           <button onClick={() => navigate('/competitors/add')} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
@@ -115,6 +159,15 @@ const CompetitorList: React.FC = () => {
           onChange={e => setSearch(e.target.value)}
           placeholder={t('competitors.searchCompetitors')}
           className="w-full ltr:pl-10 ltr:pr-4 rtl:pr-10 rtl:pl-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
+        />
+      </div>
+
+      <div className="mb-6">
+        <GlobalCompetitorStatusBar
+          selectedFilter={statusFilter}
+          onFilterChange={handleStatusFilterChange}
+          counts={statusCounts}
+          isLoading={countsLoading}
         />
       </div>
 

@@ -53,6 +53,7 @@ model Competitor {
   @@unique([companyId, slug])
   @@index([companyId])
   @@index([companyId, isActive])
+  @@index([companyId, status])
   @@map("competitors")
 }
 

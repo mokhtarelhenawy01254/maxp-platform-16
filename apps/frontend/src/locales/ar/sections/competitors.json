@@ -61,6 +61,10 @@
     "FOLLOWING": "متابعة",
     "COMPLETED": "منتهي"
   },
+  "statusFilterAll": "الكل",
+  "competitorsCount": "عدد المنافسين",
+  "statusUpdated": "تم تحديث حالة المنافس بنجاح",
+  "filterByStatus": "تصفية حسب الحالة",
   "products": "المنتجات",
   "ads": {
     "overview": "نظرة عامة على الإعلانات",

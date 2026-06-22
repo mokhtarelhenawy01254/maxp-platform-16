@@ -3,10 +3,11 @@ const { t } = require('./i18n');
 const getPrisma = () => getSharedPrismaClient();
 
 class CompetitorService {
-  static async list(companyId, { page = 1, limit = 20, isActive, search } = {}) {
+  static async list(companyId, { page = 1, limit = 20, isActive, search, status } = {}) {
     const where = { companyId };
     if (isActive !== undefined) where.isActive = isActive === 'true';
     if (search) where.name = { contains: search, mode: 'insensitive' };
+    if (status) where.status = status;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const take = parseInt(limit);
@@ -284,6 +285,19 @@ class CompetitorService {
       data,
       pagination: { page: parseInt(page), limit: parseInt(limit), total, totalPages: Math.ceil(total / parseInt(limit)) },
     };
+  }
+
+  static async getStatusCounts(companyId) {
+    const statuses = ['NEW', 'FOLLOWING', 'COMPLETED'];
+    const results = await Promise.all(
+      statuses.map(status =>
+        getPrisma().competitor.count({ where: { companyId, status } })
+      )
+    );
+    const total = await getPrisma().competitor.count({ where: { companyId } });
+    const counts = {};
+    statuses.forEach((s, i) => { counts[s] = results[i]; });
+    return { total, ...counts };
   }
 
   static async generateReport(companyId, competitorId, type = 'weekly') {

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ExternalLink, RefreshCw, BarChart2, TrendingUp, Scale, History, Settings, Instagram, Share2, Crosshair, Lightbulb, Plus, Pencil, X, AlertTriangle, CheckCircle2, Circle, Calendar, Clock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ExternalLink, RefreshCw, BarChart2, TrendingUp, Scale, History, Settings, Instagram, Share2, Crosshair, Lightbulb, Plus, Pencil, X, AlertTriangle, CheckCircle2, Circle, Calendar, Clock, Tag } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
-import CompetitorStatusBar from './CompetitorStatusBar';
+import CompetitorStatusBar, { COMPETITOR_STATUSES, type CompetitorStatus } from './CompetitorStatusBar';
 import { updateCompetitorStatus, useCompetitorStatusSync } from './useCompetitorStatus';
 import CompetitorFeatures from './CompetitorFeatures';
 import i18n from '../../i18n';
@@ -239,7 +239,11 @@ const CompetitorDetail: React.FC = () => {
               </a>
             )}
           </div>
-          <div className="mt-2">
+          <div className="flex items-center gap-3 mt-2 flex-wrap">
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <Tag size={14} className="shrink-0" />
+              <span>{t('competitors.status')}:</span>
+            </div>
             <CompetitorStatusBar
               currentStatus={competitor.status}
               competitorId={id}
