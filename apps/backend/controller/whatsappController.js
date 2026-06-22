@@ -3722,7 +3722,7 @@ async function getStatuses(req, res) {
                 expiresAt: { gte: new Date() }
             },
             orderBy: { timestamp: 'desc' },
-            include: { whatsapp_sessions: { select: { name: true } } }
+            include: { whatsAppSession: { select: { name: true } } }
         });
 
         res.json({ success: true, statuses });
