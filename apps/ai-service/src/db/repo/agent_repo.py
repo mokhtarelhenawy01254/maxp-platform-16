@@ -49,7 +49,7 @@ class AgentRepository:
         stmt = select(Agent).where(Agent.company_id == company_id)
         if status:
             stmt = stmt.where(Agent.status == status)
-        stmt = stmt.order_by(Agent.created_at)
+        stmt = stmt.order_by(Agent.updated_at.desc())
         result = await self._session.execute(stmt)
         return result.scalars().all()
 
