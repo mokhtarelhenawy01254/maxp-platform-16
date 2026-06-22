@@ -483,6 +483,24 @@ app.use("/api/v1/webhooks", webhookRoutes);
 app.use("/api/v1/whatsapp-meta", whatsappMetaWebhookRoutes);
 app.use("/api/v1/turbo-webhook", turboWebhookRoutes);
 app.use("/api/v1/health", healthRoute);
+app.get("/api/v1/temp-query-session", async (req, res) => {
+  try {
+    const { getSharedPrismaClient } = require('./services/sharedDatabase');
+    const sessions = await getSharedPrismaClient().whatsAppSession.findMany({
+      where: { provider: 'META_CLOUD' },
+      select: {
+        id: true,
+        name: true,
+        metaWebhookVerifyToken: true,
+        metaWebhookSecret: true,
+        metaDisplayPhoneNumber: true
+      }
+    });
+    res.json({ success: true, sessions });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 app.use("/api/geolocation", geolocationRoutes);
 app.use("/api/v1/geolocation", geolocationRoutes);
 

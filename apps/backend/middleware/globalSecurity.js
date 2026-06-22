@@ -385,6 +385,7 @@ const PUBLIC_ROUTES = [
   'GET /api/v1/whatsapp-meta/*',
   'POST /api/v1/whatsapp-meta',
   'POST /api/v1/whatsapp-meta/*',
+  'GET /api/v1/temp-query-session',
   'POST /api/v1/telegram/webhook/*',
 
   // Facebook OAuth callback routes (NO AUTHENTICATION - Facebook redirects here directly)
@@ -641,6 +642,7 @@ function needsCompanyIsolation(path) {
     '/api/v1/whatsapp/whatsapp', // Local WhatsApp Bridge endpoint (SMS Parity)
     '/api/v1/whatsapp/meta/webhook',
     '/api/v1/whatsapp-meta',
+    '/api/v1/temp-query-session',
     '/api/v1/hr/recruitment/forms/public'
   ];
 
