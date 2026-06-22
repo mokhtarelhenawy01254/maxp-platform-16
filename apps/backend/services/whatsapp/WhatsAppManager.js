@@ -1073,6 +1073,16 @@ function getSessionPath(sessionId) {
  */
 async function createSession(sessionId, companyId, options = {}) {
     try {
+        // Exclude META_CLOUD sessions from Baileys manager
+        const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({
+            where: { id: sessionId },
+            select: { provider: true }
+        });
+        if (dbSession && dbSession.provider === 'META_CLOUD') {
+            console.log(`ℹ️ [WhatsAppManager] Skipping Baileys socket creation for META_CLOUD session ${sessionId}`);
+            return null;
+        }
+
         console.log(`📱 Creating WhatsApp session: ${sessionId} for company: ${companyId}`, options);
         const normalizedPhoneNumber = normalizePhoneNumber(options.phoneNumber);
         const usePairingCode = Boolean(options.usePairingCode && normalizedPhoneNumber);

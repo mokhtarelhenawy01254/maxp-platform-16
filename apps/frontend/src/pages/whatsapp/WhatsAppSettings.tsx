@@ -362,7 +362,7 @@ function SettingsToggle({
   onCheckedChange: (checked: boolean) => void;
 }) {
   return (
-    <div className="rounded-[22px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)] px-4 py-4 shadow-[0_12px_30px_rgba(15,27,45,0.04)]">
+    <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <p className="text-sm font-medium text-[color:var(--color-foreground)]">
@@ -399,7 +399,7 @@ function SessionScopeSelector({
     <div className="space-y-2">
       <Label>{label}</Label>
       <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger className="min-w-[15rem] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]">
+        <SelectTrigger className="min-w-[15rem] bg-[color:var(--color-card)]">
           <SelectValue placeholder={label} />
         </SelectTrigger>
         <SelectContent>
@@ -1556,7 +1556,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
     <>
       <Button
         variant="outline"
-        className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+        className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-card)]"
         onClick={() => void handleRefresh()}
         disabled={refreshing}
       >
@@ -1565,7 +1565,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       </Button>
       {activeTab === "sessions" ? (
         <Button
-          className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)]"
+          className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90"
           onClick={() => setCreateSessionDialogOpen(true)}
           disabled={sessions.length >= (settings?.maxSessions || 3)}
         >
@@ -1575,7 +1575,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       ) : null}
       {activeTab === "quick-replies" ? (
         <Button
-          className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)]"
+          className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90"
           onClick={openCreateQuickReplyDialog}
         >
           <Plus className="size-4" />
@@ -1584,7 +1584,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       ) : null}
       {activeTab === "labels" ? (
         <Button
-          className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)]"
+          className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90"
           onClick={() => setLabelDialogOpen(true)}
           disabled={!scopedSessionId}
         >
@@ -1596,7 +1596,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   );
 
   const renderEmptyScopedSessionState = (message: string) => (
-    <Alert className="rounded-[24px] border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)]">
+    <Alert className="rounded-3xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
       <AlertCircle className="size-4 text-[color:var(--color-warning)]" />
       <AlertTitle>{t("whatsappSettings.selectSession")}</AlertTitle>
       <AlertDescription>{message}</AlertDescription>
@@ -1612,14 +1612,14 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
-              className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+              className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-card)]"
               onClick={() => void handleRefresh()}
             >
               <RefreshCw className="size-4" />
               {t("whatsappSettings.update")}
             </Button>
             <Button
-              className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)]"
+              className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90"
               onClick={() => setCreateSessionDialogOpen(true)}
               disabled={sessions.length >= (settings?.maxSessions || 3)}
             >
@@ -1630,7 +1630,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         }
       >
         {sessions.length === 0 ? (
-          <Alert className="rounded-[24px] border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)]">
+          <Alert className="rounded-3xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
             <AlertCircle className="size-4 text-[color:var(--color-warning)]" />
             <AlertTitle>{t("whatsappSettings.sidebarTitle")}</AlertTitle>
             <AlertDescription>{t("whatsappSettings.noSessions")}</AlertDescription>
@@ -1649,11 +1649,11 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
               return (
                 <div
                   key={session.id}
-                  className="rounded-[26px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_84%,var(--shell-control-bg)_16%)] p-5 shadow-[0_18px_40px_rgba(15,27,45,0.05)]"
+                  className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-5 shadow-md"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <Avatar size="lg" className="bg-[color:color-mix(in_srgb,var(--color-primary)_12%,white)]">
+                      <Avatar size="lg" className="bg-primary/10">
                         <AvatarFallback className="bg-transparent text-[color:var(--color-primary)]">
                           <Smartphone className="size-5" />
                         </AvatarFallback>
@@ -1714,7 +1714,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Badge
                       variant="outline"
-                      className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)]"
+                      className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]"
                     >
                       {providerLabels[session.provider || "BAILEYS"]}
                     </Badge>
@@ -1729,7 +1729,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                   </div>
 
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-[20px] border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[color:color-mix(in_srgb,var(--color-background)_84%,white)] px-4 py-3">
+                    <div className="rounded-2xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[color:var(--color-muted)] px-4 py-3">
                       <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
                         {t("whatsappSettings.contacts")}
                       </p>
@@ -1737,7 +1737,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                         {session._count?.contacts || 0}
                       </p>
                     </div>
-                    <div className="rounded-[20px] border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[color:color-mix(in_srgb,var(--color-background)_84%,white)] px-4 py-3">
+                    <div className="rounded-2xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[color:var(--color-muted)] px-4 py-3">
                       <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
                         {t("whatsappSettings.messages")}
                       </p>
@@ -1784,7 +1784,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
 
                     <Button
                       variant="outline"
-                      className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+                      className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-card)]"
                       onClick={() => setEditingSession({ ...session })}
                     >
                       <Edit className="size-4" />
@@ -1826,7 +1826,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   const renderGeneralTab = () => {
     if (!settings) {
       return (
-        <Alert className="rounded-[24px] border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)]">
+        <Alert className="rounded-3xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
           <AlertCircle className="size-4 text-[color:var(--color-warning)]" />
           <AlertTitle>{t("whatsappSettings.generalSettings")}</AlertTitle>
           <AlertDescription>{t("whatsappSettings.dialogs.errorLoading")}</AlertDescription>
@@ -1852,7 +1852,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                 }
               />
 
-              <div className="rounded-[24px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)] px-4 py-4">
+              <div className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium text-[color:var(--color-foreground)]">
@@ -1864,7 +1864,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                   </div>
                   <Badge
                     variant="outline"
-                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_78%,var(--shell-control-bg)_22%)]"
+                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]"
                   >
                     {settings.maxSessions}
                   </Badge>
@@ -1884,7 +1884,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-[24px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)] px-4 py-4">
+                <div className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4">
                   <div className="flex items-center gap-2">
                     <ImageIcon className="size-4 text-[color:var(--color-primary)]" />
                     <p className="text-sm font-medium text-[color:var(--color-foreground)]">
@@ -1908,7 +1908,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                   />
                 </div>
 
-                <div className="rounded-[24px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)] px-4 py-4">
+                <div className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4">
                   <div className="flex items-center gap-2">
                     <Video className="size-4 text-[color:var(--color-secondary)]" />
                     <p className="text-sm font-medium text-[color:var(--color-foreground)]">
@@ -1933,7 +1933,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)] px-4 py-4">
+              <div className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium text-[color:var(--color-foreground)]">
@@ -1945,7 +1945,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                   </div>
                   <Badge
                     variant="outline"
-                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_78%,var(--shell-control-bg)_22%)]"
+                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]"
                   >
                     {settings.maxDocumentSize} MB
                   </Badge>
@@ -1977,7 +1977,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                   }
                 />
 
-                <div className="space-y-2 rounded-[24px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)] px-4 py-4">
+                <div className="space-y-2 rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4">
                   <Label htmlFor="archive-days">Auto archive days</Label>
                   <Input
                     id="archive-days"
@@ -1997,7 +1997,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                           : previous,
                       )
                     }
-                    className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                    className="h-11 bg-[color:var(--color-card)]"
                   />
                 </div>
               </div>
@@ -2032,7 +2032,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                 }
               />
 
-              <div className="rounded-[24px] border border-emerald-300/70 bg-emerald-500/10 p-4">
+              <div className="rounded-3xl border border-emerald-300/70 bg-emerald-500/10 p-4">
                 <div className="flex items-start gap-3">
                   <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 text-white">
                     <Bell className="size-5" />
@@ -2046,7 +2046,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     </p>
                     <Button
                       variant="outline"
-                      className="rounded-full border-emerald-300/70 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)] text-emerald-900 hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+                      className="rounded-full border-emerald-300/70 bg-[color:var(--color-card)] text-emerald-900 hover:bg-[color:var(--color-card)]"
                       onClick={() => navigate(notificationsHref)}
                     >
                       {t("whatsappSettings.openNotificationSettings")}
@@ -2059,7 +2059,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         </div>
 
         <Button
-          className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)]"
+          className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:brightness-90"
           onClick={() => void handleSaveSettings()}
           disabled={saving}
         >
@@ -2077,10 +2077,10 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   const renderQuickRepliesTab = () => (
     <WhatsAppSurfaceCard
       title={t("whatsappSettings.quickReplies")}
-      description={t("whatsappSettings.noQuickReplies")}
+      description={t("whatsappSettings.quickReplies")}
       action={
         <Button
-          className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)]"
+          className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90"
           onClick={openCreateQuickReplyDialog}
         >
           <Plus className="size-4" />
@@ -2089,7 +2089,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       }
     >
       {quickReplies.length === 0 ? (
-        <Alert className="rounded-[24px] border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)]">
+        <Alert className="rounded-3xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
           <AlertCircle className="size-4 text-[color:var(--color-warning)]" />
           <AlertTitle>{t("whatsappSettings.quickReplies")}</AlertTitle>
           <AlertDescription>{t("whatsappSettings.noQuickReplies")}</AlertDescription>
@@ -2099,7 +2099,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           {quickReplies.map((reply) => (
             <div
               key={reply.id}
-              className="rounded-[24px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_84%,var(--shell-control-bg)_16%)] px-4 py-4 shadow-[0_14px_32px_rgba(15,27,45,0.04)]"
+              className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4 shadow-sm"
             >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="space-y-3">
@@ -2110,7 +2110,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     {reply.shortcut ? (
                       <Badge
                         variant="outline"
-                        className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] font-mono"
+                        className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] font-mono"
                       >
                         {reply.shortcut}
                       </Badge>
@@ -2139,13 +2139,13 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                 <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                   <Badge
                     variant="outline"
-                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]"
                   >
                     {t("whatsappSettings.usedTimes", { count: reply.usageCount })}
                   </Badge>
                   <Button
                     variant="outline"
-                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-card)]"
                     onClick={() => {
                       setEditingQuickReply(reply);
                       setQuickReplyForm({
@@ -2197,8 +2197,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           renderEmptyScopedSessionState(t("whatsappSettings.businessProfileAlert"))
         ) : loadingBusiness ? (
           <div className="grid gap-4 xl:grid-cols-2">
-            <Skeleton className="h-80 rounded-[24px]" />
-            <Skeleton className="h-80 rounded-[24px]" />
+            <Skeleton className="h-80 rounded-3xl" />
+            <Skeleton className="h-80 rounded-3xl" />
           </div>
         ) : businessProfile ? (
           <div className="space-y-4">
@@ -2223,7 +2223,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                             : previous,
                         )
                       }
-                      className="min-h-[7rem] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                      className="min-h-[7rem] bg-[color:var(--color-card)]"
                     />
                   </div>
 
@@ -2239,7 +2239,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                             : previous,
                         )
                       }
-                      className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                      className="h-11 bg-[color:var(--color-card)]"
                     />
                   </div>
 
@@ -2255,7 +2255,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                             : previous,
                         )
                       }
-                      className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                      className="h-11 bg-[color:var(--color-card)]"
                     />
                   </div>
 
@@ -2269,7 +2269,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                         )
                       }
                     >
-                      <SelectTrigger className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]">
+                      <SelectTrigger className="h-11 bg-[color:var(--color-card)]">
                         <SelectValue placeholder={t("whatsappSettings.category")} />
                       </SelectTrigger>
                       <SelectContent>
@@ -2307,7 +2307,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                               return { ...previous, websites: nextWebsites };
                             });
                           }}
-                          className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                          className="h-11 bg-[color:var(--color-card)]"
                         />
                         <Button
                           variant="outline"
@@ -2332,7 +2332,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                       </div>
                     ))
                   ) : (
-                    <Alert className="rounded-[22px] border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)]">
+                    <Alert className="rounded-2xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
                       <AlertCircle className="size-4 text-[color:var(--color-warning)]" />
                       <AlertTitle>{t("whatsappSettings.websites")}</AlertTitle>
                       <AlertDescription>{t("whatsappSettings.addWebsite")}</AlertDescription>
@@ -2341,7 +2341,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
 
                   <Button
                     variant="outline"
-                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-card)]"
                     onClick={() =>
                       setBusinessProfile((previous) =>
                         previous
@@ -2361,7 +2361,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
             </div>
 
             <Button
-              className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)]"
+              className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:brightness-90"
               onClick={() => void handleSaveBusinessProfile()}
               disabled={saving}
             >
@@ -2374,7 +2374,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
             </Button>
           </div>
         ) : (
-          <Alert className="rounded-[24px] border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)]">
+          <Alert className="rounded-3xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
             <AlertCircle className="size-4 text-[color:var(--color-warning)]" />
             <AlertTitle>{t("whatsappSettings.businessProfile")}</AlertTitle>
             <AlertDescription>{t("whatsappSettings.noBusinessProfile")}</AlertDescription>
@@ -2402,8 +2402,8 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           renderEmptyScopedSessionState(t("whatsappSettings.privacySettings"))
         ) : loadingPrivacy ? (
           <div className="grid gap-4 xl:grid-cols-2">
-            <Skeleton className="h-80 rounded-[24px]" />
-            <Skeleton className="h-80 rounded-[24px]" />
+            <Skeleton className="h-80 rounded-3xl" />
+            <Skeleton className="h-80 rounded-3xl" />
           </div>
         ) : privacySettings ? (
           <div className="space-y-4">
@@ -2442,7 +2442,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                           )
                         }
                       >
-                        <SelectTrigger className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]">
+                        <SelectTrigger className="h-11 bg-[color:var(--color-card)]">
                           <SelectValue placeholder={field.label} />
                         </SelectTrigger>
                         <SelectContent>
@@ -2464,7 +2464,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                 className="border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] shadow-none"
               >
                 {blocklist.length === 0 ? (
-                  <Alert className="rounded-[22px] border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)]">
+                  <Alert className="rounded-2xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
                     <AlertCircle className="size-4 text-[color:var(--color-warning)]" />
                     <AlertTitle>{t("whatsappSettings.blocklist")}</AlertTitle>
                     <AlertDescription>{t("whatsappSettings.noBlocked")}</AlertDescription>
@@ -2474,7 +2474,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     {blocklist.map((jid) => (
                       <div
                         key={jid}
-                        className="flex items-center justify-between gap-3 rounded-[20px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] px-4 py-3"
+                        className="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-3"
                       >
                         <div className="space-y-1">
                           <p className="text-sm font-medium text-[color:var(--color-foreground)]" dir="ltr">
@@ -2483,7 +2483,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                         </div>
                         <Button
                           variant="outline"
-                          className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_78%,var(--shell-control-bg)_22%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+                          className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] hover:bg-[color:var(--color-card)]"
                           onClick={() => void handleUnblock(jid)}
                         >
                           {t("whatsappSettings.unblock")}
@@ -2496,7 +2496,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
             </div>
 
             <Button
-              className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)]"
+              className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:brightness-90"
               onClick={() => void handleSavePrivacy()}
               disabled={saving}
             >
@@ -2528,7 +2528,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
             onValueChange={handleScopedSessionChange}
           />
           <Button
-            className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)]"
+            className="rounded-full bg-[color:var(--business-success)] px-4 text-white hover:brightness-90"
             onClick={() => setLabelDialogOpen(true)}
             disabled={!scopedSessionId}
           >
@@ -2541,9 +2541,9 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       {connectedSessions.length === 0 ? (
         renderEmptyScopedSessionState(t("whatsappSettings.noLabels"))
       ) : loadingLabels ? (
-        <Skeleton className="h-72 rounded-[24px]" />
+        <Skeleton className="h-72 rounded-3xl" />
       ) : labels.length === 0 ? (
-        <Alert className="rounded-[24px] border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)]">
+        <Alert className="rounded-3xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
           <AlertCircle className="size-4 text-[color:var(--color-warning)]" />
           <AlertTitle>{t("whatsappSettings.labels")}</AlertTitle>
           <AlertDescription>{t("whatsappSettings.noLabels")}</AlertDescription>
@@ -2553,7 +2553,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           {labels.map((label) => (
             <div
               key={label.id}
-              className="flex items-center justify-between gap-3 rounded-[24px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_84%,var(--shell-control-bg)_16%)] px-4 py-4 shadow-[0_12px_28px_rgba(15,27,45,0.04)]"
+              className="flex items-center justify-between gap-3 rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4 shadow-sm"
             >
               <div className="flex items-center gap-3">
                 <span
@@ -2604,7 +2604,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         ) : loadingStats ? (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
-              <Skeleton key={index} className="h-36 rounded-[24px]" />
+              <Skeleton key={index} className="h-36 rounded-3xl" />
             ))}
           </div>
         ) : stats ? (
@@ -2657,7 +2657,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     return (
                       <div
                         key={day.date}
-                        className="rounded-[22px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_84%,var(--shell-control-bg)_16%)] px-4 py-4"
+                        className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <p className="text-sm font-medium text-[color:var(--color-foreground)]">
@@ -2709,7 +2709,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                   })}
                 </div>
               ) : (
-                <Alert className="rounded-[22px] border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)]">
+                <Alert className="rounded-2xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
                   <AlertCircle className="size-4 text-[color:var(--color-warning)]" />
                   <AlertTitle>{t("whatsappSettings.dailyStats")}</AlertTitle>
                   <AlertDescription>{t("common.no_data")}</AlertDescription>
@@ -2740,10 +2740,10 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       {connectedSessions.length === 0 ? (
         renderEmptyScopedSessionState(t("whatsappSettings.selectSession"))
       ) : loadingStatus ? (
-        <Skeleton className="h-72 rounded-[24px]" />
+        <Skeleton className="h-72 rounded-3xl" />
       ) : (
         <div className="space-y-4">
-          <div className="rounded-[24px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)] px-5 py-5">
+          <div className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-5 py-5">
             <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
               {t("whatsappSettings.currentStatus")}
             </p>
@@ -2759,12 +2759,12 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
               value={statusText}
               onChange={(event) => setStatusText(event.target.value)}
               placeholder={t("whatsappSettings.typeStatus")}
-              className="min-h-[8rem] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+              className="min-h-[8rem] bg-[color:var(--color-card)]"
             />
           </div>
 
           <Button
-            className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)]"
+            className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:brightness-90"
             onClick={() => void handleSetStatus()}
             disabled={saving || !statusText.trim()}
           >
@@ -2818,7 +2818,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       {connectedSessions.length === 0 ? (
         renderEmptyScopedSessionState(t("whatsappSettings.selectSessionHours"))
       ) : loadingBusinessHours ? (
-        <Skeleton className="h-[28rem] rounded-[24px]" />
+        <Skeleton className="h-[28rem] rounded-3xl" />
       ) : businessHours ? (
         <div className="space-y-4">
           <div className="space-y-2">
@@ -2833,7 +2833,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     : previous,
                 )
               }
-              className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+              className="h-11 bg-[color:var(--color-card)]"
             />
           </div>
 
@@ -2848,7 +2848,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
               return (
                 <div
                   key={dayIndex}
-                  className="rounded-[24px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)] px-4 py-4"
+                  className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4"
                 >
                   <div className="grid gap-4 lg:grid-cols-[12rem_minmax(0,1fr)]">
                     <div>
@@ -2864,7 +2864,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                           updateBusinessHourDay(dayIndex, { mode: value })
                         }
                       >
-                        <SelectTrigger className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]">
+                        <SelectTrigger className="h-11 bg-[color:var(--color-card)]">
                           <SelectValue placeholder={t("whatsappSettings.businessHours")} />
                         </SelectTrigger>
                         <SelectContent>
@@ -2895,7 +2895,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                                   openTime: event.target.value,
                                 })
                               }
-                              className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                              className="h-11 bg-[color:var(--color-card)]"
                             />
                           </div>
                           <div className="space-y-2">
@@ -2908,12 +2908,12 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                                   closeTime: event.target.value,
                                 })
                               }
-                              className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                              className="h-11 bg-[color:var(--color-card)]"
                             />
                           </div>
                         </div>
                       ) : (
-                        <div className="rounded-[18px] border border-dashed border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--color-background)_84%,white)] px-4 py-3 text-sm text-[color:var(--color-muted-foreground)]">
+                        <div className="rounded-xl border border-dashed border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-4 py-3 text-sm text-[color:var(--color-muted-foreground)]">
                           {t(`whatsappSettings.modes.${currentDayConfig.mode}`)}
                         </div>
                       )}
@@ -2925,7 +2925,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           </div>
 
           <Button
-            className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)]"
+            className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:brightness-90"
             onClick={() => void handleSaveBusinessHours()}
             disabled={saving}
           >
@@ -2949,7 +2949,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       description={t("whatsappSettings.autoNotificationsDesc")}
     >
       <div className="space-y-4">
-        <Alert className="rounded-[24px] border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)]">
+        <Alert className="rounded-3xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
           <Bell className="size-4 text-[color:var(--business-success)]" />
           <AlertTitle>{t("whatsappSettings.autoNotifications")}</AlertTitle>
           <AlertDescription>{t("whatsappSettings.autoNotificationsAlert")}</AlertDescription>
@@ -2987,7 +2987,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         </div>
 
         <Button
-          className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)]"
+          className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:brightness-90"
           onClick={() => navigate(notificationsHref)}
         >
           <Bell className="size-4" />
@@ -3037,12 +3037,12 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       >
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-36 rounded-[24px]" />
+            <Skeleton key={index} className="h-36 rounded-3xl" />
           ))}
         </div>
         <div className="grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)]">
-          <Skeleton className="h-[34rem] rounded-[28px]" />
-          <Skeleton className="h-[40rem] rounded-[28px]" />
+          <Skeleton className="h-[34rem] rounded-3xl" />
+          <Skeleton className="h-[40rem] rounded-3xl" />
         </div>
       </WhatsAppPageShell>
     );
@@ -3090,7 +3090,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           <div className="space-y-2">
             <Label>{t("whatsappSettings.sidebarTitle")}</Label>
             <Select value={activeTab} onValueChange={(value) => handleTabChange(value as TabId)}>
-              <SelectTrigger className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]">
+              <SelectTrigger className="h-11 bg-[color:var(--color-card)]">
                 <SelectValue placeholder={t("whatsappSettings.sidebarTitle")} />
               </SelectTrigger>
               <SelectContent>
@@ -3122,10 +3122,10 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                   type="button"
                   onClick={() => handleTabChange(tab.id)}
                   className={cn(
-                    "flex w-full items-start gap-3 rounded-[22px] px-4 py-3 text-start transition-all",
+                    "flex w-full items-start gap-3 rounded-2xl px-4 py-3 text-start transition-all",
                     selected
-                      ? "bg-[color:color-mix(in_srgb,var(--business-success)_10%,white)] text-[color:var(--business-success)] shadow-[0_12px_24px_rgba(35,159,90,0.10)]"
-                      : "bg-[color:color-mix(in_srgb,var(--app-panel-bg)_90%,var(--shell-control-bg)_10%)] text-[color:var(--color-foreground)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]",
+                      ? "bg-[color:color-mix(in_srgb,var(--business-success)_10%,var(--color-card))] text-[color:var(--business-success)] shadow-[0_12px_24px_rgba(35,159,90,0.10)]"
+                      : "bg-[color:var(--color-muted)] text-[color:var(--color-foreground)] hover:bg-[color:var(--color-card)]",
                   )}
                 >
                   <div
@@ -3133,7 +3133,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                       "mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-2xl",
                       selected
                         ? "bg-[color:var(--business-success)] text-white"
-                        : "bg-[color:color-mix(in_srgb,var(--color-primary)_10%,white)] text-[color:var(--color-primary)]",
+                        : "bg-primary/10 text-[color:var(--color-primary)]",
                     )}
                   >
                     <Icon className="size-4.5" />
@@ -3162,7 +3162,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           }
         }}
       >
-        <DialogContent className="max-w-[calc(100%-2rem)] rounded-[28px] border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0 sm:max-w-2xl">
+        <DialogContent className="max-w-[calc(100%-1.5rem)] rounded-3xl border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0 sm:max-w-2xl">
           <DialogHeader className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-6 pt-6">
             <DialogTitle>{t("whatsappSettings.dialogs.addSessionTitle")}</DialogTitle>
             <DialogDescription>{t("whatsappSettings.description")}</DialogDescription>
@@ -3196,7 +3196,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                         isCompleted
                           ? "border-[color:var(--color-primary)] bg-[color:var(--color-primary)] text-white"
                           : isActive
-                          ? "border-[color:var(--color-primary)] bg-[var(--app-panel-bg)] text-[color:var(--color-primary)] ring-4 ring-[color:color-mix(in_srgb,var(--color-primary)_15%,transparent)]"
+                          ? "border-[color:var(--color-primary)] bg-[var(--app-panel-bg)] text-[color:var(--color-primary)] ring-4 ring-primary/15"
                           : "border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] text-[color:var(--color-muted-foreground)]"
                       )}
                     >
@@ -3233,7 +3233,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     value={newSessionName}
                     onChange={(event) => setNewSessionName(event.target.value)}
                     placeholder={t("whatsappSettings.dialogs.sessionNamePlaceholder") as string}
-                    className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                    className="h-11 bg-[color:var(--color-card)]"
                   />
                 </div>
 
@@ -3246,15 +3246,15 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                       type="button"
                       onClick={() => setNewSessionProvider("BAILEYS")}
                       className={cn(
-                        "flex flex-col items-start gap-3 rounded-[22px] border p-5 text-start transition-all cursor-pointer",
+                        "flex flex-col items-start gap-3 rounded-2xl border p-5 text-start transition-all cursor-pointer",
                         newSessionProvider === "BAILEYS"
-                          ? "border-[color:var(--color-primary)] bg-[color:color-mix(in_srgb,var(--color-primary)_8%,var(--app-panel-bg))] ring-2 ring-[color:var(--color-primary)]"
-                          : "border-[color:var(--shell-control-border)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_94%,var(--shell-control-bg)_6%)]"
+                          ? "border-[color:var(--color-primary)] bg-primary/8 ring-2 ring-[color:var(--color-primary)]"
+                          : "border-[color:var(--shell-control-border)] hover:bg-[color:var(--color-muted)]"
                       )}
                     >
                       <div className={cn(
                         "rounded-full p-2.5",
-                        newSessionProvider === "BAILEYS" ? "bg-[color:var(--color-primary)] text-white" : "bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] text-[color:var(--color-muted-foreground)]"
+                        newSessionProvider === "BAILEYS" ? "bg-[color:var(--color-primary)] text-white" : "bg-[color:var(--color-card)] text-[color:var(--color-muted-foreground)]"
                       )}>
                         <Smartphone className="size-5" />
                       </div>
@@ -3272,15 +3272,15 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                       type="button"
                       onClick={() => setNewSessionProvider("META_CLOUD")}
                       className={cn(
-                        "flex flex-col items-start gap-3 rounded-[22px] border p-5 text-start transition-all cursor-pointer",
+                        "flex flex-col items-start gap-3 rounded-2xl border p-5 text-start transition-all cursor-pointer",
                         newSessionProvider === "META_CLOUD"
-                          ? "border-[color:var(--color-primary)] bg-[color:color-mix(in_srgb,var(--color-primary)_8%,var(--app-panel-bg))] ring-2 ring-[color:var(--color-primary)]"
-                          : "border-[color:var(--shell-control-border)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_94%,var(--shell-control-bg)_6%)]"
+                          ? "border-[color:var(--color-primary)] bg-primary/8 ring-2 ring-[color:var(--color-primary)]"
+                          : "border-[color:var(--shell-control-border)] hover:bg-[color:var(--color-muted)]"
                       )}
                     >
                       <div className={cn(
                         "rounded-full p-2.5",
-                        newSessionProvider === "META_CLOUD" ? "bg-[color:var(--color-primary)] text-white" : "bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] text-[color:var(--color-muted-foreground)]"
+                        newSessionProvider === "META_CLOUD" ? "bg-[color:var(--color-primary)] text-white" : "bg-[color:var(--color-card)] text-[color:var(--color-muted-foreground)]"
                       )}>
                         <Globe className="size-5" />
                       </div>
@@ -3308,7 +3308,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     value={newPhoneNumber}
                     onChange={(event) => setNewPhoneNumber(event.target.value)}
                     placeholder={t("whatsappSettings.dialogs.phoneNumberPlaceholder") as string}
-                    className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                    className="h-11 bg-[color:var(--color-card)]"
                   />
                   <p className="text-sm text-[color:var(--color-muted-foreground)]">
                     {t("whatsappSettings.dialogs.phoneNumberHelper")}
@@ -3317,7 +3317,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
 
                 <label
                   htmlFor="session-import-history"
-                  className="flex items-start gap-3 rounded-[18px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_88%,var(--shell-control-bg)_12%)] p-4 cursor-pointer"
+                  className="flex items-start gap-3 rounded-xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-4 cursor-pointer"
                 >
                   <Checkbox
                     id="session-import-history"
@@ -3337,7 +3337,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
 
                 <label
                   htmlFor="session-keep-history"
-                  className="flex items-start gap-3 rounded-[18px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_88%,var(--shell-control-bg)_12%)] p-4 cursor-pointer"
+                  className="flex items-start gap-3 rounded-xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-4 cursor-pointer"
                 >
                   <Checkbox
                     id="session-keep-history"
@@ -3355,7 +3355,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                   </span>
                 </label>
 
-                <Alert className="rounded-[22px] border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)]">
+                <Alert className="rounded-2xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
                   <QrCode className="size-4 text-[color:var(--color-primary)]" />
                   <AlertTitle>QR Code</AlertTitle>
                   <AlertDescription>
@@ -3369,7 +3369,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
             {wizardStep === 2 && newSessionProvider === "META_CLOUD" && (
               <div className="space-y-5 animate-in fade-in-50 duration-200">
                 {/* Auth Details Card */}
-                <div className="rounded-[22px] border border-[color:var(--shell-control-border)] p-5 space-y-4 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_96%,var(--shell-control-bg)_4%)]">
+                <div className="rounded-2xl border border-[color:var(--shell-control-border)] p-5 space-y-4 bg-[color:var(--color-card)]">
                   <h4 className="flex items-center gap-2 text-sm font-semibold text-[color:var(--color-foreground)]">
                     <Key className="size-4 text-[color:var(--color-primary)]" />
                     {t("whatsappSettings.dialogs.authDetails")}
@@ -3399,7 +3399,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                         }
                         placeholder="e.g. 1151868711348740"
                         className={cn(
-                          "h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]",
+                          "h-11 bg-[color:var(--color-card)]",
                           newMetaPhoneNumberId.trim() ? "border-emerald-500/50 focus-visible:ring-emerald-500" : ""
                         )}
                       />
@@ -3429,7 +3429,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                         }
                         placeholder="EAA..."
                         className={cn(
-                          "h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]",
+                          "h-11 bg-[color:var(--color-card)]",
                           newMetaAccessToken.trim() ? "border-emerald-500/50 focus-visible:ring-emerald-500" : ""
                         )}
                       />
@@ -3438,7 +3438,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                 </div>
 
                 {/* Account Info Card */}
-                <div className="rounded-[22px] border border-[color:var(--shell-control-border)] p-5 space-y-4 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_96%,var(--shell-control-bg)_4%)]">
+                <div className="rounded-2xl border border-[color:var(--shell-control-border)] p-5 space-y-4 bg-[color:var(--color-card)]">
                   <h4 className="flex items-center gap-2 text-sm font-semibold text-[color:var(--color-foreground)]">
                     <Briefcase className="size-4 text-[color:var(--color-primary)]" />
                     {t("whatsappSettings.dialogs.accountDetails")}
@@ -3466,7 +3466,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                         onChange={(event) => setNewMetaWabaId(event.target.value.replace(/[^0-9]/g, ""))}
                         placeholder="e.g. 1482240533647516"
                         className={cn(
-                          "h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]",
+                          "h-11 bg-[color:var(--color-card)]",
                           newMetaWabaId.trim() ? "border-emerald-500/50 focus-visible:ring-emerald-500" : ""
                         )}
                       />
@@ -3494,7 +3494,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                         }
                         placeholder="e.g. 2381274910237"
                         className={cn(
-                          "h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]",
+                          "h-11 bg-[color:var(--color-card)]",
                           newMetaBusinessId.trim() ? "border-emerald-500/50 focus-visible:ring-emerald-500" : ""
                         )}
                       />
@@ -3503,7 +3503,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                 </div>
 
                 {/* Collapsible Advanced Settings */}
-                <div className="rounded-[22px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)] overflow-hidden">
+                <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] overflow-hidden">
                   <button
                     type="button"
                     onClick={() => setShowAdvancedMeta(!showAdvancedMeta)}
@@ -3538,7 +3538,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                             value={newMetaApiVersion}
                             onChange={(event) => setNewMetaApiVersion(event.target.value)}
                             placeholder="v25.0"
-                            className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                            className="h-11 bg-[color:var(--color-card)]"
                           />
                         </div>
                         <div className="space-y-2">
@@ -3560,7 +3560,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                             value={newMetaDisplayPhoneNumber}
                             onChange={(event) => setNewMetaDisplayPhoneNumber(event.target.value)}
                             placeholder="e.g. +15556390660"
-                            className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                            className="h-11 bg-[color:var(--color-card)]"
                           />
                         </div>
                       </div>
@@ -3586,7 +3586,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                               value={newMetaWebhookVerifyToken}
                               onChange={(event) => setNewMetaWebhookVerifyToken(event.target.value)}
                               placeholder="verify-token"
-                              className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                              className="h-11 bg-[color:var(--color-card)]"
                             />
                             <Button
                               type="button"
@@ -3619,7 +3619,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                               setNewMetaWebhookSecret(event.target.value)
                             }
                             placeholder="Webhook Secret"
-                            className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                            className="h-11 bg-[color:var(--color-card)]"
                           />
                         </div>
                       </div>
@@ -3632,7 +3632,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
             {/* Step 3: Review & Summary */}
             {wizardStep === 3 && (
               <div className="space-y-4 animate-in fade-in-50 duration-200">
-                <div className="rounded-[22px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)] p-6 space-y-4">
+                <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-6 space-y-4">
                   <div className="flex items-center justify-between border-b border-[color:var(--shell-control-border)] pb-4">
                     <h4 className="font-semibold text-base text-[color:var(--color-foreground)]">
                       {t("whatsappSettings.dialogs.reviewDetails")}
@@ -3720,7 +3720,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                   </div>
                 </div>
 
-                <Alert className="rounded-[22px] border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)]">
+                <Alert className="rounded-2xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
                   <Info className="size-4 text-[color:var(--color-primary)]" />
                   <AlertDescription>
                     {t("whatsappSettings.dialogs.confirmPrompt")}
@@ -3735,7 +3735,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
               {wizardStep > 1 ? (
                 <Button
                   variant="outline"
-                  className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)] cursor-pointer"
+                  className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-card)] cursor-pointer"
                   onClick={() => setWizardStep((prev) => prev - 1)}
                 >
                   <ChevronLeft className="size-4 rtl:rotate-180" />
@@ -3744,7 +3744,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
               ) : (
                 <Button
                   variant="outline"
-                  className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)] cursor-pointer"
+                  className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-card)] cursor-pointer"
                   onClick={() => setCreateSessionDialogOpen(false)}
                 >
                   {t("whatsappSettings.dialogs.cancel")}
@@ -3755,7 +3755,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
             <div>
               {wizardStep < 3 ? (
                 <Button
-                  className="rounded-full bg-[color:var(--color-primary)] px-5 text-white hover:bg-[color:color-mix(in_srgb,var(--color-primary)_86%,black)] cursor-pointer"
+                  className="rounded-full bg-[color:var(--color-primary)] px-5 text-white hover:brightness-90 cursor-pointer"
                   onClick={() => setWizardStep((prev) => prev + 1)}
                   disabled={
                     wizardStep === 1
@@ -3770,7 +3770,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                 </Button>
               ) : (
                 <Button
-                  className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)] cursor-pointer"
+                  className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:brightness-90 cursor-pointer"
                   onClick={() => void handleCreateSession()}
                   disabled={saving || creatingSession}
                 >
@@ -3797,7 +3797,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           }
         }}
       >
-        <DialogContent className="max-w-[calc(100%-2rem)] rounded-[28px] border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0 sm:max-w-3xl">
+        <DialogContent className="max-w-[calc(100%-1.5rem)] rounded-3xl border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0 sm:max-w-3xl">
           <DialogHeader className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-6 pt-6">
             <DialogTitle>{t("whatsappSettings.dialogs.editSession")}</DialogTitle>
             <DialogDescription>{editingSession?.name}</DialogDescription>
@@ -3817,14 +3817,14 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                         : previous,
                     )
                   }
-                  className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                  className="h-11 bg-[color:var(--color-card)]"
                 />
               </div>
 
               <div className="flex flex-wrap gap-2">
                 <Badge
                   variant="outline"
-                  className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                  className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]"
                 >
                   {providerLabels[editingSession.provider || "BAILEYS"]}
                 </Badge>
@@ -3864,7 +3864,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                             : previous,
                         )
                       }
-                      className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                      className="h-11 bg-[color:var(--color-card)]"
                     />
                   </div>
                   <div className="space-y-2">
@@ -3883,7 +3883,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                             : previous,
                         )
                       }
-                      className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                      className="h-11 bg-[color:var(--color-card)]"
                     />
                   </div>
                   <div className="space-y-2">
@@ -3898,7 +3898,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                             : previous,
                         )
                       }
-                      className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                      className="h-11 bg-[color:var(--color-card)]"
                     />
                   </div>
                   <div className="space-y-2">
@@ -3916,7 +3916,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                             : previous,
                         )
                       }
-                      className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                      className="h-11 bg-[color:var(--color-card)]"
                     />
                   </div>
                   <div className="space-y-2">
@@ -3931,7 +3931,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                             : previous,
                         )
                       }
-                      className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                      className="h-11 bg-[color:var(--color-card)]"
                     />
                   </div>
                   <div className="space-y-2">
@@ -3949,7 +3949,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                             : previous,
                         )
                       }
-                      className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                      className="h-11 bg-[color:var(--color-card)]"
                     />
                   </div>
                   <div className="space-y-2">
@@ -3967,7 +3967,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                             : previous,
                         )
                       }
-                      className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                      className="h-11 bg-[color:var(--color-card)]"
                     />
                   </div>
                   <div className="space-y-2">
@@ -3985,7 +3985,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                             : previous,
                         )
                       }
-                      className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                      className="h-11 bg-[color:var(--color-card)]"
                     />
                   </div>
                 </div>
@@ -4016,7 +4016,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                           : previous,
                       )
                     }
-                    className="min-h-[8rem] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                    className="min-h-[8rem] bg-[color:var(--color-card)]"
                   />
                 </div>
                 <div className="space-y-2">
@@ -4031,7 +4031,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                           : previous,
                       )
                     }
-                    className="min-h-[8rem] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                    className="min-h-[8rem] bg-[color:var(--color-card)]"
                   />
                 </div>
               </div>
@@ -4046,7 +4046,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                 }
               />
 
-              <div className="space-y-2 rounded-[24px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_86%,var(--shell-control-bg)_14%)] px-4 py-4">
+              <div className="space-y-2 rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium text-[color:var(--color-foreground)]">
@@ -4058,7 +4058,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                   </div>
                   <Badge
                     variant="outline"
-                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_78%,var(--shell-control-bg)_22%)]"
+                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]"
                   >
                     {editingSession.loadBalanceWeight || 1}
                   </Badge>
@@ -4082,13 +4082,13 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           <DialogFooter className="px-6">
             <Button
               variant="outline"
-              className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+              className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-card)]"
               onClick={() => setEditingSession(null)}
             >
               {t("whatsappSettings.dialogs.cancel")}
             </Button>
             <Button
-              className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)]"
+              className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:brightness-90"
               onClick={() => void handleUpdateSession()}
               disabled={saving}
             >
@@ -4112,7 +4112,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           }
         }}
       >
-        <DialogContent className="max-w-[calc(100%-2rem)] rounded-[28px] border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0 sm:max-w-xl">
+        <DialogContent className="max-w-[calc(100%-1.5rem)] rounded-3xl border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0 sm:max-w-xl">
           <DialogHeader className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-6 pt-6">
             <DialogTitle>
               {editingQuickReply
@@ -4134,7 +4134,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     title: event.target.value,
                   }))
                 }
-                className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                className="h-11 bg-[color:var(--color-card)]"
               />
             </div>
 
@@ -4150,7 +4150,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                   }))
                 }
                 placeholder={t("whatsappSettings.dialogs.shortcutPlaceholder")}
-                className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                className="h-11 bg-[color:var(--color-card)]"
               />
               <p className="text-sm text-[color:var(--color-muted-foreground)]">
                 {t("whatsappSettings.dialogs.shortcutHelper")}
@@ -4168,7 +4168,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                   }))
                 }
               >
-                <SelectTrigger className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]">
+                <SelectTrigger className="h-11 bg-[color:var(--color-card)]">
                   <SelectValue placeholder={t("whatsappSettings.dialogs.category")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -4192,7 +4192,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     content: event.target.value,
                   }))
                 }
-                className="min-h-[9rem] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                className="min-h-[9rem] bg-[color:var(--color-card)]"
               />
               <p className="text-sm text-[color:var(--color-muted-foreground)]">
                 {t("whatsappSettings.dialogs.variablesHelper")}
@@ -4203,13 +4203,13 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           <DialogFooter className="px-6">
             <Button
               variant="outline"
-              className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+              className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-card)]"
               onClick={() => setQuickReplyDialogOpen(false)}
             >
               {t("whatsappSettings.dialogs.cancel")}
             </Button>
             <Button
-              className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)]"
+              className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:brightness-90"
               onClick={() => void handleSaveQuickReply()}
               disabled={saving}
             >
@@ -4225,7 +4225,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       </Dialog>
 
       <Dialog open={labelDialogOpen} onOpenChange={setLabelDialogOpen}>
-        <DialogContent className="max-w-[calc(100%-2rem)] rounded-[28px] border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0 sm:max-w-sm">
+        <DialogContent className="max-w-[calc(100%-1.5rem)] rounded-3xl border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0 sm:max-w-sm">
           <DialogHeader className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-6 pt-6">
             <DialogTitle>{t("whatsappSettings.dialogs.addLabelTitle")}</DialogTitle>
             <DialogDescription>{t("whatsappSettings.manageLabels")}</DialogDescription>
@@ -4243,7 +4243,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     name: event.target.value,
                   }))
                 }
-                className="h-11 bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)]"
+                className="h-11 bg-[color:var(--color-card)]"
               />
             </div>
 
@@ -4273,13 +4273,13 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           <DialogFooter className="px-6">
             <Button
               variant="outline"
-              className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+              className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-card)]"
               onClick={() => setLabelDialogOpen(false)}
             >
               {t("whatsappSettings.dialogs.cancel")}
             </Button>
             <Button
-              className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:bg-[color:color-mix(in_srgb,var(--business-success)_76%,black)]"
+              className="rounded-full bg-[color:var(--business-success)] px-5 text-white hover:brightness-90"
               onClick={() => void handleCreateLabel()}
               disabled={saving || !labelForm.name.trim()}
             >
@@ -4313,7 +4313,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
         <DialogContent
           showCloseButton={false}
-          className="max-w-[min(calc(100%-2rem),30rem)] overflow-visible rounded-[32px] border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0 sm:max-w-[30rem]"
+          className="max-w-[min(calc(100%-2rem),30rem)] overflow-visible rounded-3xl border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-0 sm:max-w-[30rem]"
         >
           <DialogHeader className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] px-6 pt-6 sm:px-8 sm:pt-7">
             <DialogTitle>{t("whatsappSettings.dialogs.scanQR")}</DialogTitle>
@@ -4323,7 +4323,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           <div className="flex flex-col items-center justify-center gap-5 px-6 pb-7 pt-5 text-center sm:px-8">
             {currentPairingCode ? (
               <div className="w-full space-y-4 qr-fade-in">
-                <div className="rounded-[24px] border border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] px-4 py-5">
+                <div className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-5">
                   <p className="text-sm text-[color:var(--color-muted-foreground)]">
                     افتح واتساب على رقم
                     {currentPairingPhone ? (
@@ -4343,7 +4343,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                 <Button
                   type="button"
                   variant="outline"
-                  className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+                  className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-card)]"
                   onClick={() =>
                     void navigator.clipboard?.writeText(currentPairingCode)
                   }
@@ -4359,7 +4359,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     {t("whatsappSettings.dialogs.qrRefreshed")}
                   </p>
                 )}
-                <div className="mx-auto rounded-[28px] bg-white p-5 shadow-[0_24px_50px_rgba(15,27,45,0.16)] ring-1 ring-black/5 qr-fade-in">
+                <div className="mx-auto rounded-3xl bg-white p-5 shadow-[0_24px_50px_rgba(15,27,45,0.16)] ring-1 ring-black/5 qr-fade-in">
                   <QRCodeSVG
                     value={currentQR}
                     size={320}
@@ -4373,7 +4373,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
               </div>
             ) : (
               <div className="flex flex-col items-center gap-4 py-4 qr-loading-pulse">
-                <div className="flex size-16 items-center justify-center rounded-2xl bg-[color:color-mix(in_srgb,var(--color-primary)_10%,transparent)]">
+                <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/10">
                   <QrCode className="size-8 text-[color:var(--color-primary)]" />
                 </div>
                 <div className="space-y-1">
@@ -4391,7 +4391,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           <DialogFooter className="px-6">
             <Button
               variant="outline"
-              className="rounded-full border-[color:var(--shell-control-border)] bg-[color:color-mix(in_srgb,var(--app-panel-bg)_82%,var(--shell-control-bg)_18%)] hover:bg-[color:color-mix(in_srgb,var(--app-panel-bg)_92%,var(--shell-control-bg)_8%)]"
+              className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-card)]"
               onClick={() => setQrDialogOpen(false)}
             >
               {t("whatsappSettings.dialogs.close")}
@@ -4410,7 +4410,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       >
         <AlertDialogContent
           size="sm"
-          className="rounded-[28px] border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)]"
+          className="rounded-3xl border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)]"
         >
           <AlertDialogHeader>
             <AlertDialogMedia className="rounded-2xl bg-rose-500/10 text-rose-700 dark:text-rose-200">
@@ -4437,7 +4437,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
               </div>
             )}
           </AlertDialogHeader>
-          <AlertDialogFooter className="rounded-b-[28px] border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:color-mix(in_srgb,var(--color-background)_86%,var(--shell-control-bg)_14%)]">
+           <AlertDialogFooter className="rounded-b-3xl border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:var(--color-muted)]">
             <AlertDialogCancel>{t("whatsappSettings.dialogs.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
