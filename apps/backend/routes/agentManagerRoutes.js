@@ -436,7 +436,14 @@ router.put('/auto-reply', async (req, res) => {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
     const enabled = req.body?.enabled === true;
-    await aiServiceAdminClient.updateAutoReply(companyId, enabled);
+    await Promise.all([
+      aiServiceAdminClient.updateAutoReply(companyId, enabled),
+      prisma().aiSetting.upsert({
+        where: { companyId },
+        update: { autoReplyEnabled: enabled },
+        create: { companyId, autoReplyEnabled: enabled },
+      }),
+    ]);
     return res.json({ success: true, autoReplyEnabled: enabled });
   } catch (error) {
     return res.status(502).json({ success: false, error: error.message });
