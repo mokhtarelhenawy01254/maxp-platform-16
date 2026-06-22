@@ -122,7 +122,31 @@ const translations = {
       feature_image_delete_failed: 'فشل في حذف صورة الميزة',
       feature_image_list_failed: 'فشل في جلب صور الميزات',
       feature_image_reorder_failed: 'فشل في إعادة ترتيب صور الميزات',
-      social_credentials_update_failed: 'فشل في تحديث بيانات الدخول'
+      social_credentials_update_failed: 'فشل في تحديث بيانات الدخول',
+
+      social_array_required: 'يجب أن تكون حسابات التواصل الاجتماعي مصفوفة',
+      max_social_profiles: 'الحد الأقصى 5 حسابات تواصل مسموح بها',
+      invalid_platform: 'منصة غير صالحة: {{platform}}',
+      invalid_url: 'رابط غير صالح لمنصة {{platform}}',
+      invalid_status: 'حالة غير صالحة',
+      note_content_required: 'محتوى الملاحظة مطلوب',
+      feature_name_required: 'اسم الميزة مطلوب',
+      ordered_ids_required: 'مصفوفة الترتيب مطلوبة',
+      title_required: 'العنوان مطلوب',
+      image_url_required: 'رابط الصورة مطلوب',
+
+      media_note_deleted: 'تم حذف ملاحظة الوسائط',
+      comparison_deleted: 'تم حذف المقارنة',
+      dev_idea_deleted: 'تم حذف فكرة التطوير',
+      image_deleted: 'تم حذف الصورة',
+      activity_image_deleted: 'تم حذف صورة النشاط',
+      feature_image_deleted: 'تم حذف صورة الميزة',
+
+      discover_failed: 'فشل في اكتشاف المنافسين',
+      discover_suggestion_add_products: 'أضف منتجات إلى كتالوجك أولاً',
+      discover_similar_products: 'مشابه لمنتجاتك: {{name}}',
+      discover_suggestion_start_tracking: 'أضف هؤلاء المنافسين لبدء التتبع',
+      discover_no_new: 'لم يتم العثور على منافسين جدد - قد تكون تتابع المنافسين ذوي الصلة بالفعل'
     },
     devGoals: {
       list_failed: 'فشل جلب الأهداف',
@@ -325,7 +349,31 @@ const translations = {
       feature_image_delete_failed: 'Failed to delete feature image',
       feature_image_list_failed: 'Failed to list feature images',
       feature_image_reorder_failed: 'Failed to reorder feature images',
-      social_credentials_update_failed: 'Failed to update social credentials'
+      social_credentials_update_failed: 'Failed to update social credentials',
+
+      social_array_required: 'Social profiles must be an array',
+      max_social_profiles: 'Maximum of 5 social profiles allowed',
+      invalid_platform: 'Invalid platform: {{platform}}',
+      invalid_url: 'Invalid URL for platform {{platform}}',
+      invalid_status: 'Invalid status value',
+      note_content_required: 'Note content is required',
+      feature_name_required: 'Feature name is required',
+      ordered_ids_required: 'Ordered IDs array is required',
+      title_required: 'Title is required',
+      image_url_required: 'Image URL is required',
+
+      media_note_deleted: 'Media note deleted',
+      comparison_deleted: 'Comparison deleted',
+      dev_idea_deleted: 'Dev idea deleted',
+      image_deleted: 'Image deleted',
+      activity_image_deleted: 'Activity image deleted',
+      feature_image_deleted: 'Feature image deleted',
+
+      discover_failed: 'Failed to discover competitors',
+      discover_suggestion_add_products: 'Add products to your catalog first',
+      discover_similar_products: 'Similar to your products: {{name}}',
+      discover_suggestion_start_tracking: 'Add these competitors to start tracking',
+      discover_no_new: 'No new competitors found - you may already be tracking relevant ones'
     },
     devGoals: {
       list_failed: 'Failed to fetch goals',

@@ -388,7 +388,7 @@ const CompetitorAdd: React.FC = () => {
                   <Input
                     value={formData.name}
                     onChange={e => handleInputChange('name', e.target.value)}
-                    placeholder="مثال: نون, أمازون..."
+                    placeholder={t('competitors.competitorNamePlaceholder')}
                     aria-invalid={!!formErrors.name}
                   />
                   {formErrors.name && <p className="text-xs text-red-500">{formErrors.name}</p>}
@@ -462,7 +462,7 @@ const CompetitorAdd: React.FC = () => {
                   <Input
                     value={formData.founderName}
                     onChange={e => handleInputChange('founderName', e.target.value)}
-                    placeholder="مثال: محمد الأحمد"
+                    placeholder={t('competitors.founderNamePlaceholder')}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -471,7 +471,7 @@ const CompetitorAdd: React.FC = () => {
                     type="url"
                     value={formData.founderLinkedin}
                     onChange={e => handleInputChange('founderLinkedin', e.target.value)}
-                    placeholder="https://linkedin.com/in/..."
+                    placeholder={t('competitors.linkedinPlaceholder')}
                   />
                 </div>
               </div>
@@ -493,7 +493,7 @@ const CompetitorAdd: React.FC = () => {
                   <Input
                     value={formData.country}
                     onChange={e => handleInputChange('country', e.target.value)}
-                    placeholder="مثال: السعودية"
+                    placeholder={t('competitors.countryPlaceholder')}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -501,7 +501,7 @@ const CompetitorAdd: React.FC = () => {
                   <Input
                     value={formData.city}
                     onChange={e => handleInputChange('city', e.target.value)}
-                    placeholder="مثال: الرياض"
+                    placeholder={t('competitors.cityPlaceholder')}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -509,7 +509,7 @@ const CompetitorAdd: React.FC = () => {
                   <Input
                     value={formData.geoLocation}
                     onChange={e => handleInputChange('geoLocation', e.target.value)}
-                    placeholder="24.7136, 46.6753"
+                    placeholder={t('competitors.geoLocationPlaceholder')}
                   />
                 </div>
               </div>
@@ -543,7 +543,7 @@ const CompetitorAdd: React.FC = () => {
                         <Input
                           value={sp.url}
                           onChange={e => handleSocialChange(i, 'url', e.target.value)}
-                          placeholder="https://..."
+                          placeholder={t('competitors.socialUrlPlaceholder')}
                           size="sm"
                         />
                       </div>
@@ -553,7 +553,7 @@ const CompetitorAdd: React.FC = () => {
                           <Input
                             value={sp.username}
                             onChange={e => handleSocialChange(i, 'username', e.target.value)}
-                            placeholder="email@example.com"
+                            placeholder={t('competitors.socialUsernamePlaceholder')}
                             size="sm"
                           />
                         </div>
@@ -564,7 +564,7 @@ const CompetitorAdd: React.FC = () => {
                               type="password"
                               value={sp.password}
                               onChange={e => handleSocialChange(i, 'password', e.target.value)}
-                              placeholder="••••••••"
+                              placeholder={t('competitors.socialPasswordPlaceholder')}
                               size="sm"
                             />
                           </div>
@@ -930,10 +930,10 @@ const CompetitorAdd: React.FC = () => {
                       type="number"
                       value={formData.monthlyPrice}
                       onChange={e => handleInputChange('monthlyPrice', e.target.value)}
-                      placeholder="0.00"
+                      placeholder={t('competitors.pricePlaceholder')}
                       className="ltr:pl-7 rtl:pr-7"
                     />
-                    <span className="absolute top-1/2 -translate-y-1/2 ltr:left-2.5 rtl:right-2.5 text-xs text-muted-foreground">$</span>
+                    <span className="absolute top-1/2 -translate-y-1/2 ltr:left-2.5 rtl:right-2.5 text-xs text-muted-foreground">{t('competitors.currencySymbol')}</span>
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -943,10 +943,10 @@ const CompetitorAdd: React.FC = () => {
                       type="number"
                       value={formData.yearlyPrice}
                       onChange={e => handleInputChange('yearlyPrice', e.target.value)}
-                      placeholder="0.00"
+                      placeholder={t('competitors.pricePlaceholder')}
                       className="ltr:pl-7 rtl:pr-7"
                     />
-                    <span className="absolute top-1/2 -translate-y-1/2 ltr:left-2.5 rtl:right-2.5 text-xs text-muted-foreground">$</span>
+                    <span className="absolute top-1/2 -translate-y-1/2 ltr:left-2.5 rtl:right-2.5 text-xs text-muted-foreground">{t('competitors.currencySymbol')}</span>
                   </div>
                 </div>
               </div>

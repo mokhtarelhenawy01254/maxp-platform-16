@@ -520,5 +520,16 @@
   "noDevIdeas": "No development ideas yet. Add a new idea.",
   "ideaTitlePlaceholder": "Development idea title",
   "ideaImages": "Idea Images",
-  "summary": "Summary"
+  "summary": "Summary",
+  "competitorNamePlaceholder": "e.g. Noon, Amazon...",
+  "founderNamePlaceholder": "e.g. John Smith",
+  "countryPlaceholder": "e.g. Saudi Arabia",
+  "cityPlaceholder": "e.g. Riyadh",
+  "geoLocationPlaceholder": "24.7136, 46.6753",
+  "socialUrlPlaceholder": "https://...",
+  "socialUsernamePlaceholder": "email@example.com",
+  "socialPasswordPlaceholder": "Enter password",
+  "linkedinPlaceholder": "https://linkedin.com/in/...",
+  "pricePlaceholder": "0.00",
+  "currencySymbol": "$"
 }

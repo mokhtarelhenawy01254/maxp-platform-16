@@ -1857,7 +1857,7 @@
     "noGaps": "لا توجد فجوات",
     "noGapsDesc": "لديك منتجات تغطي معظم منتجات هذا المنافس",
     "opportunities": "فرص",
-    "overlapping": "ت overlapping",
+    "overlapping": "تداخل",
     "coverageRate": "معدل التغطية",
     "avgPriceDiff": "فرق السعر %",
     "viewProduct": "عرض المنتج",
@@ -2223,7 +2223,18 @@
     "additionalNotesPlaceholder": "أي ملاحظات إضافية...",
     "noDevIdeas": "لم تضف أي أفكار تطويرية بعد. أضف فكرة جديدة.",
     "ideaTitlePlaceholder": "عنوان الفكرة التطويرية",
-    "summary": "الملخص"
+    "summary": "الملخص",
+    "competitorNamePlaceholder": "مثال: نون, أمازون...",
+    "founderNamePlaceholder": "مثال: محمد الأحمد",
+    "countryPlaceholder": "مثال: السعودية",
+    "cityPlaceholder": "مثال: الرياض",
+    "geoLocationPlaceholder": "24.7136, 46.6753",
+    "socialUrlPlaceholder": "https://...",
+    "socialUsernamePlaceholder": "البريد الإلكتروني",
+    "socialPasswordPlaceholder": "أدخل كلمة المرور",
+    "linkedinPlaceholder": "https://linkedin.com/in/...",
+    "pricePlaceholder": "0.00",
+    "currencySymbol": "ر.س"
   },
   "conversations": {
     "title": "المحادثات",

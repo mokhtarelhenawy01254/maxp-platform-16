@@ -59,19 +59,19 @@ exports.create = async (req, res) => {
     // Validate socialProfiles if provided
     if (socialProfiles) {
       if (!Array.isArray(socialProfiles)) {
-        return res.status(400).json({ success: false, message: 'socialProfiles must be an array' });
+        return res.status(400).json({ success: false, error: t('competitor.social_array_required') });
       }
       if (socialProfiles.length > 5) {
-        return res.status(400).json({ success: false, message: 'Maximum of 5 social profiles allowed' });
+        return res.status(400).json({ success: false, error: t('competitor.max_social_profiles') });
       }
       const allowedPlatforms = ['instagram', 'facebook', 'twitter', 'tiktok', 'linkedin', 'youtube', 'snapchat', 'telegram', 'whatsapp'];
       const urlRegex = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
       for (const profile of socialProfiles) {
         if (!profile.platform || !allowedPlatforms.includes(profile.platform)) {
-          return res.status(400).json({ success: false, message: `Invalid platform: ${profile.platform}` });
+          return res.status(400).json({ success: false, error: t('competitor.invalid_platform', 'ar', { platform: profile.platform }) });
         }
         if (!profile.url || !urlRegex.test(profile.url)) {
-          return res.status(400).json({ success: false, message: `Invalid URL for platform ${profile.platform}` });
+          return res.status(400).json({ success: false, error: t('competitor.invalid_url', 'ar', { platform: profile.platform }) });
         }
       }
     }
@@ -148,7 +148,7 @@ exports.updateStatus = async (req, res) => {
     const { status } = req.body;
     const validStatuses = ['NEW', 'FOLLOWING', 'COMPLETED'];
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ success: false, error: 'Invalid status value' });
+      return res.status(400).json({ success: false, error: t('competitor.invalid_status') });
     }
     const competitor = await getPrisma().competitor.findFirst({ where: { id: req.params.id, companyId } });
     if (!competitor) return res.status(404).json({ success: false, error: t('competitor.not_found') });
@@ -418,7 +418,7 @@ exports.autoDiscover = async (req, res) => {
     if (myProducts.length === 0) {
       return res.json({
         success: true,
-        data: { discovered: [], searchedTerms: 0, yourProductCount: 0, suggestion: 'Add products to your catalog first' },
+        data: { discovered: [], searchedTerms: 0, yourProductCount: 0, suggestion: t('competitor.discover_suggestion_add_products') },
       });
     }
 
@@ -440,7 +440,7 @@ exports.autoDiscover = async (req, res) => {
       if (!existing) {
         discovered.push({
           suggestedName: term,
-          reason: `Similar to your products: ${sampleProducts.find(p => p.name.includes(term))?.name || term}`,
+          reason: t('competitor.discover_similar_products', 'ar', { name: sampleProducts.find(p => p.name.includes(term))?.name || term }),
           matchedProducts: myProducts.filter(p => p.name.toLowerCase().includes(term.toLowerCase().split(' ')[0])).length,
         });
       }
@@ -453,8 +453,8 @@ exports.autoDiscover = async (req, res) => {
         searchedTerms: searchTerms.length,
         yourProductCount: myProducts.length,
         suggestion: discovered.length > 0
-          ? 'Add these competitors to start tracking'
-          : 'No new competitors found - you may already be tracking relevant ones',
+          ? t('competitor.discover_suggestion_start_tracking')
+          : t('competitor.discover_no_new'),
       },
     });
   } catch (error) {
@@ -610,7 +610,7 @@ exports.addMediaNote = async (req, res) => {
     const { companyId } = req.user;
     const { note } = req.body;
     if (!note || !note.trim()) {
-      return res.status(400).json({ success: false, error: 'Note content is required' });
+      return res.status(400).json({ success: false, error: t('competitor.note_content_required') });
     }
     const created = await CompetitorMediaAnalysisService.createMediaNote(companyId, req.params.id, note);
     if (!created) return res.status(404).json({ success: false, error: t('competitor.not_found') });
@@ -626,7 +626,7 @@ exports.deleteMediaNote = async (req, res) => {
     const { companyId } = req.user;
     const deleted = await CompetitorMediaAnalysisService.deleteMediaNote(companyId, req.params.id, req.params.noteId);
     if (!deleted) return res.status(404).json({ success: false, error: t('competitor.not_found') });
-    res.json({ success: true, message: 'Media note deleted' });
+    res.json({ success: true, message: t('competitor.media_note_deleted') });
   } catch (error) {
     console.error('Error deleting media note:', error);
     res.status(500).json({ success: false, error: t('competitor.media_note_delete_failed') });
@@ -651,7 +651,7 @@ exports.createComparison = async (req, res) => {
     const { companyId } = req.user;
     const { featureName } = req.body;
     if (!featureName || !featureName.trim()) {
-      return res.status(400).json({ success: false, error: 'Feature name is required' });
+      return res.status(400).json({ success: false, error: t('competitor.feature_name_required') });
     }
     const created = await CompetitorMediaAnalysisService.createComparison(companyId, req.params.id, req.body);
     if (!created) return res.status(404).json({ success: false, error: t('competitor.not_found') });
@@ -679,7 +679,7 @@ exports.deleteComparison = async (req, res) => {
     const { companyId } = req.user;
     const deleted = await CompetitorMediaAnalysisService.deleteComparison(companyId, req.params.id, req.params.comparisonId);
     if (!deleted) return res.status(404).json({ success: false, error: t('competitor.comparison_not_found') });
-    res.json({ success: true, message: 'Comparison deleted' });
+    res.json({ success: true, message: t('competitor.comparison_deleted') });
   } catch (error) {
     console.error('Error deleting comparison:', error);
     res.status(500).json({ success: false, error: t('competitor.comparison_delete_failed') });
@@ -691,7 +691,7 @@ exports.reorderComparisons = async (req, res) => {
     const { companyId } = req.user;
     const { orderedIds } = req.body;
     if (!Array.isArray(orderedIds)) {
-      return res.status(400).json({ success: false, error: 'orderedIds array is required' });
+      return res.status(400).json({ success: false, error: t('competitor.ordered_ids_required') });
     }
     const result = await CompetitorMediaAnalysisService.reorderComparisons(companyId, req.params.id, orderedIds);
     if (!result) return res.status(404).json({ success: false, error: t('competitor.not_found') });
@@ -720,7 +720,7 @@ exports.createDevIdea = async (req, res) => {
     const { companyId } = req.user;
     const { title } = req.body;
     if (!title || !title.trim()) {
-      return res.status(400).json({ success: false, error: 'Title is required' });
+      return res.status(400).json({ success: false, error: t('competitor.title_required') });
     }
     const created = await CompetitorMediaAnalysisService.createDevIdea(companyId, req.params.id, req.body);
     if (!created) return res.status(404).json({ success: false, error: t('competitor.not_found') });
@@ -748,7 +748,7 @@ exports.deleteDevIdea = async (req, res) => {
     const { companyId } = req.user;
     const deleted = await CompetitorMediaAnalysisService.deleteDevIdea(companyId, req.params.id, req.params.ideaId);
     if (!deleted) return res.status(404).json({ success: false, error: t('competitor.dev_idea_not_found') });
-    res.json({ success: true, message: 'Dev idea deleted' });
+    res.json({ success: true, message: t('competitor.dev_idea_deleted') });
   } catch (error) {
     console.error('Error deleting dev idea:', error);
     res.status(500).json({ success: false, error: t('competitor.dev_idea_delete_failed') });
@@ -760,7 +760,7 @@ exports.reorderDevIdeas = async (req, res) => {
     const { companyId } = req.user;
     const { orderedIds } = req.body;
     if (!Array.isArray(orderedIds)) {
-      return res.status(400).json({ success: false, error: 'orderedIds array is required' });
+      return res.status(400).json({ success: false, error: t('competitor.ordered_ids_required') });
     }
     const result = await CompetitorMediaAnalysisService.reorderDevIdeas(companyId, req.params.id, orderedIds);
     if (!result) return res.status(404).json({ success: false, error: t('competitor.not_found') });
@@ -776,7 +776,7 @@ exports.addDevIdeaImage = async (req, res) => {
     const { companyId } = req.user;
     const { imageUrl } = req.body;
     if (!imageUrl) {
-      return res.status(400).json({ success: false, error: 'imageUrl is required' });
+      return res.status(400).json({ success: false, error: t('competitor.image_url_required') });
     }
     const created = await CompetitorMediaAnalysisService.addDevIdeaImage(companyId, req.params.id, req.params.ideaId, imageUrl);
     if (!created) return res.status(404).json({ success: false, error: t('competitor.dev_idea_not_found') });
@@ -792,7 +792,7 @@ exports.deleteDevIdeaImage = async (req, res) => {
     const { companyId } = req.user;
     const deleted = await CompetitorMediaAnalysisService.deleteDevIdeaImage(companyId, req.params.id, req.params.ideaId, req.params.imageId);
     if (!deleted) return res.status(404).json({ success: false, error: t('competitor.dev_idea_not_found') });
-    res.json({ success: true, message: 'Image deleted' });
+    res.json({ success: true, message: t('competitor.image_deleted') });
   } catch (error) {
     console.error('Error deleting dev idea image:', error);
     res.status(500).json({ success: false, error: t('competitor.dev_idea_image_delete_failed') });
@@ -817,7 +817,7 @@ exports.addActivityImage = async (req, res) => {
     const { companyId } = req.user;
     const { imageUrl } = req.body;
     if (!imageUrl) {
-      return res.status(400).json({ success: false, error: 'imageUrl is required' });
+      return res.status(400).json({ success: false, error: t('competitor.image_url_required') });
     }
     const created = await CompetitorMediaAnalysisService.addActivityImage(companyId, req.params.id, imageUrl);
     if (!created) return res.status(404).json({ success: false, error: t('competitor.not_found') });
@@ -833,7 +833,7 @@ exports.deleteActivityImage = async (req, res) => {
     const { companyId } = req.user;
     const deleted = await CompetitorMediaAnalysisService.deleteActivityImage(companyId, req.params.id, req.params.imageId);
     if (!deleted) return res.status(404).json({ success: false, error: t('competitor.not_found') });
-    res.json({ success: true, message: 'Activity image deleted' });
+    res.json({ success: true, message: t('competitor.activity_image_deleted') });
   } catch (error) {
     console.error('Error deleting activity image:', error);
     res.status(500).json({ success: false, error: t('competitor.activity_image_delete_failed') });
@@ -845,7 +845,7 @@ exports.reorderActivityImages = async (req, res) => {
     const { companyId } = req.user;
     const { orderedIds } = req.body;
     if (!Array.isArray(orderedIds)) {
-      return res.status(400).json({ success: false, error: 'orderedIds array is required' });
+      return res.status(400).json({ success: false, error: t('competitor.ordered_ids_required') });
     }
     const result = await CompetitorMediaAnalysisService.reorderActivityImages(companyId, req.params.id, orderedIds);
     if (!result) return res.status(404).json({ success: false, error: t('competitor.not_found') });
@@ -874,7 +874,7 @@ exports.addFeatureImage = async (req, res) => {
     const { companyId } = req.user;
     const { imageUrl } = req.body;
     if (!imageUrl) {
-      return res.status(400).json({ success: false, error: 'imageUrl is required' });
+      return res.status(400).json({ success: false, error: t('competitor.image_url_required') });
     }
     const created = await CompetitorMediaAnalysisService.addFeatureImage(companyId, req.params.id, imageUrl);
     if (!created) return res.status(404).json({ success: false, error: t('competitor.not_found') });
@@ -890,7 +890,7 @@ exports.deleteFeatureImage = async (req, res) => {
     const { companyId } = req.user;
     const deleted = await CompetitorMediaAnalysisService.deleteFeatureImage(companyId, req.params.id, req.params.imageId);
     if (!deleted) return res.status(404).json({ success: false, error: t('competitor.not_found') });
-    res.json({ success: true, message: 'Feature image deleted' });
+    res.json({ success: true, message: t('competitor.feature_image_deleted') });
   } catch (error) {
     console.error('Error deleting feature image:', error);
     res.status(500).json({ success: false, error: t('competitor.feature_image_delete_failed') });
@@ -902,7 +902,7 @@ exports.reorderFeatureImages = async (req, res) => {
     const { companyId } = req.user;
     const { orderedIds } = req.body;
     if (!Array.isArray(orderedIds)) {
-      return res.status(400).json({ success: false, error: 'orderedIds array is required' });
+      return res.status(400).json({ success: false, error: t('competitor.ordered_ids_required') });
     }
     const result = await CompetitorMediaAnalysisService.reorderFeatureImages(companyId, req.params.id, orderedIds);
     if (!result) return res.status(404).json({ success: false, error: t('competitor.not_found') });

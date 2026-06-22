@@ -226,8 +226,8 @@ const CompetitorFeatures: React.FC<Props> = ({ competitorId }) => {
                     </p>
                   )}
                   <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                    <span>{t('competitors.features.createdAt')}: {new Date(f.createdAt).toLocaleDateString()}</span>
-                    <span>{t('competitors.features.updatedAt')}: {new Date(f.updatedAt).toLocaleDateString()}</span>
+                    <span>{t('competitors.features.createdAt')}: {new Date(f.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}</span>
+                    <span>{t('competitors.features.updatedAt')}: {new Date(f.updatedAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
