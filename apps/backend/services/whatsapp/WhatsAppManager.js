@@ -51,6 +51,10 @@ const manualLogoutSessions = new Set();
 const sessionHealthChecks = new Map(); // sessionId -> last health check result
 const companySessionMap = new Map(); // companyId -> Set<sessionId>
 
+// ponytail: global reconnect throttle, per-session cooldowns if cycling persists
+const lastReconnectTime = new Map();
+const RECONNECT_COOLDOWN_MS = 30000;
+
 // Health check configuration
 const HEALTH_CHECK_INTERVAL = 25000; // 25 seconds
 const HEALTH_CHECK_WARN_THRESHOLD = 60000; // 60 seconds in 'connecting' state = warn
@@ -107,6 +111,7 @@ function cleanupSocketListeners(sock) {
 
 function cleanupSessionState(sessionId, companyId) {
     clearReconnectTimer(sessionId);
+    lastReconnectTime.delete(sessionId);
     sessionHealthChecks.delete(sessionId);
     untrackCompanySession(companyId, sessionId);
     for (const key of whatsappDisconnectAlertTimestamps.keys()) {
@@ -399,8 +404,13 @@ function stopSessionHealthCheck() {
 function scheduleReconnectSession(sessionId, companyId, options = {}, delayMs = 5000, attempt = 0) {
     clearReconnectTimer(sessionId);
 
+    // Enforce minimum cooldown between reconnects
+    const lastTime = lastReconnectTime.get(sessionId);
+    const elapsed = lastTime ? Date.now() - lastTime : Infinity;
+    const cooldownRemaining = Math.max(0, RECONNECT_COOLDOWN_MS - elapsed);
+
     // Exponential backoff with jitter for stability
-    const baseDelay = delayMs;
+    const baseDelay = Math.max(delayMs, cooldownRemaining);
     const maxDelay = 60000;
     const jitter = Math.random() * Math.min(baseDelay * 0.3, 3000);
     const actualDelay = Math.min(baseDelay + jitter, maxDelay);
@@ -412,6 +422,7 @@ function scheduleReconnectSession(sessionId, companyId, options = {}, delayMs = 
 
     const timer = setTimeout(() => {
         reconnectTimers.delete(sessionId);
+        lastReconnectTime.set(sessionId, Date.now());
         reconnectSession(sessionId, companyId, attempt, options).catch((error) => {
             WA_LOG.error(sessionId, `Scheduled reconnect failed: ${error.message}`);
             if (attempt < 5) {
@@ -1433,9 +1444,11 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
                 }
                 cleanupSessionState(sessionId, companyId);
                 sessionHealthChecks.delete(sessionId);
+                // 440 = connectionReplaced — back off harder to break the death spiral
+                const reconnectDelay = statusCode === 440 ? 30000 : 3000;
                 scheduleReconnectSession(sessionId, companyId, {
                     syncFullHistory: currentData.syncFullHistory
-                }, 3000);
+                }, reconnectDelay);
             } else if (requiresFreshLink) {
                 WA_LOG.reconnect(sessionId, `Reconnecting after close (requiresFreshLink=true) - will show QR`);
                 const storedPhoneNumber = normalizePhoneNumber(sessionData?.phoneNumber);
