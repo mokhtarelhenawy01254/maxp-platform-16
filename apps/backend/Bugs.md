@@ -1,3 +1,18 @@
+## [2026-06-22] WhatsApp Session Dialog Redesign & UX Polish
+
+- **Change**: Redesigned the WhatsApp session creation popup from a long, unorganized form into an elegant 3-step wizard (Basics, Connection, Review).
+- **Improvements**:
+  - Replaced provider dropdown selection with beautiful visual radio cards.
+  - Added a visual stepper/progress indicator.
+  - Added localized (ar/en) tooltips and descriptions to clarify complex Meta Cloud API parameters.
+  - Placed advanced settings (webhook verify token, app secret, API version) in a collapsible panel to reduce visual noise.
+  - Upgraded the default Meta Graph API version to `v25.0` (as older versions like `v17.0` are deprecated).
+  - Added step-by-step form validation to block user progression if required fields are missing.
+- **Files**:
+  - `apps/frontend/src/pages/whatsapp/WhatsAppSettings.tsx`
+  - `apps/frontend/src/locales/ar/sections/whatsappSettings.json`
+  - `apps/frontend/src/locales/en/sections/whatsappSettings.json`
+
 ## [2026-06-15] SuperAdmin route chunk — Two TDZ crash fixes (ReferenceError: Cannot access 'ea')
 
 - **Bug/Issue**: `route-super-admin` chunk threw `ReferenceError: Cannot access 'ea' before initialization` in the browser console, crashing the entire app on load.
@@ -5,7 +20,6 @@
 - **Fix 2 — Same-chunk dynamic import TDZ**: `SuperAdminAIProviderPriority.tsx` used `React.lazy(() => import("./SuperAdminAIProviders"))` to dynamically import a module in the same `route-super-admin` chunk. Since `manualChunks` puts both `.tsx` files in the same chunk, Rollup cannot create a separate lazy chunk — the dynamic import evaluates eagerly inside the module wrapping, and the target module's export (`ea` after minification) is accessed before initialization. Replaced `React.lazy` with a direct static import since both files are already in the same eagerly-loaded chunk.
 - **Files Fix 1**:
   - `apps/frontend/src/pages/super-admin/company-details/CompanyActivationCenter.jsx`
-  - `apps/frontend/src/pages/super-admin/company-details/CompanyBillingSection.jsx`
   - `apps/frontend/src/pages/super-admin/company-details/CompanyHeroCard.jsx`
   - `apps/frontend/src/pages/super-admin/company-details/CompanyLimitsSection.jsx`
   - `apps/frontend/src/pages/super-admin/company-details/CompanySubscriptionSection.jsx`
@@ -15,15 +29,6 @@
 - **Files Fix 2**:
   - `apps/frontend/src/pages/super-admin/SuperAdminAIProviderPriority.tsx`
 
-<<<<<<< HEAD
-## [2026-06-15] Dashboard route — Barrel circular dependency (ReferenceError: Cannot access 'sa')
-
-- **Bug/Issue**: The app crashed on load with `ReferenceError: Cannot access 'sa' before initialization` after the super-admin fixes were deployed. This was a remaining TDZ in the dashboard chunk.
-- **Root Cause**: `DashboardIntroBand.tsx` imported `DashboardStatusStrip` from the barrel (`./index`), but the barrel re-exports `DashboardIntroBand` itself. This created a circular import chain: `index.ts` → `DashboardIntroBand` → `./index` → (tries to resolve DashboardStatusStrip before barrel finishes evaluating). The minifier assigned `sa` to the TDZ-locked binding.
-- **Fix**: Changed `import { DashboardStatusStrip } from "./index"` to `import DashboardStatusStrip from "./DashboardStatusStrip"` (direct import of the default export).
-- **Files**:
-  - `apps/frontend/src/pages/dashboard/DashboardIntroBand.tsx`
-=======
 ## [2026-06-15] Dashboard route — Barrel circular dependency + missing manualChunks (ReferenceError: Cannot access 'sa')
 
 - **Bug/Issue**: The app crashed on load with `ReferenceError: Cannot access 'sa' before initialization` (previously `ea`) even after the super-admin TDZ fixes. The `sa` variable was from dashboard files that were incorrectly grouped into the default chunk because `vite.config.ts` had no manualChunks rule for `dashboard/`.
@@ -34,7 +39,6 @@
 - **Files**:
   - `apps/frontend/src/pages/dashboard/DashboardIntroBand.tsx`
   - `apps/frontend/vite.config.ts`
->>>>>>> 525322b20885fcdbeb7e6703548becbd89eca32a
 
 ## [2026-06-15] translation.json — i18n key additions (merge translations post-rebase)
 
