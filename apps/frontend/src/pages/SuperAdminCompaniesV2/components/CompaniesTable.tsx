@@ -3,7 +3,7 @@ import { flexRender, getCoreRowModel, useReactTable, createColumnHelper } from "
 import {
   Mail, Facebook, Eye, LogIn, MoreHorizontal, ChevronLeft, ChevronRight,
   CheckCircle2, AlertTriangle, Trash2, Pencil, Users, UserPlus, ArrowLeftRight,
-  Building2, RefreshCw, BadgeCheck, ChevronDown, ChevronUp, Phone,
+  Building2, RefreshCw, BadgeCheck, ChevronDown, ChevronUp, Phone, Search,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
 import { Checkbox } from "../../../components/ui/checkbox";
@@ -33,6 +33,7 @@ interface CompaniesTableProps {
   isAllVisibleSelected: boolean;
   isSomeVisibleSelected: boolean;
   loading: boolean;
+  searchQuery?: string;
   onOpenDetails: (company: Company) => void;
   onEdit: (company: Company) => void;
   onDelete: (company: Company) => void;
@@ -49,7 +50,7 @@ interface CompaniesTableProps {
 export function CompaniesTable({
   companies, totalPages, currentPage, onPageChange, pageSize, totalItems,
   selectedIds, onToggleSelect, onToggleSelectAll,
-  isAllVisibleSelected, isSomeVisibleSelected, loading,
+  isAllVisibleSelected, isSomeVisibleSelected, loading, searchQuery,
   onOpenDetails, onEdit, onDelete,
   onOpenUsers, onOpenFollowUp, onOpenFacebookPages,
   onTransferOwnership, onAddEmployee, onLoginAsAdmin,
@@ -282,10 +283,16 @@ export function CompaniesTable({
     return (
       <div className="rounded-lg border border-dashed border-border/80 bg-muted/20 px-6 py-12 text-center">
         <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-primary/8 text-primary shadow-inner">
-          <Building2 className="size-8" />
+          <Search className="size-8" />
         </div>
-        <h3 className="mt-6 text-xl font-black text-foreground">لا توجد شركات مطابقة</h3>
-        <p className="mt-2 text-sm font-medium text-muted-foreground/80">جرّب تعديل الفلاتر أو أضف شركة جديدة للبدء.</p>
+        <h3 className="mt-6 text-xl font-black text-foreground">
+          {searchQuery ? `لا توجد نتائج لـ "${searchQuery}"` : "لا توجد شركات مطابقة"}
+        </h3>
+        <p className="mt-2 text-sm font-medium text-muted-foreground/80">
+          {searchQuery
+            ? "لم نعثر على أي شركة تطابق بحثك. جرّب كلمات أخرى أو راجع الفلاتر."
+            : "جرّب تعديل الفلاتر أو أضف شركة جديدة للبدء."}
+        </p>
       </div>
     );
   }

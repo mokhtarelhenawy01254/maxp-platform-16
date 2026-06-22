@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { apiClient } from "../../../services/apiClient";
 import { toast } from "sonner";
 import { extractErrorMessage, enrichCompanies } from "../utils";
@@ -13,21 +13,60 @@ export function useAdmin() {
   return user as { id: string; [key: string]: unknown } | null;
 }
 
-export function useCompanies() {
+export interface CompaniesQueryParams {
+  search?: string;
+  status?: string;
+  plan?: string;
+  savedView?: string;
+  page?: number;
+  pageSize?: number;
+  sort?: string;
+}
+
+export function useCompanies(params: CompaniesQueryParams = {}) {
   const admin = useAdmin();
 
+  const queryParams = new URLSearchParams();
+  if (params.search) queryParams.set('search', params.search);
+  if (params.status && params.status !== 'ALL') queryParams.set('status', params.status);
+  if (params.plan && params.plan !== 'ALL') queryParams.set('plan', params.plan);
+  if (params.savedView && params.savedView !== 'ALL') queryParams.set('savedView', params.savedView);
+  if (params.page && params.page > 1) queryParams.set('page', String(params.page));
+  if (params.pageSize !== undefined) queryParams.set('pageSize', String(params.pageSize));
+  if (params.sort) queryParams.set('sort', params.sort);
+
+  const queryStr = queryParams.toString();
+
   const query = useQuery({
-    queryKey: ["super-admin", "companies"],
+    queryKey: ["super-admin", "companies", params],
     queryFn: async () => {
-      const res = await apiClient.get("/admin/companies");
+      const url = `/admin/companies${queryStr ? `?${queryStr}` : ''}`;
+      const res = await apiClient.get(url);
       if (!res.data?.success) throw new Error(res.data?.message || "فشل في تحميل الشركات");
-      return res.data.data?.companies as Company[] || [];
+      return {
+        companies: (res.data.data?.companies || []) as Company[],
+        total: res.data.data?.total || 0,
+        totalPages: res.data.data?.totalPages || 1,
+        page: res.data.data?.page || 1,
+        pageSize: res.data.data?.pageSize || 20,
+        meta: res.data.meta || null,
+      };
     },
-    staleTime: 30_000,
+    staleTime: 10_000,
+    placeholderData: keepPreviousData,
   });
 
-  const enriched = query.data ? enrichCompanies(query.data, admin?.id || null) : [];
-  return { ...query, companies: enriched, admin };
+  const enriched = query.data ? enrichCompanies(query.data.companies, admin?.id || null) : [];
+  return {
+    ...query,
+    companies: enriched,
+    total: query.data?.total || 0,
+    totalPages: query.data?.totalPages || 1,
+    currentPage: query.data?.page || 1,
+    currentPageSize: query.data?.pageSize || 20,
+    meta: query.data?.meta || null,
+    admin,
+  };
 }
 
 export function useBulkMutations() {

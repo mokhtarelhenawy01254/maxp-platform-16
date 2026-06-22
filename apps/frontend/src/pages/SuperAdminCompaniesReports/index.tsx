@@ -28,7 +28,7 @@ function StatCard({ icon: Icon, label, value, sub, color }: { icon: React.Elemen
 }
 
 export default function SuperAdminCompaniesReports() {
-  const { companies, isLoading } = useCompanies();
+  const { companies, isLoading } = useCompanies({ pageSize: 0 });
   const stats = useMemo(() => computeQuickStats(companies, null), [companies]);
 
   const planData = useMemo(() => {

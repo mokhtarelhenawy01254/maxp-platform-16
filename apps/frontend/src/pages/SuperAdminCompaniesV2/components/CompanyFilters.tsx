@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, ArrowDownUp, X } from "lucide-react";
+import { Search, ArrowDownUp, X, Loader2 } from "lucide-react";
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Badge } from "../../../components/ui/badge";
@@ -21,6 +21,7 @@ interface CompanyFiltersProps {
   onClearAll: () => void;
   filterCount: number;
   activeFilterLabels: (string | null)[];
+  searchLoading?: boolean;
   facebookLookup: {
     query: string;
     onQueryChange: (v: string) => void;
@@ -39,6 +40,7 @@ export function CompanyFilters({
   status, onStatusChange, sort, onSortChange,
   rowsPerPage, onRowsPerPageChange, onClearAll,
   filterCount, activeFilterLabels,
+  searchLoading,
   facebookLookup, collapsed,
 }: CompanyFiltersProps) {
   const [localSearch, setLocalSearch] = useState(search);
@@ -52,7 +54,11 @@ export function CompanyFilters({
     <div className="space-y-2">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
         <div className="group relative flex-1">
-          <Search className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+          {searchLoading ? (
+            <Loader2 className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 animate-spin text-primary" />
+          ) : (
+            <Search className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+          )}
           <Input
             aria-label="بحث الشركات"
             name="company-search"

@@ -441,7 +441,6 @@ const getAllCompanies = async (req, res) => {
         const prisma = getSharedPrismaClient();
 
         const page = Math.max(1, parseInt(req.query.page) || 1);
-        const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize) || 20));
         const search = (req.query.search || '').trim();
         const status = req.query.status || 'ALL';
         const plan = req.query.plan || 'ALL';
@@ -470,7 +469,28 @@ const getAllCompanies = async (req, res) => {
         if (savedView !== 'ALL') conditions.push(buildSavedViewWhere(savedView));
         const where = conditions.length === 1 ? conditions[0] : { AND: conditions };
 
-        const skip = (page - 1) * pageSize;
+        const rawPageSize = parseInt(req.query.pageSize);
+        let prismaSkip, prismaTake;
+        if (rawPageSize === 0) {
+            prismaSkip = undefined;
+            prismaTake = undefined;
+        } else {
+            const limit = Math.min(100, Math.max(1, rawPageSize || 20));
+            prismaSkip = (page - 1) * limit;
+            prismaTake = limit;
+        }
+
+        const sortParam = (req.query.sort || '').trim();
+        let orderBy = { createdAt: 'desc' };
+        if (sortParam) {
+            const parts = sortParam.split(':');
+            const field = parts[0];
+            const dir = parts[1] === 'asc' ? 'asc' : 'desc';
+            const allowedSortFields = ['createdAt', 'name'];
+            if (allowedSortFields.includes(field)) {
+                orderBy = { [field]: dir };
+            }
+        }
 
         const [rawCompanies, total] = await Promise.all([
             prisma.company.findMany({
@@ -484,9 +504,9 @@ const getAllCompanies = async (req, res) => {
                         }
                     }
                 },
-                skip,
-                take: pageSize,
-                orderBy: { createdAt: 'desc' }
+                ...(prismaSkip !== undefined ? { skip: prismaSkip } : {}),
+                ...(prismaTake !== undefined ? { take: prismaTake } : {}),
+                orderBy
             }),
             prisma.company.count({ where })
         ]);
@@ -506,10 +526,12 @@ const getAllCompanies = async (req, res) => {
             prisma.company.count({ where: buildSavedViewWhere('STALE_72H') }),
         ]);
 
+        const finalPageSize = prismaTake ?? total;
+        const totalPages = prismaTake ? Math.ceil(total / prismaTake) : 1;
         res.json({
             success: true,
             message: 'تم جلب الشركات بنجاح',
-            data: { companies, total, page, pageSize, totalPages: Math.ceil(total / pageSize) },
+            data: { companies, total, page, pageSize: finalPageSize, totalPages },
             meta: { stats: { totalCompanies, activeCompanies, followUpNow, myDueToday, escalationDue, urgentEscalationDue: 0, stale72h } }
         });
 
