@@ -40,7 +40,7 @@ interface Conversation {
 interface SocketEvents {
   connect: () => void;
   disconnect: (reason: string) => void;
-  "message:new": (message: Message) => void;
+  "new_message": (message: Message) => void;
   "message:delivered": (data: {
     messageId: string;
     conversationId: string;
@@ -345,7 +345,7 @@ class SocketService {
 
   onMessage(callback: (message: Message) => void) {
     if (this.socket) {
-      this.socket.on("message:new", callback);
+      this.socket.on("new_message", callback);
     }
   }
 

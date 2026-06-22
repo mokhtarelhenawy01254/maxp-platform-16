@@ -437,7 +437,7 @@ const Conversations: React.FC = () => {
 
     // Cleanup function
     return () => {
-      socketService.off("message:new", handleNewMessage);
+      socketService.off("new_message", handleNewMessage);
       socketService.off("conversation:updated", handleConversationUpdated);
       socketService.off("conversation:new", handleNewConversation);
     };

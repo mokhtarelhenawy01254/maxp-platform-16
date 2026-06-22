@@ -246,6 +246,7 @@ const UnifiedInbox: React.FC = () => {
   const attachmentMenuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const socketHandlerRef = useRef<((message: any) => void) | null>(null);
+  const newConvHandlerRef = useRef<((conversation: any) => void) | null>(null);
   const waSocketHandlerRef = useRef<((payload: any) => void) | null>(null);
   const waSentHandlerRef = useRef<((payload: any) => void) | null>(null);
 
@@ -832,6 +833,15 @@ const UnifiedInbox: React.FC = () => {
     socketHandlerRef.current = handler;
     socketService.onMessage(handler);
 
+    const newConvHandler = (conversation: any) => {
+      setConversations((prev) => {
+        if (prev.some(c => c.id === conversation.id)) return prev;
+        return [conversation, ...prev];
+      });
+    };
+    newConvHandlerRef.current = newConvHandler;
+    socketService.onNewConversation(newConvHandler);
+
     const findWaConv = (convs: UnifiedConversation[], sessionId: string, remoteJid: string) =>
       convs.find(c => c.platform === 'whatsapp' && c.metadata?.sessionId === sessionId && c.metadata?.jid === remoteJid);
 
@@ -891,8 +901,12 @@ const UnifiedInbox: React.FC = () => {
 
     return () => {
       if (socketHandlerRef.current) {
-        socketService.off("message:new", socketHandlerRef.current);
+        socketService.off("new_message", socketHandlerRef.current);
         socketHandlerRef.current = null;
+      }
+      if (newConvHandlerRef.current) {
+        socketService.off("conversation:new", newConvHandlerRef.current);
+        newConvHandlerRef.current = null;
       }
       if (waSocketHandlerRef.current) {
         socketService.off("whatsapp:message:new", waSocketHandlerRef.current);
