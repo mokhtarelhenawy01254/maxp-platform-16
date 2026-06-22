@@ -32,7 +32,7 @@ function buildMetaSessionLookup({ phoneNumberId, displayPhoneNumber }) {
     where: {
       provider: 'META_CLOUD',
       OR: identifiers,
-      AND: [ACTIVE_METADATA_FILTER]
+      ...ACTIVE_METADATA_FILTER
     },
     orderBy: [
       { isDefault: 'desc' },
@@ -51,12 +51,11 @@ async function isVerifyTokenValid(token) {
     where: {
       provider: 'META_CLOUD',
       metaWebhookVerifyToken: token,
-      AND: [ACTIVE_METADATA_FILTER]
+      ...ACTIVE_METADATA_FILTER
     }
   });
   return !!match;
 }
-
 function normalizeMetaMessage(msg) {
   const type = msg.type || 'text';
   const messageType = type.toUpperCase();

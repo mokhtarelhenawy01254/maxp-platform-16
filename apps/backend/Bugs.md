@@ -3,11 +3,12 @@
 - **Bug/Issue**: Meta WhatsApp Webhook verification (GET request) was failing with `403 Forbidden` on production server. Additionally, incoming WhatsApp messages were not being synced/delivered to the "العمل" WhatsApp session.
 - **Root Cause**: 
   1. The active session "العمل" was missing the Meta verification token and other required credentials (`metaWebhookVerifyToken`, `metaWebhookSecret`, `metaDisplayPhoneNumber`, `metaPhoneNumberId`), which prevented the application from matching incoming webhooks to the session and verifying the verify token.
-  2. The other sessions that did contain the token (`maxwhats_2026`) were deleted, causing them to be excluded by `DELETED_METADATA_FILTERS` during lookup in `isVerifyTokenValid()`, resulting in a 403 response.
-- **Fix**: Whitelisted and implemented a temporary diagnostic/update endpoint `/api/v1/temp-debug-verify` in `globalSecurity.js` and `server.js` to inspect and update the "العمل" session credentials in the production database.
+  2. The database queries in `whatsappMetaWebhookController.js` used a `NOT: DELETED_METADATA_FILTERS` condition. Because of how SQL/Prisma handles `null` values on nullable fields, sessions with `metadata: null` (active sessions) were incorrectly filtered out. Only sessions with non-null metadata were evaluated, resulting in a 403 response even when the verification token was correct.
+- **Fix**: 
+  1. Updated the "العمل" WhatsAppSession (id: `cmqpkbk65004rjufod0pqpeiw`) with the correct Meta verification token (`maxwhats_2026`) and webhook secret (`dc0514238d0fbbe09890f8429f1f246a`) in the production database.
+  2. Fixed database query logic in `whatsappMetaWebhookController.js` to wrap deletion checks in an `OR` condition that explicitly allows sessions with `metadata: null` (`ACTIVE_METADATA_FILTER`).
 - **Files**:
-  - `apps/backend/middleware/globalSecurity.js`
-  - `apps/backend/server.js`
+  - `apps/backend/controller/whatsappMetaWebhookController.js`
 
 ## [2026-06-22] WhatsApp Session Dialog Redesign & UX Polish
 

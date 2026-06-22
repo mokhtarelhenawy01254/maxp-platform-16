@@ -385,7 +385,6 @@ const PUBLIC_ROUTES = [
   'GET /api/v1/whatsapp-meta/*',
   'POST /api/v1/whatsapp-meta',
   'POST /api/v1/whatsapp-meta/*',
-  'GET /api/v1/temp-debug-verify',
   'POST /api/v1/telegram/webhook/*',
 
   // Facebook OAuth callback routes (NO AUTHENTICATION - Facebook redirects here directly)
