@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { ArrowLeft, ArrowRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
+import CompetitorStatusBar, { type CompetitorStatus } from './CompetitorStatusBar';
+import { updateCompetitorStatus } from './useCompetitorStatus';
 import i18n from "../../i18n";
 
 interface PriceComparisonRow {
@@ -30,6 +32,7 @@ interface BattlecardData {
     name: string;
     platform: string;
     url: string;
+    status: CompetitorStatus;
   };
   metrics: {
     theirProducts: number;
@@ -124,6 +127,12 @@ const BattlecardViewer: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           {t("competitors.battlecard.title")}: {data.competitor.name}
         </h1>
+        <CompetitorStatusBar
+          currentStatus={data.competitor.status}
+          competitorId={data.competitor.id}
+          onChange={(newStatus) => updateCompetitorStatus(data.competitor.id, newStatus)}
+          size="md"
+        />
       </div>
 
       <Card>

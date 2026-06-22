@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Search, RefreshCw, Plus, Pencil, Trash2, AlertTriangle, ExternalLink, Eye } from 'lucide-react';
+import { Search, RefreshCw, Plus, Pencil, Trash2, AlertTriangle, ExternalLink, Eye, Calendar } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import CompetitorStatusBar from './CompetitorStatusBar';
 import GlobalCompetitorStatusBar, { type StatusFilter } from './GlobalCompetitorStatusBar';
 import { updateCompetitorStatus, useCompetitorStatusSync } from './useCompetitorStatus';
 import type { CompetitorStatus } from './CompetitorStatusBar';
+import { getLocalizedDateTime } from '../../utils/localization';
 import i18n from '../../i18n';
 
 interface SocialProfile {
@@ -246,7 +247,11 @@ const CompetitorList: React.FC = () => {
                   })}
                 </div>
               )}
-              <div className="flex gap-4 mt-3 text-sm text-gray-500">
+              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-gray-400 dark:text-gray-500">
+                <Calendar size={11} className="shrink-0" />
+                <span dir="ltr" className="whitespace-nowrap">{getLocalizedDateTime(c.createdAt)}</span>
+              </div>
+              <div className="flex gap-4 mt-2 text-sm text-gray-500">
                 <span>{c._count.products} {t('competitors.products')}</span>
                 <span>{c._count.ads} {t('competitors.adsTab')}</span>
                 <span>{c._count.reports} {t('competitors.reports')}</span>
@@ -264,7 +269,7 @@ const CompetitorList: React.FC = () => {
               <h2 className="text-lg font-bold">{t('common.confirm')}</h2>
             </div>
             <p className="mb-4">{t('competitors.deleteConfirm')}</p>
-            <div className="flex gap-2 justify-end">
+            <div className="flex gap-2 ltr:justify-end rtl:justify-start">
               <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
                 {t('common.cancel')}
               </button>

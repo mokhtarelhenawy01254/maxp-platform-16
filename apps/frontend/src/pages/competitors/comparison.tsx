@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Scale, CheckCircle, XCircle, Minus, RefreshCw } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
+import CompetitorStatusBar, { type CompetitorStatus } from './CompetitorStatusBar';
+import { updateCompetitorStatus } from './useCompetitorStatus';
 import i18n from '../../i18n';
 
 interface ComparisonItem {
@@ -109,7 +111,7 @@ const Comparison: React.FC = () => {
 
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 mb-6">
         <h2 className="text-lg font-semibold mb-4">{t('competitors.selectCompetitorCompare')}</h2>
-        <div className="flex gap-4 items-end">
+          <div className="flex gap-4 items-end">
           <div className="flex-1">
             <label className="block text-sm font-medium mb-2">{t('competitors.competitor')}</label>
             <select
@@ -132,6 +134,21 @@ const Comparison: React.FC = () => {
             {t('competitors.compare')}
           </button>
         </div>
+        {competitorId && (() => {
+          const sel = competitors.find(c => c.id === competitorId);
+          if (!sel) return null;
+          return (
+            <div className="flex items-center gap-2 mt-4">
+              <span className="text-sm font-medium">{sel.name}</span>
+              <CompetitorStatusBar
+                currentStatus={sel.status || 'NEW'}
+                competitorId={sel.id}
+                onChange={(newStatus) => updateCompetitorStatus(sel.id, newStatus)}
+                size="sm"
+              />
+            </div>
+          );
+        })()}
       </div>
 
       {summary && (

@@ -274,7 +274,7 @@ exports.getAllReports = async (req, res) => {
     const [data, total] = await Promise.all([
       getPrisma().competitorReport.findMany({
         where,
-        include: { competitor: { select: { id: true, name: true } } },
+        include: { competitor: { select: { id: true, name: true, status: true } } },
         orderBy: { generatedAt: 'desc' },
         take: 20,
       }),
@@ -378,6 +378,7 @@ exports.getBattlecard = async (req, res) => {
         name: competitor.name,
         platform: competitor.platform,
         url: competitor.url,
+        status: competitor.status,
       },
       metrics: {
         theirProducts: competitor._count.products,

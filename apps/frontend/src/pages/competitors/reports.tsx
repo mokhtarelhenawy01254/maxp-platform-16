@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, FileText, Calendar, BarChart3, TrendingUp, Eye, RefreshCw, Download } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
+import CompetitorStatusBar, { type CompetitorStatus } from './CompetitorStatusBar';
+import { updateCompetitorStatus } from './useCompetitorStatus';
 import i18n from '../../i18n';
 
 interface Report {
@@ -15,7 +17,7 @@ interface Report {
   periodStart: string | null;
   periodEnd: string | null;
   generatedAt: string;
-  competitor: { id: string; name: string };
+  competitor: { id: string; name: string; status: CompetitorStatus };
 }
 
 const Reports: React.FC = () => {
@@ -112,7 +114,17 @@ const Reports: React.FC = () => {
                   </span>
                 </div>
                 <h3 className="font-semibold text-sm line-clamp-2">{report.title}</h3>
-                <p className="text-xs text-gray-500 mt-1">{report.competitor?.name || 'N/A'}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-xs text-gray-500">{report.competitor?.name || 'N/A'}</p>
+                  {report.competitor?.status && (
+                    <CompetitorStatusBar
+                      currentStatus={report.competitor.status}
+                      competitorId={report.competitor.id}
+                      onChange={(newStatus) => updateCompetitorStatus(report.competitor.id, newStatus)}
+                      size="sm"
+                    />
+                  )}
+                </div>
                 <p className="text-xs text-gray-400 mt-1">
                   {new Date(report.generatedAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
                     year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit'
@@ -133,6 +145,14 @@ const Reports: React.FC = () => {
                       <span>{reportTypeLabel(selectedReport.type)}</span>
                       <span>•</span>
                       <span>{selectedReport.competitor?.name}</span>
+                      {selectedReport.competitor?.status && (
+                        <CompetitorStatusBar
+                          currentStatus={selectedReport.competitor.status}
+                          competitorId={selectedReport.competitor.id}
+                          onChange={(newStatus) => updateCompetitorStatus(selectedReport.competitor.id, newStatus)}
+                          size="sm"
+                        />
+                      )}
                       <span>•</span>
                       <span>{new Date(selectedReport.generatedAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}</span>
                     </div>

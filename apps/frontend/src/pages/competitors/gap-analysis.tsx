@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { TrendingUp, AlertTriangle, CheckCircle, ArrowLeft, ArrowRight, ExternalLink, RefreshCw } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
+import CompetitorStatusBar, { type CompetitorStatus } from './CompetitorStatusBar';
+import { updateCompetitorStatus } from './useCompetitorStatus';
 import i18n from '../../i18n';
 
 interface GapProduct {
@@ -72,7 +74,7 @@ const GapAnalysis: React.FC = () => {
 
       <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl p-6 mb-6">
         <h2 className="text-lg font-semibold mb-4">{t('competitors.selectCompetitor')}</h2>
-        <div className="flex gap-4 items-end">
+          <div className="flex gap-4 items-end">
           <div className="flex-1">
             <label className="block text-sm font-medium mb-2">{t('competitors.competitor')}</label>
             <select
@@ -95,6 +97,21 @@ const GapAnalysis: React.FC = () => {
             {t('competitors.analyzeGaps')}
           </button>
         </div>
+        {competitorId && (() => {
+          const sel = competitors.find(c => c.id === competitorId);
+          if (!sel) return null;
+          return (
+            <div className="flex items-center gap-2 mt-4">
+              <span className="text-sm font-medium">{sel.name}</span>
+              <CompetitorStatusBar
+                currentStatus={sel.status || 'NEW'}
+                competitorId={sel.id}
+                onChange={(newStatus) => updateCompetitorStatus(sel.id, newStatus)}
+                size="sm"
+              />
+            </div>
+          );
+        })()}
       </div>
 
       {analysis && (

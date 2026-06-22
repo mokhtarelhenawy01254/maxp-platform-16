@@ -4,6 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, TrendingDown, TrendingUp, Minus, RefreshCw, Calendar } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import CompetitorStatusBar, { type CompetitorStatus } from './CompetitorStatusBar';
+import { updateCompetitorStatus } from './useCompetitorStatus';
 import i18n from '../../i18n';
 
 interface PricePoint {
@@ -90,7 +92,17 @@ const PriceHistory: React.FC = () => {
           {i18n.dir() === 'rtl' ? <ArrowRight size={20} /> : <ArrowLeft size={20} />}
         </button>
         <h1 className="text-2xl font-bold">{t('competitors.priceHistory')}</h1>
-        {competitor && <span className="text-gray-500">— {competitor.name}</span>}
+        {competitor && (
+          <>
+            <span className="text-gray-500">— {competitor.name}</span>
+            <CompetitorStatusBar
+              currentStatus={competitor.status || 'NEW'}
+              competitorId={competitor.id}
+              onChange={(newStatus) => updateCompetitorStatus(competitor.id, newStatus)}
+              size="sm"
+            />
+          </>
+        )}
       </div>
 
       <div className="mb-6">

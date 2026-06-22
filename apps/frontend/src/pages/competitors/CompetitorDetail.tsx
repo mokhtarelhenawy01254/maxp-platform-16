@@ -6,6 +6,7 @@ import { apiClient } from '../../services/apiClient';
 import CompetitorStatusBar, { COMPETITOR_STATUSES, type CompetitorStatus } from './CompetitorStatusBar';
 import { updateCompetitorStatus, useCompetitorStatusSync } from './useCompetitorStatus';
 import CompetitorFeatures from './CompetitorFeatures';
+import { getLocalizedDateTime } from '../../utils/localization';
 import i18n from '../../i18n';
 
 interface CompetitorProduct {
@@ -255,20 +256,7 @@ const CompetitorDetail: React.FC = () => {
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 flex items-center gap-1.5">
               <Calendar size={12} className="shrink-0" />
               <span>{t('competitors.createdAtLabel')}: </span>
-              <span>
-                {new Date(competitor.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </span>
-              <Clock size={12} className="shrink-0 ltr:ml-1 rtl:mr-1" />
-              <span>
-                {new Date(competitor.createdAt).toLocaleTimeString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </span>
+              <span dir="ltr" className="inline-block whitespace-nowrap">{getLocalizedDateTime(competitor.createdAt)}</span>
             </p>
           )}
         </div>
@@ -277,58 +265,69 @@ const CompetitorDetail: React.FC = () => {
         </button>
       </div>
 
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-4" dir={i18n.dir()}>
+        <button onClick={() => navigate('/competitors')} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+          {t('competitors.title')}
+        </button>
+        <span className="text-gray-300 dark:text-gray-600 select-none">/</span>
+        <span className="text-gray-800 dark:text-gray-200 font-medium truncate max-w-[200px] sm:max-w-[300px]">
+          {competitor.name}
+        </span>
+      </nav>
+
+      <div className="flex flex-wrap items-center gap-2 mb-6">
         {competitor._count && (
-          <div className="flex gap-6 text-sm text-gray-500">
-            <span className="bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full">
+          <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-500 flex-wrap">
+            <span className="bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 rounded-full">
               {competitor._count.products} {t('competitors.products')}
             </span>
-            <span className="bg-green-50 dark:bg-green-900/30 px-3 py-1 rounded-full">
+            <span className="bg-green-50 dark:bg-green-900/30 px-2.5 py-1 rounded-full">
               {competitor._count.ads} {t('competitors.adsTab')}
             </span>
-            <span className="bg-purple-50 dark:bg-purple-900/30 px-3 py-1 rounded-full">
+            <span className="bg-purple-50 dark:bg-purple-900/30 px-2.5 py-1 rounded-full">
               {competitor._count.reports} {t('competitors.reports')}
             </span>
           </div>
         )}
-        <div className="flex gap-2 ltr:mr-auto rtl:ml-auto">
-          <button onClick={() => navigate(`/competitors/${id}/price-compare`)} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800" title={t('competitors.comparison')}>
-            <Scale size={14} /> {t('competitors.comparison')}
+        <div className="flex items-center gap-1.5 flex-wrap ltr:ml-auto rtl:mr-auto">
+          <button onClick={() => navigate(`/competitors/${id}/price-compare`)} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs sm:text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0" title={t('competitors.comparison')}>
+            <Scale size={14} className="shrink-0" /> <span className="hidden sm:inline">{t('competitors.comparison')}</span>
           </button>
-          <button onClick={() => navigate('/competitors/gap-analysis')} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800" title={t('competitors.gapAnalysis')}>
-            <BarChart2 size={14} /> {t('competitors.gapAnalysis')}
+          <button onClick={() => navigate('/competitors/gap-analysis')} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs sm:text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0" title={t('competitors.gapAnalysis')}>
+            <BarChart2 size={14} className="shrink-0" /> <span className="hidden sm:inline">{t('competitors.gapAnalysis')}</span>
           </button>
-          <button onClick={() => navigate(`/competitors/${id}/products/${competitor.products?.[0]?.id}/price-history`)} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800" title={t('competitors.priceHistory')} disabled={!competitor.products?.length}>
-            <History size={14} /> {t('competitors.priceHistory')}
+          <button onClick={() => navigate(`/competitors/${id}/products/${competitor.products?.[0]?.id}/price-history`)} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs sm:text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0" title={t('competitors.priceHistory')} disabled={!competitor.products?.length}>
+            <History size={14} className="shrink-0" /> <span className="hidden sm:inline">{t('competitors.priceHistory')}</span>
           </button>
-          <button onClick={() => navigate('/competitors/settings')} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800" title={t('competitors.settings')}>
-            <Settings size={14} />
+          <button onClick={() => navigate('/competitors/settings')} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs sm:text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0" title={t('competitors.settings')}>
+            <Settings size={14} className="shrink-0" />
           </button>
-          <div className="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-1" />
-          <button onClick={() => navigate(`/competitors/${id}/social`)} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-pink-600 border-pink-200" title={t('competitors.social.overview')}>
-            <Instagram size={14} /> {t('competitors.social.overview')}
+          <div className="h-5 w-px bg-gray-300 dark:bg-gray-600 mx-0.5 shrink-0" />
+          <button onClick={() => navigate(`/competitors/${id}/social`)} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs sm:text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0 text-pink-600 border-pink-200" title={t('competitors.social.overview')}>
+            <Instagram size={14} className="shrink-0" /> <span className="hidden sm:inline">{t('competitors.social.overview')}</span>
           </button>
-          <button onClick={() => navigate(`/competitors/${id}/ads`)} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-blue-600 border-blue-200" title={t('competitors.ads.overview')}>
-            <Share2 size={14} /> {t('competitors.ads.overview')}
+          <button onClick={() => navigate(`/competitors/${id}/ads`)} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs sm:text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0 text-blue-600 border-blue-200" title={t('competitors.ads.overview')}>
+            <Share2 size={14} className="shrink-0" /> <span className="hidden sm:inline">{t('competitors.ads.overview')}</span>
           </button>
-          <button onClick={() => navigate(`/competitors/${id}/platforms`)} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-green-600 border-green-200" title={t('competitors.platforms.techStack')}>
-            <TrendingUp size={14} /> {t('competitors.platforms.techStack')}
+          <button onClick={() => navigate(`/competitors/${id}/platforms`)} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs sm:text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0 text-green-600 border-green-200" title={t('competitors.platforms.techStack')}>
+            <TrendingUp size={14} className="shrink-0" /> <span className="hidden sm:inline">{t('competitors.platforms.techStack')}</span>
           </button>
-          <button onClick={() => navigate(`/competitors/${id}/battlecard`)} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-purple-600 border-purple-200" title={t('competitors.battlecard.title')}>
-            <BarChart2 size={14} /> {t('competitors.battlecard.title')}
+          <button onClick={() => navigate(`/competitors/${id}/battlecard`)} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs sm:text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0 text-purple-600 border-purple-200" title={t('competitors.battlecard.title')}>
+            <BarChart2 size={14} className="shrink-0" /> <span className="hidden sm:inline">{t('competitors.battlecard.title')}</span>
           </button>
-          <button onClick={() => navigate('/competitors/auto-discover')} className="flex items-center gap-1 px-3 py-1 text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-yellow-600 border-yellow-200" title={t('competitors.autoDiscover.title')}>
-            <Crosshair size={14} /> {t('competitors.autoDiscover.title')}
+          <button onClick={() => navigate('/competitors/auto-discover')} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs sm:text-sm border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0 text-yellow-600 border-yellow-200" title={t('competitors.autoDiscover.title')}>
+            <Crosshair size={14} className="shrink-0" /> <span className="hidden sm:inline">{t('competitors.autoDiscover.title')}</span>
           </button>
         </div>
       </div>
 
-      <div className="flex gap-1 border-b mb-6">
+      <div className="flex gap-1 border-b mb-6 overflow-x-auto scrollbar-none">
         {tabs.map(tabItem => (
           <button
             key={tabItem.key}
             onClick={() => setTab(tabItem.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               tab === tabItem.key
                 ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
@@ -350,22 +349,10 @@ const CompetitorDetail: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('competitors.createdAtLabel')}</p>
-                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 flex-wrap">
-                    <span className="flex items-center gap-1">
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 flex-wrap">
+                    <span dir="ltr" className="inline-flex items-center gap-1.5 whitespace-nowrap">
                       <Calendar size={14} className="text-blue-500 shrink-0" />
-                      {new Date(competitor.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </span>
-                    <span className="text-gray-300 dark:text-gray-600">|</span>
-                    <span className="flex items-center gap-1">
-                      <Clock size={14} className="text-blue-500 shrink-0" />
-                      {new Date(competitor.createdAt).toLocaleTimeString(i18n.language === 'ar' ? 'ar-SA' : 'en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {getLocalizedDateTime(competitor.createdAt)}
                     </span>
                   </p>
                 </div>
@@ -675,7 +662,7 @@ const CompetitorDetail: React.FC = () => {
                   {taskError}
                 </div>
               )}
-              <div className="flex gap-2 justify-end pt-2 border-t">
+              <div className="flex gap-2 ltr:justify-end rtl:justify-start pt-2 border-t">
                 <button type="button" onClick={() => setShowTaskModal(false)} className="px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
                   {t('common.cancel')}
                 </button>

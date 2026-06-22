@@ -16,6 +16,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import CompetitorStatusBar, { type CompetitorStatus } from './CompetitorStatusBar';
+import { updateCompetitorStatus } from './useCompetitorStatus';
 import i18n from '../../i18n';
 
 const PLATFORMS = ['manual', 'shopify', 'woocommerce', 'salla', 'zid', 'easy_orders', 'other'] as const;
@@ -97,6 +99,7 @@ const CompetitorAdd: React.FC = () => {
     trafficSource: '',
     strengths: '', weaknesses: '',
     monthlyPrice: '', yearlyPrice: '', pricingNotes: '',
+    status: '',
   });
 
   const [socialProfiles, setSocialProfiles] = useState<SocialProfile[]>(
@@ -135,6 +138,7 @@ const CompetitorAdd: React.FC = () => {
           strengths: c.strengths || '', weaknesses: c.weaknesses || '',
           monthlyPrice: c.monthlyPrice?.toString() || '', yearlyPrice: c.yearlyPrice?.toString() || '',
           pricingNotes: c.pricingNotes || '',
+          status: c.status || 'NEW',
         });
         if (c.socialProfiles?.length) {
           const merged = SOCIAL_PLATFORMS.map(p => {
@@ -324,10 +328,23 @@ const CompetitorAdd: React.FC = () => {
         <Button variant="ghost" size="icon" onClick={() => navigate(isEdit ? `/competitors/${id}` : '/competitors')}>
           {dir === 'rtl' ? <ArrowRight size={20} /> : <ArrowLeft size={20} />}
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold">
-            {isEdit ? t('competitors.editCompetitor') : t('competitors.addCompetitor')}
-          </h1>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">
+              {isEdit ? t('competitors.editCompetitor') : t('competitors.addCompetitor')}
+            </h1>
+            {isEdit && id && formData.status && (
+              <CompetitorStatusBar
+                currentStatus={formData.status as CompetitorStatus}
+                competitorId={id}
+                onChange={async (newStatus) => {
+                  const ok = await updateCompetitorStatus(id, newStatus);
+                  if (ok) setFormData(prev => ({ ...prev, status: newStatus }));
+                }}
+                size="md"
+              />
+            )}
+          </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             {isEdit ? t('competitors.editCompetitor') : t('competitors.addCompetitor')}
           </p>
