@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from agent_framework.a2a import A2AAgent
 
-from src.agents.ceo import create_ceo_agent
+from src.agents.ceo import create_ceo_agent, create_channel_agent
 from src.config import get_settings
 from src.observability.llm_fallback import LLMFallbackProvider
 from src.pipeline.checkpointer import PipelineCheckpointer
@@ -55,38 +55,44 @@ async def run_orchestration(
 
     await _ensure_default_agents(company_id, manager, registry, session)
 
-    # Pick the LLM client: prefer the agent configured for this channel, then any agent with a provider
     _channel_normalized = effective_channel.lower()
-    client = None
 
-    # Pass 1: agent configured for this specific channel
+    # Find the agent assigned to this channel — that agent IS the responder, not CEO
+    _channel_agent = None
     for _aid, _agent, _ in registry.list_agents(company_id):
         _cfg = getattr(_agent, "config", None)
-        _provider = getattr(_cfg, "provider", None)
         _channels = [c.lower() for c in (getattr(_cfg, "allowed_channels", None) or [])]
-        if _provider and (_channel_normalized in _channels):
-            try:
-                client = await _agent.ensure_client()
-                logger.info("orchestration_using_channel_agent", agent=_aid, provider=_provider, channel=_channel_normalized)
-                break
-            except Exception as _exc:
-                logger.warning("agent_provider_unavailable", agent=_aid, provider=_provider, error=str(_exc))
+        if _channel_normalized in _channels:
+            _channel_agent = _agent
+            logger.info("orchestration_channel_agent_found", agent=_aid, channel=_channel_normalized)
+            break
 
-    # Pass 2: any agent with a provider (channel-agnostic)
+    # Get the LLM client from the channel agent (or fall back)
+    client = None
+    if _channel_agent:
+        try:
+            client = await _channel_agent.ensure_client()
+            _prov = getattr(getattr(_channel_agent, "config", None), "provider", None)
+            logger.info("orchestration_using_channel_agent", agent=_aid, provider=_prov, channel=_channel_normalized)
+        except Exception as _exc:
+            logger.warning("channel_agent_provider_unavailable", error=str(_exc))
+
     if not client:
+        # Fall back: any agent with a custom provider
         for _aid, _agent, _ in registry.list_agents(company_id):
             _provider = getattr(getattr(_agent, "config", None), "provider", None)
             if _provider:
                 try:
                     client = await _agent.ensure_client()
-                    logger.info("orchestration_using_agent_provider", agent=_aid, provider=_provider)
+                    logger.info("orchestration_using_fallback_provider_agent", agent=_aid, provider=_provider)
                     break
                 except Exception as _exc:
                     logger.warning("agent_provider_unavailable", agent=_aid, provider=_provider, error=str(_exc))
 
     if not client:
-        fallback = LLMFallbackProvider()
-        client = await fallback.get_client(company_id=company_id, system_prompt=None)
+        _fallback = LLMFallbackProvider()
+        client = await _fallback.get_client(company_id=company_id, system_prompt=None)
+        logger.info("orchestration_using_google_fallback", channel=_channel_normalized)
 
     if not client:
         raise RuntimeError("No LLM provider available for orchestration")
@@ -149,12 +155,20 @@ async def run_orchestration(
             except Exception as exc2:
                 logger.warning("could not convert agent to tool", role=role, error=str(exc2))
 
-    ceo_agent = await create_ceo_agent(
-        specialized_agents_tools=sub_agent_tools,
-        is_merchant=is_merchant,
-        company_id=company_id,
-        client=client,
-    )
+    if _channel_agent:
+        ceo_agent = await create_channel_agent(
+            channel_agent=_channel_agent,
+            specialized_agents_tools=sub_agent_tools,
+            company_id=company_id,
+            client=client,
+        )
+    else:
+        ceo_agent = await create_ceo_agent(
+            specialized_agents_tools=sub_agent_tools,
+            is_merchant=is_merchant,
+            company_id=company_id,
+            client=client,
+        )
 
     if previous_state:
         state_id, _state_data = previous_state

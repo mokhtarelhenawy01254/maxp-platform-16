@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>رحلة المسدج - WhatsApp & Facebook</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; padding: 24px; }
+
+  h1 { text-align: center; font-size: 1.5rem; color: #f0f4ff; margin-bottom: 8px; }
+  .subtitle { text-align: center; color: #64748b; font-size: 0.85rem; margin-bottom: 32px; }
+
+  .channels { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px; }
+
+  .channel-box { border-radius: 12px; padding: 16px; border: 1px solid; }
+  .wa { border-color: #25d366; background: rgba(37,211,102,0.05); }
+  .fb { border-color: #1877f2; background: rgba(24,119,242,0.05); }
+
+  .channel-header { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1rem; margin-bottom: 12px; }
+  .wa .channel-header { color: #25d366; }
+  .fb .channel-header { color: #1877f2; }
+
+  .step { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .wa .step-num { background: #25d366; color: #000; }
+  .fb .step-num { background: #1877f2; color: #fff; }
+
+  .step-content { flex: 1; }
+  .step-title { font-weight: 600; font-size: 0.85rem; color: #cbd5e1; }
+  .step-detail { font-size: 0.75rem; color: #64748b; margin-top: 2px; font-family: monospace; }
+
+  .arrow-down { text-align: center; font-size: 1.2rem; color: #475569; margin: 4px 0; }
+
+  .merge { text-align: center; margin-bottom: 20px; }
+  .merge-line { height: 1px; background: linear-gradient(90deg, #25d366, #1877f2); margin-bottom: 12px; }
+  .merge-label { display: inline-block; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 6px 16px; font-size: 0.8rem; color: #94a3b8; }
+
+  .pipeline { display: flex; flex-direction: column; gap: 0; }
+
+  .stage { display: flex; align-items: stretch; margin-bottom: 2px; }
+  .stage-icon { width: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+  .stage-body { flex: 1; background: #1e293b; border: 1px solid #2d3748; border-radius: 8px; padding: 12px 16px; }
+  .stage-name { font-weight: 700; font-size: 0.85rem; color: #e2e8f0; display: flex; align-items: center; gap: 8px; }
+  .stage-desc { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+  .stage-code { font-size: 0.7rem; font-family: monospace; color: #4ade80; margin-top: 4px; background: rgba(74,222,128,0.05); padding: 3px 6px; border-radius: 4px; display: inline-block; }
+
+  .connector { width: 40px; display: flex; align-items: center; justify-content: center; }
+  .connector::before { content: ''; display: block; width: 2px; height: 100%; background: #334155; margin: 0 auto; }
+  .connector-dot { text-align: center; font-size: 0.8rem; color: #475569; padding: 3px 0; }
+
+  .routing-box { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 16px; margin: 20px 0; }
+  .routing-title { font-weight: 700; font-size: 0.85rem; color: #a78bfa; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+
+  .pass { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+  .pass-badge { font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; margin-top: 2px; }
+  .pass-1 { background: #7c3aed; color: #fff; }
+  .pass-2 { background: #2563eb; color: #fff; }
+  .pass-fb { background: #ea580c; color: #fff; }
+  .pass-text { font-size: 0.78rem; color: #94a3b8; }
+  .pass-text strong { color: #e2e8f0; }
+  .pass-example { font-size: 0.7rem; font-family: monospace; color: #4ade80; display: block; margin-top: 3px; }
+
+  .result-box { margin-top: 20px; background: rgba(74,222,128,0.05); border: 1px solid #4ade80; border-radius: 10px; padding: 16px; }
+  .result-title { font-weight: 700; color: #4ade80; margin-bottom: 10px; font-size: 0.85rem; }
+  .result-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.78rem; }
+  .result-label { color: #64748b; }
+  .result-value { color: #e2e8f0; font-weight: 600; }
+  .ok { color: #4ade80; }
+  .na { color: #ef4444; }
+
+  .badge { display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+  .badge-g { background: #166534; color: #4ade80; }
+  .badge-d { background: #7c2d12; color: #fb923c; }
+
+  @media (max-width: 700px) {
+    .channels { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>رحلة المسدج في MaxP</h1>
+<p class="subtitle">من لحظة وصول الرسالة من العميل لحد ما الرد يرجعله</p>
+
+<!-- Two channels entry -->
+<div class="channels">
+
+  <!-- WhatsApp -->
+  <div class="channel-box wa">
+    <div class="channel-header">📱 WhatsApp</div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-title">رسالة واردة</div>
+        <div class="step-detail">Baileys (WebSocket) يستقبل الرسالة</div>
+      </div>
+    </div>
+    <div class="arrow-down">↓</div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-title">WhatsAppManager.js</div>
+        <div class="step-detail">messages.upsert event handler</div>
+      </div>
+    </div>
+    <div class="arrow-down">↓</div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-title">حفظ في الـ DB</div>
+        <div class="step-detail">conversation + message + customer</div>
+      </div>
+    </div>
+    <div class="arrow-down">↓</div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-title">Gate Check</div>
+        <div class="step-detail">aiSetting.autoReplyEnabled == true?</div>
+      </div>
+    </div>
+    <div class="arrow-down">↓</div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-title">aiSdkClient.sendChatMessage</div>
+        <div class="step-detail">channel: 'WHATSAPP'</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Facebook -->
+  <div class="channel-box fb">
+    <div class="channel-header">💬 Facebook Messenger</div>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-title">Webhook من Meta</div>
+        <div class="step-detail">POST /api/v1/facebook/webhook</div>
+      </div>
+    </div>
+    <div class="arrow-down">↓</div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-title">BullMQ Queue</div>
+        <div class="step-detail">job: 'facebook-message' → Redis</div>
+      </div>
+    </div>
+    <div class="arrow-down">↓</div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-title">webhookWorker.js</div>
+        <div class="step-detail">handleFacebookMessage() ← allFunctions.js</div>
+      </div>
+    </div>
+    <div class="arrow-down">↓</div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-title">Gate Check</div>
+        <div class="step-detail">autoReplyEnabled? workingHours?</div>
+      </div>
+    </div>
+    <div class="arrow-down">↓</div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-title">aiSdkClient.sendChatMessage</div>
+        <div class="step-detail">channel: 'FACEBOOK'</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Merge point -->
+<div class="merge">
+  <div class="merge-line"></div>
+  <div class="merge-label">↓ كلاهما يوصلوا لـ POST http://localhost:8000/chat ↓</div>
+</div>
+
+<!-- AI Service Pipeline -->
+<div style="background:#111827; border:1px solid #1e293b; border-radius:12px; padding:20px; margin-bottom:20px;">
+  <div style="font-weight:700; color:#a78bfa; margin-bottom:16px; font-size:0.95rem;">⚡ ai-service Pipeline (port 8000)</div>
+
+  <div class="pipeline">
+
+    <div class="stage">
+      <div class="stage-icon">🔀</div>
+      <div class="stage-body">
+        <div class="stage-name">Channel Routing <span class="badge badge-g">orchestration_flow.py</span></div>
+        <div class="stage-desc">بيحدد الـ CEO LLM Client حسب الـ channel</div>
+      </div>
+    </div>
+
+    <!-- routing box -->
+    <div style="padding-right: 40px;">
+      <div class="routing-box">
+        <div class="routing-title">🎯 منطق اختيار الـ Agent</div>
+
+        <div class="pass">
+          <span class="pass-badge pass-1">Pass 1</span>
+          <div class="pass-text">
+            <strong>Agent بـ provider + channel متطابق</strong><br>
+            لو عباس (provider=DEEPSEEK) معاه channel=WHATSAPP
+            <span class="pass-example">→ CEO يشتغل بـ DeepSeek</span>
+          </div>
+        </div>
+
+        <div class="pass">
+          <span class="pass-badge pass-2">Pass 2</span>
+          <div class="pass-text">
+            <strong>أي agent عنده provider</strong><br>
+            channel مش مهم - أي agent بـ custom provider
+            <span class="pass-example">→ CEO يشتغل بـ provider الـ agent ده</span>
+          </div>
+        </div>
+
+        <div class="pass">
+          <span class="pass-badge pass-fb">Fallback</span>
+          <div class="pass-text">
+            <strong>مفيش agents بـ provider → Google</strong><br>
+            LLMFallbackProvider → gemini-2.5-flash
+            <span class="pass-example">→ CEO يشتغل بـ Google (الحال دلوقتي لـ Wofod)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-icon">🧠</div>
+      <div class="stage-body">
+        <div class="stage-name">resolve_intent</div>
+        <div class="stage-desc">تصنيف نية العميل: سؤال؟ طلب؟ شكوى؟</div>
+        <div class="stage-code">Google Gemini دايماً (مش بيتأثر بالـ provider)</div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-icon">🔧</div>
+      <div class="stage-body">
+        <div class="stage-name">route_to_tools</div>
+        <div class="stage-desc">CEO يقرر يستخدم أنهي أداة أو specialist</div>
+        <div class="stage-code">CEO (بالـ provider المختار) + A2A tools للـ sub-agents</div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-icon">⚙️</div>
+      <div class="stage-body">
+        <div class="stage-name">execute_tools</div>
+        <div class="stage-desc">تنفيذ الأدوات: product_search, inventory_check, order_lookup…</div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-icon">🛡️</div>
+      <div class="stage-body">
+        <div class="stage-name">handle_fallback</div>
+        <div class="stage-desc">لو الأدوات فشلت يرد بدونها</div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-icon">✅</div>
+      <div class="stage-body">
+        <div class="stage-name">validate_reply</div>
+        <div class="stage-desc">مراجعة الرد النهائي قبل إرساله</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Sub-agents for Wofod -->
+<div style="background:#111827; border:1px solid #1e293b; border-radius:12px; padding:20px; margin-bottom:20px;">
+  <div style="font-weight:700; color:#f59e0b; margin-bottom:14px; font-size:0.9rem;">🤝 Sub-Agents لشركة Wofod</div>
+  <div style="font-size:0.75rem; color:#64748b; margin-bottom:12px;">CEO بيفوض المهام للـ sub-agents حسب طبيعة السؤال</div>
+
+  <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
+    <div style="background:#1e293b; border-radius:8px; padding:12px; border:1px solid #2d3748;">
+      <div style="font-size:0.7rem; font-weight:700; color:#4ade80; margin-bottom:4px;">SUPPORT</div>
+      <div style="font-size:0.8rem; font-weight:600;">Customer CEO Agent</div>
+      <div style="font-size:0.68rem; color:#64748b; margin-top:4px;">dashboard, whatsapp, messenger</div>
+    </div>
+    <div style="background:#1e293b; border-radius:8px; padding:12px; border:1px solid #1877f2;">
+      <div style="font-size:0.7rem; font-weight:700; color:#60a5fa; margin-bottom:4px;">FACEBOOK_SALES_SUPPORT</div>
+      <div style="font-size:0.8rem; font-weight:600;">Wofod Facebook Agent</div>
+      <div style="font-size:0.68rem; color:#64748b; margin-top:4px;">facebook, messenger</div>
+    </div>
+    <div style="background:#1e293b; border-radius:8px; padding:12px; border:1px solid #2d3748;">
+      <div style="font-size:0.7rem; font-weight:700; color:#a78bfa; margin-bottom:4px;">INVENTORY</div>
+      <div style="font-size:0.8rem; font-weight:600;">Inventory & Pricing Agent</div>
+      <div style="font-size:0.68rem; color:#64748b; margin-top:4px;">dashboard</div>
+    </div>
+  </div>
+
+  <div style="margin-top:12px; padding:10px; background:rgba(24,119,242,0.08); border:1px solid rgba(24,119,242,0.3); border-radius:8px; font-size:0.75rem; color:#93c5fd;">
+    💡 لما channel=facebook → الـ CEO بيستخدم <strong>Wofod Facebook Agent</strong> كـ A2A specialist tool
+  </div>
+</div>
+
+<!-- Final result -->
+<div class="result-box">
+  <div class="result-title">📊 نتيجة الاختبار على السيرفر</div>
+
+  <div class="result-row">
+    <span class="result-label">channel=facebook → رد الـ AI</span>
+    <span class="result-value ok">✅ 200 OK - جاب منتجات حقيقية</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Sub-agent المسؤول عن facebook</span>
+    <span class="result-value">Wofod Facebook Agent (FACEBOOK_SALES_SUPPORT)</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">CEO LLM (Wofod مفيش provider محدد)</span>
+    <span class="result-value"><span class="badge badge-g">Google gemini-2.5-flash</span></span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">لو تضيف provider للـ Facebook Agent</span>
+    <span class="result-value"><span class="badge badge-d">DeepSeek مثلاً</span> → Pass 1 يضرب</span>
+  </div>
+</div>
+
+</body>
+</html>
