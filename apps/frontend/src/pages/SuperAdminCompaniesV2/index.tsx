@@ -311,6 +311,18 @@ function FollowUpFormContent({
 // ===== MAIN PAGE =====
 export default function SuperAdminCompaniesV2() {
   const navigate = useNavigate();
+
+  // Filter & Sort state — MUST be before useCompanies
+  const [search, setSearch] = useState("");
+  const [savedView, setSavedView] = useState("ALL");
+  const [status, setStatus] = useState("ALL");
+  const [plan, setPlan] = useState("ALL");
+  const [sort, setSort] = useState(DEFAULT_SORT);
+  const [rowsPerPage, setRowsPerPage] = useState("10");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
+
   const { companies, isLoading, isFetching, error: pageError, admin, refetch, total, totalPages, meta } = useCompanies({
     search,
     status,
@@ -323,17 +335,6 @@ export default function SuperAdminCompaniesV2() {
   const { bulkStatus, bulkDelete } = useBulkMutations();
   const { createCompany, editCompany } = useCompanyMutations();
   const facebookLookup = useFacebookLookup();
-
-  // Filter & Sort state — MUST be before useCompanies
-  const [search, setSearch] = useState("");
-  const [savedView, setSavedView] = useState("ALL");
-  const [status, setStatus] = useState("ALL");
-  const [plan, setPlan] = useState("ALL");
-  const [sort, setSort] = useState(DEFAULT_SORT);
-  const [rowsPerPage, setRowsPerPage] = useState("10");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [filterOpen, setFilterOpen] = useState(false);
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   useEffect(() => {
