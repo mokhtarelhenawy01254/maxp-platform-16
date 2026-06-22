@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import CompetitorStatusBar from '../CompetitorStatusBar';
 
 jest.mock('react-i18next', () => ({
@@ -22,32 +22,42 @@ jest.mock('../../../i18n', () => ({
 }));
 
 describe('CompetitorStatusBar', () => {
-  it('renders all three status options', () => {
+  it('shows only the current status badge', () => {
     render(<CompetitorStatusBar currentStatus="NEW" />);
     expect(screen.getByText('جديد')).toBeInTheDocument();
-    expect(screen.getByText('متابعة')).toBeInTheDocument();
-    expect(screen.getByText('منتهي')).toBeInTheDocument();
+    expect(screen.queryByText('متابعة')).not.toBeInTheDocument();
+    expect(screen.queryByText('منتهي')).not.toBeInTheDocument();
   });
 
-  it('highlights the active status', () => {
+  it('opens dropdown with all three options when clicked', async () => {
     render(<CompetitorStatusBar currentStatus="NEW" />);
-    const newButton = screen.getByText('جديد').closest('button');
-    const followingButton = screen.getByText('متابعة').closest('button');
-    expect(newButton).toBeDisabled();
-    expect(followingButton).not.toBeDisabled();
+    fireEvent.click(screen.getByText('جديد'));
+    await waitFor(() => {
+      expect(screen.getByText('متابعة')).toBeInTheDocument();
+      expect(screen.getByText('منتهي')).toBeInTheDocument();
+    });
   });
 
-  it('calls onChange when clicking a non-active status', () => {
+  it('calls onChange when selecting a different status', async () => {
     const onChange = jest.fn();
     render(<CompetitorStatusBar currentStatus="NEW" onChange={onChange} />);
+    fireEvent.click(screen.getByText('جديد'));
+    await waitFor(() => {
+      expect(screen.getByText('متابعة')).toBeInTheDocument();
+    });
     fireEvent.click(screen.getByText('متابعة'));
     expect(onChange).toHaveBeenCalledWith('FOLLOWING');
   });
 
-  it('does not call onChange when clicking the active status', () => {
+  it('does not call onChange when clicking the active status in dropdown', async () => {
     const onChange = jest.fn();
     render(<CompetitorStatusBar currentStatus="NEW" onChange={onChange} />);
     fireEvent.click(screen.getByText('جديد'));
+    await waitFor(() => {
+      const items = screen.getAllByText('جديد');
+      const dropdownItem = items[1];
+      expect(dropdownItem).toBeInTheDocument();
+    });
     expect(onChange).not.toHaveBeenCalled();
   });
 

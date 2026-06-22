@@ -1,5 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import i18n from '../../i18n';
 
 export const COMPETITOR_STATUSES = ['NEW', 'FOLLOWING', 'COMPLETED'] as const;
@@ -15,43 +22,47 @@ interface CompetitorStatusBarProps {
 }
 
 const statusConfig: Record<CompetitorStatus, {
-  activeBg: string;
-  activeText: string;
-  inactiveBg: string;
-  inactiveText: string;
+  bg: string;
+  text: string;
+  dotColor: string;
   hoverBg: string;
-  indicatorColor: string;
 }> = {
   NEW: {
-    activeBg: 'bg-blue-600 dark:bg-blue-500',
-    activeText: 'text-white',
-    inactiveBg: 'bg-blue-50 dark:bg-blue-900/20',
-    inactiveText: 'text-blue-700 dark:text-blue-300',
-    hoverBg: 'hover:bg-blue-100 dark:hover:bg-blue-900/30',
-    indicatorColor: 'bg-blue-500',
+    bg: 'bg-blue-600 dark:bg-blue-500',
+    text: 'text-white',
+    dotColor: 'bg-blue-400',
+    hoverBg: 'hover:bg-blue-700 dark:hover:bg-blue-600',
   },
   FOLLOWING: {
-    activeBg: 'bg-amber-500 dark:bg-amber-400',
-    activeText: 'text-white',
-    inactiveBg: 'bg-amber-50 dark:bg-amber-900/20',
-    inactiveText: 'text-amber-700 dark:text-amber-300',
-    hoverBg: 'hover:bg-amber-100 dark:hover:bg-amber-900/30',
-    indicatorColor: 'bg-amber-500',
+    bg: 'bg-amber-500 dark:bg-amber-400',
+    text: 'text-white',
+    dotColor: 'bg-amber-300',
+    hoverBg: 'hover:bg-amber-600 dark:hover:bg-amber-500',
   },
   COMPLETED: {
-    activeBg: 'bg-emerald-600 dark:bg-emerald-500',
-    activeText: 'text-white',
-    inactiveBg: 'bg-emerald-50 dark:bg-emerald-900/20',
-    inactiveText: 'text-emerald-700 dark:text-emerald-300',
-    hoverBg: 'hover:bg-emerald-100 dark:hover:bg-emerald-900/30',
-    indicatorColor: 'bg-emerald-500',
+    bg: 'bg-emerald-600 dark:bg-emerald-500',
+    text: 'text-white',
+    dotColor: 'bg-emerald-400',
+    hoverBg: 'hover:bg-emerald-700 dark:hover:bg-emerald-600',
   },
 };
 
 const sizeClasses = {
-  sm: 'text-[10px] px-2 py-1 gap-1',
-  md: 'text-xs px-3 py-1.5 gap-1.5',
-  lg: 'text-sm px-4 py-2 gap-2',
+  sm: 'text-[11px] px-2 py-0.5 gap-1',
+  md: 'text-sm px-3 py-1 gap-1.5',
+  lg: 'text-base px-4 py-1.5 gap-2',
+};
+
+const dotSizes = {
+  sm: 'w-1.5 h-1.5',
+  md: 'w-2 h-2',
+  lg: 'w-2.5 h-2.5',
+};
+
+const chevronSizes = {
+  sm: 12,
+  md: 14,
+  lg: 16,
 };
 
 function CompetitorStatusBar({
@@ -64,6 +75,7 @@ function CompetitorStatusBar({
 }: CompetitorStatusBarProps) {
   const { t } = useTranslation();
   const isRtl = i18n.dir() === 'rtl';
+  const config = statusConfig[currentStatus];
 
   const handleChange = (status: CompetitorStatus) => {
     if (disabled || loading || status === currentStatus) return;
@@ -71,53 +83,47 @@ function CompetitorStatusBar({
   };
 
   return (
-    <div
-      className={`inline-flex ${isRtl ? 'flex-row' : 'flex-row'} rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 divide-x divide-gray-200 dark:divide-gray-700 ${
-        disabled ? 'opacity-60 cursor-not-allowed' : ''
-      }`}
-      dir={isRtl ? 'rtl' : 'ltr'}
-    >
-      {COMPETITOR_STATUSES.map((status, index) => {
-        const config = statusConfig[status];
-        const isActive = status === currentStatus;
-        const isFirst = index === 0;
-        const isLast = index === COMPETITOR_STATUSES.length - 1;
-
-        return (
-          <button
-            key={status}
-            onClick={() => handleChange(status)}
-            disabled={disabled || loading || isActive}
-            className={`
-              relative ${sizeClasses[size]} font-medium
-              transition-all duration-300 ease-in-out
-              flex items-center justify-center gap-1.5
-              focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-blue-400
-              ${isFirst ? (isRtl ? 'rounded-r-lg' : 'rounded-l-lg') : ''}
-              ${isLast ? (isRtl ? 'rounded-l-lg' : 'rounded-r-lg') : ''}
-              ${
-                isActive
-                  ? `${config.activeBg} ${config.activeText} shadow-sm cursor-default`
-                  : `${config.inactiveBg} ${config.inactiveText} ${config.hoverBg} cursor-pointer`
-              }
-              ${loading && isActive ? 'animate-pulse' : ''}
-            `}
-            title={t(`competitors.statuses.${status}`)}
-          >
-            {loading && isActive && (
-              <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-ping" />
-            )}
-            {!loading && isActive && (
-              <span className={`w-1.5 h-1.5 rounded-full ${config.indicatorColor} bg-opacity-70`} />
-            )}
-            <span>{t(`competitors.statuses.${status}`)}</span>
-            {isActive && (
-              <span className="absolute inset-0 ring-1 ring-inset ring-white/20 rounded-[inherit]" />
-            )}
-          </button>
-        );
-      })}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild disabled={disabled || loading}>
+        <button
+          className={`
+            inline-flex items-center ${sizeClasses[size]} rounded-full font-medium
+            transition-all duration-200 ease-in-out
+            ${config.bg} ${config.text}
+            ${config.hoverBg}
+            ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
+            ${loading ? 'animate-pulse' : ''}
+            focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-blue-400
+            shadow-sm
+          `}
+          dir={isRtl ? 'rtl' : 'ltr'}
+        >
+          <span className={`${dotSizes[size]} rounded-full ${config.dotColor} shrink-0`} />
+          <span>{t(`competitors.statuses.${currentStatus}`)}</span>
+          <ChevronDown size={chevronSizes[size]} className="shrink-0 opacity-70" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align={isRtl ? 'start' : 'end'} sideOffset={4}>
+        {COMPETITOR_STATUSES.map((status) => {
+          const cfg = statusConfig[status];
+          const isActive = status === currentStatus;
+          return (
+            <DropdownMenuItem
+              key={status}
+              onClick={() => handleChange(status)}
+              disabled={isActive || disabled || loading}
+              className={isActive ? 'opacity-60' : ''}
+            >
+              <span className={`w-2 h-2 rounded-full ${cfg.dotColor} shrink-0`} />
+              <span className="flex-1">{t(`competitors.statuses.${status}`)}</span>
+              {isActive && (
+                <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40 ml-auto rtl:mr-auto rtl:ml-0" />
+              )}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
