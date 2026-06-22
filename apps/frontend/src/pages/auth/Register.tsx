@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Lock, Mail, Phone, User, Eye, EyeOff, Globe2, Briefcase, ChevronDown, Check } from "lucide-react";
+import { Building2, Lock, Mail, Phone, User, Eye, EyeOff, Globe2, Briefcase, ChevronDown, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuthSimple";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
@@ -160,6 +160,7 @@ const copyByLanguage = {
     visualTitle: <>قُد أعمالك <br /> نحو <span style={{ color: "var(--auth-accent)" }}>المستقبل</span></>,
     labels: {
       fullName: "الاسم بالكامل",
+      companyName: "اسم الشركة",
       email: "البريد الإلكتروني",
       phone: "رقم الهاتف (اختياري)",
       password: "كلمة المرور",
@@ -168,11 +169,13 @@ const copyByLanguage = {
     businessTypePlaceholder: "اختر نوع نشاطك التجاري",
     placeholders: {
       fullName: "أحمد محمد",
+      companyName: "مؤسسة الأمل للتجارة",
       email: "name@company.com",
       phone: "01xxxxxxxxx",
     },
     errors: {
       fullName: "اكتب اسمك بالكامل",
+      companyName: "اسم الشركة مطلوب",
       email: "البريد الإلكتروني مطلوب",
       password: "كلمة المرور مطلوبة",
       phone: "رقم الهاتف غير صحيح (01xxxxxxxxx)",
@@ -189,6 +192,7 @@ const copyByLanguage = {
     visualTitle: <>Run your business <br /> with a <span style={{ color: "var(--auth-accent)" }}>focused toolkit</span></>,
     labels: {
       fullName: "Full name",
+      companyName: "Company name",
       email: "Email",
       phone: "Phone (optional)",
       password: "Password",
@@ -197,11 +201,13 @@ const copyByLanguage = {
     businessTypePlaceholder: "Select your business type",
     placeholders: {
       fullName: "Ahmed Mohamed",
+      companyName: "Al Amal Trading Est.",
       email: "name@company.com",
       phone: "01xxxxxxxxx",
     },
     errors: {
       fullName: "Enter your full name",
+      companyName: "Company name is required",
       email: "Email is required",
       password: "Password is required",
       phone: "Invalid Egyptian phone number (01xxxxxxxxx)",
@@ -245,6 +251,7 @@ const Register: React.FC = () => {
 
   const [formData, setFormData] = useState({
     fullName: "",
+    companyName: "",
     email: "",
     password: "",
     phone: "",
@@ -273,6 +280,7 @@ const Register: React.FC = () => {
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
     if (!formData.fullName.trim()) errors.fullName = copy.errors.fullName;
+    if (!formData.companyName.trim()) errors.companyName = copy.errors.companyName;
     if (!formData.email.trim()) errors.email = copy.errors.email;
     if (!formData.password) errors.password = copy.errors.password;
     if (formData.phone) {
@@ -298,6 +306,7 @@ const Register: React.FC = () => {
       const userData = await registerUser({
         firstName,
         lastName,
+        companyName: formData.companyName,
         email: formData.email,
         password: formData.password,
         phone: formData.phone || undefined,
@@ -381,6 +390,15 @@ const Register: React.FC = () => {
             <User className="elite-input-icon" />
           </div>
           {fieldErrors.fullName && <p className="elite-field-error">{fieldErrors.fullName}</p>}
+        </div>
+
+        <div className="elite-input-group">
+          <label className="elite-label">{copy.labels.companyName}</label>
+          <div className="elite-input-wrapper">
+            <input name="companyName" type="text" value={formData.companyName} onChange={handleChange} required className={`elite-input ${fieldErrors.companyName ? "elite-input-error" : ""}`} placeholder={copy.placeholders.companyName} disabled={isLoading} />
+            <Building2 className="elite-input-icon" />
+          </div>
+          {fieldErrors.companyName && <p className="elite-field-error">{fieldErrors.companyName}</p>}
         </div>
 
         <div className="elite-input-group">

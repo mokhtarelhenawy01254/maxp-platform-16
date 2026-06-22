@@ -6,6 +6,7 @@
 const { getSharedPrismaClient, executeWithRetry } = require('../../services/sharedDatabase');
 const socketService = require('../../services/socketService');
 const MessageHealthChecker = require('../../utils/messageHealthChecker');
+const { getMetaGraphApiVersion } = require('../../config/metaApi');
 const { conversationCache } = require('../../utils/cachingUtils');
 const { isPermissionError, getPermissionErrorMessage } = require('../../utils/dbPermissionHelper');
 const { proxyCustomerAvatarUrl } = require('../../utils/facebookMediaProxy');
@@ -739,7 +740,7 @@ const markConversationAsRead = async (req, res) => {
                 if (customer?.instagramId) {
                   const axios = require('axios');
                   await axios.post(
-                    `https://graph.facebook.com/v22.0/${igPage.instagramAccountId}/messages`,
+                    `https://graph.facebook.com/${getMetaGraphApiVersion()}/${igPage.instagramAccountId}/messages`,
                     {
                       recipient: { id: customer.instagramId },
                       sender_action: 'mark_seen',
@@ -1158,7 +1159,7 @@ const sendInstagramTypingIndicator = async (req, res) => {
 
         const axios = require('axios');
         await axios.post(
-            `https://graph.facebook.com/v22.0/${igPage.instagramAccountId}/messages`,
+            `https://graph.facebook.com/${getMetaGraphApiVersion()}/${igPage.instagramAccountId}/messages`,
             {
                 recipient: { id: customer.instagramId },
                 sender_action: action,

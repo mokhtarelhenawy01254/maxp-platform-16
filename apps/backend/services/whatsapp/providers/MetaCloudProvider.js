@@ -5,8 +5,7 @@
 
 const axios = require('axios');
 const { getSharedPrismaClient } = require('../../sharedDatabase');
-
-const DEFAULT_GRAPH_VERSION = process.env.META_GRAPH_API_VERSION || 'v21.0';
+const { getMetaGraphApiVersion } = require('../../../config/metaApi');
 
 async function getSession(sessionId) {
   return await getSharedPrismaClient().whatsAppSession.findUnique({
@@ -15,20 +14,20 @@ async function getSession(sessionId) {
 }
 
 function resolveBaseConfig(session) {
-  const apiVersion = session?.metaApiVersion || process.env.META_GRAPH_API_VERSION || DEFAULT_GRAPH_VERSION;
-  const accessToken = session?.metaAccessToken || process.env.META_WA_ACCESS_TOKEN;
+  const apiVersion = session?.metaApiVersion || getMetaGraphApiVersion();
+  const accessToken = session?.metaAccessToken;
   if (!accessToken) {
-    throw new Error('Missing Meta Cloud access token');
+    throw new Error('Missing Meta Cloud access token for session');
   }
   return { apiVersion, accessToken };
 }
 
 function resolveConfig(session) {
   const base = resolveBaseConfig(session);
-  const phoneNumberId = session?.metaPhoneNumberId || process.env.META_WA_PHONE_NUMBER_ID;
+  const phoneNumberId = session?.metaPhoneNumberId;
 
   if (!phoneNumberId) {
-    throw new Error('Missing Meta Cloud phone number ID');
+    throw new Error('Missing Meta Cloud phone number ID for session');
   }
 
   return { ...base, phoneNumberId };
@@ -65,9 +64,9 @@ async function listTemplates(sessionId) {
   }
 
   const { apiVersion, accessToken } = resolveBaseConfig(session);
-  const wabaId = session?.metaWabaId || process.env.META_WA_WABA_ID;
+  const wabaId = session?.metaWabaId;
   if (!wabaId) {
-    throw new Error('Missing Meta WABA ID');
+    throw new Error('Missing Meta WABA ID for session');
   }
 
   const url = `https://graph.facebook.com/${apiVersion}/${wabaId}/message_templates`;

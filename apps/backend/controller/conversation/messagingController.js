@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const { getSharedPrismaClient, executeWithRetry } = require('../../services/sharedDatabase');
 const { processImage, isProcessableImage } = require('../../utils/imageProcessor');
+const { getMetaGraphApiVersion } = require('../../config/metaApi');
 const socketService = require('../../services/socketService');
 const path = require('path');
 const telegramBotService = require('../../services/TelegramBotService');
@@ -476,7 +477,7 @@ const postMessageConverstation = async (req, res) => {
 
           if (igPage?.pageAccessToken && igPage?.instagramAccountId) {
             const axios = require('axios');
-            const IG_GRAPH_API = `https://graph.facebook.com/v22.0/${igPage.instagramAccountId}/messages`;
+            const IG_GRAPH_API = `https://graph.facebook.com/${getMetaGraphApiVersion()}/${igPage.instagramAccountId}/messages`;
             const igResponse = await axios.post(IG_GRAPH_API, {
               recipient: { id: recipientInstagramId },
               message: { text: message },

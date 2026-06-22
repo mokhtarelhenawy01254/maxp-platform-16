@@ -2,8 +2,9 @@ const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
 const { getSharedPrismaClient } = require('./sharedDatabase');
 const { getPageToken } = require('../controller/conversation/conversationShared');
+const { getMetaGraphApiVersion } = require('../config/metaApi');
 
-const FACEBOOK_GRAPH_VERSION = 'v18.0';
+const FACEBOOK_GRAPH_VERSION = getMetaGraphApiVersion();
 const MAX_LIST_LIMIT = 100;
 const MAX_PULL_LIMIT = 20;
 

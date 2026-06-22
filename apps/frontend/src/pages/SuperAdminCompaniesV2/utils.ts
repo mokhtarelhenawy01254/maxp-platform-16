@@ -146,7 +146,22 @@ export function enrichCompanies(companies: Company[], currentAdminId: string | n
   });
 }
 
-export function computeQuickStats(companies: Company[]): QuickStats {
+export function computeQuickStats(companies: Company[], serverStats?: QuickStats | null): QuickStats {
+  // Prefer server-provided stats when available — the API already counts against
+  // the full database, not just the currently paginated slice.
+  if (serverStats) {
+    return {
+      totalCompanies: serverStats.totalCompanies,
+      activeCompanies: serverStats.activeCompanies,
+      enterpriseCompanies: serverStats.enterpriseCompanies ?? companies.filter((c) => c.plan === "ENTERPRISE").length,
+      connectedFacebookPages: serverStats.connectedFacebookPages ?? companies.reduce((s, c) => s + getCount(c, "facebookPages"), 0),
+      followUpNow: serverStats.followUpNow,
+      escalationDue: serverStats.escalationDue,
+      urgentEscalationDue: serverStats.urgentEscalationDue,
+      stale72h: serverStats.stale72h,
+      myDueToday: serverStats.myDueToday,
+    };
+  }
   const activeCompanies = companies.filter((c) => c.isActive).length;
   const enterpriseCompanies = companies.filter((c) => c.plan === "ENTERPRISE").length;
   const connectedFacebookPages = companies.reduce((s, c) => s + getCount(c, "facebookPages"), 0);

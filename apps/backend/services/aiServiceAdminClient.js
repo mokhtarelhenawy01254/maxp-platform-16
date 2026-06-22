@@ -144,17 +144,6 @@ function normalizeAgentPayload(data = {}) {
   }, {});
 }
 
-/**
- * Test a provider API key via Python ai-service.
- * @param {Object} params
- * @param {string} params.provider
- * @param {string} params.apiKey
- * @param {string} [params.model]
- * @param {Array} [params.messages] - Optional pre-constructed messages for chat test
- * @param {string} [params.prompt] - Optional single prompt for completion test
- * @param {number} [params.timeoutMs]
- * @returns {Promise<{ok: boolean, reply: string, latency_ms: number, model: string, provider: string}>}
- */
 async function spawnAgent({ companyId, role, ...rest }) {
   return request('POST', '/admin/agents/spawn', normalizeAgentPayload({ companyId, role, ...rest }));
 }
@@ -168,6 +157,17 @@ async function updateAgentStatus(agentId, status) {
   return request('PATCH', `/admin/agents/${encodeURIComponent(agentId)}/status`, { status });
 }
 
+/**
+ * Test a provider API key via Python ai-service.
+ * @param {Object} params
+ * @param {string} params.provider
+ * @param {string} params.apiKey
+ * @param {string} [params.model]
+ * @param {Array} [params.messages] - Optional pre-constructed messages for chat test
+ * @param {string} [params.prompt] - Optional single prompt for completion test
+ * @param {number} [params.timeoutMs]
+ * @returns {Promise<{ok: boolean, reply: string, latency_ms: number, model: string, provider: string}>}
+ */
 async function testProviderKey({ provider, apiKey, model, messages, prompt, timeoutMs }) {
   const body = { provider, api_key: apiKey };
   if (model) body.model = model;

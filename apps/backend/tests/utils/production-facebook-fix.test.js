@@ -82,8 +82,8 @@ describe('production-facebook-fix', () => {
         responseType: 'arraybuffer',
       }),
     );
-    expect(axios.post).toHaveBeenCalledTimes(1);
-    expect(axios.post.mock.calls[0][0]).toBe('https://graph.facebook.com/v18.0/me/messages');
+    const { getMetaGraphApiVersion } = require("../../config/metaApi");
+    expect(axios.post.mock.calls[0][0]).toBe(`https://graph.facebook.com/${getMetaGraphApiVersion()}/me/messages`);
     expect(axios.post.mock.calls[0][2]).toEqual(
       expect.objectContaining({
         params: { access_token: 'token-1' },

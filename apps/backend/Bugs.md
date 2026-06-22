@@ -13,6 +13,25 @@
   - `apps/frontend/src/locales/ar/sections/whatsappSettings.json`
   - `apps/frontend/src/locales/en/sections/whatsappSettings.json`
 
+## [2026-06-22] Meta Graph API Upgrade to v25.0
+
+- **Change**: Upgraded all Meta Graph API calls (WhatsApp Cloud API, Facebook Messenger, and Instagram Graph API) to the latest version `v25.0`, eliminating hardcoded older versions (v18.0, v21.0, v22.0) and allowing configuration via the `META_GRAPH_API_VERSION` environment variable (defaulting to v25.0).
+- **Rationale**: Keeps the platform integrated with Meta's latest features and security updates while remaining flexible to downgrade to any version by changing environment variables.
+- **Affected Files**:
+  - `apps/backend/config/metaApi.js`
+  - `apps/backend/.env.example`
+  - `apps/backend/controller/conversation/facebookSyncController.js`
+  - `apps/backend/controller/conversation/messagingController.js`
+  - `apps/backend/controller/conversation/conversationCrudController.js`
+  - `apps/backend/controller/customerController.js`
+  - `apps/backend/controller/facebookIntegration.js`
+  - `apps/backend/controller/pageEngagementController.js`
+  - `apps/backend/controller/proxyImageController.js`
+  - `apps/backend/controller/facebookPublishController.js`
+  - `apps/backend/services/agentInboxFacebookService.js`
+  - `apps/ai-service/src/tools/whatsapp_client.py`
+  - `apps/ai-service/src/tools/facebook_client.py`
+
 ## [2026-06-15] SuperAdmin route chunk — Two TDZ crash fixes (ReferenceError: Cannot access 'ea')
 
 - **Bug/Issue**: `route-super-admin` chunk threw `ReferenceError: Cannot access 'ea' before initialization` in the browser console, crashing the entire app on load.

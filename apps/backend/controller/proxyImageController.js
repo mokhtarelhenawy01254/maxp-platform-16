@@ -1,9 +1,8 @@
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
 const sharp = require("sharp");
+const { getMetaGraphApiVersion } = require("../config/metaApi");
 
-const FACEBOOK_GRAPH_API_VERSION = "v18.0";
-const META_CLOUD_GRAPH_API_VERSION =
-  process.env.META_GRAPH_API_VERSION || "v17.0";
+const FACEBOOK_GRAPH_API_VERSION = getMetaGraphApiVersion();
 const META_GRAPH_API_BASE_URL = (
   process.env.META_GRAPH_API_BASE_URL || "https://graph.facebook.com"
 ).replace(/\/$/, "");
@@ -350,7 +349,7 @@ const getStoredMessageMediaUrl = (message) => {
 };
 
 const resolveWhatsAppMetaMediaConfig = (session) => {
-  const accessToken = session?.metaAccessToken || process.env.META_WA_ACCESS_TOKEN;
+  const accessToken = session?.metaAccessToken;
   if (!accessToken) {
     return null;
   }
@@ -359,8 +358,7 @@ const resolveWhatsAppMetaMediaConfig = (session) => {
     accessToken,
     apiVersion:
       session?.metaApiVersion ||
-      process.env.META_GRAPH_API_VERSION ||
-      META_CLOUD_GRAPH_API_VERSION,
+      getMetaGraphApiVersion(),
   };
 };
 

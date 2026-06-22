@@ -1,8 +1,10 @@
 const axios = require('axios');
 
+const { getMetaGraphApiVersion } = require('../config/metaApi');
+
 class PostDetailsService {
   constructor() {
-    this.graphApiBaseUrl = 'https://graph.facebook.com/v18.0';
+    this.graphApiBaseUrl = `https://graph.facebook.com/${getMetaGraphApiVersion()}`;
   }
 
   /**

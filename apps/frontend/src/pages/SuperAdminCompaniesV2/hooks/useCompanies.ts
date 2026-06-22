@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tansta
 import { apiClient } from "../../../services/apiClient";
 import { toast } from "sonner";
 import { extractErrorMessage, enrichCompanies } from "../utils";
-import type { Company, FacebookPageResult, FollowUpOwner, CompanyUser } from "../types";
+import type { Company, FacebookPageResult, FollowUpOwner, CompanyUser, QuickStats } from "../types";
 
 export function useAdmin() {
   let user = null;
@@ -65,6 +65,7 @@ export function useCompanies(params: CompaniesQueryParams = {}) {
     currentPage: query.data?.page || 1,
     currentPageSize: query.data?.pageSize || 20,
     meta: query.data?.meta || null,
+    serverStats: (query.data?.meta?.stats || null) as QuickStats | null,
     admin,
   };
 }

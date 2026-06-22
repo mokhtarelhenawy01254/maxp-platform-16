@@ -75,9 +75,12 @@ describe("facebookPageTokenUtils", () => {
 
     getSharedPrismaClient.mockReturnValue(mockPrisma);
 
+    const { getMetaGraphApiVersion } = require("../../config/metaApi");
+    const apiVer = getMetaGraphApiVersion();
+
     axios.get.mockImplementation((url, config = {}) => {
       if (
-        url === "https://graph.facebook.com/v18.0/me" &&
+        url === `https://graph.facebook.com/${apiVer}/me` &&
         config.params?.access_token === "stale-page-token"
       ) {
         return Promise.reject({
@@ -93,7 +96,7 @@ describe("facebookPageTokenUtils", () => {
         });
       }
 
-      if (url.startsWith("https://graph.facebook.com/v18.0/me/accounts")) {
+      if (url.startsWith(`https://graph.facebook.com/${apiVer}/me/accounts`)) {
         return Promise.resolve({
           data: {
             data: [
@@ -108,7 +111,7 @@ describe("facebookPageTokenUtils", () => {
       }
 
       if (
-        url === "https://graph.facebook.com/v18.0/me" &&
+        url === `https://graph.facebook.com/${apiVer}/me` &&
         config.params?.access_token === "fresh-page-token"
       ) {
         return Promise.resolve({

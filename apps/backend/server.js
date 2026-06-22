@@ -166,7 +166,7 @@ const tenantContext = require("./services/tenantContext");
 // Import all routes (alphabetic order for sanity)
 // Routes Block 1
 const activityLogRoutes = require("./routes/activityLogRoutes");
-const adminAnalyticsRoutes = require("./routes/adminAnalyticsRoutes");
+
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const adminCompanyRoutes = require("./routes/adminCompanyRoutes");
 const adminWhatsAppRoutes = require("./routes/adminWhatsAppRoutes");
@@ -587,7 +587,6 @@ app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/company-dashboard", companyDashboardRoutes);
 app.use("/api/v1/company", companyDashboardRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
-app.use("/api/v1/admin/analytics", adminAnalyticsRoutes);
 app.use("/api/v1/storefront-settings", storefrontSettingsRoutes);
 app.use("/api/v1/checkout-form-settings", checkoutFormSettingsRoutes);
 app.use("/api/v1/footer-settings", footerSettingsRoutes);

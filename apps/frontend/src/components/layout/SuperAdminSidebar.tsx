@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Building2, BarChart3, Settings, Shield, DollarSign, Wallet, Brain,
-  History, Globe, Headphones, Ticket, ChevronUp, ChevronDown, Briefcase, Tag, TrendingUp,
+  History, Globe, Headphones, Ticket, ChevronUp, ChevronDown, Briefcase, Tag, 
   Wrench, Activity, Sliders, Facebook, Trophy, GitBranch, Users, Clock, HardDrive,
   MessageSquare, Key, Play, Download, Code2, Rocket, Palette, Database, Layers,
 } from "lucide-react";
@@ -45,9 +45,6 @@ export const menuGroups = [
     { text: i18n.t("superAdmin.sidebar.customerPayments"), icon: <DollarSign className="size-5" />, path: "/super-admin/payments" },
     { text: i18n.t("superAdmin.sidebar.revenueAnalytics"), icon: <BarChart3 className="size-5" />, path: "/super-admin/billing-overview" },
     { text: i18n.t("superAdmin.sidebar.signupCoupons"), icon: <Tag className="size-5" />, path: "/super-admin/platform-signup-coupons" },
-  ]},
-  { title: i18n.t("superAdmin.sidebar.reportsAnalytics"), icon: <TrendingUp className="size-5" />, items: [
-    { text: i18n.t("superAdmin.sidebar.reportsAnalytics"), icon: <BarChart3 className="size-5" />, path: "/super-admin/reports" },
   ]},
   { title: i18n.t("superAdmin.evaluation.aiModels"), icon: <Brain className="size-5" />, items: [
     { text: i18n.t("superAdmin.evaluation.aiProviders"), icon: <Brain className="size-5" />, path: "/super-admin/ai-providers" },

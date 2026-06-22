@@ -2,6 +2,7 @@
 const { getSharedPrismaClient, getSharedPrismaClientAsync, safeQuery } = require('../services/sharedDatabase');
 const { v4: uuidv4 } = require('uuid'); // ✅ FIX: Add uuid import for message creation
 const axios = require('axios');
+const { getMetaGraphApiVersion } = require('../config/metaApi');
 const { recordSentMessageStat } = require('./statsRecorder');
 const { checkNegativeKeywords } = require('./keywordFilter');
 const {
@@ -201,7 +202,7 @@ async function fetchFacebookUserProfileAttempt(userId, pageAccessToken) {
   }
 
   try {
-    const response = await axios.get(`https://graph.facebook.com/v18.0/${userId}`, {
+    const response = await axios.get(`https://graph.facebook.com/${getMetaGraphApiVersion()}/${userId}`, {
       params: {
         fields: 'first_name,last_name,profile_pic',
         access_token: pageAccessToken
@@ -1005,7 +1006,7 @@ async function sendFacebookCommentReply(commentId, messageText, pageAccessToken)
     formData.append('message', messageText);
     formData.append('access_token', pageAccessToken);
 
-    const url = `https://graph.facebook.com/v18.0/${commentId}/comments`;
+    const url = `https://graph.facebook.com/${getMetaGraphApiVersion()}/${commentId}/comments`;
 
     const response = await fetch(url, {
       method: 'POST',
@@ -2166,7 +2167,7 @@ async function deleteFacebookComment(commentId, pageAccessToken) {
   try {
     //console.log(`🗑️ [COMMENT-DELETE] Deleting comment ${commentId} from Facebook`);
 
-    const url = `https://graph.facebook.com/v18.0/${commentId}?access_token=${pageAccessToken}`;
+    const url = `https://graph.facebook.com/${getMetaGraphApiVersion()}/${commentId}?access_token=${pageAccessToken}`;
 
     const response = await fetch(url, {
       method: 'DELETE'
@@ -2204,7 +2205,7 @@ async function hideFacebookComment(commentId, pageAccessToken) {
     formData.append('is_hidden', 'true');
     formData.append('access_token', pageAccessToken);
 
-    const url = `https://graph.facebook.com/v18.0/${commentId}`;
+    const url = `https://graph.facebook.com/${getMetaGraphApiVersion()}/${commentId}`;
 
     const response = await fetch(url, {
       method: 'POST',

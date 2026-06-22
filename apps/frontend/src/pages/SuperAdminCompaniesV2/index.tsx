@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import {
   Building2, Sparkles, Download, RefreshCw, Plus, Loader2,
   AlertTriangle, CheckCircle2, UserPlus, ArrowLeftRight,
-  Pencil, Eye, LogIn, Trash2, Facebook, Users, X, Filter, Clock,
+  Pencil, Eye, LogIn, Trash2, Facebook, Users, X, Filter, Clock, BadgeCheck,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Badge } from "../../components/ui/badge";
@@ -311,7 +311,6 @@ function FollowUpFormContent({
 // ===== MAIN PAGE =====
 export default function SuperAdminCompaniesV2() {
   const navigate = useNavigate();
-
   // Filter & Sort state — MUST be before useCompanies
   const [search, setSearch] = useState("");
   const [savedView, setSavedView] = useState("ALL");
@@ -323,7 +322,7 @@ export default function SuperAdminCompaniesV2() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
 
-  const { companies, isLoading, isFetching, error: pageError, admin, refetch, total, totalPages, meta } = useCompanies({
+  const { companies, isLoading, isFetching, error: pageError, admin, refetch, total, totalPages, meta, serverStats } = useCompanies({
     search,
     status,
     plan,
@@ -395,8 +394,8 @@ export default function SuperAdminCompaniesV2() {
       return {
         totalCompanies: meta.stats.totalCompanies || 0,
         activeCompanies: meta.stats.activeCompanies || 0,
-        enterpriseCompanies: 0,
-        connectedFacebookPages: 0,
+        enterpriseCompanies: meta.stats.enterpriseCompanies || 0,
+        connectedFacebookPages: meta.stats.connectedFacebookPages || 0,
         followUpNow: meta.stats.followUpNow || 0,
         escalationDue: meta.stats.escalationDue || 0,
         urgentEscalationDue: meta.stats.urgentEscalationDue || 0,
@@ -404,8 +403,8 @@ export default function SuperAdminCompaniesV2() {
         myDueToday: meta.stats.myDueToday || 0,
       };
     }
-    return computeQuickStats(enrichedCompanies);
-  }, [enrichedCompanies, meta]);
+    return computeQuickStats(enrichedCompanies, serverStats);
+  }, [enrichedCompanies, meta, serverStats]);
 
   const pageSize = Number(rowsPerPage) || 10;
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -742,54 +741,63 @@ export default function SuperAdminCompaniesV2() {
             )}
 
             {/* Stats cards */}
-            <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
               <button
                 type="button"
                 onClick={handleClearFilters}
-                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-primary/40 hover:bg-primary/[0.02] hover:shadow-md dark:bg-card"
+                className="group rounded-xl border border-border/40 bg-white p-4 text-right shadow-sm transition-all hover:border-primary/40 hover:bg-primary/[0.02] hover:shadow-md dark:bg-card"
               >
-                <div className="flex items-center gap-2.5">
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Building2 className="size-4" />
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Building2 className="size-5" />
                   </div>
-                  <div>
-                    <p className="text-lg font-black text-foreground">{quickStats.totalCompanies}</p>
-                    <p className="text-xs font-bold text-muted-foreground">إجمالي الشركات</p>
-                  </div>
+                  <BadgeCheck className="size-4 text-emerald-500/60 transition-opacity group-hover:text-emerald-600" aria-hidden="true" />
                 </div>
-                <p className="mt-1 text-xs font-semibold text-emerald-600">{quickStats.activeCompanies} نشطة</p>
+                <p className="mt-3 text-2xl font-black tabular-nums text-foreground">{quickStats.totalCompanies}</p>
+                <p className="mt-0.5 text-xs font-bold text-muted-foreground">إجمالي الشركات</p>
+                <p className="mt-1 text-[11px] font-bold text-emerald-600">{quickStats.activeCompanies} نشطة من الإجمالي</p>
               </button>
               <button
                 type="button"
                 onClick={() => handleOpenView("FOLLOW_UP_NOW")}
-                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-amber-400/60 hover:bg-amber-50/30 hover:shadow-md dark:bg-card"
+                className="group rounded-xl border border-border/40 bg-white p-4 text-right shadow-sm transition-all hover:border-amber-400/60 hover:bg-amber-50/30 hover:shadow-md dark:bg-card"
               >
-                <div className="flex items-center gap-2.5">
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
-                    <AlertTriangle className="size-4" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-black text-foreground">{quickStats.followUpNow + quickStats.escalationDue + quickStats.urgentEscalationDue}</p>
-                    <p className="text-xs font-bold text-muted-foreground">محتاجة متابعة</p>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+                    <AlertTriangle className="size-5" />
                   </div>
                 </div>
-                <p className="mt-1 text-xs font-semibold text-amber-600">تحتاج تدخل أو تصعيد</p>
+                <p className="mt-3 text-2xl font-black tabular-nums text-foreground">{quickStats.followUpNow + quickStats.escalationDue + quickStats.urgentEscalationDue}</p>
+                <p className="mt-0.5 text-xs font-bold text-muted-foreground">محتاجة متابعة</p>
+                <p className="mt-1 text-[11px] font-bold text-amber-600">تحتاج تدخل أو تصعيد</p>
               </button>
               <button
                 type="button"
                 onClick={() => handleOpenView("STALE_72H")}
-                className="rounded-lg border border-border/40 bg-white p-3 text-right shadow-sm transition-all hover:border-rose-400/60 hover:bg-rose-50/30 hover:shadow-md dark:bg-card"
+                className="group rounded-xl border border-border/40 bg-white p-4 text-right shadow-sm transition-all hover:border-rose-400/60 hover:bg-rose-50/30 hover:shadow-md dark:bg-card"
               >
-                <div className="flex items-center gap-2.5">
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
-                    <Clock className="size-4" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-black text-foreground">{quickStats.stale72h}</p>
-                    <p className="text-xs font-bold text-muted-foreground">متوقفة 72 ساعة+</p>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
+                    <Clock className="size-5" />
                   </div>
                 </div>
-                <p className="mt-1 text-xs font-semibold text-rose-600">حرجة: تحتاج تدخلًا فوريًا</p>
+                <p className="mt-3 text-2xl font-black tabular-nums text-foreground">{quickStats.stale72h}</p>
+                <p className="mt-0.5 text-xs font-bold text-muted-foreground">متوقفة 72 ساعة+</p>
+                <p className="mt-1 text-[11px] font-bold text-rose-600">حرجة: تحتاج تدخلًا فوريًا</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenView("MY_TODAY")}
+                className="group rounded-xl border border-border/40 bg-white p-4 text-right shadow-sm transition-all hover:border-sky-400/60 hover:bg-sky-50/30 hover:shadow-md dark:bg-card"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-sky-100 text-sky-600">
+                    <Users className="size-5" />
+                  </div>
+                </div>
+                <p className="mt-3 text-2xl font-black tabular-nums text-foreground">{quickStats.myDueToday}</p>
+                <p className="mt-0.5 text-xs font-bold text-muted-foreground">متابعاتي اليوم</p>
+                <p className="mt-1 text-[11px] font-bold text-sky-600">المسندة لك شخصيًا</p>
               </button>
             </div>
 

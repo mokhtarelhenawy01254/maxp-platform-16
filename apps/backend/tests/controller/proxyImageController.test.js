@@ -267,9 +267,10 @@ describe("proxyImageController image transforms", () => {
         },
       }),
     );
+    const { getMetaGraphApiVersion } = require("../../config/metaApi");
     expect(global.fetch).toHaveBeenNthCalledWith(
       1,
-      expect.stringContaining("https://graph.facebook.com/v18.0/mid-fresh-1"),
+      expect.stringContaining(`https://graph.facebook.com/${getMetaGraphApiVersion()}/mid-fresh-1`),
       expect.objectContaining({
         headers: expect.objectContaining({ Accept: "application/json" }),
       }),

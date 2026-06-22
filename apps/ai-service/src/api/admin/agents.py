@@ -10,6 +10,7 @@ from typing import Annotated, Any
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import case, select, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -483,7 +484,6 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         select(AgentModel).where(
             AgentModel.company_id == body.company_id,
             AgentModel.name == name,
-            AgentModel.status != "ARCHIVED",
         )
     )
     if existing.scalar_one_or_none():
@@ -515,7 +515,14 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
         config=body.config or {},
     )
     session.add(agent)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail=f"Agent with name '{name}' already exists for this company",
+        ) from exc
     await session.refresh(agent)
     logger.info("Agent spawned", agent_id=agent_id, company_id=body.company_id, role=role)
     return _agent_to_read(agent)

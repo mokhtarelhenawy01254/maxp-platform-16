@@ -171,7 +171,7 @@ const PlatformConnections: React.FC = () => {
         const s = r.data.session;
         setWaId(s.id);
         const qh = (d: { sessionId: string; qr: string }) => { if (d.sessionId === s.id && d.qr) { setWaQr(d.qr); setWaStep("qr"); } };
-        const ch = (d: { sessionId: string; status: string }) => { if (d.sessionId === s.id && d.status === "CONNECTED") { setWaStep("done"); setTimeout(() => { closeWa(); load(); }, 1500); } };
+        const ch = (d: { sessionId: string; status: string }) => { if (d.sessionId === s.id && (d.status === "CONNECTED" || d.status === "connected")) { setWaStep("done"); setTimeout(() => { closeWa(); load(); }, 1500); } };
         waQrRef.current = qh; waConnRef.current = ch;
         socketService.on("whatsapp:qr", qh); socketService.on("whatsapp:connection", ch);
         if (s.qrCode) { setWaQr(s.qrCode); setWaStep("qr"); }

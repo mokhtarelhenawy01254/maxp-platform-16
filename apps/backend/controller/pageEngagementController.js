@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const { getMetaGraphApiVersion } = require('../config/metaApi');
 
 /**
  * Get Page Engagement Stats
@@ -45,7 +46,7 @@ const getPageEngagementStats = async (req, res) => {
     try {
       // 1. Get Recent Posts with Engagement (Main data source)
       const postsResponse = await axios.get(
-        `https://graph.facebook.com/v18.0/${pageId}/posts`,
+        `https://graph.facebook.com/${getMetaGraphApiVersion()}/${pageId}/posts`,
         {
           params: {
             access_token: accessToken,
@@ -59,7 +60,7 @@ const getPageEngagementStats = async (req, res) => {
 
       // 2. Get Page Info
       const pageInfoResponse = await axios.get(
-        `https://graph.facebook.com/v18.0/${pageId}`,
+        `https://graph.facebook.com/${getMetaGraphApiVersion()}/${pageId}`,
         {
           params: {
             access_token: accessToken,
@@ -217,7 +218,7 @@ const getAllPagesEngagementOverview = async (req, res) => {
       try {
         // Get basic page info and fan count
         const pageInfoResponse = await axios.get(
-          `https://graph.facebook.com/v18.0/${page.pageId}`,
+          `https://graph.facebook.com/${getMetaGraphApiVersion()}/${page.pageId}`,
           {
             params: {
               access_token: page.pageAccessToken,
@@ -231,7 +232,7 @@ const getAllPagesEngagementOverview = async (req, res) => {
         since.setDate(since.getDate() - 7);
 
         const postsResponse = await axios.get(
-          `https://graph.facebook.com/v18.0/${page.pageId}/posts`,
+          `https://graph.facebook.com/${getMetaGraphApiVersion()}/${page.pageId}/posts`,
           {
             params: {
               access_token: page.pageAccessToken,

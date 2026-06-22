@@ -301,14 +301,10 @@ async function createSession(req, res) {
             ? JSON.stringify(metadataObj)
             : undefined;
 
-        // تحقق سريع من بيانات Meta عند الحاجة (يمكن الاعتماد على env كبديل)
         if (isMetaProvider) {
-            const hasAccessToken = !!(metaAccessToken || process.env.META_WA_ACCESS_TOKEN);
-            const hasPhoneNumberId = !!(metaPhoneNumberId || process.env.META_WA_PHONE_NUMBER_ID);
-
-            if (!hasAccessToken || !hasPhoneNumberId) {
+            if (!metaAccessToken || !metaPhoneNumberId) {
                 return res.status(400).json({
-                    error: 'بيانات Meta غير مكتملة (Access Token و Phone Number ID مطلوبان)'
+                    error: 'بيانات Meta غير مكتملة (Access Token و Phone Number ID مطلوبان لكل جلسة)'
                 });
             }
         }

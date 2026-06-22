@@ -12,6 +12,7 @@
 
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const axios = require('axios');
+const { getMetaGraphApiVersion } = require('../config/metaApi');
 const FormData = require('form-data');
 const {
   isAvailableStoredAsset,
@@ -224,7 +225,7 @@ async function uploadMediaDirectlyToFacebook(recipientId, mediaUrl, messageType,
   });
 
   const response = await axios.post(
-    'https://graph.facebook.com/v18.0/me/messages',
+    `https://graph.facebook.com/${getMetaGraphApiVersion()}/me/messages`,
     form,
     {
       params: { access_token: accessToken },
@@ -614,7 +615,7 @@ async function sendProductionFacebookMessage(recipientId, messageContent, messag
 
     // STEP 4: Send message to Facebook API
     const response = await axios.post(
-      `https://graph.facebook.com/v18.0/me/messages`,
+      `https://graph.facebook.com/${getMetaGraphApiVersion()}/me/messages`,
       messageData,
       {
         params: { access_token: accessToken },

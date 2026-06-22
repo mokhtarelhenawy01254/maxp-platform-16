@@ -1,5 +1,6 @@
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const axios = require('axios');
+const { getMetaGraphApiVersion } = require('../config/metaApi');
 
 const createPost = async (req, res) => {
     try {
@@ -35,7 +36,7 @@ const createPost = async (req, res) => {
         });
 
         // Common API version
-        const API_VER = 'v18.0';
+        const API_VER = getMetaGraphApiVersion();
 
         for (const page of pages) {
             try {

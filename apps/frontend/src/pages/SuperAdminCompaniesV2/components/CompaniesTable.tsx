@@ -15,7 +15,7 @@ import {
 } from "../../../components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../../components/ui/tooltip";
 import { cn } from "../../../lib/utils";
-import { getCount, getPlanMeta, formatDateTime } from "../utils";
+import { getCount, getPlanMeta } from "../utils";
 import type { Company } from "../types";
 
 const columnHelper = createColumnHelper<Company>();
@@ -120,8 +120,29 @@ export function CompaniesTable({
     }),
     columnHelper.accessor("isActive", {
       header: "الحالة",
-      cell: ({ getValue }) => {
-        const active = getValue();
+      cell: ({ row }) => {
+        const company = row.original;
+        const active = company.isActive;
+        const followUpAuto = company.followUpAutomation;
+        const isCritical = followUpAuto?.needsUrgentEscalation;
+        const isAttention = followUpAuto?.needsEscalation && !isCritical;
+
+        if (isCritical) {
+          return (
+            <Badge variant="outline" className="rounded-full border-rose-300 bg-rose-50 px-2.5 py-1 text-[13px] font-black text-rose-700 dark:border-rose-800/40 dark:bg-rose-950/30 dark:text-rose-300">
+              <span className="ml-1 size-1.5 rounded-full bg-rose-500 animate-pulse" />
+              حرجة
+            </Badge>
+          );
+        }
+        if (isAttention) {
+          return (
+            <Badge variant="outline" className="rounded-full border-amber-300 bg-amber-50 px-2.5 py-1 text-[13px] font-black text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/30 dark:text-amber-300">
+              <span className="ml-1 size-1.5 rounded-full bg-amber-500" />
+              متابعة
+            </Badge>
+          );
+        }
         return (
           <Badge
             variant="outline"
@@ -129,9 +150,10 @@ export function CompaniesTable({
               "rounded-full px-2.5 py-1 text-[13px] font-black",
               active
                 ? "border-emerald-200/60 bg-emerald-50/50 text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-400"
-                : "border-rose-200/60 bg-rose-50/50 text-rose-700 dark:border-rose-800/40 dark:bg-rose-950/30 dark:text-rose-400",
+                : "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400",
             )}
           >
+            <span className={cn("ml-1 size-1.5 rounded-full", active ? "bg-emerald-500" : "bg-slate-400")} />
             {active ? "نشطة" : "متوقفة"}
           </Badge>
         );
@@ -142,17 +164,55 @@ export function CompaniesTable({
       id: "stats",
       header: "إحصائيات",
       cell: ({ row }) => (
-        <div className="flex items-center gap-3">
-          <Tooltip><TooltipTrigger asChild><span className="inline-flex cursor-help items-center gap-1 text-[13px] font-black text-muted-foreground transition-colors hover:text-foreground"><Users className="size-3 text-primary/60" />{getCount(row.original, "users")}</span></TooltipTrigger><TooltipContent>مستخدمين</TooltipContent></Tooltip>
-          <Tooltip><TooltipTrigger asChild><span className="inline-flex cursor-help items-center gap-1 text-[13px] font-black text-muted-foreground transition-colors hover:text-foreground"><BadgeCheck className="size-3 text-emerald-500/60" />{getCount(row.original, "customers")}</span></TooltipTrigger><TooltipContent>عملاء</TooltipContent></Tooltip>
-          <Tooltip><TooltipTrigger asChild><span className="inline-flex cursor-help items-center gap-1 text-[13px] font-black text-muted-foreground transition-colors hover:text-foreground"><Facebook className="size-3 text-blue-500/60" />{getCount(row.original, "facebookPages")}</span></TooltipTrigger><TooltipContent>صفحات فيسبوك</TooltipContent></Tooltip>
+        <div className="flex items-center gap-2.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex cursor-help items-center gap-1 rounded-md bg-primary/5 px-2 py-1 text-[12px] font-black text-foreground/80 transition-colors hover:bg-primary/10">
+                <Users className="size-3 text-primary/70" />
+                <span className="tabular-nums">{getCount(row.original, "users")}</span>
+                <span className="text-[10px] font-bold text-muted-foreground/70">عضو</span>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>عدد المستخدمين</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex cursor-help items-center gap-1 rounded-md bg-emerald-50/60 px-2 py-1 text-[12px] font-black text-foreground/80 transition-colors hover:bg-emerald-100/60 dark:bg-emerald-950/30">
+                <BadgeCheck className="size-3 text-emerald-600/70" />
+                <span className="tabular-nums">{getCount(row.original, "customers")}</span>
+                <span className="text-[10px] font-bold text-muted-foreground/70">عميل</span>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>عدد العملاء</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex cursor-help items-center gap-1 rounded-md bg-blue-50/60 px-2 py-1 text-[12px] font-black text-foreground/80 transition-colors hover:bg-blue-100/60 dark:bg-blue-950/30">
+                <Facebook className="size-3 text-blue-600/70" />
+                <span className="tabular-nums">{getCount(row.original, "facebookPages")}</span>
+                <span className="text-[10px] font-bold text-muted-foreground/70">صفحة</span>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>عدد صفحات فيسبوك</TooltipContent>
+          </Tooltip>
         </div>
       ),
       meta: { className: "hidden lg:table-cell" },
     }),
     columnHelper.accessor("createdAt", {
       header: "الإنشاء",
-      cell: ({ getValue }) => <span className="text-xs font-bold text-muted-foreground/70">{formatDateTime(getValue())}</span>,
+      cell: ({ getValue }) => {
+        const raw = getValue() as string | null | undefined;
+        if (!raw) return <span className="text-xs font-bold text-muted-foreground/50">-</span>;
+        const date = new Date(raw);
+        if (Number.isNaN(date.getTime())) return <span className="text-xs font-bold text-muted-foreground/50">-</span>;
+        return (
+          <div className="flex flex-col">
+            <span className="text-xs font-bold text-foreground/80">{date.toLocaleDateString("ar-EG", { day: "numeric", month: "short", year: "numeric" })}</span>
+            <span className="text-[10px] font-bold text-muted-foreground/60 tabular-nums">{date.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}</span>
+          </div>
+        );
+      },
       meta: { className: "hidden lg:table-cell" },
     }),
     columnHelper.display({
@@ -172,32 +232,14 @@ export function CompaniesTable({
 
         return (
           <div className="flex items-center gap-1">
-            <div className="flex items-center gap-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button type="button" variant="ghost" size="icon-sm" className="h-7 w-7 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10" onClick={() => onOpenFollowUp(company)}>
-                    <CheckCircle2 className="size-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="rounded-lg bg-white text-xs font-bold shadow-md dark:bg-card">إدارة المتابعة</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button type="button" variant="ghost" size="icon-sm" className="h-7 w-7 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10" onClick={() => onOpenDetails(company)}>
-                    <Eye className="size-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="rounded-lg bg-white text-xs font-bold shadow-md dark:bg-card">عرض التفاصيل</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button type="button" variant="ghost" size="icon-sm" className="h-7 w-7 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10" onClick={() => onLoginAsAdmin(company)}>
-                    <LogIn className="size-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="rounded-lg bg-white text-xs font-bold shadow-md dark:bg-card">دخول كأدمن</TooltipContent>
-              </Tooltip>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button type="button" variant="ghost" size="icon-sm" className="h-7 w-7 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10" onClick={() => onOpenDetails(company)}>
+                  <Eye className="size-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="rounded-lg bg-white text-xs font-bold shadow-md dark:bg-card">عرض التفاصيل</TooltipContent>
+            </Tooltip>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -205,16 +247,20 @@ export function CompaniesTable({
                   <MoreHorizontal className="size-3.5" aria-hidden="true" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 rounded-lg border-border/60 p-0.5 shadow-lg">
-                {dropdownActions.map((item, idx) => (
-                  <React.Fragment key={item.key}>
-                    {idx === dropdownActions.length - 1 ? <DropdownMenuSeparator className="bg-border/40" /> : null}
-                    <DropdownMenuItem onClick={item.action} className={cn("rounded px-2 py-1 text-xs font-semibold focus:bg-primary/10 focus:text-primary", item.tone)}>
-                      <item.icon className="ml-1.5 size-3 opacity-70" aria-hidden="true" />
+              <DropdownMenuContent align="end" className="w-52 rounded-lg border-border/60 p-1 shadow-lg">
+                {[
+                  { key: "followup", icon: CheckCircle2, label: "إدارة المتابعة", action: () => onOpenFollowUp(company) },
+                  { key: "login", icon: LogIn, label: "دخول كأدمن", action: () => onLoginAsAdmin(company), tone: "text-primary font-black" as const },
+                  { key: "sep1", sep: true },
+                  ...dropdownActions,
+                ].map((item: any, idx) => item.sep
+                  ? <DropdownMenuSeparator key={item.key} className="bg-border/40" />
+                  : (
+                    <DropdownMenuItem key={item.key} onClick={item.action} className={cn("rounded px-2.5 py-1.5 text-[13px] font-semibold focus:bg-primary/10 focus:text-primary", item.tone)}>
+                      <item.icon className="ml-1.5 size-3.5 opacity-70" aria-hidden="true" />
                       {item.label}
                     </DropdownMenuItem>
-                  </React.Fragment>
-                ))}
+                  ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

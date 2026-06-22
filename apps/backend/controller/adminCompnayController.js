@@ -517,9 +517,11 @@ const getAllCompanies = async (req, res) => {
             companies.push({ ...company, followUp: await getCompanyFollowUpFromDb(prisma, company) });
         }
 
-        const [totalCompanies, activeCompanies, followUpNow, myDueToday, escalationDue, stale72h] = await Promise.all([
+        const [totalCompanies, activeCompanies, enterpriseCompanies, connectedFacebookPages, followUpNow, myDueToday, escalationDue, stale72h] = await Promise.all([
             prisma.company.count(),
             prisma.company.count({ where: { isActive: true } }),
+            prisma.company.count({ where: { plan: 'ENTERPRISE' } }),
+            prisma.facebookPage.count(),
             prisma.company.count({ where: buildSavedViewWhere('FOLLOW_UP_NOW') }),
             prisma.company.count({ where: buildSavedViewWhere('MY_TODAY') }),
             prisma.company.count({ where: buildSavedViewWhere('ESCALATION_DUE') }),
@@ -528,11 +530,24 @@ const getAllCompanies = async (req, res) => {
 
         const finalPageSize = prismaTake ?? total;
         const totalPages = prismaTake ? Math.ceil(total / prismaTake) : 1;
+
         res.json({
             success: true,
             message: 'تم جلب الشركات بنجاح',
             data: { companies, total, page, pageSize: finalPageSize, totalPages },
-            meta: { stats: { totalCompanies, activeCompanies, followUpNow, myDueToday, escalationDue, urgentEscalationDue: 0, stale72h } }
+            meta: {
+                stats: {
+                    totalCompanies,
+                    activeCompanies,
+                    enterpriseCompanies,
+                    connectedFacebookPages,
+                    followUpNow,
+                    myDueToday,
+                    escalationDue,
+                    urgentEscalationDue: 0,
+                    stale72h,
+                },
+            },
         });
 
     } catch (error) {

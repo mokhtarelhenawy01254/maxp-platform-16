@@ -7,6 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 const axios = require('axios');
 const { getPageToken } = require('./conversationShared');
+const { getMetaGraphApiVersion } = require('../../config/metaApi');
 
 const parseFacebookSyncMetadata = (metadata) => {
     if (!metadata) {
@@ -144,8 +145,9 @@ const syncFacebookMessages = async (req, res) => {
         let allMessages = [];
 
         try {
+            const apiVer = getMetaGraphApiVersion();
             // Step 1: Get conversation ID using page conversations endpoint with user_id filter
-            const conversationsUrl = `https://graph.facebook.com/v18.0/${pageId}/conversations?user_id=${psid}&fields=id&access_token=${accessToken}`;
+            const conversationsUrl = `https://graph.facebook.com/${apiVer}/${pageId}/conversations?user_id=${psid}&fields=id&access_token=${accessToken}`;
 
             const conversationsResponse = await axios.get(conversationsUrl);
 
@@ -160,7 +162,7 @@ const syncFacebookMessages = async (req, res) => {
             const fbConversationId = conversationsResponse.data.data[0].id;
 
             // Step 2: Fetch messages from the conversation
-            let messagesUrl = `https://graph.facebook.com/v18.0/${fbConversationId}/messages?fields=id,message,from,to,created_time,attachments{id,type,file_url,url,mime_type,name,image_data{url},payload{template_type,text,buttons{type,title,url,payload}}},sticker,shares&limit=50&access_token=${accessToken}`;
+            let messagesUrl = `https://graph.facebook.com/${apiVer}/${fbConversationId}/messages?fields=id,message,from,to,created_time,attachments{id,type,file_url,url,mime_type,name,image_data{url},payload{template_type,text,buttons{type,title,url,payload}}},sticker,shares&limit=50&access_token=${accessToken}`;
 
             let pageCount = 0;
             const maxPages = 3; // Limit to 3 pages (150 messages max) to prevent timeout
@@ -383,7 +385,7 @@ const syncFacebookMessages = async (req, res) => {
                         if (!imageUrl) {
                             if (attachment.id) {
                                 try {
-                                    const attachmentUrl = `https://graph.facebook.com/v18.0/${attachment.id}?fields=url,image_data{url}&access_token=${accessToken}`;
+                                    const attachmentUrl = `https://graph.facebook.com/${apiVer}/${attachment.id}?fields=url,image_data{url}&access_token=${accessToken}`;
                                     const attachmentResponse = await axios.get(attachmentUrl, { timeout: 5000 });
                                     const fetchedUrl = attachmentResponse.data?.image_data?.url || attachmentResponse.data?.url;
                                     if (fetchedUrl) {
@@ -394,7 +396,7 @@ const syncFacebookMessages = async (req, res) => {
                                     }
                                 } catch (fetchError) {
                                     try {
-                                        const messageDetailsUrl = `https://graph.facebook.com/v18.0/${fbMessage.id}?fields=attachments{id,image_data{url},file_url,url}&access_token=${accessToken}`;
+                                        const messageDetailsUrl = `https://graph.facebook.com/${apiVer}/${fbMessage.id}?fields=attachments{id,image_data{url},file_url,url}&access_token=${accessToken}`;
                                         const messageDetailsResponse = await axios.get(messageDetailsUrl, { timeout: 5000 });
                                         if (messageDetailsResponse.data?.attachments?.data?.[0]) {
                                             const detailedAttachment = messageDetailsResponse.data.attachments.data[0];
@@ -411,7 +413,7 @@ const syncFacebookMessages = async (req, res) => {
                                 }
                             } else {
                                 try {
-                                    const messageDetailsUrl = `https://graph.facebook.com/v18.0/${fbMessage.id}?fields=attachments{id,image_data{url},file_url,url}&access_token=${accessToken}`;
+                                    const messageDetailsUrl = `https://graph.facebook.com/${apiVer}/${fbMessage.id}?fields=attachments{id,image_data{url},file_url,url}&access_token=${accessToken}`;
                                     const messageDetailsResponse = await axios.get(messageDetailsUrl, { timeout: 5000 });
                                     if (messageDetailsResponse.data?.attachments?.data?.[0]) {
                                         const detailedAttachment = messageDetailsResponse.data.attachments.data[0];

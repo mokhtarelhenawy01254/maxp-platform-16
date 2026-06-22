@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Any
 
 import httpx
@@ -10,7 +11,8 @@ logger = structlog.get_logger(__name__)
 class FacebookGraphClient:
     """Client for interacting with the Facebook Graph API."""
 
-    BASE_URL = "https://graph.facebook.com/v21.0"
+    META_GRAPH_API_VERSION = os.getenv("META_GRAPH_API_VERSION", "v25.0")
+    BASE_URL = f"https://graph.facebook.com/{META_GRAPH_API_VERSION}"
 
     def __init__(self, page_access_token: str):
         self.page_access_token = page_access_token

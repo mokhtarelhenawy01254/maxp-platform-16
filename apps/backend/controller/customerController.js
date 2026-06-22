@@ -1,6 +1,7 @@
 const { getSharedPrismaClient, initializeSharedDatabase, executeWithRetry } = require('../services/sharedDatabase');
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 const axios = require('axios');
+const { getMetaGraphApiVersion } = require('../config/metaApi');
 const WalletService = require('../services/walletService');
 const customerBlocklistService = require('../services/customerBlocklistService');
 
@@ -313,7 +314,7 @@ const blockCustomerOnPage = async (req, res) => {
 
         // استخدام Facebook Graph API لحظر المستخدم
         const fbResponse = await axios.post(
-          `https://graph.facebook.com/v18.0/${pageId}/blocked`,
+          `https://graph.facebook.com/${getMetaGraphApiVersion()}/${pageId}/blocked`,
           {
             user: facebookUserId
           },
@@ -474,7 +475,7 @@ const unblockCustomerOnPage = async (req, res) => {
 
         // استخدام Facebook Graph API لإلغاء حظر المستخدم
         const fbResponse = await axios.delete(
-          `https://graph.facebook.com/v18.0/${pageId}/blocked/${facebookUserId}`,
+          `https://graph.facebook.com/${getMetaGraphApiVersion()}/${pageId}/blocked/${facebookUserId}`,
           {
             params: {
               access_token: facebookPage.pageAccessToken

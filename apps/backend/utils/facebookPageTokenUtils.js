@@ -1,5 +1,6 @@
 const axios = require("axios");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
+const { getMetaGraphApiVersion } = require("../config/metaApi");
 
 const FACEBOOK_PAGE_TOKEN_FIELDS = "id,name,category";
 const DEFAULT_PAGE_TIMEOUT_MS = 5000;
@@ -29,7 +30,7 @@ function getFacebookGraphError(error) {
 }
 
 async function fetchPageIdentityFromToken(pageAccessToken, timeoutMs = DEFAULT_PAGE_TIMEOUT_MS) {
-  const response = await axios.get("https://graph.facebook.com/v18.0/me", {
+  const response = await axios.get(`https://graph.facebook.com/${getMetaGraphApiVersion()}/me`, {
     params: {
       access_token: pageAccessToken,
       fields: FACEBOOK_PAGE_TOKEN_FIELDS,
@@ -99,7 +100,7 @@ async function listFacebookPagesForUser(
 ) {
   const collectedPages = [];
   let nextUrl =
-    "https://graph.facebook.com/v18.0/me/accounts" +
+    `https://graph.facebook.com/${getMetaGraphApiVersion()}/me/accounts` +
     `?access_token=${encodeURIComponent(userAccessToken)}` +
     `&fields=${encodeURIComponent("id,name,access_token")}` +
     `&limit=${Math.min(pageLimit, 100)}`;

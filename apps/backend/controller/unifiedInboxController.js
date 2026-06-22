@@ -1111,7 +1111,7 @@ const getSettings = async (req, res) => {
                         pages: igPages
                     },
                     whatsapp: {
-                        connected: waSessions.length > 0,
+                        connected: waSessions.some(s => s.status === 'CONNECTED'),
                         count: waSessions.length,
                         sessions: waSessions
                     },

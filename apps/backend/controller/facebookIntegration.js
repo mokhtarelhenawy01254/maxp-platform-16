@@ -1,6 +1,7 @@
 const { getSharedPrismaClient, initializeSharedDatabase, executeWithRetry } = require('../services/sharedDatabase');
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 const axios = require('axios');
+const { getMetaGraphApiVersion } = require('../config/metaApi');
 const crypto = require('crypto');
 const {
     buildFacebookPageTokenFailureMessage,
@@ -335,7 +336,7 @@ const connectFacebookPage = async (req, res) => {
 
                 try {
                     // Check if page is subscribed to webhook
-                    const subscriptionsResponse = await axios.get(`https://graph.facebook.com/v18.0/${pageId}/subscribed_apps`, {
+                    const subscriptionsResponse = await axios.get(`https://graph.facebook.com/${getMetaGraphApiVersion()}/${pageId}/subscribed_apps`, {
                         params: {
                             access_token: pageAccessToken
                         },
@@ -348,7 +349,7 @@ const connectFacebookPage = async (req, res) => {
                     if (!isSubscribed) {
                         ////console.log('🔧 [FACEBOOK-CONNECT] Attempting to subscribe page to webhook...');
 
-                        const subscribeResponse = await axios.post(`https://graph.facebook.com/v18.0/${pageId}/subscribed_apps`, {
+                        const subscribeResponse = await axios.post(`https://graph.facebook.com/${getMetaGraphApiVersion()}/${pageId}/subscribed_apps`, {
                             subscribed_fields: 'messages,messaging_postbacks,messaging_referrals,message_attachments'
                         }, {
                             params: {
@@ -534,7 +535,7 @@ const disconnectFacebookPage = async (req, res) => {
 
         let webhookUnsubscribed = false;
         try {
-            await axios.delete(`https://graph.facebook.com/v18.0/${pageId}/subscribed_apps`, {
+            await axios.delete(`https://graph.facebook.com/${getMetaGraphApiVersion()}/${pageId}/subscribed_apps`, {
                 params: {
                     access_token: existingPage.pageAccessToken
                 },
