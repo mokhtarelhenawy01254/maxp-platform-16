@@ -3,9 +3,10 @@
 ## [2026-03-09]
 
 ### WhatsApp Meta Webhook 403 & Production DB Fix
-- **Accomplishment**: Fixed a major bug preventing Meta WhatsApp Webhook verification (GET 403 Forbidden) and configured correct credentials for the "العمل" WhatsApp session on production database.
+- **Accomplishment**: Fixed a major bug preventing Meta WhatsApp Webhook verification (GET 403 Forbidden), resolved the database query override that caused webhook POST 500 errors, and configured correct credentials for the "العمل" WhatsApp session on production database.
 - **Details**:
   - Identified a SQL/Prisma null-handling bug where filtering out deleted sessions (`NOT DELETED_METADATA_FILTERS`) was throwing out active sessions whose metadata was `null`. Fixed this by adding `OR: [{ metadata: null }, ...]` explicitly (`ACTIVE_METADATA_FILTER`).
+  - Discovered and fixed a JavaScript bug in `buildMetaSessionLookup` where spreading `ACTIVE_METADATA_FILTER` directly in the query object was overriding the `OR: identifiers` check, which broke message routing by phone number ID. Changed it to wrap the active metadata filter inside `AND: [ACTIVE_METADATA_FILTER]`.
   - Updated the "العمل" session (id: `cmqpkbk65004rjufod0pqpeiw`) with the correct Meta verification token (`maxwhats_2026`) and webhook secret (`dc0514238d0fbbe09890f8429f1f246a`) in the production database.
   - Temporarily whitelisted a secure update endpoint to perform this DB update and removed it after successful verification.
 

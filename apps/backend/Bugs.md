@@ -1,12 +1,14 @@
 ## [2026-06-23] WhatsApp Meta Webhook 403 Forbidden & Session Credentials Fix
 
-- **Bug/Issue**: Meta WhatsApp Webhook verification (GET request) was failing with `403 Forbidden` on production server. Additionally, incoming WhatsApp messages were not being synced/delivered to the "العمل" WhatsApp session.
+- **Bug/Issue**: Meta WhatsApp Webhook verification (GET request) was failing with `403 Forbidden` on production server. Additionally, incoming WhatsApp messages were not being synced/delivered to the "العمل" WhatsApp session, and POST requests returned 500.
 - **Root Cause**: 
   1. The active session "العمل" was missing the Meta verification token and other required credentials (`metaWebhookVerifyToken`, `metaWebhookSecret`, `metaDisplayPhoneNumber`, `metaPhoneNumberId`), which prevented the application from matching incoming webhooks to the session and verifying the verify token.
   2. The database queries in `whatsappMetaWebhookController.js` used a `NOT: DELETED_METADATA_FILTERS` condition. Because of how SQL/Prisma handles `null` values on nullable fields, sessions with `metadata: null` (active sessions) were incorrectly filtered out. Only sessions with non-null metadata were evaluated, resulting in a 403 response even when the verification token was correct.
+  3. Spreading `ACTIVE_METADATA_FILTER` directly in the prisma lookup object (`...ACTIVE_METADATA_FILTER`) resulted in its `OR` property overriding the `OR: identifiers` check, which completely broke the session resolution by phone number ID and display phone number, causing webhook POST requests to fail with HTTP 500.
 - **Fix**: 
   1. Updated the "العمل" WhatsAppSession (id: `cmqpkbk65004rjufod0pqpeiw`) with the correct Meta verification token (`maxwhats_2026`) and webhook secret (`dc0514238d0fbbe09890f8429f1f246a`) in the production database.
   2. Fixed database query logic in `whatsappMetaWebhookController.js` to wrap deletion checks in an `OR` condition that explicitly allows sessions with `metadata: null` (`ACTIVE_METADATA_FILTER`).
+  3. Resolved the `OR` overriding issue by changing the spread `...ACTIVE_METADATA_FILTER` to `AND: [ACTIVE_METADATA_FILTER]` in both `buildMetaSessionLookup` and `isVerifyTokenValid`.
 - **Files**:
   - `apps/backend/controller/whatsappMetaWebhookController.js`
 

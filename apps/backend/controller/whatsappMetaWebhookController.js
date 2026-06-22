@@ -32,7 +32,7 @@ function buildMetaSessionLookup({ phoneNumberId, displayPhoneNumber }) {
     where: {
       provider: 'META_CLOUD',
       OR: identifiers,
-      ...ACTIVE_METADATA_FILTER
+      AND: [ACTIVE_METADATA_FILTER]
     },
     orderBy: [
       { isDefault: 'desc' },
@@ -51,7 +51,7 @@ async function isVerifyTokenValid(token) {
     where: {
       provider: 'META_CLOUD',
       metaWebhookVerifyToken: token,
-      ...ACTIVE_METADATA_FILTER
+      AND: [ACTIVE_METADATA_FILTER]
     }
   });
   return !!match;
