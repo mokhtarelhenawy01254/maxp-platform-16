@@ -103,6 +103,10 @@ export interface InboxConversation {
     imageUrls?: string[];
   } | null;
   postDetailsUnavailable?: boolean;
+  // 📦 Order info for quick display in conversation list
+  lastOrderNumber?: string | null;
+  lastOrderStatus?: string | null;
+  totalOrders?: number;
 }
 
 export interface InboxFilters {
