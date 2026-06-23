@@ -982,13 +982,16 @@ const getCustomerProfile = async (req, res) => {
             include: {
                 orders: {
                     orderBy: { createdAt: 'desc' },
-                    take: 5,
+                    take: 50,
                     select: {
                         id: true,
                         orderNumber: true,
                         status: true,
                         total: true,
-                        createdAt: true
+                        createdAt: true,
+                        _count: {
+                            select: { items: true }
+                        }
                     }
                 },
                 conversations: {

@@ -2518,18 +2518,28 @@ const UnifiedInbox: React.FC = () => {
                       style={{ color: "var(--color-muted-foreground)" }}
                     >
                       {t("unifiedInbox.customer.recentOrders")}
+                      <span className="opacity-60 ml-1">
+                        ({customerProfile.totalOrders})
+                      </span>
                     </h4>
                     <div className="space-y-2">
                       {customerProfile.recentOrders.map((order) => (
-                        <div
+                        <button
                           key={order.id}
-                          className="flex items-center justify-between rounded-lg p-2.5"
+                          onClick={() =>
+                            window.open(
+                              `/orders/${encodeURIComponent(String(order.id))}`,
+                              "_blank",
+                            )
+                          }
+                          className="w-full flex items-center justify-between rounded-lg p-2.5 hover:opacity-80 transition-opacity cursor-pointer text-left"
                           style={{
                             background:
                               "color-mix(in srgb, white 72%, var(--color-background) 28%)",
                           }}
+                          title={t("unifiedInbox.viewOrder")}
                         >
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <div
                               className="text-xs font-medium"
                               style={{ color: "var(--color-foreground)" }}
@@ -2543,9 +2553,18 @@ const UnifiedInbox: React.FC = () => {
                               {new Date(order.createdAt).toLocaleDateString(
                                 i18n.language === "ar" ? "ar-EG" : "en-US",
                               )}
+                              {order._count?.items > 0 && (
+                                <span className="mx-1">·</span>
+                              )}
+                              {order._count?.items > 0 && (
+                                <span>
+                                  {order._count.items}{" "}
+                                  {t("unifiedInbox.products")}
+                                </span>
+                              )}
                             </div>
                           </div>
-                          <div className="text-left">
+                          <div className={`${isRtl ? "text-right" : "text-right"} ml-3 flex-shrink-0`}>
                             <div
                               className="text-xs font-semibold"
                               style={{ color: "var(--business-success)" }}
@@ -2557,12 +2576,14 @@ const UnifiedInbox: React.FC = () => {
                               className="text-[10px]"
                               style={{
                                 color:
-                                  order.status === "completed"
+                                  order.status === "completed" || order.status === "DELIVERED" || order.status === "SHIPPED"
                                     ? "var(--business-success)"
-                                    : "var(--business-warning)",
+                                    : order.status === "CANCELLED" || order.status === "REFUNDED"
+                                      ? "var(--business-danger, #ef4444)"
+                                      : "var(--business-warning)",
                               }}
                             >
-                              {order.status === "completed"
+                              {order.status === "completed" || order.status === "DELIVERED"
                                 ? t(
                                     "unifiedInbox.customer.orderStatus.completed",
                                   )
@@ -2570,12 +2591,34 @@ const UnifiedInbox: React.FC = () => {
                                   ? t(
                                       "unifiedInbox.customer.orderStatus.pending",
                                     )
-                                  : order.status}
+                                  : order.status === "CANCELLED"
+                                    ? t(
+                                        "unifiedInbox.customer.orderStatus.cancelled",
+                                      )
+                                    : order.status}
                             </div>
                           </div>
-                        </div>
+                        </button>
                       ))}
                     </div>
+                    {customerProfile.totalOrders > customerProfile.recentOrders.length && (
+                      <button
+                        onClick={() =>
+                          window.open(
+                            `/orders?customerId=${encodeURIComponent(selectedConversation.contactId || "")}`,
+                            "_blank",
+                          )
+                        }
+                        className="mt-2 w-full text-xs font-medium py-1.5 rounded-lg hover:opacity-80 transition-opacity"
+                        style={{
+                          color: "var(--color-primary)",
+                          background:
+                            "color-mix(in srgb, var(--color-primary) 10%, transparent)",
+                        }}
+                      >
+                        {t("unifiedInbox.viewAllOrders")}
+                      </button>
+                    )}
                   </div>
                 )}
 
