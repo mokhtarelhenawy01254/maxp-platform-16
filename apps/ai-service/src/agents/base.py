@@ -115,7 +115,7 @@ class BaseAgentConfig:
     version: str | None = None
     parent_id: str | None = None
 
-    model: str = "gemini-2.5-flash"
+    model: str = ""
     model_source: str = "runtime-default"
     provider: str | None = None
     key_id: str | None = None
@@ -226,7 +226,7 @@ class BaseAgent:
             overrides.get("model")
             or profile.model_policy.get("default")
             or profile.model_policy.get("model")
-            or "gemini-2.5-flash"
+            or ""
         )
 
         config = BaseAgentConfig(
@@ -360,19 +360,14 @@ class BaseAgent:
                 system_prompt=instructions,
                 company_id=self.company_id,
             )
-        # Fallback: if agent's preferred model has no keys, use gemini-2.5-flash
         if self.client is None:
             if self.config.provider:
                 raise RuntimeError(
                     f"Selected LLM provider unavailable: {self.config.provider}"
                 )
-            logger.warning("agent_client_unavailable_falling_back", agent_id=self.id, model=self.model)
-            self.client = await build_agent_client_async(
-                settings,
-                model="gemini-2.5-flash",
-                tools=tools,
-                system_prompt=instructions,
-                company_id=self.company_id,
+            raise RuntimeError(
+                f"No LLM client available for model '{self.model}'. "
+                f"Check active API keys in ai_keys table for agent {self.id}."
             )
         return self.client
 

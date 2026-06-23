@@ -313,28 +313,6 @@ const getProviderDefaultModel = (provider?: string) =>
 const getStaticProviderModels = (provider?: string) =>
   provider ? STATIC_PROVIDER_MODELS[provider] || [] : [];
 
-const getAgentFitColor = (fit?: AgentSuitability) => {
-  if (fit?.agentReady) return "success";
-  if (fit?.nativeToolCalling) return "warning";
-  return "default";
-};
-
-const getAgentFitLabel = (fit?: AgentSuitability) => {
-  if (!fit) return "Unknown";
-  return fit.agentReady ? "Agent ready" : fit.nativeToolCalling ? "Tool-capable" : "Chat only";
-};
-
-const getAgentFitTooltip = (fit?: AgentSuitability) => {
-  if (!fit) return "No suitability metadata was returned for this model.";
-  const capabilities = [
-    fit.tools ? "tools" : null,
-    fit.toolChoice ? "tool choice" : null,
-    fit.structuredOutputs ? "structured outputs" : null,
-  ].filter(Boolean).join(", ") || "chat only";
-  const notes = [...(fit.strengths || []), ...(fit.warnings || [])].join(" ");
-  return `Capabilities: ${capabilities}. Confidence: ${fit.confidence || "unknown"}.${notes ? ` ${notes}` : ""}`;
-};
-
 type GlobalConfigState = {
   defaultProvider: string;
   enableFailover?: boolean;
@@ -353,19 +331,6 @@ type AiModelConfig = {
   modelName: string;
   priority: number;
   isEnabled: boolean;
-  agentSuitability?: AgentSuitability;
-};
-
-type AgentSuitability = {
-  tools?: boolean;
-  toolChoice?: boolean;
-  structuredOutputs?: boolean;
-  nativeToolCalling?: boolean;
-  agentReady?: boolean;
-  confidence?: "high" | "medium" | "low" | string;
-  label?: string;
-  warnings?: string[];
-  strengths?: string[];
 };
 
 type AiRoutingStatus = {
@@ -404,7 +369,6 @@ type AiKeyRow = {
   routingStatus?: AiRoutingStatus;
   aiModelConfigs?: AiModelConfig[];
   activeModel?: AiModelConfig | null;
-  agentSuitability?: AgentSuitability;
 };
 
 type AiFilters = {
@@ -2814,7 +2778,6 @@ const SuperAdminAIProviders = ({
               <TableHead className="py-2 px-1 text-xs font-black text-gray-500">Name</TableHead>
               <TableHead className="py-2 px-1 text-xs font-black text-gray-500">Provider</TableHead>
               <TableHead className="py-2 px-1 text-xs font-black text-gray-500">Active Model</TableHead>
-              <TableHead className="py-2 px-1 text-xs font-black text-gray-500">Agent Fit</TableHead>
               <TableHead className="py-2 px-1 text-xs font-black text-gray-500">Key (Masked)</TableHead>
               <TableHead className="py-2 px-1 text-xs font-black text-gray-500">Base URL</TableHead>
               <TableHead className="py-2 px-1 text-xs font-black text-gray-500">Status</TableHead>
@@ -2835,11 +2798,6 @@ const SuperAdminAIProviders = ({
                 const activeModel =
                   key.aiModelConfigs?.find((m) => m.priority === 1 && m.isEnabled)?.modelName ||
                   providerDefaultModel || "";
-                const activeModelConfig =
-                  key.aiModelConfigs?.find((m) => m.modelName === activeModel) ||
-                  key.activeModel || null;
-                const agentFit = activeModelConfig?.agentSuitability || key.agentSuitability;
-
                 const configuredModels = key.aiModelConfigs?.map((m) => m.modelName) || [];
                 const providerModels =
                   key.provider === "OPENROUTER" ? openRouterModels : getStaticProviderModels(key.provider);
@@ -2899,26 +2857,6 @@ const SuperAdminAIProviders = ({
                         </div>
                       ) : (
                         <span className="text-sm">{activeModel}</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="py-2 px-1">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Badge
-                              variant={agentFit?.agentReady ? "default" : "outline"}
-                              className={getAgentFitColor(agentFit) === "success" ? "bg-green-100 text-green-800 hover:bg-green-100" : getAgentFitColor(agentFit) === "warning" ? "bg-amber-100 text-amber-800 hover:bg-amber-100" : ""}
-                              style={{ height: 22 }}
-                            >
-                              <BotIcon className="h-3.5 w-3.5 mr-1" />
-                              {getAgentFitLabel(agentFit)}
-                            </Badge>
-                          </TooltipTrigger>
-                          <TooltipContent>{getAgentFitTooltip(agentFit)}</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      {agentFit?.warnings?.[0] && (
-                        <span className="text-xs text-gray-500 block mt-0.5 max-w-[220px]">{agentFit.warnings[0]}</span>
                       )}
                     </TableCell>
                     <TableCell className="py-2 px-1">

@@ -42,6 +42,7 @@ from src.api.admin.agents_schemas import (
 from src.api.chat import sanitize_model_reply
 from src.db.models.agent import Agent as AgentModel
 from src.db.models.agent import AgentTemplate
+from src.db.models.provider import AiKey, AiModelConfig
 from src.db.models.thread import Thread
 from src.db.session import get_session
 from src.llm.agent_client_factory import build_provider_client_async
@@ -387,6 +388,20 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
     allowed_tools = cfg.get("allowed_tools") or []
     allowed_skills = cfg.get("allowed_skills") or []
 
+    # ponytail: resolve model from DB if not set on agent record (legacy agents)
+    if not cfg.get("model"):
+        row = await session.execute(
+            select(AiModelConfig.model_name)
+            .join(AiKey, AiKey.id == AiModelConfig.key_id)
+            .where(AiKey.company_id == body.company_id, AiKey.is_active == True, AiModelConfig.is_enabled == True)
+            .order_by(AiModelConfig.priority)
+            .limit(1)
+        )
+        resolved = row.scalar_one_or_none()
+        if resolved:
+            cfg["model"] = resolved
+            logger.info("resolved_model_from_db_for_agent", agent_id=body.agent_id, model=resolved)
+
     # Auto-populate allowed_tools from role config if not explicitly set
     if not allowed_tools and cfg.get("role"):
         try:
@@ -527,6 +542,17 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
 
     agent_id = _generate_agent_id()
     model = body.model or (template.model_policy.get("default") if template else None)
+    if model is None:
+        result = await session.execute(
+            select(AiModelConfig.model_name)
+            .join(AiKey, AiKey.id == AiModelConfig.key_id)
+            .where(AiKey.company_id == body.company_id, AiKey.is_active == True, AiModelConfig.is_enabled == True)
+            .order_by(AiModelConfig.priority)
+            .limit(1)
+        )
+        default_model = result.scalar_one_or_none()
+        if default_model:
+            model = default_model
     agent = AgentModel(
         id=agent_id,
         company_id=body.company_id,

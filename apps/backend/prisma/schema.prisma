@@ -11854,8 +11854,10 @@ model TelegramConfig {
   createdAt      DateTime                @default(now())
   updatedAt      DateTime                @updatedAt
   label          String                  @default("Official Bot")
-  sessionString  String?
-  type           String                  @default("BOT")
+  sessionString     String?
+  tempAuthSession   String?
+  tempPhoneCodeHash String?
+  type              String   @default("BOT")
   company        Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
   autoReplyRules TelegramAutoReplyRule[]
   bulkMessages   TelegramBulkMessage[]

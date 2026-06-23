@@ -1420,8 +1420,10 @@ model TelegramConfig {
   createdAt     DateTime @default(now())
   updatedAt     DateTime
   label         String   @default("Official Bot")
-  sessionString String?  @db.Text
-  type          String   @default("BOT")
+  sessionString     String?  @db.Text
+  tempAuthSession   String?  @db.Text
+  tempPhoneCodeHash String?  @db.Text
+  type              String   @default("BOT")
   companies     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
     @@index([companyId])

@@ -163,31 +163,6 @@ const providerCatalogService = {
   },
 };
 
-// ── Model Capabilities Map ──────────────────────────────────────────────
-const MODEL_CAPABILITIES = {
-  'gemini-2.5-flash': { tools: true, toolChoice: true, structuredOutputs: true, nativeToolCalling: true, agentReady: true, confidence: 'high', strengths: ['Fast, capable, multimodal'] },
-  'gemini-2.5-pro': { tools: true, toolChoice: true, structuredOutputs: true, nativeToolCalling: true, agentReady: true, confidence: 'high', strengths: ['Deep reasoning, long context'] },
-  'deepseek-v4-flash': { tools: true, toolChoice: true, structuredOutputs: true, nativeToolCalling: false, agentReady: false, confidence: 'medium', strengths: ['Cost-efficient, fast'], warnings: ['No native tool calling, uses chat-compat'] },
-  'deepseek-v4-pro': { tools: true, toolChoice: true, structuredOutputs: true, nativeToolCalling: false, agentReady: false, confidence: 'medium', strengths: ['Deep reasoning'], warnings: ['No native tool calling'] },
-  'gpt-4o-mini': { tools: true, toolChoice: true, structuredOutputs: true, nativeToolCalling: true, agentReady: true, confidence: 'high', strengths: ['Fast, cheap, capable'] },
-  'claude-sonnet-4-20250514': { tools: true, toolChoice: true, structuredOutputs: true, nativeToolCalling: true, agentReady: true, confidence: 'high', strengths: ['Excellent coding, tool use'] },
-  'llama-3.3-70b-versatile': { tools: true, toolChoice: true, structuredOutputs: true, nativeToolCalling: true, agentReady: true, confidence: 'high', strengths: ['Fast inference via Groq LPU'] },
-};
-
-function getModelCapabilities(provider, modelName) {
-  if (!modelName) return {};
-  const nm = modelName.toLowerCase();
-  for (const [key, caps] of Object.entries(MODEL_CAPABILITIES)) {
-    if (key.toLowerCase() === nm || nm.includes('-') && key.toLowerCase().startsWith(nm.split('-')[0])) return caps;
-  }
-  return {};
-}
-
-function decorateModel(provider, serialized) {
-  const caps = getModelCapabilities(provider, serialized?.modelName);
-  return { ...serialized, agentSuitability: caps };
-}
-
 const { isRetiredGeminiModelName, isUnstableGeminiAliasModelName, GEMINI_EMBEDDING_MODELS, GEMINI_EMBEDDING_DIMENSIONS, DEFAULT_GEMINI_EMBEDDING_MODEL } = { isRetiredGeminiModelName: () => false, isUnstableGeminiAliasModelName: () => false, GEMINI_EMBEDDING_MODELS: new Set(['text-embedding-004', 'gemini-embedding-005']), GEMINI_EMBEDDING_DIMENSIONS: { 'text-embedding-004': { default: 768, options: [768, 1536] }, 'gemini-embedding-005': { default: 768, options: [768, 1536] } }, DEFAULT_GEMINI_EMBEDDING_MODEL: 'text-embedding-004' };
 
 const SUPPORTED_AI_PROVIDERS = new Set([
@@ -695,7 +670,7 @@ function serializeAiModelConfig(model, provider = null) {
         createdAt: model.createdAt,
         updatedAt: model.updatedAt
     };
-    return provider ? decorateModel(provider, serialized) : serialized;
+    return serialized;
 }
 
 function getActiveAiModelConfig(models = []) {
@@ -1703,7 +1678,6 @@ exports.getAllAIKeys = async (req, res) => {
                     aiModelConfigs: (key.aiModelConfigs || []).map(model => serializeAiModelConfig(model, key.provider))
                 }),
                 activeModel: activeModel ? serializeAiModelConfig(activeModel, key.provider) : null,
-                agentSuitability: getModelCapabilities(key.provider, activeModel?.modelName || null)
             };
         });
         res.json({ success: true, data });
@@ -1793,7 +1767,6 @@ exports.getAIKeyDetails = async (req, res) => {
                 },
                 activeModel,
                 models,
-                agentSuitability: getModelCapabilities(key.provider, activeModel?.modelName || null),
                 routing: {
                     ...routingStatus,
                     isPreferredForProvider: health.isPreferredForProvider,

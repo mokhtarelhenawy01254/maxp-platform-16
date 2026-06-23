@@ -366,7 +366,9 @@ class TelegramUserbotService {
                         sessionString: null,
                         clientSession: null,
                         clientPhone: null,
-                        isActive: false
+                        isActive: false,
+                        tempAuthSession: null,
+                        tempPhoneCodeHash: null
                     }
                 });
 
@@ -444,6 +446,21 @@ class TelegramUserbotService {
             tempData.phoneCodeHash = result.phoneCodeHash;
             this.clients.set(userbotConfigId, tempData);
 
+            // Persist temp auth data to DB (survives restarts & multi-instance)
+            try {
+                const sessionString = client.session.save();
+                await this.prisma.telegramConfig.update({
+                    where: { id: userbotConfigId },
+                    data: {
+                        clientPhone: normalizedPhone,
+                        tempAuthSession: sessionString,
+                        tempPhoneCodeHash: result.phoneCodeHash
+                    }
+                });
+            } catch (dbError) {
+                console.warn("⚠️ [SEND-CODE] Failed to persist temp auth data:", dbError.message);
+            }
+
             return { success: true, message: "Code sent successfully", phoneCodeHash: result.phoneCodeHash };
 
         } catch (error) {
@@ -454,11 +471,37 @@ class TelegramUserbotService {
         }
     }
 
+    // --- Auth Step 1.5: Restore temp session from DB ---
+    async _restoreTempSession(userbotConfigId, companyId) {
+        try {
+            const config = await this.prisma.telegramConfig.findFirst({
+                where: { id: userbotConfigId, companyId, type: 'USERBOT' }
+            });
+            if (!config || !config.tempAuthSession || !config.tempPhoneCodeHash || !config.clientPhone) {
+                return null;
+            }
+            const session = new StringSession(config.tempAuthSession);
+            const client = new TelegramClient(session, parseInt(config.apiId), config.apiHash, {
+                connectionRetries: 5,
+            });
+            await client.connect();
+            const tempData = { client, phoneNumber: config.clientPhone, phoneCodeHash: config.tempPhoneCodeHash, companyId };
+            this.clients.set(userbotConfigId, tempData);
+            return tempData;
+        } catch (error) {
+            console.error("❌ [_restoreTempSession] Failed:", error.message);
+            return null;
+        }
+    }
+
     // --- Auth Step 2: Sign In ---
     async signIn(userbotConfigId, companyId, code, password) {
-        const temp = this.clients.get(userbotConfigId);
+        let temp = this.clients.get(userbotConfigId);
         if (!temp || (typeof temp !== 'object') || !temp.client) {
-            return { success: false, error: "Session expired or not found. Try sending code again." };
+            temp = await this._restoreTempSession(userbotConfigId, companyId);
+            if (!temp) {
+                return { success: false, error: "Session expired or not found. Try sending code again." };
+            }
         }
 
         try {
@@ -511,7 +554,7 @@ class TelegramUserbotService {
             // Save to DB
             await this.prisma.telegramConfig.update({
                 where: { id: userbotConfigId },
-                data: { sessionString, isActive: true, clientPhone: this._normalizePhone(phoneNumber) || phoneNumber }
+                data: { sessionString, isActive: true, clientPhone: this._normalizePhone(phoneNumber) || phoneNumber, tempAuthSession: null, tempPhoneCodeHash: null }
             });
 
             // Store actual client instance (clean up temp object)

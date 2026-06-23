@@ -127,12 +127,6 @@ interface ModelOption {
   keyType: string;
   priority: number;
   scope: "company" | "central";
-  agentSuitability?: {
-    nativeToolCalling?: boolean;
-    agentReady?: boolean;
-    riskLevel?: string;
-    notes?: string[];
-  };
 }
 
 /* ─── Helpers ──────────────────────────────────────────────────── */

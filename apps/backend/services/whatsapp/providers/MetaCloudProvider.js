@@ -264,24 +264,46 @@ async function checkContact(sessionId, phoneNumbers) {
     throw new Error('Session not found');
   }
 
-  const { apiVersion, accessToken, phoneNumberId } = resolveConfig(session);
+  const config = resolveConfig(session);
+  const { apiVersion, accessToken, phoneNumberId } = config;
   const url = `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/contacts`;
+
+  console.error('🔍 [MetaCloud checkContact debug]:', {
+    sessionId,
+    provider: session.provider,
+    hasToken: !!accessToken,
+    tokenPrefix: accessToken?.substring(0, 10),
+    phoneNumberId,
+    apiVersion,
+    url,
+    numbers: phoneNumbers,
+  });
 
   const numbers = Array.isArray(phoneNumbers) ? phoneNumbers : [phoneNumbers];
   const normalizedNumbers = numbers.map(n => normalizePhone(n));
 
-  const response = await axios.post(url, {
-    messaging_product: 'whatsapp',
-    contacts: normalizedNumbers
-  }, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json'
-    },
-    timeout: 30000
-  });
+  try {
+    const response = await axios.post(url, {
+      messaging_product: 'whatsapp',
+      contacts: normalizedNumbers
+    }, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 30000
+    });
 
-  return response.data?.contacts || [];
+    return response.data?.contacts || [];
+  } catch (err) {
+    console.error('❌ MetaCloud checkContact error:', {
+      status: err.response?.status,
+      data: JSON.stringify(err.response?.data),
+      url,
+      phoneNumberId,
+    });
+    throw err;
+  }
 }
 
 module.exports = {
