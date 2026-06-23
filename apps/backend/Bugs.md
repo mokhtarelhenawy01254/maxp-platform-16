@@ -1,3 +1,22 @@
+## [2026-03-09] Fragmented Model Selection and provider factory NameError in Python AI Service
+
+- **Bug/Issue**: Model selection was fragmented across 3 separate paths, losing template fallback policies at runtime. Also, a NameError (`resolved_model` is undefined) in `factory.py:get_active_provider` caused database-configured provider routing to crash and fail.
+- **Root Cause**:
+  1. The variable `resolved_model` was used in `factory.py` instead of the parameter name `model`.
+  2. The database model `ai.agents` lacked a `model_policy` column to store and persist the fallback model hierarchy from templates.
+  3. `ensure_client` in `base.py` did not implement any backup/fallback mechanism when the primary model failed.
+- **Fix**:
+  1. Corrected `resolved_model` to `model` in `factory.py:get_active_provider`.
+  2. Created Alembic migration `0019_agent_model_policy.py` to add `model_policy` (JSONB) column to `ai.agents` and backfilled from `ai.agent_templates`.
+  3. Updated `Agent` SQLAlchemy model, `AgentRegistry.spawn()`, and `init_registry_from_db()` to store and recover `model_policy`.
+  4. Rewrote `ensure_client()` in `base.py` to attempt the primary model, and sequentially try fallbacks in `model_policy` before failing.
+- **Files**:
+  - `apps/ai-service/src/llm/providers/factory.py`
+  - `apps/ai-service/src/db/models/agent.py`
+  - `apps/ai-service/src/services/agent_registry.py`
+  - `apps/ai-service/src/agents/base.py`
+  - `apps/ai-service/migrations/versions/0019_agent_model_policy.py`
+
 ## [2026-06-23] WhatsAppChat.tsx Corrupted Arabic Text After Encoding Recovery Scripts
 
 - **Bug/Issue**: After running `recover_file.js` and `fix_replacement_chars.js` to fix double-encoded Arabic strings (e.g., `ØµÙˆØ±Ø©`), the scripts inadvertently corrupted valid Arabic characters in the source code, replacing them with Unicode replacement characters (`�`). This caused ~45 locations to have broken text (e.g., `صفحة` became `ص�حة`, `فيديو` became `�يديو`, `ملف` became `مل�`). Additionally, the emoji array `commonReactions` was corrupted (e.g., `👍` became `� `). The `حذف` text was also doubled to `حذفف`.

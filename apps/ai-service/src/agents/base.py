@@ -336,6 +336,43 @@ class BaseAgent:
         self.client = client
         return self._framework_agent
 
+    async def _try_build_client(
+        self,
+        *,
+        provider: str | None = None,
+        model: str = "",
+        key_id: str | None = None,
+        tools: list[Any] = None,
+        instructions: str = "",
+    ) -> Any | None:
+        try:
+            if provider:
+                return await build_provider_client_async(
+                    provider,
+                    model=model,
+                    tools=tools,
+                    system_prompt=instructions,
+                    company_id=self.company_id,
+                    key_id=key_id,
+                )
+            else:
+                return await build_agent_client_async(
+                    get_settings(),
+                    model=model,
+                    tools=tools,
+                    system_prompt=instructions,
+                    company_id=self.company_id,
+                )
+        except Exception as exc:
+            logger.warning(
+                "client_build_failed",
+                model=model,
+                provider=provider,
+                agent_id=self.id,
+                error=str(exc),
+            )
+            return None
+
     async def ensure_client(self) -> Any:
         """Create the SDK-compatible client through the framework Agent lifecycle."""
         if self.client is not None:
@@ -343,33 +380,71 @@ class BaseAgent:
         settings = get_settings()
         instructions = self._get_system_prompt()
         tools = self._resolve_tools()
-        if self.config.provider:
-            self.client = await build_provider_client_async(
-                self.config.provider,
-                model=self.model,
-                tools=tools,
-                system_prompt=instructions,
-                company_id=self.company_id,
-                key_id=self.config.key_id,
+
+        # Step 1: Try primary model
+        client = await self._try_build_client(
+            provider=self.config.provider,
+            model=self.model,
+            key_id=self.config.key_id,
+            tools=tools,
+            instructions=instructions,
+        )
+        if client:
+            self._last_model_selection = {"model": self.model, "source": "primary"}
+            self.client = client
+            return client
+
+        # Step 2: Fallback logic using model_policy
+        model_policy = self.policies.get("model_policy", {}) or {}
+        fallbacks = model_policy.get("fallback", [])
+        logger.warning(
+            "primary_model_failed_trying_fallbacks",
+            agent_id=self.id,
+            primary_model=self.model,
+            fallback_count=len(fallbacks),
+        )
+
+        for i, fb in enumerate(fallbacks):
+            fb_model = fb.get("model", "")
+            fb_provider = fb.get("provider")
+            if not fb_model:
+                continue
+
+            logger.info(
+                "trying_model_fallback",
+                index=i,
+                model=fb_model,
+                provider=fb_provider,
             )
-        else:
-            self.client = await build_agent_client_async(
-                settings,
-                model=self.model,
+            client = await self._try_build_client(
+                provider=fb_provider,
+                model=fb_model,
                 tools=tools,
-                system_prompt=instructions,
-                company_id=self.company_id,
+                instructions=instructions,
             )
-        if self.client is None:
-            if self.config.provider:
-                raise RuntimeError(
-                    f"Selected LLM provider unavailable: {self.config.provider}"
+            if client:
+                self._last_model_selection = {
+                    "model": fb_model,
+                    "provider": fb_provider,
+                    "source": f"fallback-{i}",
+                    "original_model": self.model,
+                }
+                logger.warning(
+                    "model_fallback_activated",
+                    agent_id=self.id,
+                    fallback_index=i,
+                    fallback_model=fb_model,
+                    fallback_provider=fb_provider,
                 )
-            raise RuntimeError(
-                f"No LLM client available for model '{self.model}'. "
-                f"Check active API keys in ai_keys table for agent {self.id}."
-            )
-        return self.client
+                self.client = client
+                self.model = fb_model
+                return client
+
+        # Step 3: If everything failed, raise RuntimeError
+        raise RuntimeError(
+            f"No LLM client available for model '{self.model}' (tried primary model + {len(fallbacks)} fallbacks). "
+            f"Check active API keys in ai_keys table for agent {self.id}."
+        )
 
     def _resolve_tools(self) -> list[FunctionTool]:
         """Resolve the list of tools this agent is allowed to use.

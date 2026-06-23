@@ -89,8 +89,10 @@ class AgentRegistry:
         name: str | None = None,
         instructions: str | None = None,
         allowed_tools: list[str] | None = None,
+        allowed_skills: list[str] | None = None,
         allowed_channels: list[str] | None = None,
         model: str | None = None,
+        model_policy: dict[str, Any] | None = None,
         parent_id: str | None = None,
         template_slug: str | None = None,
         company_name: str | None = None,
@@ -99,7 +101,39 @@ class AgentRegistry:
         """Create a new agent with role-specific tools, register in memory, persist to DB."""
         settings = get_settings()
         agent_id = _generate_agent_id(company_id)
-        resolved_model = model or settings.default_model
+
+        resolved_policy = model_policy or {}
+        resolved_skills = allowed_skills or []
+        resolved_persona = {}
+        resolved_guardrails = {}
+
+        if template_slug and db_session:
+            from src.agents.loader import get_template
+            from src.agents._internals import _TemplateAdapter
+            try:
+                template = await get_template(template_slug, db_session)
+                if template:
+                    profile = _TemplateAdapter.from_db_or_proxy(template, template_slug, company_id)
+                    if not resolved_policy:
+                        resolved_policy = profile.model_policy or {}
+                    if not resolved_skills:
+                        resolved_skills = profile.allowed_skills or []
+                    resolved_persona = {
+                        "language": profile.persona_meta.get("language", "arabic"),
+                        "dialect": profile.persona_meta.get("dialect"),
+                        "tone": profile.persona_meta.get("tone", "professional"),
+                        "formality": profile.persona_meta.get("formality", "formal"),
+                    }
+                    resolved_guardrails = profile.guardrails or {}
+            except Exception as e:
+                logger.warning("failed to load template during spawn", template_slug=template_slug, error=str(e))
+
+        resolved_model = (
+            model
+            or resolved_policy.get("default")
+            or resolved_policy.get("model")
+            or settings.default_model
+        )
 
         tool_names = allowed_tools or get_tool_names_for_role(role)
 
@@ -109,11 +143,16 @@ class AgentRegistry:
             role=role,
             company_id=company_id,
             allowed_tools=tool_names,
+            allowed_skills=resolved_skills,
             allowed_channels=allowed_channels or [],
             model=resolved_model,
             parent_id=parent_id,
             template_slug=template_slug,
-            # instructions handled via template or overrides in BaseAgent
+            persona=resolved_persona,
+            policies={
+                "model_policy": resolved_policy,
+                "guardrails": resolved_guardrails,
+            },
         )
 
         agent = BaseAgent(config)
@@ -126,11 +165,15 @@ class AgentRegistry:
                 "name": agent.name,
                 "role": role,
                 "model": resolved_model,
+                "model_policy": resolved_policy,
                 "status": "ACTIVE",
                 "parent_id": parent_id,
                 "template_slug": template_slug,
                 "skills": json.dumps(tool_names),
                 "channels": json.dumps(allowed_channels or []),
+                "allowed_skills": resolved_skills,
+                "persona": resolved_persona,
+                "guardrails": resolved_guardrails,
                 "created_by": "agent_registry",
             })
 
@@ -234,6 +277,10 @@ async def init_registry_from_db(session_factory) -> None:
                         model=db_agent.model or settings.default_model,
                         allowed_skills=list(db_agent.allowed_skills or []),
                         persona=db_agent.persona or {},
+                        policies={
+                            "model_policy": db_agent.model_policy or {},
+                            "guardrails": db_agent.guardrails or {},
+                        },
                         provider=_agent_config_json.get("provider") or None,
                         key_id=_agent_config_json.get("keyId") or _agent_config_json.get("key_id") or None,
                         template_slug=db_agent.template_slug or None,

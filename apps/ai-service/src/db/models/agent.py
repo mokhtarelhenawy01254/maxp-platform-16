@@ -85,6 +85,7 @@ class Agent(Base):
     )
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="ACTIVE")
     model: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    model_policy: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     persona: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     allowed_tools: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     allowed_skills: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)

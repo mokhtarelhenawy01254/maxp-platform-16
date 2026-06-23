@@ -48,3 +48,11 @@ graph TD
 - `routes/`: Express route definitions mapped to controllers
 - `prisma/`: Prisma database schema definitions and migration files
 - `tests/`: Jest test suites (unit and integration)
+
+## Python AI Service Database Updates
+
+To support unified model resolution and fallback mechanisms:
+- **Table**: `ai.agents` (mapped by `Agent` model in `apps/ai-service/src/db/models/agent.py`)
+- **Added Column**: `model_policy` (`JSONB`, default `{}`)
+- **Purpose**: Persists the fallback model configuration snapshot (copied from the agent template) to resolve failovers during message processing.
+

@@ -285,7 +285,7 @@ class ProviderFactory:
         try:
             key_info = await model_manager.get_next_key(model, company_id or "default")
             provider_type = key_info.provider if hasattr(key_info, "provider") else key_info["provider"]
-            return await self.get_provider(provider_type, resolved_model, company_id)
+            return await self.get_provider(provider_type, model, company_id)
         except ModelManagerError:
             return None
 
