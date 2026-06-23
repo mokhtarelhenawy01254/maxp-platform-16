@@ -157,7 +157,7 @@ router.get('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
         company: true,
         invoice: {
           include: {
-            items: true
+            invoiceItems: true
           }
         }
       }

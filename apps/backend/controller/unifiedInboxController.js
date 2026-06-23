@@ -990,7 +990,7 @@ const getCustomerProfile = async (req, res) => {
                         total: true,
                         createdAt: true,
                         _count: {
-                            select: { items: true }
+                            select: { orderItems: true }
                         }
                     }
                 },

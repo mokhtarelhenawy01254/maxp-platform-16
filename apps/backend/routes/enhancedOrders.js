@@ -711,7 +711,7 @@ router.patch('/:id/status', async (req, res) => {
       include: {
         customer: true,
         conversation: true,
-        items: true
+        orderItems: true
       }
     });
 
