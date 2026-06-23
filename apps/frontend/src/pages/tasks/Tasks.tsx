@@ -27,7 +27,7 @@ import { FilterSidebar } from "./components/FilterSidebar";
 import { TaskIntegrationsTab } from "./components/TaskIntegrationsTab";
 import { TaskSettingsTab } from "./components/TaskSettingsTab";
 import { TaskWorkspaceHeader } from "./components/TaskWorkspaceHeader";
-import { TaskWorkspaceTabs } from "./components/TaskWorkspaceTabs";
+
 import { BusinessPageShell } from "../../components/business/BusinessSurface";
 import { Button } from "../../components/ui/button";
 import {
@@ -1457,14 +1457,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     <BusinessPageShell className="tasks-page p-2.5 pb-24 md:px-4 md:py-3 xl:px-5 xl:py-4">
       <div className="mx-auto max-w-[1360px] space-y-2">
         <div className="space-y-2">
-          <TaskWorkspaceTabs
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            canManageIntegrations={canManageIntegrations}
-            taskCount={taskStats.total}
-            projectCount={projects.length}
-            categoryCount={categories.length}
-          />
+
           {renderActiveTabContent()}
         </div>
 
