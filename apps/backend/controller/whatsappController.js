@@ -1050,14 +1050,25 @@ async function markAsRead(req, res) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
 
-        // Resolve virtual session ID and verify ownership
-        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
-        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
-            where: { id: targetSessionId, companyId }
-        });
-
-        if (!session) {
-            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        // Resolve target session from DB only (skip in-memory check — markAsRead
+        // works on DB even if the socket is disconnected/reconnecting)
+        let targetSessionId = sessionId;
+        if (sessionId === 'all') {
+            const anySession = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { companyId },
+                orderBy: { lastConnectedAt: 'desc' }
+            });
+            if (!anySession) {
+                return res.status(404).json({ error: 'لا توجد جلسة متاحة' });
+            }
+            targetSessionId = anySession.id;
+        } else {
+            const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { id: sessionId, companyId }
+            });
+            if (!session) {
+                return res.status(404).json({ error: 'الجلسة غير موجودة' });
+            }
         }
 
         await WhatsAppMessageHandler.markAsRead(targetSessionId, remoteJid);
