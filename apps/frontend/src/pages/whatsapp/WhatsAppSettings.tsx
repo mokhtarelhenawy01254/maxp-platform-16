@@ -1622,7 +1622,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   );
 
   const renderSessionsTab = () => (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <WhatsAppSurfaceCard
         title={t("whatsappSettings.sidebarTitle")}
         description={t("whatsappSettings.description")}
@@ -1667,10 +1667,10 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
               return (
                 <div
                   key={session.id}
-                  className="rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-5 shadow-md"
+                  className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-3 shadow-sm sm:rounded-3xl sm:p-5 sm:shadow-md"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-start justify-between gap-2 sm:gap-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <Avatar size="lg" className="bg-primary/10">
                         <AvatarFallback className="bg-transparent text-[color:var(--color-primary)]">
                           <Smartphone className="size-5" />
@@ -1697,21 +1697,21 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                         </AvatarBadge>
                       </Avatar>
 
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-base font-semibold text-[color:var(--color-foreground)]">
+                      <div className="space-y-0.5 sm:space-y-1">
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                          <p className="text-sm font-semibold text-[color:var(--color-foreground)] sm:text-base">
                             {session.name}
                           </p>
                           {session.isDefault ? (
                             <Badge
                               variant="outline"
-                              className="rounded-full border-blue-300/70 bg-blue-500/10 text-blue-800 dark:border-blue-500/40 dark:text-blue-200"
+                              className="rounded-full border-blue-300/70 bg-blue-500/10 text-blue-800 dark:border-blue-500/40 dark:text-blue-200 text-[10px] sm:text-xs"
                             >
                               {t("whatsappSettings.default")}
                             </Badge>
                           ) : null}
                         </div>
-                        <p className="text-sm text-[color:var(--color-muted-foreground)]">
+                        <p className="text-xs text-[color:var(--color-muted-foreground)] sm:text-sm">
                           {phoneLabel}
                         </p>
                       </div>
@@ -1720,7 +1720,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     <Badge
                       variant="outline"
                       className={cn(
-                        "rounded-full",
+                        "rounded-full shrink-0 text-[11px] sm:text-xs",
                         statusBadgeClasses[statusValue] ||
                           statusBadgeClasses.DISCONNECTED,
                       )}
@@ -1729,43 +1729,43 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     </Badge>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-3 flex flex-wrap gap-1.5 sm:mt-4 sm:gap-2">
                     <Badge
                       variant="outline"
-                      className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]"
+                      className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] text-[11px] sm:text-xs"
                     >
                       {providerLabels[session.provider || "BAILEYS"]}
                     </Badge>
                     {session.autoReply ? (
                       <Badge
                         variant="outline"
-                        className="rounded-full border-amber-300/70 bg-amber-500/10 text-amber-800 dark:border-amber-500/40 dark:text-amber-200"
+                        className="rounded-full border-amber-300/70 bg-amber-500/10 text-amber-800 dark:border-amber-500/40 dark:text-amber-200 text-[11px] sm:text-xs"
                       >
                         {t("whatsappSettings.dialogs.autoReply")}
                       </Badge>
                     ) : null}
                   </div>
 
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[color:var(--color-muted)] px-4 py-3">
-                      <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4 sm:gap-3">
+                    <div className="rounded-xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[color:var(--color-muted)] px-3 py-2 sm:rounded-2xl sm:px-4 sm:py-3">
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)] sm:text-xs">
                         {t("whatsappSettings.contacts")}
                       </p>
-                      <p className="mt-1 text-lg font-semibold text-[color:var(--color-foreground)]">
+                      <p className="mt-0.5 text-base font-semibold text-[color:var(--color-foreground)] sm:mt-1 sm:text-lg">
                         {session._count?.contacts || 0}
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[color:var(--color-muted)] px-4 py-3">
-                      <p className="text-xs uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
+                    <div className="rounded-xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[color:var(--color-muted)] px-3 py-2 sm:rounded-2xl sm:px-4 sm:py-3">
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)] sm:text-xs">
                         {t("whatsappSettings.messages")}
                       </p>
-                      <p className="mt-1 text-lg font-semibold text-[color:var(--color-foreground)]">
+                      <p className="mt-0.5 text-base font-semibold text-[color:var(--color-foreground)] sm:mt-1 sm:text-lg">
                         {session._count?.messages || 0}
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-5 flex flex-wrap gap-2 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] pt-4">
+                  <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] pt-3 sm:mt-5 sm:gap-2 sm:pt-4">
                     {isConnectedStatus(statusValue) ? (
                       <Button
                         variant="outline"
@@ -3053,14 +3053,14 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         backLabel={t("common.back")}
         eyebrow={eyebrow}
       >
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-36 rounded-3xl" />
+            <Skeleton key={index} className="h-24 rounded-2xl sm:h-36 sm:rounded-3xl" />
           ))}
         </div>
         <div className="grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)]">
-          <Skeleton className="h-[34rem] rounded-3xl" />
-          <Skeleton className="h-[40rem] rounded-3xl" />
+          <Skeleton className="h-[20rem] rounded-2xl sm:h-[34rem] sm:rounded-3xl" />
+          <Skeleton className="h-[24rem] rounded-2xl sm:h-[40rem] sm:rounded-3xl" />
         </div>
       </WhatsAppPageShell>
     );
@@ -3076,7 +3076,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       backLabel={t("common.back")}
       eyebrow={eyebrow}
     >
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 md:grid-cols-2 xl:grid-cols-4">
         <WhatsAppMetricCard
           label={t("whatsappSettings.connected")}
           value={connectedSessions.length}
@@ -3104,23 +3104,28 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       </div>
 
       <div className="block xl:hidden">
-        <WhatsAppSurfaceCard title={t("whatsappSettings.sidebarTitle")}>
-          <div className="space-y-2">
-            <Label>{t("whatsappSettings.sidebarTitle")}</Label>
-            <Select value={activeTab} onValueChange={(value) => handleTabChange(value as TabId)}>
-              <SelectTrigger className="h-11 bg-[color:var(--color-card)]">
-                <SelectValue placeholder={t("whatsappSettings.sidebarTitle")} />
-              </SelectTrigger>
-              <SelectContent>
-                {tabs.map((tab) => (
-                  <SelectItem key={tab.id} value={tab.id}>
-                    {tab.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </WhatsAppSurfaceCard>
+        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {tabs.map((tab) => {
+            const selected = activeTab === tab.id;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => handleTabChange(tab.id)}
+                className={cn(
+                  "flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition-all whitespace-nowrap",
+                  selected
+                    ? "bg-[color:var(--business-success)] text-white shadow-md"
+                    : "bg-[color:var(--color-muted)] text-[color:var(--color-foreground)] hover:bg-[color:color-mix(in_srgb,var(--color-muted)_80%,var(--color-card))]",
+                )}
+              >
+                <Icon className="size-4" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)]">

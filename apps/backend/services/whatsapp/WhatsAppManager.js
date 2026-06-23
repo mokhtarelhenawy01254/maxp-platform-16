@@ -3487,10 +3487,8 @@ async function onWhatsApp(sessionId, number) {
     });
 
     if (dbSession?.provider === 'META_CLOUD') {
-        const { phoneNumber } = normalizeWhatsAppContactIdentity(number);
-        const results = await MetaCloudProvider.checkContact(sessionId, phoneNumber);
-        const entry = results.find(r => r.status === 'valid') || null;
-        return entry ? { jid: entry.wa_id, exists: true } : null;
+        const jid = number.replace(/[^\d]/g, '');
+        return { jid, exists: true };
     }
 
     const session = getSession(sessionId);
