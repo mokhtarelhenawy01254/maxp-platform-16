@@ -149,7 +149,7 @@ async function testAnalyticsQueries(companyId) {
         const orders = await prisma.order.findMany({
           where: {
             companyId: String(companyId),
-            status: { in: ['delivered', 'shipped', 'confirmed', 'processing'] }
+            status: { in: ['DELIVERED', 'SHIPPED', 'CONFIRMED', 'PROCESSING'] }
           },
           select: { id: true },
           take: 10
