@@ -100,25 +100,43 @@ async function sendText(sessionId, to, text, options = {}) {
   return await postMessage(session, payload);
 }
 
+function makeUrlAbsolute(url) {
+  if (!url) return url;
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  const baseUrl = (process.env.APP_URL || 'https://maxp.online').replace(/\/$/, '');
+  const relativePath = url.startsWith('/') ? url : `/${url}`;
+  return `${baseUrl}${relativePath}`;
+}
+
 async function sendMedia(sessionId, to, media, kind, options = {}) {
   const session = await getSession(sessionId);
   if (!session) {
     throw new Error('Session not found');
   }
 
-  const mediaPayload = {};
-  if (media?.id || media?.mediaId) {
-    mediaPayload.id = media.id || media.mediaId;
-  } else if (media?.url || media?.link) {
-    mediaPayload.link = media.url || media.link;
+  let mediaObj = media;
+  if (typeof media === 'string') {
+    mediaObj = { url: media };
   }
 
-  const caption = options.caption || media?.caption;
+  const mediaPayload = {};
+  if (mediaObj?.id || mediaObj?.mediaId) {
+    mediaPayload.id = mediaObj.id || mediaObj.mediaId;
+  } else {
+    const rawUrl = mediaObj?.url || mediaObj?.link;
+    if (rawUrl) {
+      mediaPayload.link = makeUrlAbsolute(rawUrl);
+    }
+  }
+
+  const caption = options.caption || mediaObj?.caption;
   if (caption) {
     mediaPayload.caption = caption;
   }
 
-  const filename = options.fileName || media?.fileName;
+  const filename = options.fileName || mediaObj?.fileName;
   if (filename && kind === 'document') {
     mediaPayload.filename = filename;
   }

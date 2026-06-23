@@ -2,6 +2,13 @@
 
 ## [2026-03-09]
 
+### WhatsApp Media Sending and Notification Encoding Fixes
+- **Accomplishment**: Restored mangled Arabic notification text in the frontend and fixed Meta Cloud provider media/image sending pipeline.
+- **Details**:
+  - Automatically decoded double-encoded Windows-1252 (CP1252) characters back to standard UTF-8 in `WhatsAppChat.tsx`, correcting Arabic words and emojis in snackbars, browser notifications, and action buttons.
+  - Resolved a failure where `MetaCloudProvider.sendMedia` failed when passed a string instead of an object, normalizing the parameter dynamically to `{ url: media }`.
+  - Added support for relative media upload paths by prepending `process.env.APP_URL` to ensure Meta's servers can publicly retrieve attachments from `/uploads/`.
+
 ### WhatsApp Meta Webhook Integration End-to-End Delivery Fixes
 - **Accomplishment**: Fixed a database schema validation crash during contact upserts for incoming Meta WhatsApp webhooks, and deployed a duplicate session database cleanup script.
 - **Details**:

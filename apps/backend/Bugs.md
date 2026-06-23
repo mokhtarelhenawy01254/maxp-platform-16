@@ -4281,3 +4281,21 @@ eq.user.id matches the createdBy field on the existing order. Otherwise, it thro
   - `apps/backend/controller/whatsappMetaWebhookController.js`
   - `apps/backend/middleware/globalSecurity.js`
 
+## [2026-06-23] Frontend — WhatsApp Message Notification Encoding Issue
+- **Bug/Issue**: Inbound WhatsApp notifications (browser push and toast messages) rendered corrupted/mangled text like `ØµÙˆØ±Ø©` and `Ø±Ø³Ø§Ù„Ø© Ø¬Ø¯ÙŠØ¯Ø©` instead of Arabic terms.
+- **Root Cause**: The file `WhatsAppChat.tsx` had its UTF-8 encoded Arabic strings double-encoded/corrupted as Windows-1252 (CP1252) characters at some point, rendering corrupted text dynamically upon receiving notification events.
+- **Fix**: Wrote a recovery script to programmatically decode the mangled Windows-1252 bytes back into proper UTF-8 Arabic text, restoring correct snackbar, toast, and browser notification strings in `WhatsAppChat.tsx`.
+- **Affected Files**:
+  - `apps/frontend/src/pages/whatsapp/WhatsAppChat.tsx`
+
+## [2026-06-23] Backend — Meta Cloud API WhatsApp Media / Image Sending Failure
+- **Bug/Issue**: Images and media attachments sent from the chat inbox failed to reach recipients on Meta Cloud provider.
+- **Root Cause**:
+  - `MetaCloudProvider.sendMedia()` expected a structured object for `media` (containing `.url` or `.link` or `.id`). However, the unified inbox controller (`unifiedInboxController.js`) passed the image source URL as a raw string directly, causing undefined properties and an empty payload structure.
+  - Local relative file upload paths (like `/uploads/...`) were not converted to absolute URLs, making them unreachable for Meta's servers.
+- **Fix**:
+  - Modified `sendMedia` in `MetaCloudProvider.js` to normalize the `media` argument to `{ url: media }` if it is passed as a string.
+  - Implemented `makeUrlAbsolute` helper in the provider to prepend `process.env.APP_URL` to relative asset paths (starting with `/`), ensuring Meta's servers can download files statically served from `/uploads/`.
+- **Affected Files**:
+  - `apps/backend/services/whatsapp/providers/MetaCloudProvider.js`
+
