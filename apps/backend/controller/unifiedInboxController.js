@@ -1028,7 +1028,7 @@ const getCustomerProfile = async (req, res) => {
         const ordersSum = await prisma.order.aggregate({
             where: {
                 customerId,
-                status: { in: ['completed', 'delivered', 'paid'] }
+                status: { in: ['DELIVERED'] }
             },
             _sum: { total: true }
         });
