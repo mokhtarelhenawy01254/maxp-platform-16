@@ -102,6 +102,115 @@ router.get('/statistics', authenticateToken, requireSuperAdmin, cacheMiddleware(
 });
 
 /**
+ * GET /api/v1/admin/dashboard/aggregated
+ * داشبورد مدير النظام - بيانات مجمعة (إحصائيات، مقارنات، اتجاهات، صحة النظام، الخدمات)
+ */
+router.get('/dashboard/aggregated', authenticateToken, requireSuperAdmin, async (req, res) => {
+  try {
+    const { getSharedPrismaClient, healthCheck: dbHealthCheck } = require('../services/sharedDatabase');
+    const prisma = getSharedPrismaClient();
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+    const [
+      totalCompanies, activeCompanies, totalUsers, totalCustomers, totalConversations,
+      recentCompanies, recentUsers, recentCustomers,
+      prevCompanies, prevUsers, prevCustomers,
+      dailyCompanies, dailyUsers, dailyCustomers,
+      systems, recentAlerts
+    ] = await Promise.all([
+      prisma.company.count(),
+      prisma.company.count({ where: { isActive: true } }),
+      prisma.user.count(),
+      prisma.customer.count(),
+      prisma.conversation.count(),
+      prisma.company.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
+      prisma.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
+      prisma.customer.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
+      prisma.company.count({ where: { createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } }),
+      prisma.user.count({ where: { createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } }),
+      prisma.customer.count({ where: { createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } }),
+      prisma.$queryRaw`SELECT DATE(createdAt) as date, CAST(COUNT(*) AS SIGNED) as count FROM companies WHERE createdAt >= ${thirtyDaysAgo} GROUP BY DATE(createdAt) ORDER BY date ASC`,
+      prisma.$queryRaw`SELECT DATE(createdAt) as date, CAST(COUNT(*) AS SIGNED) as count FROM users WHERE createdAt >= ${thirtyDaysAgo} GROUP BY DATE(createdAt) ORDER BY date ASC`,
+      prisma.$queryRaw`SELECT DATE(createdAt) as date, CAST(COUNT(*) AS SIGNED) as count FROM customers WHERE createdAt >= ${thirtyDaysAgo} GROUP BY DATE(createdAt) ORDER BY date ASC`,
+      prisma.systemSettings.findMany({ orderBy: [{ category: 'asc' }, { displayName: 'asc' }] }),
+      prisma.activityLog.findMany({ where: { severity: { in: ['HIGH', 'CRITICAL'] } }, orderBy: { createdAt: 'desc' }, take: 5 })
+    ]);
+
+    const calcGrowth = (current, previous) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return Math.round(((current - previous) / previous) * 100 * 10) / 10;
+    };
+
+    const toDateStr = (d) => {
+      if (!d) return '';
+      if (d instanceof Date) return d.toISOString().split('T')[0];
+      return String(d).split('T')[0];
+    };
+
+    const trendsMap = {};
+    const addTrend = (rows, key) => {
+      for (const row of rows) {
+        const d = toDateStr(row.date);
+        if (!d) continue;
+        if (!trendsMap[d]) trendsMap[d] = { date: d, companies: 0, users: 0, customers: 0 };
+        trendsMap[d][key] = typeof row.count === 'bigint' ? Number(row.count) : (row.count || 0);
+      }
+    };
+    addTrend(dailyCompanies, 'companies');
+    addTrend(dailyUsers, 'users');
+    addTrend(dailyCustomers, 'customers');
+
+    const trends = [];
+    for (let d = new Date(thirtyDaysAgo); d <= now; d.setDate(d.getDate() + 1)) {
+      const ds = toDateStr(d);
+      trends.push(trendsMap[ds] || { date: ds, companies: 0, users: 0, customers: 0 });
+    }
+
+    let health = { status: 'UNKNOWN', database: 'N/A' };
+    try {
+      const dbHealth = await dbHealthCheck();
+      health = {
+        status: dbHealth.status === 'ok' ? 'healthy' : dbHealth.status === 'connection_limit' ? 'degraded' : 'error',
+        uptime: process.uptime(),
+        database: dbHealth.status === 'ok' ? 'connected' : 'limited',
+        dbStats: { queryCount: dbHealth.queryCount || 0, latency: dbHealth.latency || 0, queue: dbHealth.queue || 0, active: dbHealth.active || 0 },
+        environment: process.env.NODE_ENV || 'development',
+        timestamp: now.toISOString(),
+      };
+    } catch (e) {
+      health = { status: 'error', database: 'disconnected', error: e.message, timestamp: now.toISOString() };
+    }
+
+    const sysConfig = (s) => {
+      try { return JSON.parse(s.config || '{}'); } catch { return {}; }
+    };
+
+    res.json({
+      success: true,
+      data: {
+        overview: { totalCompanies, activeCompanies, totalUsers, totalCustomers, totalConversations },
+        comparison: {
+          companiesGrowth: calcGrowth(recentCompanies, prevCompanies),
+          usersGrowth: calcGrowth(recentUsers, prevUsers),
+          customersGrowth: calcGrowth(recentCustomers, prevCustomers),
+        },
+        recentActivity: { newCompaniesLast30Days: recentCompanies, newUsersLast30Days: recentUsers, newCustomersLast30Days: recentCustomers },
+        trends,
+        health,
+        systems: systems.map(s => ({ systemName: s.systemName, displayName: s.displayName, category: s.category, isEnabled: s.isEnabled, resourceUsage: s.resourceUsage || sysConfig(s).resourceUsage || 'unknown' })),
+        alerts: recentAlerts.map(a => ({ id: a.id, type: a.severity === 'CRITICAL' ? 'error' : 'warning', message: a.description, category: a.category, action: a.action, timestamp: a.createdAt }))
+      },
+      message: 'تم جلب بيانات الداشبورد بنجاح'
+    });
+  } catch (error) {
+    console.error('❌ [Dashboard] Error fetching aggregated data:', error);
+    res.status(500).json({ success: false, message: 'خطأ في جلب بيانات الداشبورد', error: error.message });
+  }
+});
+
+/**
  * GET /api/v1/admin/active-users
  * الحصول على المستخدمين النشطين على التاسكات (التيمر شغال)
  */

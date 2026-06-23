@@ -1053,14 +1053,6 @@ function getPersistedNotificationRecipientType(recipientType) {
     : 'CUSTOMER';
 }
 
-function formatPlanLabel(plan) {
-  const normalizedPlan = String(plan || '').toUpperCase();
-  if (normalizedPlan === 'ENTERPRISE') return 'Enterprise';
-  if (normalizedPlan === 'PRO') return 'Pro';
-  if (normalizedPlan === 'BASIC') return 'Basic';
-  return normalizedPlan || 'الخطة الحالية';
-}
-
 function formatBillingCycleLabel(billingCycle) {
   const normalizedCycle = String(billingCycle || '').toLowerCase();
   if (normalizedCycle === 'yearly') return 'سنوي';
@@ -3679,7 +3671,7 @@ async function sendSubscriptionCreatedNotification({
   const baseVariables = {
     customerName: recipientName || 'عميلنا العزيز',
     companyName,
-    planName: formatPlanLabel(planName),
+    planName,
     billingCycleLabel: formatBillingCycleLabel(billingCycle),
     monthlyFee: String(monthlyFee ?? 0),
     currency,
@@ -3742,7 +3734,7 @@ async function sendSubscriptionRenewedNotification({
   const baseVariables = {
     customerName: recipientName || 'عميلنا العزيز',
     companyName,
-    planName: formatPlanLabel(planName),
+    planName,
     billingCycleLabel: formatBillingCycleLabel(billingCycle),
     monthlyFee: String(monthlyFee ?? 0),
     currency,
@@ -3802,7 +3794,7 @@ async function sendSubscriptionCancelledNotification({
   const baseVariables = {
     customerName: recipientName || 'عميلنا العزيز',
     companyName,
-    planName: formatPlanLabel(planName),
+    planName,
     reason: reason || 'غير محدد',
     endDate: formatNotificationDate(endDate || new Date())
   };

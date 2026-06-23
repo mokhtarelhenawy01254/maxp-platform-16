@@ -6,7 +6,6 @@ import {
   AlertTriangle,
   Calendar,
   PieChart,
-  BarChart3,
   RefreshCw,
   ArrowUpRight,
   ShieldCheck,
@@ -19,7 +18,6 @@ interface BillingData {
   mrr: number;
   activeSubscriptions: number;
   revenueByType: any[];
-  revenueByPlan: any[];
   failedPayments: any[];
 }
 
@@ -222,7 +220,7 @@ export default function BillingOverview() {
                 <AlertTriangle size={24} />
               </div>
               <div className="flex items-center gap-1 text-xs font-semibold bg-white/20 px-2 py-1 rounded-full">
-                <RefreshCw size={12} className={data.failedPayments.length > 0 ? "animate-spin-slow" : ""} />
+                <RefreshCw size={12} className={(data.failedPayments?.length ?? 0) > 0 ? "animate-spin-slow" : ""} />
                 <span>Needs Redo</span>
               </div>
             </div>
@@ -230,7 +228,7 @@ export default function BillingOverview() {
               الدفعات الفاشلة
             </p>
             <p className="text-3xl font-extrabold relative z-10">
-              {data.failedPayments.length}
+              {data.failedPayments?.length ?? 0}
             </p>
           </div>
         </div>
@@ -243,7 +241,7 @@ export default function BillingOverview() {
               الإيرادات حسب النوع
             </h2>
             <div className="space-y-4">
-              {data.revenueByType.map((item, index) => (
+              {(data.revenueByType ?? []).map((item, index) => (
                 <div
                   key={index}
                   className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
@@ -264,37 +262,10 @@ export default function BillingOverview() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-              <BarChart3 size={24} />
-              الإيرادات حسب الخطة
-            </h2>
-            <div className="space-y-4">
-              {data.revenueByPlan.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                >
-                  <div>
-                    <div className="font-semibold text-gray-900 dark:text-white">
-                      {item.plan}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {item._count} اشتراك
-                    </div>
-                  </div>
-                  <div className="text-lg font-bold text-purple-600">
-                    {toNumber(item._sum.monthlyFee).toLocaleString("ar-EG")}{" "}
-                    ج/شهر
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Failed Payments */}
-        {data.failedPayments.length > 0 && (
+        {(data.failedPayments?.length ?? 0) > 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <AlertTriangle size={24} className="text-red-600" />
@@ -325,7 +296,7 @@ export default function BillingOverview() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {data.failedPayments.map((payment) => (
+                  {(data.failedPayments ?? []).map((payment) => (
                     <tr
                       key={payment.id}
                       className="hover:bg-gray-50/80 dark:hover:bg-gray-700/50 transition-colors"

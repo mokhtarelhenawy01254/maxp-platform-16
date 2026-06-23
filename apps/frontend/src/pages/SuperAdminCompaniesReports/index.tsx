@@ -9,7 +9,6 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { useCompanies } from "../SuperAdminCompaniesV2/hooks/useCompanies";
 import { apiClient } from "../../services/apiClient";
 
-const COLORS = ["#2563eb", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 const STATUS_COLORS: Record<string, string> = { pending: "#f59e0b", in_progress: "#2563eb", resolved: "#10b981", escalated: "#ef4444" };
 
 function StatCard({ icon: Icon, label, value, sub, color }: { icon: React.ElementType; label: string; value: string | number; sub?: string; color: string }) {
@@ -111,7 +110,6 @@ export default function SuperAdminCompaniesReports() {
   const hasActiveFilters = appliedFilters.status !== "ALL" || appliedFilters.search || appliedFilters.startDate || appliedFilters.endDate;
 
   const overview = systemStats?.overview;
-  const planDistribution = systemStats?.planDistribution;
   const recentActivity = systemStats?.recentActivity;
 
   if (isLoading) {

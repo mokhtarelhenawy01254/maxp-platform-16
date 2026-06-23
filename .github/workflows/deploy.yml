@@ -501,6 +501,8 @@ jobs:
                 --exclude uploads \
                 --exclude logs \
                 --exclude .env \
+                --exclude node_modules \
+                --exclude prisma/generated \
                 "$DEPLOY_STAGING/backend_extract/backend/" /var/www/backend2/
               sudo mkdir -p /var/www/backend2/logs
               sudo chown -R $USER:$USER /var/www/backend2
@@ -600,7 +602,9 @@ jobs:
             npm install --os=linux --cpu=x64 sharp --no-save || echo "⚠️ Sharp fix failed, continuing..."
              
             # Run generate with the specific schema folder
-            rm -rf prisma/generated/postgresql_v2 node_modules/.prisma
+            # Keep the existing generated clients in place until the new client
+            # is ready. PM2 can restart a worker during deploy, and deleting
+            # these folders first makes that worker crash while the app is live.
             "$PRISMA_BIN" generate --schema=prisma/schema || {
                 echo "❌ Prisma generation failed"
                 exit 1
@@ -611,8 +615,7 @@ jobs:
                 exit 1
             }
             mkdir -p node_modules/.prisma
-            rm -rf node_modules/.prisma/client
-            cp -a prisma/generated/postgresql_v2 node_modules/.prisma/client
+            rsync -a --delete prisma/generated/postgresql_v2/ node_modules/.prisma/client/
             test -f node_modules/.prisma/client/default.js || {
                 echo "❌ Prisma compatibility client is missing after sync"
                 find node_modules/.prisma/client -maxdepth 2 -type f | sort | head -n 80 || true

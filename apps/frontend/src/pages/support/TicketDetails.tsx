@@ -864,17 +864,7 @@ const TicketDetails: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 text-base text-slate-600 p-3 bg-white rounded-xl border border-slate-100">
-                    <Briefcase className="w-5 h-5 text-slate-400" />
-                    <div>
-                      <span className="block text-xs text-slate-400 uppercase">
-                        الخطة الحالية
-                      </span>
-                      <span className="font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-lg text-sm">
-                        Premium Plan
-                      </span>
-                    </div>
-                  </div>
+
                 </div>
               </div>
 

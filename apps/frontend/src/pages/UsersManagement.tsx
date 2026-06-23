@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
   ArrowDownToLine,
-  Briefcase,
   Eye,
   KeyRound,
   Loader2,
@@ -62,7 +61,6 @@ import {
 } from "../components/ui/dropdown-menu";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Progress } from "../components/ui/progress";
 import { ScrollArea } from "../components/ui/scroll-area";
 import {
   Select,
@@ -371,13 +369,7 @@ const UsersManagement: React.FC = () => {
   const [positions, setPositions] = useState<Array<{ id: string; title: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [invitationsLoading, setInvitationsLoading] = useState(false);
-  const [limitsLoading, setLimitsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [planUsage, setPlanUsage] = useState<{
-    current: number;
-    limit: number;
-    percentage: number;
-  } | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
@@ -535,26 +527,6 @@ const UsersManagement: React.FC = () => {
     }
   }, [requestApi, user?.companyId]);
 
-  const fetchPlanLimits = useCallback(async () => {
-    if (!user?.companyId) {
-      return;
-    }
-
-    try {
-      setLimitsLoading(true);
-      const payload = await requestApi<{
-        usage?: { users?: { current: number; limit: number; percentage: number } };
-      }>("company/limits");
-      if (payload.success && payload.data?.usage?.users) {
-        setPlanUsage(payload.data.usage.users);
-      }
-    } catch (fetchError: unknown) {
-      console.error("Failed to fetch plan limits", fetchError);
-    } finally {
-      setLimitsLoading(false);
-    }
-  }, [requestApi, user?.companyId]);
-
   const fetchInvitations = useCallback(async () => {
     if (!user?.companyId) {
       return;
@@ -603,11 +575,10 @@ const UsersManagement: React.FC = () => {
 
   useEffect(() => {
     void fetchRoles();
-    void fetchPlanLimits();
     void fetchInvitations();
     void fetchDepartments();
     void fetchPositions();
-  }, [fetchDepartments, fetchInvitations, fetchPlanLimits, fetchPositions, fetchRoles]);
+  }, [fetchDepartments, fetchInvitations, fetchPositions, fetchRoles]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -629,21 +600,7 @@ const UsersManagement: React.FC = () => {
     );
   }, [users]);
 
-  const canAddUser = useMemo(() => {
-    if (!planUsage) {
-      return true;
-    }
-    if (planUsage.limit === -1) {
-      return true;
-    }
-    return planUsage.current < planUsage.limit;
-  }, [planUsage]);
 
-  const usagePercentage = planUsage?.percentage ?? 0;
-  const usageLimitText =
-    planUsage?.limit === -1
-      ? t("users.unlimited")
-      : String(planUsage?.limit ?? 0);
 
   const activeUsersCount = useMemo(
     () => users.filter((entry) => entry.isActive).length,
@@ -673,24 +630,8 @@ const UsersManagement: React.FC = () => {
         tone: "warning" as const,
         icon: MailPlus,
       },
-      {
-        title: "استهلاك الخطة",
-        value: limitsLoading
-          ? "..."
-          : planUsage
-            ? `${planUsage.current}/${planUsage.limit === -1 ? "∞" : planUsage.limit}`
-            : "-",
-        subtitle:
-          planUsage?.limit === -1
-            ? "عدد المستخدمين مفتوح بدون حد أعلى"
-            : planUsage
-              ? `${planUsage.percentage}% من الحد الحالي`
-              : "لم يتم تحميل بيانات الباقة بعد",
-        tone: "secondary" as const,
-        icon: Briefcase,
-      },
     ],
-    [activeUsersCount, invitations.length, limitsLoading, planUsage, totalCount],
+    [activeUsersCount, invitations.length, totalCount],
   );
 
   const activeFilterLabels = useMemo(() => {
@@ -735,11 +676,6 @@ const UsersManagement: React.FC = () => {
   );
 
   const openAddUser = () => {
-    if (!canAddUser) {
-      toast.error("تم الوصول إلى الحد الأقصى للمستخدمين في الباقة الحالية");
-      return;
-    }
-
     setUserForm(createInitialUserForm());
     setFormErrors({});
     setEditingUser(null);
@@ -748,11 +684,6 @@ const UsersManagement: React.FC = () => {
   };
 
   const openInviteDialog = () => {
-    if (!canAddUser) {
-      toast.error("تم الوصول إلى الحد الأقصى للمستخدمين في الباقة الحالية");
-      return;
-    }
-
     setInviteForm(createInitialInviteForm());
     setInviteErrors({});
     setInviteDialogOpen(true);
@@ -932,7 +863,7 @@ const UsersManagement: React.FC = () => {
         isEditMode ? "تم تحديث المستخدم بنجاح" : "تم إنشاء المستخدم بنجاح",
       );
       closeEditor();
-      await Promise.all([fetchUsers(), fetchPlanLimits()]);
+      await fetchUsers();
       setError(null);
     } catch (saveError: unknown) {
       const nextError = getErrorMessage(saveError, String(t("users.saveError")));
@@ -974,7 +905,7 @@ const UsersManagement: React.FC = () => {
       setInviteForm(createInitialInviteForm());
       setInviteErrors({});
       setError(null);
-      await Promise.all([fetchInvitations(), fetchPlanLimits()]);
+      await fetchInvitations();
     } catch (inviteError: unknown) {
       const nextError = getErrorMessage(inviteError, String(t("users.inviteError")));
       setError(nextError);
@@ -1086,7 +1017,7 @@ const UsersManagement: React.FC = () => {
         `تم ${nextValue ? "تفعيل" : "تعطيل"} ${selectedUsers.length} مستخدم`,
       );
       setSelectedUsers([]);
-      await Promise.all([fetchUsers(), fetchPlanLimits()]);
+      await fetchUsers();
       setError(null);
     } catch (toggleError: unknown) {
       toast.error(getErrorMessage(toggleError, "حدث خطأ أثناء التحديث الجماعي"));
@@ -1122,7 +1053,7 @@ const UsersManagement: React.FC = () => {
             throw new Error(response.message || String(t("users.deleteError")));
           }
           toast.success("تم حذف المستخدم بنجاح");
-          await Promise.all([fetchUsers(), fetchPlanLimits()]);
+          await fetchUsers();
           break;
         }
         case "bulk-delete": {
@@ -1139,7 +1070,7 @@ const UsersManagement: React.FC = () => {
           );
           toast.success(`تم حذف ${pendingAction.count} مستخدم`);
           setSelectedUsers([]);
-          await Promise.all([fetchUsers(), fetchPlanLimits()]);
+          await fetchUsers();
           break;
         }
         case "cancel-invitation": {
@@ -1283,11 +1214,11 @@ const UsersManagement: React.FC = () => {
             <p className="text-sm text-muted-foreground">{t("users.pageDescription")}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" className="h-11 rounded-2xl" onClick={openAddUser} disabled={!canAddUser}>
+            <Button type="button" className="h-11 rounded-2xl" onClick={openAddUser}>
               <Plus className="size-4" />
               {t("users.addNewUser")}
             </Button>
-            <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={openInviteDialog} disabled={!canAddUser}>
+            <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={openInviteDialog}>
               <UserPlus className="size-4" />
               {t("users.inviteUser")}
             </Button>
@@ -1297,36 +1228,6 @@ const UsersManagement: React.FC = () => {
             </Button>
           </div>
         </div>
-
-        {planUsage && planUsage.limit !== -1 && usagePercentage >= 80 ? (
-          <Alert variant={usagePercentage >= 95 ? "destructive" : "default"}>
-            <AlertTriangle />
-            <AlertTitle>
-              {usagePercentage >= 95
-                ? t("users.limitReachedWarning")
-                : t("users.limitNearWarning")}
-            </AlertTitle>
-            <AlertDescription className="space-y-3">
-              <p>
-                {t("users.usageText", {
-                  current: planUsage.current,
-                  limit: planUsage.limit,
-                  percentage: planUsage.percentage,
-                })}{" "}
-                {usagePercentage >= 95
-                  ? t("users.upgradePlanAddMore")
-                  : t("users.considerUpgradeSoon")}
-              </p>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{planUsage.current} مستخدم</span>
-                  <span>{usageLimitText}</span>
-                </div>
-                <Progress value={Math.min(usagePercentage, 100)} />
-              </div>
-            </AlertDescription>
-          </Alert>
-        ) : null}
 
         {error ? (
           <Alert variant="destructive">

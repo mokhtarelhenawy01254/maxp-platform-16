@@ -28,7 +28,6 @@ interface CompanyStats {
     id: string;
     name: string;
     logo: string | null;
-    plan: string;
     isDefault?: boolean;
   };
   stats: {
@@ -355,7 +354,7 @@ const MyCompaniesDashboard: React.FC = () => {
                         )}
                       </h3>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {item.company.plan} • {item.stats.totalUsers} موظف
+                        {item.stats.totalUsers} موظف
                       </p>
                     </div>
                   </div>
