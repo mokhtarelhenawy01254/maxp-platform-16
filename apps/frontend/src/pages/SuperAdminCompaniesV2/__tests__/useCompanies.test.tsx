@@ -49,7 +49,7 @@ describe("useCompanies", () => {
 
   it("fetches companies on mount", async () => {
     const companies = [
-      { id: "1", name: "Test Co", email: "test@test.com", plan: "BASIC", currency: "EGP", isActive: true, createdAt: "2024-01-01" },
+      { id: "1", name: "Test Co", email: "test@test.com", currency: "EGP", isActive: true, createdAt: "2024-01-01" },
     ];
     mockedGet.mockResolvedValueOnce({ data: { success: true, data: { companies } } });
 
@@ -136,7 +136,7 @@ describe("useCompanyMutations", () => {
 
   it("calls create company API", async () => {
     mockedPost.mockResolvedValueOnce({ data: { success: true } });
-    const payload = { name: "New Co", email: "new@test.com", plan: "BASIC", currency: "EGP" };
+    const payload = { name: "New Co", email: "new@test.com", currency: "EGP" };
 
     const { useCompanyMutations } = await import("../hooks/useCompanies");
     const { result } = renderHook(() => useCompanyMutations(), { wrapper: createWrapper() });
@@ -150,7 +150,7 @@ describe("useCompanyMutations", () => {
 
   it("calls edit company API", async () => {
     mockedPut.mockResolvedValueOnce({ data: { success: true } });
-    const payload = { id: "1", name: "Updated", email: "u@test.com", plan: "PRO", currency: "USD" };
+    const payload = { id: "1", name: "Updated", email: "u@test.com", currency: "USD" };
 
     const { useCompanyMutations } = await import("../hooks/useCompanies");
     const { result } = renderHook(() => useCompanyMutations(), { wrapper: createWrapper() });
@@ -159,7 +159,7 @@ describe("useCompanyMutations", () => {
       await result.current.editCompany.mutateAsync(payload);
     });
 
-    expect(mockedPut).toHaveBeenCalledWith("/admin/companies/1", { name: "Updated", email: "u@test.com", plan: "PRO", currency: "USD" });
+    expect(mockedPut).toHaveBeenCalledWith("/admin/companies/1", { name: "Updated", email: "u@test.com", currency: "USD" });
   });
 });
 

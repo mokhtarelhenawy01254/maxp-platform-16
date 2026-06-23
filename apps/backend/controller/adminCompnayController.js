@@ -443,7 +443,6 @@ const getAllCompanies = async (req, res) => {
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const search = (req.query.search || '').trim();
         const status = req.query.status || 'ALL';
-        const plan = req.query.plan || 'ALL';
         const savedView = req.query.savedView || 'ALL';
 
         const now = new Date();
@@ -465,7 +464,6 @@ const getAllCompanies = async (req, res) => {
             { website: { contains: search, mode: 'insensitive' } },
         ]});
         if (status === 'ACTIVE' || status === 'INACTIVE') conditions.push({ isActive: status === 'ACTIVE' });
-        if (plan !== 'ALL') conditions.push({ plan });
         if (savedView !== 'ALL') conditions.push(buildSavedViewWhere(savedView));
         const where = conditions.length === 1 ? conditions[0] : { AND: conditions };
 
@@ -520,10 +518,9 @@ const getAllCompanies = async (req, res) => {
             companies.push({ ...company, followUp: await getCompanyFollowUpFromDb(prisma, company) });
         }
 
-        const [totalCompanies, activeCompanies, enterpriseCompanies, connectedFacebookPages, followUpNow, myDueToday, escalationDue, stale72h] = await Promise.all([
+        const [totalCompanies, activeCompanies, connectedFacebookPages, followUpNow, myDueToday, escalationDue, stale72h] = await Promise.all([
             prisma.company.count(),
             prisma.company.count({ where: { isActive: true } }),
-            prisma.company.count({ where: { plan: 'ENTERPRISE' } }),
             prisma.facebookPage.count(),
             prisma.company.count({ where: buildSavedViewWhere('FOLLOW_UP_NOW') }),
             prisma.company.count({ where: buildSavedViewWhere('MY_TODAY') }),
@@ -542,7 +539,6 @@ const getAllCompanies = async (req, res) => {
                 stats: {
                     totalCompanies,
                     activeCompanies,
-                    enterpriseCompanies,
                     connectedFacebookPages,
                     followUpNow,
                     myDueToday,
@@ -604,7 +600,6 @@ const getCompanyDetails = async (req, res) => {
         }
 
         const { start: periodStart, end: periodEnd } = getCurrentMonthWindow();
-        const resolvedPlan = company.plan || 'BASIC';
         const adjustedLimits = {};
         const bonusSnapshot = {};
 
@@ -1234,7 +1229,6 @@ const createNewCompany = async (req, res) => {
             email,
             phone,
             website,
-            plan = 'BASIC',
             currency = 'EGP',
             adminFirstName,
             adminLastName,
@@ -1287,7 +1281,6 @@ const createNewCompany = async (req, res) => {
                 email,
                 phone,
                 website,
-                plan,
                 currency,
                 isActive: true,
                 // useCentralKeys field removed — key routing is now schema-agnostic
@@ -1345,7 +1338,6 @@ const updateCompany = async (req, res) => {
             email,
             phone,
             website,
-            plan,
             currency,
             isActive,
             notes
@@ -1392,7 +1384,6 @@ const updateCompany = async (req, res) => {
                 ...(email !== undefined && { email }),
                 ...(phone !== undefined && { phone }),
                 ...(website !== undefined && { website }),
-                ...(plan !== undefined && { plan }),
                 ...(currency !== undefined && { currency }),
                 ...(isActive !== undefined && { isActive }),
                 ...(notes !== undefined && { notes })
@@ -1733,7 +1724,6 @@ const getStatistics = async (req, res) => {
             totalCustomers,
             totalConversations,
             totalMessages,
-            companiesByPlan
         ] = await Promise.all([
             prisma.company.count(),
             prisma.company.count({ where: { isActive: true } }),
@@ -1741,10 +1731,6 @@ const getStatistics = async (req, res) => {
             prisma.customer.count(),
             prisma.conversation.count(),
             prisma.message.count(),
-            prisma.company.groupBy({
-                by: ['plan'],
-                _count: { plan: true }
-            })
         ]);
 
         // Get recent activity (last 30 days)
@@ -1780,10 +1766,6 @@ const getStatistics = async (req, res) => {
                     totalConversations,
                     totalMessages
                 },
-                planDistribution: companiesByPlan.reduce((acc, item) => {
-                    acc[item.plan] = item._count.plan;
-                    return acc;
-                }, {}),
                 recentActivity: {
                     newCompaniesLast30Days,
                     newUsersLast30Days,

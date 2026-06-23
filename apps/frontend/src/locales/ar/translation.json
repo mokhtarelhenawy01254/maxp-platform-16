@@ -5810,6 +5810,7 @@
     "refresh": "تحديث",
     "searchPlaceholder": "البحث في المحادثات...",
     "filters": {
+      "all": "الكل",
       "unread": "غير مقروء",
       "followUp": "تحتاج متابعة",
       "allPlatforms": "جميع المنصات"

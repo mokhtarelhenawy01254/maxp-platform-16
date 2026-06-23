@@ -408,14 +408,6 @@ enum AiKeyType {
   CENTRAL
 }
 
-enum CompaniesPlan {
-  BASIC
-  PRO
-  ENTERPRISE
-
-  @@map("companies_plan")
-}
-
 enum LeaveStatus {
   PENDING
   APPROVED

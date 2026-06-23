@@ -10,7 +10,6 @@ export interface Company {
   email: string;
   phone: string | null;
   website: string | null;
-  plan: "BASIC" | "PRO" | "ENTERPRISE";
   currency: "EGP" | "USD" | "EUR";
   isActive: boolean;
   createdAt: string;
@@ -71,7 +70,7 @@ export interface FacebookPageResult {
   pageId: string;
   pageName: string;
   isRegistered: boolean;
-  company: { name: string; plan: string } | null;
+  company: { name: string } | null;
 }
 
 export interface CompanyUser {
@@ -98,7 +97,6 @@ export interface FilterState {
   search: string;
   savedView: string;
   status: string;
-  plan: string;
   sort: string;
 }
 
@@ -107,7 +105,6 @@ export interface CompanyFormData {
   email: string;
   phone: string;
   website: string;
-  plan: string;
   currency: string;
   adminFirstName: string;
   adminLastName: string;

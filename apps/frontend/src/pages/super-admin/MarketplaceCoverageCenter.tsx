@@ -63,7 +63,7 @@ const MarketplaceCoverageCenter: React.FC = () => {
 
   const filteredCoverage = useMemo(() => companyCoverage.filter(s => {
     const q = query.trim().toLowerCase();
-    if (q) { const haystack = [s.company.name, s.company.email, s.company.slug, s.company.plan].filter(Boolean).join(" ").toLowerCase(); if (!haystack.includes(q)) return false; }
+    if (q) { const haystack = [s.company.name, s.company.email, s.company.slug].filter(Boolean).join(" ").toLowerCase(); if (!haystack.includes(q)) return false; }
     if (filter === "clean") return s.counts.risk === 0; if (filter === "risk") return s.counts.risk > 0; if (filter === "fallback") return s.counts.fallback > 0; if (filter === "missing") return s.counts.missing > 0 || s.counts.catalogMissing > 0;
     return true;
   }), [companyCoverage, filter, query]);
@@ -102,7 +102,7 @@ const MarketplaceCoverageCenter: React.FC = () => {
 
         <div className="rounded-xl border bg-card p-3">
           {selectedCoverage ? <>
-            <div className="flex flex-col md:flex-row justify-between gap-2"><div><h2 className="text-lg font-black">{selectedCoverage.company.name}</h2><p className="text-sm text-muted-foreground">{selectedCoverage.company.email || "بدون بريد"} • الخطة: {selectedCoverage.company.plan || "-"}</p></div><div className="flex gap-1 flex-wrap"><Badge variant="success">{`مثبت مباشر ${selectedCoverage.counts.exact}`}</Badge><Badge variant="warning">{`Fallback ${selectedCoverage.counts.fallback}`}</Badge><Badge variant="destructive">{`ناقص ${selectedCoverage.counts.missing + selectedCoverage.counts.catalogMissing}`}</Badge></div></div>
+            <div className="flex flex-col md:flex-row justify-between gap-2"><div><h2 className="text-lg font-black">{selectedCoverage.company.name}</h2><p className="text-sm text-muted-foreground">{selectedCoverage.company.email || "بدون بريد"}</p></div><div className="flex gap-1 flex-wrap"><Badge variant="success">{`مثبت مباشر ${selectedCoverage.counts.exact}`}</Badge><Badge variant="warning">{`Fallback ${selectedCoverage.counts.fallback}`}</Badge><Badge variant="destructive">{`ناقص ${selectedCoverage.counts.missing + selectedCoverage.counts.catalogMissing}`}</Badge></div></div>
             <Separator className="my-3" />
             <div className="flex justify-between items-center gap-2 mb-2"><div><p className="font-black">الأجزاء التي تحتاج قرار</p><p className="text-xs text-muted-foreground">نعرض فقط الـ missing/fallback/catalog-missing عشان القرار يبقى واضح وسريع.</p></div><Badge variant="outline" className="border-blue-500 text-blue-500"><Sparkles className="size-3" /> {getInstallableRows(selectedCoverage.entries).length} قابل للتفعيل</Badge></div>
             <Table><TableHeader><TableRow><TableHead>الجزء</TableHead><TableHead>المجال</TableHead><TableHead>التطبيق المطلوب</TableHead><TableHead>الحالة</TableHead><TableHead className="text-center">إجراء</TableHead></TableRow></TableHeader>

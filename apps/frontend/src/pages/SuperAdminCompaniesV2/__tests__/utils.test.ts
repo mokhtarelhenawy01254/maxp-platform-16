@@ -18,7 +18,7 @@ jest.mock("../../../utils/companyFollowUp", () => ({
 
 import {
   extractErrorMessage, formatDate, formatDateTime, toDateTimeLocalValue,
-  fromDateTimeLocalValue, normalizeWebsite, getCount, getPlanMeta, getRoleLabel,
+  fromDateTimeLocalValue, normalizeWebsite, getCount, getRoleLabel,
   sortCompanies, addHoursToDateTimeLocal,
 } from "../utils";
 
@@ -127,23 +127,6 @@ describe("getCount", () => {
   });
 });
 
-describe("getPlanMeta", () => {
-  it("returns enterprise meta", () => {
-    const meta = getPlanMeta("ENTERPRISE");
-    expect(meta.label).toBe("مؤسسي");
-  });
-
-  it("returns pro meta", () => {
-    const meta = getPlanMeta("PRO");
-    expect(meta.label).toBe("احترافي");
-  });
-
-  it("returns basic meta for BASIC and unknown", () => {
-    expect(getPlanMeta("BASIC").label).toBe("أساسي");
-    expect(getPlanMeta("UNKNOWN").label).toBe("أساسي");
-  });
-});
-
 describe("getRoleLabel", () => {
   it("translates roles correctly", () => {
     expect(getRoleLabel("OWNER")).toBe("مالك");
@@ -165,7 +148,7 @@ describe("addHoursToDateTimeLocal", () => {
 describe("sortCompanies", () => {
   const makeCompany = (overrides: Partial<Company>): Company => ({
     id: "1", name: "A", email: "a@a.com", phone: null, website: null,
-    plan: "BASIC", currency: "EGP", isActive: true, createdAt: "2024-01-01",
+    currency: "EGP", isActive: true, createdAt: "2024-01-01",
     ...overrides,
   } as Company);
 

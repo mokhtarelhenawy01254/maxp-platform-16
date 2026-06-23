@@ -367,15 +367,6 @@ enum CouponType {
   @@map("coupons_type")
 }
 
-enum CompaniesPlan {
-  BASIC
-  PRO
-  ENTERPRISE
-  MESSAGING
-
-  @@map("companies_plan")
-}
-
 enum LeaveStatus {
   PENDING
   APPROVED

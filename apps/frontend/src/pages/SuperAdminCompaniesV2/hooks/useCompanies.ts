@@ -16,7 +16,6 @@ export function useAdmin() {
 export interface CompaniesQueryParams {
   search?: string;
   status?: string;
-  plan?: string;
   savedView?: string;
   page?: number;
   pageSize?: number;
@@ -31,7 +30,6 @@ export function useCompanies(params: CompaniesQueryParams = {}) {
   const queryParams = new URLSearchParams();
   if (params.search) queryParams.set('search', params.search);
   if (params.status && params.status !== 'ALL') queryParams.set('status', params.status);
-  if (params.plan && params.plan !== 'ALL') queryParams.set('plan', params.plan);
   if (params.savedView && params.savedView !== 'ALL') queryParams.set('savedView', params.savedView);
   if (params.page && params.page > 1) queryParams.set('page', String(params.page));
   if (params.pageSize !== undefined) queryParams.set('pageSize', String(params.pageSize));

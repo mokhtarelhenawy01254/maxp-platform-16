@@ -4,7 +4,6 @@ const {
   executeWithRetry,
 } = require("../services/sharedDatabase");
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
-const planLimitsService = require("../services/planLimitsService");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
@@ -102,7 +101,6 @@ const getCurrentCompany = async (req, res) => {
         slug: company.slug || null,
         customDomain: company.customDomain || null,
         timezone: company.timezone,
-        plan: company.plan,
         currency: company.currency,
         isActive: company.isActive,
         settings: finalSettings,
@@ -1430,31 +1428,6 @@ const createnewUserForCompany = async (req, res) => {
       });
     }
 
-    // Check user limit before creating
-    const limitCheck = await planLimitsService.checkLimits(
-      companyId,
-      "users",
-      1,
-    );
-    if (!limitCheck.allowed) {
-      console.log(
-        `❌ [CREATE-USER] User limit exceeded for company: ${companyId}`,
-      );
-      return res.status(400).json({
-        success: false,
-        message: "تم تجاوز حد المستخدمين المسموح به في خطتك الحالية",
-        error: "LIMIT_EXCEEDED",
-        details: {
-          current: limitCheck.current,
-          limit: limitCheck.limit,
-          plan: (await planLimitsService.getCurrentUsage(companyId)).plan,
-        },
-        upgradeSuggestions: planLimitsService.getUpgradeSuggestions(
-          (await planLimitsService.getCurrentUsage(companyId)).plan,
-        ),
-      });
-    }
-
     // Check if company exists
     const company = await getSharedPrismaClient().company.findUnique({
       where: { id: companyId },
@@ -2685,25 +2658,6 @@ const sendUserInvitation = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "دعوة معلقة لهذا البريد الإلكتروني موجودة بالفعل",
-      });
-    }
-
-    // Check user limit before creating invitation
-    const limitCheck = await planLimitsService.checkLimits(
-      companyId,
-      "users",
-      1,
-    );
-    if (!limitCheck.allowed) {
-      return res.status(400).json({
-        success: false,
-        message: "تم تجاوز حد المستخدمين المسموح به في خطتك الحالية",
-        error: "LIMIT_EXCEEDED",
-        details: {
-          current: limitCheck.current,
-          limit: limitCheck.limit,
-          plan: (await planLimitsService.getCurrentUsage(companyId)).plan,
-        },
       });
     }
 

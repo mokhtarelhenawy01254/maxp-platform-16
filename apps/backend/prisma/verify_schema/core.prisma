@@ -7,7 +7,6 @@ model Company {
   logo                            String?
   address                         String?
   currency                        String                           @default("EGP")
-  plan                            CompaniesPlan                    @default(BASIC)
   planConfigurationId             String?
   isActive                        Boolean                          @default(true)
   settings                        String?                          @db.Text

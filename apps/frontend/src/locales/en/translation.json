@@ -5747,6 +5747,7 @@
     "refresh": "Refresh",
     "searchPlaceholder": "Search conversations...",
     "filters": {
+      "all": "All",
       "unread": "Unread",
       "followUp": "Follow Up",
       "allPlatforms": "All Platforms"

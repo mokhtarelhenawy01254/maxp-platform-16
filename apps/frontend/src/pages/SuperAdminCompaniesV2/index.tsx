@@ -22,7 +22,7 @@ import { CompanyFilters } from "./components/CompanyFilters";
 import { CompaniesTable } from "./components/CompaniesTable";
 import { BulkActionsBar } from "./components/BulkActionsBar";
 import { extractErrorMessage, formatDate, formatDateTime, enrichCompanies, computeQuickStats, getCount, getDefaultFollowUpScheduleValue, toDateTimeLocalValue, fromDateTimeLocalValue, addHoursToDateTimeLocal } from "./utils";
-import { PLAN_OPTIONS, CURRENCY_OPTIONS, DEFAULT_SORT, FOLLOW_UP_STATUS_OPTIONS } from "./constants";
+import { CURRENCY_OPTIONS, DEFAULT_SORT, FOLLOW_UP_STATUS_OPTIONS } from "./constants";
 import type { Company, CompanyFormData, EmployeeFormData, FollowUpFormData, FollowUpState, FollowUpReminder, FollowUpAutomation } from "./types";
 
 // ---- Reusable components ----
@@ -315,7 +315,6 @@ export default function SuperAdminCompaniesV2() {
   const [search, setSearch] = useState("");
   const [savedView, setSavedView] = useState("ALL");
   const [status, setStatus] = useState("ALL");
-  const [plan, setPlan] = useState("ALL");
   const [sort, setSort] = useState(DEFAULT_SORT);
   const [rowsPerPage, setRowsPerPage] = useState("10");
   const [currentPage, setCurrentPage] = useState(1);
@@ -325,7 +324,6 @@ export default function SuperAdminCompaniesV2() {
   const { companies, isLoading, isFetching, error: pageError, admin, refetch, total, totalPages, meta, serverStats } = useCompanies({
     search,
     status,
-    plan,
     savedView,
     page: currentPage,
     pageSize: Number(rowsPerPage),
@@ -345,7 +343,7 @@ export default function SuperAdminCompaniesV2() {
   // Modals
   const [companyModal, setCompanyModal] = useState<{ open: boolean; mode: "create" | "edit"; company: Company | null }>({ open: false, mode: "create", company: null });
   const [companyForm, setCompanyForm] = useState<CompanyFormData>({
-    name: "", email: "", phone: "", website: "", plan: "BASIC", currency: "EGP",
+    name: "", email: "", phone: "", website: "", currency: "EGP",
     adminFirstName: "", adminLastName: "", adminEmail: "", adminPassword: "",
   });
   const [companyFormErrors, setCompanyFormErrors] = useState<Record<string, string>>({});
@@ -409,16 +407,15 @@ export default function SuperAdminCompaniesV2() {
   const pageSize = Number(rowsPerPage) || 10;
   const safeCurrentPage = Math.min(currentPage, totalPages);
 
-  useEffect(() => { setCurrentPage(1); }, [search, savedView, status, plan, sort, rowsPerPage]);
+  useEffect(() => { setCurrentPage(1); }, [search, savedView, status, sort, rowsPerPage]);
   useEffect(() => { if (currentPage > totalPages) setCurrentPage(totalPages); }, [currentPage, totalPages]);
 
   const visibleIds = enrichedCompanies.map((c) => c.id);
   const isAllVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
   const isSomeVisibleSelected = visibleIds.some((id) => selectedIds.includes(id)) && !isAllVisibleSelected;
-  const filterCount = [status !== "ALL", plan !== "ALL"].filter(Boolean).length;
+  const filterCount = [status !== "ALL"].filter(Boolean).length;
   const activeFilterLabels = [
     status !== "ALL" ? (status === "ACTIVE" ? "نشطة" : "متوقفة") : null,
-    plan !== "ALL" ? PLAN_OPTIONS.find((o) => o.value === plan)?.label : null,
   ].filter(Boolean);
 
   // ---- Handlers ----
@@ -427,7 +424,7 @@ export default function SuperAdminCompaniesV2() {
   }, []);
 
   const handleClearFilters = useCallback(() => {
-    setSearch(""); setSavedView("ALL"); setStatus("ALL"); setPlan("ALL"); setSort(DEFAULT_SORT);
+    setSearch(""); setSavedView("ALL"); setStatus("ALL"); setSort(DEFAULT_SORT);
   }, []);
 
   const handleOpenDetails = useCallback((company: Company) => navigate(`/super-admin/companies/${company.id}`), [navigate]);
@@ -446,10 +443,10 @@ export default function SuperAdminCompaniesV2() {
   const handleBulkDelete = useCallback(() => setDeleteDialog({ open: true, ids: selectedIds, name: "" }), [selectedIds]);
 
   const handleExport = useCallback(() => {
-    const headers = ["ID", "Name", "Email", "Phone", "Website", "Plan", "Is Active", "Users", "Customers", "Facebook Pages", "Created At"];
+    const headers = ["ID", "Name", "Email", "Phone", "Website", "Is Active", "Users", "Customers", "Facebook Pages", "Created At"];
     const lines = enrichedCompanies.map((c) => [
       c.id, `"${c.name || ""}"`, c.email || "", c.phone || "", c.website || "",
-      c.plan || "", c.isActive ? "Active" : "Inactive",
+      c.isActive ? "Active" : "Inactive",
       getCount(c, "users"), getCount(c, "customers"), getCount(c, "facebookPages"),
       c.createdAt ? new Date(c.createdAt).toISOString() : "",
     ].join(","));
@@ -462,13 +459,13 @@ export default function SuperAdminCompaniesV2() {
   }, [enrichedCompanies]);
 
   const handleCreateCompany = useCallback(() => {
-    setCompanyForm({ name: "", email: "", phone: "", website: "", plan: "BASIC", currency: "EGP", adminFirstName: "", adminLastName: "", adminEmail: "", adminPassword: "" });
+    setCompanyForm({ name: "", email: "", phone: "", website: "", currency: "EGP", adminFirstName: "", adminLastName: "", adminEmail: "", adminPassword: "" });
     setCompanyFormErrors({});
     setCompanyModal({ open: true, mode: "create", company: null });
   }, []);
 
   const handleEditCompany = useCallback((company: Company) => {
-    setCompanyForm({ name: company.name || "", email: company.email || "", phone: company.phone || "", website: company.website || "", plan: company.plan || "BASIC", currency: company.currency || "EGP", adminFirstName: "", adminLastName: "", adminEmail: "", adminPassword: "" });
+    setCompanyForm({ name: company.name || "", email: company.email || "", phone: company.phone || "", website: company.website || "", currency: company.currency || "EGP", adminFirstName: "", adminLastName: "", adminEmail: "", adminPassword: "" });
     setCompanyFormErrors({});
     setCompanyModal({ open: true, mode: "edit", company });
   }, []);
@@ -497,7 +494,7 @@ export default function SuperAdminCompaniesV2() {
         await createCompany.mutateAsync({
           name: companyForm.name.trim(), email: companyForm.email.trim(),
           phone: companyForm.phone.trim() || undefined, website: companyForm.website.trim() || undefined,
-          plan: companyForm.plan, currency: companyForm.currency,
+          currency: companyForm.currency,
           adminFirstName: companyForm.adminFirstName.trim(), adminLastName: companyForm.adminLastName.trim(),
           adminEmail: companyForm.adminEmail.trim(), adminPassword: companyForm.adminPassword,
         });
@@ -505,7 +502,7 @@ export default function SuperAdminCompaniesV2() {
         await editCompany.mutateAsync({
           id: companyModal.company.id, name: companyForm.name.trim(), email: companyForm.email.trim(),
           phone: companyForm.phone.trim() || "", website: companyForm.website.trim() || "",
-          plan: companyForm.plan, currency: companyForm.currency,
+          currency: companyForm.currency,
         });
       }
       setCompanyModal((prev) => ({ ...prev, open: false }));
@@ -926,16 +923,6 @@ export default function SuperAdminCompaniesV2() {
             </FormField>
             <FormField label="الموقع الإلكتروني" error={companyFormErrors.website}>
               <input aria-label="الموقع الإلكتروني للشركة" name="company-website" autoComplete="url" dir="ltr" className="h-12 w-full rounded-lg border-border/60 bg-background px-5 text-sm font-bold shadow-sm transition-all focus:border-primary/50 focus:ring-4 focus:ring-primary/5 text-right" value={companyForm.website} onChange={(e) => setCompanyForm((prev) => ({ ...prev, website: e.target.value }))} placeholder="company.com" />
-            </FormField>
-            <FormField label="الخطة" error={companyFormErrors.plan} required>
-              <Select value={companyForm.plan} onValueChange={(v) => setCompanyForm((prev) => ({ ...prev, plan: v }))}>
-                <SelectTrigger aria-label="خطة الشركة" className="h-12 w-full rounded-lg border-border/60 bg-background px-5 text-sm font-black shadow-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-lg">
-                  {PLAN_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
             </FormField>
             <FormField label="العملة" error={companyFormErrors.currency} required>
               <Select value={companyForm.currency} onValueChange={(v) => setCompanyForm((prev) => ({ ...prev, currency: v }))}>

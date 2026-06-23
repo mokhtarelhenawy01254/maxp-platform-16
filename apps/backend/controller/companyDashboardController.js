@@ -3,7 +3,6 @@ const { fromZonedTime } = require('date-fns-tz');
 const { startOfDay, endOfDay, subDays } = require('date-fns');
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 
-const planLimitsService = require('../services/planLimitsService');
 const { encrypt, decrypt } = require('../utils/encryption');
 const { randomUUID } = require('crypto');
 const {
@@ -107,29 +106,8 @@ const companyDashboardOverview = async (req, res) => {
             });
         }
 
-        const currentLimits = await planLimitsService.getEffectiveLimits(companyId);
-
         // Map User to users for frontend compatibility
         const userCount = company._count.users || 0;
-
-        // Calculate usage percentages
-        const usage = {
-            users: {
-                current: userCount,
-                limit: currentLimits.users,
-                percentage: currentLimits.users === -1 ? 0 : Math.round((userCount / currentLimits.users) * 100)
-            },
-            customers: {
-                current: company._count.customers,
-                limit: currentLimits.customers,
-                percentage: currentLimits.customers === -1 ? 0 : Math.round((company._count.customers / currentLimits.customers) * 100)
-            },
-            conversations: {
-                current: company._count.conversations,
-                limit: currentLimits.conversations,
-                percentage: currentLimits.conversations === -1 ? 0 : Math.round((company._count.conversations / currentLimits.conversations) * 100)
-            }
-        };
 
         const { startDate, endDate } = req.query;
         const timeZone = company.timezone || 'Africa/Cairo';
@@ -346,8 +324,6 @@ const companyDashboardOverview = async (req, res) => {
                 orders: company._count.orders,
                 conversations: company._count.conversations
             },
-            usage,
-            limits: currentLimits,
             financials: {
                 totalRevenue,
                 grossProfit: totalRevenue - totalCOGS,
@@ -525,57 +501,7 @@ const updateCompanySettings = async (req, res) => {
 
 
 
-// ==================== PLAN LIMITS ROUTES ====================
 
-const checkPlanLimits = async (req, res) => {
-    try {
-        const companyId = req.user.companyId;
-
-        // Get current usage
-        const usage = await planLimitsService.getCurrentUsage(companyId);
-        const limits = await planLimitsService.getEffectiveLimits(companyId);
-
-        // Calculate usage percentages
-        const usageData = {};
-        for (const [type, currentCount] of Object.entries(usage)) {
-            if (type === 'plan') continue;
-
-            const limit = limits[type];
-            usageData[type] = {
-                current: currentCount,
-                limit,
-                percentage: limit === -1 ? 0 : Math.round((currentCount / limit) * 100),
-                remaining: limit === -1 ? -1 : Math.max(0, limit - currentCount)
-            };
-        }
-
-        // Get warnings
-        const warnings = await planLimitsService.getUsageWarnings(companyId);
-
-        // Get upgrade suggestions
-        const upgradeSuggestions = planLimitsService.getUpgradeSuggestions(usage.plan);
-
-        res.json({
-            success: true,
-            message: 'تم جلب حدود الخطة بنجاح',
-            data: {
-                plan: usage.plan,
-                limits,
-                usage: usageData,
-                warnings,
-                upgradeSuggestions
-            }
-        });
-
-    } catch (error) {
-        console.error('❌ Error fetching plan limits:', error);
-        res.status(500).json({
-            success: false,
-            message: 'فشل في جلب حدود الخطة',
-            error: error.message
-        });
-    }
-}
 
 const getCompanyLinks = async (req, res) => {
     try {
@@ -889,73 +815,10 @@ const getCompanyLinkPassword = async (req, res) => {
     }
 };
 
-const checkSpecificLimit = async (req, res) => {
-    try {
-        const companyId = req.user.companyId;
-        const { type, count = 1 } = req.body;
-
-        if (!type) {
-            return res.status(400).json({
-                success: false,
-                message: 'نوع الحد مطلوب'
-            });
-        }
-
-        const checkResult = await planLimitsService.checkLimits(companyId, type, count);
-
-        res.json({
-            success: true,
-            message: 'تم فحص الحد بنجاح',
-            data: checkResult
-        });
-
-    } catch (error) {
-        console.error('❌ Error checking limit:', error);
-        res.status(500).json({
-            success: false,
-            message: 'فشل في فحص الحد',
-            error: error.message
-        });
-    }
-}
-
-const checkMultipleLimits = async (req, res) => {
-    try {
-        const companyId = req.user.companyId;
-        const { checks } = req.body;
-
-        if (!checks || typeof checks !== 'object') {
-            return res.status(400).json({
-                success: false,
-                message: 'بيانات الفحص مطلوبة'
-            });
-        }
-
-        const results = await planLimitsService.checkMultipleLimits(companyId, checks);
-
-        res.json({
-            success: true,
-            message: 'تم فحص الحدود بنجاح',
-            data: results
-        });
-
-    } catch (error) {
-        console.error('❌ Error checking multiple limits:', error);
-        res.status(500).json({
-            success: false,
-            message: 'فشل في فحص الحدود',
-            error: error.message
-        });
-    }
-}
-
 module.exports = {
     companyDashboardOverview,
     companySettings,
     updateCompanySettings,
-    checkPlanLimits,
-    checkMultipleLimits,
-    checkSpecificLimit,
     getCompanyLinks,
     createCompanyLink,
     updateCompanyLink,

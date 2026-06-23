@@ -1905,7 +1905,6 @@ model Company {
   logo                            String?
   address                         String?
   currency                        String                           @default("EGP")
-  plan                            CompaniesPlan                    @default(BASIC)
   isActive                        Boolean                          @default(true)
   settings                        String?
   createdAt                       DateTime                         @default(now())
@@ -2880,15 +2879,6 @@ enum CouponType {
   FREE_SHIPPING
 
   @@map("coupons_type")
-}
-
-enum CompaniesPlan {
-  BASIC
-  PRO
-  ENTERPRISE
-  MESSAGING
-
-  @@map("companies_plan")
 }
 
 enum LeaveStatus {

@@ -58,18 +58,6 @@ export function getCount(company: Company, key: "users" | "customers" | "faceboo
   return company._count?.[key] || 0;
 }
 
-export function getPlanMeta(plan: string): { label: string; className: string } {
-  switch (plan) {
-    case "ENTERPRISE":
-      return { label: "مؤسسي", className: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/70 dark:bg-emerald-950/40 dark:text-emerald-300" };
-    case "PRO":
-      return { label: "احترافي", className: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800/70 dark:bg-amber-950/40 dark:text-amber-300" };
-    case "BASIC":
-    default:
-      return { label: "أساسي", className: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800/70 dark:bg-blue-950/40 dark:text-blue-300" };
-  }
-}
-
 export function getRoleLabel(role: string): string {
   switch (role) {
     case "OWNER": return "مالك";
@@ -153,7 +141,7 @@ export function computeQuickStats(companies: Company[], serverStats?: QuickStats
     return {
       totalCompanies: serverStats.totalCompanies,
       activeCompanies: serverStats.activeCompanies,
-      enterpriseCompanies: serverStats.enterpriseCompanies ?? companies.filter((c) => c.plan === "ENTERPRISE").length,
+      enterpriseCompanies: serverStats.enterpriseCompanies ?? 0,
       connectedFacebookPages: serverStats.connectedFacebookPages ?? companies.reduce((s, c) => s + getCount(c, "facebookPages"), 0),
       followUpNow: serverStats.followUpNow,
       escalationDue: serverStats.escalationDue,
@@ -163,7 +151,6 @@ export function computeQuickStats(companies: Company[], serverStats?: QuickStats
     };
   }
   const activeCompanies = companies.filter((c) => c.isActive).length;
-  const enterpriseCompanies = companies.filter((c) => c.plan === "ENTERPRISE").length;
   const connectedFacebookPages = companies.reduce((s, c) => s + getCount(c, "facebookPages"), 0);
   let followUpNow = 0, stale72h = 0;
   for (const c of companies) {
@@ -186,7 +173,7 @@ export function computeQuickStats(companies: Company[], serverStats?: QuickStats
   return {
     totalCompanies: companies.length,
     activeCompanies,
-    enterpriseCompanies,
+    enterpriseCompanies: 0,
     connectedFacebookPages,
     followUpNow,
     escalationDue,

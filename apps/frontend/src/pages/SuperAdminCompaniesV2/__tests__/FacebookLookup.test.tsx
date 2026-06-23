@@ -87,7 +87,7 @@ describe("FacebookLookup", () => {
 
   it("shows result count badge when searched with results", () => {
     const results = [
-      { id: "fb1", pageId: "123", pageName: "Test Page", isRegistered: true, company: { name: "Test Co", plan: "BASIC" } },
+      { id: "fb1", pageId: "123", pageName: "Test Page", isRegistered: true, company: { name: "Test Co" } },
       { id: "fb2", pageId: "456", pageName: "Other Page", isRegistered: false, company: null },
     ];
     render(<FacebookLookup {...defaultProps} searched results={results} />);
@@ -96,7 +96,7 @@ describe("FacebookLookup", () => {
 
   it("renders registered badge for registered pages", () => {
     const results: FacebookPageResult[] = [
-      { id: "fb1", pageId: "123", pageName: "Test Page", isRegistered: true, company: { name: "Test Co", plan: "ENTERPRISE" } },
+      { id: "fb1", pageId: "123", pageName: "Test Page", isRegistered: true, company: { name: "Test Co" } },
     ];
     render(<FacebookLookup {...defaultProps} searched results={results} />);
     fireEvent.click(screen.getByText("فحص صفحة فيسبوك"));

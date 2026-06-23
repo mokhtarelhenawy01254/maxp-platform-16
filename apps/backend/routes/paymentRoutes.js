@@ -84,13 +84,6 @@ router.get('/', authenticateToken, requireSuperAdmin, async (req, res) => {
               totalAmount: true,
               dueDate: true
             }
-          },
-          subscription: {
-            select: {
-              id: true,
-              planType: true,
-              status: true
-            }
           }
         },
         skip,
@@ -166,8 +159,7 @@ router.get('/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
           include: {
             items: true
           }
-        },
-        subscription: true
+        }
       }
     });
 

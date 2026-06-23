@@ -850,7 +850,6 @@ const createOwnerCompany = async (req, res) => {
                 phone: result.phone,
                 website: result.website,
                 address: result.address,
-                plan: result.plan,
                 currency: result.currency,
                 timezone: result.timezone,
                 logo: result.logo,

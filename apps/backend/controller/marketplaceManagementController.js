@@ -347,7 +347,6 @@ exports.getCoverage = async (req, res) => {
         name: company.name,
         email: company.email,
         slug: company.slug,
-        plan: company.plan,
         isActive: company.isActive,
         createdAt: company.createdAt,
         activeApps,

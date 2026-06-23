@@ -15,7 +15,7 @@ import {
 } from "../../../components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../../components/ui/tooltip";
 import { cn } from "../../../lib/utils";
-import { getCount, getPlanMeta } from "../utils";
+import { getCount } from "../utils";
 import type { Company } from "../types";
 
 const columnHelper = createColumnHelper<Company>();
@@ -109,14 +109,6 @@ export function CompaniesTable({
           </p>
         </div>
       ),
-    }),
-    columnHelper.accessor("plan", {
-      header: "الخطة",
-      cell: ({ getValue }) => {
-        const meta = getPlanMeta(getValue());
-        return <Badge variant="outline" className={cn("rounded-full border-primary/20 bg-primary/5 px-2.5 py-1 text-[13px] font-black text-primary", meta.className)}>{meta.label}</Badge>;
-      },
-      meta: { className: "hidden md:table-cell" },
     }),
     columnHelper.accessor("isActive", {
       header: "الحالة",
@@ -348,7 +340,6 @@ export function CompaniesTable({
       {isMobile ? (
         <div className="space-y-3">
           {companies.map((company) => {
-            const meta = getPlanMeta(company.plan);
             const isExpanded = expandedId === company.id;
             const attention = company.followUpAutomation?.needsEscalation || company.followUpAutomation?.needsUrgentEscalation;
             const critical = company.followUpAutomation?.needsUrgentEscalation;
@@ -382,7 +373,6 @@ export function CompaniesTable({
                           {company.name}
                         </button>
                         <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                          <Badge variant="outline" className={cn("rounded-full border-primary/20 bg-primary/5 px-2 py-0.5 text-xs font-black text-primary", meta.className)}>{meta.label}</Badge>
                           <Badge variant="outline" className={cn("rounded-full px-2 py-0.5 text-xs font-black", company.isActive ? "border-emerald-200/60 bg-emerald-50 text-emerald-700" : "border-rose-200/60 bg-rose-50 text-rose-700")}>
                             {company.isActive ? "نشطة" : "متوقفة"}
                           </Badge>

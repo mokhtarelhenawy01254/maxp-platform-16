@@ -15,10 +15,8 @@ import {
   RefreshCw,
   LayoutDashboard,
   Zap,
-  ShieldCheck,
   Briefcase,
   Activity,
-  BarChart3,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuthSimple";
 import { useTheme } from "../hooks/useTheme";
@@ -47,7 +45,6 @@ interface Statistics {
     totalCustomers: number;
     totalConversations: number;
   };
-  planDistribution: Record<string, number>;
   recentActivity: {
     newCompaniesLast30Days: number;
     newUsersLast30Days: number;
@@ -112,43 +109,6 @@ const MetricCard = ({
   );
 };
 
-const PlanDistributionItem = ({ plan, count, total }: { plan: string; count: number; total: number }) => {
-  const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
-  
-  const planConfig: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
-    BASIC: { label: "أساسي", color: "bg-blue-500", icon: ShieldCheck },
-    PRO: { label: "احترافي", color: "bg-amber-500", icon: Zap },
-    ENTERPRISE: { label: "مؤسسي", color: "bg-emerald-600", icon: Briefcase },
-  };
-
-  const config = planConfig[plan] || { label: plan, color: "bg-slate-500", icon: Building2 };
-  const Icon = config.icon;
-
-  return (
-    <div className="group space-y-3 rounded-3xl border border-border/40 bg-white/50 p-5 transition-all hover:bg-white dark:bg-slate-900/40">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={cn("flex size-9 items-center justify-center rounded-xl text-white shadow-lg", config.color)}>
-            <Icon className="size-5" />
-          </div>
-          <div>
-            <p className="text-sm font-black text-foreground">{config.label}</p>
-            <p className="text-[10px] font-bold text-muted-foreground/70">{count} شركة مسجلة</p>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className="text-lg font-black tracking-tight text-foreground">{percentage}%</p>
-        </div>
-      </div>
-      <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted/50">
-        <div 
-          className={cn("h-full rounded-full transition-all duration-1000 ease-out", config.color)} 
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-    </div>
-  );
-};
 
 const SuperAdminDashboard = () => {
   const { user } = useAuth();
@@ -317,34 +277,7 @@ const SuperAdminDashboard = () => {
         </div>
 
         {/* Detailed Sections */}
-        <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
-          {/* Plan Distribution */}
-          <Card className="rounded-[40px] border-border/40 bg-white/70 shadow-lg backdrop-blur-xl dark:bg-slate-900/70 xl:col-span-1">
-            <CardHeader className="p-8 pb-4">
-              <div className="flex items-center gap-4">
-                <div className="flex size-11 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600 shadow-inner">
-                  <BarChart3 className="size-6" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl font-black">توزيع الخطط</CardTitle>
-                  <CardDescription className="text-[11px] font-bold">تحليل قاعدة العملاء حسب فئة الاشتراك</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4 p-8 pt-4">
-              {Object.entries(statistics?.planDistribution || {}).map(([plan, count]) => (
-                <PlanDistributionItem
-                  key={plan}
-                  plan={plan}
-                  count={count}
-                  total={statistics?.overview?.totalCompanies || 0}
-                />
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Recent Activity Card */}
-          <Card className="rounded-[40px] border-border/40 bg-white/70 shadow-lg backdrop-blur-xl dark:bg-slate-900/70 xl:col-span-2">
+          <Card className="rounded-[40px] border-border/40 bg-white/70 shadow-lg backdrop-blur-xl dark:bg-slate-900/70">
             <CardHeader className="p-8 pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -415,7 +348,6 @@ const SuperAdminDashboard = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
       </div>
 
       {/* Active Users Monitor Overlay */}

@@ -7,11 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Building2, Users, Facebook, AlertTriangle, MessageSquare, Smartphone, TrendingUp, Search, X } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { useCompanies } from "../SuperAdminCompaniesV2/hooks/useCompanies";
-import { getPlanMeta } from "../SuperAdminCompaniesV2/utils";
 import { apiClient } from "../../services/apiClient";
 
 const COLORS = ["#2563eb", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
-const PLAN_COLORS: Record<string, string> = { BASIC: "#2563eb", PRO: "#10b981", ENTERPRISE: "#8b5cf6" };
 const STATUS_COLORS: Record<string, string> = { pending: "#f59e0b", in_progress: "#2563eb", resolved: "#10b981", escalated: "#ef4444" };
 
 function StatCard({ icon: Icon, label, value, sub, color }: { icon: React.ElementType; label: string; value: string | number; sub?: string; color: string }) {
@@ -32,7 +30,6 @@ function StatCard({ icon: Icon, label, value, sub, color }: { icon: React.Elemen
 }
 
 interface Filters {
-  plan: string;
   status: string;
   search: string;
   startDate: string;
@@ -40,12 +37,11 @@ interface Filters {
 }
 
 export default function SuperAdminCompaniesReports() {
-  const [filters, setFilters] = useState<Filters>({ plan: "ALL", status: "ALL", search: "", startDate: "", endDate: "" });
-  const [appliedFilters, setAppliedFilters] = useState<Filters>({ plan: "ALL", status: "ALL", search: "", startDate: "", endDate: "" });
+  const [filters, setFilters] = useState<Filters>({ status: "ALL", search: "", startDate: "", endDate: "" });
+  const [appliedFilters, setAppliedFilters] = useState<Filters>({ status: "ALL", search: "", startDate: "", endDate: "" });
 
   const companyParams = useMemo(() => ({
     pageSize: 0 as const,
-    ...(appliedFilters.plan !== "ALL" ? { plan: appliedFilters.plan } : {}),
     ...(appliedFilters.status !== "ALL" ? { status: appliedFilters.status } : {}),
     ...(appliedFilters.search ? { search: appliedFilters.search } : {}),
     ...(appliedFilters.startDate ? { startDate: appliedFilters.startDate } : {}),
@@ -67,18 +63,11 @@ export default function SuperAdminCompaniesReports() {
   const stats = useMemo(() => ({
     totalCompanies: serverStats?.totalCompanies ?? companies.length,
     activeCompanies: serverStats?.activeCompanies ?? companies.filter((c) => c.isActive).length,
-    enterpriseCompanies: serverStats?.enterpriseCompanies ?? companies.filter((c) => c.plan === "ENTERPRISE").length,
     followUpNow: serverStats?.followUpNow ?? 0,
     escalationDue: serverStats?.escalationDue ?? 0,
     urgentEscalationDue: serverStats?.urgentEscalationDue ?? 0,
     stale72h: serverStats?.stale72h ?? 0,
   }), [serverStats, companies]);
-
-  const planData = useMemo(() => {
-    const counts: Record<string, number> = {};
-    companies.forEach((c) => { const p = c.plan || "BASIC"; counts[p] = (counts[p] || 0) + 1; });
-    return Object.entries(counts).map(([name, value]) => ({ name: getPlanMeta(name).label, value, color: PLAN_COLORS[name] || "#6b7280" }));
-  }, [companies]);
 
   const funnelData = useMemo(() => {
     const stages: Record<string, number> = {};
@@ -116,10 +105,10 @@ export default function SuperAdminCompaniesReports() {
 
   const applyFilters = () => setAppliedFilters({ ...filters });
   const resetFilters = () => {
-    setFilters({ plan: "ALL", status: "ALL", search: "", startDate: "", endDate: "" });
-    setAppliedFilters({ plan: "ALL", status: "ALL", search: "", startDate: "", endDate: "" });
+    setFilters({ status: "ALL", search: "", startDate: "", endDate: "" });
+    setAppliedFilters({ status: "ALL", search: "", startDate: "", endDate: "" });
   };
-  const hasActiveFilters = appliedFilters.plan !== "ALL" || appliedFilters.status !== "ALL" || appliedFilters.search || appliedFilters.startDate || appliedFilters.endDate;
+  const hasActiveFilters = appliedFilters.status !== "ALL" || appliedFilters.search || appliedFilters.startDate || appliedFilters.endDate;
 
   const overview = systemStats?.overview;
   const planDistribution = systemStats?.planDistribution;
@@ -161,18 +150,6 @@ export default function SuperAdminCompaniesReports() {
               <Input value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} placeholder="اسم الشركة..."
                 className="pr-9 text-sm h-9" onKeyDown={(e) => e.key === "Enter" && applyFilters()} />
             </div>
-          </div>
-          <div className="w-[140px]">
-            <label className="mb-1 block text-xs font-bold text-muted-foreground/70">الباقة</label>
-            <Select value={filters.plan} onValueChange={(v) => setFilters({ ...filters, plan: v })}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">الكل</SelectItem>
-                <SelectItem value="BASIC">أساسي</SelectItem>
-                <SelectItem value="PRO">احترافي</SelectItem>
-                <SelectItem value="ENTERPRISE">مؤسسي</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
           <div className="w-[140px]">
             <label className="mb-1 block text-xs font-bold text-muted-foreground/70">الحالة</label>
@@ -230,34 +207,6 @@ export default function SuperAdminCompaniesReports() {
 
       {/* Charts */}
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="rounded-lg border-border/60 bg-white shadow-sm dark:bg-slate-950">
-          <CardHeader>
-            <CardTitle className="text-base font-black text-right">توزيع الخطط</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {planData.length ? (
-              <div className="space-y-4">
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie data={planData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                      {planData.map((entry, idx) => <Cell key={idx} fill={entry.color} />)}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="flex flex-wrap justify-center gap-4">
-                  {planData.map((d) => (
-                    <div key={d.name} className="flex items-center gap-2">
-                      <div className="size-3 rounded-full" style={{ backgroundColor: d.color }} />
-                      <span className="text-xs font-bold text-foreground">{d.name}: {d.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : <p className="text-sm font-bold text-muted-foreground/60 text-center py-8">لا توجد بيانات</p>}
-          </CardContent>
-        </Card>
-
         <Card className="rounded-lg border-border/60 bg-white shadow-sm dark:bg-slate-950">
           <CardHeader>
             <CardTitle className="text-base font-black text-right">مراحل القمع (Funnel Stages)</CardTitle>
@@ -339,15 +288,6 @@ export default function SuperAdminCompaniesReports() {
                 </div>
                 <div className="h-3 w-full rounded-full bg-muted/30 overflow-hidden">
                   <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${stats.totalCompanies ? (stats.activeCompanies / stats.totalCompanies) * 100 : 0}%` }} />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-xs font-bold text-muted-foreground">Enterprise</span>
-                  <span className="text-xs font-black text-foreground">{stats.enterpriseCompanies} / {stats.totalCompanies}</span>
-                </div>
-                <div className="h-3 w-full rounded-full bg-muted/30 overflow-hidden">
-                  <div className="h-full rounded-full bg-purple-500 transition-all" style={{ width: `${stats.totalCompanies ? (stats.enterpriseCompanies / stats.totalCompanies) * 100 : 0}%` }} />
                 </div>
               </div>
               <div>

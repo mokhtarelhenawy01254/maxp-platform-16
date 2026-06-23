@@ -353,7 +353,6 @@ const register = async (req, res) => {
         name: company.name,
         slug: company.slug,
         logo: company.logo,
-        plan: company.plan,
         currency: company.currency,
         isActive: company.isActive,
         sidebarLayout: company.sidebarLayout,

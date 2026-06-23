@@ -7,7 +7,6 @@ import { Skeleton } from "../../../components/ui/skeleton";
 import { Alert, AlertTitle, AlertDescription } from "../../../components/ui/alert";
 import { ChevronDown } from "lucide-react";
 import { cn } from "../../../lib/utils";
-import { getPlanMeta } from "../utils";
 import type { FacebookPageResult } from "../types";
 
 export function FacebookLookup({
@@ -128,9 +127,6 @@ export function FacebookLookup({
                               <Badge variant="outline" className="rounded-full px-2.5 py-1 text-[13px]">
                                 <Building2 className="size-3.5" />
                                 {page.company.name}
-                              </Badge>
-                              <Badge variant="outline" className="rounded-full px-2.5 py-1 text-[13px]">
-                                {getPlanMeta(page.company.plan).label}
                               </Badge>
                             </div>
                           ) : (

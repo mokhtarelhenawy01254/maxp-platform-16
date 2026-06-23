@@ -4,19 +4,6 @@ export const STATUS_FILTERS = [
   { value: "INACTIVE", label: "متوقفة" },
 ] as const;
 
-export const PLAN_FILTERS = [
-  { value: "ALL", label: "كل الخطط" },
-  { value: "BASIC", label: "أساسي" },
-  { value: "PRO", label: "احترافي" },
-  { value: "ENTERPRISE", label: "مؤسسي" },
-] as const;
-
-export const PLAN_OPTIONS = [
-  { value: "BASIC", label: "أساسي" },
-  { value: "PRO", label: "احترافي" },
-  { value: "ENTERPRISE", label: "مؤسسي" },
-] as const;
-
 export const FOLLOW_UP_SAVED_VIEWS = [
   { value: "ALL", label: "كل الشركات" },
   { value: "FOLLOW_UP_NOW", label: "تحتاج متابعة الآن" },
