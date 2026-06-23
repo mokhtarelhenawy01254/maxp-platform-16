@@ -184,10 +184,10 @@ const PlatformConnections: React.FC = () => {
     } finally { setWaLoading(false); }
   }, [waName, waPhone, waPairingMode, closeWa, load]);
 
-  // ── WhatsApp disconnect ──
+  // ── WhatsApp delete (حذف الجلسة نهائياً) ──
   const waDisconnect = useCallback(async (id: string) => {
     setDeleting(id);
-    try { await apiClient.post(`/api/v1/whatsapp/sessions/${id}/disconnect`); load(); }
+    try { await apiClient.delete(`/api/v1/whatsapp/sessions/${id}`); load(); }
     finally { setDeleting(null); }
   }, [load]);
 

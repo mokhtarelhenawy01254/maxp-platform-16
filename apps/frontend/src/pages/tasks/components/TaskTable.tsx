@@ -333,11 +333,11 @@ export const TaskTable: React.FC<TaskTableProps> = ({
     <div
       id="tasks-queue"
       data-testid="tasks-queue"
-      className="overflow-hidden rounded-[18px] border border-border/65 bg-card/72 shadow-[0_14px_42px_-34px_rgba(15,27,45,0.28)]"
+      className="overflow-hidden rounded-2xl border border-border/60 bg-card/80 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.18)]"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-3 py-2 md:px-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 bg-background/40 px-4 py-2.5 md:px-5">
         <div className="min-w-0 space-y-0.5">
-          <p className="text-sm font-semibold text-foreground">
+          <p className="text-sm font-bold text-foreground">
             قائمة التنفيذ
           </p>
           <p className="text-xs text-muted-foreground">
@@ -392,13 +392,13 @@ export const TaskTable: React.FC<TaskTableProps> = ({
           paginatedTasks.map((task) => (
             <article
               key={task.id}
-              className={`overflow-hidden rounded-[16px] border px-3 py-3 ${
+              className={`overflow-hidden rounded-xl border px-3.5 py-3.5 transition-all duration-150 ${
                 selectedTasks.includes(task.id)
-                  ? "border-primary/30 bg-primary/5"
-                  : "border-border/70 bg-background/80"
+                  ? "border-primary/30 bg-primary/5 shadow-sm"
+                  : "border-border/60 bg-background/70 hover:border-border/80 hover:bg-background hover:shadow-sm"
               } ${
                 isOverdue(task.dueDate, task.status)
-                  ? "ring-1 ring-rose-400/35"
+                  ? "ring-1 ring-rose-400/30"
                   : ""
               }`}
             >
@@ -476,9 +476,9 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                 </div>
               </div>
 
-              <div className="mt-2.5 h-1.5 rounded-full bg-muted">
+              <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-muted/70">
                 <div
-                  className="h-1.5 rounded-full bg-primary transition-all"
+                  className="h-1.5 rounded-full bg-gradient-to-l from-primary to-primary/70 transition-all duration-500"
                   style={{ width: `${task.progress}%` }}
                 />
               </div>
@@ -582,9 +582,11 @@ export const TaskTable: React.FC<TaskTableProps> = ({
             </table>
           </div>
         ) : isEmpty ? (
-          <div className="flex flex-col items-center justify-center gap-3 px-4 py-12 text-center">
-            <ClipboardDocumentListIcon className="size-12 text-muted-foreground" />
-            <div className="space-y-1">
+          <div className="flex flex-col items-center justify-center gap-4 px-4 py-16 text-center">
+            <div className="flex size-16 items-center justify-center rounded-2xl border border-dashed border-border bg-background/60">
+              <ClipboardDocumentListIcon className="size-8 text-muted-foreground/50" />
+            </div>
+            <div className="space-y-1.5">
               <p className="text-sm font-semibold text-foreground">
                 لا توجد مهام مطابقة
               </p>
@@ -632,11 +634,11 @@ export const TaskTable: React.FC<TaskTableProps> = ({
               </thead>
               <tbody className="divide-y divide-border/50">
                 {paginatedTasks.map((task) => (
-                  <tr
+              <tr
                     key={task.id}
-                    className={`transition-colors hover:bg-background/75 ${
-                      selectedTasks.includes(task.id) ? "bg-primary/5" : ""
-                    } ${isOverdue(task.dueDate, task.status) ? "bg-rose-500/5" : ""}`}
+                    className={`group transition-colors duration-100 ${
+                      selectedTasks.includes(task.id) ? "bg-primary/5" : "hover:bg-muted/40"
+                    } ${isOverdue(task.dueDate, task.status) ? "bg-rose-500/4" : ""}`}
                   >
                     <td className="px-3 py-2.5 text-center align-top">
                       <input
@@ -730,13 +732,13 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between gap-2 text-xs">
                           <span className="text-muted-foreground">الإنجاز</span>
-                          <span className="font-semibold text-foreground">
+                          <span className="font-bold text-foreground">
                             {task.progress}%
                           </span>
                         </div>
-                        <div className="h-1.5 min-w-28 max-w-32 rounded-full bg-muted">
+                        <div className="h-1.5 min-w-28 max-w-32 overflow-hidden rounded-full bg-muted/70">
                           <div
-                            className="h-1.5 rounded-full bg-primary transition-all"
+                            className="h-1.5 rounded-full bg-gradient-to-l from-primary to-primary/60 transition-all duration-500"
                             style={{ width: `${task.progress}%` }}
                           />
                         </div>

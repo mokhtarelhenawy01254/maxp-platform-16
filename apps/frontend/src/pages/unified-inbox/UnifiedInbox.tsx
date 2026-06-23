@@ -210,8 +210,7 @@ const UnifiedInbox: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [localSearchQuery, setLocalSearchQuery] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
-  const [unreadFilter, setUnreadFilter] = useState(false);
-  const [followUpFilter, setFollowUpFilter] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'followUp'>('all');
   const [activeTab, setActiveTab] = useState("all");
   const [showPlatformDropdown, setShowPlatformDropdown] = useState(false);
   const [newMessage, setNewMessage] = useState("");
@@ -302,8 +301,8 @@ const UnifiedInbox: React.FC = () => {
 
       if (searchQuery) params.set("search", searchQuery);
       if (activeTab !== "all") params.set("tab", activeTab);
-      if (followUpFilter) params.set("status", "pending");
-      if (unreadFilter) params.set("unreadOnly", "true");
+      if (activeFilter === 'followUp') params.set("isPinned", "true");
+      if (activeFilter === 'unread') params.set("unreadOnly", "true");
       params.set("limit", "50");
       params.set("page", String(targetPage));
 
@@ -339,7 +338,7 @@ const UnifiedInbox: React.FC = () => {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [selectedPlatforms, searchQuery, followUpFilter, unreadFilter, activeTab]);
+  }, [selectedPlatforms, searchQuery, activeFilter, activeTab]);
 
   const loadMoreConversations = useCallback(() => {
     if (!hasMore || loadingMore) return;
@@ -371,22 +370,31 @@ const UnifiedInbox: React.FC = () => {
     loadConversations();
   }, [loadConversations]);
 
-  const handleTogglePriority = useCallback(async () => {
-    if (!selectedConversation) return;
-    setShowActionsMenu(false);
-    const newPinned = !selectedConversation.isPinned;
+  const handleToggleConvStar = useCallback(async (convId: string, currentlyPinned: boolean) => {
+    const newPinned = !currentlyPinned;
+    setConversations(prev => prev.map(c =>
+      c.id === convId ? { ...c, isPinned: newPinned } : c
+    ));
+    if (selectedConversation?.id === convId) {
+      setSelectedConversation(prev => prev ? { ...prev, isPinned: newPinned } : null);
+    }
     try {
-      await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}`, {
+      await apiClient.put(`/api/v1/unified-inbox/conversations/${convId}`, {
         isPinned: newPinned
       });
-      setConversations(prev => prev.map(c =>
-        c.id === selectedConversation.id ? { ...c, isPinned: newPinned } : c
-      ));
-      setSelectedConversation(prev => prev ? { ...prev, isPinned: newPinned } : null);
     } catch (err) {
-      console.error("Error toggling priority:", err);
+      console.error("Error toggling star:", err);
+      setConversations(prev => prev.map(c =>
+        c.id === convId ? { ...c, isPinned: currentlyPinned } : c
+      ));
     }
   }, [selectedConversation]);
+
+  const handleTogglePriority = useCallback(() => {
+    if (!selectedConversation) return;
+    setShowActionsMenu(false);
+    handleToggleConvStar(selectedConversation.id, selectedConversation.isPinned);
+  }, [selectedConversation, handleToggleConvStar]);
 
   const handleCopyConversationLink = useCallback(() => {
     if (!selectedConversation) return;
@@ -1025,24 +1033,8 @@ const UnifiedInbox: React.FC = () => {
             </button>
           </div>
 
-          {/* Filters */}
+          {/* Header Actions */}
           <div className="flex items-center gap-2 mr-auto">
-            <button
-              type="button"
-              onClick={() => setFollowUpFilter(prev => !prev)}
-              className="inbox-filter-chip"
-              data-active={followUpFilter ? "true" : "false"}
-            >
-              {t("unifiedInbox.filters.followUp")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setUnreadFilter(prev => !prev)}
-              className="inbox-filter-chip"
-              data-active={unreadFilter ? "true" : "false"}
-            >
-              {t("unifiedInbox.filters.unread")}
-            </button>
             <button
               type="button"
               onClick={handleRefresh}
@@ -1060,7 +1052,6 @@ const UnifiedInbox: React.FC = () => {
             >
               <CheckIcon className="w-3.5 h-3.5" />
             </button>
-
           </div>
         </div>
       </div>
@@ -1096,6 +1087,37 @@ const UnifiedInbox: React.FC = () => {
                 className={`business-inbox-search ${isRtl ? "pr-9 pl-4" : "pl-9 pr-4 text-left"}`}
                 autoComplete="off"
               />
+            </div>
+
+            {/* Filter chips under search */}
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setActiveFilter('all')}
+                className="inbox-filter-chip text-xs"
+                style={{ borderRadius: "999px", padding: "0.25rem 0.75rem" }}
+                data-active={activeFilter === 'all'}
+              >
+                {t("unifiedInbox.filters.all")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveFilter('unread')}
+                className="inbox-filter-chip text-xs"
+                style={{ borderRadius: "999px", padding: "0.25rem 0.75rem" }}
+                data-active={activeFilter === 'unread'}
+              >
+                {t("unifiedInbox.filters.unread")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveFilter('followUp')}
+                className="inbox-filter-chip text-xs"
+                style={{ borderRadius: "999px", padding: "0.25rem 0.75rem" }}
+                data-active={activeFilter === 'followUp'}
+              >
+                {t("unifiedInbox.filters.followUp")}
+              </button>
             </div>
           </div>
 
@@ -1263,12 +1285,26 @@ const UnifiedInbox: React.FC = () => {
                           <div className="flex items-center justify-between mt-1">
                             {getPlatformBadge(conv.platform)}
                             <div className="flex items-center gap-1.5">
-                              {conv.isPinned && (
-                                <StarSolidIcon
-                                  className="w-3.5 h-3.5"
-                                  style={{ color: "var(--business-warning)" }}
-                                />
-                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleConvStar(conv.id, conv.isPinned);
+                                }}
+                                className="p-0.5 rounded hover:opacity-80 transition-opacity"
+                                aria-label={conv.isPinned ? t("unifiedInbox.unstar") : t("unifiedInbox.star")}
+                              >
+                                {conv.isPinned ? (
+                                  <StarSolidIcon
+                                    className="w-3.5 h-3.5"
+                                    style={{ color: "var(--business-warning)" }}
+                                  />
+                                ) : (
+                                  <StarOutlineIcon
+                                    className="w-3.5 h-3.5"
+                                    style={{ color: "var(--color-muted-foreground)" }}
+                                  />
+                                )}
+                              </button>
                               {conv.unreadCount > 0 && (
                                 <span
                                   className="text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 text-white"

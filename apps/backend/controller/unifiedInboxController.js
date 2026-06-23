@@ -30,7 +30,8 @@ const getUnifiedConversations = async (req, res) => {
             unreadOnly,
             tab,           // 'all' | 'unreplied' | 'done' | 'main' | 'general' | 'requests' | 'spam'
             sortBy = 'lastMessageAt',
-            sortOrder = 'desc'
+            sortOrder = 'desc',
+            isPinned         // 'true' | undefined
         } = req.query;
 
         const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -97,6 +98,10 @@ const getUnifiedConversations = async (req, res) => {
         if (unreadOnly === 'true') {
             fbWhere.lastMessageIsFromCustomer = true;
             fbWhere.unreadCount = { gt: 0 };
+        }
+
+        if (isPinned === 'true') {
+            fbWhere.isPinned = true;
         }
 
         if (search) {
@@ -183,6 +188,10 @@ const getUnifiedConversations = async (req, res) => {
                         sessionId: { in: sessionIds },
                         isArchived: false
                     };
+
+                    if (isPinned === 'true') {
+                        waWhere.isPinned = true;
+                    }
 
                     if (search) {
                         waWhere.OR = [
@@ -1080,7 +1089,7 @@ const getSettings = async (req, res) => {
         ] = await Promise.all([
             prisma.whatsAppSession.findMany({
                 where: { companyId },
-                select: { id: true, name: true, phoneNumber: true, status: true, createdAt: true, provider: true }
+                select: { id: true, name: true, phoneNumber: true, status: true, createdAt: true, provider: true, metadata: true }
             }),
             prisma.telegramConfig.findMany({
                 where: { companyId },
@@ -1095,6 +1104,16 @@ const getSettings = async (req, res) => {
                 select: { id: true, pageName: true, instagramAccountId: true, instagramAccountName: true, status: true }
             })
         ]);
+
+        const activeWaSessions = waSessions.filter(s => {
+            if (!s.metadata) return true;
+            try {
+                const meta = typeof s.metadata === 'string' ? JSON.parse(s.metadata) : s.metadata;
+                return !meta.isDeleted;
+            } catch (e) {
+                return true;
+            }
+        });
 
         res.json({
             success: true,
@@ -1111,9 +1130,9 @@ const getSettings = async (req, res) => {
                         pages: igPages
                     },
                     whatsapp: {
-                        connected: waSessions.some(s => s.status === 'CONNECTED'),
-                        count: waSessions.length,
-                        sessions: waSessions
+                        connected: activeWaSessions.some(s => s.status === 'CONNECTED'),
+                        count: activeWaSessions.length,
+                        sessions: activeWaSessions
                     },
                     telegram: {
                         connected: tgConfigs.some(c => c.isActive),

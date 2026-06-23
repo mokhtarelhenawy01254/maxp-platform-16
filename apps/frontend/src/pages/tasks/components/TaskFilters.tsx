@@ -56,14 +56,14 @@ const emptyFilters: TaskFiltersState = {
 };
 
 const scopeOptions = [
-  { key: "all" as const, label: "كل المهام" },
+  { key: "all" as const, label: "الكل" },
   { key: "my-tasks" as const, label: "مهامي" },
   { key: "assigned-by-me" as const, label: "أنشأتها أنا" },
 ];
 
 const quickViews = [
   { key: "in_progress" as const, label: "قيد التنفيذ" },
-  { key: "today" as const, label: "استحقاق اليوم" },
+  { key: "today" as const, label: "اليوم" },
   { key: "overdue" as const, label: "المتأخرة" },
   { key: "urgent" as const, label: "العاجلة" },
 ];
@@ -119,34 +119,18 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
     setHideCompleted(true);
 
     if (view === "overdue") {
-      setFilters({
-        ...emptyFilters,
-        dueDateTo: today,
-      });
+      setFilters({ ...emptyFilters, dueDateTo: today });
       return;
     }
-
     if (view === "today") {
-      setFilters({
-        ...emptyFilters,
-        dueDateFrom: today,
-        dueDateTo: today,
-      });
+      setFilters({ ...emptyFilters, dueDateFrom: today, dueDateTo: today });
       return;
     }
-
     if (view === "urgent") {
-      setFilters({
-        ...emptyFilters,
-        priority: "urgent",
-      });
+      setFilters({ ...emptyFilters, priority: "urgent" });
       return;
     }
-
-    setFilters({
-      ...emptyFilters,
-      status: "in_progress",
-    });
+    setFilters({ ...emptyFilters, status: "in_progress" });
   };
 
   const isQuickViewActive = (
@@ -161,7 +145,6 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
         taskFilter === "all"
       );
     }
-
     if (view === "today") {
       return (
         filters.dueDateFrom === today &&
@@ -171,7 +154,6 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
         taskFilter === "all"
       );
     }
-
     if (view === "urgent") {
       return (
         filters.priority === "urgent" &&
@@ -181,7 +163,6 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
         taskFilter === "all"
       );
     }
-
     return (
       filters.status === "in_progress" &&
       !filters.priority &&
@@ -199,58 +180,13 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
     setHideCompleted(true);
   };
 
-  const activeFilterLabels = [
-    filters.projectId
-      ? `المشروع: ${projects.find((project) => project.id === filters.projectId)?.name || "محدد"}`
-      : null,
-    filters.categoryId
-      ? `القسم: ${categories.find((category) => category.id === filters.categoryId)?.name || "محدد"}`
-      : null,
-    filters.status
-      ? `الحالة: ${
-          filters.status === "pending"
-            ? "في الانتظار"
-            : filters.status === "in_progress"
-              ? "قيد التنفيذ"
-              : filters.status === "completed"
-                ? "مكتمل"
-                : "ملغي"
-        }`
-      : null,
-    filters.priority
-      ? `الأولوية: ${
-          filters.priority === "urgent"
-            ? "عاجل"
-            : filters.priority === "high"
-              ? "عالي"
-              : filters.priority === "medium"
-                ? "متوسط"
-                : "منخفض"
-        }`
-      : null,
-    filters.assignedTo
-      ? `المسؤول: ${
-          users.find((user) => user.id === filters.assignedTo)?.name ||
-          users.find((user) => user.id === filters.assignedTo)?.firstName ||
-          "محدد"
-        }`
-      : null,
-    filters.dueDateFrom || filters.dueDateTo
-      ? `التاريخ: ${filters.dueDateFrom || "..."} - ${filters.dueDateTo || "..."}`
-      : null,
-    taskFilter === "my-tasks"
-      ? "النطاق: مهامي"
-      : taskFilter === "assigned-by-me"
-        ? "النطاق: أنشأتها أنا"
-        : null,
-    hideCompleted ? "إخفاء المكتملة" : null,
-  ].filter(Boolean) as string[];
-
   return (
-    <section className="space-y-1.5 rounded-[18px] border border-border/60 bg-card/66 p-2 shadow-[0_12px_34px_-30px_rgba(15,27,45,0.18)] md:p-2.5">
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+    <div className="rounded-2xl border border-border/55 bg-card/70 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.10)] backdrop-blur-sm">
+      {/* Main row: search + controls */}
+      <div className="flex items-center gap-2 px-3 py-2.5">
+        {/* Search */}
         <div className="relative min-w-0 flex-1">
-          <MagnifyingGlassIcon className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <MagnifyingGlassIcon className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
           <Input
             id="tasks-search"
             value={searchQuery}
@@ -258,71 +194,90 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
               setSearchQuery(event.target.value);
               setCurrentPage(1);
             }}
-            placeholder="ابحث بعنوان المهمة أو وصفها"
-            className="business-control-input h-9 rounded-xl pr-10 text-sm"
+            placeholder="بحث..."
+            className="business-control-input h-8 rounded-lg border-transparent bg-transparent pr-8 text-xs shadow-none focus:border-border/60 focus:bg-background/80"
           />
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
-          <Button
+        {/* Divider */}
+        <span className="h-5 w-px bg-border/60" />
+
+        {/* Sort */}
+        <select
+          id="tasks-sort"
+          value={sortBy}
+          onChange={(event) => {
+            setSortBy(event.target.value as TaskSortBy);
+            setCurrentPage(1);
+          }}
+          className="business-control-input theme-native-control h-8 rounded-lg border-transparent bg-transparent text-xs shadow-none"
+        >
+          <option value="createdAt">الأحدث</option>
+          <option value="dueDate">الاستحقاق</option>
+          <option value="priority">الأولوية</option>
+          <option value="status">الحالة</option>
+          <option value="title">العنوان</option>
+        </select>
+
+        {/* Sort order toggle */}
+        <button
+          type="button"
+          onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+          className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+          title={sortOrder === "asc" ? "تصاعدي" : "تنازلي"}
+        >
+          <span className="text-sm leading-none">{sortOrder === "asc" ? "↑" : "↓"}</span>
+        </button>
+
+        {/* Page size */}
+        <select
+          id="tasks-page-size"
+          value={itemsPerPage}
+          onChange={(event) => {
+            setItemsPerPage(Number(event.target.value));
+            setCurrentPage(1);
+          }}
+          className="business-control-input theme-native-control h-8 w-16 rounded-lg border-transparent bg-transparent text-xs shadow-none"
+        >
+          {[10, 25, 50, 100].map((size) => (
+            <option key={size} value={size}>{size}</option>
+          ))}
+        </select>
+
+        {/* Divider */}
+        <span className="h-5 w-px bg-border/60" />
+
+        {/* Filters button */}
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-8 shrink-0 rounded-lg px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+          onClick={() => setShowFilterSidebar(true)}
+        >
+          <AdjustmentsHorizontalIcon className="size-3.5" />
+          {activeFiltersCount > 0 ? (
+            <span className="rounded-full bg-primary/15 px-1 text-[10px] font-bold text-primary">
+              {activeFiltersCount}
+            </span>
+          ) : null}
+        </Button>
+
+        {/* Reset */}
+        {hasCommandState ? (
+          <button
             type="button"
-            variant="outline"
-            className="h-9 rounded-xl px-2.5 text-xs"
-            onClick={() => setShowFilterSidebar(true)}
+            onClick={resetCommandState}
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground/70 transition-colors hover:bg-muted/60 hover:text-foreground"
+            title="تصفير العرض"
           >
-            <AdjustmentsHorizontalIcon className="size-4" />
-            الفلاتر
-            {activeFiltersCount > 0 ? (
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
-                {activeFiltersCount}
-              </span>
-            ) : null}
-          </Button>
-
-          <select
-            id="tasks-sort"
-            value={sortBy}
-            onChange={(event) => {
-              setSortBy(event.target.value as TaskSortBy);
-              setCurrentPage(1);
-            }}
-            className="business-control-input theme-native-control h-9 min-w-[8rem] rounded-xl text-xs"
-          >
-            <option value="createdAt">الأحدث</option>
-            <option value="dueDate">الاستحقاق</option>
-            <option value="priority">الأولوية</option>
-            <option value="status">الحالة</option>
-            <option value="title">العنوان</option>
-          </select>
-
-          <select
-            id="tasks-page-size"
-            value={itemsPerPage}
-            onChange={(event) => {
-              setItemsPerPage(Number(event.target.value));
-              setCurrentPage(1);
-            }}
-            className="business-control-input theme-native-control h-9 min-w-[5.25rem] rounded-xl text-xs"
-          >
-            {[10, 25, 50, 100].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
-
-          <Button
-            type="button"
-            variant="outline"
-            className="h-9 rounded-xl px-2.5 text-xs"
-            onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-          >
-            {sortOrder === "asc" ? "تصاعدي" : "تنازلي"}
-          </Button>
-        </div>
+            <XMarkIcon className="size-4" />
+          </button>
+        ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5">
+      {/* Chips row */}
+      <div className="flex flex-wrap items-center gap-1.5 border-t border-border/40 px-3 py-2">
+        {/* Scope chips */}
         {scopeOptions.map((scope) => (
           <button
             key={scope.key}
@@ -338,8 +293,9 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           </button>
         ))}
 
-        <span className="hidden h-4 w-px bg-border/70 md:inline-flex" />
+        <span className="hidden h-3.5 w-px bg-border/60 md:inline-flex" />
 
+        {/* Quick view chips */}
         {quickViews.map((view) => (
           <button
             key={view.key}
@@ -352,9 +308,10 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           </button>
         ))}
 
+        {/* Hide completed */}
         <button
           type="button"
-          className={`business-chip-button gap-1.5 ${
+          className={`business-chip-button gap-1 ${
             hideCompleted
               ? "data-[active=true]:border-amber-500/30 data-[active=true]:bg-amber-500/5 data-[active=true]:text-amber-700 dark:data-[active=true]:text-amber-300"
               : ""
@@ -375,142 +332,90 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           )}
         </button>
 
-        {hasCommandState ? (
-          <Button
+        {/* Active filter tags */}
+        {filters.projectId ? (
+          <button
             type="button"
-            variant="ghost"
-            className="h-8 rounded-full px-2.5 text-xs text-primary"
-            onClick={resetCommandState}
+            className="business-chip-button gap-1"
+            onClick={() => clearFilter("projectId")}
           >
-            تصفير العرض
-          </Button>
+            {projects.find((p) => p.id === filters.projectId)?.name || "مشروع"}
+            <XMarkIcon className="size-3" />
+          </button>
         ) : null}
-      </div>
 
-      {activeFilterLabels.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-1.5">
-          {filters.projectId ? (
-            <button
-              type="button"
-              className="business-chip-button gap-1.5"
-              onClick={() => clearFilter("projectId")}
-            >
-              <span>
-                المشروع:{" "}
-                {projects.find((project) => project.id === filters.projectId)
-                  ?.name || "محدد"}
-              </span>
-              <XMarkIcon className="size-3.5" />
-            </button>
-          ) : null}
-
-          {filters.categoryId ? (
-            <button
-              type="button"
-              className="business-chip-button gap-1.5"
-              onClick={() => clearFilter("categoryId")}
-            >
-              <span>
-                القسم:{" "}
-                {categories.find(
-                  (category) => category.id === filters.categoryId,
-                )?.name || "محدد"}
-              </span>
-              <XMarkIcon className="size-3.5" />
-            </button>
-          ) : null}
-
-          {filters.status ? (
-            <button
-              type="button"
-              className="business-chip-button gap-1.5"
-              onClick={() => clearFilter("status")}
-            >
-              <span>
-                الحالة:{" "}
-                {filters.status === "pending"
-                  ? "في الانتظار"
-                  : filters.status === "in_progress"
-                    ? "قيد التنفيذ"
-                    : filters.status === "completed"
-                      ? "مكتمل"
-                      : "ملغي"}
-              </span>
-              <XMarkIcon className="size-3.5" />
-            </button>
-          ) : null}
-
-          {filters.priority ? (
-            <button
-              type="button"
-              className="business-chip-button gap-1.5"
-              onClick={() => clearFilter("priority")}
-            >
-              <span>
-                الأولوية:{" "}
-                {filters.priority === "urgent"
-                  ? "عاجل"
-                  : filters.priority === "high"
-                    ? "عالي"
-                    : filters.priority === "medium"
-                      ? "متوسط"
-                      : "منخفض"}
-              </span>
-              <XMarkIcon className="size-3.5" />
-            </button>
-          ) : null}
-
-          {filters.assignedTo ? (
-            <button
-              type="button"
-              className="business-chip-button gap-1.5"
-              onClick={() => clearFilter("assignedTo")}
-            >
-              <span>
-                المسؤول:{" "}
-                {users.find((user) => user.id === filters.assignedTo)?.name ||
-                  users.find((user) => user.id === filters.assignedTo)
-                    ?.firstName ||
-                  "محدد"}
-              </span>
-              <XMarkIcon className="size-3.5" />
-            </button>
-          ) : null}
-
-          {filters.dueDateFrom || filters.dueDateTo ? (
-            <button
-              type="button"
-              className="business-chip-button gap-1.5"
-              onClick={() => {
-                setFilters({
-                  ...filters,
-                  dueDateFrom: "",
-                  dueDateTo: "",
-                });
-                setCurrentPage(1);
-              }}
-            >
-              <span>
-                التاريخ: {filters.dueDateFrom || "..."} -{" "}
-                {filters.dueDateTo || "..."}
-              </span>
-              <XMarkIcon className="size-3.5" />
-            </button>
-          ) : null}
-
-          <Button
+        {filters.categoryId ? (
+          <button
             type="button"
-            variant="ghost"
-            className="h-8 rounded-full px-2.5 text-xs text-primary"
+            className="business-chip-button gap-1"
+            onClick={() => clearFilter("categoryId")}
+          >
+            {categories.find((c) => c.id === filters.categoryId)?.name || "قسم"}
+            <XMarkIcon className="size-3" />
+          </button>
+        ) : null}
+
+        {filters.status ? (
+          <button
+            type="button"
+            className="business-chip-button gap-1"
+            onClick={() => clearFilter("status")}
+          >
+            {filters.status === "pending"
+              ? "انتظار"
+              : filters.status === "in_progress"
+                ? "تنفيذ"
+                : filters.status === "completed"
+                  ? "مكتمل"
+                  : "ملغي"}
+            <XMarkIcon className="size-3" />
+          </button>
+        ) : null}
+
+        {filters.priority ? (
+          <button
+            type="button"
+            className="business-chip-button gap-1"
+            onClick={() => clearFilter("priority")}
+          >
+            {filters.priority === "urgent"
+              ? "عاجل"
+              : filters.priority === "high"
+                ? "عالي"
+                : filters.priority === "medium"
+                  ? "متوسط"
+                  : "منخفض"}
+            <XMarkIcon className="size-3" />
+          </button>
+        ) : null}
+
+        {filters.assignedTo ? (
+          <button
+            type="button"
+            className="business-chip-button gap-1"
+            onClick={() => clearFilter("assignedTo")}
+          >
+            {users.find((u) => u.id === filters.assignedTo)?.name ||
+              users.find((u) => u.id === filters.assignedTo)?.firstName ||
+              "مسؤول"}
+            <XMarkIcon className="size-3" />
+          </button>
+        ) : null}
+
+        {filters.dueDateFrom || filters.dueDateTo ? (
+          <button
+            type="button"
+            className="business-chip-button gap-1"
             onClick={() => {
-              setFilters(emptyFilters);
+              setFilters({ ...filters, dueDateFrom: "", dueDateTo: "" });
               setCurrentPage(1);
             }}
           >
-            مسح الكل
-          </Button>
-        </div>
-      ) : null}
-    </section>
+            {filters.dueDateFrom || "..."} – {filters.dueDateTo || "..."}
+            <XMarkIcon className="size-3" />
+          </button>
+        ) : null}
+      </div>
+    </div>
   );
 };
