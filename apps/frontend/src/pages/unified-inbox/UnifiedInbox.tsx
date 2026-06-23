@@ -1927,7 +1927,7 @@ const UnifiedInbox: React.FC = () => {
                       <button
                         key={reply.id}
                         onClick={() => useQuickReply(reply)}
-                        className={`w-full rounded-2xl border px-3 py-2 ${isRtl ? "text-right" : "text-left"} text-sm transition-colors truncate`}
+                        className={`w-full rounded-2xl border px-3 py-2 flex flex-col items-start gap-1 ${isRtl ? "text-right" : "text-left"} transition-colors`}
                         style={{
                           borderColor: "var(--business-card-border)",
                           background:
@@ -1935,16 +1935,16 @@ const UnifiedInbox: React.FC = () => {
                         }}
                       >
                         <span
-                          className="font-medium"
+                          className="font-bold text-sm"
                           style={{ color: "var(--color-foreground)" }}
                         >
                           {reply.title}
                         </span>
-                          <span
-                            className={isRtl ? "ml-2" : "mr-2"}
-                            style={{ color: "var(--color-muted-foreground)" }}
-                          >
-                          — {reply.content.substring(0, 50)}
+                        <span
+                          className="text-xs line-clamp-2"
+                          style={{ color: "var(--color-muted-foreground)", opacity: 0.8 }}
+                        >
+                          {reply.content}
                         </span>
                       </button>
                     ))}
