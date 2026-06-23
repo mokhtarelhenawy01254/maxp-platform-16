@@ -7,6 +7,7 @@ import {
   ShoppingBag,
   Activity,
   ExternalLink,
+  Star,
 } from "lucide-react";
 import { format } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
@@ -63,6 +64,7 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
     loading,
     loadCustomerData,
     calculateLTV,
+    calculateRating,
   } = useCustomerProfile();
 
   useEffect(() => {
@@ -72,6 +74,7 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
   }, [conversation?.customerId, loadCustomerData]);
 
   const ltv = calculateLTV();
+  const rating = calculateRating();
 
   return (
     <div className="business-inbox-column business-inbox-column--profile">
@@ -107,6 +110,32 @@ const CustomerPanel: React.FC<CustomerPanelProps> = ({
             data-platform={conversation.platform}
           >
             {conversation.platform}
+          </span>
+        </div>
+
+        {/* ⭐ Customer Rating */}
+        <div className="mt-3 flex flex-col items-center gap-1">
+          <div className="flex items-center gap-0.5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star
+                key={i}
+                size={14}
+                fill={i < rating.stars ? "currentColor" : "none"}
+                style={{
+                  color:
+                    i < rating.stars
+                      ? "var(--business-warning, #f59e0b)"
+                      : "var(--color-muted-foreground)",
+                  opacity: i < rating.stars ? 1 : 0.3,
+                }}
+              />
+            ))}
+          </div>
+          <span
+            className="text-xs font-medium"
+            style={{ color: "var(--color-muted-foreground)" }}
+          >
+            {rating.label}
           </span>
         </div>
 

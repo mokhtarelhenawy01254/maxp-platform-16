@@ -110,7 +110,9 @@ const getUnifiedConversations = async (req, res) => {
                 { customer: { firstName: { contains: search } } },
                 { customer: { lastName: { contains: search } } },
                 { customer: { email: { contains: search } } },
-                { customer: { phone: { contains: search } } }
+                { customer: { phone: { contains: search } } },
+                // 🔍 Allow searching by order number
+                { customer: { orders: { some: { orderNumber: { contains: search } } } } }
             ];
         }
 
@@ -134,7 +136,19 @@ const getUnifiedConversations = async (req, res) => {
                                 email: true,
                                 phone: true,
                                 avatar: true,
-                                facebookId: true
+                                facebookId: true,
+                                // 📦 Fetch last order number and total order count
+                                orders: {
+                                    orderBy: { createdAt: 'desc' },
+                                    take: 1,
+                                    select: {
+                                        orderNumber: true,
+                                        status: true
+                                    }
+                                },
+                                _count: {
+                                    select: { orders: true }
+                                }
                             }
                         },
                         user: {
@@ -197,7 +211,9 @@ const getUnifiedConversations = async (req, res) => {
                         waWhere.OR = [
                             { name: { contains: search } },
                             { pushName: { contains: search } },
-                            { phoneNumber: { contains: search } }
+                            { phoneNumber: { contains: search } },
+                            // 🔍 Allow searching by order number in WhatsApp
+                            { customer: { orders: { some: { orderNumber: { contains: search } } } } }
                         ];
                     }
 
@@ -227,7 +243,24 @@ const getUnifiedConversations = async (req, res) => {
                                 select: { name: true, phoneNumber: true }
                             },
                             customer: {
-                                select: { id: true, firstName: true, lastName: true, status: true }
+                                select: { 
+                                    id: true, 
+                                    firstName: true, 
+                                    lastName: true, 
+                                    status: true,
+                                    // 📦 Fetch last order info for WhatsApp contacts
+                                    orders: {
+                                        orderBy: { createdAt: 'desc' },
+                                        take: 1,
+                                        select: {
+                                            orderNumber: true,
+                                            status: true
+                                        }
+                                    },
+                                    _count: {
+                                        select: { orders: true }
+                                    }
+                                }
                             }
                         }
                     });
@@ -270,6 +303,10 @@ const getUnifiedConversations = async (req, res) => {
                 isPinned: conv.isPinned || false,
                 isMuted: false,
                 tags: conv.tags ? conv.tags.split(',').map(t => t.trim()) : [],
+                // 📦 Last order info for quick display in conversation list
+                lastOrderNumber: conv.customer?.orders?.[0]?.orderNumber || null,
+                lastOrderStatus: conv.customer?.orders?.[0]?.status || null,
+                totalOrders: conv.customer?._count?.orders || 0,
                 metadata: {
                     pageId: metadata.pageId,
                     pageName: metadata.pageName,
@@ -299,6 +336,10 @@ const getUnifiedConversations = async (req, res) => {
             isPinned: contact.isPinned,
             isMuted: contact.isMuted,
             tags: [],
+            // 📦 Last order info for quick display in WhatsApp conversation list
+            lastOrderNumber: contact.customer?.orders?.[0]?.orderNumber || null,
+            lastOrderStatus: contact.customer?.orders?.[0]?.status || null,
+            totalOrders: contact.customer?._count?.orders || 0,
             metadata: {
                 sessionId: contact.sessionId,
                 jid: contact.jid,
@@ -975,6 +1016,36 @@ const getCustomerProfile = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Customer not found' });
         }
 
+        // 🧠 Smart Rating Calculation
+        const totalOrders = customer._count.orders;
+        let ltv = 0;
+        
+        // Calculate LTV from completed/delivered/paid orders (if fetched in full, or just approximate with recent orders if full isn't fetched)
+        // Since we only fetched 5 recent orders, we'll fetch sum from DB for accuracy
+        const ordersSum = await prisma.order.aggregate({
+            where: {
+                customerId,
+                status: { in: ['completed', 'delivered', 'paid'] }
+            },
+            _sum: { total: true }
+        });
+        ltv = ordersSum._sum.total || 0;
+
+        let ratingStars = 1;
+        let ratingLabel = 'عميل جديد';
+        
+        if (totalOrders === 0) {
+            ratingStars = 1; ratingLabel = 'عميل جديد';
+        } else if (totalOrders === 1 && ltv < 200) {
+            ratingStars = 2; ratingLabel = 'عميل محتمل';
+        } else if (totalOrders <= 3 || ltv < 500) {
+            ratingStars = 3; ratingLabel = 'عميل متكرر';
+        } else if (totalOrders <= 9 || ltv < 2000) {
+            ratingStars = 4; ratingLabel = 'عميل مميز';
+        } else {
+            ratingStars = 5; ratingLabel = 'عميل VIP';
+        }
+
         res.json({
             success: true,
             data: {
@@ -995,7 +1066,11 @@ const getCustomerProfile = async (req, res) => {
                     platform: c.channel?.toLowerCase()
                 })),
                 tags: customer.tags ? customer.tags.split(',').map(t => t.trim()) : [],
-                notes: customer.notes || ''
+                notes: customer.notes || '',
+                // 🌟 Smart Rating Fields
+                ltv,
+                ratingStars,
+                ratingLabel
             }
         });
 

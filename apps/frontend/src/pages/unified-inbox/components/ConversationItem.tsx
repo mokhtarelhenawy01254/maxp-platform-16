@@ -147,15 +147,32 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
               </div>
             )}
 
-            <div className="mb-1 flex items-center justify-between">
-              <h4
-                className={`truncate text-sm ${
-                  conversation.unreadCount > 0 ? "font-bold" : "font-medium"
-                }`}
-                style={headingStyle}
-              >
-                {conversation.customerName}
-              </h4>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                <h4
+                  className={`truncate text-sm ${
+                    conversation.unreadCount > 0 ? "font-bold" : "font-medium"
+                  }`}
+                  style={headingStyle}
+                >
+                  {conversation.customerName}
+                </h4>
+                {conversation.lastOrderNumber && (
+                  <span
+                    className="flex-shrink-0 rounded px-1.5 py-0.5 text-xs font-medium"
+                    style={{
+                      background:
+                        "color-mix(in srgb, var(--color-primary) 12%, var(--color-background))",
+                      color: "var(--color-primary)",
+                      border:
+                        "1px solid color-mix(in srgb, var(--color-primary) 22%, transparent)",
+                    }}
+                    title={`آخر أوردر: #${conversation.lastOrderNumber}`}
+                  >
+                    #{conversation.lastOrderNumber}
+                  </span>
+                )}
+              </div>
               <span className="mr-2 flex-shrink-0 text-xs" style={mutedStyle}>
                 {formatTime(conversation.lastMessageTime)}
               </span>

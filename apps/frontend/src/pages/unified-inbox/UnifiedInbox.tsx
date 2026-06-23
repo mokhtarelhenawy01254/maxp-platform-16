@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   MagnifyingGlassIcon,
   PaperAirplaneIcon,
@@ -65,6 +65,10 @@ interface UnifiedConversation {
   isMuted: boolean;
   tags: string[];
   metadata: Record<string, any>;
+  // 📦 Last order info
+  lastOrderNumber?: string | null;
+  lastOrderStatus?: string | null;
+  totalOrders?: number;
 }
 
 interface UnifiedMessage {
@@ -101,6 +105,10 @@ interface CustomerProfile {
   recentConversations: any[];
   tags: string[];
   notes: string;
+  // 🌟 Smart Rating Fields
+  ltv?: number;
+  ratingStars?: number;
+  ratingLabel?: string;
 }
 
 interface PlatformCounts {
@@ -1255,14 +1263,29 @@ const UnifiedInbox: React.FC = () => {
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-0.5">
-                            <h3
-                              className={`font-semibold text-sm truncate ${isRtl ? "text-right" : "text-left"}`}
-                              style={{ color: "var(--color-foreground)" }}
-                              translate="no"
-                            >
-                              {conv.contactName || t("unifiedInbox.unknown")}
-                            </h3>
+                          <div className={`flex items-center justify-between mb-0.5 gap-2`}>
+                            <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                              <h3
+                                className={`font-semibold text-sm truncate ${isRtl ? "text-right" : "text-left"}`}
+                                style={{ color: "var(--color-foreground)" }}
+                                translate="no"
+                              >
+                                {conv.contactName || t("unifiedInbox.unknown")}
+                              </h3>
+                              {conv.lastOrderNumber && (
+                                <span
+                                  className="flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium leading-none"
+                                  style={{
+                                    background: "color-mix(in srgb, var(--color-primary) 12%, var(--color-background))",
+                                    color: "var(--color-primary)",
+                                    border: "1px solid color-mix(in srgb, var(--color-primary) 22%, transparent)",
+                                  }}
+                                  title={`آخر أوردر: #${conv.lastOrderNumber}`}
+                                >
+                                  #{conv.lastOrderNumber}
+                                </span>
+                              )}
+                            </div>
                             <span
                               className={`text-[11px] flex-shrink-0 ${isRtl ? "mr-2" : "ml-2"}`}
                               style={{ color: "var(--color-muted-foreground)" }}
@@ -2275,6 +2298,38 @@ const UnifiedInbox: React.FC = () => {
               </div>
             ) : customerProfile ? (
               <>
+                {/* ⭐ Customer Rating */}
+                {customerProfile.ratingStars !== undefined && (
+                  <div className="flex flex-col items-center gap-1 mb-4 mt-2">
+                    <div className="flex items-center gap-0.5">
+                      {Array.from({ length: 5 }).map((_, i) => {
+                        const filled = i < (customerProfile.ratingStars || 0);
+                        return filled ? (
+                          <StarSolidIcon
+                            key={i}
+                            className="w-4 h-4"
+                            style={{ color: "var(--business-warning, #f59e0b)" }}
+                          />
+                        ) : (
+                          <StarSolidIcon
+                            key={i}
+                            className="w-4 h-4"
+                            style={{ color: "var(--color-muted-foreground)", opacity: 0.3 }}
+                          />
+                        );
+                      })}
+                    </div>
+                    <span
+                      className="text-xs font-medium px-2 py-0.5 rounded-full"
+                      style={{ 
+                        color: "var(--color-primary)",
+                        backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" 
+                      }}
+                    >
+                      {customerProfile.ratingLabel}
+                    </span>
+                  </div>
+                )}
                 {/* Contact Info */}
                 <div
                   className="p-4 border-b"
