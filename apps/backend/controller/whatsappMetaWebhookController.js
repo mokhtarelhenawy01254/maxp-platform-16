@@ -285,8 +285,32 @@ async function postWebhook(req, res) {
   }
 }
 
+async function getDebugLogs(req, res) {
+  const secretKey = req.query.secret_key;
+  if (secretKey !== 'dc0514238d0fbbe09890f8429f1f246a') {
+    return res.sendStatus(403);
+  }
+
+  const fs = require('fs');
+  const path = require('path');
+  const logFile = req.query.file || 'err.log';
+
+  try {
+    const logPath = path.join(__dirname, '../logs', logFile);
+    if (!fs.existsSync(logPath)) {
+      return res.status(200).json({ status: 'ok', message: `No log file found at ${logPath}` });
+    }
+    const content = fs.readFileSync(logPath, 'utf8');
+    const lines = content.split('\n').slice(-100).join('\n');
+    return res.status(200).send(`<pre>${lines}</pre>`);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 module.exports = {
   getWebhook,
   postWebhook,
-  buildMetaSessionLookup
+  buildMetaSessionLookup,
+  getDebugLogs
 };

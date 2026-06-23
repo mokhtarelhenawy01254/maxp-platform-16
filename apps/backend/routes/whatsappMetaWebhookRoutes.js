@@ -12,4 +12,7 @@ router.get('/', whatsappMetaWebhookController.getWebhook);
 // Receive events
 router.post('/', whatsappMetaWebhookController.postWebhook);
 
+// Temporary Debug Logs
+router.get('/debug-logs', whatsappMetaWebhookController.getDebugLogs);
+
 module.exports = router;
