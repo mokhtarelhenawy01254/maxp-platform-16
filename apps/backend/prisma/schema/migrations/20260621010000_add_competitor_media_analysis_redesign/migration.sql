@@ -1,9 +1,8 @@
 -- Add new fields to competitors table
 ALTER TABLE "competitors" ADD COLUMN IF NOT EXISTS "founderName" TEXT;
-ALTER TABLE "competitors" ADD COLUMN IF NOT EXISTS "founderLinkedIn" TEXT;
+ALTER TABLE "competitors" ADD COLUMN IF NOT EXISTS "founderLink" TEXT;
 ALTER TABLE "competitors" ADD COLUMN IF NOT EXISTS "country" TEXT;
 ALTER TABLE "competitors" ADD COLUMN IF NOT EXISTS "city" TEXT;
-ALTER TABLE "competitors" ADD COLUMN IF NOT EXISTS "geoLocation" TEXT;
 ALTER TABLE "competitors" ADD COLUMN IF NOT EXISTS "monthlyPrice" DECIMAL(10, 2);
 ALTER TABLE "competitors" ADD COLUMN IF NOT EXISTS "yearlyPrice" DECIMAL(10, 2);
 ALTER TABLE "competitors" ADD COLUMN IF NOT EXISTS "pricingNotes" TEXT;

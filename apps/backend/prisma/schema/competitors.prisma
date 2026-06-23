@@ -22,10 +22,9 @@ model Competitor {
   updatedAt       DateTime             @updatedAt
 
   founderName     String?
-  founderLinkedIn String?
+  founderLink    String?
   country         String?
   city            String?
-  geoLocation     String?
   monthlyPrice    Decimal?             @db.Decimal(10, 2)
   yearlyPrice     Decimal?             @db.Decimal(10, 2)
   pricingNotes    String?              @db.Text

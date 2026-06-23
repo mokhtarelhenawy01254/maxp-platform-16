@@ -94,8 +94,8 @@ const CompetitorAdd: React.FC = () => {
 
   const [formData, setFormData] = useState<Record<string, string>>({
     name: '', websiteUrl: '', platform: 'manual', activityType: '',
-    targetMarket: '', foundedYear: '', founderName: '', founderLinkedin: '',
-    country: '', city: '', geoLocation: '',
+    targetMarket: '', foundedYear: '', founderName: '', founderLink: '',
+    country: '', city: '',
     trafficSource: '',
     strengths: '', weaknesses: '',
     monthlyPrice: '', yearlyPrice: '', pricingNotes: '',
@@ -132,8 +132,8 @@ const CompetitorAdd: React.FC = () => {
           name: c.name || '', websiteUrl: c.url || '', platform: c.platform || 'manual',
           activityType: c.activityType || '', targetMarket: c.targetMarket || '',
           foundedYear: c.foundedYear?.toString() || '', founderName: c.founderName || '',
-          founderLinkedin: c.founderLinkedin || '',
-          country: c.country || '', city: c.city || '', geoLocation: c.geoLocation || '',
+          founderLink: c.founderLink || '',
+          country: c.country || '', city: c.city || '',
           trafficSource: c.trafficSource || '',
           strengths: c.strengths || '', weaknesses: c.weaknesses || '',
           monthlyPrice: c.monthlyPrice?.toString() || '', yearlyPrice: c.yearlyPrice?.toString() || '',
@@ -487,7 +487,7 @@ const CompetitorAdd: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>{t('competitors.country') || 'الدولة'}</Label>
                   <Input
@@ -502,14 +502,6 @@ const CompetitorAdd: React.FC = () => {
                     value={formData.city}
                     onChange={e => handleInputChange('city', e.target.value)}
                     placeholder={t('competitors.cityPlaceholder')}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('competitors.geoLocation') || 'الموقع الجغرافي'}</Label>
-                  <Input
-                    value={formData.geoLocation}
-                    onChange={e => handleInputChange('geoLocation', e.target.value)}
-                    placeholder={t('competitors.geoLocationPlaceholder')}
                   />
                 </div>
               </div>

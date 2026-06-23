@@ -428,7 +428,6 @@
   "founderLinkedIn": "رابط LinkedIn (اختياري)",
   "country": "الدولة",
   "city": "المدينة (اختياري)",
-  "geoLocation": "الموقع الجغرافي",
   "platformOptions": {
     "manual": "يدوي",
     "shopify": "Shopify",
@@ -525,7 +524,6 @@
   "founderNamePlaceholder": "مثال: محمد الأحمد",
   "countryPlaceholder": "مثال: السعودية",
   "cityPlaceholder": "مثال: الرياض",
-  "geoLocationPlaceholder": "24.7136, 46.6753",
   "socialUrlPlaceholder": "https://...",
   "socialUsernamePlaceholder": "البريد الإلكتروني",
   "socialPasswordPlaceholder": "أدخل كلمة المرور",

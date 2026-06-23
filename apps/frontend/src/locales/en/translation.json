@@ -2119,7 +2119,6 @@
     "founderLinkedIn": "LinkedIn Profile (Optional)",
     "country": "Country",
     "city": "City (Optional)",
-    "geoLocation": "Geo Location",
     "platformOptions": {
       "manual": "Manual",
       "shopify": "Shopify",
@@ -2213,7 +2212,6 @@
     "founderNamePlaceholder": "e.g. John Smith",
     "countryPlaceholder": "e.g. Saudi Arabia",
     "cityPlaceholder": "e.g. Riyadh",
-    "geoLocationPlaceholder": "24.7136, 46.6753",
     "socialUrlPlaceholder": "https://...",
     "socialUsernamePlaceholder": "email@example.com",
     "socialPasswordPlaceholder": "Enter password",
