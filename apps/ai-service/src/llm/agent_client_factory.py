@@ -31,7 +31,9 @@ def build_agent_client(
         - OpenAI                          -> ``OpenAIChatCompletionClient``
         - Fallback                        -> ``ProviderAdapter`` with the best available provider
     """
-    resolved_model = model or settings.default_model
+    if not model:
+        raise ValueError("model is required for LLM client creation")
+    resolved_model = model
     if is_gemma_model(resolved_model):
         gemma = build_gemma_client(
             api_key=settings.google_api_key,
@@ -43,42 +45,17 @@ def build_agent_client(
             logger.info("agent_client.routed", provider="gemma", model=resolved_model)
             return gemma
 
-    if settings.default_llm_provider == "google":
-        logger.info("agent_client.routed", provider="google-provider-adapter", model=resolved_model)
+    # Sync path — simple heuristic routing since DB is unreachable synchronously.
+    # Production agents should use the async path (ensure_client).
+    if "gemini" in resolved_model:
+        logger.info("agent_client.routed.sync", provider="google", model=resolved_model)
         return ProviderAdapter(
             GoogleProvider(settings.google_api_key, resolved_model),
             tools=tools,
             system_prompt=system_prompt,
         )
 
-    if settings.default_llm_provider == "openai":
-        logger.info("agent_client.routed", provider="openai-provider-adapter", model=resolved_model)
-        return ProviderAdapter(
-            OpenAICompatProvider(
-                settings.openai_api_key,
-                resolved_model,
-                base_url="https://api.openai.com/v1",
-                provider_name="OPENAI",
-            ),
-            tools=tools,
-            system_prompt=system_prompt,
-        )
-
-    logger.warning(
-        "agent_client.sync_provider_requires_async_factory",
-        provider=settings.default_llm_provider,
-        model=resolved_model,
-    )
-    return ProviderAdapter(
-        OpenAICompatProvider(
-            api_key=settings.openai_api_key,
-            model=resolved_model,
-            base_url="https://api.openai.com/v1",
-            provider_name="OPENAI",
-        ),
-        tools=tools,
-        system_prompt=system_prompt,
-    )
+    raise ValueError(f"cannot resolve model '{resolved_model}' synchronously; use async build_agent_client_async instead")
 
 
 def build_provider_client(
@@ -90,7 +67,9 @@ def build_provider_client(
 ) -> Any:
     """Build a client from a specific provider type, bypassing routing logic."""
     settings = get_settings()
-    resolved_model = model or settings.default_model
+    if not model:
+        raise ValueError("model is required for LLM client creation")
+    resolved_model = model
     if is_gemma_model(resolved_model):
         gemma = build_gemma_client(
             api_key=settings.google_api_key,
@@ -113,7 +92,9 @@ async def build_agent_client_async(
     system_prompt: str | None = None,
     company_id: str | None = None,
 ) -> Any:
-    resolved_model = model or settings.default_model
+    if not model:
+        raise ValueError("model is required for LLM client creation")
+    resolved_model = model
     if is_gemma_model(resolved_model):
         gemma = build_gemma_client(
             api_key=settings.google_api_key,
@@ -128,9 +109,6 @@ async def build_agent_client_async(
     factory = get_provider_factory()
 
     provider = await factory.get_active_provider(resolved_model, company_id)
-    if provider is None:
-        provider_type = settings.default_llm_provider.upper()
-        provider = await factory.get_provider(provider_type, resolved_model, company_id)
     if provider is None:
         logger.error("No active provider found in database for model", model=resolved_model)
         return None
@@ -148,8 +126,9 @@ async def build_provider_client_async(
     company_id: str | None = None,
     key_id: str | None = None,
 ) -> Any:
-    settings = get_settings()
-    resolved_model = model or settings.default_model
+    if not model:
+        raise ValueError("model is required for LLM client creation")
+    resolved_model = model
     factory = get_provider_factory()
     provider = await factory.get_provider(
         provider_type.upper(),

@@ -280,10 +280,10 @@ class ProviderFactory:
         return provider
 
     async def get_active_provider(self, model: str | None = None, company_id: str | None = None) -> BaseProvider | None:
-        settings = get_settings()
+        if not model:
+            return None
         try:
-            resolved_model = model or settings.default_model
-            key_info = await model_manager.get_next_key(resolved_model, company_id or "default")
+            key_info = await model_manager.get_next_key(model, company_id or "default")
             provider_type = key_info.provider if hasattr(key_info, "provider") else key_info["provider"]
             return await self.get_provider(provider_type, resolved_model, company_id)
         except ModelManagerError:

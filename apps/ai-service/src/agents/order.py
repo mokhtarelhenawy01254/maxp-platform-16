@@ -25,7 +25,7 @@ async def create_order_agent(company_id: str | None = None) -> Agent | RawClaude
         allowed_tools=list(base.allowed_tools),
     )
 
-    if settings.default_llm_provider == "anthropic":
+    if base.model.startswith("claude"):
         return RawClaudeAgent(
             name=base._agent_name(),
             instructions=instructions,

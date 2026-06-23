@@ -4,7 +4,6 @@ import json
 import uuid
 
 import structlog
-from agent_framework.anthropic import RawClaudeAgent
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,7 +40,7 @@ class AgentRegistry:
         self,
         company_id: str,
         agent_id: str,
-        agent: BaseAgent | RawClaudeAgent,
+        agent: BaseAgent,
         tool_names: list[str] | None = None,
     ) -> None:
         if company_id not in self._registry:
@@ -52,7 +51,7 @@ class AgentRegistry:
         )
         self._company_id_map[agent_id] = company_id
 
-    def get(self, company_id: str, agent_id: str) -> BaseAgent | RawClaudeAgent | None:
+    def get(self, company_id: str, agent_id: str) -> BaseAgent | None:
         record = self._registry.get(company_id, {}).get(agent_id)
         return record.agent if record else None
 
@@ -60,7 +59,7 @@ class AgentRegistry:
         record = self._registry.get(company_id, {}).get(agent_id)
         return record.tool_names if record else []
 
-    def list_agents(self, company_id: str) -> list[tuple[str, BaseAgent | RawClaudeAgent, list[str]]]:
+    def list_agents(self, company_id: str) -> list[tuple[str, BaseAgent, list[str]]]:
         """Return list of (agent_id, agent, tool_names) for a company."""
         return [
             (agent_id, record.agent, record.tool_names)
@@ -169,7 +168,7 @@ class AgentRegistry:
 
 
 class _AgentRecord:
-    def __init__(self, agent: BaseAgent | RawClaudeAgent, tool_names: list[str]) -> None:
+    def __init__(self, agent: BaseAgent, tool_names: list[str]) -> None:
         self.agent = agent
         self.tool_names = tool_names
 
@@ -224,31 +223,23 @@ async def init_registry_from_db(session_factory) -> None:
                         allowed_tools=tool_names,
                     )
 
-                    if settings.default_llm_provider == "anthropic":
-                        agent: BaseAgent | RawClaudeAgent = RawClaudeAgent(
-                            name=db_agent.name,
-                            instructions=db_agent.soul or "",
-                            tools=agent_tools,
-                            default_options={"model": db_agent.model or settings.default_model},
-                        )
-                    else:
-                        _agent_config_json = db_agent.config or {}
-                        config = BaseAgentConfig(
-                            id=db_agent.id,
-                            name=db_agent.name,
-                            role=db_agent.role,
-                            company_id=company_id,
-                            allowed_tools=tool_names,
-                            allowed_channels=channels,
-                            model=db_agent.model or settings.default_model,
-                            allowed_skills=list(db_agent.allowed_skills or []),
-                            persona=db_agent.persona or {},
-                            provider=_agent_config_json.get("provider") or None,
-                            key_id=_agent_config_json.get("keyId") or _agent_config_json.get("key_id") or None,
-                            template_slug=db_agent.template_slug or None,
-                        )
-                        agent = BaseAgent(config)
-                        agent._db_rules = db_agent.rules or ""
+                    _agent_config_json = db_agent.config or {}
+                    config = BaseAgentConfig(
+                        id=db_agent.id,
+                        name=db_agent.name,
+                        role=db_agent.role,
+                        company_id=company_id,
+                        allowed_tools=tool_names,
+                        allowed_channels=channels,
+                        model=db_agent.model or settings.default_model,
+                        allowed_skills=list(db_agent.allowed_skills or []),
+                        persona=db_agent.persona or {},
+                        provider=_agent_config_json.get("provider") or None,
+                        key_id=_agent_config_json.get("keyId") or _agent_config_json.get("key_id") or None,
+                        template_slug=db_agent.template_slug or None,
+                    )
+                    agent = BaseAgent(config)
+                    agent._db_rules = db_agent.rules or ""
 
                     registry.register(company_id, db_agent.id, agent, tool_names=tool_names)
                 except Exception as exc:

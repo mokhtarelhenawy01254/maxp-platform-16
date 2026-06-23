@@ -48,7 +48,8 @@ class LLMFallbackProvider:
                 build_provider_client_async,
             )
 
-            resolved_model = model or settings.google_gemini_model or settings.default_model
+            # ponytail: settings.default_model fallback, model_manager lookup if per-company routing needed
+            resolved_model = model or settings.default_model
             if provider:
                 client = await build_provider_client_async(
                     provider,

@@ -13,8 +13,6 @@ from src.tools.sdk_gateway import wrap_tools_for_gateway
 async def create_support_agent(company_id: str | None = None) -> Agent | RawClaudeAgent:
     """Create support agent from template (single source of truth)."""
     settings = get_settings()
-
-    # Single source: template
     base = await BaseAgent.from_template("support-agent", company_id or "")
 
     instructions = base._get_system_prompt()
@@ -25,7 +23,7 @@ async def create_support_agent(company_id: str | None = None) -> Agent | RawClau
         allowed_tools=list(base.allowed_tools),
     )
 
-    if settings.default_llm_provider == "anthropic":
+    if base.model.startswith("claude"):
         return RawClaudeAgent(
             name=base._agent_name(),
             instructions=instructions,

@@ -22,25 +22,31 @@ async def health() -> dict[str, str]:
 @router.get("/ready")
 async def ready() -> JSONResponse:
     settings = get_settings()
-    provider_keys = {
-        "anthropic": settings.anthropic_api_key,
-        "openai": settings.openai_api_key,
-        "google": settings.google_api_key,
+    configured_providers = {
+        name: key
+        for name, key in [
+            ("anthropic", settings.anthropic_api_key),
+            ("openai", settings.openai_api_key),
+            ("google", settings.google_api_key),
+        ]
+        if key
     }
-    if provider_keys.get(settings.default_llm_provider):
+    if not configured_providers:
         return JSONResponse(
-            status_code=200,
+            status_code=503,
             content={
-                "status": "ready",
-                "service": settings.app_name,
-                "version": settings.version,
-                "provider": settings.default_llm_provider,
+                "status": "not_ready",
+                "reason": "No LLM provider is configured",
             },
         )
+    primary = list(configured_providers.keys())[0]
     return JSONResponse(
-        status_code=503,
+        status_code=200,
         content={
-            "status": "not_ready",
-            "reason": f"{settings.default_llm_provider} provider is not configured",
+            "status": "ready",
+            "service": settings.app_name,
+            "version": settings.version,
+            "provider": primary,
+            "configured_providers": list(configured_providers.keys()),
         },
     )

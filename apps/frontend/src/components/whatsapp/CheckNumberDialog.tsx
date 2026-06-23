@@ -12,40 +12,63 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import { apiClient as api } from "../../services/apiClient";
+import type { WhatsAppProvider, Session as SessionType } from "../../hooks/useWhatsAppQueries";
 
 interface CheckNumberDialogProps {
   open: boolean;
   onClose: () => void;
   sessionId: string;
-  onChatStart?: (jid: string) => void;
+  sessions: SessionType[];
+  onChatStart?: (jid: string, sessionId: string) => void;
 }
+
+const providerBadge: Record<WhatsAppProvider, { label: string; className: string }> = {
+  META_CLOUD: { label: "Cloud API", className: "bg-sky-100 text-sky-700" },
+  BAILEYS: { label: "Baileys", className: "bg-amber-100 text-amber-700" },
+};
+
+const statusBadge: Record<string, { label: string; className: string }> = {
+  connected: { label: "متصل", className: "bg-emerald-100 text-emerald-700" },
+  connecting: { label: "جاري الاتصال", className: "bg-amber-100 text-amber-700" },
+  disconnected: { label: "غير متصل", className: "bg-rose-100 text-rose-700" },
+};
 
 const CheckNumberDialog: React.FC<CheckNumberDialogProps> = ({
   open,
   onClose,
   sessionId,
+  sessions,
   onChatStart,
 }) => {
   const [number, setNumber] = useState("");
+  const [selectedSessionId, setSelectedSessionId] = useState(sessionId);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const realSessions = sessions.filter((s) => s.id !== "all");
+
   useEffect(() => {
-    if (!open) {
+    if (open) {
       setNumber("");
+      setSelectedSessionId(sessionId);
       setError(null);
       setSuccessMessage(null);
       setLoading(false);
     }
-  }, [open]);
+  }, [open, sessionId]);
 
   const handleAddAndStartChat = async () => {
-    if (!number) {
-      return;
-    }
+    if (!number || !selectedSessionId) return;
 
     setLoading(true);
     setError(null);
@@ -53,18 +76,14 @@ const CheckNumberDialog: React.FC<CheckNumberDialogProps> = ({
 
     try {
       const response = await api.post("/whatsapp/check-number", {
-        sessionId,
+        sessionId: selectedSessionId,
         number,
       });
 
       if (response.data.success && response.data.exists && response.data.jid) {
-        // Number exists on WhatsApp — auto-start chat immediately
         setSuccessMessage("تم العثور على الرقم! جاري فتح المحادثة...");
-        onChatStart?.(response.data.jid);
-        // Brief delay so the user sees the success state, then close
-        setTimeout(() => {
-          onClose();
-        }, 400);
+        onChatStart?.(response.data.jid, selectedSessionId);
+        setTimeout(() => onClose(), 400);
       } else if (response.data.success && !response.data.exists) {
         setError("الرقم غير مسجل على واتساب. تأكد من الرقم وحاول مرة أخرى.");
       } else {
@@ -82,6 +101,8 @@ const CheckNumberDialog: React.FC<CheckNumberDialogProps> = ({
       handleAddAndStartChat();
     }
   };
+
+  const selectedSession = realSessions.find((s) => s.id === selectedSessionId);
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
@@ -102,6 +123,41 @@ const CheckNumberDialog: React.FC<CheckNumberDialogProps> = ({
         <div className="space-y-4 px-6 py-6">
           <div className="space-y-2">
             <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
+              الجلسة
+            </label>
+            <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
+              <SelectTrigger className="h-11 rounded-[18px] bg-white/75">
+                <SelectValue placeholder="اختر الجلسة" />
+              </SelectTrigger>
+              <SelectContent>
+                {realSessions.map((s) => {
+                  const provider = providerBadge[s.provider ?? "BAILEYS"];
+                  const st = statusBadge[String(s.status || s.liveStatus || "").toLowerCase()] ?? statusBadge.disconnected;
+                  return (
+                    <SelectItem key={s.id} value={s.id} className="py-3">
+                      <div className="flex items-center gap-3">
+                        <span className="font-medium">{s.name}</span>
+                        {s.phoneNumber && (
+                          <span className="text-xs text-[color:var(--color-muted-foreground)]">
+                            {s.phoneNumber}
+                          </span>
+                        )}
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${provider.className}`}>
+                          {provider.label}
+                        </span>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${st.className}`}>
+                          {st.label}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)]">
               رقم الهاتف
             </label>
             <div className="relative">
@@ -117,10 +173,18 @@ const CheckNumberDialog: React.FC<CheckNumberDialogProps> = ({
             </div>
           </div>
 
+          {selectedSession && selectedSession.provider === "META_CLOUD" && (
+            <p className="text-xs text-[color:var(--color-muted-foreground)]">
+              سيتم التحقق من الرقم عبر Meta Cloud API. تأكد من صحة التوكن أولاً.
+            </p>
+          )}
+
           {loading ? (
             <div className="flex items-center justify-center gap-2 rounded-[22px] border border-[color:var(--shell-control-border)] bg-white/65 px-4 py-6">
               <Loader2 className="size-5 animate-spin text-[color:var(--color-primary)]" />
-              <span className="text-sm text-[color:var(--color-muted-foreground)]">جاري التحقق وفتح المحادثة...</span>
+              <span className="text-sm text-[color:var(--color-muted-foreground)]">
+                جاري التحقق وفتح المحادثة...
+              </span>
             </div>
           ) : null}
 
@@ -144,7 +208,7 @@ const CheckNumberDialog: React.FC<CheckNumberDialogProps> = ({
           <Button variant="outline" onClick={onClose}>
             إلغاء
           </Button>
-          <Button onClick={handleAddAndStartChat} disabled={!number || loading}>
+          <Button onClick={handleAddAndStartChat} disabled={!number || !selectedSessionId || loading}>
             {loading ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (

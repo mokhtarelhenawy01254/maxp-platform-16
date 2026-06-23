@@ -45,6 +45,7 @@ async def get_daily_cost(session: AsyncSession, company_id: str) -> float:
     est_output_tokens = count * 200
 
     settings = get_settings()
+    # ponytail: system-level fallback, per-company model from actual ToolCall records if accuracy matters
     model = settings.default_model
 
     costs = MODEL_COST_PER_1K.get(model, {"input": 0.003, "output": 0.015})

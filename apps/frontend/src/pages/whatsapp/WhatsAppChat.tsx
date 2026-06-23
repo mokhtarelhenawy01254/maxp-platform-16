@@ -2207,23 +2207,23 @@ const WhatsAppChatContent: React.FC = () => {
         currentPicture={currentUserProfile?.profilePicUrl || ''}
       />
 
-      <CheckNumberDialog
-        open={checkNumberDialogOpen}
-        onClose={() => setCheckNumberDialogOpen(false)}
-        sessionId={activeSessionId}
-        onChatStart={(jid) => {
-          const existingContact = conversations.find(c => c.jid === jid);
-          if (existingContact) {
-            setSelectedContact(existingContact);
-          } else {
-            // Invalidate queries to refetch and find the new contact
-            queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
-            // Create temporary contact for immediate selection
-            const newContact: Contact = {
-              id: jid,
-              sessionId: activeSessionId,
-              jid: jid,
-              phoneNumber: jid.replace(/@.*$/, '').replace(/[^\d]/g, ''),
+          <CheckNumberDialog
+            open={checkNumberDialogOpen}
+            onClose={() => setCheckNumberDialogOpen(false)}
+            sessionId={activeSessionId}
+            sessions={sessions}
+            onChatStart={(jid, selectedSessionId) => {
+              const chatSessionId = selectedSessionId || activeSessionId;
+              const existingContact = conversations.find(c => c.jid === jid);
+              if (existingContact) {
+                setSelectedContact(existingContact);
+              } else {
+                queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
+                const newContact: Contact = {
+                  id: jid,
+                  jid,
+                  sessionId: chatSessionId,
+                  phoneNumber: jid.replace(/@.*$/, '').replace(/[^\d]/g, ''),
               name: null,
               pushName: null,
               profilePicUrl: null,

@@ -48,6 +48,7 @@ from src.db.session import get_session
 from src.llm.agent_client_factory import build_provider_client_async
 from src.pipeline.context import DISABLE_EXTERNAL_EMBEDDING_RETRIEVAL
 from src.tools.registry import get_all_tools
+from src.services.model_resolver import resolver as model_resolver
 from src.workflows.approval import create_approval_draft
 
 logger = structlog.get_logger(__name__)
@@ -388,19 +389,11 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
     allowed_tools = cfg.get("allowed_tools") or []
     allowed_skills = cfg.get("allowed_skills") or []
 
-    # ponytail: resolve model from DB if not set on agent record (legacy agents)
     if not cfg.get("model"):
-        row = await session.execute(
-            select(AiModelConfig.model_name)
-            .join(AiKey, AiKey.id == AiModelConfig.key_id)
-            .where(AiKey.company_id == body.company_id, AiKey.is_active == True, AiModelConfig.is_enabled == True)
-            .order_by(AiModelConfig.priority)
-            .limit(1)
-        )
-        resolved = row.scalar_one_or_none()
+        resolved = await model_resolver.resolve_for_company(body.company_id)
         if resolved:
-            cfg["model"] = resolved
-            logger.info("resolved_model_from_db_for_agent", agent_id=body.agent_id, model=resolved)
+            cfg["model"] = resolved.model_name
+            logger.info("resolved_model_from_db_for_agent", agent_id=body.agent_id, model=resolved.model_name)
 
     # Auto-populate allowed_tools from role config if not explicitly set
     if not allowed_tools and cfg.get("role"):
@@ -543,16 +536,9 @@ async def spawn_agent(body: AgentCreate, session: SessionDep) -> AgentRead:
     agent_id = _generate_agent_id()
     model = body.model or (template.model_policy.get("default") if template else None)
     if model is None:
-        result = await session.execute(
-            select(AiModelConfig.model_name)
-            .join(AiKey, AiKey.id == AiModelConfig.key_id)
-            .where(AiKey.company_id == body.company_id, AiKey.is_active == True, AiModelConfig.is_enabled == True)
-            .order_by(AiModelConfig.priority)
-            .limit(1)
-        )
-        default_model = result.scalar_one_or_none()
-        if default_model:
-            model = default_model
+        resolved = await model_resolver.resolve_for_company(body.company_id)
+        if resolved:
+            model = resolved.model_name
     agent = AgentModel(
         id=agent_id,
         company_id=body.company_id,
