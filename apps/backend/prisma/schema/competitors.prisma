@@ -7,11 +7,11 @@ model Competitor {
   logo            String?
   description     String?
   notes           String?
-  activityType    String?   @map("activity_type")
+  activityType    String?
   location        String?
-  targetMarket    String?   @map("target_market")
-  foundedYear     Int?      @map("founded_year")
-  employeeCount   String?   @map("employee_count")
+  targetMarket    String?
+  foundedYear     Int?
+  employeeCount   String?
   strengths       String?              @db.Text
   weaknesses      String?              @db.Text
   isActive        Boolean              @default(true)
@@ -22,13 +22,15 @@ model Competitor {
   updatedAt       DateTime             @updatedAt
 
   founderName     String?
-  founderLink    String?
+  founderLinkedIn String?
   country         String?
   city            String?
   monthlyPrice    Decimal?             @db.Decimal(10, 2)
   yearlyPrice     Decimal?             @db.Decimal(10, 2)
   pricingNotes    String?              @db.Text
   trafficSource   String?
+  websiteUsername String?
+  websitePassword String?
 
   company         Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   products        CompetitorProduct[]

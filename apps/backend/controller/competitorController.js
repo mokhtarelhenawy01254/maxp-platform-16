@@ -49,6 +49,8 @@ exports.create = async (req, res) => {
       weaknesses,
       socialProfiles,
       status,
+      websiteUsername,
+      websitePassword,
     } = req.body;
 
     // Validate required fields
@@ -95,6 +97,8 @@ exports.create = async (req, res) => {
         strengths,
         weaknesses,
         status: status || 'NEW',
+        websiteUsername,
+        websitePassword,
         companyId,
       },
     });
