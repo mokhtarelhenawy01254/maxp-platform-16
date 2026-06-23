@@ -1413,15 +1413,15 @@ const WhatsAppChatContent: React.FC = () => {
   };
 
   // ==================== Labels ====================
-  const loadLabels = async () => {
-    if (!selectedSession || selectedSession === 'all') return;
-    try {
-      const res = await api.get('/whatsapp/labels', { params: { sessionId: selectedSession } });
-      setLabels(res.data.labels || []);
-    } catch (error) {
-      console.error('Error loading labels:', error);
-    }
-  };
+  // const loadLabels = async () => {
+  //   if (!selectedSession || selectedSession === 'all') return;
+  //   try {
+  //     const res = await api.get('/whatsapp/labels', { params: { sessionId: selectedSession } });
+  //     setLabels(res.data.labels || []);
+  //   } catch (error) {
+  //     console.error('Error loading labels:', error);
+  //   }
+  // };
 
   const handleLabelChat = async (labelId: string) => {
     if (!selectedSession || !selectedContactForLabel) return;
@@ -1773,7 +1773,7 @@ const WhatsAppChatContent: React.FC = () => {
         selectedContact={selectedContact}
         currentUserProfile={currentUserProfile}
         isLoadingConversations={loadingConversations}
-        isLoadingMoreConversations={loadingMoreConversations}
+        isLoadingMoreConversations={isLoadingMoreConversations}
         hasMoreConversations={hasMoreConversations}
         isLoadingStatuses={loadingStatuses}
         onSelectSession={setSelectedSession}
