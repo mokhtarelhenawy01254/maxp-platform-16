@@ -26,7 +26,27 @@ function isPermissionError(error) {
     errorString.includes('UPDATE command denied') ||
     errorString.includes('DELETE command denied');
   
-  return hasPermissionError;
+  if (hasPermissionError) return true;
+
+  // Check for PostgreSQL RLS violation patterns
+  const pgPatterns = [
+    'violates row-level security policy',
+    'violates row level security policy',
+    'permission denied for',
+    'permission denied for table',
+    'permission denied for relation',
+    'is not permitted',
+  ];
+
+  const lowerMsg = errorMessage.toLowerCase();
+  for (const pattern of pgPatterns) {
+    if (lowerMsg.includes(pattern)) return true;
+  }
+
+  // Check for Prisma permission-related error codes
+  if (error.code === 'P2010' || error.code?.startsWith('P2')) return true;
+
+  return false;
 }
 
 /**

@@ -6,6 +6,11 @@
 
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
 
+const tryParseJSON = (val) => {
+  if (typeof val === 'object') return val;
+  try { return JSON.parse(val); } catch { return null; }
+};
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📋 جلب جميع المحادثات الموحدة
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -591,7 +596,7 @@ const getConversationMessages = async (req, res) => {
                 } : null,
                 isAIResponse: msg.isAIResponse,
                 sender: msg.fromMe ? 'agent' : (msg.participant || 'customer'),
-                interactiveData: msg.interactiveData ? JSON.parse(msg.interactiveData) : null
+                interactiveData: msg.interactiveData ? tryParseJSON(msg.interactiveData) : null
             })).reverse(); // Reverse to show oldest first
 
             return res.json({

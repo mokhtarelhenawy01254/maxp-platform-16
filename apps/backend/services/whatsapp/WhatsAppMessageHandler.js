@@ -1173,7 +1173,13 @@ async function markAsRead(sessionId, remoteJid) {
 
         return { success: true };
     } catch (error) {
-        console.error('❌ Error marking as read:', error);
+        console.error('❌ Error marking as read:', {
+            message: error.message,
+            stack: error.stack,
+            code: error.code,
+            sessionId,
+            remoteJid
+        });
         throw error;
     }
 }

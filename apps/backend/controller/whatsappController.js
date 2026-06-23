@@ -1064,7 +1064,14 @@ async function markAsRead(req, res) {
 
         res.json({ success: true });
     } catch (error) {
-        console.error('❌ Error marking as read:', error);
+        console.error('❌ Error marking as read:', {
+            message: error.message,
+            stack: error.stack,
+            code: error.code,
+            companyId: req.user?.companyId,
+            sessionId: req.body?.sessionId,
+            remoteJid: req.body?.remoteJid
+        });
         res.status(500).json({ error: 'حدث خطأ' });
     }
 }

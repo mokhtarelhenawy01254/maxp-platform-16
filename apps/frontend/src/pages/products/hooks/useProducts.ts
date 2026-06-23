@@ -398,8 +398,8 @@ export const useProducts = () => {
 
   const startQuickEdit = (product: Product) => {
     setEditingProduct(product.id);
-    setEditPrice(product.price.toString());
-    setEditStock(product.stock.toString());
+    setEditPrice(product.price?.toString() ?? '0');
+    setEditStock(product.stock?.toString() ?? '0');
   };
 
   const cancelQuickEdit = () => {
