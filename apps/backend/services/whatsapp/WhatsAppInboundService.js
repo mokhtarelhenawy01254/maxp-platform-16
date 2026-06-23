@@ -41,6 +41,34 @@ async function upsertContact(sessionId, remoteJid, options = {}) {
   const pushName = options.pushName || null;
   const customerId = options.customerId || null;
 
+  const updatePayload = {
+    pushName: pushName || undefined,
+    lastMessageAt: new Date(),
+    totalMessages: { increment: 1 },
+    unreadCount: isOutgoing ? undefined : { increment: 1 },
+    updatedAt: new Date()
+  };
+  if (customerId) {
+    updatePayload.customer = { connect: { id: customerId } };
+  }
+
+  const createPayload = {
+    jid: normalizedJid,
+    phoneNumber,
+    pushName,
+    lastMessageAt: new Date(),
+    totalMessages: 1,
+    unreadCount: isOutgoing ? 0 : 1,
+    isGroup: normalizedJid?.endsWith('@g.us') || false,
+    whatsAppSession: {
+      connect: { id: sessionId }
+    },
+    updatedAt: new Date()
+  };
+  if (customerId) {
+    createPayload.customer = { connect: { id: customerId } };
+  }
+
   return await getSharedPrismaClient().whatsAppContact.upsert({
     where: {
       sessionId_jid: {
@@ -48,28 +76,8 @@ async function upsertContact(sessionId, remoteJid, options = {}) {
         jid: normalizedJid
       }
     },
-    update: {
-      pushName: pushName || undefined,
-      customerId: customerId || undefined,
-      lastMessageAt: new Date(),
-      totalMessages: { increment: 1 },
-      unreadCount: isOutgoing ? undefined : { increment: 1 },
-      updatedAt: new Date()
-    },
-    create: {
-      jid: normalizedJid,
-      phoneNumber,
-      pushName,
-      customerId,
-      lastMessageAt: new Date(),
-      totalMessages: 1,
-      unreadCount: isOutgoing ? 0 : 1,
-      isGroup: normalizedJid?.endsWith('@g.us') || false,
-      whatsAppSession: {
-        connect: { id: sessionId }
-      },
-      updatedAt: new Date()
-    }
+    update: updatePayload,
+    create: createPayload
   });
 }
 
