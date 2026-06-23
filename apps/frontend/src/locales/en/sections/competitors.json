@@ -425,7 +425,7 @@
   "basicData": "Basic Data",
   "activityData": "Activity Data",
   "founderName": "Founder Name",
-  "founderLinkedIn": "Founder Link",
+  "founderLink": "Founder URL",
   "country": "Country",
   "city": "City (Optional)",
   "platformOptions": {

@@ -22,15 +22,13 @@ model Competitor {
   updatedAt       DateTime             @updatedAt
 
   founderName     String?
-  founderLinkedIn String?
+  founderLink      String?
   country         String?
   city            String?
   monthlyPrice    Decimal?             @db.Decimal(10, 2)
   yearlyPrice     Decimal?             @db.Decimal(10, 2)
   pricingNotes    String?              @db.Text
   trafficSource   String?
-  websiteUsername String?
-  websitePassword String?
 
   company         Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   products        CompetitorProduct[]

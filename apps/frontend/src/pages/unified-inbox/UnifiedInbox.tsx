@@ -1983,16 +1983,16 @@ const UnifiedInbox: React.FC = () => {
                         }}
                       >
                         <span
-                          className="font-bold text-sm"
+                          className="font-medium"
                           style={{ color: "var(--color-foreground)" }}
                         >
                           {reply.title}
                         </span>
-                        <span
-                          className="text-xs line-clamp-2"
-                          style={{ color: "var(--color-muted-foreground)", opacity: 0.8 }}
-                        >
-                          {reply.content}
+                          <span
+                            className={isRtl ? "ml-2" : "mr-2"}
+                            style={{ color: "var(--color-muted-foreground)" }}
+                          >
+                          — {reply.content.substring(0, 50)}
                         </span>
                       </button>
                     ))}

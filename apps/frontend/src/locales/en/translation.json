@@ -1479,6 +1479,10 @@
       "noTopProducts": "No product data for this period"
     },
     "noTimelineData": "No timeline data for this period",
+    "warnings": {
+      "title": "Warning: Approaching Usage Limits",
+      "message": "You are approaching your plan limits. Consider upgrading to avoid service interruption."
+    },
     "stats": {
       "title": "Quick Stats",
       "products": "Products",
@@ -2112,7 +2116,7 @@
     "basicData": "Basic Data",
     "activityData": "Activity Data",
     "founderName": "Founder Name",
-    "founderLinkedIn": "Founder Link",
+    "founderLink": "Founder URL",
     "country": "Country",
     "city": "City (Optional)",
     "platformOptions": {
@@ -2560,6 +2564,8 @@
     "last_7_days": "Last 7 days",
     "quick_actions": "Quick Actions",
     "asset_overview": "Asset Overview",
+    "upgrade_title": "Upgrade Plan",
+    "upgrade_message": "You have reached 80% of your limit",
     "view_all_reports": "View All Reports",
     "actions": {
       "orders": {

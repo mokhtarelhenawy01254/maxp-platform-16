@@ -425,7 +425,7 @@
   "basicData": "البيانات الأساسية",
   "activityData": "بيانات النشاط",
   "founderName": "اسم المؤسس",
-  "founderLinkedIn": "رابط المؤسس",
+  "founderLink": "رابط المؤسس",
   "country": "الدولة",
   "city": "المدينة (اختياري)",
   "platformOptions": {

@@ -1025,7 +1025,7 @@ const getCustomerProfile = async (req, res) => {
         const ordersSum = await prisma.order.aggregate({
             where: {
                 customerId,
-                status: { in: ['DELIVERED', 'SHIPPED', 'CONFIRMED', 'PROCESSING'] }
+                status: { in: ['completed', 'delivered', 'paid'] }
             },
             _sum: { total: true }
         });
@@ -1127,40 +1127,9 @@ const getQuickReplies = async (req, res) => {
             mediaType: r.mediaType
         }));
 
-        // Get user's saved texts from TextGallery
-        const userId = req.user?.userId || req.user?.id;
-        let textGalleryTexts = [];
-        
-        if (userId) {
-            const savedTexts = await prisma.textGallery.findMany({
-                where: { companyId, userId },
-                orderBy: [
-                    { isPinned: 'desc' },
-                    { createdAt: 'desc' }
-                ],
-                select: {
-                    id: true,
-                    title: true,
-                    content: true,
-                    imageUrls: true
-                }
-            });
-
-            textGalleryTexts = savedTexts.map(t => ({
-                id: `tg_${t.id}`,
-                title: t.title || 'نص محفوظ',
-                shortcut: '',
-                content: t.content,
-                category: 'TextGallery',
-                platforms: ['whatsapp', 'facebook', 'instagram', 'telegram'],
-                mediaUrl: t.imageUrls && t.imageUrls.length > 0 ? t.imageUrls[0] : null,
-                mediaType: t.imageUrls && t.imageUrls.length > 0 ? 'image' : null
-            }));
-        }
-
         res.json({
             success: true,
-            data: [...quickReplies, ...textGalleryTexts]
+            data: quickReplies
         });
 
     } catch (error) {
