@@ -276,14 +276,14 @@ const SidebarSettings: React.FC = () => {
 
   const performSave = useCallback(async () => {
     setSaveStatus("saving");
-    // Preserve settings for inactive/restricted sections that exist in DB
-    const mergedSections = { ...settings?.sections, ...localSections };
-    const success = await updateSettings({ sections: mergedSections } as Partial<SidebarManagementData>);
+    // Only save currently-visible sections — do not merge stale DB sections
+    // that may carry outdated "visible: false" for now-reactivated apps.
+    const success = await updateSettings({ sections: localSections } as Partial<SidebarManagementData>);
     setSaveStatus(success ? "saved" : "error");
     if (success) {
       setTimeout(() => setSaveStatus("idle"), 2000);
     }
-  }, [localSections, updateSettings, settings]);
+  }, [localSections, updateSettings]);
 
   const toggleItemVisibility = useCallback((sectionId: string, itemId: string) => {
     setLocalSections((prev) => {

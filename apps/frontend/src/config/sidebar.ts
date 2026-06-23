@@ -108,15 +108,22 @@ const mergeSectionOverrides = (
 ): SidebarSection => {
     // Layer 1: Company-level settings
     // Layer 2: User-level settings (override company settings)
-    const effectiveVisible = userDb?.visible ?? dbSection?.visible;
     const effectiveRoles = userDb?.requiredRoles ?? dbSection?.requiredRoles;
-
-    const sectionVisible = effectiveVisible !== false;
     const sectionRoleAccess = hasRoleAccess(userRole, effectiveRoles);
 
     // Respect original hidden (app deactivation, role restrictions, etc.)
     // even if DB/user settings say visible
-    if (!sectionVisible || !sectionRoleAccess || section.hidden === true) {
+    if (section.hidden === true || !sectionRoleAccess) {
+        return { ...section, hidden: true };
+    }
+
+    // Apply DB/user visibility — but only user-level settings can hide a
+    // runtime-visible section. Company-level DB settings cannot override
+    // app-gated visibility, preventing stale "visible: false" data from
+    // keeping a section hidden after its required app is reactivated.
+    const effectiveVisible = userDb?.visible ?? (section.hidden === false ? undefined : dbSection?.visible);
+    const sectionVisible = effectiveVisible !== false;
+    if (!sectionVisible) {
         return { ...section, hidden: true };
     }
 
