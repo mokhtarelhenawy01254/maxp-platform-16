@@ -354,14 +354,25 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
 
         <button
           type="button"
-          className="business-chip-button"
+          className={`business-chip-button gap-1.5 ${
+            hideCompleted
+              ? "data-[active=true]:border-amber-500/30 data-[active=true]:bg-amber-500/5 data-[active=true]:text-amber-700 dark:data-[active=true]:text-amber-300"
+              : ""
+          }`}
           data-active={hideCompleted ? "true" : undefined}
           onClick={() => {
             setHideCompleted(!hideCompleted);
             setCurrentPage(1);
           }}
         >
-          {hideCompleted ? "إخفاء المكتملة" : "عرض المكتملة"}
+          {hideCompleted ? (
+            <>
+              <span className="size-1.5 rounded-full bg-amber-500" />
+              إخفاء المكتملة
+            </>
+          ) : (
+            "عرض المكتملة"
+          )}
         </button>
 
         {hasCommandState ? (

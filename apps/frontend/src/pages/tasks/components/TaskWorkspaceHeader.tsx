@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  AdjustmentsHorizontalIcon,
   ArrowDownTrayIcon,
   FolderPlusIcon,
   PlusIcon,
@@ -108,16 +107,7 @@ export const TaskWorkspaceHeader: React.FC<TaskWorkspaceHeaderProps> = ({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-8 rounded-xl px-2.5 text-xs"
-            onClick={() => setShowFilterSidebar(true)}
-          >
-            <AdjustmentsHorizontalIcon className="size-3.5" />
-            الفلاتر
-          </Button>
+        <div className="flex flex-wrap gap-1.5">          
           <Button
             type="button"
             variant="outline"

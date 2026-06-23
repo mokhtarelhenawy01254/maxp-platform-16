@@ -30,6 +30,16 @@ import { TaskWorkspaceHeader } from "./components/TaskWorkspaceHeader";
 import { TaskWorkspaceTabs } from "./components/TaskWorkspaceTabs";
 import { BusinessPageShell } from "../../components/business/BusinessSurface";
 import { Button } from "../../components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../../components/ui/alert-dialog";
 import type {
   Project,
   ProjectDraft,
@@ -189,6 +199,15 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
   // Filter sidebar state
   const [showFilterSidebar, setShowFilterSidebar] = useState(false);
   const bulkActionsRef = React.useRef<HTMLDivElement | null>(null);
+  const [confirmState, setConfirmState] = useState<{
+    show: boolean;
+    message: string;
+    onConfirm: () => void;
+  }>({ show: false, message: "", onConfirm: () => {} });
+
+  const requestConfirm = (message: string, onConfirm: () => void) => {
+    setConfirmState({ show: true, message, onConfirm });
+  };
 
   const [newProject, setNewProject] = useState<ProjectDraft>({
     name: "",
@@ -260,7 +279,13 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     setWorkspaceSettings(nextSettings);
   }, [activeCompanyId, activeUserId]);
 
+  const settingsAppliedRef = React.useRef(false);
+
   useEffect(() => {
+    if (!settingsAppliedRef.current) {
+      settingsAppliedRef.current = true;
+      return;
+    }
     setTaskFilter(workspaceSettings.defaultScope);
     setSortBy(workspaceSettings.defaultSortBy);
     setSortOrder(workspaceSettings.defaultSortOrder);
@@ -268,6 +293,10 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     setHideCompleted(workspaceSettings.hideCompletedByDefault);
     setCurrentPage(1);
   }, [workspaceSettings]);
+
+  useEffect(() => {
+    settingsAppliedRef.current = false;
+  }, [activeCompanyId, activeUserId]);
 
   // Data refresh here is intentionally driven by the current workspace controls.
   /* eslint-disable react-hooks/exhaustive-deps */
@@ -484,7 +513,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
   };
 
   const deleteCategory = async (categoryId: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذا القسم؟")) return;
+    requestConfirm("هل أنت متأكد من حذف هذا القسم؟", async () => {
     try {
       const token = getAccessToken();
       const response = await fetch(
@@ -505,6 +534,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     } catch (error) {
       toast.error("فشل في حذف القسم");
     }
+    });
   };
 
   const fetchTasks = async () => {
@@ -550,6 +580,8 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
           toast.error("انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى");
+        } else {
+          toast.error("تعذر تحميل المهام. حاول مجدداً.");
         }
         return;
       }
@@ -570,7 +602,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         }
       }
     } catch (error) {
-      // Silent fail
+      toast.error("تعذر الاتصال بالخادم. تحقق من اتصالك.");
     } finally {
       setLoading(false);
     }
@@ -603,7 +635,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         );
       }
     } catch (error) {
-      // Silent fail
+      toast.error("تعذر تحميل المشاريع. حاول مجدداً.");
     }
   };
 
@@ -629,7 +661,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
         setGoals(ensureArray<GoalOption>(data.goals || data.data || data.tasks));
       }
     } catch (error) {
-      // Silent fail
+      // Silent fail for goals (non-critical)
     }
   };
 
@@ -842,7 +874,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
 
   // Delete Task
   const deleteTask = async (taskId: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذه المهمة؟")) return;
+    requestConfirm("هل أنت متأكد من حذف هذه المهمة؟", async () => {
     try {
       const token = getAccessToken();
       const response = await fetch(buildApiUrl(`tasks/${taskId}`), {
@@ -864,6 +896,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     } catch (error) {
       toast.error("فشل في حذف المهمة");
     }
+    });
   };
 
   // Update Project
@@ -899,7 +932,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
 
   // Delete Project
   const deleteProject = async (projectId: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذا المشروع؟")) return;
+    requestConfirm("هل أنت متأكد من حذف هذا المشروع؟", async () => {
     try {
       const token = getAccessToken();
       const response = await fetch(buildApiUrl(`projects/${projectId}`), {
@@ -921,6 +954,7 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
     } catch (error) {
       toast.error("فشل في حذف المشروع");
     }
+    });
   };
 
   const getStatusIcon = (status: string) => {
@@ -1310,6 +1344,9 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
             filteredAndSortedTasks={filteredAndSortedTasks}
             searchQuery={searchQuery}
             selectedTasks={selectedTasks}
+            loading={loading}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
             handleSelectTask={handleSelectTask}
             handleSelectAll={handleSelectAll}
             isOverdue={isOverdue}
@@ -1599,6 +1636,34 @@ const Tasks: React.FC<TasksProps> = ({ embeddedInModal }) => {
           </div>
         </div>
       ) : null}
+
+      <AlertDialog
+        open={confirmState.show}
+        onOpenChange={(open) => {
+          if (!open) setConfirmState({ show: false, message: "", onConfirm: () => {} });
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmState.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-rose-600 text-white hover:bg-rose-700"
+              onClick={() => {
+                confirmState.onConfirm();
+                setConfirmState({ show: false, message: "", onConfirm: () => {} });
+              }}
+            >
+              تأكيد الحذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </BusinessPageShell>
   );
 };
