@@ -75,7 +75,6 @@ async function main() {
         email: user.company.email,
         slug: user.company.slug,
         customDomain: user.company.customDomain || '❌ NOT SET',
-        plan: user.company.plan,
         currency: user.company.currency,
         isActive: user.company.isActive,
         sidebarLayout: user.company.sidebarLayout,

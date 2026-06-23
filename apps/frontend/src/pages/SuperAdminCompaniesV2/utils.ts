@@ -141,7 +141,6 @@ export function computeQuickStats(companies: Company[], serverStats?: QuickStats
     return {
       totalCompanies: serverStats.totalCompanies,
       activeCompanies: serverStats.activeCompanies,
-      enterpriseCompanies: serverStats.enterpriseCompanies ?? 0,
       connectedFacebookPages: serverStats.connectedFacebookPages ?? companies.reduce((s, c) => s + getCount(c, "facebookPages"), 0),
       followUpNow: serverStats.followUpNow,
       escalationDue: serverStats.escalationDue,
@@ -173,7 +172,6 @@ export function computeQuickStats(companies: Company[], serverStats?: QuickStats
   return {
     totalCompanies: companies.length,
     activeCompanies,
-    enterpriseCompanies: 0,
     connectedFacebookPages,
     followUpNow,
     escalationDue,

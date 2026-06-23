@@ -217,7 +217,6 @@ async function main() {
         email: ownerEmail,
         phone: '+201000000900',
         currency: 'EGP',
-        plan: 'PRO',
         isActive: true,
         sidebarLayout: 'affiliate-demo',
         timezone: 'Africa/Cairo',

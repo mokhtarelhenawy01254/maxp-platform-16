@@ -119,7 +119,6 @@ describe("adminCompnayController.getCompanyDetails review payload", () => {
       id: "company-1",
       name: "Acme Co",
       email: "acme@example.com",
-      plan: "PRO",
       currency: "EGP",
       isActive: true,
       createdAt: new Date("2026-04-01T00:00:00.000Z"),

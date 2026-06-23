@@ -33,7 +33,6 @@ describe('Login API Tests', () => {
           id: 'test-company-login-' + Date.now(),
           name: 'Test Company for Login',
           email: 'testcompany@login.test',
-          plan: 'BASIC',
           isActive: true,
           sidebarLayout: 'three-tier',
           timezone: 'Asia/Riyadh',

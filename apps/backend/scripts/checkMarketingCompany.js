@@ -41,7 +41,6 @@ async function checkMarketingCompany() {
     console.log(`📞 الهاتف: ${company.phone || 'غير محدد'}`);
     console.log(`🌐 الموقع: ${company.website || 'غير محدد'}`);
     console.log(`📍 العنوان: ${company.address || 'غير محدد'}`);
-    console.log(`💼 الخطة: ${company.plan || 'غير محدد'}`);
     console.log(`✅ نشطة: ${company.isActive ? 'نعم' : 'لا'}`);
     console.log(`📅 تاريخ الإنشاء: ${company.createdAt}`);
     console.log(`📅 آخر تحديث: ${company.updatedAt}`);

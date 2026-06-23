@@ -29,7 +29,7 @@ const CURRENT_COMPANY_SELECT = {
   settings: true,
   createdAt: true,
   updatedAt: true,
-  plan: true,
+
   currency: true,
   isActive: true,
 };
@@ -646,7 +646,6 @@ const createNewCompany = async (req, res) => {
       phone,
       website,
       address,
-      plan = "BASIC",
       currency = "EGP",
       isActive = true,
     } = req.body;
@@ -710,7 +709,6 @@ const createNewCompany = async (req, res) => {
           phone: phone || null,
           website: website || null,
           address: address || null,
-          plan,
           currency,
           isActive,
           // useCentralKeys field removed — key routing is now schema-agnostic
@@ -764,7 +762,6 @@ const updateCompany = async (req, res) => {
       phone,
       website,
       address,
-      plan,
       currency,
       isActive,
       sidebarLayout,
@@ -776,12 +773,10 @@ const updateCompany = async (req, res) => {
 
     // Non-super-admin users cannot change sensitive fields
     const isSuperAdmin = req.user?.role === 'SUPER_ADMIN';
-    const sensitiveFields = ['plan', 'isActive'];
-    const attemptedSensitive = sensitiveFields.filter(f => req.body[f] !== undefined);
-    if (!isSuperAdmin && attemptedSensitive.length > 0) {
+    if (!isSuperAdmin && req.body.isActive !== undefined) {
       return res.status(403).json({
         success: false,
-        message: 'لا يمكن تعديل الخطة أو حالة التفعيل. هذا متاح لمدير النظام فقط',
+        message: 'لا يمكن تعديل حالة التفعيل. هذا متاح لمدير النظام فقط',
       });
     }
 
@@ -926,7 +921,6 @@ const updateCompany = async (req, res) => {
         ...(phone !== undefined && { phone }),
         ...(website !== undefined && { website }),
         ...(address !== undefined && { address }),
-        ...(plan && { plan }),
         ...(currency && { currency }),
         ...(isActive !== undefined && { isActive }),
         ...(sidebarLayout && { sidebarLayout }),

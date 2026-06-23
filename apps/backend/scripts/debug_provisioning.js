@@ -15,7 +15,6 @@ async function debugProvisioning() {
                 name: `Debug Store ${Date.now()}`,
                 slug: `debug-store-${Date.now()}`,
                 email: `debug_${Date.now()}@test.com`,
-                plan: 'BASIC',
                 isActive: true
             }
         });

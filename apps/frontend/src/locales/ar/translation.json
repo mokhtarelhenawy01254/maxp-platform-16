@@ -1308,7 +1308,6 @@
     "totalConversations": "إجمالي المحادثات",
     "filters": {
       "search": "البحث",
-      "plan": "الخطة",
       "status": "الحالة",
       "all": "الكل",
       "active": "نشط",
@@ -1317,7 +1316,6 @@
     },
     "table": {
       "company": "الشركة",
-      "plan": "الخطة",
       "users": "المستخدمين",
       "customers": "العملاء",
       "products": "المنتجات",
@@ -1325,11 +1323,6 @@
       "status": "الحالة",
       "createdAt": "تاريخ الإنشاء",
       "actions": "الإجراءات"
-    },
-    "plans": {
-      "BASIC": "أساسي",
-      "PRO": "احترافي",
-      "ENTERPRISE": "مؤسسي"
     },
     "actions": {
       "edit": "تعديل",
@@ -1345,7 +1338,6 @@
       "phone": "رقم الهاتف",
       "website": "رابط الموقع",
       "address": "العنوان",
-      "plan": "الخطة",
       "active": "نشط",
       "nameRequired": "اسم الشركة مطلوب",
       "emailRequired": "البريد الإلكتروني مطلوب",
@@ -1450,11 +1442,6 @@
   },
   "companyDashboard": {
     "title": "لوحة تحكم",
-    "plan": {
-      "basic": "أساسي",
-      "pro": "احترافي",
-      "enterprise": "مؤسسي"
-    },
     "status": {
       "active": "نشط",
       "inactive": "غير نشط"
@@ -2649,7 +2636,6 @@
     "dataLoadError": "خطأ في تحميل البيانات",
     "retryLoading": "إعادة المحاولة",
     "company": "الشركة",
-    "plan": "باقة",
     "lastDataUpdate": "آخر تحديث للبيانات",
     "quickActions": "إجراءات سريعة",
     "updateData": "تحديث البيانات",

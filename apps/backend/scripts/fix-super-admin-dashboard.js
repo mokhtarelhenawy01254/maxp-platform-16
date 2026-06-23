@@ -14,7 +14,6 @@ async function fixSuperAdminDashboard() {
       select: {
         id: true,
         name: true,
-        plan: true,
         isActive: true,
         createdAt: true
       },
@@ -25,7 +24,7 @@ async function fixSuperAdminDashboard() {
     if (companies.length > 0) {
       console.log('   Ø£Ù…Ø«Ù„Ø©:');
       companies.forEach(c => {
-        console.log(`   - ${c.name} (${c.plan}) - ${c.isActive ? 'Ù†Ø´Ø·Ø©' : 'ØºÙŠØ± Ù†Ø´Ø·Ø©'}`);
+        console.log(`   - ${c.name} - ${c.isActive ? 'Ù†Ø´Ø·Ø©' : 'ØºÙŠØ± Ù†Ø´Ø·Ø©'}`);
       });
     }
     
@@ -64,15 +63,15 @@ async function fixSuperAdminDashboard() {
     console.log(`âœ… Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø§Øª: ${conversationsCount} Ù…Ø­Ø§Ø¯Ø«Ø©`);
     
     // 5. ÙØ­Øµ ØªÙˆØ²ÙŠØ¹ Ø§Ù„Ø®Ø·Ø·
-    console.log('\nðŸ“Š Ø§Ù„Ø®Ø·ÙˆØ© 2: ÙØ­Øµ ØªÙˆØ²ÙŠØ¹ Ø§Ù„Ø®Ø·Ø·\n');
-    const planDistribution = await prisma.company.groupBy({
-      by: ['plan'],
-      _count: { plan: true }
+    console.log('\nðŸ“Š Ø§Ù„Ø®Ø·ÙˆØ© 2: ÙØ­Øµ Ø­Ø§Ù„Ø© Ø§Ù„Ù†Ø´Ø§Ø·\n');
+    const activityDistribution = await prisma.company.groupBy({
+      by: ['isActive'],
+      _count: { isActive: true }
     });
     
-    console.log('âœ… ØªÙˆØ²ÙŠØ¹ Ø§Ù„Ø®Ø·Ø·:');
-    planDistribution.forEach(p => {
-      console.log(`   - ${p.plan}: ${p._count.plan} Ø´Ø±ÙƒØ©`);
+    console.log('âœ… ØªÙˆØ²ÙŠØ¹ Ø§Ù„Ù†Ø´Ø§Ø·:');
+    activityDistribution.forEach(p => {
+      console.log(`   - ${p.isActive}: ${p._count.isActive} Ø´Ø±ÙƒØ©`);
     });
     
     // 6. ÙØ­Øµ Ø§Ù„Ù†Ø´Ø§Ø· Ø§Ù„Ø£Ø®ÙŠØ±
@@ -113,10 +112,7 @@ async function fixSuperAdminDashboard() {
           totalCustomers,
           totalConversations
         },
-        planDistribution: planDistribution.reduce((acc, p) => {
-          acc[p.plan] = p._count.plan;
-          return acc;
-        }, {}),
+
         recentActivity: {
           newCompaniesLast30Days: recentCompanies,
           newUsersLast30Days: recentUsers,

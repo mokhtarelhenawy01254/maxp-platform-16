@@ -399,7 +399,7 @@ const companySettings = async (req, res) => {
                 phone: true,
                 website: true,
                 address: true,
-                plan: true,
+
                 currency: true,
                 timezone: true,
                 isActive: true,
@@ -468,7 +468,7 @@ const updateCompanySettings = async (req, res) => {
                 phone: true,
                 website: true,
                 address: true,
-                plan: true,
+
                 currency: true,
                 timezone: true,
                 isActive: true,

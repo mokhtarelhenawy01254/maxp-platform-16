@@ -21,22 +21,6 @@ const updateSubscriptionRules = () => {
   ];
 };
 
-const updatePlanLimitRules = () => {
-  return [
-    param("plan")
-      .isIn(["FREE", "BASIC", "PRO", "ENTERPRISE"])
-      .withMessage("الخطة غير صحيحة"),
-    body("maxUsers")
-      .optional()
-      .isInt({ min: 1 })
-      .withMessage("الحد الأقصى للمستخدمين يجب أن يكون رقم صحيح موجب"),
-    body("maxProducts")
-      .optional()
-      .isInt({ min: 1 })
-      .withMessage("الحد الأقصى للمنتجات يجب أن يكون رقم صحيح موجب"),
-  ];
-};
-
 const retryPaymentRules = () => {
   return [
     param("id").isUUID().withMessage("معرف سجل الفاتورة غير صحيح"),
@@ -169,7 +153,7 @@ const validate = (req, res, next) => {
 
 module.exports = {
   updateSubscriptionRules,
-  updatePlanLimitRules,
+
   retryPaymentRules,
   upsertSignupCouponRules,
   updateSignupCouponRules,

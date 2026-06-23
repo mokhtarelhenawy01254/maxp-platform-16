@@ -53,7 +53,6 @@ describe('Preparation Queue Routes', () => {
         id: `test-company-prep-${unique}`,
         name: 'Test Company Preparation Queue',
         email: `preparation-company-${unique}@test.local`,
-        plan: 'ENTERPRISE',
         isActive: true,
         sidebarLayout: 'three-tier',
         timezone: 'Africa/Cairo',

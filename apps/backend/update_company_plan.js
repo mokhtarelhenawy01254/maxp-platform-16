@@ -10,7 +10,6 @@ async function main() {
         // Update company to ENTERPRISE plan
         const updatedCompany = await prisma.company.update({
             where: { id: companyId },
-            data: { plan: 'ENTERPRISE' }
         });
 
         console.log('Company updated to ENTERPRISE plan:');

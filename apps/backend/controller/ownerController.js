@@ -29,7 +29,7 @@ const getOwnerCompanies = async (req, res) => {
                         logo: true,
                         email: true,
                         phone: true,
-                        plan: true,
+
                         isActive: true,
                         createdAt: true
                     }
@@ -109,7 +109,7 @@ const getOwnerDashboard = async (req, res) => {
         const companiesData = await Promise.all(companyIds.map(async (companyId) => {
             const company = await prisma.company.findUnique({
                 where: { id: companyId },
-                select: { id: true, name: true, logo: true, plan: true }
+                select: { id: true, name: true, logo: true }
             });
 
             // Count users in company (safe query)
@@ -756,7 +756,6 @@ const createOwnerCompany = async (req, res) => {
             phone,
             website,
             address,
-            plan = 'BASIC',
             currency = 'EGP',
             timezone = 'Africa/Cairo'
         } = req.body;
@@ -808,7 +807,6 @@ const createOwnerCompany = async (req, res) => {
                     phone: phone || null,
                     website: website || null,
                     address: address || null,
-                    plan,
                     currency,
                     timezone,
                     isActive: true,

@@ -42,7 +42,6 @@ describe('Orders routes guest totals', () => {
         id: `test-company-orders-guest-${unique}`,
         name: 'Test Company Orders Guest',
         email: `orders-guest-company-${unique}@test.local`,
-        plan: 'ENTERPRISE',
         isActive: true,
         sidebarLayout: 'three-tier',
         timezone: 'Africa/Cairo',

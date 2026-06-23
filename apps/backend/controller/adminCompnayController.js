@@ -1506,7 +1506,7 @@ const searchFacebookPages = async (req, res) => {
                         name: true,
                         slug: true,
                         email: true,
-                        plan: true,
+
                         isActive: true
                     }
                 }

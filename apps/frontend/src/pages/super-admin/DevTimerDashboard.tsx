@@ -418,7 +418,7 @@ const DevTimerDashboard: React.FC = () => {
                     {group.description && <p className="text-xs text-gray-500 mb-2">{group.description}</p>}
 
                     <div className="text-xs text-gray-500 mb-2">
-                      {group.dev_tasks.length} مهمة
+                      {group.dev_tasks?.length ?? 0} مهمة
                       {group.isRunning && group.startTime && (
                         <span className="mr-2 text-green-600 font-bold">
                           ← {formatElapsedTime(group.startTime, false)}
@@ -427,7 +427,7 @@ const DevTimerDashboard: React.FC = () => {
                     </div>
 
                     <div className="flex flex-wrap gap-1">
-                      {group.dev_tasks.map(task => (
+                      {(group.dev_tasks ?? []).map(task => (
                         <span key={task.id} className="inline-flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
                           <span className="truncate max-w-[120px]">{task.title}</span>
                           <button onClick={() => handleRemoveTask(group.id, task.id)} className="text-gray-400 hover:text-red-500">
@@ -441,10 +441,10 @@ const DevTimerDashboard: React.FC = () => {
                       <div className="mt-2 p-2 bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700">
                         <p className="text-xs text-gray-500 mb-1">اختر مهام للإضافة:</p>
                         <div className="max-h-24 overflow-y-auto">
-                          {ungroupedTasks.filter(t => !group.dev_tasks.some(gt => gt.id === t.id)).length === 0 ? (
+                          {ungroupedTasks.filter(t => !(group.dev_tasks ?? []).some(gt => gt.id === t.id)).length === 0 ? (
                             <p className="text-xs text-gray-400">كل المهام موجودة</p>
                           ) : (
-                            ungroupedTasks.filter(t => !group.dev_tasks.some(gt => gt.id === t.id)).map(t => (
+                            ungroupedTasks.filter(t => !(group.dev_tasks ?? []).some(gt => gt.id === t.id)).map(t => (
                               <label key={t.id} className="flex items-center gap-2 py-0.5 text-xs cursor-pointer">
                                 <input
                                   type="checkbox"

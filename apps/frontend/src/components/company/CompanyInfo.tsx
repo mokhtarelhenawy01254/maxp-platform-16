@@ -38,32 +38,6 @@ const CompanyInfo: React.FC = () => {
     );
   }
 
-  const getPlanColor = (plan: string) => {
-    switch (plan) {
-      case "BASIC":
-        return "bg-gray-100 text-gray-800";
-      case "PRO":
-        return "bg-blue-100 text-blue-800";
-      case "ENTERPRISE":
-        return "bg-purple-100 text-purple-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getPlanName = (plan: string) => {
-    switch (plan) {
-      case "BASIC":
-        return "أساسي";
-      case "PRO":
-        return "احترافي";
-      case "ENTERPRISE":
-        return "مؤسسي";
-      default:
-        return plan;
-    }
-  };
-
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
       <div className="flex items-start justify-between">
@@ -77,11 +51,6 @@ const CompanyInfo: React.FC = () => {
             <h3 className="font-semibold text-gray-900">{company.name}</h3>
             <p className="text-sm text-gray-600">{company.email}</p>
             <div className="flex items-center space-x-2 mt-1">
-              <span
-                className={`px-2 py-1 rounded-full text-xs font-medium ${getPlanColor(company.plan)}`}
-              >
-                {getPlanName(company.plan)}
-              </span>
               <span
                 className={`px-2 py-1 rounded-full text-xs font-medium ${
                   company.isActive

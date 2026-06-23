@@ -12,7 +12,6 @@ async function seed() {
       data: {
         name: "Mokhtar Enterprise",
         email: "admin@mokhtarelhenawy.com",
-        plan: "ENTERPRISE",
         isActive: true,
         slug: "mokhtar"
       }

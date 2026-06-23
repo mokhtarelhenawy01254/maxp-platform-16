@@ -27,7 +27,6 @@ async function testDelete() {
         console.log(`   - ID: ${company.id}`);
         console.log(`   - Name: ${company.name}`);
         console.log(`   - Email: ${company.email}`);
-        console.log(`   - Plan: ${company.plan}`);
 
         // Mock Request and Response for Controller
         const req = {

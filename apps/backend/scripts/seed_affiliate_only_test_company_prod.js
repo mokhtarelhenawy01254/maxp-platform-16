@@ -252,7 +252,6 @@ async function main() {
         email: ownerEmail,
         phone: '+201010040001',
         currency: 'EGP',
-        plan: 'PRO',
         isActive: true,
         sidebarLayout: 'affiliate-only',
         timezone: 'Africa/Cairo',
@@ -692,7 +691,6 @@ async function main() {
           id: result.company.id,
           name: result.company.name,
           slug: result.company.slug,
-          plan: result.company.plan,
           sidebarLayout: result.company.sidebarLayout,
         },
         urls: {

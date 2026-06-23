@@ -19,7 +19,6 @@ async function listCompanies() {
         email: true,
         slug: true,
         isActive: true,
-        plan: true,
         createdAt: true,
         _count: {
           select: {
@@ -44,14 +43,12 @@ async function listCompanies() {
 
     companies.forEach((company, index) => {
       const status = company.isActive ? '✅ نشطة' : '❌ غير نشطة';
-      const plan = company.plan || 'غير محدد';
       
       console.log(`${index + 1}. ${company.name}`);
       console.log(`   🆔 ID: ${company.id}`);
       console.log(`   📧 Email: ${company.email || 'غير محدد'}`);
       console.log(`   🔗 Slug: ${company.slug || 'غير محدد'}`);
       console.log(`   📊 الحالة: ${status}`);
-      console.log(`   💳 الخطة: ${plan}`);
       console.log(`   👥 عدد المستخدمين: ${company._count.users}`);
       console.log(`   📅 تاريخ الإنشاء: ${new Date(company.createdAt).toLocaleDateString('ar-EG')}`);
       console.log('');

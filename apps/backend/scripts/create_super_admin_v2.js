@@ -23,7 +23,6 @@ async function createSuperAdmin() {
                     name: 'Mokhtar Elhenawy Systems',
                     email: companyEmail,
                     slug: 'mokhtar-systems',
-                    plan: 'ENTERPRISE',
                     isActive: true,
                     // useCentralKeys removed — schema-agnostic routing
                     sidebarLayout: 'three-tier',

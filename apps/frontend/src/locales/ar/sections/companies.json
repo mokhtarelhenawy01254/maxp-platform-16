@@ -7,7 +7,6 @@
   "totalConversations": "إجمالي المحادثات",
   "filters": {
     "search": "البحث",
-    "plan": "الخطة",
     "status": "الحالة",
     "all": "الكل",
     "active": "نشط",
@@ -16,7 +15,6 @@
   },
   "table": {
     "company": "الشركة",
-    "plan": "الخطة",
     "users": "المستخدمين",
     "customers": "العملاء",
     "products": "المنتجات",
@@ -24,11 +22,6 @@
     "status": "الحالة",
     "createdAt": "تاريخ الإنشاء",
     "actions": "الإجراءات"
-  },
-  "plans": {
-    "BASIC": "أساسي",
-    "PRO": "احترافي",
-    "ENTERPRISE": "مؤسسي"
   },
   "actions": {
     "edit": "تعديل",
@@ -44,7 +37,6 @@
     "phone": "رقم الهاتف",
     "website": "رابط الموقع",
     "address": "العنوان",
-    "plan": "الخطة",
     "active": "نشط",
     "nameRequired": "اسم الشركة مطلوب",
     "emailRequired": "البريد الإلكتروني مطلوب",

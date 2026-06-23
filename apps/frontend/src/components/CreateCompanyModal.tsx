@@ -125,7 +125,6 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
       phone: "",
       website: "",
       address: "",
-      plan: "BASIC",
       currency: "EGP",
       timezone: "Africa/Cairo",
     });

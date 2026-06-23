@@ -392,7 +392,6 @@ export default function SuperAdminCompaniesV2() {
       return {
         totalCompanies: meta.stats.totalCompanies || 0,
         activeCompanies: meta.stats.activeCompanies || 0,
-        enterpriseCompanies: meta.stats.enterpriseCompanies || 0,
         connectedFacebookPages: meta.stats.connectedFacebookPages || 0,
         followUpNow: meta.stats.followUpNow || 0,
         escalationDue: meta.stats.escalationDue || 0,

@@ -179,7 +179,6 @@ const register = async (req, res) => {
         slug: uniqueSlug,
         email: normalizedEmail,
         phone: phone || null,
-        plan: 'PRO',
         isActive: true,
         sidebarLayout: 'three-tier',
         timezone: userTimezone,
@@ -453,16 +452,17 @@ const getBusinessSpecialties = async (req, res) => {
 };
 
 const login = async (req, res) => {
+  const invalidCredentialsMessage =
+    'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+  const companyAssociationMessage = 'الحساب غير مرتبط بشركة';
+  const inactiveUserMessage = 'الحساب غير مفعل';
+  const inactiveCompanyMessage = 'حساب الشركة غير مفعل';
+  const databaseUnavailableMessage =
+    'فشل الاتصال بقاعدة البيانات. يرجى المحاولة مرة أخرى.';
+
   try {
     const { email, password } = req.body;
     const normalizedEmail = normalizeEmail(email);
-    const invalidCredentialsMessage =
-      'البريد الإلكتروني أو كلمة المرور غير صحيحة';
-    const companyAssociationMessage = 'الحساب غير مرتبط بشركة';
-    const inactiveUserMessage = 'الحساب غير مفعل';
-    const inactiveCompanyMessage = 'حساب الشركة غير مفعل';
-    const databaseUnavailableMessage =
-      'فشل الاتصال بقاعدة البيانات. يرجى المحاولة مرة أخرى.';
 
     console.log('[AUTH] Login attempt for:', normalizedEmail);
 
@@ -529,7 +529,6 @@ const login = async (req, res) => {
               name: true,
               slug: true,
               logo: true,
-              plan: true,
               currency: true,
               isActive: true,
               sidebarLayout: true,
@@ -564,7 +563,6 @@ const login = async (req, res) => {
                   name: true,
                   slug: true,
                   logo: true,
-                  plan: true,
                   currency: true,
                   isActive: true,
                   sidebarLayout: true,
@@ -857,7 +855,6 @@ const me = async (req, res) => {
             name: true,
             slug: true,
             logo: true,
-            plan: true,
             currency: true,
             isActive: true,
             sidebarLayout: true,
@@ -892,7 +889,6 @@ const me = async (req, res) => {
                 name: true,
                 slug: true,
                 logo: true,
-                plan: true,
                 currency: true,
                 isActive: true,
                 sidebarLayout: true,
@@ -1498,7 +1494,7 @@ const getUserCompanies = async (req, res) => {
             name: true,
             slug: true,
             logo: true,
-            plan: true,
+
             currency: true,
             isActive: true,
             sidebarLayout: true,
@@ -1537,7 +1533,7 @@ const getUserCompanies = async (req, res) => {
                 nextBillingDate: true
               }
             },
-            plan: true,
+
             currency: true,
             isActive: true
           }
@@ -1638,7 +1634,7 @@ const switchCompany = async (req, res) => {
                 name: true,
                 slug: true,
                 logo: true,
-                plan: true,
+    
                 currency: true,
                 isActive: true,
                 sidebarLayout: true
@@ -1697,7 +1693,6 @@ const switchCompany = async (req, res) => {
         id: true,
         name: true,
         slug: true,
-        plan: true,
         currency: true,
         isActive: true,
         sidebarLayout: true
@@ -1762,7 +1757,6 @@ const switchCompany = async (req, res) => {
           name: true,
           slug: true,
           logo: true,
-          plan: true,
           currency: true,
           isActive: true,
           sidebarLayout: true

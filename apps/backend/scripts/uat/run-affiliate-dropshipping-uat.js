@@ -115,7 +115,6 @@ async function createRegisteredCompany(prisma, { suffix, companyName }) {
       slug,
       email,
       phone: suffix === 'owner' ? '+201000000501' : '+201000000502',
-      plan: 'PRO',
       isActive: true,
       sidebarLayout: 'three-tier',
       timezone: 'Africa/Cairo',

@@ -347,11 +347,11 @@ const DevGoalDetails: React.FC = () => {
             </div>
 
             {/* Child Goals */}
-            {goal.childGoals.length > 0 && (
+            {(goal.childGoals?.length ?? 0) > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">الأهداف الفرعية</h3>
                 <div className="space-y-3">
-                  {goal.childGoals.map((child) => (
+                  {(goal.childGoals ?? []).map((child) => (
                     <div
                       key={child.id}
                       className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -382,15 +382,15 @@ const DevGoalDetails: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-500 dark:text-gray-400">النتائج الرئيسية</span>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">{goal.keyResults.length}</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">{goal.keyResults?.length ?? 0}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500 dark:text-gray-400">المهام المرتبطة</span>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">{goal.linkedTasks.length}</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">{goal.linkedTasks?.length ?? 0}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500 dark:text-gray-400">الأهداف الفرعية</span>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">{goal.childGoals.length}</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">{goal.childGoals?.length ?? 0}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500 dark:text-gray-400">الأولوية</span>
@@ -504,14 +504,14 @@ const DevGoalDetails: React.FC = () => {
 
       {activeTab === "tasks" && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-          {goal.linkedTasks.length === 0 ? (
+          {(goal.linkedTasks?.length ?? 0) === 0 ? (
             <div className="p-12 text-center">
               <LinkIcon className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
               <p className="text-gray-500 dark:text-gray-400">لا توجد مهام مرتبطة بعد</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {goal.linkedTasks.map((task) => (
+              {(goal.linkedTasks ?? []).map((task) => (
                 <div
                   key={task.id}
                   className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"

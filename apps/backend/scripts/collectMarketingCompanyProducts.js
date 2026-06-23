@@ -29,7 +29,6 @@ async function collectMarketingCompanyProducts() {
         phone: true,
         website: true,
         isActive: true,
-        plan: true,
         currency: true,
         createdAt: true
       }
@@ -122,7 +121,6 @@ async function collectMarketingCompanyProducts() {
         phone: company.phone,
         website: company.website,
         isActive: company.isActive,
-        plan: company.plan,
         currency: company.currency,
         createdAt: company.createdAt,
         totalProducts: products.length,

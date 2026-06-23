@@ -23,7 +23,6 @@ async function checkLimits() {
         }
 
         console.log(`📊 Company: ${company.name}`);
-        console.log(`   Plan: ${company.plan}`);
         console.log(`\n👥 Users Count: ${company.users.length}`);
         console.log('   Users List:');
         company.users.forEach(u => {

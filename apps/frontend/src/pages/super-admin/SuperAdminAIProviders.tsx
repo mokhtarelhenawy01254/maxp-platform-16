@@ -834,7 +834,7 @@ const RuntimeDashboardPanel = ({
             className="grid grid-cols-1 lg:grid-cols-2"
             style={{ gap: 4 }}
           >
-            {dashboard.providers.map((provider) => {
+            {(dashboard.providers ?? []).map((provider) => {
               const providerInfo = PROVIDERS.find((item) => item.value === provider.provider);
               return (
                 <div

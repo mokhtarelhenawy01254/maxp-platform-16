@@ -18,7 +18,6 @@ async function main() {
             email: 'demo@example.com',
             phone: '+966501234567',
             website: 'https://demo.example.com',
-            plan: 'PRO',
             address: 'الرياض، المملكة العربية السعودية',
             settings: JSON.stringify({
                 timezone: 'Asia/Riyadh',

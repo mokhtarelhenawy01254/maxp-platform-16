@@ -468,7 +468,6 @@ async function main() {
           slug: `affiliate-merchant-scale-${stamp}`,
           email: `owner+${runId}@codex.local`,
           phone: '+201000009001',
-          plan: 'PRO',
           isActive: true,
           sidebarLayout: 'three-tier',
           timezone: 'Africa/Cairo',

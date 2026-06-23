@@ -1306,7 +1306,6 @@
     "totalConversations": "Total Conversations",
     "filters": {
       "search": "Search",
-      "plan": "Plan",
       "status": "Status",
       "all": "All",
       "active": "Active",
@@ -1315,7 +1314,6 @@
     },
     "table": {
       "company": "Company",
-      "plan": "Plan",
       "users": "Users",
       "customers": "Customers",
       "products": "Products",
@@ -1323,11 +1321,6 @@
       "status": "Status",
       "createdAt": "Created At",
       "actions": "Actions"
-    },
-    "plans": {
-      "BASIC": "Basic",
-      "PRO": "Pro",
-      "ENTERPRISE": "Enterprise"
     },
     "actions": {
       "edit": "Edit",
@@ -1343,7 +1336,6 @@
       "phone": "Phone Number",
       "website": "Website URL",
       "address": "Address",
-      "plan": "Plan",
       "active": "Active",
       "nameRequired": "Company name is required",
       "emailRequired": "Email is required",
@@ -1448,11 +1440,6 @@
   },
   "companyDashboard": {
     "title": "Dashboard",
-    "plan": {
-      "basic": "Basic",
-      "pro": "Pro",
-      "enterprise": "Enterprise"
-    },
     "status": {
       "active": "Active",
       "inactive": "Inactive"
@@ -2647,7 +2634,6 @@
     "dataLoadError": "Error Loading Data",
     "retryLoading": "Retry",
     "company": "Company",
-    "plan": "Plan",
     "lastDataUpdate": "Last data update",
     "quickActions": "Quick Actions",
     "updateData": "Update Data",

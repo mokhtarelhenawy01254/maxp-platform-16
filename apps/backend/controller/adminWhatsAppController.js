@@ -429,7 +429,7 @@ async function getCompanies(req, res) {
             name: true,
             slug: true,
             email: true,
-            plan: true,
+
             isActive: true,
             createdAt: true,
           },
@@ -637,7 +637,6 @@ async function getCompanySummary(req, res) {
           name: true,
           slug: true,
           email: true,
-          plan: true,
           isActive: true,
           createdAt: true,
         },

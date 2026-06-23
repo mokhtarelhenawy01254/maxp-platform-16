@@ -15,7 +15,7 @@ jest.mock("react-router-dom", () => ({
 }));
 
 const baseStats: QuickStats = {
-  totalCompanies: 0, activeCompanies: 0, enterpriseCompanies: 0,
+  totalCompanies: 0, activeCompanies: 0,
   connectedFacebookPages: 0,
   followUpNow: 0, escalationDue: 0, urgentEscalationDue: 0, stale72h: 0, myDueToday: 0,
 };

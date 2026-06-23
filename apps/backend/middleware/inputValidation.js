@@ -35,11 +35,6 @@ const companyValidationRules = () => {
       .optional()
       .isIn(['EGP', 'USD', 'EUR', 'SAR'])
       .withMessage('العملة غير مدعومة'),
-      
-    body('plan')
-      .optional()
-      .isIn(['BASIC', 'PREMIUM', 'ENTERPRISE'])
-      .withMessage('الخطة غير مدعومة')
   ];
 };
 

@@ -30,14 +30,6 @@ import {
   formatTimeWithZone,
 } from "../../utils/dateFormat";
 
-interface SubscriptionPlan {
-  name: string;
-  price: number;
-  currency: string;
-  limits: Record<string, number>;
-  features: Record<string, boolean>;
-}
-
 interface UsageStat {
   usage: number;
   limit: number;
@@ -102,13 +94,8 @@ const normalizeSidebarLayout = (value: unknown): SidebarLayout =>
 type CompanyTab =
   | "general"
   | "appearance"
-  | "plan"
   | "usage"
   | "ownership";
-
-interface CompanySubscription {
-  plan?: string;
-}
 
 interface CompanyRecord {
   id?: string;
@@ -120,7 +107,6 @@ interface CompanyRecord {
   customDomain?: string | null;
   timezone?: string;
   logo?: string;
-  subscription?: CompanySubscription;
 }
 
 interface CompanyUser {
@@ -165,7 +151,6 @@ const parseCompanySettings = (value: unknown): CompanySettingsMap => {
 const CompanySettings: React.FC = () => {
   const { user } = useAuth();
   const [company, setCompany] = useState<CompanyRecord | null>(null);
-  const [plans, setPlans] = useState<Record<string, SubscriptionPlan>>({}); // ponytail: always empty — plan system deleted
   const [usage, setUsage] = useState<Record<string, UsageStat>>({});
   const [loading, setLoading] = useState(true);
 
@@ -935,22 +920,7 @@ const CompanySettings: React.FC = () => {
                   </div>
                 )}
               </div>
-              <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                الباقة الحالية
-              </span>
-              <div className="mt-1 flex items-center">
-                <span className="text-lg font-semibold text-indigo-600 dark:text-indigo-400">
-                  {plans[company?.subscription?.plan]?.name}
-                </span>
-                <span className="mr-2 text-sm text-gray-500 dark:text-gray-400">
-                  (
-                  {formatCurrency(
-                    plans[company?.subscription?.plan]?.price || 0,
-                    selectedCurrency,
-                  )}
-                  /شهر)
-                </span>
-              </div>
+
             </div>
 
             {/* Slug Setting (Full Width) */}

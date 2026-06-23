@@ -68,7 +68,6 @@ describe("authController email normalization", () => {
         name: "PEARLEG",
         slug: "pearleg",
         logo: null,
-        plan: "PRO",
         currency: "EGP",
         isActive: true,
         sidebarLayout: "three-tier",

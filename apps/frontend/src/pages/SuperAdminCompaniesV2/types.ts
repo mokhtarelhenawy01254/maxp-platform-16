@@ -84,7 +84,6 @@ export interface CompanyUser {
 export interface QuickStats {
   totalCompanies: number;
   activeCompanies: number;
-  enterpriseCompanies: number;
   connectedFacebookPages: number;
   followUpNow: number;
   escalationDue: number;

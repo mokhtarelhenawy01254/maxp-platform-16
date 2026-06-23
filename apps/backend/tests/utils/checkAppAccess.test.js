@@ -33,7 +33,7 @@ describe("checkAppAccess middleware", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     sharedDatabase.executeWithRetry.mockImplementation(async (operation) => operation());
-    mockPrisma.company.findUnique.mockResolvedValue({ plan: "PRO" });
+    mockPrisma.company.findUnique.mockResolvedValue({});
   });
 
   it("expands legacy order route access slugs to the installed ecommerce app", async () => {

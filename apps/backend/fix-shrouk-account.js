@@ -27,7 +27,6 @@ async function main() {
                 slug: 'm22',
                 email: 'info@m22.com',
                 isActive: true,
-                plan: 'PRO'
             }
         });
     }

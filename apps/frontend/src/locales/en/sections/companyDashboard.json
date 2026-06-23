@@ -1,10 +1,5 @@
 {
   "title": "Dashboard",
-  "plan": {
-    "basic": "Basic",
-    "pro": "Pro",
-    "enterprise": "Enterprise"
-  },
   "status": {
     "active": "Active",
     "inactive": "Inactive"
@@ -44,10 +39,6 @@
     "noTopProducts": "No product data for this period"
   },
   "noTimelineData": "No timeline data for this period",
-  "warnings": {
-    "title": "Warning: Approaching Usage Limits",
-    "message": "You are approaching your plan limits. Consider upgrading to avoid service interruption."
-  },
   "stats": {
     "title": "Quick Stats",
     "products": "Products",

@@ -10,8 +10,6 @@
   "last_7_days": "آخر 7 أيام",
   "quick_actions": "إجراءات سريعة",
   "asset_overview": "نظرة عامة على الأصول",
-  "upgrade_title": "ترقية الخطة",
-  "upgrade_message": "وصلت لـ 80% من حدود خطتك",
   "view_all_reports": "عرض جميع التقارير",
   "actions": {
     "orders": {
@@ -78,7 +76,6 @@
   "dataLoadError": "خطأ في تحميل البيانات",
   "retryLoading": "إعادة المحاولة",
   "company": "الشركة",
-  "plan": "باقة",
   "lastDataUpdate": "آخر تحديث للبيانات",
   "quickActions": "إجراءات سريعة",
   "updateData": "تحديث البيانات",

@@ -45,7 +45,6 @@ async function main() {
         phone: rphone(),
         website: 'https://al-tijara.example.com',
         currency: 'EGP',
-        plan: 'ENTERPRISE',
         isActive: true,
         sidebarLayout: 'three-tier',
         timezone: 'Africa/Cairo',

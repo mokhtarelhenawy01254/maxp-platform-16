@@ -10,8 +10,6 @@
   "last_7_days": "Last 7 days",
   "quick_actions": "Quick Actions",
   "asset_overview": "Asset Overview",
-  "upgrade_title": "Upgrade Plan",
-  "upgrade_message": "You have reached 80% of your limit",
   "view_all_reports": "View All Reports",
   "actions": {
     "orders": {
@@ -78,7 +76,6 @@
   "dataLoadError": "Error Loading Data",
   "retryLoading": "Retry",
   "company": "Company",
-  "plan": "Plan",
   "lastDataUpdate": "Last data update",
   "quickActions": "Quick Actions",
   "updateData": "Update Data",

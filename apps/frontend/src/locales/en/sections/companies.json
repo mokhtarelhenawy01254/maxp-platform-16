@@ -7,7 +7,6 @@
   "totalConversations": "Total Conversations",
   "filters": {
     "search": "Search",
-    "plan": "Plan",
     "status": "Status",
     "all": "All",
     "active": "Active",
@@ -16,7 +15,6 @@
   },
   "table": {
     "company": "Company",
-    "plan": "Plan",
     "users": "Users",
     "customers": "Customers",
     "products": "Products",
@@ -24,11 +22,6 @@
     "status": "Status",
     "createdAt": "Created At",
     "actions": "Actions"
-  },
-  "plans": {
-    "BASIC": "Basic",
-    "PRO": "Pro",
-    "ENTERPRISE": "Enterprise"
   },
   "actions": {
     "edit": "Edit",
@@ -44,7 +37,6 @@
     "phone": "Phone Number",
     "website": "Website URL",
     "address": "Address",
-    "plan": "Plan",
     "active": "Active",
     "nameRequired": "Company name is required",
     "emailRequired": "Email is required",

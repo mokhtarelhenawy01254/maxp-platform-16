@@ -148,7 +148,6 @@ describe("marketplaceManagementController marketplace coverage", () => {
         name: "Swan",
         email: "swan@example.com",
         slug: "swan",
-        plan: "PRO",
         isActive: true,
         createdAt: new Date("2026-05-01T00:00:00Z"),
         installedApps: [

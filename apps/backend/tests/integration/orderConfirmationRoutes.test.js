@@ -131,7 +131,6 @@ describe('Order Confirmation Routes', () => {
         id: `test-company-confirm-${unique}`,
         name: 'Test Company Confirmation',
         email: `confirmation-company-${unique}@test.local`,
-        plan: 'BASIC',
         isActive: true,
         sidebarLayout: 'three-tier',
         timezone: 'Asia/Riyadh',

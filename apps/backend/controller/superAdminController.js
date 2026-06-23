@@ -6635,7 +6635,7 @@ const globalSearch = async (req, res) => {
             OR: ac('name', query),
           },
         },
-        select: { id: true, plan: true, status: true, company: { select: { id: true, name: true, logo: true } } },
+        select: { id: true, status: true, company: { select: { id: true, name: true, logo: true } } },
         take: isShortQuery ? 5 : 10,
         orderBy: { nextBillingDate: "asc" },
       })),

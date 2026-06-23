@@ -16,7 +16,6 @@ async function createTestUser() {
         name: 'Test Company',
         email: 'test@company.com',
         slug: 'test-company',
-        plan: 'PRO',
         currency: 'EGP',
         isActive: true,
       },
