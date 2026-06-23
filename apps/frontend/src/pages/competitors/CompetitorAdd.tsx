@@ -48,6 +48,8 @@ const toBase64 = (file: File): Promise<string> =>
 interface SocialProfile {
   platform: string;
   url: string;
+  username: string;
+  password: string;
 }
 
 interface MediaNoteItem {
@@ -91,9 +93,8 @@ const CompetitorAdd: React.FC = () => {
   const [activeSocialIndex, setActiveSocialIndex] = useState<number | null>(null);
 
   const [formData, setFormData] = useState<Record<string, string>>({
-    name: '', websiteUrl: '', websiteUsername: '', websitePassword: '',
-    platform: 'manual', activityType: '',
-    targetMarket: '', foundedYear: '', founderName: '', founderLinkedin: '',
+    name: '', websiteUrl: '', platform: 'manual', activityType: '',
+    targetMarket: '', foundedYear: '', founderName: '', founderLink: '',
     country: '', city: '',
     trafficSource: '',
     strengths: '', weaknesses: '',
@@ -102,13 +103,15 @@ const CompetitorAdd: React.FC = () => {
   });
 
   const [socialProfiles, setSocialProfiles] = useState<SocialProfile[]>(
-    SOCIAL_PLATFORMS.map(p => ({ platform: p.key, url: '' }))
+    SOCIAL_PLATFORMS.map(p => ({ platform: p.key, url: '', username: '', password: '' }))
   );
 
   const [activityImages, setActivityImages] = useState<ImageItem[]>([]);
   const [featureImages, setFeatureImages] = useState<ImageItem[]>([]);
   const [mediaNotes, setMediaNotes] = useState<MediaNoteItem[]>([]);
   const [mediaNoteInput, setMediaNoteInput] = useState('');
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState('');
   const [comparisons, setComparisons] = useState<ComparisonItem[]>([]);
   const [devIdeas, setDevIdeas] = useState<DevIdea[]>([]);
 
@@ -128,11 +131,10 @@ const CompetitorAdd: React.FC = () => {
       if (res.data.success) {
         const c = res.data.data;
         setFormData({
-          name: c.name || '', websiteUrl: c.url || '', websiteUsername: c.websiteUsername || '', websitePassword: c.websitePassword || '',
-          platform: c.platform || 'manual',
+          name: c.name || '', websiteUrl: c.url || '', platform: c.platform || 'manual',
           activityType: c.activityType || '', targetMarket: c.targetMarket || '',
           foundedYear: c.foundedYear?.toString() || '', founderName: c.founderName || '',
-          founderLinkedin: c.founderLinkedin || '',
+          founderLink: c.founderLink || '',
           country: c.country || '', city: c.city || '',
           trafficSource: c.trafficSource || '',
           strengths: c.strengths || '', weaknesses: c.weaknesses || '',
@@ -144,8 +146,8 @@ const CompetitorAdd: React.FC = () => {
           const merged = SOCIAL_PLATFORMS.map(p => {
             const existing = c.socialProfiles.find((sp: Record<string, unknown>) => sp.platform === p.key);
             return existing
-              ? { platform: p.key, url: existing.url || '' }
-              : { platform: p.key, url: '' };
+              ? { platform: p.key, url: existing.url || '', username: existing.username || '', password: existing.password || '' }
+              : { platform: p.key, url: '', username: '', password: '' };
           });
           setSocialProfiles(merged);
         }
@@ -204,6 +206,22 @@ const CompetitorAdd: React.FC = () => {
 
   const handleRemoveMediaNote = (id: string) => {
     setMediaNotes(prev => prev.filter(n => n.id !== id));
+  };
+
+  const handleStartEditNote = (id: string, text: string) => {
+    setEditingNoteId(id);
+    setEditingNoteText(text);
+  };
+
+  const handleSaveEditNote = (id: string) => {
+    setMediaNotes(prev => prev.map(n => n.id === id ? { ...n, text: editingNoteText } : n));
+    setEditingNoteId(null);
+    setEditingNoteText('');
+  };
+
+  const handleCancelEditNote = () => {
+    setEditingNoteId(null);
+    setEditingNoteText('');
   };
 
   const handleAddComparison = () => {
@@ -267,7 +285,7 @@ const CompetitorAdd: React.FC = () => {
 
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
-    if (!formData.name.trim()) errors.name = t('competitors.errors.nameRequired') || 'This field is required';
+    if (!formData.name.trim()) errors.name = t('competitors.errors.nameRequired') || 'هذا الحقل مطلوب';
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -278,7 +296,7 @@ const CompetitorAdd: React.FC = () => {
     const payload: Record<string, unknown> = {
       ...formData,
       url: formData.websiteUrl,
-      socialProfiles: socialProfiles.filter(sp => sp.url),
+      socialProfiles: socialProfiles.filter(sp => sp.url || sp.username),
       activityImages: activityImages.map(img => img.data),
       featureImages: featureImages.map(img => img.data),
       mediaNotes: mediaNotes.map(n => n.text),
@@ -355,19 +373,19 @@ const CompetitorAdd: React.FC = () => {
         <TabsList className="w-full justify-start mb-6 overflow-x-auto">
           <TabsTrigger value="general" className="gap-2">
             <Info size={16} />
-            <span className="hidden sm:inline">{t('competitors.generalInfo') || 'General Info'}</span>
+            <span className="hidden sm:inline">{t('competitors.generalInfo') || 'المعلومات العامة'}</span>
           </TabsTrigger>
           <TabsTrigger value="media" className="gap-2">
             <BarChart3 size={16} />
-            <span className="hidden sm:inline">{t('competitors.mediaAnalysis') || 'Media Analysis'}</span>
+            <span className="hidden sm:inline">{t('competitors.mediaAnalysis') || 'تحليل الميديا'}</span>
           </TabsTrigger>
           <TabsTrigger value="features" className="gap-2">
             <Zap size={16} />
-            <span className="hidden sm:inline">{t('competitors.strengthsWeaknesses') || 'Strengths & Weaknesses'}</span>
+            <span className="hidden sm:inline">{t('competitors.strengthsWeaknesses') || 'القوة والضعف'}</span>
           </TabsTrigger>
           <TabsTrigger value="pricing" className="gap-2">
             <DollarSign size={16} />
-            <span className="hidden sm:inline">{t('competitors.pricing') || 'Pricing'}</span>
+            <span className="hidden sm:inline">{t('competitors.pricing') || 'الأسعار'}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -378,7 +396,7 @@ const CompetitorAdd: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Info size={18} className="text-blue-500" />
-                {t('competitors.basicData') || 'Basic Data'}
+                {t('competitors.basicData') || 'البيانات الأساسية'}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -400,23 +418,6 @@ const CompetitorAdd: React.FC = () => {
                     value={formData.websiteUrl}
                     onChange={e => handleInputChange('websiteUrl', e.target.value)}
                     placeholder={t('competitors.competitorUrlPlaceholder')}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('competitors.social.username') || 'Username'}</Label>
-                  <Input
-                    value={formData.websiteUsername}
-                    onChange={e => handleInputChange('websiteUsername', e.target.value)}
-                    placeholder={t('competitors.socialUsernamePlaceholder')}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('competitors.social.password') || 'Password'}</Label>
-                  <Input
-                    type="password"
-                    value={formData.websitePassword}
-                    onChange={e => handleInputChange('websitePassword', e.target.value)}
-                    placeholder={t('competitors.socialPasswordPlaceholder')}
                   />
                 </div>
               </div>
@@ -475,7 +476,7 @@ const CompetitorAdd: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>{t('competitors.founderName') || 'Founder Name'}</Label>
+                  <Label>{t('competitors.founderName') || 'اسم المؤسس'}</Label>
                   <Input
                     value={formData.founderName}
                     onChange={e => handleInputChange('founderName', e.target.value)}
@@ -483,11 +484,11 @@ const CompetitorAdd: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>{t('competitors.founderLinkedin') || 'Founder Link'}</Label>
+                  <Label>{t('competitors.founderLink') || 'رابط المؤسس'}</Label>
                   <Input
                     type="url"
-                    value={formData.founderLinkedin}
-                    onChange={e => handleInputChange('founderLinkedin', e.target.value)}
+                    value={formData.founderLink}
+                    onChange={e => handleInputChange('founderLink', e.target.value)}
                     placeholder={t('competitors.founderLinkPlaceholder')}
                   />
                 </div>
@@ -506,7 +507,7 @@ const CompetitorAdd: React.FC = () => {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>{t('competitors.country') || 'Country'}</Label>
+                  <Label>{t('competitors.country') || 'الدولة'}</Label>
                   <Input
                     value={formData.country}
                     onChange={e => handleInputChange('country', e.target.value)}
@@ -514,7 +515,7 @@ const CompetitorAdd: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>{t('competitors.city') || 'City'}</Label>
+                  <Label>{t('competitors.city') || 'المدينة'}</Label>
                   <Input
                     value={formData.city}
                     onChange={e => handleInputChange('city', e.target.value)}
@@ -548,13 +549,36 @@ const CompetitorAdd: React.FC = () => {
                   {activeSocialIndex === i && (
                     <div className="px-4 pb-3 pt-1 border-t dark:border-gray-700 space-y-3">
                       <div className="space-y-1.5">
-                        <Label className="text-xs">{t('competitors.social.linkUrl') || 'Page URL'}</Label>
+                        <Label className="text-xs">{t('competitors.social.linkUrl') || 'رابط الصفحة'}</Label>
                         <Input
                           value={sp.url}
                           onChange={e => handleSocialChange(i, 'url', e.target.value)}
                           placeholder={t('competitors.socialUrlPlaceholder')}
                           size="sm"
                         />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">{t('competitors.social.username') || 'اسم المستخدم/البريد'}</Label>
+                          <Input
+                            value={sp.username}
+                            onChange={e => handleSocialChange(i, 'username', e.target.value)}
+                            placeholder={t('competitors.socialUsernamePlaceholder')}
+                            size="sm"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">{t('competitors.social.password') || 'كلمة المرور'}</Label>
+                          <div className="relative">
+                            <Input
+                              type="password"
+                              value={sp.password}
+                              onChange={e => handleSocialChange(i, 'password', e.target.value)}
+                              placeholder={t('competitors.socialPasswordPlaceholder')}
+                              size="sm"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -568,12 +592,12 @@ const CompetitorAdd: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ImagePlus size={18} className="text-purple-500" />
-                {t('competitors.referenceImages') || 'Reference Images'}
+                {t('competitors.referenceImages') || 'الصور المرجعية'}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <ImageUploadSection
-                label={t('competitors.activityTypeImages') || 'Activity Type Images'}
+                label={t('competitors.activityTypeImages') || 'صور نوع النشاط'}
                 images={activityImages}
                 onAdd={file => handleAddImage('activity', file)}
                 onRemove={id => handleRemoveImage('activity', id)}
@@ -581,7 +605,7 @@ const CompetitorAdd: React.FC = () => {
                 onMoveDown={i => handleMoveImage('activity', i, 'down')}
               />
               <ImageUploadSection
-                label={t('competitors.featureReferenceImages') || 'Feature Reference Images'}
+                label={t('competitors.featureReferenceImages') || 'صور مرجعية للمميزات'}
                 images={featureImages}
                 onAdd={file => handleAddImage('feature', file)}
                 onRemove={id => handleRemoveImage('feature', id)}
@@ -598,65 +622,90 @@ const CompetitorAdd: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 size={18} className="text-orange-500" />
-                {t('competitors.trafficSource') || 'Traffic Source'}
+                {t('competitors.mediaAnalysis') || 'تحليل الميديا'}
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="flex gap-2 p-1 bg-muted rounded-lg w-fit" dir={dir}>
-                {['organic', 'paid', 'both'].map(val => (
-                  <button
-                    key={val}
-                    type="button"
-                    onClick={() => handleInputChange('trafficSource', val)}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                      formData.trafficSource === val
-                        ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {t(`competitors.${val}`)}
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Edit3 size={18} className="text-blue-500" />
-                {t('competitors.mediaNotes') || 'Media Analysis Notes'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Textarea
-                  value={mediaNoteInput}
-                  onChange={e => setMediaNoteInput(e.target.value)}
-                  placeholder={t('competitors.mediaNotesPlaceholder') || 'Add a note...'}
-                  className="min-h-[60px]"
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddMediaNote(); } }}
-                />
-                <Button onClick={handleAddMediaNote} disabled={!mediaNoteInput.trim()} className="self-end shrink-0">
-                  <Plus size={16} />
-                </Button>
-              </div>
-              {mediaNotes.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground text-sm">
-                  {t('competitors.noMediaNotes') || 'No notes yet. Add your notes above.'}
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-80 overflow-y-auto">
-                  {mediaNotes.map(n => (
-                    <div key={n.id} className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 group">
-                      <p className="flex-1 text-sm whitespace-pre-wrap">{n.text}</p>
-                      <Button variant="ghost" size="icon-xs" onClick={() => handleRemoveMediaNote(n.id)} className="opacity-0 group-hover:opacity-100 shrink-0">
-                        <Trash2 size={14} className="text-red-400" />
-                      </Button>
-                    </div>
+            <CardContent className="space-y-6">
+              {/* Traffic Source */}
+              <div>
+                <Label className="text-sm font-medium mb-2 block">{t('competitors.trafficSource') || 'مصدر الزيارات'}</Label>
+                <div className="flex gap-2 p-1 bg-muted rounded-lg w-fit" dir={dir}>
+                  {['organic', 'paid', 'both'].map(val => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => handleInputChange('trafficSource', val)}
+                      className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                        formData.trafficSource === val
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {t(`competitors.${val}`)}
+                    </button>
                   ))}
                 </div>
-              )}
+              </div>
+
+              <div className="border-t dark:border-gray-700" />
+
+              {/* Media Notes */}
+              <div>
+                <Label className="text-sm font-medium mb-2 block">{t('competitors.mediaNotes') || 'ملاحظات تحليل الميديا'}</Label>
+                <div className="flex gap-2">
+                  <Textarea
+                    value={mediaNoteInput}
+                    onChange={e => setMediaNoteInput(e.target.value)}
+                    placeholder={t('competitors.mediaNotesPlaceholder') || 'أضف ملاحظة...'}
+                    className="min-h-[60px]"
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddMediaNote(); } }}
+                  />
+                  <Button onClick={handleAddMediaNote} disabled={!mediaNoteInput.trim()} className="self-end shrink-0">
+                    <Plus size={16} />
+                  </Button>
+                </div>
+                {mediaNotes.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    {t('competitors.noMediaNotes') || 'لا توجد ملاحظات بعد. أضف ملاحظاتك أعلاه.'}
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-80 overflow-y-auto mt-4">
+                    {mediaNotes.map(n => (
+                      <div key={n.id} className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 group">
+                        {editingNoteId === n.id ? (
+                          <div className="flex-1 space-y-2">
+                            <Textarea
+                              value={editingNoteText}
+                              onChange={e => setEditingNoteText(e.target.value)}
+                              className="min-h-[60px]"
+                            />
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={() => handleSaveEditNote(n.id)}>
+                                {t('common.save')}
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={handleCancelEditNote}>
+                                {t('common.cancel')}
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="flex-1 text-sm whitespace-pre-wrap">{n.text}</p>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 shrink-0">
+                              <Button variant="ghost" size="icon-xs" onClick={() => handleStartEditNote(n.id, n.text)}>
+                                <Edit3 size={14} className="text-blue-400" />
+                              </Button>
+                              <Button variant="ghost" size="icon-xs" onClick={() => handleRemoveMediaNote(n.id)}>
+                                <Trash2 size={14} className="text-red-400" />
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -706,14 +755,14 @@ const CompetitorAdd: React.FC = () => {
                   {t('competitors.comparisonSection')}
                 </CardTitle>
                 <Button variant="outline" size="sm" onClick={handleAddComparison}>
-                  <Plus size={14} /> {t('common.add') || 'Add'}
+                  <Plus size={14} /> {t('common.add') || 'إضافة'}
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {comparisons.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
-                  {t('competitors.noComparisons') || 'No comparisons yet. Add a new comparison.'}
+                  {t('competitors.noComparisons') || 'لم تضف أي مقارنات بعد. أضف مقارنة جديدة.'}
                 </div>
               ) : (
                 comparisons.map((comp, i) => (
@@ -733,17 +782,17 @@ const CompetitorAdd: React.FC = () => {
                       </Button>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs">{t('competitors.featureName') || 'Feature Name'}</Label>
+                      <Label className="text-xs">{t('competitors.featureName') || 'اسم الميزة'}</Label>
                       <Input
                         value={comp.featureName}
                         onChange={e => handleUpdateComparison(comp.id, 'featureName', e.target.value)}
-                        placeholder={t('competitors.featureNamePlaceholder') || 'e.g. Delivery speed'}
+                        placeholder={t('competitors.featureNamePlaceholder') || 'مثال: سرعة التوصيل'}
                         size="sm"
                       />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <Label className="text-xs">{t('competitors.competitorDesc') || 'Competitor Description'}</Label>
+                        <Label className="text-xs">{t('competitors.competitorDesc') || 'وصف المنافس'}</Label>
                         <Textarea
                           value={comp.competitorDesc}
                           onChange={e => handleUpdateComparison(comp.id, 'competitorDesc', e.target.value)}
@@ -751,7 +800,7 @@ const CompetitorAdd: React.FC = () => {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs">{t('competitors.ourDesc') || 'Our Description'}</Label>
+                        <Label className="text-xs">{t('competitors.ourDesc') || 'وصفنا'}</Label>
                         <Textarea
                           value={comp.ourDesc}
                           onChange={e => handleUpdateComparison(comp.id, 'ourDesc', e.target.value)}
@@ -761,7 +810,7 @@ const CompetitorAdd: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <Label className="text-xs">{t('competitors.easierToUse') || 'Who is easier to use?'}</Label>
+                        <Label className="text-xs">{t('competitors.easierToUse') || 'الأسهل استخداماً؟'}</Label>
                         <div className="flex gap-3">
                           {['competitor', 'us'].map(val => (
                             <label key={val} className="flex items-center gap-1.5 text-sm cursor-pointer">
@@ -778,7 +827,7 @@ const CompetitorAdd: React.FC = () => {
                         </div>
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs">{t('competitors.stronger') || 'Who is stronger?'}</Label>
+                        <Label className="text-xs">{t('competitors.stronger') || 'الأقوى؟'}</Label>
                         <div className="flex gap-3">
                           {['competitor', 'us'].map(val => (
                             <label key={val} className="flex items-center gap-1.5 text-sm cursor-pointer">
@@ -796,11 +845,11 @@ const CompetitorAdd: React.FC = () => {
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs">{t('competitors.additionalNotes') || 'Additional Notes'}</Label>
+                      <Label className="text-xs">{t('competitors.additionalNotes') || 'ملاحظات إضافية'}</Label>
                       <Input
                         value={comp.notes}
                         onChange={e => handleUpdateComparison(comp.id, 'notes', e.target.value)}
-                        placeholder={t('competitors.additionalNotesPlaceholder') || 'Any additional notes...'}
+                        placeholder={t('competitors.additionalNotesPlaceholder') || 'أي ملاحظات إضافية...'}
                         size="sm"
                       />
                     </div>
@@ -816,17 +865,17 @@ const CompetitorAdd: React.FC = () => {
               <div className="flex items-center justify-between w-full">
                 <CardTitle className="flex items-center gap-2">
                   <Lightbulb size={18} className="text-amber-500" />
-                  {t('competitors.devIdeas') || 'Development Ideas & Suggestions'}
+                  {t('competitors.devIdeas') || 'أفكار ومقترحات تطويرية'}
                 </CardTitle>
                 <Button variant="outline" size="sm" onClick={handleAddDevIdea}>
-                  <Plus size={14} /> {t('common.add') || 'Add'}
+                  <Plus size={14} /> {t('common.add') || 'إضافة'}
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {devIdeas.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
-                  {t('competitors.noDevIdeas') || 'No development ideas yet. Add a new idea.'}
+                  {t('competitors.noDevIdeas') || 'لم تضف أي أفكار تطويرية بعد. أضف فكرة جديدة.'}
                 </div>
               ) : (
                 devIdeas.map((idea, i) => (
@@ -846,16 +895,16 @@ const CompetitorAdd: React.FC = () => {
                       </Button>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs">{t('competitors.ideaTitle') || 'Idea Title'}</Label>
+                      <Label className="text-xs">{t('competitors.ideaTitle') || 'عنوان الفكرة'}</Label>
                       <Input
                         value={idea.title}
                         onChange={e => handleUpdateDevIdea(idea.id, 'title', e.target.value)}
-                        placeholder={t('competitors.ideaTitlePlaceholder') || 'Development idea title'}
+                        placeholder={t('competitors.ideaTitlePlaceholder') || 'عنوان الفكرة التطويرية'}
                         size="sm"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs">{t('competitors.ideaDescription') || 'Idea Description'}</Label>
+                      <Label className="text-xs">{t('competitors.ideaDescription') || 'وصف الفكرة'}</Label>
                       <Textarea
                         value={idea.description}
                         onChange={e => handleUpdateDevIdea(idea.id, 'description', e.target.value)}
@@ -863,7 +912,7 @@ const CompetitorAdd: React.FC = () => {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs">{t('competitors.ideaImages') || 'Idea Images'}</Label>
+                      <Label className="text-xs">{t('competitors.ideaImages') || 'صور توضيحية'}</Label>
                       <div className="flex flex-wrap gap-2">
                         {idea.images.map((imgData, imgIdx) => (
                           <div key={imgIdx} className="relative size-16 rounded-lg overflow-hidden border group">
@@ -904,13 +953,13 @@ const CompetitorAdd: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign size={18} className="text-emerald-500" />
-                {t('competitors.pricing') || 'Pricing'}
+                {t('competitors.pricing') || 'الأسعار'}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>{t('competitors.monthlyPrice') || 'Monthly Price'}</Label>
+                  <Label>{t('competitors.monthlyPrice') || 'السعر الشهري'}</Label>
                   <div className="relative">
                     <Input
                       type="number"
@@ -923,7 +972,7 @@ const CompetitorAdd: React.FC = () => {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>{t('competitors.yearlyPrice') || 'Yearly Price'}</Label>
+                  <Label>{t('competitors.yearlyPrice') || 'السعر السنوي'}</Label>
                   <div className="relative">
                     <Input
                       type="number"
@@ -937,12 +986,12 @@ const CompetitorAdd: React.FC = () => {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>{t('competitors.pricingNotes') || 'Pricing Notes'}</Label>
+                <Label>{t('competitors.pricingNotes') || 'ملاحظات الأسعار'}</Label>
                 <Textarea
                   value={formData.pricingNotes}
                   onChange={e => handleInputChange('pricingNotes', e.target.value)}
                   rows={4}
-                  placeholder={t('competitors.pricingNotesPlaceholder') || 'Any pricing notes...'}
+                  placeholder={t('competitors.pricingNotesPlaceholder') || 'أي ملاحظات حول الأسعار...'}
                 />
               </div>
             </CardContent>
@@ -1000,7 +1049,7 @@ const ImageUploadSection: React.FC<{
         ))}
         <label className="aspect-square rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-muted/50 transition-colors">
           <Upload size={18} className="text-muted-foreground" />
-          <span className="text-[10px] text-muted-foreground">{t('common.upload') || 'Upload'}</span>
+          <span className="text-[10px] text-muted-foreground">{t('common.upload') || 'رفع'}</span>
           <input
             type="file"
             accept="image/*"

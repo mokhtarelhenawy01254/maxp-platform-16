@@ -21,6 +21,17 @@ class CompetitorMediaAnalysisService {
     });
   }
 
+  static async updateMediaNote(companyId, competitorId, noteId, newNote) {
+    const note = await getPrisma().competitorMediaNote.findFirst({
+      where: { id: noteId, competitor: { companyId, id: competitorId } },
+    });
+    if (!note) return null;
+    return getPrisma().competitorMediaNote.update({
+      where: { id: noteId },
+      data: { note: newNote },
+    });
+  }
+
   static async deleteMediaNote(companyId, competitorId, noteId) {
     const note = await getPrisma().competitorMediaNote.findFirst({
       where: { id: noteId, competitor: { companyId, id: competitorId } },

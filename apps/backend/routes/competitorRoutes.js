@@ -41,6 +41,7 @@ router.get('/:id/battlecard', controller.getBattlecard);
 // ---- Media Notes ----
 router.get('/:id/media-notes', controller.getMediaNotes);
 router.post('/:id/media-notes', controller.addMediaNote);
+router.put('/:id/media-notes/:noteId', controller.updateMediaNote);
 router.delete('/:id/media-notes/:noteId', controller.deleteMediaNote);
 
 // ---- Comparisons ----

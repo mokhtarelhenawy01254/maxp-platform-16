@@ -49,8 +49,6 @@ exports.create = async (req, res) => {
       weaknesses,
       socialProfiles,
       status,
-      websiteUsername,
-      websitePassword,
     } = req.body;
 
     // Validate required fields
@@ -97,8 +95,6 @@ exports.create = async (req, res) => {
         strengths,
         weaknesses,
         status: status || 'NEW',
-        websiteUsername,
-        websitePassword,
         companyId,
       },
     });
@@ -625,16 +621,32 @@ exports.addMediaNote = async (req, res) => {
   }
 };
 
+exports.updateMediaNote = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const { note } = req.body;
+        if (!note || !note.trim()) {
+            return res.status(400).json({ success: false, error: t('competitor.note_content_required') });
+        }
+        const updated = await CompetitorMediaAnalysisService.updateMediaNote(companyId, req.params.id, req.params.noteId, note);
+        if (!updated) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+        res.json({ success: true, data: updated });
+    } catch (error) {
+        console.error('Error updating media note:', error);
+        res.status(500).json({ success: false, error: t('competitor.media_note_update_failed') });
+    }
+};
+
 exports.deleteMediaNote = async (req, res) => {
-  try {
-    const { companyId } = req.user;
-    const deleted = await CompetitorMediaAnalysisService.deleteMediaNote(companyId, req.params.id, req.params.noteId);
-    if (!deleted) return res.status(404).json({ success: false, error: t('competitor.not_found') });
-    res.json({ success: true, message: t('competitor.media_note_deleted') });
-  } catch (error) {
-    console.error('Error deleting media note:', error);
-    res.status(500).json({ success: false, error: t('competitor.media_note_delete_failed') });
-  }
+    try {
+        const { companyId } = req.user;
+        const deleted = await CompetitorMediaAnalysisService.deleteMediaNote(companyId, req.params.id, req.params.noteId);
+        if (!deleted) return res.status(404).json({ success: false, error: t('competitor.not_found') });
+        res.json({ success: true, message: t('competitor.media_note_deleted') });
+    } catch (error) {
+        console.error('Error deleting media note:', error);
+        res.status(500).json({ success: false, error: t('competitor.media_note_delete_failed') });
+    }
 };
 
 // ---- Comparisons ----
