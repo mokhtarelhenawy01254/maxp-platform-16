@@ -425,7 +425,7 @@
   "basicData": "البيانات الأساسية",
   "activityData": "بيانات النشاط",
   "founderName": "اسم المؤسس",
-  "founderLinkedIn": "رابط LinkedIn (اختياري)",
+  "founderLinkedIn": "رابط المؤسس",
   "country": "الدولة",
   "city": "المدينة (اختياري)",
   "platformOptions": {
@@ -527,7 +527,7 @@
   "socialUrlPlaceholder": "https://...",
   "socialUsernamePlaceholder": "البريد الإلكتروني",
   "socialPasswordPlaceholder": "أدخل كلمة المرور",
-  "linkedinPlaceholder": "https://linkedin.com/in/...",
+  "founderLinkPlaceholder": "https://...",
   "pricePlaceholder": "0.00",
   "currencySymbol": "ر.س"
 }

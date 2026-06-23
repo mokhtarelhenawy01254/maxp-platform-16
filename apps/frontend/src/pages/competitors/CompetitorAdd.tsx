@@ -94,7 +94,7 @@ const CompetitorAdd: React.FC = () => {
 
   const [formData, setFormData] = useState<Record<string, string>>({
     name: '', websiteUrl: '', platform: 'manual', activityType: '',
-    targetMarket: '', foundedYear: '', founderName: '', founderLink: '',
+    targetMarket: '', foundedYear: '', founderName: '', founderLinkedin: '',
     country: '', city: '',
     trafficSource: '',
     strengths: '', weaknesses: '',
@@ -132,7 +132,7 @@ const CompetitorAdd: React.FC = () => {
           name: c.name || '', websiteUrl: c.url || '', platform: c.platform || 'manual',
           activityType: c.activityType || '', targetMarket: c.targetMarket || '',
           foundedYear: c.foundedYear?.toString() || '', founderName: c.founderName || '',
-          founderLink: c.founderLink || '',
+          founderLinkedin: c.founderLinkedin || '',
           country: c.country || '', city: c.city || '',
           trafficSource: c.trafficSource || '',
           strengths: c.strengths || '', weaknesses: c.weaknesses || '',
@@ -466,12 +466,12 @@ const CompetitorAdd: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>{t('competitors.founderLinkedin') || 'LinkedIn المؤسس'}</Label>
+                  <Label>{t('competitors.founderLinkedin') || 'رابط المؤسس'}</Label>
                   <Input
                     type="url"
                     value={formData.founderLinkedin}
                     onChange={e => handleInputChange('founderLinkedin', e.target.value)}
-                    placeholder={t('competitors.linkedinPlaceholder')}
+                    placeholder={t('competitors.founderLinkPlaceholder')}
                   />
                 </div>
               </div>

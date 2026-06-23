@@ -1481,10 +1481,6 @@
       "noTopProducts": "لا توجد بيانات منتجات لهذه الفترة"
     },
     "noTimelineData": "لا توجد بيانات زمنية لهذه الفترة",
-    "warnings": {
-      "title": "تحذير: اقتراب من حدود الاستخدام",
-      "message": "أنت تقترب من حدود خطتك الحالية. فكر في ترقية خطتك لتجنب انقطاع الخدمة."
-    },
     "stats": {
       "title": "إحصائيات سريعة",
       "products": "المنتجات",
@@ -2118,7 +2114,7 @@
     "basicData": "البيانات الأساسية",
     "activityData": "بيانات النشاط",
     "founderName": "اسم المؤسس",
-    "founderLinkedIn": "رابط LinkedIn (اختياري)",
+    "founderLinkedIn": "رابط المؤسس",
     "country": "الدولة",
     "city": "المدينة (اختياري)",
     "platformOptions": {
@@ -2217,7 +2213,7 @@
     "socialUrlPlaceholder": "https://...",
     "socialUsernamePlaceholder": "البريد الإلكتروني",
     "socialPasswordPlaceholder": "أدخل كلمة المرور",
-    "linkedinPlaceholder": "https://linkedin.com/in/...",
+    "founderLinkPlaceholder": "https://...",
     "pricePlaceholder": "0.00",
     "currencySymbol": "ر.س"
   },
@@ -2566,8 +2562,6 @@
     "last_7_days": "آخر 7 أيام",
     "quick_actions": "إجراءات سريعة",
     "asset_overview": "نظرة عامة على الأصول",
-    "upgrade_title": "ترقية الخطة",
-    "upgrade_message": "وصلت لـ 80% من حدود خطتك",
     "view_all_reports": "عرض جميع التقارير",
     "actions": {
       "orders": {

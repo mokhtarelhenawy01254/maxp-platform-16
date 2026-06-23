@@ -425,7 +425,7 @@
   "basicData": "Basic Data",
   "activityData": "Activity Data",
   "founderName": "Founder Name",
-  "founderLinkedIn": "LinkedIn Profile (Optional)",
+  "founderLinkedIn": "Founder Link",
   "country": "Country",
   "city": "City (Optional)",
   "platformOptions": {
@@ -527,7 +527,7 @@
   "socialUrlPlaceholder": "https://...",
   "socialUsernamePlaceholder": "email@example.com",
   "socialPasswordPlaceholder": "Enter password",
-  "linkedinPlaceholder": "https://linkedin.com/in/...",
+  "founderLinkPlaceholder": "https://...",
   "pricePlaceholder": "0.00",
   "currencySymbol": "$"
 }
