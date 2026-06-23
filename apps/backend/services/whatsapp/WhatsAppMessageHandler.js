@@ -51,7 +51,6 @@ async function ensureMetaContact(sessionId, jid, options = {}) {
                 updatedAt: new Date()
             },
             create: {
-                sessionId,
                 jid: normalizedJid,
                 phoneNumber,
                 lastMessageAt: new Date(),

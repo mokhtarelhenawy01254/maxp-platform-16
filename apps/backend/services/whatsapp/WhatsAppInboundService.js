@@ -57,7 +57,6 @@ async function upsertContact(sessionId, remoteJid, options = {}) {
       updatedAt: new Date()
     },
     create: {
-      sessionId,
       jid: normalizedJid,
       phoneNumber,
       pushName,
