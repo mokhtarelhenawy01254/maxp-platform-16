@@ -54,7 +54,7 @@ interface WorkspaceStats {
 }
 
 const ADMIN_ALERT_STYLES =
-  'rounded-2xl border px-4 py-3 text-sm shadow-sm backdrop-blur';
+  'rounded-lg border px-4 py-3 text-sm shadow-sm';
 
 const getInitials = (firstName = '', lastName = '') =>
   `${firstName.charAt(0)}${lastName.charAt(0)}`.trim() || 'U';
@@ -355,25 +355,21 @@ const WhatsAppNumberSettings: React.FC = () => {
       key: 'configured',
       label: t('whatsappInbox.workspaceConfiguredNumbers'),
       value: stats.configuredNumbers,
-      tone: 'from-emerald-500/15 to-emerald-100',
     },
     {
       key: 'exclusive',
       label: t('whatsappInbox.workspaceExclusiveNumbers'),
       value: stats.exclusiveNumbers,
-      tone: 'from-sky-500/15 to-sky-100',
     },
     {
       key: 'roundRobin',
       label: t('whatsappInbox.workspaceRoundRobinNumbers'),
       value: stats.roundRobinNumbers,
-      tone: 'from-amber-500/15 to-amber-100',
     },
     {
       key: 'connected',
       label: t('whatsappInbox.workspaceConnectedNumbers'),
       value: stats.connectedNumbers,
-      tone: 'from-slate-500/10 to-slate-100',
     },
   ];
 
@@ -381,8 +377,8 @@ const WhatsAppNumberSettings: React.FC = () => {
     return (
       <div className="p-6" dir={isRtl ? 'rtl' : 'ltr'}>
         <div className="grid gap-4 lg:grid-cols-[320px,1fr]">
-          <div className="h-[540px] animate-pulse rounded-[28px] bg-slate-200/70 dark:bg-slate-800" />
-          <div className="h-[540px] animate-pulse rounded-[28px] bg-slate-200/70 dark:bg-slate-800" />
+          <div className="h-[540px] animate-pulse rounded-xl bg-muted" />
+          <div className="h-[540px] animate-pulse rounded-xl bg-muted" />
         </div>
       </div>
     );
@@ -403,72 +399,55 @@ const WhatsAppNumberSettings: React.FC = () => {
           </div>
         )}
 
-        <section className="relative overflow-hidden rounded-[34px] border border-slate-200 bg-[linear-gradient(135deg,#f8fafc_0%,#ecfeff_45%,#fefce8_100%)] p-6 shadow-[0_30px_70px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-[linear-gradient(135deg,#07111a_0%,#0f172a_50%,#172033_100%)] md:p-8">
-          <div className="absolute inset-y-0 left-0 w-48 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.16),transparent_72%)]" />
-          <div className="relative flex flex-col gap-6">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-              <div className="max-w-3xl space-y-3">
-                <span className="inline-flex w-fit items-center rounded-full border border-emerald-200 bg-white/80 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-sm dark:border-emerald-900/60 dark:bg-slate-900/70 dark:text-emerald-300">
-                  {t('whatsappInbox.workspaceBadge')}
-                </span>
-                <div className="space-y-2">
-                  <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white md:text-4xl">
-                    {t('whatsappInbox.workspaceTitle')}
-                  </h1>
-                  <p className="max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 md:text-base">
-                    {t('whatsappInbox.workspaceDescription')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  onClick={() => navigate('/settings/inbox')}
-                  className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                >
-                  {t('whatsappInbox.openSettingsPage')}
-                </button>
-                <button
-                  onClick={() => void loadWorkspace(selectedSessionId)}
-                  className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition hover:-translate-y-0.5 hover:bg-emerald-500"
-                >
-                  {t('whatsappInbox.refreshWorkspace')}
-                </button>
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {workspaceSummary.map((item) => (
-                <article
-                  key={item.key}
-                  className={`rounded-[24px] border border-white/70 bg-gradient-to-br ${item.tone} px-4 py-4 shadow-sm backdrop-blur dark:border-slate-800 dark:from-slate-900/90 dark:to-slate-900/70`}
-                >
-                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    {item.label}
-                  </p>
-                  <p className="mt-3 text-3xl font-black text-slate-900 dark:text-white">
-                    {item.value}
-                  </p>
-                </article>
-              ))}
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <h1 className="text-2xl font-bold text-foreground">
+              {t('whatsappInbox.workspaceTitle')}
+            </h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => navigate('/settings/inbox')}
+                className="inline-flex items-center justify-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted"
+              >
+                {t('whatsappInbox.openSettingsPage')}
+              </button>
+              <button
+                onClick={() => void loadWorkspace(selectedSessionId)}
+                className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90"
+              >
+                {t('whatsappInbox.refreshWorkspace')}
+              </button>
             </div>
           </div>
-        </section>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {workspaceSummary.map((item) => (
+              <div
+                key={item.key}
+                className="rounded-xl border border-border/50 bg-card p-4 shadow-sm"
+              >
+                <p className="text-xs font-medium text-muted-foreground">
+                  {item.label}
+                </p>
+                <p className="mt-2 text-2xl font-bold text-foreground">
+                  {item.value}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
 
         <div className="grid gap-6 lg:grid-cols-[320px,1fr]">
-          <section className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-950">
-            <div className="border-b border-slate-200 px-5 py-5 dark:border-slate-800">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+          <section className="overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm">
+            <div className="border-b border-border/50 px-4 py-4">
+              <h2 className="text-base font-semibold text-foreground">
                 {t('whatsappInbox.workspaceNumbersTitle')}
               </h2>
-              <p className="mt-1 text-xs leading-6 text-slate-500 dark:text-slate-400">
-                {t('whatsappInbox.workspaceNumbersDescription')}
-              </p>
             </div>
 
-            <div className="max-h-[720px] space-y-3 overflow-y-auto p-4">
+            <div className="max-h-[720px] space-y-2 overflow-y-auto p-3">
               {numbers.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                <div className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
                   {t('whatsappInbox.workspaceNoNumbers')}
                 </div>
               )}
@@ -484,41 +463,38 @@ const WhatsAppNumberSettings: React.FC = () => {
                   <button
                     key={number.sessionId}
                     onClick={() => handleSessionSelect(number.sessionId)}
-                    className={`w-full rounded-[24px] border p-4 text-start transition ${
+                    className={`w-full rounded-lg border p-3 text-start transition ${
                       isSelected
-                        ? 'border-emerald-300 bg-emerald-50 shadow-md dark:border-emerald-800 dark:bg-emerald-950/20'
-                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700 dark:hover:bg-slate-900'
+                        ? 'border-emerald-300 bg-emerald-50 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/20'
+                        : 'border-border/50 bg-card hover:border-border hover:bg-muted'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
+                        <p className="truncate text-sm font-medium text-foreground">
                           {displayName}
                         </p>
-                        <p
-                          className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400"
-                          dir="ltr"
-                        >
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground" dir="ltr">
                           {number.session.phoneNumber}
                         </p>
                       </div>
 
                       <span
-                        className={`inline-flex shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${resolveConnectionClasses(number.connectionStatus)}`}
+                        className={`inline-flex shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium ${resolveConnectionClasses(number.connectionStatus)}`}
                       >
                         {resolveConnectionLabel(number.connectionStatus)}
                       </span>
                     </div>
 
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                         {number.isConfigured
                           ? number.routingMode === 'NUMBER_OWNER'
                             ? t('whatsappInbox.modeDirect')
                             : t('whatsappInbox.modeRoundRobin')
                           : t('whatsappInbox.modeNotConfigured')}
                       </span>
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                         {t('whatsappInbox.selectedEmployeesCount', {
                           count: number.routingUserIds.length,
                         })}
@@ -530,85 +506,73 @@ const WhatsAppNumberSettings: React.FC = () => {
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-950">
+          <section className="overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm">
             {!selectedNumber ? (
-              <div className="flex min-h-[620px] flex-col items-center justify-center px-6 text-center">
-                <div className="rounded-full bg-emerald-100 p-5 text-3xl dark:bg-emerald-950/30">
+              <div className="flex min-h-[400px] flex-col items-center justify-center px-6 text-center">
+                <div className="rounded-full bg-muted p-4 text-2xl text-muted-foreground">
                   01
                 </div>
-                <h2 className="mt-6 text-2xl font-black text-slate-900 dark:text-white">
+                <h2 className="mt-4 text-xl font-bold text-foreground">
                   {t('whatsappInbox.workspaceEmptyTitle')}
                 </h2>
-                <p className="mt-3 max-w-md text-sm leading-7 text-slate-500 dark:text-slate-400">
-                  {t('whatsappInbox.workspaceEmptyDescription')}
-                </p>
               </div>
             ) : (
-              <div className="flex flex-col gap-6 p-5 md:p-6">
-                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+              <div className="flex flex-col gap-5 p-4 md:p-5">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-bold text-foreground">
                         {selectedNumber.session.name ||
                           selectedNumber.session.profileName ||
                           selectedNumber.session.phoneNumber}
                       </h2>
                       <span
-                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${resolveConnectionClasses(selectedNumber.connectionStatus)}`}
+                        className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${resolveConnectionClasses(selectedNumber.connectionStatus)}`}
                       >
                         {resolveConnectionLabel(selectedNumber.connectionStatus)}
                       </span>
                     </div>
-                    <div
-                      className="text-sm text-slate-500 dark:text-slate-400"
-                      dir="ltr"
-                    >
+                    <div className="text-sm text-muted-foreground" dir="ltr">
                       {selectedNumber.session.phoneNumber}
                     </div>
-                    <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">
-                      {t('whatsappInbox.workspaceEditorDescription')}
-                    </p>
                   </div>
 
-                  <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 text-sm dark:border-slate-800 dark:bg-slate-900">
-                    <p className="font-semibold text-slate-600 dark:text-slate-300">
+                  <div className="rounded-lg border border-border/50 bg-muted px-3 py-3 text-sm">
+                    <p className="font-medium text-muted-foreground">
                       {t('whatsappInbox.lastDistribution')}
                     </p>
-                    <p className="mt-2 text-slate-900 dark:text-white">
+                    <p className="mt-1 text-foreground">
                       {lastDistributedUser
                         ? `${lastDistributedUser.firstName} ${lastDistributedUser.lastName}`
                         : t('whatsappInbox.notAvailable')}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    <p className="mt-0.5 text-xs text-muted-foreground">
                       {formatDateTime(selectedNumber.lastDistributedAt)}
                     </p>
                   </div>
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-2">
+                <div className="grid gap-3 md:grid-cols-2">
                   <button
                     type="button"
                     onClick={() => handleModeChange('NUMBER_OWNER')}
-                    className={`rounded-[26px] border p-5 text-start transition ${
+                    className={`rounded-lg border p-4 text-start transition ${
                       routingMode === 'NUMBER_OWNER'
-                        ? 'border-emerald-300 bg-emerald-50 shadow-md dark:border-emerald-800 dark:bg-emerald-950/20'
-                        : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700'
+                        ? 'border-emerald-300 bg-emerald-50 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/20'
+                        : 'border-border/50 bg-card hover:border-border'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                        <h3 className="text-base font-semibold text-foreground">
                           {t('whatsappInbox.modeDirect')}
                         </h3>
-                        <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                          {t('whatsappInbox.modeDirectDescription')}
-                        </p>
                       </div>
                       <span
-                        className={`h-5 w-5 rounded-full border-4 ${
+                        className={`h-4 w-4 shrink-0 rounded-full border-2 ${
                           routingMode === 'NUMBER_OWNER'
                             ? 'border-emerald-500 bg-white'
-                            : 'border-slate-300 bg-transparent dark:border-slate-700'
+                            : 'border-border bg-transparent'
                         }`}
                       />
                     </div>
@@ -617,46 +581,36 @@ const WhatsAppNumberSettings: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleModeChange('ROUND_ROBIN')}
-                    className={`rounded-[26px] border p-5 text-start transition ${
+                    className={`rounded-lg border p-4 text-start transition ${
                       routingMode === 'ROUND_ROBIN'
-                        ? 'border-amber-300 bg-amber-50 shadow-md dark:border-amber-800 dark:bg-amber-950/20'
-                        : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700'
+                        ? 'border-amber-300 bg-amber-50 shadow-sm dark:border-amber-800 dark:bg-amber-950/20'
+                        : 'border-border/50 bg-card hover:border-border'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                        <h3 className="text-base font-semibold text-foreground">
                           {t('whatsappInbox.modeRoundRobin')}
                         </h3>
-                        <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                          {t('whatsappInbox.modeRoundRobinDescription')}
-                        </p>
                       </div>
                       <span
-                        className={`h-5 w-5 rounded-full border-4 ${
+                        className={`h-4 w-4 shrink-0 rounded-full border-2 ${
                           routingMode === 'ROUND_ROBIN'
                             ? 'border-amber-500 bg-white'
-                            : 'border-slate-300 bg-transparent dark:border-slate-700'
+                            : 'border-border bg-transparent'
                         }`}
                       />
                     </div>
                   </button>
                 </div>
 
-                <div className="grid gap-6 xl:grid-cols-[1.4fr,0.9fr]">
-                  <div className="rounded-[28px] border border-slate-200 bg-slate-50/90 p-5 dark:border-slate-800 dark:bg-slate-900/60">
-                    <div className="flex flex-col gap-2">
-                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                        {t('whatsappInbox.workspaceEmployeesTitle')}
-                      </h3>
-                      <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">
-                        {routingMode === 'NUMBER_OWNER'
-                          ? t('whatsappInbox.workspaceEmployeesDirectHint')
-                          : t('whatsappInbox.workspaceEmployeesRoundRobinHint')}
-                      </p>
-                    </div>
+                <div className="grid gap-4 md:grid-cols-[1.4fr,0.9fr]">
+                  <div className="rounded-lg border border-border/50 bg-muted/50 p-4">
+                    <h3 className="text-base font-semibold text-foreground">
+                      {t('whatsappInbox.workspaceEmployeesTitle')}
+                    </h3>
 
-                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
                       {moderators.map((moderator) => {
                         const isSelected = selectedUserIds.includes(moderator.id);
 
@@ -665,40 +619,40 @@ const WhatsAppNumberSettings: React.FC = () => {
                             key={moderator.id}
                             type="button"
                             onClick={() => toggleEmployee(moderator.id)}
-                            className={`rounded-[24px] border p-4 text-start transition ${
+                            className={`rounded-lg border p-3 text-start transition ${
                               isSelected
                                 ? routingMode === 'NUMBER_OWNER'
-                                  ? 'border-emerald-300 bg-white shadow-md dark:border-emerald-800 dark:bg-slate-950'
-                                  : 'border-amber-300 bg-white shadow-md dark:border-amber-800 dark:bg-slate-950'
-                                : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700'
+                                  ? 'border-emerald-300 bg-card shadow-sm dark:border-emerald-800'
+                                  : 'border-amber-300 bg-card shadow-sm dark:border-amber-800'
+                                : 'border-border/50 bg-card hover:border-border'
                             }`}
                           >
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 text-sm font-black text-white">
+                            <div className="flex items-center gap-2">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
                                 {getInitials(
                                   moderator.firstName,
                                   moderator.lastName,
                                 )}
                               </div>
                               <div className="min-w-0">
-                                <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
+                                <p className="truncate text-sm font-medium text-foreground">
                                   {moderator.firstName} {moderator.lastName}
                                 </p>
-                                <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                                <p className="truncate text-xs text-muted-foreground">
                                   {moderator.email}
                                 </p>
                               </div>
                             </div>
 
-                            <div className="mt-3 flex items-center justify-between gap-3">
-                              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            <div className="mt-2 flex items-center justify-between gap-2">
+                              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
                                 {resolveRoleLabel(moderator.role)}
                               </span>
                               <span
-                                className={`inline-flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-black ${
+                                className={`inline-flex h-4 w-4 items-center justify-center rounded-full border text-[9px] font-bold ${
                                   isSelected
                                     ? 'border-emerald-500 bg-emerald-500 text-white'
-                                    : 'border-slate-300 text-slate-400 dark:border-slate-700'
+                                    : 'border-border text-muted-foreground'
                                 }`}
                               >
                                 {isSelected ? '✓' : ''}
@@ -710,39 +664,24 @@ const WhatsAppNumberSettings: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="rounded-[28px] border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-950">
-                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                        {t('whatsappInbox.privacySummaryTitle')}
-                      </h3>
-                      <div className="mt-4 space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                        <p>{t('whatsappInbox.privacySummaryIntro')}</p>
-                        <p>
-                          {routingMode === 'NUMBER_OWNER'
-                            ? t('whatsappInbox.privacySummaryDirect')
-                            : t('whatsappInbox.privacySummaryRoundRobin')}
-                        </p>
-                        <p>{t('whatsappInbox.privacySummaryFooter')}</p>
-                      </div>
-                    </div>
-
-                    <div className="rounded-[28px] border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-950">
-                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  <div className="space-y-3">
+                    <div className="rounded-lg border border-border/50 bg-card p-4">
+                      <h3 className="text-base font-semibold text-foreground">
                         {t('whatsappInbox.selectedEmployeesTitle')}
                       </h3>
 
                       {selectedUsers.length === 0 ? (
-                        <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+                        <p className="mt-3 text-sm text-muted-foreground">
                           {t('whatsappInbox.selectedEmployeesEmpty')}
                         </p>
                       ) : (
-                        <div className="mt-4 flex flex-wrap gap-2">
+                        <div className="mt-3 flex flex-wrap gap-1.5">
                           {selectedUsers.map((user) => (
                             <span
                               key={user.id}
-                              className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                              className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-1 text-xs font-medium text-foreground"
                             >
-                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-[10px] font-black text-emerald-700 dark:bg-slate-700 dark:text-emerald-300">
+                              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-card text-[9px] font-bold text-primary">
                                 {getInitials(user.firstName, user.lastName)}
                               </span>
                               <span>
@@ -756,12 +695,12 @@ const WhatsAppNumberSettings: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-3 border-t border-slate-200 pt-6 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-2 border-t border-border/50 pt-4 sm:flex-row sm:items-center sm:justify-between">
                   <button
                     type="button"
                     onClick={handleUnassign}
                     disabled={saving || !selectedNumber.isConfigured}
-                    className="inline-flex items-center justify-center rounded-2xl border border-rose-200 px-4 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-900/70 dark:text-rose-300 dark:hover:bg-rose-950/20"
+                    className="inline-flex items-center justify-center rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {t('whatsappInbox.unassign')}
                   </button>
@@ -770,7 +709,7 @@ const WhatsAppNumberSettings: React.FC = () => {
                     type="button"
                     onClick={handleSave}
                     disabled={saving}
-                    className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition hover:-translate-y-0.5 hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {saving
                       ? t('whatsappInbox.savingRouting')

@@ -60,31 +60,26 @@ const ToggleField = ({
   description: string;
   isRtl: boolean;
 }) => (
-  <div className="flex items-start justify-between gap-4 rounded-[24px] border border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-950">
-    <div>
-      <p className="text-sm font-bold text-slate-900 dark:text-white">{title}</p>
-      <p className="mt-1 text-sm leading-7 text-slate-500 dark:text-slate-400">
-        {description}
-      </p>
-    </div>
+  <div className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-card px-4 py-3">
+    <p className="text-sm font-medium text-foreground">{title}</p>
 
     <button
       type="button"
       onClick={onChange}
-      className={`relative mt-1 inline-flex h-7 w-12 shrink-0 rounded-full transition ${
-        checked ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'
+      className={`relative inline-flex h-6 w-10 shrink-0 rounded-full transition ${
+        checked ? 'bg-primary' : 'bg-muted'
       }`}
       aria-pressed={checked}
     >
       <span
-        className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition ${
+        className={`absolute top-0.5 h-5 w-5 rounded-full bg-card shadow transition ${
           checked
             ? isRtl
-              ? 'right-1'
-              : 'left-6'
+              ? 'right-0.5'
+              : 'left-[18px]'
             : isRtl
-              ? 'right-6'
-              : 'left-1'
+              ? 'right-[18px]'
+              : 'left-0.5'
         }`}
       />
     </button>
@@ -200,8 +195,8 @@ const InboxSettingsPage: React.FC = () => {
     return (
       <div className="p-6" dir={isRtl ? 'rtl' : 'ltr'}>
         <div className="mx-auto grid max-w-6xl gap-4 lg:grid-cols-2">
-          <div className="h-64 animate-pulse rounded-[30px] bg-slate-200/70 dark:bg-slate-800" />
-          <div className="h-64 animate-pulse rounded-[30px] bg-slate-200/70 dark:bg-slate-800" />
+          <div className="h-64 animate-pulse rounded-xl bg-muted" />
+          <div className="h-64 animate-pulse rounded-xl bg-muted" />
         </div>
       </div>
     );
@@ -222,51 +217,35 @@ const InboxSettingsPage: React.FC = () => {
           </div>
         )}
 
-        <section className="overflow-hidden rounded-[34px] border border-slate-200 bg-[linear-gradient(135deg,#f8fafc_0%,#ecfeff_45%,#fef2f2_100%)] p-6 shadow-[0_30px_70px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-[linear-gradient(135deg,#07111a_0%,#0f172a_50%,#20151f_100%)] md:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-3xl space-y-3">
-              <span className="inline-flex w-fit rounded-full border border-sky-200 bg-white/80 px-3 py-1 text-xs font-semibold text-sky-700 shadow-sm dark:border-sky-900/60 dark:bg-slate-900/70 dark:text-sky-300">
-                {t('whatsappInbox.settingsBadge')}
-              </span>
-              <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white md:text-4xl">
-                {t('whatsappInbox.settingsTitle')}
-              </h1>
-              <p className="text-sm leading-7 text-slate-600 dark:text-slate-300 md:text-base">
-                {t('whatsappInbox.settingsDescription')}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={() => navigate('/whatsapp-inbox')}
-                className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-              >
-                {t('whatsappInbox.backToWorkspace')}
-              </button>
-              <button
-                onClick={saveSettings}
-                disabled={saving}
-                className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition hover:-translate-y-0.5 hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {saving
-                  ? t('whatsappInbox.settingsSaving')
-                  : t('whatsappInbox.settingsSave')}
-              </button>
-            </div>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <h1 className="text-2xl font-bold text-foreground">
+            {t('whatsappInbox.settingsTitle')}
+          </h1>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => navigate('/whatsapp-inbox')}
+              className="inline-flex items-center justify-center rounded-lg border border-border/50 bg-card px-3 py-2 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted"
+            >
+              {t('whatsappInbox.backToWorkspace')}
+            </button>
+            <button
+              onClick={saveSettings}
+              disabled={saving}
+              className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {saving
+                ? t('whatsappInbox.settingsSaving')
+                : t('whatsappInbox.settingsSave')}
+            </button>
           </div>
-        </section>
+        </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1.15fr,0.85fr]">
-          <div className="space-y-6">
-            <section className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-950">
-              <div className="mb-4">
-                <h2 className="text-xl font-black text-slate-900 dark:text-white">
-                  {t('whatsappInbox.settingsOperationsTitle')}
-                </h2>
-                <p className="mt-1 text-sm leading-7 text-slate-500 dark:text-slate-400">
-                  {t('whatsappInbox.settingsOperationsDescription')}
-                </p>
-              </div>
+        <div className="grid gap-5 lg:grid-cols-[1.15fr,0.85fr]">
+          <div className="space-y-5">
+            <section className="rounded-xl border border-border/50 bg-card p-5 shadow-sm">
+              <h2 className="text-lg font-semibold text-foreground">
+                {t('whatsappInbox.settingsOperationsTitle')}
+              </h2>
 
               <div className="space-y-3">
                 <ToggleField
@@ -292,11 +271,11 @@ const InboxSettingsPage: React.FC = () => {
                 />
 
                 {settings.autoCloseEnabled && (
-                  <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900">
-                    <label className="mb-2 block text-sm font-bold text-slate-900 dark:text-white">
+                  <div className="rounded-lg border border-border/50 bg-muted p-4">
+                    <label className="mb-2 block text-sm font-medium text-foreground">
                       {t('whatsappInbox.settingsAutoCloseAfter')}
                     </label>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <input
                         type="number"
                         min={1}
@@ -307,9 +286,9 @@ const InboxSettingsPage: React.FC = () => {
                             Math.max(1, Number(event.target.value) || 1),
                           )
                         }
-                        className="w-28 rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-0 transition focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                        className="w-24 rounded-lg border border-border/50 bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-ring"
                       />
-                      <span className="text-sm text-slate-500 dark:text-slate-400">
+                      <span className="text-sm text-muted-foreground">
                         {t('whatsappInbox.settingsMinutes')}
                       </span>
                     </div>
@@ -317,8 +296,8 @@ const InboxSettingsPage: React.FC = () => {
                 )}
 
                 <div className="grid gap-3 md:grid-cols-2">
-                  <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900">
-                    <label className="mb-2 block text-sm font-bold text-slate-900 dark:text-white">
+                  <div className="rounded-lg border border-border/50 bg-muted p-4">
+                    <label className="mb-2 block text-sm font-medium text-foreground">
                       {t('whatsappInbox.settingsDefaultStatus')}
                     </label>
                     <select
@@ -326,7 +305,7 @@ const InboxSettingsPage: React.FC = () => {
                       onChange={(event) =>
                         updateField('defaultChatStatus', event.target.value)
                       }
-                      className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                      className="w-full rounded-lg border border-border/50 bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-ring"
                     >
                       <option value="NEW">{t('whatsappInbox.statusNew')}</option>
                       <option value="ACTIVE">{t('whatsappInbox.statusActive')}</option>
@@ -334,8 +313,8 @@ const InboxSettingsPage: React.FC = () => {
                     </select>
                   </div>
 
-                  <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900">
-                    <label className="mb-2 block text-sm font-bold text-slate-900 dark:text-white">
+                  <div className="rounded-lg border border-border/50 bg-muted p-4">
+                    <label className="mb-2 block text-sm font-medium text-foreground">
                       {t('whatsappInbox.settingsMaxChats')}
                     </label>
                     <input
@@ -348,22 +327,17 @@ const InboxSettingsPage: React.FC = () => {
                           Math.max(1, Number(event.target.value) || 1),
                         )
                       }
-                      className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                      className="w-full rounded-lg border border-border/50 bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-ring"
                     />
                   </div>
                 </div>
               </div>
             </section>
 
-            <section className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-950">
-              <div className="mb-4">
-                <h2 className="text-xl font-black text-slate-900 dark:text-white">
-                  {t('whatsappInbox.settingsNotificationsTitle')}
-                </h2>
-                <p className="mt-1 text-sm leading-7 text-slate-500 dark:text-slate-400">
-                  {t('whatsappInbox.settingsNotificationsDescription')}
-                </p>
-              </div>
+            <section className="rounded-xl border border-border/50 bg-card p-5 shadow-sm">
+              <h2 className="text-lg font-semibold text-foreground">
+                {t('whatsappInbox.settingsNotificationsTitle')}
+              </h2>
 
               <div className="space-y-3">
                 <ToggleField
@@ -398,39 +372,26 @@ const InboxSettingsPage: React.FC = () => {
             </section>
           </div>
 
-          <div className="space-y-6">
-            <section className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-950">
-              <div className="mb-4">
-                <h2 className="text-xl font-black text-slate-900 dark:text-white">
-                  {t('whatsappInbox.settingsPolicyTitle')}
-                </h2>
-                <p className="mt-1 text-sm leading-7 text-slate-500 dark:text-slate-400">
-                  {t('whatsappInbox.settingsPolicyDescription')}
-                </p>
-              </div>
+          <div className="space-y-5">
+            <section className="rounded-xl border border-border/50 bg-card p-5 shadow-sm">
+              <h2 className="text-lg font-semibold text-foreground">
+                {t('whatsappInbox.settingsPolicyTitle')}
+              </h2>
 
-              <div className="space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 px-4 py-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+              <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900/60 dark:bg-emerald-950/20">
                   {t('whatsappInbox.settingsPrivacyRuleDirect')}
                 </div>
-                <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900/60 dark:bg-amber-950/20">
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/60 dark:bg-amber-950/20">
                   {t('whatsappInbox.settingsPrivacyRuleRoundRobin')}
-                </div>
-                <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900">
-                  {t('whatsappInbox.settingsPolicyFooter')}
                 </div>
               </div>
             </section>
 
-            <section className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-950">
-              <div className="mb-4">
-                <h2 className="text-xl font-black text-slate-900 dark:text-white">
-                  {t('whatsappInbox.settingsWorkingHoursTitle')}
-                </h2>
-                <p className="mt-1 text-sm leading-7 text-slate-500 dark:text-slate-400">
-                  {t('whatsappInbox.settingsWorkingHoursDescription')}
-                </p>
-              </div>
+            <section className="rounded-xl border border-border/50 bg-card p-5 shadow-sm">
+              <h2 className="text-lg font-semibold text-foreground">
+                {t('whatsappInbox.settingsWorkingHoursTitle')}
+              </h2>
 
               <div className="space-y-4">
                 <ToggleField
@@ -444,8 +405,8 @@ const InboxSettingsPage: React.FC = () => {
                 {settings.workingHoursEnabled && (
                   <>
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900">
-                        <label className="mb-2 block text-sm font-bold text-slate-900 dark:text-white">
+                      <div className="rounded-lg border border-border/50 bg-muted p-4">
+                        <label className="mb-2 block text-sm font-medium text-foreground">
                           {t('whatsappInbox.settingsWorkingHoursStart')}
                         </label>
                         <input
@@ -454,12 +415,12 @@ const InboxSettingsPage: React.FC = () => {
                           onChange={(event) =>
                             updateField('workingHoursStart', event.target.value)
                           }
-                          className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                          className="w-full rounded-lg border border-border/50 bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-ring"
                         />
                       </div>
 
-                      <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900">
-                        <label className="mb-2 block text-sm font-bold text-slate-900 dark:text-white">
+                      <div className="rounded-lg border border-border/50 bg-muted p-4">
+                        <label className="mb-2 block text-sm font-medium text-foreground">
                           {t('whatsappInbox.settingsWorkingHoursEnd')}
                         </label>
                         <input
@@ -468,13 +429,13 @@ const InboxSettingsPage: React.FC = () => {
                           onChange={(event) =>
                             updateField('workingHoursEnd', event.target.value)
                           }
-                          className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                          className="w-full rounded-lg border border-border/50 bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-ring"
                         />
                       </div>
                     </div>
 
-                    <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-900">
-                      <p className="mb-3 text-sm font-bold text-slate-900 dark:text-white">
+                    <div className="rounded-lg border border-border/50 bg-muted p-4">
+                      <p className="mb-3 text-sm font-medium text-foreground">
                         {t('whatsappInbox.settingsWorkingDays')}
                       </p>
                       <div className="flex flex-wrap gap-2">
@@ -485,18 +446,18 @@ const InboxSettingsPage: React.FC = () => {
                             .includes(day);
 
                           return (
-                            <button
-                              key={day}
-                              type="button"
-                              onClick={() => toggleDay(day)}
-                              className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
-                                isActive
-                                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300'
-                                  : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300'
-                              }`}
-                            >
-                              {workingDayLabels[day]}
-                            </button>
+                              <button
+                                  key={day}
+                                  type="button"
+                                  onClick={() => toggleDay(day)}
+                                  className={`rounded-md border px-2.5 py-1.5 text-xs font-medium transition ${
+                                    isActive
+                                      ? 'border-primary bg-primary/10 text-primary'
+                                      : 'border-border/50 bg-card text-muted-foreground'
+                                  }`}
+                                >
+                                  {workingDayLabels[day]}
+                                </button>
                           );
                         })}
                       </div>

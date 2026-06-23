@@ -86,7 +86,7 @@ type QueueFilter = '' | 'WAITING_QUEUE' | 'ASSIGNED_QUEUE' | 'PENDING_QUEUE' | '
 const getSessionTone = (status: string) =>
   String(status || '').toUpperCase() === 'CONNECTED'
     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200'
-    : 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-200';
+    : 'bg-muted text-muted-foreground';
 
 const WhatsAppInbox: React.FC = () => {
   const { sessionId } = useParams();
@@ -261,18 +261,18 @@ const WhatsAppInbox: React.FC = () => {
   return (
     <div
       dir={copy.isArabic ? 'rtl' : 'ltr'}
-      className="flex h-[calc(100vh-64px)] overflow-y-auto bg-slate-100 dark:bg-slate-950"
+      className="flex h-[calc(100vh-64px)] overflow-y-auto bg-background"
     >
-      <aside className="hidden w-80 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:flex">
-        <div className="border-b border-slate-200 px-5 py-5 dark:border-slate-800">
-          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+      <aside className="hidden w-72 flex-col border-r border-border/50 bg-card lg:flex">
+        <div className="border-b border-border/50 px-4 py-4">
+          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {copy.inbox.railEyebrow}
           </div>
-          <div className="mt-2 text-xl font-black text-slate-950 dark:text-white">
+          <div className="mt-1 text-lg font-bold text-foreground">
             {copy.inbox.railTitle}
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-3">
+        <div className="flex-1 overflow-y-auto p-2">
           {sessions.map((item) => {
             const active = item.id === activeSession;
             return (
@@ -283,22 +283,22 @@ const WhatsAppInbox: React.FC = () => {
                     setActiveSession(item.id);
                     navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/inbox/${item.id}` : `/whatsapp-inbox/${item.id}`);
                   }}
-                  className={`mb-2 w-full rounded-3xl border px-4 py-4 text-left transition ${
+                  className={`mb-1 w-full rounded-lg border px-3 py-3 text-left transition ${
                     active
-                      ? 'border-cyan-300 bg-cyan-50 shadow-sm dark:border-cyan-500/50 dark:bg-cyan-950/20'
-                      : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700'
+                      ? 'border-primary/30 bg-primary/5 shadow-sm'
+                      : 'border-border/50 bg-card hover:border-border'
                   }`}
               >
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="truncate font-semibold text-slate-950 dark:text-white">
+                    <div className="truncate text-sm font-medium text-foreground">
                       {item.name || item.phoneNumber}
                     </div>
-                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    <div className="mt-0.5 text-xs text-muted-foreground">
                       {item.phoneNumber}
                     </div>
                   </div>
-                  <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${getSessionTone(item.status)}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${getSessionTone(item.status)}`}>
                     {formatSessionStatus(item.status)}
                   </span>
                 </div>
@@ -309,41 +309,33 @@ const WhatsAppInbox: React.FC = () => {
       </aside>
 
       <main className="flex min-w-0 flex-1 flex-col">
-        <section className="border-b border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-900 md:px-6">
-          <div className="overflow-hidden rounded-[28px] bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950 px-5 py-6 text-white shadow-[0_22px_70px_rgba(15,23,42,0.18)] md:px-6">
-            <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-              <div className="max-w-3xl">
-                <div className="inline-flex rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-white/70">
-                  {copy.inbox.heroEyebrow}
-                </div>
-                <h1 className="mt-3 text-2xl font-black tracking-tight md:text-3xl">
-                  {selectedSession?.name || selectedSession?.phoneNumber || copy.inbox.heroFallbackTitle}
-                </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-white/75 md:text-base">
-                  {copy.inbox.heroDescription}
-                </p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="border-b border-border/50 bg-card px-4 py-3 md:px-5">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <h1 className="text-xl font-bold text-foreground">
+                {selectedSession?.name || selectedSession?.phoneNumber || copy.inbox.heroFallbackTitle}
+              </h1>
+              <div className="flex flex-wrap gap-2">
                 {heroMetrics.map((metric) => (
                   <div
                     key={metric.label}
-                    className="rounded-3xl border border-white/10 bg-white/10 px-4 py-3 text-center"
+                    className="rounded-lg border border-border/50 bg-muted px-3 py-2 text-center"
                   >
-                    <div className="text-[11px] uppercase tracking-[0.18em] text-white/60">
+                    <div className="text-[11px] font-medium text-muted-foreground">
                       {metric.label}
                     </div>
-                    <div className="mt-1 text-2xl font-black text-white">{metric.value}</div>
+                    <div className="mt-0.5 text-lg font-bold text-foreground">{metric.value}</div>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          <div className="mt-4 lg:hidden">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+          <div className="mt-3 lg:hidden">
+            <div className="mb-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {copy.inbox.railEyebrow}
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-1">
+            <div className="flex gap-2 overflow-x-auto pb-1">
               {sessions.map((item) => {
                 const active = item.id === activeSession;
                 return (
@@ -354,18 +346,18 @@ const WhatsAppInbox: React.FC = () => {
                       setActiveSession(item.id);
                       navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/inbox/${item.id}` : `/whatsapp-inbox/${item.id}`);
                     }}
-                    className={`min-w-[220px] rounded-3xl border px-4 py-4 text-left transition ${
+                    className={`min-w-[200px] rounded-lg border px-3 py-3 text-left transition ${
                       active
-                        ? 'border-cyan-300 bg-cyan-50 shadow-sm dark:border-cyan-500/50 dark:bg-cyan-950/20'
-                        : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900'
+                        ? 'border-primary/30 bg-primary/5 shadow-sm'
+                        : 'border-border/50 bg-card'
                     }`}
                   >
-                    <div className="truncate font-semibold text-slate-950 dark:text-white">
+                    <div className="truncate text-sm font-medium text-foreground">
                       {item.name || item.phoneNumber}
                     </div>
-                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{item.phoneNumber}</div>
-                    <div className="mt-3">
-                      <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${getSessionTone(item.status)}`}>
+                    <div className="mt-0.5 text-xs text-muted-foreground">{item.phoneNumber}</div>
+                    <div className="mt-2">
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${getSessionTone(item.status)}`}>
                         {formatSessionStatus(item.status)}
                       </span>
                     </div>
@@ -376,17 +368,17 @@ const WhatsAppInbox: React.FC = () => {
           </div>
         </section>
 
-        <div className="grid min-h-0 flex-1 gap-0 xl:grid-cols-[1fr,360px]">
-          <section className="flex min-h-0 flex-col border-r border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950">
-            <div className="border-b border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-900 md:px-6">
+        <div className="grid min-h-0 flex-1 gap-0 xl:grid-cols-[1fr,320px]">
+          <section className="flex min-h-0 flex-col border-r border-border/50 bg-background">
+            <div className="border-b border-border/50 bg-card px-4 py-3 md:px-5">
               {error ? (
-                <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200">
+                <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   {error}
                 </div>
               ) : null}
 
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex flex-1 flex-col gap-3 md:flex-row">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-1 gap-2">
                   <input
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
@@ -396,14 +388,14 @@ const WhatsAppInbox: React.FC = () => {
                       }
                     }}
                     placeholder={copy.inbox.searchPlaceholder}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                    className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-ring"
                   />
                   <button
                     type="button"
                     onClick={() => {
                       void loadConversations();
                     }}
-                    className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-cyan-500 dark:text-slate-950 dark:hover:bg-cyan-400"
+                    className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
                   >
                     {copy.inbox.refresh}
                   </button>
@@ -411,22 +403,22 @@ const WhatsAppInbox: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/moderator-dashboard` : '/moderator-dashboard')}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                  className="rounded-lg border border-border/50 bg-card px-3 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
                 >
                   {copy.inbox.openDashboard}
                 </button>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-1.5">
                 {queueTabs.map((tab) => (
                   <button
                     key={tab.key || 'all'}
                     type="button"
                     onClick={() => setQueueFilter(tab.key)}
-                    className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
                       queueFilter === tab.key
-                        ? 'bg-slate-950 text-white dark:bg-cyan-500 dark:text-slate-950'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     }`}
                   >
                     {tab.label}
@@ -437,11 +429,11 @@ const WhatsAppInbox: React.FC = () => {
 
             <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 md:px-4">
               {conversations.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white px-6 text-center dark:border-slate-700 dark:bg-slate-900">
-                  <div className="text-lg font-bold text-slate-900 dark:text-white">
+                <div className="flex h-full flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card px-6 text-center">
+                  <div className="text-base font-semibold text-foreground">
                     {copy.inbox.emptyStateTitle}
                   </div>
-                  <div className="mt-2 max-w-md text-sm text-slate-500 dark:text-slate-400">
+                  <div className="mt-1 max-w-md text-sm text-muted-foreground">
                     {copy.inbox.emptyStateDescription}
                   </div>
                 </div>
@@ -454,51 +446,51 @@ const WhatsAppInbox: React.FC = () => {
                       key={conversation.id}
                       type="button"
                       onClick={() => navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/chat/${conversation.id}` : `/whatsapp-chat/${conversation.id}`)}
-                      className="mb-3 w-full rounded-3xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-cyan-300 hover:bg-cyan-50/50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-cyan-500/60 dark:hover:bg-slate-900"
+                      className="mb-2 w-full rounded-lg border border-border/50 bg-card p-3 text-left shadow-sm transition hover:border-primary/30 hover:bg-primary/5"
                     >
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="font-semibold text-slate-950 dark:text-white">
+                          <div className="text-sm font-medium text-foreground">
                             {conversation.customer.name}
                           </div>
-                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          <div className="mt-0.5 text-xs text-muted-foreground">
                             {conversation.customer.phone}
                           </div>
                         </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <span className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-semibold text-white dark:bg-cyan-500 dark:text-slate-950">
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
                             {formatQueueLabel(conversation.queueKey, conversation.status, i18n.language)}
                           </span>
                           {messageTime ? (
-                            <span className="text-[11px] text-slate-400">{messageTime}</span>
+                            <span className="text-[11px] text-muted-foreground">{messageTime}</span>
                           ) : null}
                           {!conversation.isRead ? (
-                            <span className="rounded-full bg-rose-500 px-2 py-0.5 text-[11px] font-semibold text-white">
+                            <span className="rounded-full bg-destructive px-1.5 py-0.5 text-[11px] font-semibold text-destructive-foreground">
                               {conversation.unreadCount || 1}
                             </span>
                           ) : null}
                         </div>
                       </div>
 
-                      <div className="mt-3 truncate text-sm text-slate-600 dark:text-slate-300">
+                      <div className="mt-2 truncate text-sm text-muted-foreground">
                         {conversation.lastMessagePreview || copy.inbox.previewFallback}
                       </div>
 
-                      <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                        <span className="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
+                      <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="rounded-full bg-muted px-2 py-0.5">
                           {formatWorkflowStatus(conversation.status, i18n.language)}
                         </span>
                         {conversation.assignedUser ? (
-                          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200">
+                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200">
                             {`${conversation.assignedUser.firstName} ${conversation.assignedUser.lastName}`.trim()}
                           </span>
                         ) : (
-                          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
+                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-700 dark:bg-amber-950/30 dark:text-amber-200">
                             {copy.common.unassigned}
                           </span>
                         )}
                         {conversation.customer.status === 'VIP' ? (
-                          <span className="rounded-full bg-fuchsia-100 px-2.5 py-1 text-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-200">
+                          <span className="rounded-full bg-fuchsia-100 px-2 py-0.5 text-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-200">
                             {copy.common.vip}
                           </span>
                         ) : null}
@@ -514,58 +506,58 @@ const WhatsAppInbox: React.FC = () => {
             </div>
           </section>
 
-          <aside className="hidden min-h-0 flex-col bg-white dark:bg-slate-900 xl:flex">
-            <div className="border-b border-slate-200 px-5 py-5 dark:border-slate-800">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+          <aside className="hidden min-h-0 flex-col bg-card xl:flex">
+            <div className="border-b border-border/50 px-4 py-4">
+              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 {copy.inbox.moderatorPoolEyebrow}
               </div>
-              <div className="mt-2 text-xl font-black text-slate-950 dark:text-white">
+              <div className="mt-1 text-lg font-bold text-foreground">
                 {copy.inbox.moderatorPoolTitle}
               </div>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            <div className="min-h-0 flex-1 overflow-y-auto p-3">
               {moderatorPool.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                <div className="rounded-lg border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
                   {copy.inbox.moderatorPoolEmpty}
                 </div>
               ) : (
                 moderatorPool.map((moderator) => (
                   <div
                     key={moderator.id}
-                    className="mb-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800"
+                    className="mb-2 rounded-lg border border-border/50 bg-muted/50 p-3"
                   >
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center justify-between gap-2">
                       <div>
-                        <div className="font-semibold text-slate-950 dark:text-white">{moderator.name}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                        <div className="text-sm font-medium text-foreground">{moderator.name}</div>
+                        <div className="text-xs text-muted-foreground">
                           {moderator.department || copy.common.noDepartment}
                         </div>
                       </div>
                       <span
-                        className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                           moderator.online
                             ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200'
-                            : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
+                            : 'bg-muted text-muted-foreground'
                         }`}
                       >
                         {moderator.online ? copy.common.online : copy.common.offline}
                       </span>
                     </div>
 
-                    <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                      <div className="rounded-2xl bg-white px-3 py-3 dark:bg-slate-900">
-                        <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                      <div className="rounded-lg bg-card px-3 py-2">
+                        <div className="text-[11px] font-medium text-muted-foreground">
                           {copy.common.active}
                         </div>
-                        <div className="mt-1 text-xl font-black text-slate-950 dark:text-white">
+                        <div className="mt-0.5 text-lg font-bold text-foreground">
                           {moderator.workload.active}
                         </div>
                       </div>
-                      <div className="rounded-2xl bg-white px-3 py-3 dark:bg-slate-900">
-                        <div className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                      <div className="rounded-lg bg-card px-3 py-2">
+                        <div className="text-[11px] font-medium text-muted-foreground">
                           {copy.common.pending}
                         </div>
-                        <div className="mt-1 text-xl font-black text-slate-950 dark:text-white">
+                        <div className="mt-0.5 text-lg font-bold text-foreground">
                           {moderator.workload.pending}
                         </div>
                       </div>

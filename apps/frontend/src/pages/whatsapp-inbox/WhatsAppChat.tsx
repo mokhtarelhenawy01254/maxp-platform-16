@@ -315,26 +315,26 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
 
   return (
     <div className="grid h-[calc(100vh-64px)] min-h-0 gap-0 xl:grid-cols-[1fr,380px]">
-      <main className="flex min-h-0 flex-col bg-slate-100 dark:bg-slate-950">
-        <header className="border-b border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-900 md:px-6">
+      <main className="flex min-h-0 flex-col bg-background">
+        <header className="border-b border-border/50 bg-card px-4 py-3 md:px-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div className="flex items-start gap-4">
+              <div className="flex items-start gap-2">
               <button
                 type="button"
                 onClick={() => navigate(superAdminMode ? `/super-admin/whatsapp/companies/${companyId}/inbox` : '/whatsapp-inbox')}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                className="rounded-md border border-border/50 bg-muted px-2.5 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted/80"
               >
                 Back
               </button>
               <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Exclusive Owner Chat</div>
-                <h1 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">{conversation.customer.name}</h1>
-                <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{conversation.customer.phone}</div>
+                  <div className="text-xs font-medium text-muted-foreground">Chat</div>
+                  <h1 className="mt-1 text-xl font-bold text-foreground">{conversation.customer.name}</h1>
+                  <div className="text-sm text-muted-foreground">{conversation.customer.phone}</div>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold text-white dark:bg-cyan-500 dark:text-slate-950">
+              <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground">
                 {formatQueueLabel(conversation.queueKey, conversation.status)}
               </span>
               <button
@@ -358,7 +358,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
               <select
                 value={conversation.status}
                 onChange={(event) => updateStatus(event.target.value)}
-                className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="rounded-lg border border-border/50 bg-muted px-3 py-1.5 text-xs font-medium text-foreground outline-none"
               >
                 {statusOptions.map((status) => (
                   <option key={status} value={status}>
@@ -367,14 +367,14 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                 ))}
               </select>
               {conversation.customer.status === 'VIP' ? (
-                <span className="rounded-full bg-fuchsia-100 px-3 py-1 text-xs font-semibold text-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-200">
+                <span className="rounded-full bg-fuchsia-100 px-2.5 py-0.5 text-xs font-medium text-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-200">
                   VIP
                 </span>
               ) : null}
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
             <span>Owner: {conversation.assignedUser ? `${conversation.assignedUser.firstName} ${conversation.assignedUser.lastName}`.trim() : 'Unassigned'}</span>
             {conversation.flags.detectedLanguage ? <span>Language: {conversation.flags.detectedLanguage.toUpperCase()}</span> : null}
             {conversation.flags.detectedCountry ? <span>Country: {conversation.flags.detectedCountry}</span> : null}
@@ -384,7 +384,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-5">
           <div className="space-y-3">
             {conversation.messages.map((message) => (
               <div
@@ -392,17 +392,17 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                 className={`flex ${message.isFromCustomer ? 'justify-start' : 'justify-end'}`}
               >
                 <div
-                  className={`max-w-[72%] rounded-[28px] px-4 py-3 shadow-sm ${
-                    message.isFromCustomer
-                      ? 'rounded-bl-md bg-white text-slate-900 dark:bg-slate-800 dark:text-white'
-                      : 'rounded-br-md bg-slate-950 text-white dark:bg-cyan-500 dark:text-slate-950'
-                  }`}
+                className={`max-w-[72%] rounded-xl px-4 py-3 shadow-sm ${
+                  message.isFromCustomer
+                    ? 'rounded-bl-sm bg-card text-foreground'
+                    : 'rounded-br-sm bg-primary text-primary-foreground'
+                }`}
                 >
                   <LinkifiedText
                     text={message.content}
                     className="block whitespace-pre-wrap break-words text-sm leading-6"
                   />
-                  <div className={`mt-2 text-[11px] ${message.isFromCustomer ? 'text-slate-400' : 'text-white/70 dark:text-slate-950/70'}`}>
+                  <div className={`mt-1.5 text-[11px] ${message.isFromCustomer ? 'text-muted-foreground' : 'text-primary-foreground/70'}`}>
                     {formatTime(message.createdAt)}
                   </div>
                 </div>
@@ -412,8 +412,8 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
           </div>
         </div>
 
-        <div className="border-t border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-900 md:px-6">
-          <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800">
+        <div className="border-t border-border/50 bg-card px-4 py-3 md:px-5">
+          <div className="rounded-lg border border-border/50 bg-muted p-3">
             <textarea
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
@@ -424,14 +424,14 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                 }
               }}
               placeholder="Reply as the conversation owner..."
-              className="min-h-[96px] w-full resize-none bg-transparent px-2 py-2 text-sm text-slate-900 outline-none dark:text-white"
+              className="min-h-[80px] w-full resize-none bg-transparent px-1 py-1 text-sm text-foreground outline-none"
             />
             <div className="flex justify-end">
               <button
                 type="button"
                 onClick={sendMessage}
                 disabled={saving || !draft.trim()}
-                className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-cyan-500 dark:text-slate-950 dark:hover:bg-cyan-400"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Send Reply
               </button>
@@ -440,10 +440,10 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
         </div>
       </main>
 
-      <aside className="min-h-0 overflow-y-auto border-l border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 md:p-5">
-        <div className="space-y-6">
-          <section className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Tags</div>
+      <aside className="min-h-0 overflow-y-auto border-l border-border/50 bg-card p-4 md:p-5">
+        <div className="space-y-4">
+          <section className="rounded-xl border border-border/50 bg-muted/50 p-4">
+            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Tags</div>
             <div className="mt-3 flex flex-wrap gap-2">
               {conversation.conversationTags.map((tag) => (
                 <span
@@ -463,12 +463,12 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                 value={tagInput}
                 onChange={(event) => setTagInput(event.target.value)}
                 placeholder="Add tag"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                className="w-full rounded-lg border border-border/50 bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-ring"
               />
               <button
                 type="button"
                 onClick={addTag}
-                className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white dark:bg-cyan-500 dark:text-slate-950"
+                className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
               >
                 Add
               </button>
@@ -476,13 +476,13 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
           </section>
 
           {canTransfer ? (
-            <section className="rounded-3xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Transfer / Reassign</div>
-              <div className="mt-3 space-y-3">
+            <section className="rounded-xl border border-border/50 bg-card p-4">
+              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Transfer / Reassign</div>
+              <div className="mt-3 space-y-2">
                 <select
                   value={transferTarget}
                   onChange={(event) => setTransferTarget(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="w-full rounded-lg border border-border/50 bg-muted px-3 py-2 text-sm text-foreground outline-none focus:border-ring"
                 >
                   <option value="">Select moderator</option>
                   {conversation.availableModerators.map((moderator) => (
@@ -495,7 +495,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                   type="button"
                   onClick={transferConversation}
                   disabled={!transferTarget}
-                  className="w-full rounded-2xl bg-amber-400 px-4 py-3 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-lg bg-amber-400 px-3 py-2 text-sm font-medium text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Transfer Chat
                 </button>
@@ -503,13 +503,13 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
             </section>
           ) : null}
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Internal Collaboration</div>
+          <section className="rounded-xl border border-border/50 bg-card p-4">
+            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Internal Collaboration</div>
             <textarea
               value={noteDraft}
               onChange={(event) => setNoteDraft(event.target.value)}
               placeholder="Internal note, handoff summary, or request assistance..."
-              className="mt-3 min-h-[120px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              className="mt-3 min-h-[100px] w-full rounded-lg border border-border/50 bg-muted px-3 py-2 text-sm text-foreground outline-none focus:border-ring"
             />
             <div className="mt-3 flex flex-wrap gap-2">
               {conversation.availableModerators.map((moderator) => (
@@ -517,11 +517,11 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                   key={moderator.id}
                   type="button"
                   onClick={() => toggleMention(moderator.id)}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                    selectedMentionIds.includes(moderator.id)
-                      ? 'bg-slate-950 text-white dark:bg-cyan-500 dark:text-slate-950'
-                      : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'
-                  }`}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                  selectedMentionIds.includes(moderator.id)
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground'
+                }`}
                 >
                   @{moderator.name}
                 </button>
@@ -532,7 +532,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                 type="button"
                 onClick={() => addNote(false)}
                 disabled={!noteDraft.trim()}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                className="rounded-lg border border-border/50 bg-card px-3 py-2 text-sm font-medium text-foreground disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Save Internal Note
               </button>
@@ -540,7 +540,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                 type="button"
                 onClick={() => addNote(true)}
                 disabled={!noteDraft.trim()}
-                className="rounded-2xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-lg bg-destructive px-3 py-2 text-sm font-medium text-destructive-foreground disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Request Assistance
               </button>
@@ -628,11 +628,11 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
             )}
           </section>
 
-          <section className="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Internal Notes Timeline</div>
+          <section className="rounded-xl border border-border/50 bg-muted/50 p-4">
+            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Internal Notes Timeline</div>
             <div className="mt-4 space-y-3">
               {conversation.notes.map((note) => (
-                <div key={note.id} className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+                <div key={note.id} className="rounded-lg border border-border/50 bg-card p-3">
                   <div className="text-sm leading-6 text-slate-700 dark:text-slate-200">{note.content}</div>
                   <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400">
                     <span>{`${note.author.firstName} ${note.author.lastName}`.trim()}</span>
@@ -641,7 +641,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                 </div>
               ))}
               {conversation.notes.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-300 px-4 py-5 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                <div className="rounded-lg border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
                   No internal notes yet.
                 </div>
               ) : null}

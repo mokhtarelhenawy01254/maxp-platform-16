@@ -525,7 +525,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           <div className="mt-3 flex items-center gap-2">
             <Select value={resolvedSessionValue} onValueChange={onSelectSession}>
               <SelectTrigger className="h-9 min-w-0 flex-1 rounded-xl bg-[var(--whatsapp-surface)] text-xs">
-                <SelectValue />
+                <SelectValue placeholder={t("whatsapp.sidebar.all")} />
               </SelectTrigger>
               <SelectContent align={i18n.dir() === "rtl" ? "start" : "end"}>
                 <SelectItem value="all">{t("whatsapp.sidebar.all")}</SelectItem>

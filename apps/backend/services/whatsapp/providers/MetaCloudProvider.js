@@ -258,6 +258,32 @@ async function sendRaw(sessionId, payload) {
   return await postMessage(session, payload);
 }
 
+async function checkContact(sessionId, phoneNumbers) {
+  const session = await getSession(sessionId);
+  if (!session) {
+    throw new Error('Session not found');
+  }
+
+  const { apiVersion, accessToken, phoneNumberId } = resolveConfig(session);
+  const url = `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/contacts`;
+
+  const numbers = Array.isArray(phoneNumbers) ? phoneNumbers : [phoneNumbers];
+  const normalizedNumbers = numbers.map(n => normalizePhone(n));
+
+  const response = await axios.post(url, {
+    messaging_product: 'whatsapp',
+    contacts: normalizedNumbers
+  }, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    timeout: 30000
+  });
+
+  return response.data?.contacts || [];
+}
+
 module.exports = {
   resolveConfig,
   resolveBaseConfig,
@@ -269,5 +295,6 @@ module.exports = {
   sendTemplate,
   sendInteractive,
   sendRaw,
-  listTemplates
+  listTemplates,
+  checkContact
 };

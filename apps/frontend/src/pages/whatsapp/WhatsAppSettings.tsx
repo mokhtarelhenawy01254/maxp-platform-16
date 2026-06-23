@@ -91,6 +91,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { useQueryClient } from "@tanstack/react-query";
+import { indexedDBStorage } from "../../services/indexedDBStorage";
 import { apiClient, type ApiRequestConfig } from "../../services/apiClient";
 import useSocket from "../../hooks/useSocket";
 import {
@@ -483,6 +485,17 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       companyId ? { ...config, _companyId: companyId } : config,
     [companyId],
   );
+
+  const queryClient = useQueryClient();
+
+  const invalidateSessionsCache = useCallback(async () => {
+    try {
+      await indexedDBStorage.removeItem("whatsapp_sessions").catch(console.error);
+      await queryClient.invalidateQueries({ queryKey: ["whatsapp", "sessions"] });
+    } catch (err) {
+      console.error("Error invalidating whatsapp sessions cache:", err);
+    }
+  }, [queryClient]);
 
   const [scopedSessionId, setScopedSessionId] = useState("");
 
@@ -1170,6 +1183,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       setSessions((previous) => [...previous, createdSession]);
       setCreateSessionDialogOpen(false);
       resetNewSessionForm();
+      void invalidateSessionsCache();
 
       if (newSessionProvider === "META_CLOUD") {
         toast.success("Meta Cloud API session created.");
@@ -1216,6 +1230,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       setCurrentPairingPhone(updatedSession?.phoneNumber || session.phoneNumber);
       setQrDialogOpen(true);
       toast.info(t("whatsappSettings.connecting"));
+      void invalidateSessionsCache();
     } catch (error) {
       showError(error, t("common.error"));
     } finally {
@@ -1232,6 +1247,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       );
       toast.success(t("whatsappSettings.dialogs.disconnectedAlert"));
       await loadData();
+      void invalidateSessionsCache();
     } catch (error) {
       showError(error, t("common.error"));
     }
@@ -1258,6 +1274,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       );
       setEditingSession(null);
       toast.success(t("whatsappSettings.dialogs.sessionUpdated"));
+      void invalidateSessionsCache();
     } catch (error) {
       showError(error, t("common.error"));
     } finally {
@@ -1484,6 +1501,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           previous.filter((session) => session.id !== deleteState.id),
         );
         toast.success(t("whatsappSettings.dialogs.sessionDeleted"));
+        void invalidateSessionsCache();
       }
 
       if (deleteState.kind === "quickReply") {

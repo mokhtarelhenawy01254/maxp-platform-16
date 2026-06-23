@@ -165,9 +165,11 @@ const resolveActiveSessionId = async (companyId, sessionId) => {
         });
         if (!session) throw new Error('الجلسة غير موجودة أو لا تنتمي لهذه الشركة');
 
-        const inMemory = WhatsAppManager.getSession(sessionId);
-        if (!inMemory) {
-            throw new Error('الجلسة غير متصلة حالياً. يرجى إعادة الاتصال.');
+        if (session.provider !== 'META_CLOUD') {
+            const inMemory = WhatsAppManager.getSession(sessionId);
+            if (!inMemory) {
+                throw new Error('الجلسة غير متصلة حالياً. يرجى إعادة الاتصال.');
+            }
         }
 
         return sessionId;
@@ -181,9 +183,11 @@ const resolveActiveSessionId = async (companyId, sessionId) => {
         throw new Error('لا توجد جلسة نشطة متاحة. يرجى التأكد من ربط حساب واحد على الأقل.');
     }
 
-    const inMemory = WhatsAppManager.getSession(activeSession.id);
-    if (!inMemory) {
-        throw new Error('الجلسة غير متصلة حالياً. يرجى إعادة الاتصال.');
+    if (activeSession.provider !== 'META_CLOUD') {
+        const inMemory = WhatsAppManager.getSession(activeSession.id);
+        if (!inMemory) {
+            throw new Error('الجلسة غير متصلة حالياً. يرجى إعادة الاتصال.');
+        }
     }
 
     return activeSession.id;

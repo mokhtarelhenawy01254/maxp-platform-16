@@ -26,6 +26,7 @@ const {
     getConversationAudience
 } = require('../whatsappRealtimeAudienceService');
 const telegramAlertService = require('../telegramAlertService');
+const MetaCloudProvider = require('./providers/MetaCloudProvider');
 const getIO = () => socketService.getIO();
 
 // Dynamic import for Baileys
@@ -3480,13 +3481,23 @@ async function updateProfilePicture(sessionId, jid, content) {
  * التحقق من وجود الرقم على واتساب
  */
 async function onWhatsApp(sessionId, number) {
+    const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({
+        where: { id: sessionId },
+        select: { provider: true }
+    });
+
+    if (dbSession?.provider === 'META_CLOUD') {
+        const { phoneNumber } = normalizeWhatsAppContactIdentity(number);
+        const results = await MetaCloudProvider.checkContact(sessionId, phoneNumber);
+        const entry = results.find(r => r.status === 'valid') || null;
+        return entry ? { jid: entry.wa_id, exists: true } : null;
+    }
+
     const session = getSession(sessionId);
     if (!session) throw new Error('Session not found');
 
-    // Normalize number using our utility
     const { phoneNumber } = normalizeWhatsAppContactIdentity(number);
 
-    // Check if session is connected
     if (session.status !== 'connected' || !session.sock) {
         throw new Error('الجلسة غير متصلة. يرجى التأكد من ربط الحساب أولاً.');
     }
@@ -3503,7 +3514,6 @@ async function onWhatsApp(sessionId, number) {
     } catch (error) {
         console.error('❌ Error checking number on WhatsApp:', error);
         
-        // If it's a "not-authorized" or session error, provide a better message
         if (error.message?.includes('not-authorized') || error.message?.includes('closed')) {
             throw new Error('انتهت صلاحية الجلسة أو تم فصلها. يرجى إعادة الاتصال.');
         }
