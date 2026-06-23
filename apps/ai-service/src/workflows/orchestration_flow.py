@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import time
+from contextlib import suppress
 from typing import Any
 
 import structlog
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from agent_framework.a2a import A2AAgent
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.agents.ceo import create_ceo_agent, create_channel_agent
 from src.config import get_settings
@@ -17,13 +17,12 @@ from src.pipeline.runner import execute_pipeline
 from src.pipeline.stages.execute_tools import execute_tools
 from src.pipeline.stages.handle_fallback import handle_fallback
 from src.pipeline.stages.resolve_intent import resolve_intent
-from src.pipeline.stages.retrieve_knowledge import retrieve_knowledge
 from src.pipeline.stages.route_to_tools import route_to_tools
 from src.pipeline.stages.validate_reply import validate_reply
-from src.services.agent_manager_service import get_agent_manager_service
-from src.services.agent_registry import get_agent_registry
 from src.services.a2a_bridge import AGENT_CARD_META
 from src.services.agent_feedback import AgentFeedbackTracker
+from src.services.agent_manager_service import get_agent_manager_service
+from src.services.agent_registry import get_agent_registry
 from src.services.memory_router import get_ceo_lessons
 from src.services.run_state_manager import RunStateManager
 from src.tools.registry import get_tool_names_for_role
@@ -42,6 +41,7 @@ async def run_orchestration(
     is_merchant: bool = False,
     channel: str | None = None,
     memory_context: dict[str, Any] | None = None,
+    conversation_id: str | None = None,
 ) -> dict[str, Any]:
     settings = get_settings()
     effective_channel = channel or ("merchant" if is_merchant else "chat")
@@ -190,10 +190,8 @@ async def run_orchestration(
 
         ceo_lessons = ""
         if session:
-            try:
+            with suppress(Exception):
                 ceo_lessons = await get_ceo_lessons(company_id, session, message)
-            except Exception:
-                pass
         if ceo_lessons:
             existing = external_context.get("ceo_lessons", "")
             external_context["ceo_lessons"] = existing + ceo_lessons
@@ -206,6 +204,7 @@ async def run_orchestration(
             agent=ceo_agent,
             session=session,
             channel=effective_channel,
+            conversation_id=conversation_id,
             external_memory_context=external_context,
         )
 

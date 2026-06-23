@@ -110,6 +110,24 @@ async def test_context_assembler_fetch_message_history():
 
 
 @pytest.mark.asyncio
+async def test_context_assembler_uses_conversation_id_for_message_history():
+    ctx = MagicMock(spec=PipelineContext)
+    ctx.thread_id = "9a8f8cc4-2c75-4bde-8f54-f7f562502e57"
+    ctx.conversation_id = "cmqodplse007dju4hdnz1shav"
+    ctx.external_memory_context = {}
+    ctx.session = AsyncMock(spec=AsyncSession)
+
+    mock_result = MagicMock()
+    mock_result.fetchall.return_value = [("مصاريف الشحن كام ؟", True, "TEXT")]
+    ctx.session.execute.return_value = mock_result
+
+    history = await ContextAssembler().fetch_message_history(ctx)
+
+    assert history == [{"role": "user", "content": "مصاريف الشحن كام ؟"}]
+    assert ctx.session.execute.await_args.args[1]["conversation_id"] == "cmqodplse007dju4hdnz1shav"
+
+
+@pytest.mark.asyncio
 async def test_context_assembler_dedupes_adjacent_duplicate_history():
     ctx = MagicMock(spec=PipelineContext)
     ctx.thread_id = "conv_123"

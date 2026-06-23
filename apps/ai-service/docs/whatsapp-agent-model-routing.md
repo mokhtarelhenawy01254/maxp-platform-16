@@ -28,3 +28,10 @@ hydrates recent message history before routing, excluding the current user turn
 when it was already persisted. The context assembler also collapses adjacent
 duplicate role/content pairs created by WhatsApp sync echoes before sending
 history to the model.
+
+WhatsApp callers pass the unified inbox conversation id as `thread_id`. That id
+is not always a UUID, while the ai-service chat endpoint stores its own internal
+UUID thread. The original conversation id is now forwarded separately into the
+pipeline as `conversation_id`, and context assembly reads `public.messages` with
+that value before falling back to the internal thread id. This keeps customer
+follow-ups attached to the visible inbox history.

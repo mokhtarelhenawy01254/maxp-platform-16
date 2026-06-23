@@ -164,6 +164,7 @@ async def chat(
             session=session,
             channel=channel,
             memory_context=body.memory_context,
+            conversation_id=body.thread_id,
         )
 
         reply = sanitize_model_reply(outcome.get("reply", ""))
@@ -275,6 +276,7 @@ async def chat_merchant(
             customer_id=customer_id,
             session=session,
             is_merchant=True,
+            conversation_id=body.thread_id,
         )
 
         reply = sanitize_model_reply(outcome.get("reply", ""))

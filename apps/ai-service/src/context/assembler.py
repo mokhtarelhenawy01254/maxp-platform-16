@@ -97,7 +97,8 @@ class ContextAssembler:
             if history_messages:
                 return self._dedupe_adjacent_messages(history_messages)
 
-        if not ctx.thread_id or not ctx.session:
+        lookup_id = ctx.conversation_id or ctx.thread_id
+        if not lookup_id or not ctx.session:
             return []
 
         history_messages = []
@@ -109,7 +110,7 @@ class ContextAssembler:
             )
             result = await ctx.session.execute(
                 query,
-                {"conversation_id": ctx.thread_id, "limit": limit}
+                {"conversation_id": lookup_id, "limit": limit}
             )
             rows = result.fetchall()
 

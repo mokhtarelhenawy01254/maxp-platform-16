@@ -125,6 +125,46 @@ def test_chat_valid_request(client, mock_session):
     uuid.UUID(data["thread_id"])
 
 
+def test_chat_passes_original_thread_id_as_conversation_id(client, mock_session):
+    conversation_id = "cmqodplse007dju4hdnz1shav"
+    mock_session.execute.return_value = MagicMock(
+        scalar_one_or_none=MagicMock(return_value=None)
+    )
+
+    import src.api.chat as chat_module
+
+    original = chat_module.run_orchestration
+    run_mock = AsyncMock(
+        return_value={
+            "reply": "تمام، هراجع مصاريف الشحن.",
+            "thread_id": "internal-thread",
+        }
+    )
+    chat_module.run_orchestration = run_mock
+
+    try:
+        resp = client.post(
+            "/chat",
+            json={
+                "message": "لقيت ايه ؟",
+                "thread_id": conversation_id,
+                "channel": "WHATSAPP",
+            },
+            headers={
+                "X-Company-Id": "comp1",
+                "X-Customer-Id": "cust1",
+                "Authorization": "Bearer test-service-token",
+            },
+        )
+    finally:
+        chat_module.run_orchestration = original
+
+    assert resp.status_code == 200
+    assert run_mock.await_args.kwargs["conversation_id"] == conversation_id
+    assert run_mock.await_args.kwargs["channel"] == "WHATSAPP"
+    uuid.UUID(run_mock.await_args.kwargs["thread_id"])
+
+
 def test_chat_strips_internal_thought_markers(client, mock_session):
     mock_session.execute.return_value = MagicMock(
         scalar_one_or_none=MagicMock(return_value=None)
@@ -232,7 +272,7 @@ def test_chat_passes_sdk_approval_id_to_draft(client, mock_session):
     import src.api.chat as chat_module
 
     original_run = chat_module.run_orchestration
-    original_create = chat_module.create_approval_draft
+    original_service = chat_module.ApprovalService
     chat_module.run_orchestration = AsyncMock(
         return_value={
             "reply": "approval needed",
@@ -248,10 +288,9 @@ def test_chat_passes_sdk_approval_id_to_draft(client, mock_session):
             ],
         }
     )
-    create_mock = AsyncMock(
-        return_value={"draft_id": "draft_123", "status": "pending"}
-    )
-    chat_module.create_approval_draft = create_mock
+    service_mock = MagicMock()
+    service_mock.request_approval = AsyncMock(return_value={"draft_id": "draft_123", "status": "pending"})
+    chat_module.ApprovalService = MagicMock(return_value=service_mock)
 
     try:
         resp = client.post(
@@ -265,8 +304,8 @@ def test_chat_passes_sdk_approval_id_to_draft(client, mock_session):
         )
     finally:
         chat_module.run_orchestration = original_run
-        chat_module.create_approval_draft = original_create
+        chat_module.ApprovalService = original_service
 
     assert resp.status_code == 200
     assert resp.json()["status"] == "awaiting_approval"
-    assert create_mock.await_args.kwargs["sdk_approval_id"] == "call-1"
+    assert service_mock.request_approval.await_args.kwargs["sdk_approval_id"] == "call-1"
