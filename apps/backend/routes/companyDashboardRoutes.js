@@ -12,12 +12,6 @@ router.get('/settings', verifyToken.authenticateToken, verifyToken.requireCompan
 
 router.put('/settings', verifyToken.authenticateToken, verifyToken.requireRole(['COMPANY_ADMIN', 'OWNER']), companyDashboardController.updateCompanySettings)
 
-// ==================== PLAN LIMITS ROUTES ====================
-
-router.get('/limits', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, companyDashboardController.checkPlanLimits)
-
-router.post('/limits/check', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, companyDashboardController.checkSpecificLimit)
-router.post('/limits/check-multiple', verifyToken.authenticateToken, verifyToken.requireCompanyAccess, companyDashboardController.checkMultipleLimits)
 
 // ==================== COMPANY LINKS ROUTES ====================
 
