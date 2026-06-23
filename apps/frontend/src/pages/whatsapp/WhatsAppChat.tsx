@@ -1155,7 +1155,7 @@ const WhatsAppChatContent: React.FC = () => {
       toast.success(contact.isPinned ? 'تم إلغاء التثبيت' : 'تم التثبيت');
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
     } catch (error) {
-      toast.error('� شل تحديث حالة التثبيت');
+      toast.error('فشل تحديث حالة التثبيت');
     }
   };
 
@@ -1170,7 +1170,7 @@ const WhatsAppChatContent: React.FC = () => {
       toast.success(contact.isMuted ? 'تم إلغاء كتم الصوت' : 'تم كتم الصوت');
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
     } catch (error) {
-      toast.error('� شل تحديث حالة كتم الصوت');
+      toast.error('فشل تحديث حالة كتم الصوت');
     }
   };
 
@@ -1181,7 +1181,7 @@ const WhatsAppChatContent: React.FC = () => {
       toast.success('تم تحديد المحادثة كغير مقروءة');
       queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
     } catch (error) {
-      toast.error('� شل تحديد حالة القراءة');
+      toast.error('فشل تحديد حالة القراءة');
     }
   };
 
@@ -1201,13 +1201,13 @@ const WhatsAppChatContent: React.FC = () => {
       setSelectedContactsForForward([]);
       setSelectedMessageForMenu(null);
     } catch (error) {
-      toast.error('� شل إعادة توجيه الرسالة');
+      toast.error('فشل إعادة توجيه الرسالة');
     }
   };
 
   const handleDeleteMessage = async () => {
     if (!selectedSession || !selectedMessageForMenu || !selectedContact) return;
-    if (!window.confirm('هل أنت متأكد من حذ�  هذه الرسالة؟')) return;
+    if (!window.confirm('هل أنت متأكد من حذف هذه الرسالة؟')) return;
 
     try {
       await api.delete(`/whatsapp/messages/${selectedMessageForMenu.messageId}`, {
@@ -1217,7 +1217,7 @@ const WhatsAppChatContent: React.FC = () => {
           fromMe: selectedMessageForMenu.fromMe
         }
       });
-      toast.success('تم حذ�  الرسالة');
+      toast.success('تم حذف الرسالة');
 
       // Update messages cache
       queryClient.setQueryData<MessagesCache>(['whatsapp', 'messages', selectedContact.jid, targetSessionId], old => {
@@ -1232,7 +1232,7 @@ const WhatsAppChatContent: React.FC = () => {
       setMessageContextMenu(null);
       setSelectedMessageForMenu(null);
     } catch (error) {
-      toast.error('� شل حذ�  الرسالة');
+      toast.error('فشل حذف الرسالة');
     }
   };
 
@@ -1365,13 +1365,13 @@ const WhatsAppChatContent: React.FC = () => {
         emoji
       });
       setShowReactionPicker(null);
-      toast.success('تم إرسال الت� اعل');
+      toast.success('تم إرسال التفاعل');
     } catch (error) {
-      toast.error('� شل إرسال الت� اعل');
+      toast.error('فشل إرسال التفاعل');
     }
   };
 
-  const commonReactions = ['� ', '� �� ', '😂', '😮', '😢', '� '];
+  const commonReactions = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
   // ==================== Star Messages ====================
   const handleStarMessage = async (message: Message) => {
@@ -1389,7 +1389,7 @@ const WhatsAppChatContent: React.FC = () => {
       toast.success('تم تمييز الرسالة بنجمة');
       setMessageContextMenu(null);
     } catch (error) {
-      toast.error('� شل تمييز الرسالة');
+      toast.error('فشل تمييز الرسالة');
     }
   };
 
@@ -1408,7 +1408,7 @@ const WhatsAppChatContent: React.FC = () => {
       toast.success('تم إلغاء تمييز الرسالة');
       setMessageContextMenu(null);
     } catch (error) {
-      toast.error('� شل إلغاء تمييز الرسالة');
+      toast.error('فشل إلغاء تمييز الرسالة');
     }
   };
 
@@ -1431,11 +1431,11 @@ const WhatsAppChatContent: React.FC = () => {
         jid: selectedContactForLabel.jid,
         labelId
       });
-      toast.success('تم إضا� ة العلامة للمحادثة');
+      toast.success('تم إضافة العلامة للمحادثة');
       setLabelDialogOpen(false);
       setSelectedContactForLabel(null);
     } catch (error) {
-      toast.error('� شل إضا� ة العلامة');
+      toast.error('فشل إضافة العلامة');
     }
   };
 
@@ -1445,7 +1445,7 @@ const WhatsAppChatContent: React.FC = () => {
     const targetSessionId = selectedContact.sessionId || selectedSession;
     const validOptions = pollData.options.filter(o => o.trim());
     if (validOptions.length < 2) {
-      toast.warning('يجب إضا� ة خيارين على الأقل');
+      toast.warning('يجب إضافة خيارين على الأقل');
       return;
     }
     try {
@@ -1462,7 +1462,7 @@ const WhatsAppChatContent: React.FC = () => {
       setPollDialogOpen(false);
       setPollData({ question: '', options: ['', ''], selectableCount: 1 });
     } catch (error) {
-      toast.error('� شل إرسال الاستطلاع');
+      toast.error('فشل إرسال الاستطلاع');
     }
   };
 
@@ -1472,7 +1472,7 @@ const WhatsAppChatContent: React.FC = () => {
     const targetSessionId = selectedContact.sessionId || selectedSession;
     const validButtons = buttonsData.buttons.filter(b => b.text.trim());
     if (validButtons.length === 0 || validButtons.length > 3) {
-      toast.warning('يجب إضا� ة 1-3 أزرار');
+      toast.warning('يجب إضافة 1-3 أزرار');
       return;
     }
     try {
@@ -1487,7 +1487,7 @@ const WhatsAppChatContent: React.FC = () => {
       setButtonsDialogOpen(false);
       setButtonsData({ text: '', footer: '', buttons: [{ id: '1', text: '' }] });
     } catch (error) {
-      toast.error('� شل إرسال الرسالة');
+      toast.error('فشل إرسال الرسالة');
     }
   };
 
@@ -1515,7 +1515,7 @@ const WhatsAppChatContent: React.FC = () => {
       setListDialogOpen(false);
       setListData({ text: '', buttonText: 'اختر', title: '', sections: [{ title: 'القسم 1', rows: [{ id: '1', title: '', description: '' }] }] });
     } catch (error) {
-      toast.error('� شل إرسال القائمة');
+      toast.error('فشل إرسال القائمة');
     }
   };
 
@@ -1551,7 +1551,7 @@ const WhatsAppChatContent: React.FC = () => {
       toast.success('تم إرسال المنتج');
       setCatalogDialogOpen(false);
     } catch (error) {
-      toast.error('� شل إرسال المنتج');
+      toast.error('فشل إرسال المنتج');
     }
   };
 
@@ -1566,7 +1566,7 @@ const WhatsAppChatContent: React.FC = () => {
       setStarredMessages(res.data.messages || []);
       setStarredMessagesOpen(true);
     } catch (error) {
-      toast.error('� شل تحميل الرسائل المميزة');
+      toast.error('فشل تحميل الرسائل المميزة');
     }
   };
 
@@ -1583,11 +1583,11 @@ const WhatsAppChatContent: React.FC = () => {
           toast.success('تم تحديد موقعك الحالي');
         },
         (error) => {
-          toast.error('� شل تحديد الموقع: ' + error.message);
+          toast.error('فشل تحديد الموقع: ' + error.message);
         }
       );
     } else {
-      toast.error('المتص� ح لا يدعم تحديد الموقع');
+      toast.error('المتصفح لا يدعم تحديد الموقع');
     }
   };
 
@@ -1614,7 +1614,7 @@ const WhatsAppChatContent: React.FC = () => {
   };
 
   const handleBlockContact = async (contact: Contact) => {
-    if (!window.confirm(`GD #F* E*#C/ EF -81 ${getContactName(contact)}`)) return;
+    if (!window.confirm(`هل أنت متأكد من حظر ${getContactName(contact)}؟`)) return;
     try {
       await api.post('/whatsapp/contacts/block', { sessionId: contact.sessionId || selectedSession, jid: contact.jid });
       toast.success('تم حظر جهة الاتصال');
@@ -1761,7 +1761,7 @@ const WhatsAppChatContent: React.FC = () => {
 
   return (
     <div className="whatsapp-theme-transition flex h-[calc(100dvh-6rem)] min-h-[34rem] flex-col overflow-hidden sm:h-[calc(100dvh-7rem)] sm:min-h-[38rem] lg:h-[calc(100dvh-7.5rem)] lg:min-h-[40rem]">
-      <h1 className="sr-only">DH-) *4:JD H'*3'(</h1>
+      <h1 className="sr-only">لوحة تشغيل واتساب</h1>
       <div className="whatsapp-theme-transition flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] shadow-lg xl:flex-row">
       {/* Sidebar */}
       <ChatSidebar
@@ -1773,7 +1773,7 @@ const WhatsAppChatContent: React.FC = () => {
         selectedContact={selectedContact}
         currentUserProfile={currentUserProfile}
         isLoadingConversations={loadingConversations}
-        isLoadingMoreConversations={isLoadingMoreConversations}
+        isLoadingMoreConversations={loadingMoreConversations}
         hasMoreConversations={hasMoreConversations}
         isLoadingStatuses={loadingStatuses}
         onSelectSession={setSelectedSession}
@@ -1909,7 +1909,7 @@ const WhatsAppChatContent: React.FC = () => {
               className="flex w-full items-center gap-2 rounded-[18px] px-3 py-2 text-sm text-[color:var(--color-foreground)] transition-colors hover:bg-[color:var(--shell-control-hover)]"
             >
               <Reply className="size-4" />
-              <span>1/</span>
+              <span>رد</span>
             </button>
             <button
               type="button"
@@ -1917,7 +1917,7 @@ const WhatsAppChatContent: React.FC = () => {
               className="flex w-full items-center gap-2 rounded-[18px] px-3 py-2 text-sm text-[color:var(--color-foreground)] transition-colors hover:bg-[color:var(--shell-control-hover)]"
             >
               <Copy className="size-4" />
-              <span>F3.</span>
+              <span>نسخ</span>
             </button>
             <button
               type="button"
@@ -1929,7 +1929,7 @@ const WhatsAppChatContent: React.FC = () => {
               className="flex w-full items-center gap-2 rounded-[18px] px-3 py-2 text-sm text-[color:var(--color-foreground)] transition-colors hover:bg-[color:var(--shell-control-hover)]"
             >
               <Forward className="size-4" />
-              <span>%9'/) *H,JG</span>
+              <span>إعادة توجيه</span>
             </button>
             <button
               type="button"
@@ -1941,7 +1941,7 @@ const WhatsAppChatContent: React.FC = () => {
               className="flex w-full items-center gap-2 rounded-[18px] px-3 py-2 text-sm text-[color:var(--color-foreground)] transition-colors hover:bg-[color:var(--shell-control-hover)]"
             >
               <Star className="size-4" />
-              <span>*EJJ2 (F,E)</span>
+              <span>تمييز بنجمة</span>
             </button>
             {selectedMessageForMenu?.fromMe ? (
               <button
@@ -1950,7 +1950,7 @@ const WhatsAppChatContent: React.FC = () => {
                 className="flex w-full items-center gap-2 rounded-[18px] px-3 py-2 text-sm text-rose-600 transition-colors hover:bg-rose-500/10"
               >
                 <Trash2 className="size-4" />
-                <span>-0A DD,EJ9</span>
+                <span>حذفف للجميع</span>
               </button>
             ) : null}
           </div>
@@ -1972,10 +1972,10 @@ const WhatsAppChatContent: React.FC = () => {
         >
           <UiDialogHeader className="border-b border-[color:var(--shell-control-border)] px-6 py-5">
             <UiDialogTitle className="text-lg text-[color:var(--color-foreground)]">
-              %9'/) *H,JG 'D13'D) %DI...
+              إعادة توجيه الرسالة إلى...
             </UiDialogTitle>
             <UiDialogDescription>
-              '.*1 E-'/+) #H #C+1 D%13'D FA3 'D13'D) (/HF A*- F'A0) ,/J/).
+              اختر محادثة أو أكثر لإرسال نفس الرسالة بدون فتح نافذة جديدة.
             </UiDialogDescription>
           </UiDialogHeader>
 
@@ -2034,13 +2034,13 @@ const WhatsAppChatContent: React.FC = () => {
                 setSelectedContactsForForward([]);
               }}
             >
-              %D:'!
+              إلغاء
             </UiButton>
             <UiButton
               onClick={handleForwardMessage}
               disabled={selectedContactsForForward.length === 0}
             >
-              %13'D ({selectedContactsForForward.length})
+              إرسال ({selectedContactsForForward.length})
             </UiButton>
           </UiDialogFooter>
         </UiDialogContent>
@@ -2073,7 +2073,7 @@ const WhatsAppChatContent: React.FC = () => {
                       {selectedContactName}
                     </UiSheetTitle>
                     <UiSheetDescription className="sr-only">
-                      1BE H'*3'( {selectedContactPhoneLabel}
+                      رقم واتساب {selectedContactPhoneLabel}
                     </UiSheetDescription>
                     {selectedContactPhoneLabel ? (
                       <a
@@ -2095,7 +2095,7 @@ const WhatsAppChatContent: React.FC = () => {
                     type="button"
                     className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-3 text-sm font-medium text-[color:var(--color-foreground)] transition-colors hover:bg-[var(--whatsapp-surface-hover)]"
                   >
-                    <span>'DH3'&7 H'D1H'(7 H'DE3*F/'*</span>
+                    <span>الوسائط والروابط والمستندات</span>
                     <span className="rounded-full bg-black/5 px-2 py-0.5 text-xs text-[color:var(--color-muted-foreground)]">
                       0
                     </span>
@@ -2106,7 +2106,7 @@ const WhatsAppChatContent: React.FC = () => {
                     onClick={loadStarredMessages}
                     className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-3 text-sm font-medium text-[color:var(--color-foreground)] transition-colors hover:bg-[var(--whatsapp-surface-hover)]"
                   >
-                    <span>'D13'&D 'DEEJ2) (F,E)</span>
+                    <span>الرسائل المميزة بنجمة</span>
                     <Star className="size-4 text-amber-500" />
                   </button>
                   <div className="h-px bg-[color:var(--shell-control-border)]" />
@@ -2115,9 +2115,9 @@ const WhatsAppChatContent: React.FC = () => {
                     onClick={() => handleMuteChat(selectedContact)}
                     className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-3 text-sm font-medium text-[color:var(--color-foreground)] transition-colors hover:bg-[var(--whatsapp-surface-hover)]"
                   >
-                    <span>C*E 'D%49'1'*</span>
+                    <span>كتم الإشعارات</span>
                     <span className="text-xs text-[color:var(--color-muted-foreground)]">
-                      {selectedContact.isMuted ? 'EA9D' : ':J1 EA9D'}
+                      {selectedContact.isMuted ? 'مفعل' : 'غير مفعل'}
                     </span>
                   </button>
                 </div>
@@ -2128,7 +2128,7 @@ const WhatsAppChatContent: React.FC = () => {
                     className="h-11 w-full justify-between rounded-[18px] bg-[var(--whatsapp-surface-strong)]"
                     onClick={() => handleClearChat(selectedContact)}
                   >
-                    <span>E3- 'DE-*HI</span>
+                    <span>مسح المحتوى</span>
                     <Trash2 className="size-4" />
                   </UiButton>
 
@@ -2140,7 +2140,7 @@ const WhatsAppChatContent: React.FC = () => {
                       setShowContactInfo(false);
                     }}
                   >
-                    <span>-0A 'DE-'/+)</span>
+                    <span>حذفف المحادثة</span>
                     <Trash2 className="size-4" />
                   </UiButton>
 
@@ -2150,7 +2150,7 @@ const WhatsAppChatContent: React.FC = () => {
                       className="h-11 w-full justify-between rounded-[18px] bg-[var(--whatsapp-surface-strong)]"
                       onClick={() => handleUnblockContact(selectedContact)}
                     >
-                      <span>%D:'! -81 {selectedContactName}</span>
+                      <span>إلغاء حظر {selectedContactName}</span>
                       <Check className="size-4 text-[color:var(--color-primary)]" />
                     </UiButton>
                   ) : (
@@ -2159,7 +2159,7 @@ const WhatsAppChatContent: React.FC = () => {
                       className="h-11 w-full justify-between rounded-[18px] border-rose-200 bg-rose-50/75 text-rose-600 hover:bg-rose-100/80 hover:text-rose-700"
                       onClick={() => handleBlockContact(selectedContact)}
                     >
-                      <span>-81 {selectedContactName}</span>
+                      <span>حظر {selectedContactName}</span>
                       <Ban className="size-4" />
                     </UiButton>
                   )}
@@ -2167,9 +2167,9 @@ const WhatsAppChatContent: React.FC = () => {
                   <UiButton
                     variant="outline"
                     className="h-11 w-full justify-between rounded-[18px] border-rose-200 bg-[var(--whatsapp-surface-strong)] text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                    onClick={() => toast.info('B1J('K')}
+                    onClick={() => toast.info('قريباً')}
                   >
-                    <span>'D%(D': 9F {selectedContactName}</span>
+                    <span>الإبلاغ عن {selectedContactName}</span>
                     <ShieldAlert className="size-4" />
                   </UiButton>
                 </div>
@@ -2254,17 +2254,17 @@ const WhatsAppChatContent: React.FC = () => {
           <UiDialogHeader className="border-b border-[color:var(--shell-control-border)] px-6 py-5">
             <UiDialogTitle className="flex items-center gap-2 text-lg text-[color:var(--color-foreground)]">
               <BarChart3 className="size-5 text-[color:var(--color-primary)]" />
-              %F4'! '3*7D'9
+              إنشاء استطلاع
             </UiDialogTitle>
             <UiDialogDescription>
-              'C*( 'D3$'D H-// 'D.J'1'* 'D*J 3J3*7J9 'D9EJD 'D'.*J'1 EFG'.
+              اكتب السؤال وحدد الخيارات التي سيستطيع العميل الاختيار منها.
             </UiDialogDescription>
           </UiDialogHeader>
 
           <div className="space-y-4 px-6 py-6">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-[color:var(--color-foreground)]">
-                'D3$'D
+                السؤال
               </label>
               <UiInput
                 value={pollData.question}
@@ -2276,17 +2276,17 @@ const WhatsAppChatContent: React.FC = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-semibold text-[color:var(--color-foreground)]">
-                  'D.J'1'*
+                  الخيارات
                 </label>
                 <span className="text-xs text-[color:var(--color-muted-foreground)]">
-                  {pollData.options.filter((option) => option.trim()).length} EC*ED
+                  {pollData.options.filter((option) => option.trim()).length} مكتمل
                 </span>
               </div>
               {pollData.options.map((option, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <UiInput
                     value={option}
-                    placeholder={`'D.J'1 ${index + 1}`}
+                    placeholder={`الخيار ${index + 1}`}
                     onChange={(e) => {
                       const newOptions = [...pollData.options];
                       newOptions[index] = e.target.value;
@@ -2316,14 +2316,14 @@ const WhatsAppChatContent: React.FC = () => {
                   onClick={() => setPollData((prev) => ({ ...prev, options: [...prev.options, ''] }))}
                 >
                   <PlusCircle className="size-4" />
-                  %6'A) .J'1
+                  إضافة خيار
                 </UiButton>
               ) : null}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-[color:var(--color-foreground)]">
-                9// 'D'.*J'1'* 'DE3EH- (G'
+                عدد الاختيارات المسموح بها
               </label>
               <UiSelect
                 value={String(pollData.selectableCount)}
@@ -2335,8 +2335,8 @@ const WhatsAppChatContent: React.FC = () => {
                   <UiSelectValue />
                 </UiSelectTrigger>
                 <UiSelectContent>
-                  <UiSelectItem value="1">'.*J'1 H'-/ AB7</UiSelectItem>
-                  <UiSelectItem value="0">'.*J'1'* E*9//)</UiSelectItem>
+                  <UiSelectItem value="1">اختيار واحد فقط</UiSelectItem>
+                  <UiSelectItem value="0">اختيارات متعددة</UiSelectItem>
                 </UiSelectContent>
               </UiSelect>
             </div>
@@ -2344,13 +2344,13 @@ const WhatsAppChatContent: React.FC = () => {
 
           <UiDialogFooter className="border-t border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)]">
             <UiButton variant="outline" onClick={() => setPollDialogOpen(false)}>
-              %D:'!
+              إلغاء
             </UiButton>
             <UiButton
               onClick={handleSendPoll}
               disabled={!pollData.question.trim() || pollData.options.filter((o) => o.trim()).length < 2}
             >
-              %13'D 'D'3*7D'9
+              إرسال الاستطلاع
             </UiButton>
           </UiDialogFooter>
         </UiDialogContent>
@@ -2363,7 +2363,7 @@ const WhatsAppChatContent: React.FC = () => {
           className="max-w-fit rounded-[28px] border border-[color:var(--shell-control-border)] bg-[var(--app-panel-bg)] p-4"
         >
           <UiDialogHeader className="pb-3 text-start">
-            <UiDialogTitle className="text-base">'.*1 *A'9D</UiDialogTitle>
+            <UiDialogTitle className="text-base">اختر تفاعل</UiDialogTitle>
           </UiDialogHeader>
           <EmojiPicker
             onEmojiClick={(data: EmojiClickData) => {
@@ -2384,14 +2384,14 @@ const WhatsAppChatContent: React.FC = () => {
           <UiDialogHeader className="border-b border-[color:var(--shell-control-border)] px-6 py-5">
             <UiDialogTitle className="flex items-center gap-2 text-lg text-[color:var(--color-foreground)]">
               <MousePointerSquare className="size-5 text-[color:var(--color-primary)]" />
-              %13'D 13'D) (#21'1
+              إرسال رسالة بأزرار
             </UiDialogTitle>
           </UiDialogHeader>
 
           <div className="space-y-4 px-6 py-6">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-[color:var(--color-foreground)]">
-                F5 'D13'D)
+                نص الرسالة
               </label>
               <UiTextarea
                 rows={4}
@@ -2403,30 +2403,30 @@ const WhatsAppChatContent: React.FC = () => {
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-[color:var(--color-foreground)]">
-                F5 'D*0JJD
+                نص التذييل
               </label>
               <UiInput
                 value={buttonsData.footer}
                 onChange={(e) => setButtonsData((prev) => ({ ...prev, footer: e.target.value }))}
                 className="h-11 rounded-[18px] bg-[var(--whatsapp-surface-strong)]"
-                placeholder="'.*J'1J"
+                placeholder="اختياري"
               />
             </div>
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-semibold text-[color:var(--color-foreground)]">
-                  'D#21'1
+                  الأزرار
                 </label>
                 <span className="text-xs text-[color:var(--color-muted-foreground)]">
-                  (-/ #B5I 3
+                  بحد أقصى 3
                 </span>
               </div>
               {buttonsData.buttons.map((button, index) => (
                 <div key={button.id} className="flex items-center gap-2">
                   <UiInput
                     value={button.text}
-                    placeholder={`'D21 ${index + 1}`}
+                    placeholder={`الزر ${index + 1}`}
                     onChange={(e) => {
                       const newButtons = [...buttonsData.buttons];
                       newButtons[index] = { ...button, text: e.target.value };
@@ -2463,7 +2463,7 @@ const WhatsAppChatContent: React.FC = () => {
                   }
                 >
                   <PlusCircle className="size-4" />
-                  %6'A) 21
+                  إضافة زر
                 </UiButton>
               ) : null}
             </div>
@@ -2471,10 +2471,10 @@ const WhatsAppChatContent: React.FC = () => {
 
           <UiDialogFooter className="border-t border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)]">
             <UiButton variant="outline" onClick={() => setButtonsDialogOpen(false)}>
-              %D:'!
+              إلغاء
             </UiButton>
             <UiButton onClick={handleSendButtons} disabled={!buttonsData.text.trim()}>
-              %13'D
+              إرسال
             </UiButton>
           </UiDialogFooter>
         </UiDialogContent>
@@ -2489,14 +2489,14 @@ const WhatsAppChatContent: React.FC = () => {
           <UiDialogHeader className="border-b border-[color:var(--shell-control-border)] px-6 py-5">
             <UiDialogTitle className="flex items-center gap-2 text-lg text-[color:var(--color-foreground)]">
               <ListIcon className="size-5 text-[color:var(--color-primary)]" />
-              %13'D 13'D) (B'&E)
+              إرسال رسالة بقائمة
             </UiDialogTitle>
           </UiDialogHeader>
 
           <div className="max-h-[70vh] space-y-4 overflow-y-auto px-6 py-6">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-[color:var(--color-foreground)]">
-                F5 'D13'D)
+                نص الرسالة
               </label>
               <UiTextarea
                 rows={3}
@@ -2509,7 +2509,7 @@ const WhatsAppChatContent: React.FC = () => {
             <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-[color:var(--color-foreground)]">
-                  9FH'F 'DB'&E)
+                  عنوان القائمة
                 </label>
                 <UiInput
                   value={listData.title}
@@ -2519,7 +2519,7 @@ const WhatsAppChatContent: React.FC = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-[color:var(--color-foreground)]">
-                  F5 'D21
+                  نص الزر
                 </label>
                 <UiInput
                   value={listData.buttonText}
@@ -2544,7 +2544,7 @@ const WhatsAppChatContent: React.FC = () => {
                         setListData((prev) => ({ ...prev, sections: newSections }));
                       }}
                       className="h-10 rounded-[16px] bg-[var(--whatsapp-surface-elevated)]"
-                      placeholder="9FH'F 'DB3E"
+                      placeholder="عنوان القسم"
                     />
                     {listData.sections.length > 1 ? (
                       <UiButton
@@ -2568,7 +2568,7 @@ const WhatsAppChatContent: React.FC = () => {
                       <div key={row.id} className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
                         <UiInput
                           value={row.title}
-                          placeholder="'D9FH'F"
+                          placeholder="العنوان"
                           onChange={(e) => {
                             const newSections = [...listData.sections];
                             if (newSections[sIndex]?.rows[rIndex]) {
@@ -2580,7 +2580,7 @@ const WhatsAppChatContent: React.FC = () => {
                         />
                         <UiInput
                           value={row.description}
-                          placeholder="'DH5A"
+                          placeholder="الوصف"
                           onChange={(e) => {
                             const newSections = [...listData.sections];
                             if (newSections[sIndex]?.rows[rIndex]) {
@@ -2624,7 +2624,7 @@ const WhatsAppChatContent: React.FC = () => {
                       }}
                     >
                       <PlusCircle className="size-4" />
-                      %6'A) 9F51
+                      إضافة عنصر
                     </UiButton>
                   </div>
                 </div>
@@ -2640,7 +2640,7 @@ const WhatsAppChatContent: React.FC = () => {
                     sections: [
                       ...prev.sections,
                       {
-                        title: `'DB3E ${prev.sections.length + 1}`,
+                        title: `القسم ${prev.sections.length + 1}`,
                         rows: [{ id: '1', title: '', description: '' }],
                       },
                     ],
@@ -2648,17 +2648,17 @@ const WhatsAppChatContent: React.FC = () => {
                 }
               >
                 <PlusCircle className="size-4" />
-                %6'A) B3E
+                إضافة قسم
               </UiButton>
             ) : null}
           </div>
 
           <UiDialogFooter className="border-t border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)]">
             <UiButton variant="outline" onClick={() => setListDialogOpen(false)}>
-              %D:'!
+              إلغاء
             </UiButton>
             <UiButton onClick={handleSendList} disabled={!listData.text.trim()}>
-              %13'D
+              إرسال
             </UiButton>
           </UiDialogFooter>
         </UiDialogContent>
@@ -2673,14 +2673,14 @@ const WhatsAppChatContent: React.FC = () => {
           <UiDialogHeader className="border-b border-[color:var(--shell-control-border)] px-6 py-5">
             <UiDialogTitle className="flex items-center gap-2 text-lg text-[color:var(--color-foreground)]">
               <Store className="size-5 text-[color:var(--color-primary)]" />
-              %13'D EF*,
+              إرسال منتج
             </UiDialogTitle>
           </UiDialogHeader>
 
           <div className="max-h-[70vh] overflow-y-auto px-6 py-6">
             {products.length === 0 ? (
               <div className="rounded-[24px] border border-dashed border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] px-4 py-10 text-center text-sm text-[color:var(--color-muted-foreground)]">
-                D' *H,/ EF*,'* AJ 'DC*'DH,.
+                لا توجد منتجات في الكتالوج.
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -2722,13 +2722,13 @@ const WhatsAppChatContent: React.FC = () => {
 
           <UiDialogFooter className="border-t border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)]">
             <UiButton variant="outline" onClick={() => setCatalogDialogOpen(false)}>
-              %D:'!
+              إلغاء
             </UiButton>
             <UiButton
               onClick={() => selectedProduct && handleSendProduct(selectedProduct)}
               disabled={!selectedProduct}
             >
-              %13'D 'DEF*,
+              إرسال المنتج
             </UiButton>
           </UiDialogFooter>
         </UiDialogContent>
@@ -2743,17 +2743,17 @@ const WhatsAppChatContent: React.FC = () => {
           <UiSheetHeader className="border-b border-[color:var(--shell-control-border)] px-6 py-6 text-start">
             <div className="flex items-center gap-2">
               <Star className="size-5 text-amber-500" />
-              <UiSheetTitle>'D13'&D 'DEEJ2)</UiSheetTitle>
+              <UiSheetTitle>الرسائل المميزة</UiSheetTitle>
             </div>
             <UiSheetDescription>
-              1',9 'D13'&D 'D*J *E *EJJ2G' /'.D 'DE-'/+) 'D-'DJ).
+              راجع الرسائل التي تم تمييزها داخل المحادثة الحالية.
             </UiSheetDescription>
           </UiSheetHeader>
 
           <div className="space-y-3 overflow-y-auto px-6 py-6">
             {starredMessages.length === 0 ? (
               <div className="rounded-[24px] border border-dashed border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] px-4 py-10 text-center text-sm text-[color:var(--color-muted-foreground)]">
-                D' *H,/ 13'&D EEJ2)
+                لا توجد رسائل مميزة
               </div>
             ) : (
               starredMessages.map((msg) => (
@@ -2807,18 +2807,18 @@ const WhatsAppChatContent: React.FC = () => {
           <UiDialogHeader className="border-b border-[color:var(--shell-control-border)] px-6 py-5">
             <UiDialogTitle className="flex items-center gap-2 text-lg text-[color:var(--color-foreground)]">
               <MapPin className="size-5 text-[color:var(--color-primary)]" />
-              %13'D EHB9
+              إرسال موقع
             </UiDialogTitle>
           </UiDialogHeader>
 
           <div className="space-y-4 px-6 py-6">
             <UiButton variant="outline" className="w-full justify-center" onClick={getCurrentLocation}>
               <MapPin className="size-4" />
-              '3*./'E EHB9J 'D-'DJ
+              استخدام موقعي الحالي
             </UiButton>
 
             <p className="text-sm font-semibold text-[color:var(--color-foreground)]">
-              #H #/.D 'D%-/'+J'* J/HJK'
+              أو أدخل الإحداثيات يدويًا
             </p>
 
             <div className="grid gap-3 md:grid-cols-2">
@@ -2828,7 +2828,7 @@ const WhatsAppChatContent: React.FC = () => {
                 value={locationData.latitude}
                 onChange={(e) => setLocationData((prev) => ({ ...prev, latitude: e.target.value }))}
                 className="h-11 rounded-[18px] bg-[var(--whatsapp-surface-strong)]"
-                placeholder=".7 'D916"
+                placeholder="خط العرض"
               />
               <UiInput
                 type="number"
@@ -2836,7 +2836,7 @@ const WhatsAppChatContent: React.FC = () => {
                 value={locationData.longitude}
                 onChange={(e) => setLocationData((prev) => ({ ...prev, longitude: e.target.value }))}
                 className="h-11 rounded-[18px] bg-[var(--whatsapp-surface-strong)]"
-                placeholder=".7 'D7HD"
+                placeholder="خط الطول"
               />
             </div>
 
@@ -2844,13 +2844,13 @@ const WhatsAppChatContent: React.FC = () => {
               value={locationData.address}
               onChange={(e) => setLocationData((prev) => ({ ...prev, address: e.target.value }))}
               className="h-11 rounded-[18px] bg-[var(--whatsapp-surface-strong)]"
-              placeholder="E+'D: 'DB'G1) E51"
+              placeholder="مثال: القاهرة، مصر"
             />
 
             {locationData.latitude && locationData.longitude ? (
               <div className="space-y-3 rounded-[24px] border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] p-4">
                 <p className="text-sm text-[color:var(--color-foreground)]">
-                  'DEHB9: {locationData.latitude}, {locationData.longitude}
+                  الموقع: {locationData.latitude}, {locationData.longitude}
                 </p>
                 <UiButton asChild variant="outline" size="sm">
                   <a
@@ -2858,7 +2858,7 @@ const WhatsAppChatContent: React.FC = () => {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    916 9DI 'D.1J7)
+                    عرض على الخريطة
                   </a>
                 </UiButton>
               </div>
@@ -2867,13 +2867,13 @@ const WhatsAppChatContent: React.FC = () => {
 
           <UiDialogFooter className="border-t border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)]">
             <UiButton variant="outline" onClick={() => setLocationDialogOpen(false)}>
-              %D:'!
+              إلغاء
             </UiButton>
             <UiButton
               onClick={handleSendLocation}
               disabled={!locationData.latitude || !locationData.longitude}
             >
-              %13'D 'DEHB9
+              إرسال الموقع
             </UiButton>
           </UiDialogFooter>
         </UiDialogContent>
@@ -2903,10 +2903,10 @@ const WhatsAppChatContent: React.FC = () => {
           <UiDialogHeader className="border-b border-[color:var(--shell-control-border)] px-6 py-5">
             <UiDialogTitle className="flex items-center gap-2 text-lg text-[color:var(--color-foreground)]">
               <PlusCircle className="size-5 text-[color:var(--color-primary)]" />
-              %6'A) -'D) ,/J/)
+              إضافة حالة جديدة
             </UiDialogTitle>
             <UiDialogDescription>
-              3*8G1 'D-'D) DE/) 24 3'9) +E *.*AJ *DB'&JK'.
+              ستظهر الحالة لمدة 24 ساعة ثم تختفي تلقائيًا.
             </UiDialogDescription>
           </UiDialogHeader>
 
@@ -2916,24 +2916,24 @@ const WhatsAppChatContent: React.FC = () => {
               rows={4}
               value={statusContent}
               onChange={(e) => setStatusContent(e.target.value)}
-              placeholder="E'0' J-/+"
+              placeholder="ماذا يحدث؟"
               className="rounded-[20px] bg-[var(--whatsapp-surface-strong)]"
             />
             <p className="text-xs text-[color:var(--color-muted-foreground)]">
-              'D-'D) 3*F*GJ (9/ 24 3'9).
+              الحالة ستنتهي بعد 24 ساعة.
             </p>
           </div>
 
           <UiDialogFooter className="border-t border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)]">
             <UiButton variant="outline" onClick={() => setStatusDialogOpen(false)}>
-              %D:'!
+              إلغاء
             </UiButton>
             <UiButton
               onClick={handlePostStatus}
               disabled={!statusContent.trim() || postingStatus}
             >
               {postingStatus ? <Loader2 className="size-4 animate-spin" /> : null}
-              F41
+              نشر
             </UiButton>
           </UiDialogFooter>
         </UiDialogContent>
