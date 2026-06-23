@@ -144,6 +144,39 @@ def _safe_list(value: object) -> list:
     return []
 
 
+def _normalized_channels(channels: object) -> set[str]:
+    return {str(channel).strip().lower() for channel in _safe_list(channels) if str(channel).strip()}
+
+
+async def _remove_claimed_channels_from_other_agents(
+    *,
+    session: AsyncSession,
+    company_id: str,
+    agent_id: str,
+    claimed_channels: object,
+) -> None:
+    claimed = _normalized_channels(claimed_channels)
+    if not claimed:
+        return
+
+    result = await session.execute(
+        select(AgentModel).where(
+            AgentModel.company_id == company_id,
+            AgentModel.id != agent_id,
+            AgentModel.status == "ACTIVE",
+        )
+    )
+    for other_agent in result.scalars().all():
+        current_channels = _safe_list(other_agent.channels)
+        next_channels = [
+            channel
+            for channel in current_channels
+            if str(channel).strip().lower() not in claimed
+        ]
+        if next_channels != current_channels:
+            other_agent.channels = next_channels
+
+
 def _agent_to_read(agent: AgentModel) -> AgentRead:
     dept = getattr(agent, 'department', None)
     skills_raw = getattr(agent, 'skills', None)
@@ -558,13 +591,13 @@ async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentC
         raise
     except Exception as e:
         logger.error("Failed to load chat agent", error=str(e))
-        raise HTTPException(status_code=500, detail=f"Failed to load agent: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to load agent: {e}") from e
 
     try:
         await agent.ensure_client()
     except Exception as e:
         logger.error("Failed to ensure client", error=str(e))
-        raise HTTPException(status_code=502, detail=f"LLM client error: {e}")
+        raise HTTPException(status_code=502, detail=f"LLM client error: {e}") from e
 
     thread_id = body.thread_id or f"agent-chat-{uuid.uuid4()}"
     requested_provider = getattr(getattr(agent, "config", None), "provider", None)
@@ -594,7 +627,7 @@ async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentC
         )
     except Exception as e:
         logger.error("Agent process_task failed", error=str(e))
-        raise HTTPException(status_code=502, detail=f"Agent processing failed: {e}")
+        raise HTTPException(status_code=502, detail=f"Agent processing failed: {e}") from e
 
     result_data = result if isinstance(result, dict) else {}
     payload = result_data.get("result", {}) if isinstance(result_data, dict) else {}
@@ -1024,6 +1057,12 @@ async def update_agent(
         agent.allowed_skills = body.allowed_skills
     if body.allowed_channels is not None:
         agent.channels = body.allowed_channels
+        await _remove_claimed_channels_from_other_agents(
+            session=session,
+            company_id=agent.company_id,
+            agent_id=agent.id,
+            claimed_channels=body.allowed_channels,
+        )
     persona = dict(agent.persona or {})
     persona_changed = False
     if body.persona is not None:

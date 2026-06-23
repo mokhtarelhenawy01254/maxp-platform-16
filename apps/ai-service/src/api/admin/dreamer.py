@@ -69,6 +69,13 @@ def _build_prompt(conversations: list[dict], consolidation_type: str) -> str:
     return SUMMARY_PROMPT_TEMPLATE.format(conversations=conversations_json)
 
 
+def _normalize_consolidation_type(consolidation_type: str) -> str:
+    normalized = consolidation_type.strip().lower()
+    if normalized in {"fact_extraction", "fact-extraction", "facts_extraction"}:
+        return "facts"
+    return normalized
+
+
 def _extract_json(text: str) -> dict[str, Any] | None:
     if not text:
         return None
@@ -96,7 +103,7 @@ async def consolidate_conversations(body: DreamerRequest) -> DreamerResponse:
     if not body.conversations:
         raise HTTPException(status_code=400, detail="At least one conversation is required")
 
-    consolidation_type = body.consolidation_type.strip().lower()
+    consolidation_type = _normalize_consolidation_type(body.consolidation_type)
     if consolidation_type not in {"summary", "facts"}:
         raise HTTPException(status_code=400, detail="consolidation_type must be 'summary' or 'facts'")
 

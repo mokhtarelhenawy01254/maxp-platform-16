@@ -8,8 +8,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import get_settings
-from src.db.session import get_session
 from src.db.models.agent import Agent, AgentTemplate
+from src.db.session import get_session
 
 
 def _create_test_app(mock_session: AsyncMock) -> FastAPI:
@@ -118,7 +118,7 @@ def setup_execute_mock(mock_session, template_return=None, agent_return=None, li
 def test_list_agents(client, mock_session, valid_headers):
     agent1 = _make_mock_agent(agent_id="agent_1")
     agent2 = _make_mock_agent(agent_id="agent_2")
-    
+
     setup_execute_mock(mock_session, list_agents_return=[agent1, agent2])
 
     resp = client.get("/admin/agents", headers=valid_headers)
@@ -249,6 +249,34 @@ def test_update_agent_success(client, mock_session, valid_headers):
     assert data["persona"]["personaInstructions"] == "Speak in Egyptian Arabic"
     assert data["allowed_tools"] == ["custom_tool"]
     assert data["config"] == {"provider": "ANTHROPIC", "keyId": "key_claude"}
+
+
+def test_update_agent_channels_removes_channel_from_other_active_agents(
+    client, mock_session, valid_headers
+):
+    target = _make_mock_agent(agent_id="agent_target", company_id="comp_123", role="SALES")
+    target.channels = ["DASHBOARD"]
+    other_one = _make_mock_agent(agent_id="agent_other_1", company_id="comp_123", role="SALES")
+    other_one.channels = ["WHATSAPP", "DASHBOARD"]
+    other_two = _make_mock_agent(agent_id="agent_other_2", company_id="comp_123", role="SUPPORT")
+    other_two.channels = ["whatsapp", "MESSENGER"]
+
+    get_result = MagicMock()
+    get_result.scalar_one_or_none.return_value = target
+    list_result = MagicMock()
+    list_result.scalars.return_value.all.return_value = [other_one, other_two]
+    mock_session.execute.side_effect = [get_result, list_result]
+
+    resp = client.put(
+        "/admin/agents/agent_target?company_id=comp_123",
+        json={"allowed_channels": ["WHATSAPP", "DASHBOARD"]},
+        headers=valid_headers,
+    )
+
+    assert resp.status_code == 200
+    assert target.channels == ["WHATSAPP", "DASHBOARD"]
+    assert other_one.channels == []
+    assert other_two.channels == ["MESSENGER"]
 
 
 def test_archive_agent(client, mock_session, valid_headers):

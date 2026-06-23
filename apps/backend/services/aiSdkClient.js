@@ -22,6 +22,72 @@ function normalizeAiServiceResponse(payload = {}) {
   };
 }
 
+function normalizeDreamerConsolidationType(consolidationType) {
+  const normalized = String(consolidationType || 'facts').trim().toLowerCase();
+  if (['fact_extraction', 'fact-extraction', 'facts_extraction'].includes(normalized)) {
+    return 'facts';
+  }
+  return normalized;
+}
+
+function normalizeDreamerFact(fact) {
+  if (typeof fact === 'string') {
+    return {
+      type: 'FACT',
+      content: fact,
+      confidence: 0.8,
+      metadata: { source: 'AI_DREAMER' },
+    };
+  }
+
+  if (!fact || typeof fact !== 'object') return null;
+
+  const content = fact.content || fact.statement || fact.fact || fact.value;
+  if (!content) return null;
+
+  return {
+    type: fact.type || 'FACT',
+    content: String(content),
+    confidence: typeof fact.confidence === 'number' ? fact.confidence : 0.8,
+    metadata: fact.metadata || { source: 'AI_DREAMER' },
+  };
+}
+
+function normalizeDreamerResponse(payload = {}, conversations = []) {
+  if (!payload || typeof payload !== 'object') return payload;
+  if (Array.isArray(payload.results)) return payload;
+
+  const rows = Array.isArray(payload.result?.conversations)
+    ? payload.result.conversations
+    : [];
+
+  return {
+    ...payload,
+    results: rows.map((row = {}, index) => {
+      const entities = Array.isArray(row.entities) ? row.entities : [];
+      const keyTopics = row.keyTopics || row.key_points || entities
+        .map(entity => entity?.name || entity?.value)
+        .filter(Boolean);
+
+      return {
+        conversation_id: row.conversation_id
+          || row.conversationId
+          || conversations[index]?.conversation_id
+          || conversations[index]?.conversationId
+          || null,
+        facts: (Array.isArray(row.facts) ? row.facts : [])
+          .map(normalizeDreamerFact)
+          .filter(Boolean),
+        summary: row.summary || '',
+        keyTopics,
+        sentiment: row.sentiment || 'NEUTRAL',
+        actions: Array.isArray(row.actions) ? row.actions : [],
+        entities,
+      };
+    }),
+  };
+}
+
 /**
  * Send a chat message - uses external AI service.
  * @param {Object} params
@@ -140,7 +206,7 @@ async function listApprovals({ companyId, status = "pending" }) {
  * @param {Object} params
  * @param {string} params.companyId
  * @param {Array} params.conversations - Array of { conversation_id, messages: [{ content, is_from_customer }] }
- * @param {string} [params.consolidationType="fact_extraction"]
+ * @param {string} [params.consolidationType="facts"]
  * @returns {Promise<{results: Array}>}
  */
 async function consolidateDreamer({ companyId, conversations, consolidationType }) {
@@ -148,7 +214,7 @@ async function consolidateDreamer({ companyId, conversations, consolidationType 
   const body = JSON.stringify({
     company_id: companyId,
     conversations,
-    consolidation_type: consolidationType || 'fact_extraction',
+    consolidation_type: normalizeDreamerConsolidationType(consolidationType),
   });
   const token = getAiServiceToken();
   const response = await fetch(url.toString(), {
@@ -164,7 +230,7 @@ async function consolidateDreamer({ companyId, conversations, consolidationType 
     const text = await response.text();
     throw new Error(`Dreamer service error ${response.status}: ${text}`);
   }
-  return await response.json();
+  return normalizeDreamerResponse(await response.json(), conversations);
 }
 
 /**

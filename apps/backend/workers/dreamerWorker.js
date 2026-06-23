@@ -180,7 +180,7 @@ class DreamerWorker {
           conversation_id: p.conversation_id,
           messages: p.messages_payload,
         })),
-        consolidationType: 'fact_extraction',
+        consolidationType: 'facts',
       });
       if (pyResponse.results) {
         for (const r of pyResponse.results) {

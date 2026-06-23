@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import time
 from contextlib import suppress
 from typing import Any
@@ -8,8 +9,11 @@ import structlog
 from agent_framework.a2a import A2AAgent
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.agents.base import BaseAgent, BaseAgentConfig
 from src.agents.ceo import create_ceo_agent, create_channel_agent
 from src.config import get_settings
+from src.db.models.agent import Agent as AgentModel
+from src.db.repo.agent_repo import AgentRepository
 from src.observability.llm_fallback import LLMFallbackProvider
 from src.pipeline.checkpointer import PipelineCheckpointer
 from src.pipeline.context import PipelineContext
@@ -30,6 +34,127 @@ from src.workflows.magentic_orchestration import MagenticOrchestrator
 from src.workflows.postgres_checkpoint import PostgresCheckpointStorage
 
 logger = structlog.get_logger(__name__)
+
+
+def _agent_channels(channels: object) -> list[str]:
+    if isinstance(channels, list):
+        return [str(channel).strip().lower() for channel in channels if str(channel).strip()]
+    return []
+
+
+def _sync_agent_config_from_db(agent: Any, db_agent: AgentModel) -> None:
+    config = getattr(agent, "config", None)
+    if not config:
+        return
+
+    config.allowed_channels = list(db_agent.channels or [])
+    if db_agent.model:
+        config.model = db_agent.model
+
+    db_config = db_agent.config or {}
+    provider = db_config.get("provider")
+    key_id = db_config.get("keyId") or db_config.get("key_id")
+    if provider:
+        config.provider = provider
+    if key_id:
+        config.key_id = key_id
+
+
+def _build_runtime_agent_from_db(db_agent: AgentModel) -> tuple[BaseAgent, list[str]]:
+    tool_names: list[str] = []
+    if db_agent.skills:
+        if isinstance(db_agent.skills, list):
+            tool_names = [str(tool) for tool in db_agent.skills]
+        elif isinstance(db_agent.skills, str):
+            with suppress(json.JSONDecodeError, TypeError):
+                parsed = json.loads(db_agent.skills)
+                if isinstance(parsed, list):
+                    tool_names = [str(tool) for tool in parsed]
+
+    if not tool_names:
+        tool_names = get_tool_names_for_role(db_agent.role)
+
+    db_config = db_agent.config or {}
+    config = BaseAgentConfig(
+        id=db_agent.id,
+        name=db_agent.name,
+        role=db_agent.role,
+        company_id=db_agent.company_id,
+        allowed_tools=tool_names,
+        allowed_channels=list(db_agent.channels or []),
+        model=db_agent.model or get_settings().default_model,
+        allowed_skills=list(db_agent.allowed_skills or []),
+        persona=db_agent.persona or {},
+        provider=db_config.get("provider") or None,
+        key_id=db_config.get("keyId") or db_config.get("key_id") or None,
+        template_slug=db_agent.template_slug or None,
+    )
+    agent = BaseAgent(config)
+    agent._db_rules = db_agent.rules or ""
+    return agent, tool_names
+
+
+async def _resolve_channel_agent(
+    *,
+    company_id: str,
+    channel: str,
+    registry,
+    session: AsyncSession | None,
+) -> tuple[str | None, Any | None, str]:
+    channel_normalized = channel.lower()
+
+    if session:
+        try:
+            repo = AgentRepository(session)
+            db_agents = await repo.list_active_agents(company_id)
+            matches = [
+                db_agent
+                for db_agent in db_agents
+                if channel_normalized in _agent_channels(db_agent.channels or [])
+            ]
+            if len(matches) > 1:
+                logger.warning(
+                    "orchestration_channel_assignment_conflict",
+                    company_id=company_id,
+                    channel=channel_normalized,
+                    agent_ids=[agent.id for agent in matches],
+                )
+            if matches:
+                db_agent = matches[0]
+                runtime_agent = registry.get(company_id, db_agent.id)
+                if runtime_agent:
+                    _sync_agent_config_from_db(runtime_agent, db_agent)
+                    return db_agent.id, runtime_agent, "db"
+                runtime_agent, tool_names = _build_runtime_agent_from_db(db_agent)
+                registry.register(company_id, db_agent.id, runtime_agent, tool_names=tool_names)
+                logger.info(
+                    "orchestration_db_channel_agent_loaded_into_registry",
+                    company_id=company_id,
+                    channel=channel_normalized,
+                    agent_id=db_agent.id,
+                )
+                return db_agent.id, runtime_agent, "db_loaded"
+            logger.info(
+                "orchestration_no_db_channel_agent",
+                company_id=company_id,
+                channel=channel_normalized,
+            )
+            return None, None, "db"
+        except Exception as exc:
+            logger.warning(
+                "orchestration_db_channel_assignment_lookup_failed",
+                company_id=company_id,
+                channel=channel_normalized,
+                error=str(exc),
+            )
+
+    for agent_id, agent, _ in registry.list_agents(company_id):
+        config = getattr(agent, "config", None)
+        channels = _agent_channels(getattr(config, "allowed_channels", None) or [])
+        if channel_normalized in channels:
+            return agent_id, agent, "registry"
+
+    return None, None, "none"
 
 
 async def run_orchestration(
@@ -57,15 +182,20 @@ async def run_orchestration(
 
     _channel_normalized = effective_channel.lower()
 
-    # Find the agent assigned to this channel — that agent IS the responder, not CEO
-    _channel_agent = None
-    for _aid, _agent, _ in registry.list_agents(company_id):
-        _cfg = getattr(_agent, "config", None)
-        _channels = [c.lower() for c in (getattr(_cfg, "allowed_channels", None) or [])]
-        if _channel_normalized in _channels:
-            _channel_agent = _agent
-            logger.info("orchestration_channel_agent_found", agent=_aid, channel=_channel_normalized)
-            break
+    # Find the agent assigned to this channel — that agent IS the responder, not CEO.
+    _channel_agent_id, _channel_agent, _assignment_source = await _resolve_channel_agent(
+        company_id=company_id,
+        channel=_channel_normalized,
+        registry=registry,
+        session=session,
+    )
+    if _channel_agent:
+        logger.info(
+            "orchestration_channel_agent_found",
+            agent=_channel_agent_id,
+            channel=_channel_normalized,
+            assignment_source=_assignment_source,
+        )
 
     # Get the LLM client from the channel agent (or fall back)
     client = None
@@ -73,7 +203,15 @@ async def run_orchestration(
         try:
             client = await _channel_agent.ensure_client()
             _prov = getattr(getattr(_channel_agent, "config", None), "provider", None)
-            logger.info("orchestration_using_channel_agent", agent=_aid, provider=_prov, channel=_channel_normalized)
+            _model = getattr(getattr(_channel_agent, "config", None), "model", None)
+            logger.info(
+                "orchestration_using_channel_agent",
+                agent=_channel_agent_id,
+                provider=_prov,
+                model=_model,
+                channel=_channel_normalized,
+                assignment_source=_assignment_source,
+            )
         except Exception as _exc:
             logger.warning("channel_agent_provider_unavailable", error=str(_exc))
 
