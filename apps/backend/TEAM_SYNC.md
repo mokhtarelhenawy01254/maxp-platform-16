@@ -2,6 +2,14 @@
 
 ## [2026-03-09]
 
+### WhatsApp Meta Webhook Integration End-to-End Delivery Fixes
+- **Accomplishment**: Fixed a database schema validation crash during contact upserts for incoming Meta WhatsApp webhooks, and deployed a duplicate session database cleanup script.
+- **Details**:
+  - Resolved `PrismaClientValidationError: Unknown argument 'customerId'` in `WhatsAppInboundService.js` by connecting the customer relation using the `customer: { connect: { id: customerId } }` relation pattern instead of scalar `customerId` in `create`/`update` blocks.
+  - Implemented `cleanup-duplicate-whatsapp-session.js` database migration script and matching `run-whatsapp-cleanup.yml` GitHub Action to safely purge duplicate Meta credentials on duplicate sessions in production.
+  - Secured the production webhook by reverting verbose stack trace error responses to generic `Internal Server Error` responses.
+  - Verified webhook GET challenge verification and POST message payload parsing successfully end-to-end against the live backend.
+
 ### WhatsApp Meta Webhook 403 & Production DB Fix
 - **Accomplishment**: Fixed a major bug preventing Meta WhatsApp Webhook verification (GET 403 Forbidden), resolved the database query override that caused webhook POST 500 errors, and configured correct credentials for the "العمل" WhatsApp session on production database.
 - **Details**:

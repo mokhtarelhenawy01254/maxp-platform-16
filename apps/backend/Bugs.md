@@ -1,3 +1,11 @@
+## [2026-06-23] Prisma validation error 'customerId' on WhatsAppContact Creation
+
+- **Bug/Issue**: Incoming Meta WhatsApp webhooks were failing with `500 Internal Server Error` due to a Prisma validation error: `Unknown argument 'customerId'. Did you mean 'customer'?` at `WhatsAppInboundService.js:44` in `upsertContact()`.
+- **Root Cause**: The `WhatsAppContact` model has `customerId String?` as a database column/scalar field and `customer Customer? @relation(fields: [customerId], references: [id])`. In Prisma's generated client (v6.12.0), when using `create` inside `upsert`, Prisma requires using the relation `customer: { connect: { id: customerId } }` instead of the scalar field `customerId`. Passing the scalar field direct in the `create` or `update` block raises a client validation exception.
+- **Fix**: Replaced scalar `customerId: customerId` with `customer: { connect: { id: customerId } }` in both `create` and `update` blocks of the `upsertContact()` call in `WhatsAppInboundService.js`.
+- **Files**:
+  - `apps/backend/services/WhatsAppInboundService.js`
+
 ## [2026-06-23] WhatsApp Meta Webhook 403 Forbidden & Session Credentials Fix
 
 - **Bug/Issue**: Meta WhatsApp Webhook verification (GET request) was failing with `403 Forbidden` on production server. Additionally, incoming WhatsApp messages were not being synced/delivered to the "العمل" WhatsApp session, and POST requests returned 500.

@@ -281,12 +281,7 @@ async function postWebhook(req, res) {
     res.sendStatus(200);
   } catch (error) {
     console.error('❌ Meta webhook error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Webhook processing failed',
-      details: error.message,
-      stack: error.stack
-    });
+    res.status(500).send('Internal Server Error');
   }
 }
 
