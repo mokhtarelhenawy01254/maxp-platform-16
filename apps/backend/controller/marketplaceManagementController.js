@@ -143,10 +143,7 @@ async function ensureCompanyMarketplaceAppInstalled(tx, {
         companyId,
         appId: app.id,
         activePricingModel: requestedPricingModel,
-        status: app.trialDays > 0 ? 'TRIAL' : 'ACTIVE',
-        trialEndsAt: app.trialDays > 0
-          ? new Date(Date.now() + app.trialDays * 24 * 60 * 60 * 1000)
-          : null,
+        status: 'ACTIVE',
         validUntil,
         settings: installedSettings,
         nextBillingAt: validUntil

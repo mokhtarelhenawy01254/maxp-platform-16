@@ -139,11 +139,6 @@ async function initializeDefaultApps(companyId, options = {}) {
     const specialtyAppSlugs = Array.isArray(options.specialtyAppSlugs)
       ? options.specialtyAppSlugs.map((slug) => String(slug || '').trim()).filter(Boolean)
       : [];
-    const trialDays = Math.max(0, Number.parseInt(String(options.trialDays ?? 0), 10) || 0);
-    const trialEndsAt = trialDays > 0
-      ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000)
-      : null;
-
     if (specialtyAppSlugs.length > 0) {
       const businessSpecialtyService = require('../services/businessSpecialtyService');
       const resolution = await businessSpecialtyService.ensureMarketplaceAppsBySlugs(specialtyAppSlugs, {
@@ -156,8 +151,7 @@ async function initializeDefaultApps(companyId, options = {}) {
         await prisma.companyApp.upsert({
           where: { companyId_appId: { companyId, appId: app.id } },
           update: {
-            status: trialDays > 0 ? 'TRIAL' : 'ACTIVE',
-            trialEndsAt,
+            status: 'ACTIVE',
             activePricingModel: app.pricingModel || 'SUBSCRIPTION',
             settings: {
               onboarding: {
@@ -169,8 +163,7 @@ async function initializeDefaultApps(companyId, options = {}) {
           create: {
             companyId,
             appId: app.id,
-            status: trialDays > 0 ? 'TRIAL' : 'ACTIVE',
-            trialEndsAt,
+            status: 'ACTIVE',
             activePricingModel: app.pricingModel || 'SUBSCRIPTION',
             settings: {
               onboarding: {

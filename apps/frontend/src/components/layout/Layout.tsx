@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Bars3Icon,
   ChevronDownIcon,
-  SparklesIcon,
   MagnifyingGlassIcon,
   XMarkIcon,
   UsersIcon,
@@ -41,12 +40,6 @@ interface LayoutProps {
 }
 
 type SidebarIconComponent = React.ElementType<{ className?: string }>;
-type CompanyWithSubscription = {
-  platformSubscription?: {
-    status?: string;
-    nextBillingDate?: string | null;
-  } | null;
-};
 type ActiveUsersResponse = {
   data?: {
     count?: number;
@@ -301,43 +294,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
       .filter((section) => section.items.length > 0);
   }, [menuSections, searchQuery]);
 
-  const trialSubscription = (user?.company as CompanyWithSubscription | null | undefined)
-    ?.platformSubscription;
-  const isTrial = trialSubscription?.status === "TRIAL";
-  const trialEndDate = trialSubscription?.nextBillingDate;
-  const daysRemaining = trialEndDate
-    ? Math.max(
-        0,
-        Math.ceil(
-          (new Date(trialEndDate).getTime() - new Date().getTime()) /
-            (1000 * 60 * 60 * 24),
-        ),
-      )
-    : 0;
-  const [trialDismissed, setTrialDismissed] = useState(
-    localStorage.getItem("trial-banner-dismissed") === "true",
-  );
-  const showTrialBanner = isTrial && daysRemaining > 0 && !trialDismissed;
-  const translateWithFallback = useCallback(
-    (key: string, fallback: string, options?: Record<string, unknown>) => {
-      const translated = t(key, options);
-      return translated && translated !== key ? translated : fallback;
-    },
-    [t],
-  );
-  const trialBannerText = translateWithFallback(
-    "billing.trialBanner",
-    `أنت الآن في الفترة التجريبية المجانية - باقي ${daysRemaining} أيام`,
-    { days: daysRemaining },
-  );
-  const upgradeNowText = translateWithFallback(
-    "billing.upgradeNow",
-    "ترقية الحساب الآن",
-  );
-  const dismissTrial = useCallback(() => {
-    setTrialDismissed(true);
-    localStorage.setItem("trial-banner-dismissed", "true");
-  }, []);
+
 
   if (useSuperAdminShell) {
     return (
@@ -673,19 +630,6 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
           ) : null}
 
           <div className="flex-1 w-full flex flex-col overflow-hidden">
-            {showTrialBanner ? (
-              <div className="business-trial-banner">
-                <SparklesIcon className="h-4 w-4" />
-                <span>{trialBannerText}</span>
-                <Link to="/subscription" className="business-trial-banner-link">
-                  {upgradeNowText}
-                </Link>
-                <button onClick={dismissTrial} className="mr-auto text-white/60 hover:text-white transition-colors" aria-label="إخفاء">
-                  <XMarkIcon className="h-4 w-4" />
-                </button>
-              </div>
-            ) : null}
-
             {headerBlock}
 
              <main
@@ -764,19 +708,6 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
            ) : null}
 
            <div className="flex-1 w-full flex flex-col overflow-hidden">
-            {showTrialBanner ? (
-                <div className="business-trial-banner">
-                  <SparklesIcon className="h-4 w-4" />
-                  <span>{trialBannerText}</span>
-                  <Link to="/subscription" className="business-trial-banner-link">
-                    {upgradeNowText}
-                  </Link>
-                  <button onClick={dismissTrial} className="mr-auto text-white/60 hover:text-white transition-colors" aria-label="إخفاء">
-                    <XMarkIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : null}
-
               {headerBlock}
 
               <main

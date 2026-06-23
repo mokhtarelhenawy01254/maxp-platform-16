@@ -1805,6 +1805,10 @@ const AppContent = () => {
               }
             />
             <Route
+              path="/ai-providers/logs"
+              element={<Navigate to={`/super-admin/ai-providers/logs${window.location.search}`} replace />}
+            />
+            <Route
               path="/super-admin/ai-providers/logs"
               element={
                 <Layout fullWidth>

@@ -209,31 +209,22 @@ exports.messagingCheckout = async (req, res) => {
     const { companyId } = req.user;
     const prisma = getSharedPrismaClient();
 
-    // Read trialDays from the bundle (editable from super admin → bundles)
-    const inboxBundle = await prisma.appBundle.findUnique({ where: { slug: "ai-inbox-bundle" } });
-    const TRIAL_DAYS = inboxBundle?.trialDays ?? 7;
-
-    const hasTrial = TRIAL_DAYS > 0;
-    const subscriptionStatus = hasTrial ? "TRIAL" : "ACTIVE";
-    const trialEndDate = new Date();
-    trialEndDate.setDate(trialEndDate.getDate() + TRIAL_DAYS);
     const nextBillingDate = new Date();
     nextBillingDate.setDate(nextBillingDate.getDate() + 30);
 
     await prisma.$transaction(async (tx) => {
       await tx.platformSubscription.upsert({
         where: { companyId },
-        update: { status: subscriptionStatus, trialEndDate, nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
-        create: { companyId, status: subscriptionStatus, trialEndDate, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date(), monthlyFee: 0 }
+        update: { status: 'ACTIVE', nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
+        create: { companyId, status: 'ACTIVE', nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date(), monthlyFee: 0 }
       });
-      // Activate AI Chat + Unified Inbox + WhatsApp Business for the company
       for (const slug of ["ai-chat-basic", "unified-inbox", "whatsapp-business"]) {
         const app = await tx.marketplaceApp.findUnique({ where: { slug } });
         if (app) {
           await tx.companyApp.upsert({
             where: { companyId_appId: { companyId, appId: app.id } },
-            update: { status: subscriptionStatus, trialEndsAt: hasTrial ? trialEndDate : null },
-            create: { companyId, appId: app.id, status: subscriptionStatus, trialEndsAt: hasTrial ? trialEndDate : null }
+            update: { status: 'ACTIVE' },
+            create: { companyId, appId: app.id, status: 'ACTIVE' }
           });
         }
       }
@@ -241,8 +232,7 @@ exports.messagingCheckout = async (req, res) => {
 
     res.json({
       success: true,
-      message: `تم تفعيل الباقة تجريبياً لمدة ${TRIAL_DAYS} أيام`,
-      data: { skipPayment: true, trialDays: TRIAL_DAYS, trialEndDate: trialEndDate.toISOString() }
+      message: 'تم تفعيل الباقة بنجاح'
     });
   } catch (error) {
     console.error("[MESSAGING-CHECKOUT] Error:", error);

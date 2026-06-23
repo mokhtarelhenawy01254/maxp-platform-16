@@ -280,7 +280,7 @@ async function ensureCompanyAppInstalled(tx, {
     pricingModel,
     normalizePricingModel(app.pricingModel, 'SUBSCRIPTION')
   );
-  const isExpired = existing && existing.validUntil && new Date(existing.validUntil) < new Date() && existing.status !== 'TRIAL';
+  const isExpired = existing && existing.validUntil && new Date(existing.validUntil) < new Date();
   const canTransition = existing && existing.activePricingModel === 'PAY_PER_USE' && requestedPricingModel === 'SUBSCRIPTION';
 
   if (existing && existing.status !== 'CANCELLED' && !isExpired && !canTransition) {
@@ -290,7 +290,6 @@ async function ensureCompanyAppInstalled(tx, {
     return autoInstalledApps;
   }
 
-  const trialEndsAt = !existing ? new Date(Date.now() + app.trialDays * 24 * 60 * 60 * 1000) : existing.trialEndsAt;
   const validUntil = requestedPricingModel === 'SUBSCRIPTION' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null;
   const installedSettings = buildInstalledMarketplaceAppSettings(
     app.slug,
@@ -320,8 +319,7 @@ async function ensureCompanyAppInstalled(tx, {
         companyId,
         appId: app.id,
         activePricingModel: requestedPricingModel,
-        status: app.trialDays > 0 ? 'TRIAL' : 'ACTIVE',
-        trialEndsAt,
+        status: 'ACTIVE',
         validUntil,
         settings: installedSettings,
         nextBillingAt: requestedPricingModel === 'SUBSCRIPTION' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null
@@ -1866,21 +1864,15 @@ exports.subscribeToBundle = async (req, res) => {
       });
     }
 
-    // AI + Inbox Bundle uses PlatformSubscription flow (not wallet)
     if (slug === 'ai-inbox-bundle') {
       const prisma = getSharedPrismaClient();
-      const amount = 999;
-      const TRIAL_DAYS = bundle.trialDays > 0 ? bundle.trialDays : 7;
-      const hasTrial = TRIAL_DAYS > 0;
-      const subscriptionStatus = hasTrial ? "TRIAL" : "ACTIVE";
-      const trialEndDate = hasTrial ? new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000) : null;
       const nextBillingDate = new Date();
       nextBillingDate.setDate(nextBillingDate.getDate() + 30);
       await prisma.$transaction(async (tx) => {
         await tx.platformSubscription.upsert({
           where: { companyId },
-          update: { status: subscriptionStatus, trialEndDate, nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
-          create: { companyId, status: subscriptionStatus, trialEndDate, nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date(), monthlyFee: 0 }
+          update: { status: 'ACTIVE', nextBillingDate, failedAttempts: 0, lastBillingDate: new Date() },
+          create: { companyId, status: 'ACTIVE', nextBillingDate, billingDay: new Date().getDate(), failedAttempts: 0, lastBillingDate: new Date(), monthlyFee: 0 }
         });
         const appSlugs = ["ai-chat-basic", "unified-inbox", "whatsapp-business"];
         for (const slug of appSlugs) {
@@ -1888,14 +1880,13 @@ exports.subscribeToBundle = async (req, res) => {
           if (app) {
             await tx.companyApp.upsert({
               where: { companyId_appId: { companyId, appId: app.id } },
-              update: { status: subscriptionStatus, trialEndsAt: trialEndDate },
-              create: { companyId, appId: app.id, status: subscriptionStatus, trialEndsAt: trialEndDate }
+              update: { status: 'ACTIVE' },
+              create: { companyId, appId: app.id, status: 'ACTIVE' }
             });
           }
         }
       });
-      const msg = hasTrial ? `تم تفعيل باقة AI + Inbox تجريبياً لمدة ${TRIAL_DAYS} أيام` : "تم تفعيل باقة AI + Inbox بنجاح";
-      return res.json({ success: true, message: msg, data: { bundle: "ai-inbox-bundle", skipPayment: true, trialDays: TRIAL_DAYS, trialEndDate: trialEndDate?.toISOString() } });
+      return res.json({ success: true, message: "تم تفعيل باقة AI + Inbox بنجاح" });
     }
 
     const bundleAppIds = normalizeStringArray(bundle.appIds);
@@ -1906,51 +1897,44 @@ exports.subscribeToBundle = async (req, res) => {
       });
     }
 
-    const trialDays = Number(bundle.trialDays) || 0;
-    const hasTrial = trialDays > 0;
-    const trialEndDate = hasTrial ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000) : null;
-
     await executeWithRetry(async () => {
       return await getSharedPrismaClient().$transaction(async (tx) => {
-        // فقط ادفع من المحفظة لو مفيش فترة تجربة
-        if (!hasTrial) {
-          let wallet = await tx.companyWallet.findUnique({
-            where: { companyId }
-          });
+        let wallet = await tx.companyWallet.findUnique({
+          where: { companyId }
+        });
 
-          if (!wallet) {
-            wallet = await tx.companyWallet.create({
-              data: {
-                id: uuidv4(),
-                companyId,
-                balance: 0,
-                currency: 'EGP'
-              }
-            });
-          }
-
-          if (Number(wallet.balance) < Number(bundle.monthlyPrice)) {
-            throw new Error(`رصيد المحفظة غير كافٍ. المطلوب: ${bundle.monthlyPrice} ${wallet.currency}، المتوفر: ${wallet.balance} ${wallet.currency}`);
-          }
-
-          await tx.companyWallet.update({
-            where: { companyId },
-            data: {
-              balance: { decrement: Number(bundle.monthlyPrice) }
-            }
-          });
-
-          await tx.transaction.create({
+        if (!wallet) {
+          wallet = await tx.companyWallet.create({
             data: {
               id: uuidv4(),
-              walletId: wallet.id,
-              type: 'PAYMENT',
-              amount: bundle.monthlyPrice,
-              description: `الاشتراك في باقة: ${bundle.name}`,
-              referenceId: `BUNDLE_SUB_${bundle.slug}_${Date.now()}`
+              companyId,
+              balance: 0,
+              currency: 'EGP'
             }
           });
         }
+
+        if (Number(wallet.balance) < Number(bundle.monthlyPrice)) {
+          throw new Error(`رصيد المحفظة غير كافٍ. المطلوب: ${bundle.monthlyPrice} ${wallet.currency}، المتوفر: ${wallet.balance} ${wallet.currency}`);
+        }
+
+        await tx.companyWallet.update({
+          where: { companyId },
+          data: {
+            balance: { decrement: Number(bundle.monthlyPrice) }
+          }
+        });
+
+        await tx.transaction.create({
+          data: {
+            id: uuidv4(),
+            walletId: wallet.id,
+            type: 'PAYMENT',
+            amount: bundle.monthlyPrice,
+            description: `الاشتراك في باقة: ${bundle.name}`,
+            referenceId: `BUNDLE_SUB_${bundle.slug}_${Date.now()}`
+          }
+        });
 
         const nextBillingAt = new Date();
         nextBillingAt.setDate(nextBillingAt.getDate() + 30);
@@ -1995,14 +1979,12 @@ exports.subscribeToBundle = async (req, res) => {
             },
           );
 
-          const appStatus = hasTrial ? 'TRIAL' : 'ACTIVE';
           if (existingInstallation) {
             await tx.companyApp.update({
               where: { id: existingInstallation.id },
               data: {
-                status: appStatus,
-                validUntil: hasTrial ? null : nextBillingAt,
-                trialEndsAt: trialEndDate,
+                status: 'ACTIVE',
+                validUntil: nextBillingAt,
                 settings: mergedSettings,
               }
             });
@@ -2012,9 +1994,8 @@ exports.subscribeToBundle = async (req, res) => {
                 id: uuidv4(),
                 companyId,
                 appId,
-                status: appStatus,
-                validUntil: hasTrial ? null : nextBillingAt,
-                trialEndsAt: trialEndDate,
+                status: 'ACTIVE',
+                validUntil: nextBillingAt,
                 settings: mergedSettings,
               }
             });
@@ -2030,11 +2011,7 @@ exports.subscribeToBundle = async (req, res) => {
       });
     });
 
-    if (hasTrial) {
-      res.json({ success: true, message: `تم تفعيل ${bundle.name} تجريبياً لمدة ${trialDays} يوم مع ${bundleAppIds.length} أداة! 🎉`, data: { trialDays, trialEndDate: trialEndDate.toISOString() } });
-    } else {
-      res.json({ success: true, message: `تم الاشتراك في ${bundle.name} وتفعيل ${bundleAppIds.length} أداة بنجاح! 🎉` });
-    }
+    res.json({ success: true, message: `تم الاشتراك في ${bundle.name} وتفعيل ${bundleAppIds.length} أداة بنجاح! 🎉` });
 
   } catch (error) {
     console.error('Error subscribing to bundle:', error);

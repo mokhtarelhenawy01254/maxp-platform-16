@@ -147,7 +147,7 @@ const AIAgentSandboxPage: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-background overflow-hidden relative">
+    <div className="flex-1 flex flex-col bg-background overflow-hidden relative">
 
       {/* Top Header Controls */}
       <HeaderBar
@@ -171,7 +171,7 @@ const AIAgentSandboxPage: React.FC = () => {
       />
 
       {/* Main workspace - three columns */}
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex overflow-hidden relative min-h-0">
         <SessionList
           sessions={sessions}
           activeSessionId={activeSessionId}

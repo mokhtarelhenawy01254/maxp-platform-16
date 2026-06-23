@@ -27,23 +27,35 @@ const aiRuntimeService = {
 const AIProviderFactory = {};
 
 // ── Prisma-backed AI Provider Log Service ───────────────────────────────
+const applyLogTimeFilter = (where, filters) => {
+  if (filters.sinceHours) {
+    where.createdAt = { gte: new Date(Date.now() - Number(filters.sinceHours) * 3600000) };
+  } else if (filters.startDate || filters.endDate) {
+    where.createdAt = {};
+    if (filters.startDate) where.createdAt.gte = new Date(filters.startDate);
+    if (filters.endDate) where.createdAt.lte = new Date(filters.endDate);
+  }
+};
+
+const buildLogWhere = (filters) => {
+  const where = {};
+  if (filters.provider) where.provider = filters.provider;
+  if (filters.keyId) where.keyId = filters.keyId;
+  if (filters.companyId) where.companyId = filters.companyId;
+  if (filters.status) where.status = filters.status;
+  if (filters.scope) where.scope = filters.scope;
+  if (filters.action) where.action = filters.action;
+  applyLogTimeFilter(where, filters);
+  return where;
+};
+
 const aiProviderLogService = {
   listProviderLogs: async (filters = {}) => {
     try {
       const prisma = getSharedPrismaClient();
-      const where = {};
-      if (filters.provider) where.provider = filters.provider;
-      if (filters.keyId) where.keyId = filters.keyId;
-      if (filters.status) where.status = filters.status;
-      if (filters.scope) where.scope = filters.scope;
-      if (filters.action) where.action = filters.action;
-      if (filters.startDate || filters.endDate) {
-        where.createdAt = {};
-        if (filters.startDate) where.createdAt.gte = new Date(filters.startDate);
-        if (filters.endDate) where.createdAt.lte = new Date(filters.endDate);
-      }
       return await prisma.aiProviderLog.findMany({
-        where, orderBy: { createdAt: 'desc' },
+        where: buildLogWhere(filters),
+        orderBy: { createdAt: 'desc' },
         take: Math.min(filters.limit || 200, 1000),
         skip: filters.offset || 0,
       });
@@ -52,23 +64,33 @@ const aiProviderLogService = {
   getProviderLogSummary: async (filters = {}) => {
     try {
       const prisma = getSharedPrismaClient();
-      const where = {};
-      if (filters.provider) where.provider = filters.provider;
-      if (filters.scope) where.scope = filters.scope;
-      const logs = await prisma.aiProviderLog.findMany({
-        where, select: { status: true, latencyMs: true },
-      });
-      let success = 0, failed = 0, warning = 0, rateLimit = 0;
-      const latencies = [];
-      for (const log of logs) {
-        if (log.status === 'success') success++;
-        else if (log.status === 'failed') failed++;
-        else if (log.status === 'warning') warning++;
-        if (log.latencyMs) latencies.push(log.latencyMs);
+      const where = buildLogWhere(filters);
+      const [aggregated, latencyAgg] = await Promise.all([
+        prisma.aiProviderLog.groupBy({
+          by: ['status'],
+          where,
+          _count: { status: true },
+        }),
+        prisma.aiProviderLog.aggregate({
+          where: { ...where, latencyMs: { not: null } },
+          _avg: { latencyMs: true },
+        }),
+      ]);
+      const counts = { success: 0, failed: 0, warning: 0, rateLimit: 0 };
+      let total = 0;
+      for (const row of aggregated) {
+        counts[row.status] = (counts[row.status] || 0) + row._count.status;
+        total += row._count.status;
       }
       return {
-        total: logs.length, success, failed, warning, rateLimit,
-        avgLatencyMs: latencies.length ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : null,
+        total,
+        success: counts.success,
+        failed: counts.failed,
+        warning: counts.warning,
+        rateLimit: counts.rateLimit,
+        avgLatencyMs: latencyAgg._avg.latencyMs
+          ? Math.round(latencyAgg._avg.latencyMs)
+          : null,
       };
     } catch { return { total: 0, success: 0, failed: 0, warning: 0, rateLimit: 0, avgLatencyMs: null }; }
   },

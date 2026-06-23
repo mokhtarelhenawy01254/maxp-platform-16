@@ -124,7 +124,7 @@ export default function AIHubLayout() {
     const saWrap = saMain?.querySelector<HTMLElement>("div.w-full");
     if (saWrap && !el) { saWrap.style.padding = "0"; saWrap.style.display = "flex"; saWrap.style.flex = "1"; saWrap.style.minHeight = "0"; }
     return () => {
-      if (el) { el.style.overflow = ""; el.style.padding = ""; }
+      if (el) { el.style.overflow = ""; el.style.padding = ""; el.style.display = ""; el.style.flexDirection = ""; }
       if (w) { w.style.display = ""; w.style.flex = ""; w.style.minHeight = ""; }
       if (saMain && !el) { saMain.style.overflow = ""; }
       if (saWrap && !el) { saWrap.style.padding = ""; saWrap.style.display = ""; saWrap.style.flex = ""; saWrap.style.minHeight = ""; }
@@ -173,7 +173,7 @@ export default function AIHubLayout() {
         )}
       </div>
 
-      <div className="flex-1 bg-slate-50/20 overflow-hidden">
+      <div className="flex-1 bg-slate-50/20 overflow-hidden flex flex-col min-h-0">
         <React.Suspense fallback={
           <div className="flex h-[400px] items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
