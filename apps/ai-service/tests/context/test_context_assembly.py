@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.context.compressor import count_tokens, compress_history
 from src.context.assembler import ContextAssembler
+from src.context.compressor import compress_history, count_tokens
 from src.pipeline.context import PipelineContext
 
 
@@ -13,11 +14,11 @@ def test_count_tokens():
     # Test English tokens (~4 chars per token)
     assert count_tokens("hello") == 1
     assert count_tokens("hello world") == 2
-    
+
     # Test Arabic tokens (~1.5 chars per token)
     # "مرحبا" is 5 chars -> should be ~3 tokens
     assert count_tokens("مرحبا") == 3
-    
+
     # Empty string
     assert count_tokens("") == 0
     assert count_tokens(None) == 0
@@ -44,10 +45,10 @@ async def test_compress_history_with_rule_based_compression():
         {"role": "user", "content": "black please"},
         {"role": "assistant", "content": "added to cart!"},
     ]
-    
+
     # keep_recent = 2, max_tokens = 5 (very small, forces compression)
     retained, summary = await compress_history(messages, max_tokens=5, keep_recent=2)
-    
+
     assert len(retained) == 2
     assert retained == messages[-2:]
     assert summary is not None
@@ -62,17 +63,17 @@ async def test_context_assembler_fetch_customer_profile():
     ctx = MagicMock(spec=PipelineContext)
     ctx.customer_id = "cust_123"
     ctx.session = AsyncMock(spec=AsyncSession)
-    
+
     # Mock DB row using tuple
     mock_row = ("Ahmed", "Ali", "01012345678", "ahmed@example.com", "{}")
-    
+
     mock_result = MagicMock()
     mock_result.fetchone.return_value = mock_row
     ctx.session.execute.return_value = mock_result
-    
+
     assembler = ContextAssembler()
     profile = await assembler.fetch_customer_profile(ctx)
-    
+
     assert profile is not None
     assert profile["first_name"] == "Ahmed"
     assert profile["last_name"] == "Ali"
@@ -85,20 +86,20 @@ async def test_context_assembler_fetch_message_history():
     ctx = MagicMock(spec=PipelineContext)
     ctx.thread_id = "conv_123"
     ctx.session = AsyncMock(spec=AsyncSession)
-    
+
     # Mock messages using tuples
     mock_rows = [
         ("hi there", True, "TEXT"),
         ("hello! how can I help you?", False, "TEXT"),
     ]
-    
+
     mock_result = MagicMock()
     mock_result.fetchall.return_value = mock_rows
     ctx.session.execute.return_value = mock_result
-    
+
     assembler = ContextAssembler()
     history = await assembler.fetch_message_history(ctx)
-    
+
     # fetchall returns newest first, so mock_rows has newest first.
     # The fetch_message_history reverses them to chronological order.
     assert len(history) == 2
@@ -106,6 +107,33 @@ async def test_context_assembler_fetch_message_history():
     assert history[0]["content"] == "hello! how can I help you?"
     assert history[1]["role"] == "user"
     assert history[1]["content"] == "hi there"
+
+
+@pytest.mark.asyncio
+async def test_context_assembler_dedupes_adjacent_duplicate_history():
+    ctx = MagicMock(spec=PipelineContext)
+    ctx.thread_id = "conv_123"
+    ctx.session = AsyncMock(spec=AsyncSession)
+
+    mock_rows = [
+        ("لقيت ايه ؟", True, "TEXT"),
+        ("لقيت ايه ؟", True, "TEXT"),
+        ("هراجع مصاريف الشحن.", False, "TEXT"),
+        ("هراجع مصاريف الشحن.", False, "TEXT"),
+        ("مصاريف الشحن كام ؟", True, "TEXT"),
+    ]
+
+    mock_result = MagicMock()
+    mock_result.fetchall.return_value = mock_rows
+    ctx.session.execute.return_value = mock_result
+
+    history = await ContextAssembler().fetch_message_history(ctx)
+
+    assert history == [
+        {"role": "user", "content": "مصاريف الشحن كام ؟"},
+        {"role": "assistant", "content": "هراجع مصاريف الشحن."},
+        {"role": "user", "content": "لقيت ايه ؟"},
+    ]
 
 
 @pytest.mark.asyncio

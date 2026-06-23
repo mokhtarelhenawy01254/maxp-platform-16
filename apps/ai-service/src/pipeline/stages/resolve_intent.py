@@ -4,6 +4,7 @@ from typing import Any
 
 import structlog
 
+from src.context.assembler import ContextAssembler
 from src.guardrails.input import INPUT_GUARDRAILS
 from src.intent.planner import build_intent_contract_async, to_tool_plan
 from src.intent.schema import is_customer_channel
@@ -52,6 +53,36 @@ def _available_tools(ctx: PipelineContext) -> list[str]:
     ctx.native_tools = tools
     return [name for tool in tools if (name := _tool_name(tool))]
 
+
+async def _ensure_recent_history_for_intent(ctx: PipelineContext) -> dict[str, Any]:
+    external_context = dict(getattr(ctx, "external_memory_context", {}) or {})
+    if external_context.get("recentMessages"):
+        return external_context
+
+    if not getattr(ctx, "thread_id", None) or not getattr(ctx, "session", None):
+        return external_context
+
+    try:
+        recent_messages = await ContextAssembler().fetch_message_history(ctx, limit=8)
+    except Exception as exc:
+        logger.warning("intent_recent_history_fetch_failed", error=str(exc))
+        return external_context
+
+    current = str(ctx.message or "").strip()
+    if (
+        recent_messages
+        and recent_messages[-1].get("role") == "user"
+        and str(recent_messages[-1].get("content") or "").strip() == current
+    ):
+        recent_messages = recent_messages[:-1]
+
+    if recent_messages:
+        external_context["recentMessages"] = recent_messages
+        ctx.external_memory_context = external_context
+
+    return external_context
+
+
 def get_agent_instructions(agent: Any) -> str:
     if not agent:
         return ""
@@ -93,6 +124,7 @@ async def resolve_intent(ctx: PipelineContext) -> PipelineContext:
     # 1. Detect channel from context (set by API layer or orchestration flow)
     ctx.is_customer_channel = is_customer_channel(ctx.channel)
     available_tools = _available_tools(ctx)
+    external_memory_context = await _ensure_recent_history_for_intent(ctx)
 
     # 2. Resolve relevance plan
     intent_context = {
@@ -102,7 +134,7 @@ async def resolve_intent(ctx: PipelineContext) -> PipelineContext:
         "preferredModel": getattr(ctx.agent, "model", None),
         "preferredProvider": getattr(getattr(ctx.agent, "config", None), "provider", None),
         "attachments": list(getattr(ctx, "attachments", []) or []),
-        "externalMemoryContext": dict(getattr(ctx, "external_memory_context", {}) or {}),
+        "externalMemoryContext": external_memory_context,
     }
     contract = await build_intent_contract_async(
         message=ctx.message,

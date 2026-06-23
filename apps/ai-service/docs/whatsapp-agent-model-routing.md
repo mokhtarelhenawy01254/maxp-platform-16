@@ -19,3 +19,12 @@ reply is generated. DeepSeek's OpenAI-compatible API accepts JSON mode as
 `json_schema` for normal compatible providers and switches only DeepSeek
 structured calls to `json_object`, preventing the classifier from failing over
 to Gemini before the DeepSeek final reply.
+
+## 2026-06-23
+
+Short WhatsApp follow-ups such as "what did you find?" must be classified with
+recent conversation context, not as isolated messages. The intent stage now
+hydrates recent message history before routing, excluding the current user turn
+when it was already persisted. The context assembler also collapses adjacent
+duplicate role/content pairs created by WhatsApp sync echoes before sending
+history to the model.

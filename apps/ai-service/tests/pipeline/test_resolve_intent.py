@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -76,3 +76,50 @@ async def test_resolve_intent_does_not_pass_agent_reply_client_to_classifier(mon
     assert captured["client"] is None
     assert captured["context"]["preferredModel"] == "openai/gpt-oss-120b"
     assert captured["context"]["preferredProvider"] == "GROQ"
+
+
+@pytest.mark.asyncio
+async def test_resolve_intent_supplies_recent_history_before_classification(monkeypatch):
+    captured = {}
+
+    async def fake_contract(**kwargs):
+        captured.update(kwargs)
+        return IntentContract(
+            intent="shipping.quote",
+            requiresTool=True,
+            route={"primaryTool": "shipping_rates", "allowedTools": ["shipping_rates"]},
+            decision="execute_tool",
+        )
+
+    monkeypatch.setattr(
+        "src.pipeline.stages.resolve_intent.build_intent_contract_async",
+        fake_contract,
+    )
+
+    ctx = PipelineContext(
+        message="لقيت ايه ؟",
+        thread_id="conv_whatsapp_1",
+        company_id="comp1",
+        customer_id="cust1",
+        channel="whatsapp",
+    )
+    ctx.agent = SimpleNamespace(client=None, model="deepseek-v4-flash", config=SimpleNamespace(provider=None))
+    ctx.native_tools = [{"name": "shipping_rates"}]
+    ctx.session = AsyncMock()
+
+    mock_result = MagicMock()
+    mock_result.fetchall.return_value = [
+        ("لقيت ايه ؟", True, "TEXT"),
+        ("هراجع مصاريف الشحن.", False, "TEXT"),
+        ("مصاريف الشحن كام ؟", True, "TEXT"),
+    ]
+    ctx.session.execute.return_value = mock_result
+
+    await resolve_intent(ctx)
+
+    recent = captured["context"]["externalMemoryContext"]["recentMessages"]
+    assert recent == [
+        {"role": "user", "content": "مصاريف الشحن كام ؟"},
+        {"role": "assistant", "content": "هراجع مصاريف الشحن."},
+    ]
+    assert ctx.external_memory_context["recentMessages"] == recent

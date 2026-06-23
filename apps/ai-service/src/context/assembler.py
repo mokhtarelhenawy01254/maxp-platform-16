@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 import structlog
 from sqlalchemy import text
@@ -26,7 +26,7 @@ class ContextAssembler:
     """
 
     # ─── Section priority (lower = more important, dropped last) ───
-    SECTION_PRIORITY = {
+    SECTION_PRIORITY: ClassVar[dict[str, int]] = {
         "base_prompt": 0,
         "customer_profile": 1,
         "session_state": 2,
@@ -39,6 +39,20 @@ class ContextAssembler:
     def _sanitize_content(content: str) -> str:
         """Escapes XML special characters to prevent structure-breaking prompt injection."""
         return content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    @staticmethod
+    def _dedupe_adjacent_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Collapse adjacent duplicate role/content pairs created by sync echoes."""
+        deduped: list[dict[str, Any]] = []
+        for message in messages:
+            role = str(message.get("role") or "").strip().lower()
+            content = str(message.get("content") or "").strip()
+            if not role or not content:
+                continue
+            if deduped and deduped[-1]["role"] == role and deduped[-1]["content"] == content:
+                continue
+            deduped.append({"role": role, "content": content})
+        return deduped
 
     # ─── Data Fetchers ────────────────────────────────────────────
 
@@ -81,7 +95,7 @@ class ContextAssembler:
                 if role in {"user", "assistant"} and content:
                     history_messages.append({"role": role, "content": content})
             if history_messages:
-                return history_messages
+                return self._dedupe_adjacent_messages(history_messages)
 
         if not ctx.thread_id or not ctx.session:
             return []
@@ -117,7 +131,7 @@ class ContextAssembler:
         except Exception as e:
             logger.warning("failed to fetch message history from DB", error=str(e))
 
-        return history_messages
+        return self._dedupe_adjacent_messages(history_messages)
 
     async def fetch_session_state(self, ctx: PipelineContext) -> dict[str, Any] | None:
         """Fetch current working memory session state (cart, search filters, etc.)."""
