@@ -136,7 +136,7 @@ const requirePermission = (permission) => {
     if (userRole === 'SUPER_ADMIN') return next();
 
     // Check if user has DB-based permissions attached (from auth middleware)
-    if (req.user.userPermissions && Array.isArray(req.user.userPermissions)) {
+    if (req.user.userPermissions && Array.isArray(req.user.userPermissions) && req.user.userPermissions.length > 0) {
       if (req.user.userPermissions.includes(permission)) {
         return next();
       }
@@ -182,6 +182,8 @@ const requireDbPermission = (permissionKey) => {
     try {
       const permissions = await permissionService.getUserPermissions(req.user.id, companyId);
       if (!permissions.includes(permissionKey)) {
+        // ponytail: fallback to hardcoded map when DB permissions are empty (no roleRef linked)
+        if (hasPermission(req.user.role, permissionKey)) return next();
         return res.status(403).json({
           error: 'Insufficient permissions',
           code: 'INSUFFICIENT_PERMISSIONS',

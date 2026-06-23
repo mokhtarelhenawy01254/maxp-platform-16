@@ -197,7 +197,8 @@ const setUserRole = async (userId, companyId, roleId, actorId) => {
 };
 
 const getUserPermissions = async (userId, companyId) => {
-  const userCompany = await getSharedPrismaClient().userCompany.findUnique({
+  const prisma = getSharedPrismaClient();
+  const userCompany = await prisma.userCompany.findUnique({
     where: { userId_companyId: { userId, companyId } },
     include: {
       roleRef: {
@@ -214,6 +215,27 @@ const getUserPermissions = async (userId, companyId) => {
 
   if (userCompany.roleRef) {
     return userCompany.roleRef.permissions.map(rp => rp.permission.key);
+  }
+
+  // ponytail: auto-fix missing roleId — lazy resolution
+  if (userCompany.role) {
+    try {
+      const builtInRole = await prisma.role.findFirst({
+        where: { key: userCompany.role, companyId: '__system__', isBuiltIn: true },
+        include: {
+          permissions: { include: { permission: true } },
+        },
+      });
+      if (builtInRole) {
+        await prisma.userCompany.update({
+          where: { userId_companyId: { userId, companyId } },
+          data: { roleId: builtInRole.id },
+        });
+        return builtInRole.permissions.map(rp => rp.permission.key);
+      }
+    } catch (e) {
+      console.warn('[PERMISSIONS] Auto-fix roleId failed:', e.message);
+    }
   }
 
   return [];

@@ -18,6 +18,7 @@ const loadUserPermissions = async (userId, companyId) => {
     const userCompany = await prisma.userCompany.findUnique({
       where: { userId_companyId: { userId, companyId } },
       select: {
+        role: true,
         roleId: true,
         roleRef: {
           include: {
@@ -30,6 +31,33 @@ const loadUserPermissions = async (userId, companyId) => {
     });
     if (userCompany?.roleRef?.permissions) {
       return userCompany.roleRef.permissions.map(rp => rp.permission.key);
+    }
+    // ponytail: auto-fix missing roleId — lazy resolution
+    if (userCompany?.role) {
+      const builtInRole = await prisma.role.findFirst({
+        where: { key: userCompany.role, companyId: '__system__', isBuiltIn: true },
+        select: { id: true },
+      });
+      if (builtInRole) {
+        await prisma.userCompany.update({
+          where: { userId_companyId: { userId, companyId } },
+          data: { roleId: builtInRole.id },
+        });
+        // Re-fetch with roleRef now populated
+        const refixed = await prisma.userCompany.findUnique({
+          where: { userId_companyId: { userId, companyId } },
+          select: {
+            roleRef: {
+              include: {
+                permissions: { include: { permission: true } },
+              },
+            },
+          },
+        });
+        if (refixed?.roleRef?.permissions) {
+          return refixed.roleRef.permissions.map(rp => rp.permission.key);
+        }
+      }
     }
   } catch (e) {
     // Table might not exist yet (pre-migration)
