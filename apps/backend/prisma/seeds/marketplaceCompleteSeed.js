@@ -643,42 +643,87 @@ async function seedMarketplace() {
 
   const marketingApps = [
     {
+      slug: 'facebook-pages-connect',
+      name: 'ربط صفحات فيسبوك',
+      category: 'MARKETING',
+      description: 'ربط صفحات فيسبوك وإدارة الصفحات الأساسية والمحتوى.',
+      icon: '📄',
+      monthlyPrice: 99,
+      yearlyPrice: 990,
+      trialDays: 14,
+      features: JSON.stringify([
+        'ربط الصفحات (OAuth)',
+        'إدارة الصفحات',
+        'نشر المحتوى',
+        'الرد على التعليقات',
+        'تحليلات الصفحة'
+      ]),
+      isActive: true,
+      isPopular: false
+    },
+    {
+      slug: 'facebook-pixel-capi',
+      name: 'Pixel وتحليلات التحويل',
+      category: 'MARKETING',
+      description: 'تتبع الزوار والتحويلات عبر Pixel و CAPI مع تقارير دقيقة.',
+      icon: '📊',
+      monthlyPrice: 99,
+      yearlyPrice: 990,
+      trialDays: 14,
+      features: JSON.stringify([
+        'Pixel Tracking',
+        'Conversions API (CAPI)',
+        'أحداث قياسية',
+        'تقارير التحويل',
+        'ربط مع المتجر',
+        'تحسين الحملات'
+      ]),
+      isActive: true,
+      isFeatured: true,
+      isPopular: false,
+      requiredApps: ['facebook-pages-connect']
+    },
+    {
       slug: 'facebook-ads-pro',
-      name: 'Facebook & Instagram Ads Pro',
+      name: 'إعلانات فيسبوك وانستجرام',
       category: 'MARKETING',
       description: 'إدارة حملات فيسبوك وانستجرام مع AI Optimization وتقارير متقدمة.',
       icon: '📢',
-      monthlyPrice: 299,
-      yearlyPrice: 2990,
+      monthlyPrice: 199,
+      yearlyPrice: 1990,
       trialDays: 14,
       features: JSON.stringify([
         'إنشاء الحملات',
         'AI Optimization',
         'Audience Targeting',
-        'Pixel Tracking',
+        'A/B Testing',
         'تقارير الأداء',
-        'A/B Testing'
+        'Automation Rules',
+        'Budget Alerts',
+        'Lead Forms'
       ]),
       isActive: true,
       isFeatured: true,
-      isPopular: true
+      isPopular: true,
+      requiredApps: ['facebook-pages-connect']
     },
     {
-      slug: 'facebook-catalog',
-      name: 'Facebook Catalog Sync',
+      slug: 'facebook-catalog-shop',
+      name: 'كتالوج ومتجر فيسبوك',
       category: 'MARKETING',
-      description: 'مزامنة كتالوج المنتجات مع فيسبوك وانستجرام Shop.',
+      description: 'مزامنة كتالوج المنتجات مع فيسبوك وانستجرام Shop، إدارة المخزون، وإعلانات Dynamic Ads.',
       icon: '🛍️',
       monthlyPrice: 149,
       yearlyPrice: 1490,
       trialDays: 14,
       features: JSON.stringify([
-        'Sync الـ Catalog',
+        'مزامنة الكتالوج',
         'Dynamic Ads',
         'Instagram Shop',
-        'تحديث آلي',
+        'Facebook Shops',
         'تصنيف المنتجات',
-        'إدارة المخزون'
+        'إدارة المخزون',
+        'تحديث آلي'
       ]),
       isActive: true,
       isPopular: false
@@ -950,7 +995,7 @@ async function seedMarketplace() {
       slug: 'ecommerce-pro-bundle',
       name: 'باقة التجارة الإلكترونية الاحترافية',
       description: 'كل ما تحتاجه للتجارة الإلكترونية: متجر + مخزون + تسويق + صور AI',
-      apps: ['store-pro', 'inventory-pro', 'ai-image-studio', 'facebook-ads-pro', 'facebook-catalog', 'woocommerce-sync'],
+      apps: ['store-pro', 'inventory-pro', 'ai-image-studio', 'facebook-ads-pro', 'facebook-catalog-shop', 'woocommerce-sync'],
       monthlyPrice: 999,
       yearlyPrice: 9990,
       discount: 30,
@@ -1015,6 +1060,7 @@ async function seedMarketplace() {
     'whatsapp-settings',       // وهمي - مش gate حقيقي
     'whatsapp-templates',      // وهمي - مش gate حقيقي
     'whatsapp-analytics',      // وهمي - مش gate حقيقي
+    'facebook-catalog',        // مستبدل بـ facebook-catalog-shop
   ];
   const { count } = await prisma.marketplaceApp.updateMany({
     where: { slug: { in: slugsToRemove } },
