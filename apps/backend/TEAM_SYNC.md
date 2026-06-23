@@ -2,6 +2,15 @@
 
 ## [2026-03-09]
 
+### WhatsApp Chat Page Arabic Text Restoration & Subscription Center Duplicate Key Fix
+- **Accomplishment**: Restored valid Arabic characters in `WhatsAppChat.tsx` that were corrupted by broad byte-level replacement scripts during encoding recovery, and fixed a duplicate `trialDays` key bug in `SubscriptionCenter.tsx`.
+- **Details**:
+  - Replaced over 45 instances of Unicode replacement characters (``) with the correct Arabic letters (e.g., `صفحة`, `فيديو`, `ملف`, `تفاعل`).
+  - Restored the corrupted `commonReactions` emoji list to correct values (`👍`, `❤️`, `😂`, `😮`, `😢`, `🙏`).
+  - Corrected double-character typing issues (`حذفف` -> `حذف`).
+  - Removed duplicate `trialDays` property assignment in `createDefaultMarketplaceFormData` inside `SubscriptionCenter.tsx` that caused TypeScript build errors.
+  - Verified a successful compile and production build of the frontend.
+
 ### WhatsApp Media Sending and Notification Encoding Fixes
 - **Accomplishment**: Restored mangled Arabic notification text in the frontend and fixed Meta Cloud provider media/image sending pipeline.
 - **Details**:

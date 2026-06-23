@@ -1,3 +1,12 @@
+## [2026-06-23] WhatsAppChat.tsx Corrupted Arabic Text After Encoding Recovery Scripts
+
+- **Bug/Issue**: After running `recover_file.js` and `fix_replacement_chars.js` to fix double-encoded Arabic strings (e.g., `ØµÙˆØ±Ø©`), the scripts inadvertently corrupted valid Arabic characters in the source code, replacing them with Unicode replacement characters (`�`). This caused ~45 locations to have broken text (e.g., `صفحة` became `ص�حة`, `فيديو` became `�يديو`, `ملف` became `مل�`). Additionally, the emoji array `commonReactions` was corrupted (e.g., `👍` became `� `). The `حذف` text was also doubled to `حذفف`.
+- **Root Cause**: The encoding recovery scripts used broad byte-level replacement patterns that matched valid UTF-8 byte sequences within Arabic text, not just the double-encoded sequences they were targeting. This is because some byte patterns in double-encoded UTF-8 overlap with valid Arabic character encodings.
+- **Fix**: Manually reviewed all 45+ corrupted locations and restored the correct Arabic text. Replaced corrupted emoji values in `commonReactions` array with correct emoji characters (`👍`, `❤️`, `😂`, `😮`, `😢`, `🙏`).
+- **Lesson Learned**: Never run automated encoding recovery scripts on source code files without creating a git checkpoint first. Always validate script output character-by-character for multi-byte encodings like Arabic.
+- **Files**:
+  - `apps/frontend/src/pages/whatsapp/WhatsAppChat.tsx`
+
 ## [2026-06-23] Prisma validation error 'customerId' on WhatsAppContact Creation
 
 - **Bug/Issue**: Incoming Meta WhatsApp webhooks were failing with `500 Internal Server Error` due to a Prisma validation error: `Unknown argument 'customerId'. Did you mean 'customer'?` at `WhatsAppInboundService.js:44` in `upsertContact()`.
