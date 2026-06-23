@@ -563,14 +563,37 @@ const UnifiedInbox: React.FC = () => {
 
   const loadQuickReplies = useCallback(async () => {
     try {
-      const response = await apiClient.get(
-        "/api/v1/unified-inbox/quick-replies",
-      );
-      if (response.data?.success) {
-        setQuickReplies(response.data.data || []);
+      const [qrResponse, textsResponse] = await Promise.all([
+        apiClient.get("/api/v1/unified-inbox/quick-replies").catch(() => null),
+        apiClient.get("/user/text-gallery").catch(() => null)
+      ]);
+
+      let combined: any[] = [];
+      
+      if (qrResponse?.data?.success) {
+        combined = [...(qrResponse.data.data || [])];
       }
+
+      if (textsResponse?.data?.texts) {
+        const sortedTexts = [...textsResponse.data.texts].sort((a: any, b: any) => {
+          if (!!a.isPinned === !!b.isPinned) {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          }
+          return a.isPinned ? -1 : 1;
+        });
+
+        const formattedTexts = sortedTexts.map((t: any) => ({
+          id: `saved-text-${t.id}`,
+          title: t.title || "بدون عنوان",
+          content: t.content,
+          imageUrls: t.imageUrls,
+        }));
+        combined = [...combined, ...formattedTexts];
+      }
+
+      setQuickReplies(combined);
     } catch (error) {
-      console.error("Error loading quick replies:", error);
+      console.error("Error loading quick replies and saved texts:", error);
     }
   }, []);
 
@@ -796,8 +819,18 @@ const UnifiedInbox: React.FC = () => {
     }, 400);
   };
 
-  const useQuickReply = (reply: any) => {
-    setNewMessage(reply.content);
+  const handleQuickReplySelect = (reply: any) => {
+    setNewMessage((prev) => prev ? prev + "\n" + (reply.content || "") : (reply.content || ""));
+    
+    if (reply.imageUrls && reply.imageUrls.length > 0) {
+      const newAtts = reply.imageUrls.map((url: string) => ({
+        url,
+        name: url.split("/").pop() || "image",
+        type: "image"
+      }));
+      setAttachments(prev => [...prev, ...newAtts]);
+    }
+    
     setShowQuickReplies(false);
   };
 
@@ -1394,13 +1427,28 @@ const UnifiedInbox: React.FC = () => {
                       )}
                     </div>
                     <div>
-                      <h3
-                        className="font-semibold text-sm"
-                        style={{ color: "var(--color-foreground)" }}
-                        translate="no"
-                      >
-                        {selectedConversation.contactName}
-                      </h3>
+                      <div className="flex items-center gap-1.5">
+                        <h3
+                          className="font-semibold text-sm"
+                          style={{ color: "var(--color-foreground)" }}
+                          translate="no"
+                        >
+                          {selectedConversation.contactName}
+                        </h3>
+                        {selectedConversation.lastOrderNumber && (
+                          <span
+                            className="rounded px-1.5 py-0.5 text-[10px] font-medium leading-none"
+                            style={{
+                              background: "color-mix(in srgb, var(--color-primary) 12%, var(--color-background))",
+                              color: "var(--color-primary)",
+                              border: "1px solid color-mix(in srgb, var(--color-primary) 22%, transparent)",
+                            }}
+                            title={`${t("unifiedInbox.orders")}: #${selectedConversation.lastOrderNumber}`}
+                          >
+                            #{selectedConversation.lastOrderNumber}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         {getPlatformBadge(selectedConversation.platform)}
                         <span
@@ -1926,7 +1974,7 @@ const UnifiedInbox: React.FC = () => {
                     {quickReplies.map((reply) => (
                       <button
                         key={reply.id}
-                        onClick={() => useQuickReply(reply)}
+                        onClick={() => handleQuickReplySelect(reply)}
                         className={`w-full rounded-2xl border px-3 py-2 flex flex-col items-start gap-1 ${isRtl ? "text-right" : "text-left"} transition-colors`}
                         style={{
                           borderColor: "var(--business-card-border)",
@@ -2275,13 +2323,28 @@ const UnifiedInbox: React.FC = () => {
                 )}
               </div>
 
-              <h3
-                className="font-bold text-lg"
-                style={{ color: "var(--color-foreground)" }}
-                translate="no"
-              >
-                {customerProfile?.name || selectedConversation.contactName}
-              </h3>
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <h3
+                  className="font-bold text-lg"
+                  style={{ color: "var(--color-foreground)" }}
+                  translate="no"
+                >
+                  {customerProfile?.name || selectedConversation.contactName}
+                </h3>
+                {selectedConversation.lastOrderNumber && (
+                  <span
+                    className="rounded px-1.5 py-0.5 text-[10px] font-medium leading-none"
+                    style={{
+                      background: "color-mix(in srgb, var(--color-primary) 12%, var(--color-background))",
+                      color: "var(--color-primary)",
+                      border: "1px solid color-mix(in srgb, var(--color-primary) 22%, transparent)",
+                    }}
+                    title={`${t("unifiedInbox.orders")}: #${selectedConversation.lastOrderNumber}`}
+                  >
+                    #{selectedConversation.lastOrderNumber}
+                  </span>
+                )}
+              </div>
               {getPlatformBadge(selectedConversation.platform)}
             </div>
 
@@ -2669,7 +2732,10 @@ const UnifiedInbox: React.FC = () => {
     )}
     <TextGalleryModal
       isOpen={showTextGallery}
-      onClose={() => setShowTextGallery(false)}
+      onClose={() => {
+        setShowTextGallery(false);
+        loadQuickReplies();
+      }}
       onSelectText={handleTextGallerySelect}
     />
     <ImageGalleryModal
