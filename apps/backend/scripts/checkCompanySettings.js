@@ -12,15 +12,14 @@ async function checkCompanySettings() {
     const companies = await prisma.company.findMany({
       select: { 
         id: true, 
-        name: true, 
-        useCentralKeys: true 
+        name: true
       }
     });
     
     for (const company of companies) {
       console.log(`🏢 ${company.name}`);
       console.log(`   ID: ${company.id}`);
-      console.log(`   استخدام المفاتيح المركزية: ${company.useCentralKeys ? '✅ نعم' : '❌ لا'}`);
+      console.log(`   استخدام المفاتيح المركزية: ✅ (مفعل دائمًا - تم إلغاء حقل useCentralKeys)`);
       
       // فحص مفاتيح الشركة
       const companyKeys = await prisma.geminiKey.findMany({
@@ -51,8 +50,7 @@ async function checkCompanySettings() {
       console.log(`   - ${k.name}: ${k.isActive ? '✅ نشط' : '❌ غير نشط'}`);
     });
     
-    console.log('\n💡 لتفعيل المفاتيح المركزية لشركة معينة:');
-    console.log('   UPDATE Company SET useCentralKeys = true WHERE id = "COMPANY_ID";');
+    console.log('\n💡 المفاتيح المركزية مفعّلة لجميع الشركات بشكل افتراضي.');
     
   } catch (error) {
     console.error('❌ خطأ:', error.message);

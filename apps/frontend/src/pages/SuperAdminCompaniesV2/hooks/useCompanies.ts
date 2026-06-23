@@ -21,6 +21,8 @@ export interface CompaniesQueryParams {
   page?: number;
   pageSize?: number;
   sort?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export function useCompanies(params: CompaniesQueryParams = {}) {
@@ -34,6 +36,8 @@ export function useCompanies(params: CompaniesQueryParams = {}) {
   if (params.page && params.page > 1) queryParams.set('page', String(params.page));
   if (params.pageSize !== undefined) queryParams.set('pageSize', String(params.pageSize));
   if (params.sort) queryParams.set('sort', params.sort);
+  if (params.startDate) queryParams.set('startDate', params.startDate);
+  if (params.endDate) queryParams.set('endDate', params.endDate);
 
   const queryStr = queryParams.toString();
 

@@ -469,6 +469,9 @@ const getAllCompanies = async (req, res) => {
         if (savedView !== 'ALL') conditions.push(buildSavedViewWhere(savedView));
         const where = conditions.length === 1 ? conditions[0] : { AND: conditions };
 
+        if (req.query.startDate) conditions.push({ createdAt: { gte: new Date(req.query.startDate) } });
+        if (req.query.endDate) conditions.push({ createdAt: { lte: new Date(req.query.endDate) } });
+
         const rawPageSize = parseInt(req.query.pageSize);
         let prismaSkip, prismaTake;
         if (rawPageSize === 0) {
@@ -1165,14 +1168,16 @@ const updateCompanyFollowUp = async (req, res) => {
             });
         }
 
-        await prisma.company.update({
-            where: { id: companyId },
-            data: {
-                settings: merged.serializedSettings,
-            },
-        });
+        await prisma.$transaction(async (tx) => {
+            await tx.company.update({
+                where: { id: companyId },
+                data: {
+                    settings: merged.serializedSettings,
+                },
+            });
 
-        await saveFollowUpToDb(prisma, companyId, merged.followUp);
+            await saveFollowUpToDb(tx, companyId, merged.followUp);
+        });
 
         const automationActions = [];
         if (markReminderSent === true) {

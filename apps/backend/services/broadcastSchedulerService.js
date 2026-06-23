@@ -603,7 +603,7 @@ class BroadcastSchedulerService {
         recipientCount: recipients.length,
         sentCount: sentCount,
         failedCount: failedCount,
-        deliveredCount: sentCount,
+        deliveredCount: 0, // ponytail: starts at 0, updated by webhooks on actual delivery
         status: sentCount > 0 ? 'sent' : 'failed'
       }
       });

@@ -11,7 +11,7 @@ async function checkKeys() {
     const company = await prisma.company.findUnique({
         where: { id: companyId }
     });
-    console.log('🏢 Company:', company ? `Found (useCentralKeys: ${company.useCentralKeys})` : 'Not Found');
+    console.log('🏢 Company:', company ? 'Found' : 'Not Found');
 
     // 2. Check Company Keys
     const companyKeys = await prisma.geminiKey.findMany({

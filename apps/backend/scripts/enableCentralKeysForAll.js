@@ -1,42 +1,26 @@
 /**
  * تفعيل المفاتيح المركزية لجميع الشركات
+ * ponytail: useCentralKeys field removed — now always on
  */
-const { PrismaClient } = require('@prisma/client');
+const { getSharedPrismaClient } = require('../services/sharedDatabase');
 
 async function enableCentralKeysForAll() {
-  const prisma = new PrismaClient();
-  
   try {
     console.log('=== 🔧 تفعيل المفاتيح المركزية لجميع الشركات ===\n');
+    console.log('✅ المفاتيح المركزية مفعّلة لجميع الشركات بشكل افتراضي.');
+    console.log('   (حقل useCentralKeys تمت إزالته - التوجيه أصبح schema-agnostic)\n');
     
-    // تحديث جميع الشركات
-    const result = await prisma.company.updateMany({
-      where: {
-        useCentralKeys: false
-      },
-      data: {
-        useCentralKeys: true
-      }
+    const companies = await getSharedPrismaClient().company.findMany({
+      select: { name: true }
     });
     
-    console.log(`✅ تم تفعيل المفاتيح المركزية لـ ${result.count} شركة`);
-    
-    // التحقق من النتيجة
-    const companies = await prisma.company.findMany({
-      select: { name: true, useCentralKeys: true }
-    });
-    
-    console.log('\n=== الحالة بعد التحديث ===\n');
-    companies.forEach(c => {
-      console.log(`${c.useCentralKeys ? '✅' : '❌'} ${c.name}`);
-    });
-    
-    console.log('\n🎉 الآن يمكن لجميع الشركات استخدام المفاتيح المركزية!');
+    console.log(`📊 عدد الشركات: ${companies.length}`);
+    companies.forEach(c => console.log(`   ✅ ${c.name}`));
     
   } catch (error) {
     console.error('❌ خطأ:', error.message);
   } finally {
-    await prisma.$disconnect();
+    await getSharedPrismaClient().$disconnect();
   }
 }
 

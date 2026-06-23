@@ -916,6 +916,51 @@ try {
   console.error("❌ [EMBEDDING-CRON] Failed to start product embedding cron:", error);
 }
 
+// Start WhatsApp Journey scheduler — follow-up messages
+try {
+  const { startWhatsAppJourneyScheduler } = require("./cron/whatsappJourneyCron");
+  startWhatsAppJourneyScheduler();
+  console.log("✅ [JOURNEY-CRON] WhatsApp Journey scheduler started (runs every 30 min)");
+} catch (error) {
+  console.error("❌ [JOURNEY-CRON] Failed to start WhatsApp Journey scheduler:", error);
+}
+
+// Start Birthday notifications scheduler
+try {
+  const { startBirthdayScheduler } = require("./cron/birthdayCron");
+  startBirthdayScheduler();
+  console.log("✅ [BIRTHDAY-CRON] Birthday scheduler started (runs daily at 10 AM)");
+} catch (error) {
+  console.error("❌ [BIRTHDAY-CRON] Failed to start birthday scheduler:", error);
+}
+
+// Start Stats aggregation scheduler — raw stats → daily summary
+try {
+  const { startStatsScheduler } = require("./cron/statsScheduler");
+  startStatsScheduler();
+  console.log("✅ [STATS-CRON] Statistics scheduler started (runs every 3 hours)");
+} catch (error) {
+  console.error("❌ [STATS-CRON] Failed to start statistics scheduler:", error);
+}
+
+// Start Loyalty points expiry scheduler
+try {
+  const { startLoyaltyExpiryScheduler } = require("./cron/loyaltyExpiryScheduler");
+  startLoyaltyExpiryScheduler();
+  console.log("✅ [LOYALTY-CRON] Loyalty expiry scheduler started (runs daily at 2 AM)");
+} catch (error) {
+  console.error("❌ [LOYALTY-CRON] Failed to start loyalty expiry scheduler:", error);
+}
+
+// Start Order confirmation scheduler
+try {
+  const { startOrderConfirmationScheduler } = require("./cron/orderConfirmationScheduler");
+  startOrderConfirmationScheduler();
+  console.log("✅ [ORDER-CONFIRMATION-CRON] Order confirmation scheduler started (runs every 5 min)");
+} catch (error) {
+  console.error("❌ [ORDER-CONFIRMATION-CRON] Failed to start order confirmation scheduler:", error);
+}
+
 // AI Provider Health Check — delegated to Python ai-service
 try {
   const { healthCheck } = require("./services/aiSdkClient");

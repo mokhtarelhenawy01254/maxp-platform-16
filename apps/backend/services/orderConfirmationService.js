@@ -1022,35 +1022,37 @@ class OrderConfirmationService {
 
     if (!selected) return null;
 
-    await this.prisma.orderAssignment.updateMany({
-      where: { orderId: order.id, isActive: true },
-      data: { isActive: false }
-    });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.orderAssignment.updateMany({
+        where: { orderId: order.id, isActive: true },
+        data: { isActive: false }
+      });
 
-    await this.prisma.orderAssignment.create({
-      data: {
-        companyId,
-        orderId: order.id,
-        assignedTo: selected.id,
-        assignedBy,
-        strategy: settings.distributionStrategy,
-        isActive: true
-      }
-    });
+      await tx.orderAssignment.create({
+        data: {
+          companyId,
+          orderId: order.id,
+          assignedTo: selected.id,
+          assignedBy,
+          strategy: settings.distributionStrategy,
+          isActive: true
+        }
+      });
 
-    await this.prisma.order.update({
-      where: { id: order.id },
-      data: {
-        assignedTo: selected.id,
-        assignedBy,
-        assignedAt: new Date(),
-        assignmentStrategy: settings.distributionStrategy
-      }
-    });
+      await tx.order.update({
+        where: { id: order.id },
+        data: {
+          assignedTo: selected.id,
+          assignedBy,
+          assignedAt: new Date(),
+          assignmentStrategy: settings.distributionStrategy
+        }
+      });
 
-    await this.prisma.orderConfirmationSettings.update({
-      where: { companyId },
-      data: { lastAssignedUserId: selected.id }
+      await tx.orderConfirmationSettings.update({
+        where: { companyId },
+        data: { lastAssignedUserId: selected.id }
+      });
     });
 
     return selected;

@@ -25,7 +25,7 @@ async function createSuperAdmin() {
                     slug: 'mokhtar-systems',
                     plan: 'ENTERPRISE',
                     isActive: true,
-                    useCentralKeys: true,
+                    // useCentralKeys removed — schema-agnostic routing
                     sidebarLayout: 'three-tier',
                     timezone: 'Africa/Cairo'
                 }

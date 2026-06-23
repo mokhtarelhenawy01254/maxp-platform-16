@@ -619,7 +619,7 @@ class RagKnowledgeMaintenanceService {
         }
         const text = buildProductKnowledgeText(product);
         const textEmbedding = await episodicMemoryService.generateEmbeddingAsync(text);
-        let imageEmbedding = textEmbedding;
+        let imageEmbedding = null;
         const mainImageUrl = product.mainImage;
         if (mainImageUrl) {
           try {
@@ -634,7 +634,7 @@ class RagKnowledgeMaintenanceService {
               });
             }
           } catch (imgErr) {
-            console.warn(`[BACKFILL] Image fetch failed for product ${product.id}, using text-only embedding:`, imgErr.message);
+            console.warn(`[BACKFILL] Image fetch failed for product ${product.id}, skipping image embedding:`, imgErr.message);
           }
         }
         await prisma.product.update({
@@ -642,8 +642,10 @@ class RagKnowledgeMaintenanceService {
           data: {
             embedding: JSON.stringify(textEmbedding),
             embeddingGeneratedAt: new Date(),
-            embeddingImage: JSON.stringify(imageEmbedding),
-            embeddingImageGeneratedAt: new Date(),
+            ...(imageEmbedding ? {
+              embeddingImage: JSON.stringify(imageEmbedding),
+              embeddingImageGeneratedAt: new Date(),
+            } : {}),
           },
         });
         return { updated: true };
@@ -737,7 +739,7 @@ class RagKnowledgeMaintenanceService {
       }
       const text = buildProductKnowledgeText(product);
       const embedding = await episodicMemoryService.generateEmbeddingAsync(text);
-      let imageEmbedding = embedding;
+      let imageEmbedding = null;
       const mainImageUrl = product.mainImage;
       if (mainImageUrl) {
         try {
@@ -752,16 +754,18 @@ class RagKnowledgeMaintenanceService {
             });
           }
         } catch (imgErr) {
-          console.warn(`[BACKFILL] Image fetch failed for product ${product.id}, using text-only embedding:`, imgErr.message);
+          console.warn(`[BACKFILL] Image fetch failed for product ${product.id}, skipping image embedding:`, imgErr.message);
         }
       }
-      await model.update({
-        where: { id: product.id },
-        data: {
-          embeddingImage: JSON.stringify(imageEmbedding),
-          embeddingImageGeneratedAt: new Date(),
-        },
-      });
+      if (imageEmbedding) {
+        await model.update({
+          where: { id: product.id },
+          data: {
+            embeddingImage: JSON.stringify(imageEmbedding),
+            embeddingImageGeneratedAt: new Date(),
+          },
+        });
+      }
       return { updated: true };
     };
     await this._processBackfillBatch(products, processor, result, 'product');

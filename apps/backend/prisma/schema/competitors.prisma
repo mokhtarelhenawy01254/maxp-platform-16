@@ -7,11 +7,11 @@ model Competitor {
   logo            String?
   description     String?
   notes           String?
-  activityType    String?
+  activityType    String?   @map("activity_type")
   location        String?
-  targetMarket    String?
-  foundedYear     Int?
-  employeeCount   String?
+  targetMarket    String?   @map("target_market")
+  foundedYear     Int?      @map("founded_year")
+  employeeCount   String?   @map("employee_count")
   strengths       String?              @db.Text
   weaknesses      String?              @db.Text
   isActive        Boolean              @default(true)

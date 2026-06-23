@@ -20,7 +20,6 @@ async function checkCompanyKeys() {
             select: {
                 id: true,
                 name: true,
-                useCentralKeys: true,
                 isActive: true
             }
         });
@@ -36,7 +35,7 @@ async function checkCompanyKeys() {
             console.log(`📊 الشركة: ${company.name}`);
             console.log(`   ID: ${company.id}`);
             console.log(`   Active: ${company.isActive ? '✅' : '❌'}`);
-            console.log(`   useCentralKeys: ${company.useCentralKeys ? '✅ نعم' : '❌ لا'}`);
+            console.log(`   المفاتيح المركزية: ✅ (مفعلة دائمًا)`);
             console.log('');
 
             // 2. فحص مفاتيح الشركة

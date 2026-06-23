@@ -1,10 +1,14 @@
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Building2, Users, Facebook, AlertTriangle } from "lucide-react";
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { Building2, Users, Facebook, AlertTriangle, MessageSquare, Smartphone, TrendingUp, Search, X } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { useCompanies } from "../SuperAdminCompaniesV2/hooks/useCompanies";
-import { getPlanMeta, computeQuickStats } from "../SuperAdminCompaniesV2/utils";
-import type { Company } from "../SuperAdminCompaniesV2/types";
+import { getPlanMeta } from "../SuperAdminCompaniesV2/utils";
+import { apiClient } from "../../services/apiClient";
 
 const COLORS = ["#2563eb", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
 const PLAN_COLORS: Record<string, string> = { BASIC: "#2563eb", PRO: "#10b981", ENTERPRISE: "#8b5cf6" };
@@ -27,9 +31,48 @@ function StatCard({ icon: Icon, label, value, sub, color }: { icon: React.Elemen
   );
 }
 
+interface Filters {
+  plan: string;
+  status: string;
+  search: string;
+  startDate: string;
+  endDate: string;
+}
+
 export default function SuperAdminCompaniesReports() {
-  const { companies, isLoading } = useCompanies({ pageSize: 0 });
-  const stats = useMemo(() => computeQuickStats(companies, null), [companies]);
+  const [filters, setFilters] = useState<Filters>({ plan: "ALL", status: "ALL", search: "", startDate: "", endDate: "" });
+  const [appliedFilters, setAppliedFilters] = useState<Filters>({ plan: "ALL", status: "ALL", search: "", startDate: "", endDate: "" });
+
+  const companyParams = useMemo(() => ({
+    pageSize: 0 as const,
+    ...(appliedFilters.plan !== "ALL" ? { plan: appliedFilters.plan } : {}),
+    ...(appliedFilters.status !== "ALL" ? { status: appliedFilters.status } : {}),
+    ...(appliedFilters.search ? { search: appliedFilters.search } : {}),
+    ...(appliedFilters.startDate ? { startDate: appliedFilters.startDate } : {}),
+    ...(appliedFilters.endDate ? { endDate: appliedFilters.endDate } : {}),
+  }), [appliedFilters]);
+
+  const { companies, isLoading, serverStats } = useCompanies(companyParams);
+
+  const { data: systemStats } = useQuery({
+    queryKey: ["super-admin", "statistics"],
+    queryFn: async () => {
+      const res = await apiClient.get("/admin/companies/statistics");
+      if (!res.data?.success) throw new Error("فشل في تحميل الإحصائيات");
+      return res.data.data;
+    },
+    staleTime: 60_000,
+  });
+
+  const stats = useMemo(() => ({
+    totalCompanies: serverStats?.totalCompanies ?? companies.length,
+    activeCompanies: serverStats?.activeCompanies ?? companies.filter((c) => c.isActive).length,
+    enterpriseCompanies: serverStats?.enterpriseCompanies ?? companies.filter((c) => c.plan === "ENTERPRISE").length,
+    followUpNow: serverStats?.followUpNow ?? 0,
+    escalationDue: serverStats?.escalationDue ?? 0,
+    urgentEscalationDue: serverStats?.urgentEscalationDue ?? 0,
+    stale72h: serverStats?.stale72h ?? 0,
+  }), [serverStats, companies]);
 
   const planData = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -71,6 +114,17 @@ export default function SuperAdminCompaniesReports() {
   const totalFacebookPages = useMemo(() => companies.reduce((s, c) => s + (c._count?.facebookPages || 0), 0), [companies]);
   const totalEscalations = useMemo(() => companies.filter((c) => c.followUpAutomation?.needsEscalation || c.followUpAutomation?.needsUrgentEscalation).length, [companies]);
 
+  const applyFilters = () => setAppliedFilters({ ...filters });
+  const resetFilters = () => {
+    setFilters({ plan: "ALL", status: "ALL", search: "", startDate: "", endDate: "" });
+    setAppliedFilters({ plan: "ALL", status: "ALL", search: "", startDate: "", endDate: "" });
+  };
+  const hasActiveFilters = appliedFilters.plan !== "ALL" || appliedFilters.status !== "ALL" || appliedFilters.search || appliedFilters.startDate || appliedFilters.endDate;
+
+  const overview = systemStats?.overview;
+  const planDistribution = systemStats?.planDistribution;
+  const recentActivity = systemStats?.recentActivity;
+
   if (isLoading) {
     return (
       <div dir="rtl" className="p-4 md:p-6 space-y-6">
@@ -97,6 +151,62 @@ export default function SuperAdminCompaniesReports() {
         <p className="text-sm font-medium text-muted-foreground/60">تحليلات وإحصائيات شاملة عن الشركات المسجلة.</p>
       </div>
 
+      {/* Filters */}
+      <div className="rounded-lg border border-border/60 bg-white p-4 shadow-sm dark:bg-slate-950">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex-1 min-w-[180px]">
+            <label className="mb-1 block text-xs font-bold text-muted-foreground/70">بحث</label>
+            <div className="relative">
+              <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
+              <Input value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} placeholder="اسم الشركة..."
+                className="pr-9 text-sm h-9" onKeyDown={(e) => e.key === "Enter" && applyFilters()} />
+            </div>
+          </div>
+          <div className="w-[140px]">
+            <label className="mb-1 block text-xs font-bold text-muted-foreground/70">الباقة</label>
+            <Select value={filters.plan} onValueChange={(v) => setFilters({ ...filters, plan: v })}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">الكل</SelectItem>
+                <SelectItem value="BASIC">أساسي</SelectItem>
+                <SelectItem value="PRO">احترافي</SelectItem>
+                <SelectItem value="ENTERPRISE">مؤسسي</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-[140px]">
+            <label className="mb-1 block text-xs font-bold text-muted-foreground/70">الحالة</label>
+            <Select value={filters.status} onValueChange={(v) => setFilters({ ...filters, status: v })}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">الكل</SelectItem>
+                <SelectItem value="ACTIVE">نشطة</SelectItem>
+                <SelectItem value="INACTIVE">متوقفة</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-[160px]">
+            <label className="mb-1 block text-xs font-bold text-muted-foreground/70">من تاريخ</label>
+            <Input type="date" value={filters.startDate} onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+              className="h-9 text-sm" />
+          </div>
+          <div className="w-[160px]">
+            <label className="mb-1 block text-xs font-bold text-muted-foreground/70">إلى تاريخ</label>
+            <Input type="date" value={filters.endDate} onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+              className="h-9 text-sm" />
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={applyFilters} size="sm" className="h-9">تطبيق</Button>
+            {hasActiveFilters && (
+              <Button onClick={resetFilters} variant="ghost" size="sm" className="h-9">
+                <X className="size-4 ml-1" /> إعادة
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Company Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard icon={Building2} label="إجمالي الشركات" value={stats.totalCompanies} sub={`${stats.activeCompanies} نشطة`} color="#2563eb" />
         <StatCard icon={Users} label="إجمالي الأعضاء" value={totalMembers} sub={`${stats.totalCompanies} شركة`} color="#10b981" />
@@ -104,6 +214,21 @@ export default function SuperAdminCompaniesReports() {
         <StatCard icon={AlertTriangle} label="تصعيدات" value={totalEscalations} sub="بحاجة متابعة" color="#ef4444" />
       </div>
 
+      {/* System Overview Cards */}
+      {overview && (
+        <div>
+          <h2 className="mb-3 text-lg font-black text-foreground">نظرة عامة على النظام</h2>
+          <div className="grid gap-4 md:grid-cols-4">
+            <StatCard icon={Users} label="إجمالي المستخدمين" value={overview.totalUsers} sub="عبر كل الشركات" color="#8b5cf6" />
+            <StatCard icon={Smartphone} label="إجمالي العملاء" value={overview.totalCustomers} sub="عبر كل الشركات" color="#06b6d4" />
+            <StatCard icon={MessageSquare} label="المحادثات" value={overview.totalConversations} sub={`${overview.totalMessages} رسالة`} color="#f97316" />
+            <StatCard icon={TrendingUp} label={`نشاط آخر 30 يوم`} value={recentActivity?.newCompaniesLast30Days ?? 0}
+              sub={`${recentActivity?.newUsersLast30Days ?? 0} مستخدم · ${recentActivity?.newCustomersLast30Days ?? 0} عميل`} color="#10b981" />
+          </div>
+        </div>
+      )}
+
+      {/* Charts */}
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="rounded-lg border-border/60 bg-white shadow-sm dark:bg-slate-950">
           <CardHeader>
@@ -249,8 +374,8 @@ export default function SuperAdminCompaniesReports() {
                 { label: "متابعة الآن", value: stats.followUpNow, color: "text-amber-600" },
                 { label: "تصعيد", value: stats.escalationDue, color: "text-orange-600" },
                 { label: "راكد 72س", value: stats.stale72h, color: "text-slate-600" },
-                { label: "تسجيل بدون بدء", value: stats.registeredNoStart, color: "text-blue-600" },
-                { label: "تفعيل قيد التنفيذ", value: stats.activationInProgress, color: "text-emerald-600" },
+                { label: "تسجيل بدون بدء", value: serverStats?.registeredNoStart ?? 0, color: "text-blue-600" },
+                { label: "تفعيل قيد التنفيذ", value: serverStats?.activationInProgress ?? 0, color: "text-emerald-600" },
               ].map((item) => (
                 <div key={item.label} className="rounded-lg border border-border/40 bg-muted/10 p-3 text-center dark:bg-slate-900/30">
                   <p className="text-xs font-bold text-muted-foreground/60">{item.label}</p>
