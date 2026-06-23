@@ -28,8 +28,12 @@ import {
   ArrowTopRightOnSquareIcon,
   TrashIcon,
   StarIcon as StarOutlineIcon,
+  ArchiveBoxIcon,
+  NoSymbolIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
+import StatusDropdown from "../../components/facebook-inbox/StatusDropdown/StatusDropdown";
+import AssignmentDropdown from "../../components/facebook-inbox/AssignmentDropdown/AssignmentDropdown";
 import { apiClient } from "../../services/apiClient";
 import { socketService } from "../../services/socketService";
 import { useTranslation } from "react-i18next";
@@ -782,6 +786,63 @@ const UnifiedInbox: React.FC = () => {
   };
 
   // ── Conversation quick actions ──
+  const handleStatusChange = useCallback(async (status: string) => {
+    if (!selectedConversation) return;
+    try {
+      await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}`, { status });
+      setSelectedConversation(prev => prev ? { ...prev, status } : null);
+      setConversations(prev => prev.map(c => c.id === selectedConversation.id ? { ...c, status } : c));
+    } catch (err) {
+      console.error("Error changing status:", err);
+    }
+  }, [selectedConversation]);
+
+  const handleAssign = useCallback(async (userId: string | null) => {
+    if (!selectedConversation) return;
+    try {
+      const res = await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}/assign`, { userId });
+      const assignedTo = res.data?.data?.assignedTo || null;
+      const assignedToName = res.data?.data?.assignedToName || null;
+      
+      setSelectedConversation(prev => prev ? { ...prev, assignedTo: assignedTo ? { id: assignedTo, name: assignedToName, avatar: null } : null } : null);
+      setConversations(prev => prev.map(c => c.id === selectedConversation.id ? { ...c, assignedTo: assignedTo ? { id: assignedTo, name: assignedToName, avatar: null } : null } : c));
+    } catch (err) {
+      console.error("Error assigning:", err);
+    }
+  }, [selectedConversation]);
+
+  const handleBlockCustomer = useCallback(async () => {
+    if (!selectedConversation) return;
+    if (!window.confirm(t("unifiedInbox.blockConfirm", { defaultValue: "هل أنت متأكد من حظر هذا العميل؟" }))) return;
+    try {
+      await apiClient.post(`/api/v1/unified-inbox/conversations/${selectedConversation.id}/block`);
+    } catch (err) {
+      console.error("Error blocking customer:", err);
+    }
+  }, [selectedConversation, t]);
+
+  const handleArchiveConversation = useCallback(async () => {
+    if (!selectedConversation) return;
+    try {
+      await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}`, { status: "archived" });
+      setConversations(prev => prev.filter(c => c.id !== selectedConversation.id));
+      setSelectedConversation(null);
+    } catch (err) {
+      console.error("Error archiving:", err);
+    }
+  }, [selectedConversation]);
+
+  const handleMarkUnread = useCallback(async () => {
+    if (!selectedConversation) return;
+    try {
+      await apiClient.put(`/api/v1/unified-inbox/conversations/${selectedConversation.id}/unread`);
+      setConversations(prev => prev.map(c => c.id === selectedConversation.id ? { ...c, unreadCount: 1 } : c));
+      setSelectedConversation(prev => prev ? { ...prev, unreadCount: 1 } : null);
+    } catch (err) {
+      console.error("Error marking as unread:", err);
+    }
+  }, [selectedConversation]);
+
   const handleMarkResolved = useCallback(async () => {
     if (!selectedConversation) return;
     setShowActionsMenu(false);
@@ -2346,6 +2407,66 @@ const UnifiedInbox: React.FC = () => {
                 )}
               </div>
               {getPlatformBadge(selectedConversation.platform)}
+            </div>
+
+            {/* Status & Assignment & Actions */}
+            <div className="px-4 pb-4 border-b" style={{ borderColor: "var(--business-muted-line)" }}>
+              <div className="mt-2 grid gap-1.5" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}>
+                <div className="min-w-0 [&>div>button]:w-full [&>div>button]:justify-between [&>div>button]:overflow-hidden [&>div>button]:rounded-xl [&>div>button]:px-2 [&>div>button]:py-1.5 [&>div>button]:text-xs [&>div>button_span]:truncate">
+                  <StatusDropdown
+                    currentStatus={selectedConversation.status}
+                    onStatusChange={handleStatusChange}
+                    disabled={loadingProfile}
+                  />
+                </div>
+                <div className="min-w-0 [&>div>button]:w-full [&>div>button]:justify-between [&>div>button]:overflow-hidden [&>div>button]:rounded-xl [&>div>button]:px-2 [&>div>button]:py-1.5 [&>div>button]:text-xs [&>div>button_span]:truncate">
+                  <AssignmentDropdown
+                    currentAssignee={selectedConversation.assignedTo?.id || null}
+                    currentAssigneeName={selectedConversation.assignedTo?.name || null}
+                    onAssign={handleAssign}
+                    disabled={loadingProfile}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center justify-center gap-3">
+                <button
+                  onClick={handleMarkUnread}
+                  className="business-icon-button rounded-full p-2.5 transition-colors border shadow-sm"
+                  style={{
+                    color: "var(--color-primary)",
+                    background: "color-mix(in srgb, var(--color-primary) 10%, var(--color-background))",
+                    borderColor: "color-mix(in srgb, var(--color-primary) 20%, transparent)",
+                  }}
+                  title={t("unifiedInbox.markUnread", { defaultValue: "تحديد كغير مقروء" })}
+                >
+                  <EnvelopeIcon className="w-5 h-5 shrink-0" />
+                </button>
+                <button
+                  onClick={handleArchiveConversation}
+                  className="business-icon-button rounded-full p-2.5 transition-colors border shadow-sm"
+                  style={{
+                    color: "var(--business-warning)",
+                    background: "color-mix(in srgb, var(--business-warning) 10%, var(--color-background))",
+                    borderColor: "color-mix(in srgb, var(--business-warning) 20%, transparent)",
+                  }}
+                  title={t("unifiedInbox.archive", { defaultValue: "أرشفة" })}
+                >
+                  <ArchiveBoxIcon className="w-5 h-5 shrink-0" />
+                </button>
+                <button
+                  onClick={handleBlockCustomer}
+                  className="business-icon-button rounded-full p-2.5 transition-colors border shadow-sm"
+                  style={{
+                    color: "var(--business-danger)",
+                    background: "color-mix(in srgb, var(--business-danger) 10%, var(--color-background))",
+                    borderColor: "color-mix(in srgb, var(--business-danger) 20%, transparent)",
+                  }}
+                  title={t("unifiedInbox.block", { defaultValue: "حظر" })}
+                >
+                  <NoSymbolIcon className="w-5 h-5 shrink-0" />
+                </button>
+              </div>
             </div>
 
             {loadingProfile ? (
