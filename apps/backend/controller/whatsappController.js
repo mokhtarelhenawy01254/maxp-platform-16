@@ -941,14 +941,25 @@ async function getMessages(req, res) {
             return res.status(400).json({ error: 'معرف الجلسة مطلوب' });
         }
 
-        // Resolve virtual session ID and verify ownership
-        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
-        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
-            where: { id: targetSessionId, companyId }
-        });
-
-        if (!session) {
-            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        // Resolve session from DB only (skip in-memory check — getMessages
+        // reads from DB and works fine even if the socket is disconnected)
+        let targetSessionId = sessionId;
+        if (sessionId === 'all') {
+            const anySession = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { companyId },
+                orderBy: { lastConnectedAt: 'desc' }
+            });
+            if (!anySession) {
+                return res.status(404).json({ error: 'لا توجد جلسة متاحة' });
+            }
+            targetSessionId = anySession.id;
+        } else {
+            const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+                where: { id: sessionId, companyId }
+            });
+            if (!session) {
+                return res.status(404).json({ error: 'الجلسة غير موجودة' });
+            }
         }
 
         const result = await WhatsAppMessageHandler.getMessages(targetSessionId, jid, {
@@ -958,7 +969,14 @@ async function getMessages(req, res) {
 
         res.json(result);
     } catch (error) {
-        console.error('❌ Error getting messages:', error);
+        console.error('❌ Error getting messages:', {
+            message: error.message,
+            stack: error.stack,
+            code: error.code,
+            companyId: req.user?.companyId,
+            sessionId: req.query?.sessionId,
+            jid: req.params?.jid
+        });
         res.status(500).json({ error: 'حدث خطأ أثناء جلب الرسائل' });
     }
 }
