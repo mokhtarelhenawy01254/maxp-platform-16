@@ -20,7 +20,6 @@ import {
   Tags,
   Trash2,
   User,
-  UserPlus,
   Users,
   VolumeX,
   Wifi,
@@ -35,7 +34,6 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -149,7 +147,7 @@ function FilterPill({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-full border px-2 text-[11px] font-medium transition-colors",
+        "inline-flex h-6 min-w-0 items-center justify-center gap-1 rounded-full border px-1.5 text-[10px] font-medium transition-colors",
         active
           ? "border-[color:var(--color-primary)] bg-primary/10 text-[color:var(--color-primary)]"
           : "border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)] hover:text-[color:var(--color-foreground)]",
@@ -382,23 +380,22 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         className,
       )}
     >
-      <div className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] bg-[color:var(--color-muted)] px-3 py-3">
-        <div className="flex items-center gap-3">
+      <div className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] bg-[color:var(--color-muted)] px-2 py-2">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onOpenProfile}
             className="rounded-full transition-transform hover:scale-[1.02]"
           >
-            <Avatar size="lg" className="shadow-md">
+            <Avatar>
               <AvatarImage src={currentUserProfile?.profilePicUrl || undefined} />
-              <AvatarFallback className="bg-primary/10 font-semibold text-[color:var(--color-primary)]">
+              <AvatarFallback className="bg-primary/10 text-xs font-semibold text-[color:var(--color-primary)]">
                 {getContactInitials(currentUserProfile?.name || "WA")}
               </AvatarFallback>
             </Avatar>
           </button>
 
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1 space-y-0">
               <p className="truncate text-sm font-semibold text-[color:var(--color-foreground)]">
                 {currentUserProfile?.name || "WhatsApp Workspace"}
               </p>
@@ -410,11 +407,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   الأرشيف
                 </Badge>
               ) : null}
+              <p className="mt-0.5 truncate text-[11px] text-[color:var(--color-muted-foreground)]">
+                {currentUserProfile?.status ||
+                  "صندوق تشغيل موحد للجلسات والمحادثات المباشرة."}
+              </p>
             </div>
-            <p className="mt-0.5 truncate text-[11px] text-[color:var(--color-muted-foreground)]">
-              {currentUserProfile?.status ||
-                "صندوق تشغيل موحد للجلسات والمحادثات المباشرة."}
-            </p>
           </div>
 
           <div className="flex items-center gap-1">
@@ -426,33 +423,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               title="محادثة"
             >
               <MessageSquarePlus className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={onOpenNewGroup}
-              className="rounded-full text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
-              title="مجموعة"
-            >
-              <UserPlus className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={onOpenBroadcast}
-              className="rounded-full text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
-              title="إرسال بث"
-            >
-              <Megaphone className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={onOpenLabels}
-              className="rounded-full text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
-              title="التصنيفات"
-            >
-              <Tags className="size-4" />
             </Button>
 
             <DropdownMenu>
@@ -469,43 +439,50 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align={i18n.dir() === "rtl" ? "start" : "end"}
-                className="w-60"
+                className="w-52"
               >
-                <DropdownMenuLabel>إجراءات مساحة واتساب</DropdownMenuLabel>
                 <DropdownMenuItem
                   onClick={onOpenNewGroup}
-                  className="justify-between"
                 >
-                  <span>{t("whatsapp.sidebar.newGroup")}</span>
                   <Users className="size-4" />
+                  <span>{t("whatsapp.sidebar.newGroup")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={onOpenProfile}
-                  className="justify-between"
+                  onClick={onOpenBroadcast}
                 >
-                  <span>{t("whatsapp.sidebar.profile")}</span>
+                  <Megaphone className="size-4" />
+                  <span>إرسال بث</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={onOpenLabels}
+                >
+                  <Tags className="size-4" />
+                  <span>التصنيفات</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={onOpenProfile}
+                >
                   <User className="size-4" />
+                  <span>{t("whatsapp.sidebar.profile")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={onOpenBusinessProfile}
-                  className="justify-between"
                 >
-                  <span>{t("whatsapp.sidebar.settings")}</span>
                   <Store className="size-4" />
+                  <span>{t("whatsapp.sidebar.settings")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={onOpenPrivacySettings}
-                  className="justify-between"
                 >
-                  <span>{t("whatsapp.sidebar.settings")}</span>
                   <Shield className="size-4" />
+                  <span>{t("whatsapp.sidebar.settings")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={onOpenCheckNumber}
-                  className="justify-between"
                 >
-                  <span>فحص الرقم</span>
                   <Search className="size-4" />
+                  <span>فحص الرقم</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuCheckboxItem
@@ -519,12 +496,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </div>
 
         {sessionOptions.length > 0 ? (
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-2 flex items-center gap-2">
             <Select value={resolvedSessionValue} onValueChange={onSelectSession}>
-              <SelectTrigger className="h-9 min-w-0 flex-1 rounded-xl bg-[var(--whatsapp-surface)] text-xs">
+              <SelectTrigger className="h-8 min-w-0 flex-1 rounded-xl bg-[var(--whatsapp-surface)] text-[11px]">
                 <SelectValue placeholder={t("whatsapp.sidebar.all")} />
               </SelectTrigger>
               <SelectContent align={i18n.dir() === "rtl" ? "start" : "end"}>
@@ -550,14 +526,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         ) : null}
       </div>
 
-      <div className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] px-3 py-3">
+      <div className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_76%,transparent)] px-2 py-2">
         <div className="relative">
           <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
           <Input
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
             placeholder={t("whatsapp.sidebar.searchPlaceholder")}
-            className="whatsapp-search-input h-11 rounded-xl bg-[var(--whatsapp-surface)] ps-9 pe-11"
+            className="whatsapp-search-input h-9 rounded-xl bg-[var(--whatsapp-surface)] ps-9 pe-10 text-xs"
           />
           <Button
             variant="ghost"
@@ -579,7 +555,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           </Button>
         </div>
 
-        <div className="mt-2 grid grid-cols-5 gap-1.5">
+        <div className="mt-2 grid grid-cols-5 gap-1">
           <FilterPill
             active={filterType === "all" && !showArchived}
             label={t("whatsapp.sidebar.all")}
@@ -614,7 +590,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3" onScroll={handleScroll}>
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2" onScroll={handleScroll}>
         {filterType === "statuses" ? (
           <div className="space-y-3">
             <button
@@ -709,24 +685,24 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                     });
                   }}
                   className={cn(
-                    "min-h-[5.75rem] w-full rounded-3xl border px-3 py-3 text-start transition-all",
+                    "min-h-[4.5rem] w-full rounded-2xl border px-3 py-2.5 text-start transition-all",
                     isSelected
-                      ? "border-[color:var(--color-primary)] bg-primary/10 shadow-md"
-                      : "border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-strong)] hover:bg-[var(--whatsapp-surface-hover)] hover:shadow-sm",
+                      ? "border-[color:var(--color-primary)] bg-primary/10"
+                      : "border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-strong)] hover:bg-[var(--whatsapp-surface-hover)]",
                   )}
                 >
                   <div className="flex items-start gap-3">
-                    <Avatar size="lg">
+                    <Avatar>
                       <AvatarImage src={contact.profilePicUrl || undefined} />
-                      <AvatarFallback className="bg-primary/8 font-semibold text-[color:var(--color-primary)]">
+                      <AvatarFallback className="bg-primary/8 text-xs font-semibold text-[color:var(--color-primary)]">
                         {getContactInitials(contactName)}
                       </AvatarFallback>
                     </Avatar>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-1.5">
+                          <div className="flex items-center gap-1.5">
                             <p
                               className={cn(
                                 "truncate text-sm text-[color:var(--color-foreground)]",
@@ -738,27 +714,16 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                             {contact.isGroup ? (
                               <Badge
                                 variant="outline"
-                                className="border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-muted-foreground)]"
+                                className="border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] px-1.5 text-[9px] uppercase text-[color:var(--color-muted-foreground)]"
                               >
-                                Group
-                              </Badge>
-                            ) : null}
-                            {resolvedSessionValue === "all" ? (
-                              <Badge
-                                variant="outline"
-                                className="border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-overlay)] text-[10px] text-[color:var(--color-muted-foreground)]"
-                              >
-                                {contact.session?.name || "Session"}
+                                G
                               </Badge>
                             ) : null}
                           </div>
-                          <p className="mt-1 text-xs text-[color:var(--color-muted-foreground)]" dir="ltr">
-                            {getContactDisplayPhone(contact)}
-                          </p>
                         </div>
                         <p
                           className={cn(
-                            "shrink-0 text-xs",
+                            "shrink-0 text-[11px]",
                             contact.unreadCount > 0
                               ? "font-medium text-[color:var(--color-primary)]"
                               : "text-[color:var(--color-muted-foreground)]",
@@ -768,19 +733,19 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         </p>
                       </div>
 
-                      <div className="mt-2 flex items-center justify-between gap-3">
-                        <p className="line-clamp-2 text-sm leading-6 text-[color:var(--color-muted-foreground)]">
+                      <div className="mt-1 flex items-center justify-between gap-2">
+                        <p className="line-clamp-1 text-sm leading-5 text-[color:var(--color-muted-foreground)]">
                           {getLastMessagePreview(contact)}
                         </p>
                         <div className="flex shrink-0 items-center gap-1.5">
                           {contact.isPinned ? (
-                            <Pin className="size-3.5 text-[color:var(--color-muted-foreground)]" />
+                            <Pin className="size-3 text-[color:var(--color-muted-foreground)]" />
                           ) : null}
                           {contact.isMuted ? (
-                            <VolumeX className="size-3.5 text-[color:var(--color-muted-foreground)]" />
+                            <VolumeX className="size-3 text-[color:var(--color-muted-foreground)]" />
                           ) : null}
                           {contact.unreadCount > 0 ? (
-                            <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-[color:var(--color-primary)] px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                            <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[color:var(--color-primary)] px-1 py-0.5 text-[10px] font-semibold text-white">
                               {contact.unreadCount}
                             </span>
                           ) : null}
@@ -793,8 +758,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             })}
 
             {isLoadingMoreConversations ? (
-              <div className="flex items-center justify-center py-3">
-                <Loader2 className="size-5 animate-spin text-[color:var(--color-muted-foreground)]" />
+              <div className="flex items-center justify-center py-2">
+                <Loader2 className="size-4 animate-spin text-[color:var(--color-muted-foreground)]" />
               </div>
             ) : null}
           </div>

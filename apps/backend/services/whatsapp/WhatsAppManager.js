@@ -91,6 +91,21 @@ function clearReconnectTimer(sessionId) {
     }
 }
 
+// ponytail: simple lock prevents concurrent reconnect for same session
+const reconnectInProgress = new Set();
+
+function isReconnecting(sessionId) {
+    return reconnectInProgress.has(sessionId);
+}
+
+function markReconnecting(sessionId) {
+    reconnectInProgress.add(sessionId);
+}
+
+function clearReconnecting(sessionId) {
+    reconnectInProgress.delete(sessionId);
+}
+
 function cleanupSocketListeners(sock) {
     if (!sock || !sock.ev) return;
     try {
@@ -253,10 +268,9 @@ function classifySessionSocketHealth(session) {
         }
 
         if (readyState === 1) {
-            // WebSocket is OPEN - but also verify it's not stale by checking last message time
             const lastMsgRecv = session.sock.lastReceivedMessageTimestamp || 0;
             const now = Date.now();
-            const staleThreshold = 120000; // 2 minutes without any message = stale
+            const staleThreshold = parseInt(process.env.STALE_CONNECTION_THRESHOLD_MS || '120000', 10);
             if (lastMsgRecv > 0 && (now - lastMsgRecv) > staleThreshold) {
                 return { alive: true, stale: true, reason: 'no_recent_messages' };
             }
@@ -403,6 +417,9 @@ function stopSessionHealthCheck() {
 }
 
 function scheduleReconnectSession(sessionId, companyId, options = {}, delayMs = 5000, attempt = 0) {
+    if (isReconnecting(sessionId)) {
+        return;
+    }
     clearReconnectTimer(sessionId);
 
     // Enforce minimum cooldown between reconnects
@@ -424,12 +441,16 @@ function scheduleReconnectSession(sessionId, companyId, options = {}, delayMs = 
     const timer = setTimeout(() => {
         reconnectTimers.delete(sessionId);
         lastReconnectTime.set(sessionId, Date.now());
+        markReconnecting(sessionId);
         reconnectSession(sessionId, companyId, attempt, options).catch((error) => {
             WA_LOG.error(sessionId, `Scheduled reconnect failed: ${error.message}`);
+            clearReconnecting(sessionId);
             if (attempt < 5) {
                 const nextDelay = Math.min(baseDelay * 1.5, maxDelay);
                 scheduleReconnectSession(sessionId, companyId, options, nextDelay, attempt + 1);
             }
+        }).finally(() => {
+            clearReconnecting(sessionId);
         });
     }, actualDelay);
 
@@ -469,31 +490,24 @@ function shouldEnableFullHistorySync(options = {}) {
         toBooleanOption(options.importHistory) ||
         toBooleanOption(options.syncOldMessages);
 }
-
 function getSocketBrowser(syncFullHistory) {
     const platform = process.platform;
-    const chromeVersion = '125.0.0';
 
-    if (syncFullHistory && Browsers) {
-        if (platform === 'win32' && Browsers.windows) {
-            return Browsers.windows('Chrome');
-        }
-        if (platform === 'linux') {
-            if (Browsers.linux) return Browsers.linux('Chrome');
-            if (Browsers.ubuntu) return Browsers.ubuntu('Chrome');
-        }
-        // Use the actual platform name with Chrome so WhatsApp shows correct device
+    if (!Browsers) {
         const osName = platform === 'win32' ? 'Windows'
             : platform === 'linux' ? 'Linux'
-            : platform === 'darwin' ? 'macOS'
-            : 'Windows';
-        return [`${osName}`, 'Chrome', chromeVersion];
+            : 'macOS';
+        return [osName, 'Chrome', '130.0.0'];
     }
 
-    const name = platform === 'win32' ? 'MaxBot (Windows)'
-        : platform === 'linux' ? 'MaxBot (Linux)'
-        : 'MaxBot';
-    return [name, 'Chrome', chromeVersion];
+    if (platform === 'win32' && Browsers.windows) return Browsers.windows('Chrome');
+    if (platform === 'linux') {
+        if (Browsers.ubuntu) return Browsers.ubuntu('Chrome');
+        if (Browsers.linux) return Browsers.linux('Chrome');
+    }
+    if (Browsers.macOS) return Browsers.macOS('Chrome');
+
+    return Browsers.windows ? Browsers.windows('Chrome') : ['Windows', 'Chrome', '130.0.0'];
 }
 
 function getLiveStatusFromDbStatus(status, provider) {
@@ -1120,11 +1134,19 @@ async function createSession(sessionId, companyId, options = {}) {
         // تحميل حالة المصادقة من قاعدة البيانات
         const { state, saveCreds } = await useDatabaseAuthState(sessionId);
 
-        // الحصول على أحدث إصدار من Baileys
-        const { version } = await fetchLatestBaileysVersion();
+        // الحصول على أحدث إصدار من Baileys مع fallback للنسخة المخزنة
+        let version;
+        try {
+            const fetched = await fetchLatestBaileysVersion();
+            version = fetched.version;
+        } catch {
+            version = [6, 7, 22];
+            WA_LOG.warn(sessionId, `Failed to fetch latest Baileys version, using fallback ${version.join('.')}`);
+        }
         console.log(`📦 Using Baileys version: ${version.join('.')}`);
 
         // إعدادات Socket
+        const staleThreshold = parseInt(process.env.STALE_CONNECTION_THRESHOLD_MS || '120000', 10);
         const socketOptions = {
             version,
             auth: state,
@@ -1134,9 +1156,30 @@ async function createSession(sessionId, companyId, options = {}) {
             defaultQueryTimeoutMs: 60000,
             keepAliveIntervalMs: 30000,
             emitOwnEvents: true,
-            markOnlineOnConnect: true,
+            markOnlineOnConnect: process.env.WHATSAPP_MARK_ONLINE !== 'false',
             syncFullHistory,
-            shouldSyncHistoryMessage: () => syncFullHistory
+            shouldSyncHistoryMessage: () => syncFullHistory,
+            getMessage: async (key) => {
+                try {
+                    const prisma = getSharedPrismaClient();
+                    const msg = await prisma.whatsAppMessage.findUnique({
+                        where: { messageId: key.id },
+                        select: { metadata: true }
+                    });
+                    if (msg?.metadata) return JSON.parse(msg.metadata);
+                } catch { /* return undefined */ }
+                return undefined;
+            },
+            cachedGroupMetadata: async (jid) => {
+                try {
+                    const prisma = getSharedPrismaClient();
+                    const session = await prisma.whatsAppSession.findFirst({
+                        where: { id: sessionId },
+                        select: { metadata: true }
+                    });
+                    return session?.metadata?.cachedGroups?.[jid] || undefined;
+                } catch { return undefined; }
+            }
         };
 
         // إنشاء Socket
@@ -2684,12 +2727,6 @@ async function reconnectSession(sessionId, companyId, attempt = 0, options = {})
         return result;
     } catch (error) {
         WA_LOG.error(sessionId, `Reconnect attempt ${attempt + 1} failed: ${error.message}`);
-        if (attempt < 5) {
-            const nextDelay = Math.min(60000, 5000 * Math.pow(1.5, attempt));
-            scheduleReconnectSession(sessionId, companyId, options, nextDelay, attempt + 1);
-        } else {
-            WA_LOG.error(sessionId, `Max reconnect attempts reached for session`);
-        }
         throw error;
     }
 }

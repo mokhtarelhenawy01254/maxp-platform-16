@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import EmojiPicker from "emoji-picker-react";
 import { VirtualItem } from "@tanstack/react-virtual";
@@ -15,6 +15,7 @@ import {
   ShoppingCart,
   Smile,
   Menu,
+  Plus,
   Store,
   ClipboardList,
   X,
@@ -74,11 +75,6 @@ interface ChatWindowProps {
 
 const backgroundStyle: React.CSSProperties = {
   backgroundColor: "var(--color-muted)",
-  backgroundImage:
-    'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")',
-  backgroundPosition: "center",
-  backgroundSize: "cover",
-  backgroundBlendMode: "normal",
 };
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -120,6 +116,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   highlightedMessageId,
 }) => {
   const { t, i18n } = useTranslation();
+  const [showRichTools, setShowRichTools] = useState(false);
 
   if (!selectedContact) {
     return (
@@ -153,8 +150,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         className,
       )}
     >
-      <div className="flex items-center justify-between gap-4 border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:var(--color-muted)] px-5 py-4">
-        <div className="flex min-w-0 items-center gap-3">
+      <div className="flex items-center justify-between gap-3 border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:var(--color-muted)] px-4 py-2.5">
+        <div className="flex min-w-0 items-center gap-2.5">
           {onBackToList ? (
             <Button
               variant="outline"
@@ -169,7 +166,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               <span className="sr-only">{t("whatsapp.sidebar.all")}</span>
             </Button>
           ) : null}
-          <Avatar size="lg" className="shadow-md">
+          <Avatar className="shadow-md">
             <AvatarImage src={selectedContact.profilePicUrl || undefined} />
             <AvatarFallback className="bg-primary/10 text-[color:var(--color-primary)]">
               {getContactName(selectedContact).slice(0, 2).toUpperCase()}
@@ -271,9 +268,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         ) : null}
       </div>
 
-      <div className="border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:var(--color-card)] px-3 py-3 sm:px-4 sm:py-4">
+      <div className="border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:var(--color-card)] px-2 py-2 sm:px-3 sm:py-3">
         {replyingTo ? (
-          <div className="mb-3 flex items-start justify-between gap-3 rounded-xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-4 py-3">
+          <div className="mb-2 flex items-start justify-between gap-3 rounded-xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-3 py-2">
             <div className="min-w-0 space-y-1">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--color-primary)]">
                 {replyingTo.fromMe
@@ -336,75 +333,91 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               >
                 <Paperclip className="size-4" />
               </Button>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                className={cn(
+                  "rounded-full border-[color:var(--shell-control-border)]",
+                  showRichTools
+                    ? "bg-primary/10 text-[color:var(--color-primary)]"
+                    : "bg-[var(--whatsapp-surface)] text-[color:var(--color-muted-foreground)] hover:bg-[var(--whatsapp-surface-hover)]",
+                )}
+                onClick={() => setShowRichTools(!showRichTools)}
+                title="أدوات إضافية"
+              >
+                <Plus className="size-4" />
+              </Button>
             </div>
 
-            <div className="order-3 flex w-full flex-wrap items-center gap-1 sm:order-2 sm:w-auto">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="rounded-full"
-                onClick={onOpenPoll}
-                title={t("whatsapp.tooltips.poll")}
-              >
-                <BarChart3 className="size-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="rounded-full"
-                onClick={onOpenButtons}
-                title={t("whatsapp.tooltips.buttons")}
-              >
-                <Menu className="size-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="rounded-full"
-                onClick={onOpenList}
-                title={t("whatsapp.tooltips.list")}
-              >
-                <List className="size-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="rounded-full"
-                onClick={onOpenCatalog}
-                title={t("whatsapp.tooltips.catalog")}
-              >
-                <Store className="size-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="rounded-full"
-                onClick={onOpenLocation}
-                title={t("whatsapp.tooltips.location")}
-              >
-                <MapPin className="size-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="rounded-full"
-                onClick={onOpenOrder}
-                title={t("whatsapp.tooltips.order")}
-              >
-                <ShoppingCart className="size-4" />
-              </Button>
-              {onOpenTasks && (
+            {showRichTools ? (
+              <div className="order-3 flex w-full flex-wrap items-center gap-1 sm:order-2 sm:w-auto">
                 <Button
                   variant="ghost"
                   size="icon-sm"
                   className="rounded-full"
-                  onClick={onOpenTasks}
-                  title={t("whatsapp.tooltips.task")}
+                  onClick={onOpenPoll}
+                  title={t("whatsapp.tooltips.poll")}
                 >
-                  <ClipboardList className="size-4" />
+                  <BarChart3 className="size-4" />
                 </Button>
-              )}
-            </div>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="rounded-full"
+                  onClick={onOpenButtons}
+                  title={t("whatsapp.tooltips.buttons")}
+                >
+                  <Menu className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="rounded-full"
+                  onClick={onOpenList}
+                  title={t("whatsapp.tooltips.list")}
+                >
+                  <List className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="rounded-full"
+                  onClick={onOpenCatalog}
+                  title={t("whatsapp.tooltips.catalog")}
+                >
+                  <Store className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="rounded-full"
+                  onClick={onOpenLocation}
+                  title={t("whatsapp.tooltips.location")}
+                >
+                  <MapPin className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="rounded-full"
+                  onClick={onOpenOrder}
+                  title={t("whatsapp.tooltips.order")}
+                >
+                  <ShoppingCart className="size-4" />
+                </Button>
+                {onOpenTasks && (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="rounded-full"
+                    onClick={onOpenTasks}
+                    title={t("whatsapp.tooltips.task")}
+                  >
+                    <ClipboardList className="size-4" />
+                  </Button>
+                )}
+              </div>
+            ) : null}
 
             <input type="file" ref={fileInputRef} hidden onChange={onFileUpload} />
 
@@ -412,7 +425,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               value={newMessage}
               onChange={(event) => setNewMessage(event.target.value)}
               placeholder={t("whatsapp.window.inputPlaceholder")}
-              className="order-2 min-h-[2.75rem] min-w-[14rem] flex-1 resize-none rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-input-bg)] px-4 py-3 text-sm leading-6 text-[color:var(--color-foreground)] outline-none transition-colors placeholder:text-[color:var(--color-muted-foreground)] focus:border-[color:var(--color-primary)] sm:order-3"
+              className="order-2 min-h-[2.75rem] min-w-[14rem] flex-1 resize-none rounded-2xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-input-bg)] px-3 py-2.5 text-sm leading-6 text-[color:var(--color-foreground)] outline-none transition-colors placeholder:text-[color:var(--color-muted-foreground)] focus:border-[color:var(--color-primary)] sm:order-3"
               rows={1}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {

@@ -8,6 +8,7 @@
 const { getSharedPrismaClient } = require('../sharedDatabase');
 // // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues // ❌ Removed to prevent early loading issues
 const { isPermissionError, getPermissionErrorMessage } = require('../../utils/dbPermissionHelper');
+const hardening = require('./hardening/whatsappHardening');
 
 // Dynamic import for Baileys
 let initAuthCreds, BufferJSON;
@@ -90,6 +91,27 @@ async function clearDatabaseAuthState(sessionId) {
 
     authStateCache.delete(sessionId);
 
+    // ponytail: backup before destructive clear
+    try {
+        const session = await getSharedPrismaClient().whatsAppSession.findUnique({
+            where: { id: sessionId },
+            select: { authState: true }
+        });
+        if (session?.authState) {
+            const fs = require('fs');
+            const path = require('path');
+            const backupDir = path.join(process.cwd(), 'data', 'whatsapp-sessions', '_backups');
+            fs.mkdirSync(backupDir, { recursive: true });
+            fs.writeFileSync(
+                path.join(backupDir, `${sessionId}_${Date.now()}.json`),
+                session.authState,
+                'utf-8'
+            );
+        }
+    } catch (backupErr) {
+        // backup failure is non-critical
+    }
+
     AUTH_LOG.warn(sessionId, `Clearing auth state from database`);
 
     await getSharedPrismaClient().whatsAppSession.update({
@@ -149,7 +171,7 @@ async function useDatabaseAuthState(sessionId) {
     };
 
     // تخزين بيانات المفاتيح في متغير منفصل
-    let keysData = authData.keys ? JSON.parse(JSON.stringify(authData.keys)) : {};
+    let keysData = authData.keys ? hardening.structuredCloneSafe(authData.keys) : {};
 
     if (hasValidAuth) {
         AUTH_LOG.ok(sessionId, `Auth state loaded with valid credentials`, {
@@ -215,19 +237,16 @@ async function useDatabaseAuthState(sessionId) {
         const saveFunction = async () => {
             try {
                 // أخذ snapshot متسق من creds و keys
-                const currentCreds = state.creds;
-                const currentKeys = { ...keysData };
-                // Deep-clone لكل فئة مفاتيح لمنع التعديل أثناء التسلسل
-                for (const cat of Object.keys(currentKeys)) {
-                    currentKeys[cat] = { ...currentKeys[cat] };
-                }
+                const currentCreds = hardening.structuredCloneSafe(state.creds);
+                const currentKeys = hardening.structuredCloneSafe(keysData);
+                hardening.pruneAuthKeys(currentKeys);
 
                 const dataToSave = {
                     creds: currentCreds,
                     keys: currentKeys
                 };
 
-                const serialized = JSON.stringify(dataToSave, BufferJSON.replacer, 2);
+                const serialized = hardening.serializeAndCap(dataToSave, { replacer: BufferJSON.replacer });
 
                 await getSharedPrismaClient().whatsAppSession.update({
                     where: { id: sessionId },
@@ -238,7 +257,7 @@ async function useDatabaseAuthState(sessionId) {
                 });
 
                 // تحديث الـ cache بالبيانات المحفوظة فعلياً
-                authStateCache.set(sessionId, dataToSave);
+                setCachedAuthState(sessionId, dataToSave);
 
                 AUTH_LOG.ok(sessionId, `Auth state saved (${serialized.length} bytes, keys cats: ${Object.keys(currentKeys).length})`);
             } catch (error) {
@@ -318,8 +337,16 @@ module.exports = {
     useDatabaseAuthState,
     clearDatabaseAuthState,
     __testing: {
-        applyKeyUpdates
+        applyKeyUpdates,
+        hardening
     }
 };
+
+
+
+
+
+
+
 
 
