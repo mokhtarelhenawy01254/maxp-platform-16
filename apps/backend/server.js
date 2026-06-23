@@ -487,6 +487,38 @@ app.use("/api/v1/webhooks", webhookRoutes);
 app.use("/api/v1/whatsapp-meta", whatsappMetaWebhookRoutes);
 app.use("/api/v1/turbo-webhook", turboWebhookRoutes);
 app.use("/api/v1/health", healthRoute);
+
+app.get("/api/v1/temp-debug-verify", async (req, res) => {
+  try {
+    const { getSharedPrismaClient } = require("./services/sharedDatabase");
+    const prisma = getSharedPrismaClient();
+    const sessions = await prisma.whatsAppSession.findMany();
+    const companies = await prisma.company.findMany({
+      select: { id: true, name: true, email: true }
+    });
+    res.status(200).json({ success: true, sessions, companies });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post("/api/v1/temp-debug-verify", async (req, res) => {
+  try {
+    const { getSharedPrismaClient } = require("./services/sharedDatabase");
+    const prisma = getSharedPrismaClient();
+    const { sessionId, updates } = req.body;
+    if (!sessionId) {
+      return res.status(400).json({ success: false, error: "sessionId is required" });
+    }
+    const updated = await prisma.whatsAppSession.update({
+      where: { id: sessionId },
+      data: updates
+    });
+    res.status(200).json({ success: true, updated });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 app.use("/api/geolocation", geolocationRoutes);
 app.use("/api/v1/geolocation", geolocationRoutes);
 
